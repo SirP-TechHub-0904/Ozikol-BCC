@@ -1,0 +1,48 @@
+﻿@page
+@model Ozikol_BCC.Website.Pages.fSuccessModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form Submitted Successfully</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        .success-card {
+            max-width: 500px;
+            margin: 5rem auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container px-3">
+        <div class="success-card">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 100px; height: 100px;">
+                <i class="bi bi-check-lg" style="font-size: 3rem;"></i>
+            </div>
+            <h2 class="fw-bold mb-3">Response Recorded</h2>
+            <p class="lead text-muted mb-4">Your response has been successfully submitted and saved. Thank you for your time.</p>
+        </div>
+        
+        <div class="text-center text-muted fs-8 pb-4">
+            Powered by Juray Universal Platform
+        </div>
+    </div>
+</body>
+</html>
+

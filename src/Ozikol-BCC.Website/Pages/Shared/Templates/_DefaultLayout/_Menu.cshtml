@@ -1,0 +1,366 @@
+@using MediatR
+@using Ozikol_BCC.Application.Queries.SliderQueries
+@inject IMediator Mediator
+@using System.Text.RegularExpressions;
+@using Ozikol_BCC.Application.Services;
+
+@{
+    var sliderData = await Mediator.Send(new GetSliderAggregatedDataQuery());
+    var xsetting = sliderData.ConfigSetting;
+    var configsetting = sliderData.ConfigSetting;
+    var Model = sliderData.ConfigSetting;
+    var config = sliderData.ConfigSetting;
+    var catitemlist = sliderData.MenuCategories;
+    var singlePages = sliderData.SinglePages;
+    var topPages = sliderData.TopPages;
+    var productpage = sliderData.ProductPages;
+    var linkExternalDropdown = sliderData.ExternalLinks;
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+}
+
+@if (Model.DisableMainTopMenu == false)
+{
+    if (ViewBag.ConfigSetting.UseCustomMenuTop == true)
+    {
+        @Html.Raw(ViewBag.ConfigSetting.CustomMenuTop)
+    }
+    else
+    {
+
+
+        <!-- Top-Bar START -->
+        <div id="top-bar" class="">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-9 col-12">
+                        <div class="top-bar-welcome">
+                            <ul>
+                                <li>@ViewBag.setting.TopNote</li>
+                            </ul>
+                        </div>
+                        <div class="top-bar-info">
+                            <ul>
+                                @if (ViewBag.ConfigSetting.ShowEmailOneInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-envelope"></i>@ViewBag.setting.EmailOne
+                                    </li>
+                                }
+                                @if (ViewBag.ConfigSetting.ShowEmailTwoInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-envelope"></i>@ViewBag.setting.EmailTwo
+                                    </li>
+                                }
+                                @if (ViewBag.ConfigSetting.ShowEmailThreeInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-envelope"></i>@ViewBag.setting.EmailThree
+                                    </li>
+                                }
+                                @if (ViewBag.ConfigSetting.ShowPhoneOneInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-phone"></i>@ViewBag.setting.PhoneOne
+                                    </li>
+                                }
+                                @if (ViewBag.ConfigSetting.ShowPhoneTwoInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-phone"></i>@ViewBag.setting.PhoneTwo
+                                    </li>
+                                }
+                                @if (ViewBag.ConfigSetting.ShowPhoneThreeInTop == true)
+                                {
+                                    <li>
+                                        <i class="fas fa-phone"></i>@ViewBag.setting.PhoneThree
+                                    </li>
+                                }
+                                @foreach (var item in topPages)
+                                {
+                                    if (item.EnableDirectUrl == true)
+                                    {
+                                        <li>
+                                            <a class="top-class" href="@item.DirectUrl"><i class="fas fa-th"></i>@item.Title</a>
+
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li>
+                                            <a class="top-class" asp-page="/Page" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)"><i class="fas fa-th"></i>@item.Title</a>
+
+                                        </li>
+                                    }
+
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-12">
+                        <ul class="social-icons hidden-md-down">
+                            <li><a href="@ViewBag.setting.FacebookPage"><i class="fab fa-facebook"></i></a></li>
+                            <li><a href="@ViewBag.setting.TwitterPage"><i class="fab fa-twitter"></i></a></li>
+                            <li><a href="@ViewBag.setting.InstagramPage"><i class="fab fa-instagram"></i></a></li>
+                            <li><a href="@ViewBag.setting.YoutubeChannel"><i class="fab fa-youtube"></i></a></li>
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Top-Bar END -->
+    }
+}
+<!-- Navbar START -->
+@if (ViewBag.ConfigSetting.EnableBreakingNewsRibon == true && ViewBag.ConfigSetting.RibonPosition == Domain.Enum.Enum.RibonPosition.BeforeMenu)
+{
+    <partial name="Partials/_NewsRibon" />
+}
+<header>
+    <nav id="navigation4" class="container-fluid navigation">
+        <div class="nav-header">
+            <a class="nav-brand" href="/">
+                <img src="@ViewBag.ConfigSetting.CompanyLogoUrl" class="main-logo" alt="@ViewBag.ConfigSetting.CompanyName" id="main_logo" style="max-height:50px;">
+            </a>
+            <div class="nav-toggle"></div>
+        </div>
+        <div class="nav-menus-wrapper">
+            <ul class="nav-menu align-to-right">
+
+
+                @foreach (var item in singlePages.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Top))
+                {
+                    if (item.EnableDirectUrl == true)
+                    {
+                        <li>
+                            <a href="@item.DirectUrl">@item.Title</a>
+
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <a asp-page="/Page" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)">@item.Title</a>
+
+                        </li>
+                    }
+                }
+
+
+                @foreach (var item in catitemlist.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Top))
+                {
+                    <li>
+                        <a href="#">@item.Title</a>
+
+                        @{
+                            IEnumerable<Ozikol_BCC.Application.Dtos.UI.WebPageDto> itemlist = item.WebPages;
+                        }
+                        <ul class="nav-dropdown">
+
+                            @foreach (var xitem in itemlist.Where(x => x.Publish == true && x.ShowInMenuDropDown == true).OrderBy(x => x.SortOrder).ToList())
+                            {
+                                if (xitem.EnableDirectUrl == true)
+                                {
+                                    <li>
+                                        <a target="_blank" href="@xitem.DirectUrl">@xitem.Title</a>
+                                        <ul class="nav-dropdown">
+
+                                            @foreach (var litem in itemlist.Where(x => x.Publish == true && x.ShowInMenuDropDown == true).OrderBy(x => x.SortOrder).ToList())
+                                            {
+                                                if (litem.EnableDirectUrl == true)
+                                                {
+                                                    <li>
+                                                        <a target="_blank" href="@litem.DirectUrl">@litem.Title</a>
+
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li>
+                                                        <a asp-page="/Page" asp-route-id="@litem.Id" asp-route-title="@MainServices.GenerateSlug(litem.Title)">@litem.Title</a>
+
+                                                    </li>
+                                                }
+                                            }
+
+                                        </ul>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li>
+                                        <a asp-page="/Page" asp-route-id="@xitem.Id" asp-route-title="@MainServices.GenerateSlug(xitem.Title)">@xitem.Title</a>
+
+                                    </li>
+                                }
+                            }
+
+                        </ul>
+                    </li>
+
+                }
+
+                @if (ViewBag.ConfigSetting.ShowProductsInMenu == true)
+                {
+                    <li>
+                        <a asp-page="/Catalog">@ViewBag.ConfigSetting.ProductTitle</a>
+                        @if (productpage.Count() > 0)
+                        {
+                            <ul class="nav-dropdown">
+                                @foreach (var item in productpage)
+                                {
+                                    <li><a asp-page="/CatalogDetails" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)">@item.Title</a></li>
+                                }
+                            </ul>
+                        }
+
+                    </li>
+                }
+
+                @foreach (var item in catitemlist.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Middle))
+                {
+                    <li>
+                        <a href="#">@item.Title</a>
+
+                        @{
+                            IEnumerable<Ozikol_BCC.Application.Dtos.UI.WebPageDto> itemlist = item.WebPages;
+                        }
+                        <ul class="nav-dropdown">
+
+                            @foreach (var xitem in itemlist.Where(x => x.Publish == true).OrderBy(x => x.SortOrder).ToList())
+                            {
+                                if (xitem.EnableDirectUrl == true)
+                                {
+                                    <li>
+                                        <a target="_blank" href="@xitem.DirectUrl">@xitem.Title</a>
+
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li>
+                                        <a asp-page="/Page" asp-route-id="@xitem.Id" asp-route-title="@MainServices.GenerateSlug(xitem.Title)">@xitem.Title</a>
+
+                                    </li>
+                                }
+                            }
+
+                        </ul>
+                    </li>
+
+                }
+                @foreach (var item in singlePages.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Middle))
+                {
+                    if (item.EnableDirectUrl == true)
+                    {
+                        <li>
+                            <a href="@item.DirectUrl">@item.Title</a>
+
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <a asp-page="/Page" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)">@item.Title</a>
+
+                        </li>
+                    }
+                }
+                @foreach (var item in linkExternalDropdown)
+                {
+                    <li>
+                        <a href="@item.DirectUrl">@item.Title</a>
+
+                    </li>
+
+                }
+
+                @if (ViewBag.ConfigSetting.AddBlogToMenu == true)
+                {
+                    <li>
+                        <a asp-page="/Insights">@ViewBag.ConfigSetting.BlogDisplayTitle</a>
+
+                    </li>
+                }
+                @if (ViewBag.ConfigSetting.ActivateProfilePortfolio == true)
+                {
+                    <li>
+                        <a asp-page="/PortfolioAccount">@ViewBag.ConfigSetting.PortfolioTitle</a>
+
+                    </li>
+                }
+                @if (ViewBag.ConfigSetting.ShowContactUsMenu == true)
+                {
+                    <li>
+                        <a asp-page="/ContactUs">Contact Us</a>
+
+                    </li>
+                }
+                @if (ViewBag.ConfigSetting.AddCareerToMenu == true)
+                {
+                    <li>
+                        <a asp-page="/Careers">@ViewBag.ConfigSetting.CareerDisplayTitle</a>
+                    </li>
+                }
+                @foreach (var item in catitemlist.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Bottom))
+                {
+                    <li>
+                        <a href="#">@item.Title</a>
+
+                        @{
+                            IEnumerable<Ozikol_BCC.Application.Dtos.UI.WebPageDto> itemlist = item.WebPages;
+                        }
+                        <ul class="nav-dropdown">
+
+                            @foreach (var xitem in itemlist.Where(x => x.Publish == true).OrderBy(x => x.SortOrder).ToList())
+                            {
+                                if (xitem.EnableDirectUrl == true)
+                                {
+                                    <li>
+                                        <a target="_blank" href="@xitem.DirectUrl">@xitem.Title</a>
+
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li>
+                                        <a asp-page="/Page" asp-route-id="@xitem.Id" asp-route-title="@MainServices.GenerateSlug(xitem.Title)">@xitem.Title</a>
+
+                                    </li>
+                                }
+                            }
+
+                        </ul>
+                    </li>
+
+                }
+                @{
+                    var menuIndex = 1;
+                }
+                @foreach (var item in singlePages.Where(x => x.HomeSortFrom == Domain.Enum.Enum.HomeSortFrom.Bottom))
+                {
+                    if (item.EnableDirectUrl == true)
+                    {
+                        <li class="md-@menuIndex-style">
+                            <a href="@item.DirectUrl">@item.Title</a>
+
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="md-@menuIndex-style">
+                            <a asp-page="/Page" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)">@item.Title</a>
+
+                        </li>
+                    }
+                }
+                @if (ViewBag.ConfigSetting.ActivateLoginInMenu == true)
+                {
+                    <li class="nav-item"><a class="nav-link" asp-page="/AuthV2/Account/Login" asp-area="V2">Login</a></li>
+                }
+            </ul>
+        </div>
+    </nav>
+</header>
+<!-- Navbar END -->

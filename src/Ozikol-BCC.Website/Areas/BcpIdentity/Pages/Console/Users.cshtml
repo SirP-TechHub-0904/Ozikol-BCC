@@ -1,0 +1,13 @@
+@page
+@model UsersModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Identity Users";
+}
+
+@* Users is the Console-side account management route. Future handlers should centralize
+   approval, lockout, profile state, and identity security posture here. *@
+<section class="m3-card">
+    <div class="card-header"><span class="card-title">Users</span></div>
+    <p style="color:var(--sidebar-color);">Manage authenticated accounts, approval status, lockout state, and security posture.</p>
+</section>

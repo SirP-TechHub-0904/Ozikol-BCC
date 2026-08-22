@@ -1,0 +1,62 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpGroups.Pages.Workspace.InvitationsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Group Invitations";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "My Workspace",
+    Title = "Group Invitations",
+    Subtitle = "Review and accept invitations to join committee or department workspace groups.",
+    Icon = "mail",
+    BackUrl = "/BcpGroups/Workspace/Dashboard",
+    BackText = "My Groups"
+})
+
+<section class="m3-card bcp-card">
+    <div class="p-3 border-bottom"><h3 class="bcp-section-title mb-0"><span class="material-symbols-outlined">mark_email_unread</span> Pending Group Invitations</h3></div>
+    <div class="bcp-table-wrap">
+        <table class="bcp-table">
+            <thead>
+                <tr>
+                    <th>Group Title</th>
+                    <th>Invited By</th>
+                    <th>Date Invited</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.PendingInvitations.Any())
+                {
+                    <tr><td colspan="4" class="text-center py-4 text-muted">You have no pending group invitations at this time.</td></tr>
+                }
+                @foreach (var inv in Model.PendingInvitations)
+                {
+                    <tr>
+                        <td><strong>@inv.Group?.Title</strong></td>
+                        <td>@inv.InvitedByUser?.FullName</td>
+                        <td>@inv.CreatedAt.ToString("MMM dd, yyyy")</td>
+                        <td class="bcp-table-actions">
+                            <button class="console-btn primary" onclick="respondInvitation(@inv.Id, true)"><span class="material-symbols-outlined">check</span>Accept</button>
+                            <button class="console-btn secondary" onclick="respondInvitation(@inv.Id, false)"><span class="material-symbols-outlined">close</span>Decline</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function respondInvitation(invId, accept) {
+            fetch(`/api/groups/invitations/${invId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accept: accept })
+            }).then(() => location.reload());
+        }
+    </script>
+}

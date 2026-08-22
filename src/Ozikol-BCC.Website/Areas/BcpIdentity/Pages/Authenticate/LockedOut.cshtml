@@ -1,0 +1,16 @@
+@page
+@model LockedOutModel
+@attribute [AllowAnonymous]
+@{
+    ViewData["Title"] = "Locked Out";
+}
+
+@* Lockout is a security outcome, not a validation error. Keep the message calm and generic
+   so attackers do not learn unnecessary account details. *@
+<section class="m3-card">
+    <div class="empty-state">
+        <span class="material-symbols-outlined">lock</span>
+        <strong>Account locked</strong>
+        <span>This account is temporarily locked. Contact an administrator or try again later.</span>
+    </div>
+</section>

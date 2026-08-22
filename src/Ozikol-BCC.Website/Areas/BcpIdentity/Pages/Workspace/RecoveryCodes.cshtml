@@ -1,0 +1,55 @@
+@page
+@model RecoveryCodesModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "2FA Recovery Codes";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "2FA Backup Recovery Codes",
+    Subtitle = "Generate and store emergency recovery codes to access your account if you lose your authenticator device.",
+    Icon = "key",
+    Eyebrow = "User Workspace",
+    BackUrl = "/BcpIdentity/Workspace/TwoFactor"
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px;">
+        <div>
+            <strong>Status Update</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+<div style="max-width:700px;" class="m3-card bcp-card" style="padding:24px;">
+    <div class="card-header" style="margin-bottom:16px;">
+        <span class="card-title" style="font-size:18px; font-weight:600;">Emergency Recovery Codes</span>
+    </div>
+
+    @if (Model.RecoveryCodes.Length > 0)
+    {
+        <div style="padding:16px; background:var(--md-sys-color-surface-container-low); border:1px solid var(--md-sys-color-outline-variant); border-radius:8px; margin-bottom:20px;">
+            <p style="margin-top:0; font-weight:500; color:var(--md-sys-color-error);">Keep these recovery codes in a secure offline password manager. Each code can only be used once.</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-family:monospace; font-size:15px; font-weight:600;">
+                @foreach (var code in Model.RecoveryCodes)
+                {
+                    <div style="padding:6px; background:var(--md-sys-color-surface); border-radius:4px; text-align:center; border:1px solid var(--md-sys-color-outline-variant);">@code</div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <p style="color:var(--sidebar-color); font-size:14px;">Generating new recovery codes will invalidate any previously generated codes.</p>
+    }
+
+    <form method="post" asp-page-handler="Generate">
+        <button type="submit" class="btn-custom active" style="padding:10px 20px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Generate New Recovery Codes</span>
+        </button>
+    </form>
+</div>

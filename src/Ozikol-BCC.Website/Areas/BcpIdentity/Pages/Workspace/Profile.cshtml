@@ -1,0 +1,254 @@
+@page
+@model ProfileModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "My Profile";
+
+    var initials = "";
+    if (Model.UserProfile != null)
+    {
+        var fn = Model.UserProfile.FirstName;
+        var ln = Model.UserProfile.LastName;
+        if (!string.IsNullOrEmpty(fn) && fn.Length > 0) initials += fn[0];
+        if (!string.IsNullOrEmpty(ln) && ln.Length > 0) initials += ln[0];
+    }
+    if (string.IsNullOrEmpty(initials)) initials = "U";
+    initials = initials.ToUpperInvariant();
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "My Profile Settings",
+    Subtitle = "Manage your contact credentials, update personal details, and verify your account context.",
+    Icon = "account_circle",
+    Eyebrow = "User Workspace",
+    BackUrl = "/BcpWorkspace/Workspace/Dashboard"
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    var isError = Model.StatusMessage.StartsWith("Error:");
+    <section class="console-alert" style="margin-bottom:24px; padding:12px 16px; background:@(isError ? "var(--md-sys-color-error-container)" : "var(--md-sys-color-primary-container)"); color:@(isError ? "var(--md-sys-color-on-error-container)" : "var(--md-sys-color-on-primary-container)"); border-radius:8px;">
+        <div>
+            <strong>Status Update</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+@* ── TOP HERO CARD: STATE-OF-THE-ART USER HEADER ── *@
+@if (Model.UserProfile != null)
+{
+    <section class="m3-card" style="padding:28px; margin-bottom:32px; border-radius:16px; background: linear-gradient(135deg, #091e3a 0%, #1e293b 100%); color: #ffffff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:24px;">
+            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                
+                @* Modern Initials Avatar *@
+                <div style="width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,0.12); border:3px solid rgba(255,255,255,0.25); display:inline-flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; color:#ffffff;">
+                    @initials
+                </div>
+
+                <div>
+                    <h3 style="margin:0 0 2px 0; font-size:22px; font-weight:800; color:#ffffff;">@Model.UserProfile.FullName</h3>
+                    <div style="font-size:14px; opacity:0.85; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-outlined" style="font-size:16px; opacity:0.9;">mail</span>
+                        <span>@Model.Email</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.15); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">
+                            @(Model.UserProfile.BcpUserCategory?.Name ?? "General Staff")
+                        </span>
+                        <span style="display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); font-size:12.5px; font-weight:600; color:#34d399;">
+                            <span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block; box-shadow:0 0 8px #10b981;"></span>
+                            @Model.UserProfile.UserStatus
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:right; font-size:13.5px; opacity:0.85; line-height:1.4;">
+                <div style="font-weight:700; color:#ffffff; margin-bottom:2px;">Account Context</div>
+                <div>Last Login: @(Model.UserProfile.LastLogin?.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt") ?? "Never")</div>
+            </div>
+        </div>
+    </section>
+}
+
+<div style="display:grid; grid-template-columns: 3fr 2fr; gap:28px; align-items:start;">
+
+    @* ── LEFT COLUMN: Personal Details Form ──────────────── *@
+    <div>
+        <form method="post" class="m3-card bcp-card" style="padding:28px; margin:0; border-radius:12px;">
+            <div style="margin-bottom:20px; border-bottom:1px solid var(--md-sys-color-outline-variant); padding-bottom:12px;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:700; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface);">
+                    <span class="material-symbols-outlined" style="color:var(--md-sys-color-primary);">manage_accounts</span>
+                    Update Personal Information
+                </h3>
+            </div>
+
+            <div asp-validation-summary="ModelOnly" style="color:var(--md-sys-color-error); font-size:13px; margin-bottom:12px;"></div>
+
+            <div style="display:grid; gap:20px;">
+                
+                @* Row: Title and First Name *@
+                <div style="display:grid; grid-template-columns: 1fr 2.5fr; gap:16px;">
+                    <div>
+                        <label asp-for="Input.Title" style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;"></label>
+                        <input asp-for="Input.Title" placeholder="e.g. Mr. / Dr." style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" />
+                    </div>
+                    <div>
+                        <label asp-for="Input.FirstName" style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;"></label>
+                        <input asp-for="Input.FirstName" style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" required />
+                        <span asp-validation-for="Input.FirstName" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+                    </div>
+                </div>
+
+                @* Row: Middle and Last Name *@
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div>
+                        <label asp-for="Input.MiddleName" style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;"></label>
+                        <input asp-for="Input.MiddleName" style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" />
+                    </div>
+                    <div>
+                        <label asp-for="Input.LastName" style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;"></label>
+                        <input asp-for="Input.LastName" style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" required />
+                        <span asp-validation-for="Input.LastName" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+                    </div>
+                </div>
+
+                @* Phone Number *@
+                <div>
+                    <label asp-for="Input.PhoneNumber" style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;"></label>
+                    <input asp-for="Input.PhoneNumber" placeholder="e.g. +2348165680904" style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" />
+                    <span asp-validation-for="Input.PhoneNumber" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+                </div>
+
+                @* Actions *@
+                <div style="margin-top:8px;">
+                    <button type="submit" class="console-btn primary" style="height:42px; padding:0 24px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:8px; background:var(--md-sys-color-primary); color:white; border:none; cursor:pointer;">
+                        <span class="material-symbols-outlined">save</span>
+                        <span>Save Profile Changes</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @* ── RIGHT COLUMN: Secure Email Update ───────────────── *@
+    <div>
+        <section class="m3-card bcp-card" style="padding:28px; margin:0; border-radius:12px;">
+            <div style="margin-bottom:20px; border-bottom:1px solid var(--md-sys-color-outline-variant); padding-bottom:12px;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:700; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface);">
+                    <span class="material-symbols-outlined" style="color:#2563eb;">shield</span>
+                    Change Account Email
+                </h3>
+            </div>
+
+            @if (!Model.IsOtpSent)
+            {
+                <form method="post" asp-page-handler="SendOtp" style="display:grid; gap:20px;">
+                    <div>
+                        <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:var(--md-sys-color-on-surface-variant);">Current Email Address</label>
+                        <div style="font-size:15px; font-weight:700; color:var(--md-sys-color-on-surface);">
+                            @Model.Email
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px;">New Email Address</label>
+                        <input type="email" asp-for="NewEmail" required placeholder="e.g. user@example.com"
+                               style="width:100%; padding:10px 12px; border:1px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14.5px; box-sizing:border-box;" />
+                        <span asp-validation-for="NewEmail" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+                    </div>
+
+                    <div style="margin-top:8px;">
+                        <button type="submit" class="console-btn primary" style="height:42px; padding:0 20px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:8px; background:#2563eb; color:white; border:none; cursor:pointer;">
+                            <span class="material-symbols-outlined">mark_email_read</span>
+                            <span>Send Verification Code</span>
+                        </button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="ConfirmEmail" style="display:grid; gap:20px;">
+                    <div style="padding:14px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px; font-size:13.5px; line-height:1.4; display:flex; align-items:flex-start; gap:10px;">
+                        <span class="material-symbols-outlined" style="font-size:20px; color:var(--md-sys-color-primary);">info</span>
+                        <div>
+                            A security verification code was dispatched to:
+                            <div style="font-weight:700; margin-top:2px;">@Model.PendingEmail</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:8px;">Enter 6-Digit OTP Code</label>
+                        <input type="text" asp-for="OtpCodeInput" required placeholder="••••••" maxlength="6" autocomplete="off"
+                               style="width:100%; padding:12px; border:2px solid var(--md-sys-color-primary); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:22px; font-weight:700; text-align:center; letter-spacing:10px; box-sizing:border-box;" />
+                        <span asp-validation-for="OtpCodeInput" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:12px;">
+                        <button type="submit" class="console-btn primary" style="height:42px; padding:0 20px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:8px; background:#10b981; color:white; border:none; cursor:pointer;">
+                            <span class="material-symbols-outlined">verified</span>
+                            <span>Confirm & Update</span>
+                        </button>
+                        
+                        <a href="?" class="console-btn secondary" style="height:42px; padding:0 16px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; text-decoration:none; background:var(--md-sys-color-surface-container); color:var(--md-sys-color-on-surface); border:1px solid var(--md-sys-color-outline-variant);">Cancel</a>
+                    </div>
+                </form>
+            }
+        </section>
+
+        @* ── Phone Number OTP Verification Section ────────────────── *@
+        <section class="m3-card bcp-card" style="padding:28px; margin-top:24px; border-radius:12px;">
+            <div style="margin-bottom:20px; border-bottom:1px solid var(--md-sys-color-outline-variant); padding-bottom:12px;">
+                <h3 style="margin:0; font-size:16.5px; font-weight:700; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface);">
+                    <span class="material-symbols-outlined" style="color:#10b981;">smartphone</span>
+                    Phone Number Verification
+                </h3>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13.5px; font-weight:600; color:var(--md-sys-color-on-surface-variant); margin-bottom:4px;">Current Phone Number</div>
+                <div style="font-size:15px; font-weight:700; display:flex; align-items:center; gap:10px;">
+                    <span>@(string.IsNullOrWhiteSpace(Model.Input.PhoneNumber) ? "Not set" : Model.Input.PhoneNumber)</span>
+                    @if (Model.IsPhoneConfirmed)
+                    {
+                        <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.15); color:#10b981; font-size:12px; font-weight:700;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Verified
+                        </span>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(Model.Input.PhoneNumber))
+                    {
+                        <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; background:rgba(245,158,11,0.15); color:#f59e0b; font-size:12px; font-weight:700;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">warning</span> Unverified
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (!Model.IsPhoneConfirmed && !string.IsNullOrWhiteSpace(Model.Input.PhoneNumber))
+            {
+                <form method="post" asp-page-handler="SendPhoneOtp" style="margin-bottom:16px;">
+                    <button type="submit" id="sendSmsOtpBtn" class="console-btn primary" style="height:38px; padding:0 16px; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; border-radius:6px; background:#10b981; color:white; border:none; cursor:pointer;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">sms</span>
+                        <span id="sendSmsOtpTxt">Send Phone Verification SMS OTP</span>
+                    </button>
+                </form>
+
+                <form method="post" asp-page-handler="VerifyPhoneOtp" style="display:grid; gap:14px;">
+                    <div>
+                        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:6px;">Enter 6-Digit Phone OTP Code</label>
+                        <input type="text" asp-for="PhoneOtpInput" placeholder="••••••" maxlength="6" autocomplete="off"
+                               style="width:100%; padding:10px; border:2px solid var(--md-sys-color-outline); border-radius:8px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:20px; font-weight:700; text-align:center; letter-spacing:8px; box-sizing:border-box;" />
+                    </div>
+                    <button type="submit" class="console-btn secondary" style="height:40px; padding:0 18px; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:8px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border:none; cursor:pointer;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">task_alt</span>
+                        <span>Verify Phone OTP</span>
+                    </button>
+                </form>
+            }
+        </section>
+    </div>
+
+</div>

@@ -1,0 +1,34 @@
+@model Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto
+
+<partial name="Partials/_PageSection" model='@(new Ozikol_BCC.Application.Queries.PageSectionQueries.GetPageSectionsByCriteriaQuery { Position = "fixed" })' />
+
+@if (ViewBag.ConfigSetting.EnableBreakingNewsRibon == true && ViewBag.ConfigSetting.RibonPosition == Domain.Enum.Enum.RibonPosition.BeforeFooter)
+{
+    <partial name="Partials/_NewsRibon" />
+}
+
+@{
+    var themeData = Context.Request.Query["previewTheme"].FirstOrDefault() ?? Model.TemplateLayoutKey;
+    var themeFolderName = themeData;
+    var componentKey = Model.FooterTemplateKey;
+    
+    // We attempt to load the specific component key template if it exists, otherwise fallback to the base template
+    var partialPath = string.IsNullOrEmpty(componentKey) ? $"~/Pages/Shared/Templates/{themeFolderName}/_Footer.cshtml" : $"~/Pages/Shared/Templates/{themeFolderName}/_Footer_{componentKey}.cshtml";
+}
+
+@try
+{
+    @await Html.PartialAsync(partialPath, Model)
+}
+catch (Exception ex)
+{
+    try
+    {
+        // Fallback to base footer if the specific keyed one is missing
+        @await Html.PartialAsync($"~/Pages/Shared/Templates/{themeFolderName}/_Footer.cshtml", Model)
+    }
+    catch (Exception innerEx)
+    {
+        <!-- Footer not found for theme @themeFolderName -->
+    }
+}

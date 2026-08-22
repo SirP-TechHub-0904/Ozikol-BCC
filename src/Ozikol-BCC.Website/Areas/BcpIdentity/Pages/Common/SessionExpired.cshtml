@@ -1,0 +1,16 @@
+@page
+@model SessionExpiredModel
+@attribute [AllowAnonymous]
+@{
+    ViewData["Title"] = "Session Expired";
+}
+
+@* Shared session-expired outcome for BCP shell pages. The page should guide users back
+   to Authenticate without leaking the private page they were trying to use. *@
+<section class="m3-card">
+    <div class="empty-state">
+        <span class="material-symbols-outlined">timer_off</span>
+        <strong>Session expired</strong>
+        <span>Please sign in again to continue.</span>
+    </div>
+</section>

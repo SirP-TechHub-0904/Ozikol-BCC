@@ -1,0 +1,66 @@
+@using Ozikol_BCC.Application.Repository.Services
+@inject ISettingsService SettingsService
+@{
+    var configDto = await SettingsService.GetConfigAsync();
+    ViewBag.ConfigSetting = configDto;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <partial name="Partials/_WebTitle" model="configDto" />
+    
+    <!-- CSS Files -->
+    <link href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/bootstrap.min.css" rel="stylesheet" type="text/css" id="bootstrap">
+    <link href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/plugins.css" rel="stylesheet" type="text/css">
+    <link href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/swiper.css" rel="stylesheet" type="text/css">
+    <link href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/style.css" rel="stylesheet" type="text/css">
+    <link id="colors" href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/colors/scheme-1.css" rel="stylesheet" type="text/css">
+    <link href="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/css/custom-swiper-1.css" rel="stylesheet" type="text/css">
+    
+    <partial name="Partials/_WebsiteCSS" model="configDto" />
+    
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body class="dark-scheme">
+    <div id="wrapper">
+        <a href="#" id="back-to-top"></a>
+
+        <!-- preloader begin -->
+        <partial name="Partials/_Reloader" />
+        <!-- preloader end -->
+
+        <!-- menu begin -->
+        <partial name="Partials/_Menu" />
+        <!-- menu end -->
+
+        @RenderBody()
+
+        <!-- footer begin -->
+        <partial name="Partials/_Footer" />
+        <!-- footer end -->
+
+    </div>
+    
+    <!-- Javascript Files -->
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/plugins.js"></script>
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/designesia.js"></script>
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/swiper.js"></script>
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/custom-swiper-3.js"></script>
+
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/jquery.event.move.js"></script>
+    <script src="https://res.cloudinary.com/pcbhnjad/raw/upload/v1/autodetails/js/jquery.twentytwenty.js"></script>
+
+    <script>
+    $(window).on("load", function(){
+      $(".twentytwenty-container[data-orientation!='vertical']").twentytwenty({default_offset_pct: 0.5});
+      $(".twentytwenty-container[data-orientation='vertical']").twentytwenty({default_offset_pct: 0.5, orientation: 'vertical'});
+    });
+    </script>
+    
+    <partial name="Partials/_CustomeJavascript" model="configDto" />
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

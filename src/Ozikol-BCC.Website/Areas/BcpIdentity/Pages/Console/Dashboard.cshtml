@@ -1,0 +1,121 @@
+@page
+@model DashboardModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Identity Console";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "Identity & Authentication",
+    Title = "Identity Dashboard",
+    Subtitle = "Authentication health, account security, MFA coverage, lockouts, roles, sessions, and login risk.",
+    Icon = "admin_panel_settings",
+    Buttons =
+    [
+        new("Users", "/BcpIdentity/Console/Users", "groups", true),
+        new("Roles", "/BcpIdentity/Console/Roles", "admin_panel_settings"),
+        new("MFA Policy", "/BcpIdentity/Console/MfaPolicy", "passkey"),
+        new("Login Audit", "/BcpIdentity/Console/LoginAudit", "manage_search")
+    ]
+})
+
+@if (!Model.DatabaseReady)
+{
+    <section class="console-alert danger">
+        <div>
+            <strong>Database unavailable</strong>
+            <p>Run the tenant migrator and refresh this page.</p>
+        </div>
+    </section>
+}
+
+@* This dashboard is intentionally scoped to Identity. Platform health, billing, cache,
+   and feature lifecycle belong to /BcpConsole/Console/Dashboard. *@
+<section class="console-grid" data-tour="identity-dashboard-grid">
+    <article class="console-widget span-12" data-widget="identity-overview" data-title="Identity Overview" data-tour="identity-overview">
+        <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Identity overview</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div>
+        </div>
+        <div class="widget-body">
+            <div class="metric-grid">
+                <a class="metric-card" href="/BcpIdentity/Console/Users"><div class="metric-label">Accounts</div><div class="metric-value">@Model.TotalUsers</div><div class="metric-note">Identity user records</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/Users"><div class="metric-label">Confirmed emails</div><div class="metric-value">@Model.ConfirmedEmailUsers</div><div class="metric-note">@Model.UnconfirmedEmailUsers pending</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/MfaPolicy"><div class="metric-label">2FA enabled</div><div class="metric-value">@Model.TwoFactorUsers</div><div class="metric-note">@Model.TwoFactorCoveragePercent.ToString("0.#")% coverage</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/LockedAccounts"><div class="metric-label">Locked</div><div class="metric-value">@Model.LockedAccounts</div><div class="metric-note">@Model.LockoutEnabledUsers lockout-enabled</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/Roles"><div class="metric-label">Roles</div><div class="metric-value">@Model.RoleCount</div><div class="metric-note">@Model.UsersWithoutRole users without role</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/LoginAudit"><div class="metric-label">Failed attempts</div><div class="metric-value">@Model.TotalFailedAttempts</div><div class="metric-note">@Model.UsersWithFailedAttempts accounts affected</div></a>
+            </div>
+        </div>
+    </article>
+
+    <article class="console-widget span-6" data-widget="mfa-coverage" data-title="MFA Coverage" data-tour="mfa-coverage">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">MFA coverage</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body">
+            <div class="billing-layout">
+                <div>
+                    <div class="metric-label">Coverage</div>
+                    <div class="billing-amount">@Model.TwoFactorCoveragePercent.ToString("0.#")%</div>
+                    <p class="metric-note">@Model.TwoFactorUsers enabled, @Model.TwoFactorDisabledUsers disabled.</p>
+                    <p class="metric-note">@Model.AdminsWithoutTwoFactor admin accounts still need MFA.</p>
+                </div>
+                <div class="progress-track identity-progress"><div class="progress-fill" style="--value:@Model.TwoFactorCoveragePercent%;"></div></div>
+            </div>
+        </div>
+        <div class="widget-footer"><a href="/BcpIdentity/Console/MfaPolicy">Go to MFA policy</a></div>
+    </article>
+
+    <article class="console-widget span-6" data-widget="account-security" data-title="Account Security" data-tour="account-security">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Account security signals</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body">
+            <div class="recommendation-list">
+                @foreach (var item in Model.SecurityItems)
+                {
+                    <a class="recommendation" href="@item.Url"><span class="list-icon @item.Tone"><span class="material-symbols-outlined">@item.Icon</span></span><span class="row-main"><span class="row-title">@item.Title</span><span class="row-sub">@item.Subtitle</span></span></a>
+                }
+            </div>
+        </div>
+    </article>
+
+    <article class="console-widget span-4" data-widget="password-policy" data-title="Password Policy">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Password policy</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body"><div class="empty-state identity-empty"><span class="material-symbols-outlined">password</span><strong>@Model.PasswordPolicySummary</strong><span>Password rules are enforced by ASP.NET Identity.</span><a class="console-btn" href="/BcpIdentity/Console/PasswordPolicy">Open policy</a></div></div>
+    </article>
+
+    <article class="console-widget span-4" data-widget="lockout-policy" data-title="Lockout Policy">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Lockout policy</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body"><div class="empty-state identity-empty"><span class="material-symbols-outlined">lock</span><strong>@Model.LockoutPolicySummary</strong><span>Repeated failed attempts participate in tenant lockout policy.</span><a class="console-btn" href="/BcpIdentity/Console/LockedAccounts">Locked accounts</a></div></div>
+    </article>
+
+    <article class="console-widget span-4" data-widget="identity-roles" data-title="Roles">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Roles and assignments</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body">
+            <div class="two-col">
+                <a class="metric-card" href="/BcpIdentity/Console/Roles"><div class="metric-label">Roles</div><div class="metric-value">@Model.RoleCount</div><div class="metric-note">Broad Identity roles</div></a>
+                <a class="metric-card" href="/BcpIdentity/Console/Users"><div class="metric-label">Admins</div><div class="metric-value">@Model.AdminUsers</div><div class="metric-note">@Model.AdminsWithoutTwoFactor without MFA</div></a>
+            </div>
+        </div>
+    </article>
+
+    <article class="console-widget span-12" data-widget="quick-actions" data-title="Quick Actions" data-tour="identity-quick-actions">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Identity quick actions</h2></div><div class="widget-actions"><button class="widget-icon-btn minimize-widget" type="button"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" type="button"><span class="material-symbols-outlined">close</span></button></div></div>
+        <div class="widget-body">
+            <div class="quick-grid">
+                @foreach (var item in Model.QuickActions)
+                {
+                    <a class="quick-action" href="@item.Url"><span class="material-symbols-outlined">@item.Icon</span><span>@item.Title</span></a>
+                }
+            </div>
+        </div>
+    </article>
+</section>
+
+<script type="application/json" id="bcp-page-tour">
+[
+  {"selector":"[data-tour='identity-overview']","title":"Identity overview","text":"This dashboard is only for authentication and account security. Platform billing and feature health live in the main BCP Console.","placement":"bottom"},
+  {"selector":"[data-tour='mfa-coverage']","title":"MFA coverage","text":"Track how many users and admins have two-factor authentication enabled.","placement":"right"},
+  {"selector":"[data-tour='account-security']","title":"Security signals","text":"Use these signals to find lockouts, failed attempts, unconfirmed emails, and admin MFA gaps.","placement":"left"},
+  {"selector":"[data-tour='identity-quick-actions']","title":"Identity actions","text":"These buttons jump to the main Identity control pages: users, roles, permissions, audit, MFA, password policy, and sessions.","placement":"top"}
+]
+</script>

@@ -1,0 +1,71 @@
+@page
+@model Ozikol.Central.Pages.MarketplaceModel
+@{
+    ViewData["Title"] = "Template & Layout Marketplace - Ozikol BCC Cloud";
+}
+
+<div class="marketing-page">
+    <section class="page-hero-section">
+        <div class="marketing-container">
+            <div class="hero-badge" style="margin: 0 auto 12px auto;">
+                <span class="badge-dot"></span>
+                <span>CENTRAL TEMPLATE MARKETPLACE</span>
+            </div>
+            <h1 class="page-hero-title">Custom Website & Dashboard Layout Blueprints</h1>
+            <p class="page-hero-sub">
+                Browse pre-built executive dashboards, digital storefronts, and service CMS templates. Install blueprints directly into your tenant workspace with a single click.
+            </p>
+        </div>
+    </section>
+
+    <section class="section-marketing">
+        <div class="marketing-container">
+            <div class="marketplace-grid">
+                @foreach (var template in Model.Templates)
+                {
+                    <div class="marketplace-card">
+                        <div class="template-preview-banner">
+                            <div class="template-badge-tag">@template.Tag</div>
+                            @if (!string.IsNullOrEmpty(template.Badge))
+                            {
+                                <div class="template-version font-mono">@template.Badge</div>
+                            }
+                            <div class="template-code-badge font-mono">@template.VariantCode</div>
+                        </div>
+
+                        <div class="template-body">
+                            <div class="template-header-row">
+                                <h3 class="template-title">@template.Name</h3>
+                                <span class="template-price-pill price-free">
+                                    Included in Plan
+                                </span>
+                            </div>
+
+                            <p class="template-desc">@template.Description</p>
+
+                            <div class="template-meta-row">
+                                <span class="template-author">@template.PreviewTitle</span>
+                                <span class="template-category"><code>@template.CategoryKey</code></span>
+                            </div>
+
+                            <div class="template-card-footer">
+                                <a asp-page="/Signup" class="btn-template-install">
+                                    <span>Launch with this Template</span>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="bottom-cta-card" style="margin-top: 48px;">
+                <h2 class="bottom-cta-title">Want to Publish Templates to the Central Marketplace?</h2>
+                <p class="bottom-cta-sub">Join our Template Creator Network and earn revenue when tenants install your layouts.</p>
+                <a asp-page="/Affiliate" class="btn-hero-secondary" style="margin-top: 16px;">
+                    <span>Join Template & Affiliate Program</span>
+                </a>
+            </div>
+        </div>
+    </section>
+</div>

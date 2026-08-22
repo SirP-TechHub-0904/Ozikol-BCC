@@ -1,0 +1,10 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Workspace.PerformanceModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "My Performance";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel { Eyebrow = "Workspace", Title = "My Performance", Subtitle = "Review your KPI scores by period.", Icon = "monitoring", BackUrl = "/BcpWorkspace/Workspace/Dashboard" })
+<section class="m3-card bcp-card"><partial name="/Areas/BcpUserManagement/Pages/Common/PerformanceScoreTable.cshtml" model="Model.Scores" /></section>
+<script type="application/json" id="bcp-page-tour">[{"selector":"[data-tour='performance-score-table']","title":"My performance history","text":"Workspace shows read-only performance scores. Admin scoring happens from Console.","placement":"top"}]</script>

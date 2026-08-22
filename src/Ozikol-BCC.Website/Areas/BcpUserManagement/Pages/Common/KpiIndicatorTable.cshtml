@@ -1,0 +1,28 @@
+@model IEnumerable<BcpKpiIndicator>
+
+<div class="bcp-table-wrap" data-tour="kpi-indicator-table">
+    <table class="bcp-table">
+        <thead>
+            <tr>
+                <th>Indicator</th>
+                <th>Max Score</th>
+                <th>Sort</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@item.Title</strong>
+                        <div class="bcp-muted">@item.Description</div>
+                    </td>
+                    <td>@item.MaxScore</td>
+                    <td>@item.SortOrder</td>
+                    <td><span class="bcp-badge @(item.IsActive ? "success" : "muted")">@(item.IsActive ? "Active" : "Inactive")</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

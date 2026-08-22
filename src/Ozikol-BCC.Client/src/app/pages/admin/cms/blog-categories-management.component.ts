@@ -1,0 +1,451 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { ApiService } from '../../../core/services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
+
+@Component({
+  selector: 'app-blog-categories-management',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <div class="cms-container">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Blog & Article Categories</h1>
+          <p class="page-sub">Manage topical categories, news groupings, and editorial taxonomy.</p>
+        </div>
+        <button type="button" class="btn-primary" (click)="openCreateModal()" [disabled]="!canEdit">
+          <span class="material-symbols-outlined">add_circle</span>
+          <span>Add Blog Category</span>
+        </button>
+      </div>
+
+      <!-- Categories Table Card -->
+      <div class="table-card">
+        <div class="card-head">
+          <div class="search-box">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Search categories..." />
+          </div>
+          <span class="count-badge">{{ filteredCategories.length }} Categories</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>Parent Category</th>
+                <th>Articles Count</th>
+                <th>Visibility</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cat of filteredCategories">
+                <td>
+                  <div class="cat-name-cell">
+                    <span class="material-symbols-outlined text-purple">folder</span>
+                    <strong>{{ cat.title }}</strong>
+                  </div>
+                </td>
+                <td>{{ cat.parentTitle || '— (Root Category)' }}</td>
+                <td>
+                  <span class="post-count-badge">{{ cat.postCount || 0 }} Posts</span>
+                </td>
+                <td>
+                  <span class="status-chip" [class.published]="cat.publish" [class.draft]="!cat.publish">
+                    {{ cat.publish ? 'Published' : 'Hidden' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="actions-group">
+                    <button type="button" class="btn-icon edit" (click)="openEditModal(cat)" [disabled]="!canEdit" title="Edit Category">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <a [routerLink]="canEdit ? ['/content/console/blog-categories/delete', cat.id] : null" class="btn-icon delete" [class.disabled-btn]="!canEdit" title="Delete Category">
+                      <span class="material-symbols-outlined">delete</span>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!filteredCategories.length && !loading">
+                <td colspan="5" class="empty-row">No blog categories found.</td>
+              </tr>
+              <tr *ngIf="loading">
+                <td colspan="5" class="empty-row">Loading categories...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Create / Edit Modal -->
+      <div class="modal-backdrop" *ngIf="showModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <div class="modal-title">
+              <span class="material-symbols-outlined text-purple">{{ isEditing ? 'edit' : 'add_circle' }}</span>
+              <h3>{{ isEditing ? 'Edit Blog Category' : 'Create New Blog Category' }}</h3>
+            </div>
+            <button type="button" class="btn-close" (click)="closeModal()">✕</button>
+          </div>
+
+          <form (ngSubmit)="saveCategory()">
+            <div class="form-body">
+              <div class="form-group">
+                <label>Category Title <span class="req">*</span></label>
+                <input type="text" [(ngModel)]="currentCat.title" name="title" required placeholder="e.g. Technology & Innovation" class="form-input" />
+              </div>
+
+              <div class="form-group">
+                <label>Parent Category (Optional)</label>
+                <select [(ngModel)]="currentCat.parentId" name="parentId" class="form-input">
+                  <option [ngValue]="null">-- None (Top Level) --</option>
+                  <option *ngFor="let p of parentOptions" [ngValue]="p.id">{{ p.title }}</option>
+                </select>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label class="check-label">
+                  <input type="checkbox" [(ngModel)]="currentCat.publish" name="publish" />
+                  <span>Publish category and show on public website</span>
+                </label>
+              </div>
+
+              <div *ngIf="modalError" class="modal-error">{{ modalError }}</div>
+            </div>
+
+            <div class="modal-foot">
+              <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
+              <button type="submit" class="btn-primary" [disabled]="saving || !currentCat.title">
+                <span class="material-symbols-outlined">{{ saving ? 'hourglass_top' : 'save' }}</span>
+                <span>{{ saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Category') }}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .cms-container { display: flex; flex-direction: column; gap: 20px; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; }
+    .page-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+    .page-sub { font-size: 13px; color: #64748b; margin: 0; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0050e5, #1f6bff);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.3);
+      text-decoration: none;
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .table-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 12px;
+      width: 260px;
+    }
+    .search-box span { font-size: 18px; color: #64748b; }
+    .search-box input { border: none; outline: none; font-size: 13px; width: 100%; color: #0f172a; }
+    .count-badge { font-size: 12px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 12px; }
+
+    .table-wrap { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .data-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .data-table td { padding: 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
+
+    .cat-name-cell { display: flex; align-items: center; gap: 8px; }
+    .post-count-badge { font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 3px 8px; border-radius: 6px; }
+    .status-chip {
+      display: inline-flex;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .status-chip.published { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+    .status-chip.draft { background: rgba(100, 116, 139, 0.12); color: #64748b; }
+
+    .actions-group { display: flex; justify-content: flex-end; gap: 6px; }
+    .btn-icon {
+      background: none;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.2s;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+    .btn-icon:hover:not(:disabled):not(.disabled-btn) { background: #f8fafc; color: #0f172a; }
+    .btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-icon.disabled-btn {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .empty-row { text-align: center; padding: 30px; color: #94a3b8; }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 460px;
+      max-width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      animation: scaleIn 0.2s ease-out;
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title { display: flex; align-items: center; gap: 8px; }
+    .modal-title h3 { margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; }
+    .btn-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
+    .form-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 12px; font-weight: 700; color: #334155; text-transform: uppercase; }
+    .form-group label .req { color: #ef4444; }
+    .form-input {
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13.5px;
+      outline: none;
+    }
+    .form-input:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1); }
+    .checkbox-group { margin-top: 4px; }
+    .check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    .btn-secondary {
+      background: #ffffff;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f8fafc; }
+    .modal-error { color: #ef4444; font-size: 12.5px; font-weight: 700; }
+    .text-purple { color: #9333ea; }
+  `]
+})
+export class BlogCategoriesManagementComponent implements OnInit {
+  categories: any[] = [];
+  searchQuery = '';
+  loading = false;
+  saving = false;
+  showModal = false;
+  isEditing = false;
+  modalError = '';
+  canEdit = false;
+
+  currentCat: any = {
+    id: null,
+    title: '',
+    publish: true,
+    parentId: null
+  };
+
+  constructor(
+    private api: ApiService,
+    private toast: ToastService
+  ) {}
+
+  ngOnInit(): void {
+    this.checkPermissions();
+    this.loadCategories();
+  }
+
+  getUserId(): string {
+    const token = localStorage.getItem('access_token');
+    if (!token) return '';
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return payload.sub || payload.nameid || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '';
+      }
+    } catch {}
+    return '';
+  }
+
+  checkPermissions(): void {
+    const userId = this.getUserId();
+    const rolesJson = localStorage.getItem('user_roles');
+    let isAdminOrSuper = false;
+    if (rolesJson) {
+      try {
+        const roles: string[] = JSON.parse(rolesJson);
+        isAdminOrSuper = roles.some(r => ['superadmin', 'admin', 'systemadministrator'].includes(r.toLowerCase()));
+      } catch {}
+    }
+
+    if (isAdminOrSuper) {
+      this.canEdit = true;
+    } else if (userId) {
+      this.api.get<any>(`IdentityApi/users/${userId}/feature-roles`).subscribe({
+        next: (res) => {
+          if (res && res.data) {
+            const roles = res.data.featureRoles || [];
+            const cmsRole = roles.find((r: any) => r.featureName?.toLowerCase() === 'cms' || r.featureName?.toLowerCase() === 'blog');
+            const hasGlobalEdit = roles.some((r: any) => r.scope === 'GlobalEdit');
+            const hasFeatureEdit = cmsRole && cmsRole.scope === 'FeatureEdit';
+            
+            this.canEdit = res.data.isAdmin || hasGlobalEdit || hasFeatureEdit;
+          }
+        },
+        error: () => {
+          this.canEdit = false;
+        }
+      });
+    }
+  }
+
+  get filteredCategories(): any[] {
+    if (!this.searchQuery) return this.categories;
+    const q = this.searchQuery.toLowerCase();
+    return this.categories.filter(c => c.title?.toLowerCase().includes(q));
+  }
+
+  get parentOptions(): any[] {
+    if (!this.isEditing) return this.categories;
+    return this.categories.filter(c => c.id !== this.currentCat.id);
+  }
+
+  loadCategories(): void {
+    this.loading = true;
+    this.api.get<any>('ContentApi/blog-categories').subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.categories = res?.data || [];
+      },
+      error: () => {
+        this.loading = false;
+        this.toast.error('Failed to load blog categories.');
+      }
+    });
+  }
+
+  openCreateModal(): void {
+    if (!this.canEdit) return;
+    this.isEditing = false;
+    this.modalError = '';
+    this.currentCat = { id: null, title: '', publish: true, parentId: null };
+    this.showModal = true;
+  }
+
+  openEditModal(cat: any): void {
+    if (!this.canEdit) return;
+    this.isEditing = true;
+    this.modalError = '';
+    this.currentCat = { ...cat };
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+  }
+
+  saveCategory(): void {
+    if (!this.canEdit || !this.currentCat.title) return;
+    this.saving = true;
+    this.modalError = '';
+
+    const obs = this.isEditing
+      ? this.api.put<any>(`ContentApi/blog-categories/${this.currentCat.id}`, this.currentCat)
+      : this.api.post<any>('ContentApi/blog-categories', this.currentCat);
+
+    obs.subscribe({
+      next: () => {
+        this.saving = false;
+        this.showModal = false;
+        this.toast.success(
+          this.isEditing ? 'Category updated successfully.' : 'Category created successfully.',
+          'CMS Success'
+        );
+        this.loadCategories();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.modalError = err?.error?.message || 'Failed to save blog category.';
+      }
+    });
+  }
+}

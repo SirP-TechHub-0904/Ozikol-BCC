@@ -1,0 +1,22 @@
+@model Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto
+
+@{
+    var themeData = Context.Request.Query["previewTheme"].FirstOrDefault() ?? Model.TemplateLayoutKey;
+    var themeFolderName = themeData;
+}
+
+@try
+{
+    @await Html.PartialAsync($"~/Pages/Shared/Templates/{themeFolderName}/_WebsiteCSS.cshtml", Model)
+}
+catch (Exception ex)
+{
+    <!-- WebsiteCSS not found for theme @themeFolderName -->
+}
+
+@if (ViewBag.DataConfigs != null && !string.IsNullOrEmpty((string)ViewBag.DataConfigs.LayoutCSS))
+{
+    <style>
+        @Html.Raw(ViewBag.DataConfigs.LayoutCSS)
+    </style>
+}

@@ -1,0 +1,55 @@
+@page
+@model LoginModel
+@attribute [AllowAnonymous]
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+@* Login is the public gateway into BCP. The business creates user accounts from Console/User Management;
+   users sign in here or recover access through forgot password. *@
+<form class="m3-card" method="post">
+    <div class="card-header">
+        <span class="card-title">Sign in</span>
+    </div>
+    <div style="display:grid; gap:16px;">
+        <div asp-validation-summary="ModelOnly" style="color:var(--md-sys-color-error); font-size:13px;"></div>
+        <md-outlined-text-field label="Email or username" name="Input.Login" value="@Model.Input.Login" type="text" required></md-outlined-text-field>
+        <span asp-validation-for="Input.Login" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+        <md-outlined-text-field id="login-password-field" label="Password" name="Input.Password" type="password" required>
+            <button type="button" class="bcp-password-toggle" slot="trailing-icon" aria-label="Show password" aria-pressed="false">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+            </button>
+        </md-outlined-text-field>
+        <span asp-validation-for="Input.Password" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+        <label style="display:flex; align-items:center; gap:8px; color:var(--sidebar-color); font-size:13px;">
+            <input type="checkbox" name="Input.RememberMe" value="true" @(Model.Input.RememberMe ? "checked" : "") />
+            Remember this device
+        </label>
+        <button class="console-btn primary" type="submit"><span class="material-symbols-outlined">login</span>Sign in</button>
+        <div style="display:flex; align-items:center; font-size:13px;">
+            <a class="console-link" asp-page="/Authenticate/ForgotPassword" asp-area="BcpIdentity">Forgot password</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (() => {
+            const passwordField = document.getElementById('login-password-field');
+            const toggleButton = document.querySelector('.bcp-password-toggle');
+            const toggleIcon = toggleButton?.querySelector('.material-symbols-outlined');
+
+            if (!passwordField || !toggleButton || !toggleIcon) {
+                return;
+            }
+
+            toggleButton.addEventListener('click', () => {
+                const isHidden = passwordField.getAttribute('type') === 'password';
+                passwordField.setAttribute('type', isHidden ? 'text' : 'password');
+                toggleButton.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+                toggleButton.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+                toggleIcon.textContent = isHidden ? 'visibility_off' : 'visibility';
+            });
+        })();
+    </script>
+}

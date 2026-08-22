@@ -1,0 +1,51 @@
+@using MediatR
+@using Ozikol_BCC.Application.Queries.SliderQueries
+@using Ozikol_BCC.Application.Queries.BlogQueries
+@inject IMediator Mediator
+@using Ozikol_BCC.Application.Services;
+@using System.Text.RegularExpressions;
+
+@{
+    var blogData = await Mediator.Send(new GetRecentBlogsQuery { Limit = 3 });
+    var blogs = blogData.Blogs;
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+}
+
+<div class="section-block-grey">
+    <div class="container">
+        <div class="blg-title">
+            <h3>@ViewBag.ConfigSetting?.BlogDisplayTitle</h3>
+        </div>
+        <div class="row">
+            @foreach (var item in blogs)
+            {
+                <div class="col-md-4 col-sm-4 col-12">
+                    <div class="blog-grid">
+                        <div class="blog-grid-img">
+                            <img src="@item.ImageUrl" alt="@item.Title" style="height:220px;">
+                            <div class="data-box-grid">
+                                <h4>@item.Date.ToString("dd")</h4>
+                                <p>@item.Date.ToString("MMM")</p>
+                            </div>
+                        </div>
+                        <div class="blog-grid-text">
+                            <h4 style=" height: 54px;overflow:hidden;">@item.Title</h4>
+                            <ul>
+                                <li><i class="fa fa-calendar"></i>@item.Date.ToString("MMM dd, yyyy")</li>
+
+                            </ul>
+                            <div class="choose-3-line">
+                                <p style=" height: 107px; overflow: hidden;text-overflow:ellipsis !important;">
+                                    @item.ShortDescription
+                                </p>
+                            </div>
+                            <div class="mt-20 left-holder" style="margin-top:5px;">
+                                <a asp-page="/Article" asp-route-id="@item.Id" asp-route-title="@MainServices.GenerateSlug(item.Title)" class="primary-button button-sm">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

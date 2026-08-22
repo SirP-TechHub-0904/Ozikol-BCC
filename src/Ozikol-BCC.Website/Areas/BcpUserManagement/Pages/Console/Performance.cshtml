@@ -1,0 +1,47 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Console.PerformanceModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Performance";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel { Eyebrow = "Performance", Title = "User Performance", Subtitle = "Score users against configured KPI indicators and review leaderboard history.", Icon = "monitoring", BackUrl = "/BcpUserManagement/Console/Dashboard", Buttons = [new("KPI Indicators", "/BcpUserManagement/Console/KpiIndicators", "add_chart"), new("Users", "/BcpUserManagement/Console/Users", "groups")] })
+<section class="m3-card bcp-card" style="padding:24px;">
+    <div class="card-header" style="margin-bottom:16px;">
+        <span class="card-title" style="font-size:16px; font-weight:600;">Select User and Period</span>
+    </div>
+    <form method="get" class="bcp-inline-form" data-tour="performance-filter-form" style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;">
+        <label class="bcp-field" style="flex:1; min-width:200px; display:block;">
+            User
+            <select class="bcp-input bcp-select" name="profileId" asp-items="Model.UserOptions" style="width:100%; padding:10px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface);"></select>
+        </label>
+        
+        <label class="bcp-field" style="flex:1; min-width:200px; display:block;">
+            Period
+            <select class="bcp-input bcp-select" name="period" asp-items="Model.PeriodOptions" style="width:100%; padding:10px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface);"></select>
+        </label>
+        
+        <button class="console-btn primary" type="submit" style="padding:10px 18px; display:inline-flex; align-items:center; gap:8px;">
+            <span class="material-symbols-outlined">monitoring</span>
+            Score User
+        </button>
+    </form>
+</section>
+@if (Model.ScoreSheet.Count > 0)
+{
+    <form method="post" class="m3-card bcp-card" data-tour="score-sheet">
+        <input type="hidden" name="profileId" value="@Model.ProfileId" />
+        <input type="hidden" name="period" value="@Model.Period" />
+        <div class="card-header"><span class="card-title">Score Sheet: @Model.Period</span></div>
+        @for (var i = 0; i < Model.ScoreSheet.Count; i++)
+        {
+            <input type="hidden" name="Scores[@i].ProfileId" value="@Model.ScoreSheet[i].ProfileId" />
+            <input type="hidden" name="Scores[@i].BcpKpiIndicatorId" value="@Model.ScoreSheet[i].BcpKpiIndicatorId" />
+            <input type="hidden" name="Scores[@i].Period" value="@Model.ScoreSheet[i].Period" />
+            <div class="bcp-score-row"><label class="bcp-field">@Model.ScoreSheet[i].IndicatorTitle (@Model.ScoreSheet[i].MaxScore)<input class="bcp-input" name="Scores[@i].Score" type="number" step="0.01" value="@Model.ScoreSheet[i].Score" /></label><label class="bcp-field">Remarks<input class="bcp-input" name="Scores[@i].Remarks" value="@Model.ScoreSheet[i].Remarks" /></label></div>
+        }
+        <button class="console-btn primary" type="submit"><span class="material-symbols-outlined">save</span>Save Scores</button>
+    </form>
+}
+<section class="m3-card bcp-card"><div class="card-header"><span class="card-title">Leaderboard</span></div><div class="bcp-table-wrap"><table class="bcp-table"><thead><tr><th>Rank</th><th>User</th><th>Total</th><th>Percentage</th></tr></thead><tbody>@foreach (var item in Model.Leaderboard) { <tr><td>@item.Rank</td><td>@item.FullName</td><td>@item.TotalScore / @item.MaxPossibleScore</td><td>@item.Percentage.ToString("0.##")%</td></tr> }</tbody></table></div></section>
+<script type="application/json" id="bcp-page-tour">[{"selector":"[data-tour='performance-filter-form']","title":"Choose score context","text":"Performance is always scored for one user and one period so history stays comparable.","placement":"bottom"},{"selector":"[data-tour='score-sheet']","title":"Score sheet","text":"The page builds one input row per active KPI indicator.","placement":"top"}]</script>

@@ -1,0 +1,6 @@
+@model IEnumerable<SelectListItem>
+<form method="get" class="bcp-inline-form" data-tour="performance-filter-form">
+    <label class="bcp-field">User<select class="bcp-input bcp-select" name="profileId" asp-items="Model"></select></label>
+    <label class="bcp-field">Period<input class="bcp-input" name="period" value="@DateTime.UtcNow.ToString("MMMM yyyy")" /></label>
+    <button class="console-btn primary" type="submit"><span class="material-symbols-outlined">monitoring</span>Score User</button>
+</form>

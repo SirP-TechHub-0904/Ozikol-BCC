@@ -1,0 +1,96 @@
+@page "/kb/{module}/{id:guid}"
+@model Ozikol_BCC.Website.Pages.KnowledgeBase.ArticleModel
+@{
+    ViewData["Title"] = Model.Article.PageTitle;
+    Layout = "_KbLayout";
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/kb" class="text-decoration-none">Knowledge Base</a></li>
+        <li class="breadcrumb-item"><a href="/kb/@Model.Article.BcpManual.ModuleFolder" class="text-decoration-none">@Model.Article.BcpManual.Title</a></li>
+        <li class="breadcrumb-item active text-truncate" aria-current="page" style="max-width: 200px;">@Model.Article.PageTitle</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4 p-md-5">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="fw-bold mb-3">@Model.Article.PageTitle</h1>
+                <p class="text-muted fs-5 mb-0" style="line-height: 1.6;">@Model.Article.PageDescription</p>
+            </div>
+            <button onclick="window.print()" class="btn btn-light d-none d-md-block text-muted" title="Print this page">
+                <i class="bi bi-printer"></i>
+            </button>
+        </div>
+
+        @if (Model.AccessibleElements.Any())
+        {
+            <hr class="my-5 opacity-10" />
+            <h4 class="fw-bold mb-4">Feature Guide</h4>
+            
+            <div class="accordion accordion-flush" id="kbArticleAccordion">
+                @foreach (var element in Model.AccessibleElements)
+                {
+                    <div class="accordion-item border rounded-3 mb-3 searchable-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed rounded-3 fw-semibold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#element-@element.Id">
+                                <div class="d-flex align-items-center w-100 me-3">
+                                    <i class="bi bi-cursor text-primary me-3 fs-5"></i>
+                                    <div>
+                                        <div class="text-dark">@element.ElementName</div>
+                                        @if (!string.IsNullOrEmpty(element.ElementType))
+                                        {
+                                            <small class="text-muted fs-8 fw-normal">@element.ElementType</small>
+                                        }
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="element-@element.Id" class="accordion-collapse collapse" data-bs-parent="#kbArticleAccordion">
+                            <div class="accordion-body text-muted pt-0 pb-4 px-4 fs-6" style="line-height: 1.7; padding-left: 3.5rem !important;">
+                                @element.Description
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-light border text-center text-muted my-5 py-4">
+                <i class="bi bi-info-circle fs-3 d-block mb-2 opacity-50"></i>
+                No specific elements documented for this article.
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+        color: #0d6efd;
+        box-shadow: none;
+    }
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,.125);
+    }
+    @@media print {
+        #kb-sidebar, .kb-topbar, nav[aria-label="breadcrumb"], .accordion-button::after {
+            display: none !important;
+        }
+        #kb-main {
+            margin-left: 0 !important;
+        }
+        .accordion-collapse {
+            display: block !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+

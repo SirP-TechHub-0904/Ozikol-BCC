@@ -1,0 +1,52 @@
+@page
+@model Ozikol.Central.Pages.AboutModel
+@{
+    ViewData["Title"] = "About Ozikol BCC - Architecture & Mission";
+}
+
+<div class="marketing-page">
+    <section class="page-hero-section">
+        <div class="marketing-container">
+            <span class="section-badge">OUR MISSION & ARCHITECTURE</span>
+            <h1 class="page-hero-title">Redefining Multi-Tenant Cloud Governance</h1>
+            <p class="page-hero-sub">
+                Ozikol BCC was engineered to eliminate the compromise between multi-tenant scalability and strict database security isolation.
+            </p>
+        </div>
+    </section>
+
+    <section class="section-marketing">
+        <div class="marketing-container">
+            <div class="about-grid">
+                <div class="about-card">
+                    <h3 class="about-card-title">1. The Database Isolation Philosophy</h3>
+                    <p class="about-card-text">
+                        Traditional SaaS systems place all customer data into shared SQL tables separated only by a <code>TenantId</code> column. A single software bug or query leak can expose sensitive financial and member records.
+                    </p>
+                    <p class="about-card-text">
+                        Ozikol BCC solves this at the architectural layer: every provisioned workspace receives a completely dedicated, isolated SQL database with its own generated SQL Server credentials and zero shared schema tables.
+                    </p>
+                </div>
+
+                <div class="about-card">
+                    <h3 class="about-card-title">2. Unified Central Governance</h3>
+                    <p class="about-card-text">
+                        With hundreds of isolated databases across a fleet, management must be frictionless. Ozikol Central connects to a single Master Catalog DB, allowing platform SuperAdmins to execute zero-downtime EF Core migrations across the entire fleet with a single click.
+                    </p>
+                    <p class="about-card-text">
+                        Real-time Dynamic Management Views (DMVs) query database partition statistics in under 5 milliseconds, providing instant table breakdowns and row summation across thousands of tenant catalogs.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bottom-cta-card" style="margin-top: 48px;">
+                <h2 class="bottom-cta-title">Build on an Architecture You Can Trust</h2>
+                <p class="bottom-cta-sub">Launch your dedicated organization workspace in under 30 seconds.</p>
+                <a asp-page="/Signup" class="btn-hero-primary" style="margin-top: 16px;">
+                    <span>Get Started to Own Your MIS</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+</div>

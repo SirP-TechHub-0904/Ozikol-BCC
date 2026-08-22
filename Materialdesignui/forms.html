@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Advanced Forms & Rich Text Editors</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Advanced Form Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Advanced Form Elements & Rich Text Editors</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Explore Text Inputs with Labels, Inline Icon Inputs with Submit Buttons, 3 Rich Text Editors (WYSIWYG Toolbar, Floating Bubble, Live Markdown), and Search-To-Trigger Autocomplete Dropdowns.</p>
+      </div>
+
+      <!-- SECTION 1: Inputs with Labels & Variants -->
+      <div class="m3-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <span class="card-title">1. Text Inputs with Floating Labels & Options</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+          <!-- Outlined Text Field -->
+          <md-outlined-text-field label="Full Name" value="Anna Adame" supporting-text="Enter your legal full name" required></md-outlined-text-field>
+
+          <!-- Filled Text Field -->
+          <md-filled-text-field label="Company Email" type="email" value="anna.adame@velzon.com" supporting-text="We'll never share your email"></md-filled-text-field>
+
+          <!-- Prefix & Suffix Adornments -->
+          <md-outlined-text-field label="Budget Amount" value="5,000" prefix-text="$" suffix-text=".00 USD"></md-outlined-text-field>
+
+          <!-- Input with Character Counter -->
+          <md-outlined-text-field label="Project Code" value="PRJ-9942" maxlength="10" supporting-text="Max 10 chars"></md-outlined-text-field>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Inputs with Inline Icons & Embedded Submit Buttons -->
+      <div class="m3-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <span class="card-title">2. Inputs with Inline Icons & Embedded Submit Buttons</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Password Input with Trailing Visibility Toggle -->
+          <md-outlined-text-field id="input-password" label="Account Password" type="password" value="SecretP@ssword123">
+            <md-icon slot="leading-icon">lock</md-icon>
+            <md-icon slot="trailing-icon" style="cursor:pointer;" id="btn-toggle-pass">visibility</md-icon>
+          </md-outlined-text-field>
+
+          <!-- Embedded Subscribe Input with Submit Button Inside -->
+          <div class="input-inline-group">
+            <md-outlined-text-field label="Newsletter Subscription" placeholder="enter your email address...">
+              <md-icon slot="leading-icon">mark_email_unread</md-icon>
+            </md-outlined-text-field>
+            <md-filled-button class="inline-submit-btn" style="--md-filled-button-container-color: #0284c7;">
+              <md-icon slot="icon">send</md-icon> Subscribe
+            </md-filled-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Textareas & Character Limit Counters -->
+      <div class="m3-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <span class="card-title">3. Textareas & Character Limit Counters</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Standard Outlined Textarea -->
+          <md-outlined-text-field type="textarea" label="Project Overview Description" rows="4" value="Velzon Material Design 3 UI is built with native Web Components and Sky Blue theme tokens."></md-outlined-text-field>
+
+          <!-- Textarea with Live Character Limit -->
+          <div>
+            <md-outlined-text-field id="textarea-char-limit" type="textarea" label="Bio / Executive Summary (Max 200 Chars)" rows="4" maxlength="200" value="Passionate about spatial computing, Material 3 UI design systems, and frontend architecture."></md-outlined-text-field>
+            <span id="char-limit-counter" style="font-size: 12px; color: var(--sidebar-header-color); float: right; margin-top: 4px;">88 / 200 characters</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: 3 DIFFERENT KINDS OF RICH TEXT EDITORS -->
+      <div class="m3-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <span class="card-title">4. Three (3) Different Kinds of Rich Text Editors</span>
+        </div>
+
+        <!-- KIND 1: Standard WYSIWYG Admin Toolbar Editor -->
+        <div style="margin-bottom: 28px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #0284c7; margin: 0 0 10px 0;">KIND 1: Standard WYSIWYG Admin Toolbar Editor</h4>
+          <div class="editor-toolbar">
+            <button type="button" title="Bold" onclick="document.execCommand('bold', false, null)"><span class="material-symbols-outlined">format_bold</span></button>
+            <button type="button" title="Italic" onclick="document.execCommand('italic', false, null)"><span class="material-symbols-outlined">format_italic</span></button>
+            <button type="button" title="Underline" onclick="document.execCommand('underline', false, null)"><span class="material-symbols-outlined">format_underlined</span></button>
+            <button type="button" title="Strikethrough" onclick="document.execCommand('strikeThrough', false, null)"><span class="material-symbols-outlined">strikethrough_s</span></button>
+            <span style="opacity:0.3; margin:0 4px;">|</span>
+            <button type="button" title="Bullet List" onclick="document.execCommand('insertUnorderedList', false, null)"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+            <button type="button" title="Numbered List" onclick="document.execCommand('insertOrderedList', false, null)"><span class="material-symbols-outlined">format_list_numbered</span></button>
+            <span style="opacity:0.3; margin:0 4px;">|</span>
+            <button type="button" title="Align Left" onclick="document.execCommand('justifyLeft', false, null)"><span class="material-symbols-outlined">format_align_left</span></button>
+            <button type="button" title="Align Center" onclick="document.execCommand('justifyCenter', false, null)"><span class="material-symbols-outlined">format_align_center</span></button>
+            <button type="button" title="Align Right" onclick="document.execCommand('justifyRight', false, null)"><span class="material-symbols-outlined">format_align_right</span></button>
+          </div>
+          <div class="editor-content-box" contenteditable="true">
+            <strong>Standard WYSIWYG Editor</strong> allows full text formatting with toolbar controls. Highlight text and click buttons above to format content seamlessly!
+          </div>
+        </div>
+
+        <!-- KIND 2: Floating Bubble Toolbar Editor -->
+        <div style="margin-bottom: 28px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #a855f7; margin: 0 0 10px 0;">KIND 2: Minimalist Floating Bubble Toolbar Editor (Highlight Text to See Bubble)</h4>
+          <div class="editor-bubble-container">
+            <div class="bubble-popover-toolbar">
+              <button type="button" onclick="document.execCommand('bold', false, null)"><b>B</b></button>
+              <button type="button" onclick="document.execCommand('italic', false, null)"><i>I</i></button>
+              <button type="button" onclick="document.execCommand('underline', false, null)"><u>U</u></button>
+              <button type="button" onclick="document.execCommand('createLink', false, prompt('Enter URL:'))">🔗 Link</button>
+            </div>
+            <div class="editor-content-box" contenteditable="true" style="border-radius: 8px;">
+              Highlight any word in this paragraph to trigger the dark floating bubble popover toolbar! Perfect for Medium-style clean writing environments.
+            </div>
+          </div>
+        </div>
+
+        <!-- KIND 3: Markdown Live Split-Pane Editor -->
+        <div>
+          <h4 style="font-size: 14px; font-weight: 700; color: #0ab39c; margin: 0 0 10px 0;">KIND 3: Markdown Live Split-Pane Editor (Input on Left → Live HTML Preview on Right)</h4>
+          <div class="markdown-split-grid">
+            <div>
+              <span style="font-size: 12px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 6px;">MARKDOWN INPUT</span>
+              <textarea id="markdown-input" style="width: 100%; height: 130px; padding: 12px; border-radius: 8px; border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface); color: inherit; font-family: monospace; font-size: 13px;"># Live Markdown Preview
+- **Material Design 3** Web Components
+- *Sky Blue* Theme Palette
+- [Velzon Admin Dashboard](https://google.com)</textarea>
+            </div>
+            <div>
+              <span style="font-size: 12px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 6px;">LIVE RENDERED HTML PREVIEW</span>
+              <div id="markdown-preview" style="height: 130px; padding: 12px; border-radius: 8px; border: 1px solid var(--md-sys-color-outline); background: var(--sidebar-hover-bg); font-size: 13.5px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION 5: ADVANCED DROPDOWNS & SEARCH SELECTS -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">5. Advanced Dropdowns, Selects & Search Trigger Lists</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+          
+          <!-- Dropdown 1: Standard M3 Select -->
+          <div>
+            <span style="font-size: 12px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 6px;">1. Standard M3 Select</span>
+            <md-outlined-select label="Select Department">
+              <md-select-option value="engineering" selected><div slot="headline">Engineering</div></md-select-option>
+              <md-select-option value="finance"><div slot="headline">Finance</div></md-select-option>
+              <md-select-option value="marketing"><div slot="headline">Marketing</div></md-select-option>
+            </md-outlined-select>
+          </div>
+
+          <!-- Dropdown 2: Multi-Select Checkbox List Dropdown -->
+          <div class="custom-dropdown-container">
+            <span style="font-size: 12px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 6px;">2. Multi-Select Checkbox List Dropdown</span>
+            <md-outlined-text-field id="trigger-checkbox-dropdown" label="Select Permissions" value="3 Permissions Selected" readonly style="cursor:pointer;">
+              <md-icon slot="trailing-icon">arrow_drop_down</md-icon>
+            </md-outlined-text-field>
+
+            <div class="custom-dropdown-menu" id="menu-checkbox-dropdown">
+              <div class="custom-dropdown-list">
+                <label class="custom-dropdown-item"><md-checkbox checked></md-checkbox> Read User Directory</label>
+                <label class="custom-dropdown-item"><md-checkbox checked></md-checkbox> Edit Financial Dues</label>
+                <label class="custom-dropdown-item"><md-checkbox checked></md-checkbox> Approve Proposals</label>
+                <label class="custom-dropdown-item"><md-checkbox></md-checkbox> Delete System Records</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown 3: Filterable Search List Dropdown -->
+          <div class="custom-dropdown-container">
+            <span style="font-size: 12px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 6px;">3. Filterable Search List Dropdown</span>
+            <md-outlined-text-field id="trigger-search-dropdown" label="Select Country" value="United States" readonly style="cursor:pointer;">
+              <md-icon slot="trailing-icon">arrow_drop_down</md-icon>
+            </md-outlined-text-field>
+
+            <div class="custom-dropdown-menu" id="menu-search-dropdown">
+              <div class="custom-dropdown-search-box">
+                <input type="text" id="input-filter-countries" placeholder="Type to filter countries...">
+              </div>
+              <div class="custom-dropdown-list" id="list-countries">
+                <div class="custom-dropdown-item country-item">🇺🇸 United States</div>
+                <div class="custom-dropdown-item country-item">🇩🇪 Germany</div>
+                <div class="custom-dropdown-item country-item">🇬🇧 United Kingdom</div>
+                <div class="custom-dropdown-item country-item">🇨🇦 Canada</div>
+                <div class="custom-dropdown-item country-item">🇯🇵 Japan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown 4: Search-To-Trigger Autocomplete Dropdown (Combobox) -->
+          <div class="custom-dropdown-container">
+            <span style="font-size: 12px; font-weight: 700; color: #0284c7; display: block; margin-bottom: 6px;">4. Search-To-Trigger Autocomplete (Type to Trigger)</span>
+            <md-outlined-text-field id="input-combobox-trigger" label="Search Staff Member..." placeholder="Type 'a' or 'd' to trigger...">
+              <md-icon slot="leading-icon">person_search</md-icon>
+            </md-outlined-text-field>
+
+            <div class="custom-dropdown-menu" id="menu-combobox-trigger">
+              <div class="custom-dropdown-list" id="list-combobox-results">
+                <div class="custom-dropdown-item combobox-item"><strong>Anna Adame</strong> (Product Lead)</div>
+                <div class="custom-dropdown-item combobox-item"><strong>David Miller</strong> (Software Architect)</div>
+                <div class="custom-dropdown-item combobox-item"><strong>Alexander Wright</strong> (QA Engineer)</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Password Visibility Toggle
+      const passInput = document.getElementById('input-password');
+      const passToggle = document.getElementById('btn-toggle-pass');
+      if (passInput && passToggle) {
+        passToggle.addEventListener('click', () => {
+          const isPass = passInput.type === 'password';
+          passInput.type = isPass ? 'text' : 'password';
+          passToggle.textContent = isPass ? 'visibility_off' : 'visibility';
+        });
+      }
+
+      // Live Character Counter Limit
+      const textareaChar = document.getElementById('textarea-char-limit');
+      const charCounter = document.getElementById('char-limit-counter');
+      if (textareaChar && charCounter) {
+        textareaChar.addEventListener('input', () => {
+          const count = textareaChar.value.length;
+          charCounter.textContent = `${count} / 200 characters`;
+        });
+      }
+
+      // Kind 3: Markdown Live Split-Pane Editor Logic
+      const mdInput = document.getElementById('markdown-input');
+      const mdPreview = document.getElementById('markdown-preview');
+      function renderMarkdown() {
+        if (!mdInput || !mdPreview) return;
+        let text = mdInput.value;
+        // Simple markdown parsing
+        text = text.replace(/^# (.*$)/gim, '<h3>$1</h3>');
+        text = text.replace(/\*\*(.*)\**/gim, '<strong>$1</strong>');
+        text = text.replace(/\*(.*)\*/gim, '<em>$1</em>');
+        text = text.replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2' target='_blank' style='color:#0284c7;'>$1</a>");
+        text = text.replace(/^\- (.*$)/gim, '• $1<br>');
+        mdPreview.innerHTML = text.replace(/\n/g, '<br>');
+      }
+      if (mdInput) {
+        mdInput.addEventListener('input', renderMarkdown);
+        renderMarkdown();
+      }
+
+      // Dropdown 2: Checkbox List Dropdown Toggle
+      const triggerCheck = document.getElementById('trigger-checkbox-dropdown');
+      const menuCheck = document.getElementById('menu-checkbox-dropdown');
+      if (triggerCheck && menuCheck) {
+        triggerCheck.addEventListener('click', () => menuCheck.classList.toggle('active'));
+      }
+
+      // Dropdown 3: Filterable Country Search Dropdown
+      const triggerSearch = document.getElementById('trigger-search-dropdown');
+      const menuSearch = document.getElementById('menu-search-dropdown');
+      const filterInput = document.getElementById('input-filter-countries');
+      const countryItems = document.querySelectorAll('.country-item');
+      if (triggerSearch && menuSearch) {
+        triggerSearch.addEventListener('click', () => menuSearch.classList.toggle('active'));
+      }
+      if (filterInput) {
+        filterInput.addEventListener('input', () => {
+          const val = filterInput.value.toLowerCase();
+          countryItems.forEach(item => {
+            item.style.display = item.textContent.toLowerCase().includes(val) ? 'flex' : 'none';
+          });
+        });
+      }
+
+      // Dropdown 4: Search-To-Trigger Autocomplete Combobox
+      const comboboxInput = document.getElementById('input-combobox-trigger');
+      const comboboxMenu = document.getElementById('menu-combobox-trigger');
+      const comboboxItems = document.querySelectorAll('.combobox-item');
+      if (comboboxInput && comboboxMenu) {
+        comboboxInput.addEventListener('input', () => {
+          const val = comboboxInput.value.trim().toLowerCase();
+          if (val.length > 0) {
+            comboboxMenu.classList.add('active');
+            comboboxItems.forEach(item => {
+              item.style.display = item.textContent.toLowerCase().includes(val) ? 'flex' : 'none';
+            });
+          } else {
+            comboboxMenu.classList.remove('active');
+          }
+        });
+      }
+
+      // Close dropdowns on outside click
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-dropdown-container')) {
+          document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.remove('active'));
+        }
+      });
+    });
+  </script>
+
+  <script src="layout.js"></script>
+</body>
+</html>

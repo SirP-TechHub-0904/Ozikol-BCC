@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Interactive DataTables</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+
+  <style>
+    .design-tag {
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 10px;
+    }
+    .design-tag-1 { background: rgba(2,132,199,0.12); color: #0284c7; }
+    .design-tag-2 { background: rgba(168,85,247,0.12); color: #a855f7; }
+    .design-tag-3 { background: rgba(10,179,156,0.12); color: #0ab39c; }
+
+    .dt-toolbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+      padding: 12px 0; margin-bottom: 12px;
+    }
+    .dt-toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .dt-toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .dt-search-box {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface);
+    }
+    .dt-search-box input {
+      border: none; background: transparent; font-size: 13px; outline: none; color: inherit; width: 180px;
+    }
+
+    .dt-rows-select {
+      display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--sidebar-header-color);
+    }
+    .dt-rows-select select {
+      padding: 5px 8px; border-radius: 6px; border: 1px solid var(--md-sys-color-outline);
+      background: var(--md-sys-color-surface); color: inherit; font-size: 12.5px; cursor: pointer;
+    }
+
+    .dt-export-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px;
+      font-size: 12px; font-weight: 600; border: 1px solid var(--md-sys-color-outline);
+      background: var(--md-sys-color-surface); color: var(--sidebar-color); cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .dt-export-btn:hover { background: #0284c7; color: #fff; border-color: #0284c7; }
+    .dt-export-btn.pdf { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+    .dt-export-btn.pdf:hover { background: #ef4444; color: #fff; }
+    .dt-export-btn.word { color: #3b82f6; border-color: rgba(59,130,246,0.3); }
+    .dt-export-btn.word:hover { background: #3b82f6; color: #fff; }
+    .dt-export-btn.excel { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+    .dt-export-btn.excel:hover { background: #22c55e; color: #fff; }
+
+    .dt-sortable { cursor: pointer; user-select: none; }
+    .dt-sortable:hover { color: #0284c7; }
+    .dt-sort-icon { font-size: 14px; vertical-align: middle; margin-left: 4px; opacity: 0.5; }
+    .dt-sortable.asc .dt-sort-icon, .dt-sortable.desc .dt-sort-icon { opacity: 1; color: #0284c7; }
+
+    .dt-pagination {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+      padding: 12px 0; font-size: 13px; color: var(--sidebar-header-color);
+    }
+    .dt-pagination-btns { display: flex; gap: 4px; }
+    .dt-page-btn {
+      min-width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface);
+      color: var(--sidebar-color); cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s ease;
+      padding: 0 6px;
+    }
+    .dt-page-btn:hover, .dt-page-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; }
+    .dt-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .dt-page-btn:disabled:hover { background: var(--md-sys-color-surface); color: var(--sidebar-color); border-color: var(--md-sys-color-outline); }
+
+    .card-view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .card-view-item {
+      background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline);
+      border-radius: 12px; padding: 16px; transition: box-shadow 0.2s ease;
+    }
+    .card-view-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .view-toggle-bar { display: flex; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; overflow: hidden; }
+    .view-toggle-btn {
+      padding: 6px 14px; font-size: 12px; font-weight: 600; border: none;
+      background: var(--md-sys-color-surface); color: var(--sidebar-color); cursor: pointer;
+      display: flex; align-items: center; gap: 4px; transition: all 0.15s ease;
+    }
+    .view-toggle-btn.active { background: #0284c7; color: #fff; }
+    .view-toggle-btn:not(:last-child) { border-right: 1px solid var(--md-sys-color-outline); }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header"><span class="material-symbols-outlined">space_dashboard</span><span>VELZON</span></div>
+    <nav class="sidebar-nav">
+      <div class="menu-title">Menu</div>
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)"><div class="nav-link-content"><span class="material-symbols-outlined">dashboard</span><span>Dashboards</span></div></a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+      <div class="menu-title">Components</div>
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)"><div class="nav-link-content"><span class="material-symbols-outlined">architecture</span><span>Base UI</span></div></a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)"><div class="nav-link-content"><span class="material-symbols-outlined">widgets</span><span>Widgets</span></div></a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html"><div class="nav-link-content"><span class="material-symbols-outlined">edit_document</span><span>Forms</span></div></a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Advanced Form Elements</span></a></li>
+        </ul>
+      </div>
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)"><div class="nav-link-content"><span class="material-symbols-outlined">table_chart</span><span>Tables</span></div></a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">circle</span>Normal Tables</span></a></li>
+          <li><a href="datatable.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size:8px;">fiber_manual_record</span>Interactive DataTables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation"><span class="material-symbols-outlined">menu</span></button>
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard"><span class="material-symbols-outlined">space_dashboard</span></a>
+        <div class="topbar-search-box"><span class="material-symbols-outlined search-icon">search</span><input type="text" placeholder="Search..." aria-label="Search"></div>
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search"><span class="material-symbols-outlined">search</span></button>
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen"><span class="material-symbols-outlined">fullscreen</span></button>
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme"><span class="material-symbols-outlined">dark_mode</span></button>
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info"><span class="user-name">Anna Adame</span><span class="user-role">Founder</span></div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu"><div class="profile-menu-header">Welcome Anna!</div></div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar"><div class="mobile-search-inner"><span class="material-symbols-outlined">search</span><input type="text" placeholder="Search..." aria-label="Mobile Search"></div></div>
+
+    <div class="scroll-area">
+
+      <!-- Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Interactive DataTables with Search, Sort, Pagination & Export</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">3 DataTable Designs with live search, click-to-sort, rows per page (10, 50, 100, All), pagination, and PDF / Word / Excel export.</p>
+      </div>
+
+      <!-- ==============================
+           DESIGN 1: Sky Blue Glassmorphism DataTable
+           ============================== -->
+      <div class="m3-card" style="margin-bottom: 28px;">
+        <span class="design-tag design-tag-1">DESIGN 1 OF 3</span>
+        <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 4px 0;">Modern Sky Blue DataTable with Full Pagination</h3>
+
+        <div class="dt-toolbar">
+          <div class="dt-toolbar-left">
+            <div class="dt-rows-select">
+              <span>Show</span>
+              <select id="dt1-page-size" onchange="dt1Engine.setPageSize(this.value)">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">All</option>
+              </select>
+              <span>entries</span>
+            </div>
+            <div class="dt-search-box">
+              <span class="material-symbols-outlined" style="font-size:18px; opacity:0.5;">search</span>
+              <input type="text" id="search-dt1" placeholder="Filter rows..." oninput="dt1Engine.search(this.value)">
+            </div>
+          </div>
+          <div class="dt-toolbar-right">
+            <button class="dt-export-btn pdf" onclick="exportTable('dt1','pdf')"><span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF</button>
+            <button class="dt-export-btn word" onclick="exportTable('dt1','word')"><span class="material-symbols-outlined" style="font-size:16px;">description</span> Word</button>
+            <button class="dt-export-btn excel" onclick="exportTable('dt1','excel')"><span class="material-symbols-outlined" style="font-size:16px;">table_chart</span> Excel</button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--md-sys-color-outline);">
+          <table id="dt1" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--sidebar-hover-bg); border-bottom: 2px solid var(--md-sys-color-outline);">
+                <th class="dt-sortable" onclick="dt1Engine.sort(0)" style="padding:12px 16px; text-align:left;">NAME <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt1Engine.sort(1)" style="padding:12px 16px; text-align:left;">EMAIL <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt1Engine.sort(2)" style="padding:12px 16px; text-align:left;">DEPARTMENT <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt1Engine.sort(3)" style="padding:12px 16px; text-align:left;">STATUS <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt1Engine.sort(4)" style="padding:12px 16px; text-align:right;">REVENUE <span class="dt-sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="dt1-body"></tbody>
+          </table>
+        </div>
+
+        <div class="dt-pagination">
+          <span id="dt1-info">Showing 1–10 of 25 records</span>
+          <div class="dt-pagination-btns" id="dt1-pagination"></div>
+        </div>
+      </div>
+
+      <!-- ==============================
+           DESIGN 2: Enterprise Compact Audit DataTable
+           ============================== -->
+      <div class="m3-card" style="margin-bottom: 28px;">
+        <span class="design-tag design-tag-2">DESIGN 2 OF 3</span>
+        <h3 style="font-size: 17px; font-weight: 700; margin: 0 0 4px 0;">Enterprise Compact Financial Audit DataTable</h3>
+
+        <div class="dt-toolbar">
+          <div class="dt-toolbar-left">
+            <div class="dt-rows-select">
+              <span>Show</span>
+              <select id="dt2-page-size" onchange="dt2Engine.setPageSize(this.value)">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">All</option>
+              </select>
+              <span>entries</span>
+            </div>
+            <div class="dt-search-box">
+              <span class="material-symbols-outlined" style="font-size:18px; opacity:0.5;">search</span>
+              <input type="text" id="search-dt2" placeholder="Search transactions..." oninput="dt2Engine.search(this.value)">
+            </div>
+          </div>
+          <div class="dt-toolbar-right">
+            <button class="dt-export-btn pdf" onclick="exportTable('dt2','pdf')"><span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF</button>
+            <button class="dt-export-btn word" onclick="exportTable('dt2','word')"><span class="material-symbols-outlined" style="font-size:16px;">description</span> Word</button>
+            <button class="dt-export-btn excel" onclick="exportTable('dt2','excel')"><span class="material-symbols-outlined" style="font-size:16px;">table_chart</span> Excel</button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--md-sys-color-outline);">
+          <table id="dt2" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--sidebar-hover-bg); border-bottom: 2px solid var(--md-sys-color-outline);">
+                <th class="dt-sortable" onclick="dt2Engine.sort(0)" style="padding:8px 12px; text-align:left; font-size:12px;">TXN CODE <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt2Engine.sort(1)" style="padding:8px 12px; text-align:left; font-size:12px;">GATEWAY <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt2Engine.sort(2)" style="padding:8px 12px; text-align:left; font-size:12px;">DATE <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt2Engine.sort(3)" style="padding:8px 12px; text-align:right; font-size:12px;">FEE <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt2Engine.sort(4)" style="padding:8px 12px; text-align:right; font-size:12px;">TOTAL <span class="dt-sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="dt2-body"></tbody>
+          </table>
+        </div>
+
+        <div class="dt-pagination">
+          <span id="dt2-info">Showing 1–10 of 20 transactions</span>
+          <div class="dt-pagination-btns" id="dt2-pagination"></div>
+        </div>
+      </div>
+
+      <!-- ==============================
+           DESIGN 3: Toggleable Grid/Card DataTable
+           ============================== -->
+      <div class="m3-card" style="margin-bottom: 28px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <div>
+            <span class="design-tag design-tag-3">DESIGN 3 OF 3</span>
+            <h3 style="font-size: 17px; font-weight: 700; margin: 0;">Toggleable Grid/Card DataTable View</h3>
+          </div>
+          <div class="view-toggle-bar">
+            <button class="view-toggle-btn active" id="btn-grid-view" onclick="toggleView('grid')">
+              <span class="material-symbols-outlined" style="font-size:16px;">table_rows</span> Table
+            </button>
+            <button class="view-toggle-btn" id="btn-card-view" onclick="toggleView('card')">
+              <span class="material-symbols-outlined" style="font-size:16px;">grid_view</span> Cards
+            </button>
+          </div>
+        </div>
+
+        <div class="dt-toolbar">
+          <div class="dt-toolbar-left">
+            <div class="dt-rows-select">
+              <span>Show</span>
+              <select id="dt3-page-size" onchange="dt3Engine.setPageSize(this.value)">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">All</option>
+              </select>
+              <span>entries</span>
+            </div>
+            <div class="dt-search-box">
+              <span class="material-symbols-outlined" style="font-size:18px; opacity:0.5;">search</span>
+              <input type="text" id="search-dt3" placeholder="Search staff..." oninput="dt3Engine.search(this.value)">
+            </div>
+          </div>
+          <div class="dt-toolbar-right">
+            <button class="dt-export-btn pdf" onclick="exportTable('dt3','pdf')"><span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF</button>
+            <button class="dt-export-btn word" onclick="exportTable('dt3','word')"><span class="material-symbols-outlined" style="font-size:16px;">description</span> Word</button>
+            <button class="dt-export-btn excel" onclick="exportTable('dt3','excel')"><span class="material-symbols-outlined" style="font-size:16px;">table_chart</span> Excel</button>
+          </div>
+        </div>
+
+        <!-- TABLE VIEW -->
+        <div id="dt3-grid-view" style="overflow-x:auto; border-radius:8px; border:1px solid var(--md-sys-color-outline);">
+          <table id="dt3" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background: var(--sidebar-hover-bg); border-bottom: 2px solid var(--md-sys-color-outline);">
+                <th class="dt-sortable" onclick="dt3Engine.sort(0)" style="padding:12px 16px; text-align:left;">STAFF <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt3Engine.sort(1)" style="padding:12px 16px; text-align:left;">ROLE <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt3Engine.sort(2)" style="padding:12px 16px; text-align:left;">DEPARTMENT <span class="dt-sort-icon">↕</span></th>
+                <th class="dt-sortable" onclick="dt3Engine.sort(3)" style="padding:12px 16px; text-align:left;">STATUS <span class="dt-sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="dt3-body"></tbody>
+          </table>
+        </div>
+
+        <!-- CARD VIEW -->
+        <div id="dt3-card-view" class="card-view-grid" style="display:none;"></div>
+
+        <div class="dt-pagination">
+          <span id="dt3-info">Showing 1–10 of 15 staff</span>
+          <div class="dt-pagination-btns" id="dt3-pagination"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // ==================== DATATABLE ENGINE CLASS ====================
+    class DataTableEngine {
+      constructor(config) {
+        this.allData = config.data;
+        this.filteredData = [...this.allData];
+        this.columns = config.columns;
+        this.tbodyId = config.tbodyId;
+        this.infoId = config.infoId;
+        this.paginationId = config.paginationId;
+        this.tableId = config.tableId;
+        this.rowRenderer = config.rowRenderer;
+        this.cardRenderer = config.cardRenderer || null;
+        this.cardContainerId = config.cardContainerId || null;
+        this.infoLabel = config.infoLabel || 'records';
+        this.pageSize = 10;
+        this.currentPage = 1;
+        this.searchQuery = '';
+        this.sortCol = -1;
+        this.sortDir = 'asc';
+        this.render();
+      }
+
+      setPageSize(val) {
+        this.pageSize = val === 'all' ? this.filteredData.length || this.allData.length : parseInt(val);
+        this.currentPage = 1;
+        this.render();
+      }
+
+      search(query) {
+        this.searchQuery = query.toLowerCase();
+        this.filteredData = this.allData.filter(row =>
+          row.some(cell => String(cell).toLowerCase().includes(this.searchQuery))
+        );
+        this.currentPage = 1;
+        this.render();
+      }
+
+      sort(colIndex) {
+        if (this.sortCol === colIndex) {
+          this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sortCol = colIndex;
+          this.sortDir = 'asc';
+        }
+
+        this.filteredData.sort((a, b) => {
+          let aVal = String(a[colIndex]).replace(/[$,]/g, '');
+          let bVal = String(b[colIndex]).replace(/[$,]/g, '');
+          const aNum = parseFloat(aVal);
+          const bNum = parseFloat(bVal);
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return this.sortDir === 'asc' ? aNum - bNum : bNum - aNum;
+          }
+          return this.sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+
+        // Update header icons
+        const table = document.getElementById(this.tableId);
+        table.querySelectorAll('.dt-sortable').forEach((th, i) => {
+          th.classList.remove('asc', 'desc');
+          th.querySelector('.dt-sort-icon').textContent = '↕';
+          if (i === colIndex) {
+            th.classList.add(this.sortDir);
+            th.querySelector('.dt-sort-icon').textContent = this.sortDir === 'asc' ? '↑' : '↓';
+          }
+        });
+
+        this.render();
+      }
+
+      goToPage(page) {
+        this.currentPage = page;
+        this.render();
+      }
+
+      render() {
+        const total = this.filteredData.length;
+        const ps = this.pageSize >= total ? total : this.pageSize;
+        const totalPages = Math.max(1, Math.ceil(total / ps));
+        if (this.currentPage > totalPages) this.currentPage = totalPages;
+        const start = (this.currentPage - 1) * ps;
+        const end = Math.min(start + ps, total);
+        const pageData = this.filteredData.slice(start, end);
+
+        // Render Table Rows
+        const tbody = document.getElementById(this.tbodyId);
+        tbody.innerHTML = pageData.map(row => this.rowRenderer(row)).join('');
+
+        // Render Card View (Design 3)
+        if (this.cardRenderer && this.cardContainerId) {
+          const cardContainer = document.getElementById(this.cardContainerId);
+          if (cardContainer) {
+            cardContainer.innerHTML = pageData.map(row => this.cardRenderer(row)).join('');
+          }
+        }
+
+        // Render Info
+        const info = document.getElementById(this.infoId);
+        if (total === 0) {
+          info.textContent = `No ${this.infoLabel} found`;
+        } else {
+          info.textContent = `Showing ${start + 1}–${end} of ${total} ${this.infoLabel}`;
+        }
+
+        // Render Pagination Buttons
+        const paginationContainer = document.getElementById(this.paginationId);
+        let btns = '';
+        btns += `<button class="dt-page-btn" onclick="${this.engineName}.goToPage(${this.currentPage - 1})" ${this.currentPage <= 1 ? 'disabled' : ''}><span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span></button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          if (totalPages <= 7 || i === 1 || i === totalPages || Math.abs(i - this.currentPage) <= 1) {
+            btns += `<button class="dt-page-btn ${i === this.currentPage ? 'active' : ''}" onclick="${this.engineName}.goToPage(${i})">${i}</button>`;
+          } else if (Math.abs(i - this.currentPage) === 2) {
+            btns += `<button class="dt-page-btn" disabled>…</button>`;
+          }
+        }
+        btns += `<button class="dt-page-btn" onclick="${this.engineName}.goToPage(${this.currentPage + 1})" ${this.currentPage >= totalPages ? 'disabled' : ''}><span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span></button>`;
+        paginationContainer.innerHTML = btns;
+      }
+    }
+
+    // ==================== DATA & INITIALIZATION ====================
+    const statuses = ['Active', 'Pending', 'Inactive', 'On Leave'];
+    const statusColors = { 'Active': '#0ab39c', 'Pending': '#f7b84b', 'Inactive': '#f06548', 'On Leave': '#a855f7' };
+    const depts = ['Engineering', 'Finance', 'Marketing', 'Operations', 'HR', 'Sales', 'Legal'];
+    const roles = ['Product Lead', 'System Architect', 'Operations Manager', 'Finance Director', 'HR Specialist', 'Sales Rep', 'Legal Counsel', 'UX Designer', 'QA Engineer', 'DevOps Lead'];
+    const names = ['Anna Adame','David Miller','Sarah Connor','Robert Chen','Emily Watson','James Taylor','Olivia Brown','Michael Scott','Jessica Lee','Daniel Kim','Sophie Martin','Alexander Wright','Rachel Green','Thomas Moore','Victoria Hall','Chris Evans','Laura Phillips','Kevin Hart','Megan Fox','Samuel Jackson','Grace Kelly','Nathan Drake','Zoe Chen','Peter Parker','Diana Prince'];
+    const gateways = ['Stripe USD','PayPal EUR','Flutterwave NGN','Paystack NGN','Square USD','Razorpay INR','Mollie EUR','Adyen GBP'];
+
+    // Design 1 Data: 25 Staff Members
+    const dt1Data = names.map((name, i) => {
+      const status = statuses[i % statuses.length];
+      return [name, name.toLowerCase().replace(/ /g, '.') + '@velzon.com', depts[i % depts.length], status, '$' + ((Math.floor(Math.random() * 80) + 10) * 1000).toLocaleString()];
+    });
+
+    // Design 2 Data: 20 Transactions
+    const dt2Data = Array.from({ length: 20 }, (_, i) => {
+      const code = `TXN-${8841 + i}-${String(100 + Math.floor(Math.random() * 900))}`;
+      const gw = gateways[i % gateways.length];
+      const day = String(22 - (i % 22)).padStart(2, '0');
+      const fee = (Math.random() * 4 + 0.5).toFixed(2);
+      const total = (Math.random() * 900 + 50).toFixed(2);
+      return [code, gw, `2026-07-${day}`, `$${fee}`, `$${total}`];
+    });
+
+    // Design 3 Data: 15 Staff
+    const dt3Data = names.slice(0, 15).map((name, i) => {
+      const status = statuses[i % statuses.length];
+      return [name, roles[i % roles.length], depts[i % depts.length], status];
+    });
+
+    const initials = (name) => name.split(' ').map(n => n[0]).join('');
+    const avatarColors = ['rgba(2,132,199,0.12)', 'rgba(168,85,247,0.12)', 'rgba(240,101,72,0.12)', 'rgba(10,179,156,0.12)', 'rgba(245,158,11,0.12)'];
+    const avatarTextColors = ['#0284c7', '#a855f7', '#f06548', '#0ab39c', '#f59e0b'];
+
+    // Design 1 Engine
+    const dt1Engine = new DataTableEngine({
+      data: dt1Data,
+      columns: ['NAME', 'EMAIL', 'DEPARTMENT', 'STATUS', 'REVENUE'],
+      tbodyId: 'dt1-body',
+      infoId: 'dt1-info',
+      paginationId: 'dt1-pagination',
+      tableId: 'dt1',
+      infoLabel: 'records',
+      rowRenderer: (row) => `<tr style="border-bottom:1px solid var(--md-sys-color-outline);">
+        <td style="padding:12px 16px; font-weight:600;">${row[0]}</td>
+        <td style="padding:12px 16px;">${row[1]}</td>
+        <td style="padding:12px 16px;">${row[2]}</td>
+        <td style="padding:12px 16px;"><span class="badge-pill" style="background:${statusColors[row[3]] || '#0ab39c'};">${row[3]}</span></td>
+        <td style="padding:12px 16px; text-align:right; font-weight:700;">${row[4]}</td>
+      </tr>`
+    });
+    dt1Engine.engineName = 'dt1Engine';
+
+    // Design 2 Engine
+    const dt2Engine = new DataTableEngine({
+      data: dt2Data,
+      columns: ['TXN CODE', 'GATEWAY', 'DATE', 'FEE', 'TOTAL'],
+      tbodyId: 'dt2-body',
+      infoId: 'dt2-info',
+      paginationId: 'dt2-pagination',
+      tableId: 'dt2',
+      infoLabel: 'transactions',
+      rowRenderer: (row) => `<tr style="border-bottom:1px solid var(--md-sys-color-outline);">
+        <td style="padding:8px 12px; font-family:monospace; font-size:12px;">${row[0]}</td>
+        <td style="padding:8px 12px; font-size:12px;">${row[1]}</td>
+        <td style="padding:8px 12px; font-size:12px;">${row[2]}</td>
+        <td style="padding:8px 12px; text-align:right; font-size:12px;">${row[3]}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:700; font-size:12px;">${row[4]}</td>
+      </tr>`
+    });
+    dt2Engine.engineName = 'dt2Engine';
+
+    // Design 3 Engine
+    const dt3Engine = new DataTableEngine({
+      data: dt3Data,
+      columns: ['STAFF', 'ROLE', 'DEPARTMENT', 'STATUS'],
+      tbodyId: 'dt3-body',
+      infoId: 'dt3-info',
+      paginationId: 'dt3-pagination',
+      tableId: 'dt3',
+      infoLabel: 'staff',
+      cardContainerId: 'dt3-card-view',
+      rowRenderer: (row) => `<tr style="border-bottom:1px solid var(--md-sys-color-outline);">
+        <td style="padding:12px 16px; font-weight:600;">${row[0]}</td>
+        <td style="padding:12px 16px;">${row[1]}</td>
+        <td style="padding:12px 16px;">${row[2]}</td>
+        <td style="padding:12px 16px;"><span class="badge-pill" style="background:${statusColors[row[3]] || '#0ab39c'};">${row[3]}</span></td>
+      </tr>`,
+      cardRenderer: (row) => {
+        const idx = names.indexOf(row[0]) % 5;
+        return `<div class="card-view-item">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:${avatarColors[idx]};color:${avatarTextColors[idx]};display:flex;align-items:center;justify-content:center;font-weight:700;">${initials(row[0])}</div>
+            <div><strong>${row[0]}</strong><span style="display:block;font-size:12px;color:var(--sidebar-header-color);">${row[1]}</span></div>
+          </div>
+          <div style="font-size:12.5px;display:flex;justify-content:space-between;">
+            <span>${row[2]}</span><span class="badge-pill" style="background:${statusColors[row[3]] || '#0ab39c'};">${row[3]}</span>
+          </div>
+        </div>`;
+      }
+    });
+    dt3Engine.engineName = 'dt3Engine';
+
+    // ==================== VIEW TOGGLE (Design 3) ====================
+    function toggleView(view) {
+      const gridView = document.getElementById('dt3-grid-view');
+      const cardView = document.getElementById('dt3-card-view');
+      const gridBtn = document.getElementById('btn-grid-view');
+      const cardBtn = document.getElementById('btn-card-view');
+      if (view === 'grid') {
+        gridView.style.display = 'block'; cardView.style.display = 'none';
+        gridBtn.classList.add('active'); cardBtn.classList.remove('active');
+      } else {
+        gridView.style.display = 'none'; cardView.style.display = 'grid';
+        gridBtn.classList.remove('active'); cardBtn.classList.add('active');
+      }
+    }
+
+    // ==================== EXPORT TO PDF / WORD / EXCEL ====================
+    function exportTable(tableId, format) {
+      const table = document.getElementById(tableId);
+      const rows = table.querySelectorAll('tr');
+      let data = [];
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('th, td');
+        const rowData = [];
+        cells.forEach(cell => rowData.push(cell.textContent.trim()));
+        data.push(rowData);
+      });
+
+      if (format === 'excel') {
+        const csv = data.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        downloadBlob(blob, `${tableId}-export.csv`);
+      } else if (format === 'word') {
+        const html = `<html><head><meta charset="utf-8"><style>table{border-collapse:collapse;width:100%;font-family:Roboto,sans-serif;}th,td{border:1px solid #ccc;padding:8px 12px;text-align:left;}th{background:#0284c7;color:#fff;}</style></head><body><h2>DataTable Export</h2>${table.outerHTML}</body></html>`;
+        const blob = new Blob([html], { type: 'application/msword' });
+        downloadBlob(blob, `${tableId}-export.doc`);
+      } else if (format === 'pdf') {
+        const html = `<html><head><meta charset="utf-8"><style>body{font-family:Roboto,sans-serif;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:8px 12px;text-align:left;}th{background:#0284c7;color:#fff;}</style></head><body><h2>DataTable Export</h2>${table.outerHTML}</body></html>`;
+        const printWin = window.open('', '_blank');
+        printWin.document.write(html);
+        printWin.document.close();
+        printWin.print();
+      }
+    }
+
+    function downloadBlob(blob, filename) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+
+  <script src="layout.js"></script>
+</body>
+</html>

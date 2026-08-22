@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @await Html.PartialAsync("Layouts/Bcp/_BcpHeadTitle")
+    @await Html.PartialAsync("Layouts/Bcp/_BcpDashboardCSS")
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @* Authorized BCP pages share this shell. Console, Workspace, and feature dashboards
+       should keep this layout so navigation, topbar tools, help, and page spacing remain consistent. *@
+    @{
+        var isAdminUser = User.IsInRole("SuperAdmin") 
+                       || User.IsInRole("PlatformOwner") 
+                       || User.IsInRole("Administrator");
+
+        var sidebarPartial = isAdminUser
+            ? "Layouts/Bcp/_BcpAdminSidebar"
+            : "Layouts/Bcp/_BcpUserSidebar";
+    }
+    @await Html.PartialAsync(sidebarPartial)
+
+    <main id="main-content">
+        @* The topbar/sidebar markup is intentionally standardized by bcp-layout.js.
+           Role, enabled-feature, and permission checks should drive the final menu items. *@
+        @await Html.PartialAsync("Layouts/Bcp/_BcpTopbar")
+        <div class="bcp-page-shell">
+            @RenderBody()
+        </div>
+    </main>
+
+    @await Html.PartialAsync("Layouts/Bcp/_BcpContextualHelp")
+    @await Html.PartialAsync("Layouts/Bcp/_BcpScript")
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

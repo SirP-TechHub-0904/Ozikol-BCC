@@ -1,0 +1,38 @@
+@model IEnumerable<Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Workspace.ActivityModel.UserActivityItem>
+
+<div class="bcp-timeline" data-tour="activity-timeline">
+    @if (!Model.Any())
+    {
+        <div style="text-align:center; padding:48px 0; color:var(--sidebar-color);">
+            <span class="material-symbols-outlined" style="font-size:48px; opacity:0.4; display:block; margin-bottom:12px;">history</span>
+            <h4 style="margin:0; font-size:16px; font-weight:600;">No activity recorded yet</h4>
+            <p style="margin:4px 0 0 0; font-size:14px;">Your account activity will appear here as actions take place.</p>
+        </div>
+    }
+    else
+    {
+        <div style="display:grid; gap:12px;">
+            @foreach (var item in Model)
+            {
+                <article class="bcp-timeline-item" style="display:flex; gap:16px; align-items:flex-start; padding:16px; border-radius:12px; background:var(--md-sys-color-surface-container-low, #f8fafc); border:1px solid var(--md-sys-color-outline-variant, #e2e8f0);">
+                    <div style="width:42px; height:42px; border-radius:10px; background:rgba(37,99,235,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <span class="material-symbols-outlined" style="font-size:22px; color:#2563eb;">@item.Icon</span>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:8px;">
+                            <strong style="font-size:15px; font-weight:700; color:var(--md-sys-color-on-surface);">@item.Title</strong>
+                            <span style="font-size:12px; color:var(--sidebar-color); background:var(--md-sys-color-surface); padding:2px 8px; border-radius:6px; border:1px solid var(--md-sys-color-outline-variant);">
+                                @item.Date.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
+                            </span>
+                        </div>
+                        <p style="margin:0 0 8px 0; font-size:14px; color:var(--sidebar-color); line-height:1.5;">@item.Description</p>
+                        <div style="font-size:12px; color:var(--sidebar-color); display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:15px; opacity:0.7;">person</span>
+                            <span>By <strong>@item.PerformedBy</strong></span>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>

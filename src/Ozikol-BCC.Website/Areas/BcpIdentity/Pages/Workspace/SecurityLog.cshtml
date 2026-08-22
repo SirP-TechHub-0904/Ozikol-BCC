@@ -1,0 +1,62 @@
+@page
+@model SecurityLogModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Security Activity Log";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "Personal Security Log",
+    Subtitle = "Timeline of authentication events, password updates, and security activity on your account.",
+    Icon = "history",
+    Eyebrow = "User Workspace",
+    BackUrl = "/BcpIdentity/Workspace/Security"
+})
+
+<section class="m3-card bcp-card" style="padding:24px; max-width:850px;">
+    <div class="card-header" style="margin-bottom:16px;">
+        <span class="card-title" style="font-size:18px; font-weight:600;">Security Activity (@Model.SecurityLogs.Count)</span>
+    </div>
+
+    @if (Model.SecurityLogs.Count == 0)
+    {
+        <div style="padding:32px; text-align:center; color:var(--sidebar-color);">
+            <span class="material-symbols-outlined" style="font-size:48px; color:var(--sidebar-color);">manage_history</span>
+            <p style="margin-top:12px; font-size:15px;">No security activity logged yet.</p>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface-container-low);">
+                        <th style="padding:12px;">Timestamp</th>
+                        <th style="padding:12px;">Security Event</th>
+                        <th style="padding:12px;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.SecurityLogs)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant);">
+                            <td style="padding:12px; white-space:nowrap; font-size:13px; color:var(--sidebar-color);">
+                                @log.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                            </td>
+                            <td style="padding:12px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="material-symbols-outlined" style="font-size:18px; color:#2563eb;">@log.Icon</span>
+                                    <span class="badge-pill" style="background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); padding:3px 10px; border-radius:12px; font-weight:600; font-size:12.5px;">
+                                        @log.ActionType
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="padding:12px; font-size:13.5px;">@log.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

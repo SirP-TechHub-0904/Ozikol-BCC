@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Cards Showcase</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards (Accordion) -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Dashboards" data-url="index.html" data-icon="dashboard" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="console-dashboard.html" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Console Home</span>
+                </div>
+              </a>
+              <button type="button" class="pin-btn" data-title="Console Home" data-url="console-dashboard.html" data-icon="space_dashboard" title="Pin Task">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html#analytics" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Analytics</span>
+                </div>
+              </a>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html#crm" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>CRM</span>
+                </div>
+              </a>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Ecommerce</span>
+                </div>
+              </a>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Base UI" data-url="cards.html" data-icon="architecture" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Widgets" data-url="widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <div class="apps-grid-wrapper">
+          <button type="button" class="topbar-action-btn" id="apps-grid-btn" title="Apps">
+            <span class="material-symbols-outlined">grid_view</span>
+          </button>
+          <div id="apps-grid-dropdown" class="apps-grid-dropdown">
+            <div class="apps-grid-header">Favorites</div>
+            <div class="apps-grid-container">
+              <a href="cards.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">
+                  <span class="material-symbols-outlined">style</span>
+                </div>
+                <span class="app-grid-label">Cards</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Cards Showcase</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Elevated, Outlined, Media, KPI Stats, and Profile Cards built with Material Design 3 guidelines.</p>
+      </div>
+
+      <!-- Stat KPI Cards Grid -->
+      <div class="dashboard-grid">
+        <div class="m3-card" style="margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--sidebar-header-color);">TOTAL REVENUE</span>
+              <h3 style="font-size: 24px; font-weight: 700; margin: 6px 0 4px 0; color: var(--md-sys-color-on-surface);">$54,239.50</h3>
+              <span class="badge-pill" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">+18.4% ↑</span>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="m3-card" style="margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--sidebar-header-color);">ACTIVE USERS</span>
+              <h3 style="font-size: 24px; font-weight: 700; margin: 6px 0 4px 0; color: var(--md-sys-color-on-surface);">12,840</h3>
+              <span class="badge-pill" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;">+12.1% ↑</span>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0ea5e9; display: flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">group</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="m3-card" style="margin-bottom: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--sidebar-header-color);">PENDING ORDERS</span>
+              <h3 style="font-size: 24px; font-weight: 700; margin: 6px 0 4px 0; color: var(--md-sys-color-on-surface);">1,429</h3>
+              <span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">-2.5% ↓</span>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; display: flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">shopping_bag</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rich Media & Content Cards -->
+      <div class="chart-grid" style="margin-top: 24px;">
+        
+        <!-- Media Card -->
+        <div class="m3-card" style="padding: 0; overflow: hidden;">
+          <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80" alt="Analytics" style="width: 100%; height: 200px; object-fit: cover;">
+          <div style="padding: 20px;">
+            <span class="badge-pill" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; margin-bottom: 8px; display: inline-block;">FEATURED PROJECT</span>
+            <h3 style="font-size: 18px; font-weight: 700; margin: 6px 0;">Velzon Material 3 Admin Architecture</h3>
+            <p style="color: var(--sidebar-header-color); font-size: 13.5px; line-height: 1.5; margin-bottom: 16px;">Designed with native Google Material Design 3 Web Components, customizable Sky Blue theme tokens, responsive sidebar navigation, and interactive popovers.</p>
+            <div style="display: flex; gap: 12px;">
+              <md-filled-button>Explore Demo</md-filled-button>
+              <md-outlined-button>View Documentation</md-outlined-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="m3-card" style="text-align: center;">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="Anna Adame" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid #0284c7;">
+          <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0;">Anna Adame</h3>
+          <span style="font-size: 13px; color: var(--sidebar-header-color); display: block; margin-bottom: 16px;">Founder & CEO</span>
+          <p style="font-size: 13px; color: var(--sidebar-color); margin-bottom: 20px;">Passionate about building state-of-the-art Web Applications and Material 3 design systems.</p>
+          <div style="display: flex; justify-content: center; gap: 8px;">
+            <md-filled-button>Follow</md-filled-button>
+            <md-outlined-button>Send Email</md-outlined-button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="layout.js"></script>
+</body>
+</html>

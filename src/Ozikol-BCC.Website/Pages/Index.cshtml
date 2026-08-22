@@ -1,0 +1,20 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+
+    ViewData["PageName"] = Model.ConfigSetting?.WebsiteTitle;
+    ViewData["Description"] = Model.ConfigSetting?.CompanyDescription;
+    ViewData["Image"] = Model.ConfigSetting?.CompanyIconUrl;
+}
+
+@if (Model.ConfigSettingDto != null)
+{
+    <partial name="Partials/_Slider" model="Model.ConfigSettingDto" />
+}
+
+<partial name="Partials/_PageSection" model='new Ozikol_BCC.Application.Queries.PageSectionQueries.GetPageSectionsByCriteriaQuery { Position = "top", PageSet = "home", TakeX = 3 }' />
+
+<partial name="Partials/_BlogHome" />
+
+<partial name="Partials/_PageSection" model='new Ozikol_BCC.Application.Queries.PageSectionQueries.GetPageSectionsByCriteriaQuery { Position = "bottom", PageSet = "home", TakeX = 3 }' />

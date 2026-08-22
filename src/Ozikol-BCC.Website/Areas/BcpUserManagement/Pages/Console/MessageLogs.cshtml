@@ -1,0 +1,374 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Console.MessageLogsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Message Logs";
+    var prevPage = Model.PageIndex - 1;
+    var nextPage = Model.PageIndex + 1;
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "User Management",
+    Title = "Message Logs",
+    Subtitle = "Monitor message queue pools, inspect status updates, trace delivery failures, and clean up historical records.",
+    Icon = "history",
+    BackUrl = "/BcpUserManagement/Console/Dashboard",
+    Buttons = [new("Send Notification", "/BcpUserManagement/Console/SendNotification", "campaign")]
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px;">
+        <div>
+            <strong>Info</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+@* ── Dashboard Stats / Clickable Tabs ───────────────────────── *@
+@* ── Dashboard Stats / Clickable Tabs ───────────────────────── *@
+<div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:24px; margin-bottom:28px;">
+    
+    <a href="?tab=InApp&searchQuery=@Model.SearchQuery" 
+       class="metric-card"
+       style="text-decoration:none; display:flex; flex-direction:column; justify-content:space-between; border-radius:12px; border: 1px solid @(Model.Tab == "InApp" ? "var(--md-sys-color-primary)" : "var(--md-sys-color-outline-variant)"); border-left: 6px solid var(--md-sys-color-primary); background: linear-gradient(135deg, rgba(0, 80, 229, 0.05), var(--md-sys-color-surface)); padding:20px; min-height:140px; box-shadow: @(Model.Tab == "InApp" ? "0 10px 24px rgba(0, 80, 229, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)"); transition: all 0.25s ease; cursor:pointer;"
+       onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(0, 80, 229, 0.18)';" 
+       onmouseout="this.style.transform='none'; this.style.boxShadow='@(Model.Tab == "InApp" ? "0 10px 24px rgba(0, 80, 229, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)")';">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span class="metric-label" style="margin:0; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color: var(--sidebar-color);">In-App Notifications</span>
+            <div style="background: rgba(0, 80, 229, 0.1); color: var(--md-sys-color-primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="font-size:22px;">notifications</span>
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <h3 style="margin:0; font-size:34px; font-weight:800; color:var(--md-sys-color-on-surface); font-family:'Outfit', 'Inter', sans-serif; letter-spacing:-1px;">@Model.TotalInAppCount</h3>
+            <span style="font-size:11px; font-weight:700; color:var(--md-sys-color-primary); text-transform:uppercase; letter-spacing:1px; display:block; margin-top:4px;">@(Model.Tab == "InApp" ? "● Active View" : "Live Queue")</span>
+        </div>
+    </a>
+
+    <a href="?tab=Email&searchQuery=@Model.SearchQuery" 
+       class="metric-card"
+       style="text-decoration:none; display:flex; flex-direction:column; justify-content:space-between; border-radius:12px; border: 1px solid @(Model.Tab == "Email" ? "#4f46e5" : "var(--md-sys-color-outline-variant)"); border-left: 6px solid #4f46e5; background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), var(--md-sys-color-surface)); padding:20px; min-height:140px; box-shadow: @(Model.Tab == "Email" ? "0 10px 24px rgba(79, 70, 229, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)"); transition: all 0.25s ease; cursor:pointer;"
+       onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(79, 70, 229, 0.18)';" 
+       onmouseout="this.style.transform='none'; this.style.boxShadow='@(Model.Tab == "Email" ? "0 10px 24px rgba(79, 70, 229, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)")';">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span class="metric-label" style="margin:0; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color: var(--sidebar-color);">Emails Logged</span>
+            <div style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="font-size:22px;">email</span>
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <h3 style="margin:0; font-size:34px; font-weight:800; color:var(--md-sys-color-on-surface); font-family:'Outfit', 'Inter', sans-serif; letter-spacing:-1px;">@Model.TotalEmailCount</h3>
+            <span style="font-size:11px; font-weight:700; color: #4f46e5; text-transform:uppercase; letter-spacing:1px; display:block; margin-top:4px;">@(Model.Tab == "Email" ? "● Active View" : "Queue Pool")</span>
+        </div>
+    </a>
+
+    <a href="?tab=Sms&searchQuery=@Model.SearchQuery" 
+       class="metric-card"
+       style="text-decoration:none; display:flex; flex-direction:column; justify-content:space-between; border-radius:12px; border: 1px solid @(Model.Tab == "Sms" ? "#0ab39c" : "var(--md-sys-color-outline-variant)"); border-left: 6px solid #0ab39c; background: linear-gradient(135deg, rgba(10, 179, 156, 0.05), var(--md-sys-color-surface)); padding:20px; min-height:140px; box-shadow: @(Model.Tab == "Sms" ? "0 10px 24px rgba(10, 179, 156, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)"); transition: all 0.25s ease; cursor:pointer;"
+       onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 28px rgba(10, 179, 156, 0.18)';" 
+       onmouseout="this.style.transform='none'; this.style.boxShadow='@(Model.Tab == "Sms" ? "0 10px 24px rgba(10, 179, 156, 0.12)" : "0 4px 12px rgba(0, 0, 0, 0.02)")';">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span class="metric-label" style="margin:0; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color: var(--sidebar-color);">SMS Messages Logged</span>
+            <div style="background: rgba(10, 179, 156, 0.1); color: #0ab39c; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                <span class="material-symbols-outlined" style="font-size:22px;">sms</span>
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <h3 style="margin:0; font-size:34px; font-weight:800; color:var(--md-sys-color-on-surface); font-family:'Outfit', 'Inter', sans-serif; letter-spacing:-1px;">@Model.TotalSmsCount</h3>
+            <span style="font-size:11px; font-weight:700; color: #0ab39c; text-transform:uppercase; letter-spacing:1px; display:block; margin-top:4px;">@(Model.Tab == "Sms" ? "● Active View" : "Queue Pool")</span>
+        </div>
+    </a>
+</div>
+
+@* ── Controls: Search & Cleanup Tools ───────────────────────── *@
+<section class="m3-card bcp-card" style="padding:20px; margin-bottom:24px;">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:20px;">
+        
+        @* Search Form *@
+        <form method="get" style="display:flex; align-items:flex-end; gap:12px; flex:1; min-width:300px;">
+            <input type="hidden" name="tab" value="@Model.Tab" />
+            <label class="bcp-field" style="flex:1; margin:0; display:block;">
+                Search Logs
+                <input type="text" name="searchQuery" value="@Model.SearchQuery" placeholder="Search by recipient, title, details..." 
+                       style="width:100%; padding:10px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14px;" />
+            </label>
+            <button type="submit" class="console-btn primary" style="height:38px; display:inline-flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">search</span> Search
+            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+            {
+                <a href="?tab=@Model.Tab" class="console-btn secondary" style="height:38px; display:inline-flex; align-items:center; gap:4px; text-decoration:none;">
+                    <span class="material-symbols-outlined" style="font-size:18px;">restart_alt</span> Reset
+                </a>
+            }
+        </form>
+
+        @* Old Logs Purge (Cleanup) Form *@
+        <form method="post" asp-page-handler="Cleanup" onsubmit="return confirm('Are you sure you want to permanently delete these logs?');" style="display:flex; align-items:flex-end; gap:8px;">
+            <input type="hidden" name="logType" value="@Model.Tab" />
+            <label class="bcp-field" style="margin:0; display:block;">
+                Purge @Model.Tab Logs older than
+                <select name="days" style="padding:8px 12px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); font-size:14px; width:120px; display:block; margin-top:4px;">
+                    <option value="7">7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30">30 Days</option>
+                </select>
+            </label>
+            <button type="submit" class="console-btn danger" style="height:38px; display:inline-flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">delete_sweep</span> Purge
+            </button>
+        </form>
+
+    </div>
+</section>
+
+@* ── Tab-Specific Log Tables ────────────────────────────────── *@
+<section class="m3-card bcp-card" style="padding:24px; overflow-x:auto;">
+    
+    @if (Model.TotalItems == 0)
+    {
+        <div style="text-align:center; padding:48px 0; color:var(--sidebar-color);">
+            <span class="material-symbols-outlined" style="font-size:48px; opacity:0.4; display:block; margin-bottom:12px;">inbox</span>
+            <h4 style="margin:0; font-size:16px; font-weight:600;">No logs found</h4>
+            <p style="margin:4px 0 0 0; font-size:14px;">Try clearing filters or search terms.</p>
+        </div>
+    }
+    else
+    {
+        @* ── Tab 1: In-App Notifications ── *@
+        @if (Model.Tab == "InApp")
+        {
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--md-sys-color-outline-variant); color:var(--sidebar-color); font-weight:600; font-size:14px;">
+                        <th style="padding:12px 8px;">Recipient</th>
+                        <th style="padding:12px 8px;">Title</th>
+                        <th style="padding:12px 8px;">Message</th>
+                        <th style="padding:12px 8px;">Category / Event</th>
+                        <th style="padding:12px 8px;">Timestamp</th>
+                        <th style="padding:12px 8px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.InAppLogs)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); font-size:14px;">
+                            <td style="padding:12px 8px;">
+                                @if (item.IsBroadcast)
+                                {
+                                    <span class="status-pill info" style="font-weight:600; font-size:12px; padding:2px 8px;">General</span>
+                                }
+                                else
+                                {
+                                    <span>@(item.User?.FullName ?? "Unknown User")</span><br />
+                                    <small style="color:var(--sidebar-color);">@item.User?.Email</small>
+                                }
+                            </td>
+                            <td style="padding:12px 8px; font-weight:500;">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="material-symbols-outlined" style="font-size:18px; color:var(--sidebar-color);">@(item.Icon ?? "notifications")</span>
+                                    @item.Title
+                                </div>
+                            </td>
+                            <td style="padding:12px 8px; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="@item.Message">
+                                @item.Message
+                            </td>
+                            <td style="padding:12px 8px;">
+                                <span class="status-pill info" style="font-size:11px;">@item.Category</span><br/>
+                                <small style="color:var(--sidebar-color);">@item.EventType</small>
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td style="padding:12px 8px;">
+                                @if (item.IsRead)
+                                {
+                                    <span class="status-pill success" style="font-size:11px;">Read</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill warning" style="font-size:11px;">Unread</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @* ── Tab 2: Email Queue Logs ── *@
+        else if (Model.Tab == "Email")
+        {
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--md-sys-color-outline-variant); color:var(--sidebar-color); font-weight:600; font-size:14px;">
+                        <th style="padding:12px 8px;">Recipient</th>
+                        <th style="padding:12px 8px;">Subject</th>
+                        <th style="padding:12px 8px;">Category / Event</th>
+                        <th style="padding:12px 8px;">Timestamp</th>
+                        <th style="padding:12px 8px; text-align:center;">Retries</th>
+                        <th style="padding:12px 8px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.EmailLogs)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); font-size:14px;">
+                            <td style="padding:12px 8px;">
+                                <span style="font-weight:500;">@item.RecipientName</span><br />
+                                <small style="color:var(--sidebar-color);">@item.RecipientEmail</small>
+                            </td>
+                            <td style="padding:12px 8px; font-weight:500; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="@item.Subject">
+                                @item.Subject
+                            </td>
+                            <td style="padding:12px 8px;">
+                                <span class="status-pill info" style="font-size:11px;">@item.Category</span><br/>
+                                <small style="color:var(--sidebar-color);">@item.EventType</small>
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td style="padding:12px 8px; text-align:center; font-weight:600;">
+                                @item.Retries / @item.MaxRetries
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @if (item.Status == BcpQueueStatus.Sent)
+                                {
+                                    <span class="status-pill success" style="font-size:11px;">Sent</span>
+                                }
+                                else if (item.Status == BcpQueueStatus.Failed)
+                                {
+                                    <span class="status-pill danger" style="font-size:11px; cursor:pointer;" title="Click for details" onclick="alert('Last Error:\n@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.LastError ?? "Unknown error"))')">Failed ⚠</span>
+                                }
+                                else if (item.Status == BcpQueueStatus.Processing)
+                                {
+                                    <span class="status-pill info" style="font-size:11px;">Processing</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill warning" style="font-size:11px;">Queued</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @* ── Tab 3: SMS Queue Logs ── *@
+        else if (Model.Tab == "Sms")
+        {
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--md-sys-color-outline-variant); color:var(--sidebar-color); font-weight:600; font-size:14px;">
+                        <th style="padding:12px 8px;">Recipient Phone</th>
+                        <th style="padding:12px 8px;">Message</th>
+                        <th style="padding:12px 8px;">Category / Event</th>
+                        <th style="padding:12px 8px;">Timestamp</th>
+                        <th style="padding:12px 8px; text-align:center;">Retries</th>
+                        <th style="padding:12px 8px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.SmsLogs)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); font-size:14px;">
+                            <td style="padding:12px 8px; font-weight:600; white-space:nowrap;">
+                                @item.RecipientPhone
+                                @if (item.RelatedUser != null)
+                                {
+                                    <br /><small style="color:var(--sidebar-color); font-weight:400;">@item.RelatedUser.FullName</small>
+                                }
+                            </td>
+                            <td style="padding:12px 8px; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="@item.Message">
+                                @item.Message
+                            </td>
+                            <td style="padding:12px 8px;">
+                                <span class="status-pill info" style="font-size:11px;">@item.Category</span><br/>
+                                <small style="color:var(--sidebar-color);">@item.EventType</small>
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td style="padding:12px 8px; text-align:center; font-weight:600;">
+                                @item.Retries / @item.MaxRetries
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @if (item.Status == BcpQueueStatus.Sent)
+                                {
+                                    <span class="status-pill success" style="font-size:11px;">Sent</span>
+                                }
+                                else if (item.Status == BcpQueueStatus.Failed)
+                                {
+                                    <span class="status-pill danger" style="font-size:11px; cursor:pointer;" title="Click for details" onclick="alert('Last Error:\n@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.LastError ?? "Unknown error"))')">Failed ⚠</span>
+                                }
+                                else if (item.Status == BcpQueueStatus.Processing)
+                                {
+                                    <span class="status-pill info" style="font-size:11px;">Processing</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill warning" style="font-size:11px;">Queued</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @* ── Pagination controls ── *@
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--md-sys-color-outline-variant);">
+            <div style="font-size:13px; color:var(--sidebar-color);">
+                Showing page <strong>@Model.PageIndex</strong> of <strong>@Model.TotalPages</strong> (<strong>@Model.TotalItems</strong> total items)
+            </div>
+            <div style="display:flex; gap:6px;">
+                @if (Model.PageIndex > 1)
+                {
+                    <a href="?tab=@Model.Tab&searchQuery=@Model.SearchQuery&pageIndex=@prevPage" class="console-btn secondary" style="padding:8px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span> Previous
+                    </a>
+                }
+                else
+                {
+                    <button class="console-btn secondary" disabled style="padding:8px 12px; display:inline-flex; align-items:center; gap:4px; opacity:0.5;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span> Previous
+                    </button>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.PageIndex)
+                    {
+                        <button class="console-btn primary" disabled style="padding:8px 14px; font-weight:600;">@i</button>
+                    }
+                    else if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <a href="?tab=@Model.Tab&searchQuery=@Model.SearchQuery&pageIndex=@i" class="console-btn secondary" style="padding:8px 14px; text-decoration:none; font-weight:500;">@i</a>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding:8px; color:var(--sidebar-color);">...</span>
+                    }
+                }
+
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <a href="?tab=@Model.Tab&searchQuery=@Model.SearchQuery&pageIndex=@nextPage" class="console-btn secondary" style="padding:8px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                        Next <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+                    </a>
+                }
+                else
+                {
+                    <button class="console-btn secondary" disabled style="padding:8px 12px; display:inline-flex; align-items:center; gap:4px; opacity:0.5;">
+                        Next <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+</section>

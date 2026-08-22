@@ -1,0 +1,32 @@
+@inject Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext _context
+@{
+    var misSetting = _context.BcpSettings.FirstOrDefault();
+    if (misSetting == null) return;
+    
+    var captchaType = misSetting.ActiveCaptcha;
+}
+
+@if (captchaType == Ozikol_BCC.Domain.Enum.Enum.CaptchaType.Arithmetic)
+{
+    // Generate Random Numbers for arithmetic captcha
+    Random rand = new Random();
+    int firstNumber = rand.Next(1, 10);
+    int secondNumber = rand.Next(1, 10);
+    
+    <div class="form-group mb-3 col-12">
+        <label for="captcha" class="fw-bold">Security Check: What is @firstNumber + @secondNumber = ?</label>
+        <input type="hidden" name="FirstNumber" value="@firstNumber" />
+        <input type="hidden" name="SecondNumber" value="@secondNumber" />
+        <input type="number" name="Captcha" id="captcha" class="form-control" required="required" placeholder="Enter answer here">
+    </div>
+}
+else if (captchaType == Ozikol_BCC.Domain.Enum.Enum.CaptchaType.GoogleRecaptcha)
+{
+    <div class="form-group mb-3 col-12">
+        <div class="g-recaptcha" data-sitekey="@misSetting.GoogleRecaptchaSiteKey"></div>
+    </div>
+    
+    <!-- Ensure the api.js is loaded -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}
+

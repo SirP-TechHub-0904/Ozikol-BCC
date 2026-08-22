@@ -1,0 +1,600 @@
+@page "/Bpg_info/{id}/{title}"
+@model Ozikol_BCC.Website.Pages.ArticleModel
+
+@using System.Text.RegularExpressions;
+
+@{
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+}
+
+
+@{
+    ViewData["Title"] = "Article";
+
+    ViewData["PageName"] = Model.Blog.Title;
+    ViewData["Description"] = Model.Blog.Description;
+    ViewData["Image"] = Model.Blog.ImageUrl;
+
+
+}
+<partial name="Partials/_BreadcrumOthers" model="Model.Blog.Title" />
+
+@if (Model.ConfigSetting.TemplateLayoutKey == "Layout1111")
+{
+    <div class="section-block">
+        <div class="container">
+            <div class="row">
+                <!-- Left Side START -->
+                <div class="col-md-9 col-sm-8 col-12">
+                    <div class="blog-list-left">
+                        <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title">
+                        <div class="data-box">
+                            <h4>@Model.Blog.Date.ToString("dd")</h4>
+                            <strong>@Model.Blog.Date.ToString("MM")</strong>
+                        </div>
+                        <div class="blog-title-box">
+                            <h2>@Model.Blog.Title</h2>
+                            <span><i class="fa fa-calendar"></i>@Model.Blog.Date.ToString("dd MMM, yyyy")</span>
+                        </div>
+
+                        <div class="blog-post-content">
+                            @Html.Raw(Model.Blog.FullDescription)
+                        </div>
+                    </div>
+                </div>
+                <!-- Left Side END -->
+                <!-- Right Side START -->
+                <div class="col-md-3 col-sm-4 col-12">
+                    <div class="blog-list-right">
+
+                        <!-- Categories -->
+                        <div class="blog-list-left-heading">
+                            <h4>Categories</h4>
+                        </div>
+                        <div class="blog-categories">
+                            <ul>
+                                @foreach (var item in Model.BlogCategories)
+                                {
+                                    <li><a href="#">@item.Title <span>(@item.Blogs.Count())</span></a></li>
+                                }
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- Right Side END -->
+            </div>
+        </div>
+    </div>
+}
+
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout2222")
+{
+
+    <section class="section-padding no-top gray ">
+        <!-- Main Container -->
+        <div class="container">
+            <!-- Row -->
+            <div class="row">
+                <!-- Middle Content Area -->
+                <div class="col-md-8 col-xs-12 col-sm-12">
+                    <div class="blog-detial">
+                        <!-- Blog Archive -->
+                        <div class="blog-post">
+                            <div class="post-img">
+                                <a href="" data-fancybox="group"> <img class="img-responsive large-img" alt="" src="@Model.Blog.ImageUrl"> </a>
+                            </div>
+                            <div class="post-info"> <a href="">Aug 30, 2017</a>  </div>
+                            <h3 class="post-title"> <a href="#"> @Model.Blog.Title </a> </h3>
+                            <div class="post-excerpt">
+
+                                @Html.Raw(Model.Blog.FullDescription)
+                            </div>
+                        </div>
+                        <!-- Blog Grid -->
+                    </div>
+                </div>
+                <!-- Right Sidebar -->
+                <div class="col-md-4 col-xs-12 col-sm-12">
+                    <!-- Sidebar Widgets -->
+                    <div class="blog-sidebar">
+                        <!-- Categories -->
+                        <div class="widget">
+                            <div class="widget-heading">
+                                <h4 class="panel-title"><a>Categories</a></h4>
+                            </div>
+                            <div class="widget-content categories">
+                                <ul>
+                                    @foreach (var item in Model.BlogCategories)
+                                    {
+                                        <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Latest News -->
+                        <div class="widget">
+                            <div class="widget-heading">
+                                <h4 class="panel-title"><a>Latest News</a></h4>
+                            </div>
+                            <div class="widget-content recent-ads">
+                                <!-- Ads -->
+                                @foreach (var item in Model.Blogs)
+                                {
+                                    <div class="recent-ads-list">
+                                        <div class="recent-ads-container">
+                                            <div class="recent-ads-list-image">
+                                                <a asp-page="/Article" asp-route-id="@item.Id" asp-route-title="@regex.Replace(item.Title, "-")" class="recent-ads-list-image-inner">
+                                                    <img src="@item.ImageUrl" alt="">
+                                                </a><!-- /.recent-ads-list-image-inner -->
+                                            </div>
+                                            <!-- /.recent-ads-list-image -->
+                                            <div class="recent-ads-list-content">
+                                                <h3 class="recent-ads-list-title">
+                                                    <a asp-page="/Article" asp-route-id="@item.Id" asp-route-title="@regex.Replace(item.Title, "-")">@item.Title</a>
+                                                </h3>
+                                                <ul class="recent-ads-list-location">
+                                                    <li><a asp-page="/Article" asp-route-id="@item.Id" asp-route-title="@regex.Replace(item.Title, "-")">@item.BlogCategory.Title</a></li>
+                                                </ul>
+                                                <!-- /.recent-ads-list-price -->
+                                            </div>
+                                            <!-- /.recent-ads-list-content -->
+                                        </div>
+                                        <!-- /.recent-ads-container -->
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sidebar Widgets End -->
+                </div>
+                <!-- Middle Content Area  End -->
+            </div>
+            <!-- Row End -->
+        </div>
+        <!-- Main Container End -->
+    </section>
+
+
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout3333")
+{
+
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout4444")
+{
+    <section class="blog-pg section-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 offset-lg-1">
+                    <div class="posts">
+                        <div class="item mb-80">
+                            <div class="img">
+                                <a href="blog-details.html">
+                                    <img src="@Model.Blog.ImageUrl" alt="" class="thumparallax">
+                                </a>
+                                <div class="info">
+                                    <div class="date">
+                                        <h5>
+                                            <a href="#0">
+                                                <span class="num custom-font">@Model.Blog.Date.ToString("dd")</span>
+                                                <span>@Model.Blog.Date.ToString("MM")</span>
+                                            </a>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-10 offset-lg-1">
+                                    <div class="content">
+
+                                        <h4 class="title">
+                                            <a href="blog-details.html">
+                                                @Model.Blog.Title
+                                            </a>
+                                        </h4>
+                                        <p>
+                                            @Html.Raw(Model.Blog.FullDescription)
+                                        </p>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout5555")
+{
+    <div class="rs-inner-blog pt-100 pb-100 md-pt-70 md-pb-70">
+        <div class="container custom">
+            <div class="row">
+                <div class="col-lg-4 col-md-12 order-last">
+                    <div class="widget-area">
+
+
+                        <div class="categories">
+                            <div class="widget-title">
+                                <h3 class="title">Categories</h3>
+                            </div>
+                            <ul>
+                                @foreach (var item in Model.BlogCategories)
+                                {
+                                    <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8 pr-35 md-pr-15 md-mt-50">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="blog-details">
+                                <div class="bs-img mb-35">
+                                    <a href="#"> <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title"></a>
+                                </div>
+                                <div class="blog-full">
+                                    <ul class="single-post-meta">
+                                        <li>
+                                            <span class="p-date">
+                                                <i class="fa fa-calendar-check-o"></i> @Model.Blog.Date.ToString("MMM dd, yyyy")
+                                            </span>
+                                        </li>
+                                        <li>
+                                            <span class="p-date">@Model.Blog.Title  </span>
+                                        </li>
+
+                                    </ul>
+                                    <div>
+                                        @Html.Raw(Model.Blog.FullDescription)
+                                    </div>
+
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout6666")
+{
+    <section id="blog-single" class="blog-single">
+        <div class="container">
+            <!-- Blog Main Wrap -->
+            <div class="blog-main-wrap blog-list">
+                <!-- Row -->
+                <div class="row">
+                    <!-- Col -->
+                    <div class="col-lg-8">
+                        <!-- blog-wrap -->
+                        <div class="blog-wrap">
+                            <!-- blog-info-wrap -->
+                            <div class="blog-info-wrap">
+                                <!-- blog img -->
+                                <div class="blog-thumb mb-4 pb-2">
+                                    <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title" class="img-fluid">
+                                </div>
+                                <!-- Meta -->
+                                <div class="post-meta top-meta pb-4 mb-4">
+                                    <div class="pull-left">
+                                        <ul class="nav">
+                                            <li class="nav-item">
+                                                <div class="post-date">
+                                                    <span class="icon-calendar mr-2"></span>
+                                                    <a href="#">@Model.Blog.Date.ToString("dd MMM, yyyy")</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item">
+                                                <div class="post-category">
+                                                    <h2>@Model.Blog.Title</h2>
+
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                </div>
+                                <!-- Meta -->
+                                <div class="blog-content pb-5">
+                                    @Html.Raw(Model.Blog.FullDescription)
+                                </div>
+                                <!-- Meta -->
+                                <!-- Meta -->
+                            </div>
+                            <!-- blog-info-wrap -->
+                        </div>
+                        <!-- blog-wrap -->
+                        <!-- row -->
+
+                    </div>
+                    <!-- Col -->
+                    <!-- Sidebar -->
+                    <div class="col-lg-4 pl-5 px-sm-15">
+                        <div class="sidebar right-sidebar">
+                            <!-- Search -->
+                            <!-- Search -->
+                            <!-- Popular Post -->
+                            <!-- Popular Post -->
+                            <!-- Categories -->
+                            <div class="widget category-widget mb-5">
+                                <div class="widget-title">
+                                    <!-- Title -->
+                                    <h3 class="title mb-4 text-uppercase">Categories</h3>
+                                </div>
+                                <ul class="category-list">
+                                    @foreach (var item in Model.BlogCategories)
+                                    {
+                                        <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                    }
+                                </ul>
+                            </div>
+                            <!-- Categories -->
+                            <!-- CTA -->
+                            <!-- CTA -->
+                            <!--Testimonials Owl Slider-->
+                            <!-- Tag Cloud -->
+                            <!-- Tag Cloud -->
+                        </div>
+                        <!-- Sidebar -->
+                    </div>
+                    <!-- Col -->
+                </div>
+                <!-- Row -->
+            </div>
+            <!-- Blog Main Wrap -->
+        </div>
+        <!-- Container -->
+    </section>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout7777")
+{
+    <section class="blog_single_details">
+        <div class="container">
+
+
+
+            <div class="row">
+
+                <div class="col-lg-8 col-md-12 col-sm-12">
+                    <div class="left_blog_details">
+                        <div class="blog_single_inner">
+                            <div class="image">
+                                <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title" class="img-fluid" />
+                            </div>
+                            <div class="content_inner">
+
+                                <ul>
+
+
+                                    <li><span class="icon-calendar"></span>@Model.Blog.Date.ToString("dd MMM, yyyy")</li>
+
+                                </ul>
+                                <h2>
+                                    @Model.Blog.Title
+                                </h2>
+                                <p>
+                                    @Html.Raw(Model.Blog.FullDescription)
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="col-lg-4 co-md-12 col-sm-12">
+                    <div class="blog_siderbar">
+
+                        <div class="category_blog">
+                            <h2 class="side_title">Categories</h2>
+                            <div class="cat_inner inner_box">
+                                <ul>
+                                    @foreach (var item in Model.BlogCategories)
+                                    {
+                                        <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </section>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout8888")
+{
+    <section class="blg-info-2">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="box-shadow">
+                        <div class="post shadow-none">
+                            <div class="post-image">
+                                <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title">
+                                <div class="post-date">@Model.Blog.Date.ToString("dd MMM, yyyy")</div>
+                            </div>
+                            <div class="post-desc pb-0">
+                                <div class="post-title">
+                                    <h4>  @Model.Blog.Title</h4>
+                                </div>
+                                <p class="mb-0 line-h-3">@Html.Raw(Model.Blog.FullDescription)</p>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-12 sidebar mt-5 mt-lg-0">
+                    <div class="widget">
+                        <div class="widget-search">
+                            <form class="form-inline form">
+                                <div class="widget-searchbox">
+                                    <button type="submit" class="search-btn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <input type="text" placeholder="Search..." class="form-control">
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="widget">
+                        <h5 class="widget-title">Categories</h5>
+                        <ul class="widget-categories list-unstyled">
+                            @foreach (var xitem in Model.BlogCategories)
+                            {
+                                <li>
+                                    <a asp-page="/Category" asp-route-id="@xitem.Id" asp-route-title="@xitem.Title">@xitem.Title</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="widget">
+                        <h5 class="widget-title">Recent Post</h5>
+                        <div class="recent-post">
+                            <ul class="list-unstyled">
+                                @foreach (var item in Model.Blogs)
+                                {
+
+                                    <li class="mb-3">
+                                        <div class="recent-post-thumb">
+                                            <img class="img-fluid" src="@item.ImageUrl" alt="">
+                                        </div>
+                                        <div class="recent-post-desc">
+                                            <a asp-page="/Article" asp-route-id="@item.Id" asp-route-title="@regex.Replace(item.Title, "-")">@item.Title</a>
+                                            <span><i class="fas fa-calendar-alt text-theme me-1"></i> @item.Date.ToString("dd MMM, yyyy")</span>
+                                        </div>
+                                    </li>
+                                }
+
+                            </ul>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout9999")
+{
+    <div class="issues-around-us-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="blog-details-items">
+                        <div class="thumb">
+                            <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title">
+                        </div>
+                        <div class="blog-details-item-header">
+                            <h6>@Model.Blog.Date.ToString("dd MMM, yyyy")</h6>
+                        </div>
+                        <h2 class="title"> @Model.Blog.Title</h2>
+                        <p>@Html.Raw(Model.Blog.FullDescription)</p>
+
+
+                    </div>
+
+                </div>
+                <div class="col-lg-4">
+                    <div class="widget-area">
+
+
+                        <div class="widget widget_archive">
+                            <h3 class="widget-title style-01">category</h3>
+                            <ul>
+                                @foreach (var item in Model.BlogCategories)
+                                {
+                                    <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                }
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.ConfigSetting.TemplateLayoutKey == "Layout13131313")
+{
+    <section class="blog-details">
+        <div class="container">
+            <div class="row">
+                <div class="col-xl-8 col-lg-7">
+                    <div class="blog-details__content">
+                        <div class="blog-details__img-1">
+                            <div class="inner">
+                                <img src="@Model.Blog.ImageUrl" alt="@Model.Blog.Title">
+                            </div>
+                        </div>
+
+                        <div class="blog-details__content-meta-box">
+                            <ul class="list-unstyled">
+                                 
+                                <li>
+                                    <div class="icon">
+                                        <span class="icon-calendar"></span>
+                                    </div>
+
+                                    <div class="text-box">
+                                        <p>@Model.Blog.Date.ToString("dd MMM, yyyy")</p>
+                                    </div>
+                                </li>
+                                 
+                            </ul>
+                        </div>
+
+                        <div class="blog-details__content-text1">
+                            <h2>@Model.Blog.Title</h2>
+                            @Html.Raw(Model.Blog.FullDescription)
+                        </div>
+
+                          
+                    </div>
+                </div>
+
+                <!--Start Sidebar-->
+                <div class="col-xl-4 col-lg-5">
+                    <div class="sidebar">
+                         
+                        <!--Start Sidebar Single-->
+                        <div class="sidebar__single sidebar__category wow fadeInUp animated" data-wow-delay=".1s" style="visibility: visible; animation-delay: 0.1s; animation-name: fadeInUp;">
+                            <h3 class="sidebar__title">Categories</h3>
+                            <ul class="sidebar__category-list list-unstyled">
+                                @foreach (var item in Model.BlogCategories)
+                                {
+                                    <li> <a href=""> @item.Title <span>(@item.Blogs.Count())</span> </a> </li>
+                                }
+                                 
+                            </ul>
+                        </div>
+                       
+                    </div>
+                </div>
+                <!--End Sidebar-->
+            </div>
+        </div>
+    </section>
+}
+
+
+

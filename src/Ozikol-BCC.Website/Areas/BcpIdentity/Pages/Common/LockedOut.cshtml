@@ -1,0 +1,16 @@
+@page
+@model LockedOutModel
+@attribute [AllowAnonymous]
+@{
+    ViewData["Title"] = "Locked Out";
+}
+
+@* Shared lockout outcome for signed-in shell contexts. Keep the view generic and move
+   unlock rules into Console policy and administrator workflows. *@
+<section class="m3-card">
+    <div class="empty-state">
+        <span class="material-symbols-outlined">lock</span>
+        <strong>Account locked</strong>
+        <span>The account is currently locked by policy or administrator action.</span>
+    </div>
+</section>

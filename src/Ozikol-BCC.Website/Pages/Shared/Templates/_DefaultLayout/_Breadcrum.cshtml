@@ -1,0 +1,27 @@
+@model Ozikol_BCC.Domain.Models.WebPage
+@using System.Text.RegularExpressions;
+
+@{
+    var xsetting = ViewBag.ConfigSetting; var configsetting = ViewBag.ConfigSetting;
+    var supersetting = ViewBag.ManagementSetting; var config = ViewBag.ConfigSetting;
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+    string murl = "";
+    if (!String.IsNullOrEmpty(Model.ImageUrl))
+    {
+        murl = Model.ImageUrl;
+    }
+    else
+    {
+        murl = ViewBag.ConfigSetting.DefaultTitleBackgroundUrl;
+    }
+}
+
+<div class="page-title-section" style="background-image: url(@murl);">
+    <div class="container">
+        <h1>@Model.Title</h1>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="#">@Model.Title</a></li>
+        </ul>
+    </div>
+</div>

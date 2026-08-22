@@ -1,0 +1,10 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Workspace.NotesModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "My Notes";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel { Eyebrow = "Workspace", Title = "My Notes", Subtitle = "Review notes that administrators marked visible to you.", Icon = "sticky_note_2", BackUrl = "/BcpWorkspace/Workspace/Dashboard" })
+<partial name="/Areas/BcpUserManagement/Pages/Common/NoteList.cshtml" model="Model.Notes" />
+<script type="application/json" id="bcp-page-tour">[{"selector":"[data-tour='note-list']","title":"Visible notes","text":"Only non-private notes are shown in Workspace. Private admin notes remain Console-only.","placement":"top"}]</script>

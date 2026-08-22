@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Buttons Showcase</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards (Accordion) -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Dashboards" data-url="index.html" data-icon="dashboard" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="console-dashboard.html" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Console Home</span>
+                </div>
+              </a>
+              <button type="button" class="pin-btn" data-title="Console Home" data-url="console-dashboard.html" data-icon="space_dashboard" title="Pin Task">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html#analytics" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Analytics</span>
+                </div>
+              </a>
+              <button type="button" class="pin-btn" data-title="Analytics" data-url="index.html#analytics" data-icon="analytics" title="Pin Task">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html#crm" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>CRM</span>
+                </div>
+              </a>
+              <button type="button" class="pin-btn" data-title="CRM" data-url="index.html#crm" data-icon="groups" title="Pin Task">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="sub-nav-wrapper">
+              <a href="index.html" class="sub-nav-item">
+                <div class="sub-nav-content">
+                  <span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>
+                  <span>Ecommerce</span>
+                </div>
+              </a>
+              <button type="button" class="pin-btn" data-title="Ecommerce" data-url="index.html" data-icon="shopping_cart" title="Pin Task">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Group: Apps -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">grid_view</span>
+            <span>Apps</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Apps" data-url="javascript:void(0)" data-icon="grid_view" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="javascript:void(0)" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Calendar</span></a></li>
+          <li><a href="javascript:void(0)" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Chat</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Base UI" data-url="buttons.html" data-icon="architecture" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Widgets" data-url="widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Forms" data-url="forms.html" data-icon="edit_document" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Tables" data-url="list.html" data-icon="table_chart" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <!-- Company Icon Mark in Topbar -->
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <!-- Sleek Topbar Search Input Box (Desktop) -->
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <!-- Pinned Task Bar -->
+        <div id="pinned-taskbar" class="pinned-taskbar">
+          <!-- Dynamically populated chips -->
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        
+        <!-- Mobile Search Icon Button -->
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <!-- Google-Style 3x6 Feature Grid Dropdown -->
+        <div class="apps-grid-wrapper">
+          <button type="button" class="topbar-action-btn" id="apps-grid-btn" title="Google-style Apps">
+            <span class="material-symbols-outlined">grid_view</span>
+          </button>
+
+          <div id="apps-grid-dropdown" class="apps-grid-dropdown">
+            <div class="apps-grid-header">Your Favorites</div>
+            <div class="apps-grid-container">
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+                  <span class="material-symbols-outlined">account_circle</span>
+                </div>
+                <span class="app-grid-label">Account</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(234, 179, 8, 0.12); color: #eab308;">
+                  <span class="material-symbols-outlined">add_to_drive</span>
+                </div>
+                <span class="app-grid-label">Drive</span>
+              </a>
+              <a href="index.html#analytics" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+                  <span class="material-symbols-outlined">analytics</span>
+                </div>
+                <span class="app-grid-label">Analytics</span>
+              </a>
+              <a href="index.html#crm" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                  <span class="material-symbols-outlined">mail</span>
+                </div>
+                <span class="app-grid-label">Gmail</span>
+              </a>
+              <a href="buttons.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+                  <span class="material-symbols-outlined">smart_button</span>
+                </div>
+                <span class="app-grid-label">Buttons</span>
+              </a>
+              <a href="cards.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">
+                  <span class="material-symbols-outlined">style</span>
+                </div>
+                <span class="app-grid-label">Cards</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Calendar Widget Dropdown -->
+        <div class="calendar-wrapper">
+          <button type="button" class="topbar-action-btn" id="calendar-btn" title="Calendar">
+            <span class="material-symbols-outlined">calendar_today</span>
+          </button>
+
+          <div id="calendar-dropdown" class="calendar-dropdown-menu">
+            <div class="calendar-header">
+              <span class="calendar-month-title">July 2026</span>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div class="calendar-days-grid">
+              <span class="day-cell empty">28</span><span class="day-cell empty">29</span><span class="day-cell empty">30</span>
+              <span class="day-cell">1</span><span class="day-cell">2</span><span class="day-cell">3</span><span class="day-cell">4</span>
+              <span class="day-cell">5</span><span class="day-cell">6</span><span class="day-cell">7</span><span class="day-cell">8</span>
+              <span class="day-cell">9</span><span class="day-cell">10</span><span class="day-cell">11</span><span class="day-cell">12</span>
+              <span class="day-cell">13</span><span class="day-cell">14</span><span class="day-cell">15</span><span class="day-cell">16</span>
+              <span class="day-cell">17</span><span class="day-cell">18</span><span class="day-cell">19</span><span class="day-cell">20</span>
+              <span class="day-cell">21</span><span class="day-cell today">22</span><span class="day-cell">23</span><span class="day-cell">24</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fullscreen Toggle -->
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <!-- Notifications Bell with Badge 3 & Dropdown -->
+        <div class="notifications-wrapper">
+          <button type="button" class="topbar-action-btn" id="notifications-btn" title="Notifications">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="action-badge badge-notify">3</span>
+          </button>
+
+          <div id="notifications-dropdown" class="notifications-dropdown-menu">
+            <div class="notifications-header">
+              <span class="notifications-title">Notifications <span class="badge-pill" style="background:var(--sidebar-active-color); font-size:10px;">3 New</span></span>
+            </div>
+            <div class="notifications-list">
+              <a href="javascript:void(0)" class="notification-item">
+                <div class="notification-avatar-icon" style="background:#0284c7;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">task_alt</span>
+                </div>
+                <div class="notification-body">
+                  <span class="notification-item-title">Buttons Page Created</span>
+                  <span class="notification-item-desc">Material 3 Web Component Buttons Showcase updated</span>
+                  <span class="notification-item-time">Just now</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pinned Tasks Dropdown Menu -->
+        <div class="pinned-dropdown-wrapper">
+          <button type="button" class="topbar-action-btn" id="pinned-tasks-btn" title="Pinned Tasks">
+            <span class="material-symbols-outlined">push_pin</span>
+          </button>
+          <span id="pinned-count" class="pinned-count-badge" style="display:none;">0</span>
+          
+          <div id="pinned-menu-dropdown" class="pinned-menu-dropdown">
+            <div class="pinned-menu-header">
+              <span>📌 Pinned Tasks</span>
+              <button id="pin-current-page-btn" class="pinned-action-btn">+ Pin Page</button>
+            </div>
+            <div id="pinned-menu-list" class="pinned-menu-list"></div>
+          </div>
+        </div>
+
+        <!-- User Profile Trigger & Dropdown Menu -->
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+
+          <!-- User Profile Dropdown Card -->
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+            
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">account_circle</span>
+                <span>Profile</span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Logout</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Collapsible Mobile Search Input Bar -->
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Page Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Material Design 3 & Velzon Buttons Showcase</h2>
+            <p style="margin: 0; opacity: 0.9; font-size: 14px;">Explore native Google Material 3 Web Component buttons, Floating Action Buttons (FABs), Icon Buttons, Segmented Controls, and custom Velzon color variants.</p>
+          </div>
+          <md-filled-button style="--md-filled-button-container-color: #FFFFFF; --md-filled-button-label-text-color: #0284c7;">
+            <md-icon slot="icon">download</md-icon>
+            Export Components
+          </md-filled-button>
+        </div>
+      </div>
+
+      <!-- Section 1: Core Material 3 Button Types -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">1. Material 3 Core Button Variants</span>
+        </div>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Use filled buttons for primary actions, tonal & elevated buttons for secondary emphasis, outlined for medium emphasis, and text buttons for subtle actions.</p>
+        
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+          <md-filled-button>Filled Button</md-filled-button>
+          <md-filled-tonal-button>Tonal Button</md-filled-tonal-button>
+          <md-elevated-button>Elevated Button</md-elevated-button>
+          <md-outlined-button>Outlined Button</md-outlined-button>
+          <md-text-button>Text Button</md-text-button>
+        </div>
+      </div>
+
+      <!-- Section 2: Buttons with Icons -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">2. Buttons with Material Symbols Icons</span>
+        </div>
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+          <md-filled-button>
+            <md-icon slot="icon">send</md-icon>
+            Send Message
+          </md-filled-button>
+
+          <md-filled-tonal-button>
+            <md-icon slot="icon">add_task</md-icon>
+            Add Task
+          </md-filled-tonal-button>
+
+          <md-elevated-button>
+            <md-icon slot="icon">cloud_upload</md-icon>
+            Upload File
+          </md-elevated-button>
+
+          <md-outlined-button>
+            <md-icon slot="icon">tune</md-icon>
+            Filter Results
+          </md-outlined-button>
+
+          <md-text-button>
+            <md-icon slot="icon">delete</md-icon>
+            Remove Item
+          </md-text-button>
+        </div>
+      </div>
+
+      <!-- Section 3: Floating Action Buttons (FABs) -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">3. Floating Action Buttons (FAB & Extended FAB)</span>
+        </div>
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+          <md-fab aria-label="Add">
+            <md-icon slot="icon">add</md-icon>
+          </md-fab>
+
+          <md-fab size="small" aria-label="Edit">
+            <md-icon slot="icon">edit</md-icon>
+          </md-fab>
+
+          <md-fab size="large" aria-label="Compose">
+            <md-icon slot="icon">edit_note</md-icon>
+          </md-fab>
+
+          <md-fab label="Create New Project" extended>
+            <md-icon slot="icon">add_circle</md-icon>
+          </md-fab>
+
+          <md-fab label="Schedule Event" extended variant="secondary">
+            <md-icon slot="icon">event</md-icon>
+          </md-fab>
+        </div>
+      </div>
+
+      <!-- Section 4: Icon Buttons & Toggles -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">4. Icon Buttons & Toggle States</span>
+        </div>
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+          <md-icon-button aria-label="Search">
+            <md-icon>search</md-icon>
+          </md-icon-button>
+
+          <md-filled-icon-button aria-label="Favorite">
+            <md-icon>favorite</md-icon>
+          </md-filled-icon-button>
+
+          <md-filled-tonal-icon-button aria-label="Settings">
+            <md-icon>settings</md-icon>
+          </md-filled-tonal-icon-button>
+
+          <md-outlined-icon-button aria-label="Share">
+            <md-icon>share</md-icon>
+          </md-outlined-icon-button>
+        </div>
+      </div>
+
+      <!-- Section 5: Velzon Color Status Variations -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">5. Custom Status Color Button Variants</span>
+        </div>
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+          <!-- Primary Sky Blue -->
+          <button type="button" class="btn-custom btn-primary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
+            Primary Action
+          </button>
+
+          <!-- Success Green -->
+          <button type="button" class="btn-custom btn-success">
+            <span class="material-symbols-outlined" style="font-size: 18px;">verified</span>
+            Success Verified
+          </button>
+
+          <!-- Danger Red -->
+          <button type="button" class="btn-custom btn-danger">
+            <span class="material-symbols-outlined" style="font-size: 18px;">delete_forever</span>
+            Delete Record
+          </button>
+
+          <!-- Warning Orange -->
+          <button type="button" class="btn-custom btn-warning">
+            <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+            Warning Alert
+          </button>
+
+          <!-- Info Cyan -->
+          <button type="button" class="btn-custom btn-info">
+            <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
+            System Details
+          </button>
+        </div>
+
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 16px;">
+          <!-- Soft Color Tinted Buttons -->
+          <button type="button" class="btn-custom btn-soft-primary">Soft Primary</button>
+          <button type="button" class="btn-custom btn-soft-success">Soft Success</button>
+          <button type="button" class="btn-custom btn-soft-danger">Soft Danger</button>
+          <button type="button" class="btn-custom btn-soft-warning">Soft Warning</button>
+          <button type="button" class="btn-custom btn-soft-info">Soft Info</button>
+        </div>
+      </div>
+
+      <!-- Section 6: Disabled & Loading States -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">6. Disabled States & Loading Indicators</span>
+        </div>
+        <div class="component-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+          <md-filled-button disabled>Disabled Filled</md-filled-button>
+          <md-outlined-button disabled>Disabled Outlined</md-outlined-button>
+          <md-text-button disabled>Disabled Text</md-text-button>
+
+          <button type="button" class="btn-custom btn-primary" disabled style="opacity: 0.65; cursor: not-allowed;">
+            <span class="material-symbols-outlined spin-icon" style="font-size: 18px; animation: spin 1s linear infinite;">sync</span>
+            Processing Order...
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 7: Button Groups (2, 3, 4, and 5 Buttons Grouped Together) -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">7. Button Groups (2, 3, 4, & 5 Buttons Joined Together)</span>
+        </div>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Seamlessly join 2, 3, 4, or 5 buttons in a unified container with merged borders and outer rounded corners.</p>
+
+        <!-- 2-Button Group -->
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 10px;">A) 2-Button Group (e.g. Action / Navigation)</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <div class="btn-group">
+              <button type="button" class="btn-custom btn-primary">
+                <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> Previous
+              </button>
+              <button type="button" class="btn-custom btn-primary">
+                Next <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span>
+              </button>
+            </div>
+
+            <div class="btn-group-outlined">
+              <button type="button" class="btn-custom active">Grid View</button>
+              <button type="button" class="btn-custom">List View</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Button Group -->
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 10px;">B) 3-Button Group (e.g. Time Range Filter)</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <div class="btn-group">
+              <button type="button" class="btn-custom btn-info">Daily</button>
+              <button type="button" class="btn-custom btn-info">Weekly</button>
+              <button type="button" class="btn-custom btn-info">Monthly</button>
+            </div>
+
+            <div class="btn-group-outlined">
+              <button type="button" class="btn-custom">Small</button>
+              <button type="button" class="btn-custom active">Medium</button>
+              <button type="button" class="btn-custom">Large</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-Button Group -->
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 10px;">C) 4-Button Group (e.g. Export Tools)</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <div class="btn-group">
+              <button type="button" class="btn-custom btn-soft-primary">
+                <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span> Copy
+              </button>
+              <button type="button" class="btn-custom btn-soft-primary">
+                <span class="material-symbols-outlined" style="font-size:16px;">csv</span> CSV
+              </button>
+              <button type="button" class="btn-custom btn-soft-primary">
+                <span class="material-symbols-outlined" style="font-size:16px;">table_chart</span> Excel
+              </button>
+              <button type="button" class="btn-custom btn-soft-primary">
+                <span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5-Button Group -->
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 10px;">D) 5-Button Group (e.g. Rating / Pagination)</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <div class="btn-group-outlined">
+              <button type="button" class="btn-custom active">1</button>
+              <button type="button" class="btn-custom">2</button>
+              <button type="button" class="btn-custom">3</button>
+              <button type="button" class="btn-custom">4</button>
+              <button type="button" class="btn-custom">5</button>
+            </div>
+
+            <div class="btn-group">
+              <button type="button" class="btn-custom btn-success">★ 1</button>
+              <button type="button" class="btn-custom btn-success">★ 2</button>
+              <button type="button" class="btn-custom btn-success">★ 3</button>
+              <button type="button" class="btn-custom btn-success">★ 4</button>
+              <button type="button" class="btn-custom btn-success">★ 5</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Material 3 Segmented Button Set -->
+        <div>
+          <span style="font-size: 13px; font-weight: 700; color: var(--sidebar-header-color); display: block; margin-bottom: 10px;">E) Material 3 Segmented Button Controls</span>
+          <md-outlined-segmented-button-set>
+            <md-outlined-segmented-button label="Standard Shipping" selected></md-outlined-segmented-button>
+            <md-outlined-segmented-button label="Express Freight"></md-outlined-segmented-button>
+            <md-outlined-segmented-button label="Overnight Air"></md-outlined-segmented-button>
+          </md-outlined-segmented-button-set>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Custom Button Helper Styles -->
+  <style>
+    .btn-custom {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background-color: #0284c7; color: #FFFFFF; }
+    .btn-primary:hover { background-color: #0369a1; }
+    
+    .btn-success { background-color: #0ab39c; color: #FFFFFF; }
+    .btn-success:hover { background-color: #099885; }
+
+    .btn-danger { background-color: #f06548; color: #FFFFFF; }
+    .btn-danger:hover { background-color: #d95338; }
+
+    .btn-warning { background-color: #f7b84b; color: #FFFFFF; }
+    .btn-warning:hover { background-color: #e0a33c; }
+
+    .btn-info { background-color: #299cdb; color: #FFFFFF; }
+    .btn-info:hover { background-color: #2086be; }
+
+    /* Soft Tonal Variants */
+    .btn-soft-primary { background-color: rgba(2, 132, 199, 0.12); color: #0284c7; border-color: rgba(2, 132, 199, 0.2); }
+    .btn-soft-primary:hover { background-color: #0284c7; color: #FFFFFF; }
+
+    .btn-soft-success { background-color: rgba(10, 179, 156, 0.12); color: #0ab39c; border-color: rgba(10, 179, 156, 0.2); }
+    .btn-soft-success:hover { background-color: #0ab39c; color: #FFFFFF; }
+
+    .btn-soft-danger { background-color: rgba(240, 101, 72, 0.12); color: #f06548; border-color: rgba(240, 101, 72, 0.2); }
+    .btn-soft-danger:hover { background-color: #f06548; color: #FFFFFF; }
+
+    .btn-soft-warning { background-color: rgba(247, 184, 75, 0.12); color: #f7b84b; border-color: rgba(247, 184, 75, 0.2); }
+    .btn-soft-warning:hover { background-color: #f7b84b; color: #FFFFFF; }
+
+    .btn-soft-info { background-color: rgba(41, 156, 219, 0.12); color: #299cdb; border-color: rgba(41, 156, 219, 0.2); }
+    .btn-soft-info:hover { background-color: #299cdb; color: #FFFFFF; }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Layout & Interactions Script -->
+  <script src="layout.js"></script>
+</body>
+</html>

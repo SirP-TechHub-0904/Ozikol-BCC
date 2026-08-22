@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Ozikol-BCC.Persistence.EF.DbMigrator-92BA12E9-5130-4C9D-8FD5-90F4B91BC73A</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>    
+    <Content Include="..\Ozikol-BCC.Api\appsettings*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Ozikol-BCC.Api\.env">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Persistence.EF.SQL\Ozikol-BCC.Persistence.EF.SQL.csproj" />
+  </ItemGroup>  
+</Project>
+
+
+
+

@@ -1,0 +1,52 @@
+@page "{id:guid}"
+@model Ozikol_BCC.Website.Areas.BcpGroups.Pages.Workspace.FilesModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = Model.Group.Title + " Shared Files";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "Group Workspace",
+    Title = "Shared Media & Files",
+    Subtitle = "Group: " + Model.Group.Title + " (" + Model.Files.Count + " files shared)",
+    Icon = "folder",
+    BackUrl = "/BcpGroups/Workspace/Chat/" + Model.Group.Id,
+    BackText = "Back to Chat"
+})
+
+<section class="m3-card bcp-card">
+    <div class="bcp-table-wrap">
+        <table class="bcp-table">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Size</th>
+                    <th>Uploaded By</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Files.Any())
+                {
+                    <tr><td colspan="5" class="text-center py-4 text-muted">No files shared in this group chat yet.</td></tr>
+                }
+                @foreach (var f in Model.Files)
+                {
+                    <tr>
+                        <td><strong><span class="material-symbols-outlined align-middle me-1">description</span>@f.FileName</strong></td>
+                        <td>@(f.FileSize / 1024) KB</td>
+                        <td>@f.UploadedByUser?.FullName</td>
+                        <td>@f.UploadedAt.ToString("MMM dd, yyyy")</td>
+                        <td class="bcp-table-actions">
+                            <a class="console-btn primary" href="@f.FileUrl" target="_blank">
+                                <span class="material-symbols-outlined">download</span>Download
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

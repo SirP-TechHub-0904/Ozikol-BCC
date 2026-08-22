@@ -1,0 +1,197 @@
+@page
+@model Ozikol.Central.Pages.IndexModel
+@{
+    ViewData["Title"] = "Ozikol BCC - Enterprise Multi-Tenant Cloud & Modular MIS";
+}
+
+<div class="marketing-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-glow-1"></div>
+        <div class="hero-glow-2"></div>
+        <div class="marketing-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>Ozikol BCC Enterprise SaaS Cloud</span>
+                </div>
+                <h1 class="hero-headline">
+                    Own Your Modular <span class="gradient-text">Multi-Tenant MIS</span> & Digital Platform.
+                </h1>
+                <p class="hero-subheadline">
+                    Instant automated provisioning of dedicated SQL databases with isolated schemas, executive governance, multi-tier finance, digital storefronts, and customizable layout marketplaces.
+                </p>
+
+                <div class="hero-cta-group">
+                    <a asp-page="/Signup" class="btn-hero-primary">
+                        <span>Get Started to Own Your MIS</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <a asp-page="/Marketplace" class="btn-hero-secondary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                        <span>Explore Marketplace</span>
+                    </a>
+                </div>
+
+                <!-- Trust Metrics Bar -->
+                <div class="hero-trust-bar">
+                    <div class="trust-stat">
+                        <span class="trust-val">100%</span>
+                        <span class="trust-label">Database Isolation</span>
+                    </div>
+                    <div class="trust-sep"></div>
+                    <div class="trust-stat">
+                        <span class="trust-val">&lt; 5ms</span>
+                        <span class="trust-label">DMV Partition Analytics</span>
+                    </div>
+                    <div class="trust-sep"></div>
+                    <div class="trust-stat">
+                        <span class="trust-val">20%</span>
+                        <span class="trust-label">Recurring Affiliate Payout</span>
+                    </div>
+                    <div class="trust-sep"></div>
+                    <div class="trust-stat">
+                        <span class="trust-val">Zero</span>
+                        <span class="trust-label">Shared Tenant Tables</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive MIS Visual Preview Showcase -->
+            <div class="hero-mockup-wrap">
+                <div class="mockup-frame">
+                    <div class="mockup-top-bar">
+                        <div class="mockup-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                        <div class="mockup-url-bar">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span>https://acme-corp.localhost:4200/dashboard</span>
+                        </div>
+                        <span class="mockup-tag">Live MIS Instance</span>
+                    </div>
+                    <div class="mockup-content-grid">
+                        <div class="mockup-sidebar">
+                            <div class="mock-side-brand">🏢 Acme Workspace</div>
+                            <div class="mock-side-item active">📊 Executive Overview</div>
+                            <div class="mock-side-item">💳 Multi-Tier Finance</div>
+                            <div class="mock-side-item">🛍️ Storefront & Products</div>
+                            <div class="mock-side-item">👥 Member Governance</div>
+                            <div class="mock-side-item">🎨 Template Themes</div>
+                            <div class="mock-side-item">⚙️ Organization Config</div>
+                        </div>
+                        <div class="mockup-main">
+                            <div class="mock-stat-row">
+                                <div class="mock-stat-card">
+                                    <span class="mock-stat-title">Monthly Revenue</span>
+                                    <span class="mock-stat-val text-success">$148,250.00</span>
+                                </div>
+                                <div class="mock-stat-card">
+                                    <span class="mock-stat-title">Active Members</span>
+                                    <span class="mock-stat-val text-primary">1,420 Active</span>
+                                </div>
+                                <div class="mock-stat-card">
+                                    <span class="mock-stat-title">Dedicated SQL DB</span>
+                                    <span class="mock-stat-val text-warning font-mono">oz_db_acme_7x9q</span>
+                                </div>
+                            </div>
+                            <div class="mock-table-card">
+                                <div class="mock-table-head">Real-Time Financial Ledger & Transactions</div>
+                                <div class="mock-table-row"><span>TX-9842 • Enterprise License</span><span class="text-success">+$12,500</span></div>
+                                <div class="mock-table-row"><span>TX-9841 • Storefront Product Sale</span><span class="text-success">+$1,450</span></div>
+                                <div class="mock-table-row"><span>TX-9840 • Member Subscription</span><span class="text-success">+$290</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Pillars Section -->
+    <section class="section-marketing">
+        <div class="marketing-container">
+            <div class="section-header-center">
+                <span class="section-badge">ENTERPRISE ARCHITECTURE</span>
+                <h2 class="section-main-heading">Engineered for Complete Data Isolation & Scale</h2>
+                <p class="section-main-sub">Every organization provisioned on Ozikol BCC receives a completely autonomous ecosystem.</p>
+            </div>
+
+            <div class="pillars-grid">
+                <div class="pillar-card">
+                    <div class="pillar-icon">🛡️</div>
+                    <h3 class="pillar-title">Dedicated Database Isolation</h3>
+                    <p class="pillar-desc">
+                        No shared tables or noisy-neighbor vulnerabilities. Every workspace gets a randomized database name (<code>oz_db_*</code>) and dedicated SQL Server credentials.
+                    </p>
+                    <a asp-page="/Features" class="pillar-link">Learn about DB security →</a>
+                </div>
+
+                <div class="pillar-card">
+                    <div class="pillar-icon">💳</div>
+                    <h3 class="pillar-title">Executive Multi-Tier Finance</h3>
+                    <p class="pillar-desc">
+                        Comprehensive ledger management, multi-currency invoicing, transaction records, automated accounting, and real-time revenue analytics.
+                    </p>
+                    <a asp-page="/Features" class="pillar-link">Explore finance modules →</a>
+                </div>
+
+                <div class="pillar-card">
+                    <div class="pillar-icon">🛍️</div>
+                    <h3 class="pillar-title">Dynamic Storefront & CMS</h3>
+                    <p class="pillar-desc">
+                        Built-in e-commerce catalog, payment processing, drag-and-drop web sliders, dynamic CMS pages, and instant template switching from the Marketplace.
+                    </p>
+                    <a asp-page="/Marketplace" class="pillar-link">Browse Marketplace templates →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Affiliate Program Banner Callout -->
+    <section class="affiliate-banner-section">
+        <div class="marketing-container">
+            <div class="affiliate-banner-card">
+                <div class="affiliate-banner-left">
+                    <span class="affiliate-tag">PARTNER & REFERRAL PROGRAM</span>
+                    <h2 class="affiliate-banner-heading">Join Our Affiliate Program & Earn 20% Recurring Commission</h2>
+                    <p class="affiliate-banner-sub">
+                        Refer organizations, enterprises, and communities to Ozikol BCC. Earn 20% lifetime recurring payouts on every active tenant subscription.
+                    </p>
+                    <div class="affiliate-highlights">
+                        <div class="aff-highlight-item">✓ Real-time referral link tracking</div>
+                        <div class="aff-highlight-item">✓ Monthly automated payouts</div>
+                        <div class="aff-highlight-item">✓ Dedicated marketing collateral</div>
+                    </div>
+                </div>
+                <div class="affiliate-banner-right">
+                    <a asp-page="/Affiliate" class="btn-affiliate-cta">
+                        <span>Become an Affiliate Partner</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="bottom-cta-section">
+        <div class="marketing-container">
+            <div class="bottom-cta-card">
+                <h2 class="bottom-cta-title">Ready to Launch Your Organization's MIS?</h2>
+                <p class="bottom-cta-sub">Join hundreds of growing organizations governed by Ozikol BCC Cloud.</p>
+                <div class="bottom-cta-actions">
+                    <a asp-page="/Signup" class="btn-hero-primary">
+                        <span>Get Started to Own Your MIS</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <a asp-page="/Pricing" class="btn-hero-secondary">
+                        <span>View Pricing Plans</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

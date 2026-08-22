@@ -1,0 +1,37 @@
+@model Ozikol_BCC.Application.Queries.PageSectionQueries.GetPageSectionsByCriteriaQuery
+@using MediatR
+@using Ozikol_BCC.Application.Queries.SliderQueries
+@inject IMediator Mediator
+@using System.Text.RegularExpressions;
+@using Ozikol_BCC.Application.Services;
+@{
+    var ModelList = await Mediator.Send(Model);
+    var sliderData = await Mediator.Send(new GetSliderAggregatedDataQuery());
+    
+    // Allow Live Preview System to override active config key
+    var themeData = Context.Request.Query["previewTheme"].FirstOrDefault() ?? sliderData.ConfigSetting.TemplateLayoutKey;
+    var themeFolderName = themeData;
+
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+    int listcountforhome = 500;
+    string homeUrl = Url.Page("/Index");
+    string currentUrl = Context.Request.Path;
+    bool isHomePage = currentUrl.Equals(homeUrl, StringComparison.OrdinalIgnoreCase);
+    
+    ViewBag.take3 = 3;
+    ViewBag.pageset = isHomePage ? "home" : "page";
+}
+
+@foreach (var item in ModelList)
+{
+    try
+    {
+        @await Html.PartialAsync($"~/Pages/Shared/Templates/{themeFolderName}/_Section{item.TemplateKey}.cshtml", item)
+    }
+    catch (Exception ex)
+    {
+        <div style="border:1px dashed red; padding:10px; margin: 10px 0;">
+            <b>Error loading section template (@item.TemplateKey) for theme (@themeData):</b> @ex.Message
+        </div>
+    }
+}

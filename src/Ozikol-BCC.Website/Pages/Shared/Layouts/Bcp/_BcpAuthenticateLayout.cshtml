@@ -1,0 +1,86 @@
+@using Microsoft.EntityFrameworkCore
+@using Ozikol_BCC.Domain.Models
+@inject Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext DbContext
+@{
+    ConfigSetting? bcpConfig = null;
+
+    try
+    {
+        bcpConfig = await DbContext.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+    }
+    catch
+    {
+        // Public auth pages must still load when setup/database state is incomplete.
+    }
+
+    var authLabel = bcpConfig?.DashboardTitle
+        ?? bcpConfig?.WebsiteTitle
+        ?? bcpConfig?.CompanyName
+        ?? "BCP authentication";
+    var authEyebrow = bcpConfig?.LoginNoteTitle ?? bcpConfig?.DashboardTitle ?? "Business Command Platform";
+    var authTitle = bcpConfig?.LoginTitle ?? "Secure access to every enabled BCP feature.";
+    var authNote = bcpConfig?.LoginNote ?? "Console, Workspace, role control, and feature permissions operate from one governed identity layer.";
+    var authFooter = bcpConfig?.LoginNoteFooter ?? "Protected access for Console and Workspace operations.";
+    var visualStyle = !string.IsNullOrWhiteSpace(bcpConfig?.LoginBackgroundImageUrl)
+        ? $"background-image: linear-gradient(135deg, rgba(245, 249, 255, 0.94), rgba(228, 240, 255, 0.88)), url('{bcpConfig.LoginBackgroundImageUrl}');"
+        : null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @await Html.PartialAsync("Layouts/Bcp/_BcpHeadTitle")
+    @await Html.PartialAsync("Layouts/Bcp/_BcpDashboardCSS")
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="bcp-authenticate-body">
+    @* Public authentication pages use their own shell instead of the authorized BCP admin layout.
+       This keeps login/reset/invite flows focused while preserving the official BCP Material UI system. *@
+    <main class="bcp-authenticate-shell">
+        <section class="bcp-authenticate-form-panel" aria-label="@authLabel">
+            @await Html.PartialAsync("Layouts/Bcp/_BcpAuthenticateHeader")
+
+            <div class="bcp-authenticate-content">
+                @RenderBody()
+            </div>
+
+            <footer class="bcp-authenticate-footer">
+                <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+                @authFooter
+            </footer>
+        </section>
+
+        @* The visual panel explains the BCP security model at a glance: access begins with identity,
+           then flows into Console, Workspace, enabled features, roles, and permission assignments. *@
+        <aside class="bcp-authenticate-visual-panel" aria-label="@authLabel security" style="@visualStyle">
+            <div class="bcp-authenticate-visual-copy">
+                <p class="bcp-authenticate-eyebrow">@authEyebrow</p>
+                <h1>@authTitle</h1>
+                <p>@authNote</p>
+            </div>
+
+            <div class="bcp-authenticate-illustration" aria-hidden="true">
+                <div class="bcp-authenticate-command-card card-primary">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <strong>Console</strong>
+                    <small>Role driven command center</small>
+                </div>
+                <div class="bcp-authenticate-command-card card-secondary">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <strong>Workspace</strong>
+                    <small>Feature dashboards by access</small>
+                </div>
+                <div class="bcp-authenticate-security-core">
+                    <span class="material-symbols-outlined">shield_lock</span>
+                </div>
+                <div class="bcp-authenticate-orbit orbit-one"></div>
+                <div class="bcp-authenticate-orbit orbit-two"></div>
+            </div>
+        </aside>
+    </main>
+
+    @await Html.PartialAsync("Layouts/Bcp/_BcpScript")
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,130 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Console.KpiPeriodsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "KPI Periods";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "User Management",
+    Title = "KPI Periods",
+    Subtitle = "Manage custom performance evaluation intervals (e.g. Monthly Reports, Quarterly Milestones) to group scores on the leaderboard.",
+    Icon = "calendar_month",
+    BackUrl = "/BcpUserManagement/Console/Dashboard",
+    Buttons = [new("User Performance", "/BcpUserManagement/Console/Performance", "equalizer")]
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    var isError = Model.StatusMessage.StartsWith("Error:");
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:@(isError ? "var(--md-sys-color-error-container)" : "var(--md-sys-color-primary-container)"); color:@(isError ? "var(--md-sys-color-on-error-container)" : "var(--md-sys-color-on-primary-container)"); border-radius:8px;">
+        <div>
+            <strong>Status</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; align-items:start;">
+
+    @* ── Left: Add Period ────────────────────────────────────── *@
+    <section class="m3-card bcp-card" style="padding:24px; margin:0;">
+        <div class="card-header" style="margin-bottom:16px;">
+            <span class="card-title" style="font-size:18px; font-weight:600;">Create Evaluation Period</span>
+        </div>
+
+        <form method="post" asp-page-handler="Add" style="display:grid; gap:16px;">
+            <div>
+                <label style="font-weight:500; display:block; margin-bottom:6px;">Period Title</label>
+                <input type="text" asp-for="NewPeriod.Title" placeholder="e.g. July 2026, Q3 2026" required
+                       style="width:100%; padding:10px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface);" />
+                <span asp-validation-for="NewPeriod.Title" style="color:var(--md-sys-color-error); font-size:12px;"></span>
+            </div>
+
+            <div>
+                <label style="font-weight:500; display:block; margin-bottom:6px;">Description (Optional)</label>
+                <textarea asp-for="NewPeriod.Description" rows="4" placeholder="Brief notes about this scoring cycle..."
+                          style="width:100%; padding:10px; border:1px solid var(--md-sys-color-outline); border-radius:6px; background:var(--md-sys-color-surface); color:var(--md-sys-color-on-surface); resize:vertical; font-family:inherit;"></textarea>
+            </div>
+
+            <div style="margin-top:8px;">
+                <button type="submit" class="console-btn primary" style="padding:10px 18px; display:inline-flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Add Period</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    @* ── Right: List Periods ──────────────────────────────────── *@
+    <section class="m3-card bcp-card" style="padding:24px; margin:0; overflow-x:auto;">
+        <div class="card-header" style="margin-bottom:16px;">
+            <span class="card-title" style="font-size:18px; font-weight:600;">Active & Historical Periods</span>
+        </div>
+
+        @if (Model.Periods.Count == 0)
+        {
+            <div style="text-align:center; padding:48px 0; color:var(--sidebar-color);">
+                <span class="material-symbols-outlined" style="font-size:48px; opacity:0.4; display:block; margin-bottom:12px;">calendar_today</span>
+                <h4 style="margin:0; font-size:16px; font-weight:600;">No periods created yet</h4>
+                <p style="margin:4px 0 0 0; font-size:14px;">Create your first evaluation period using the form on the left.</p>
+            </div>
+        }
+        else
+        {
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--md-sys-color-outline-variant); color:var(--sidebar-color); font-weight:600; font-size:14px;">
+                        <th style="padding:12px 8px;">Period Title</th>
+                        <th style="padding:12px 8px;">Description</th>
+                        <th style="padding:12px 8px;">Created At</th>
+                        <th style="padding:12px 8px;">Status</th>
+                        <th style="padding:12px 8px; text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var period in Model.Periods)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); font-size:14px;">
+                            <td style="padding:12px 8px; font-weight:600; color:var(--md-sys-color-on-surface);">
+                                @period.Title
+                            </td>
+                            <td style="padding:12px 8px; color:var(--sidebar-color); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="@period.Description">
+                                @(period.Description ?? "-")
+                            </td>
+                            <td style="padding:12px 8px; white-space:nowrap;">
+                                @period.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")
+                            </td>
+                            <td style="padding:12px 8px;">
+                                @if (period.IsActive)
+                                {
+                                    <span class="status-pill success" style="font-size:11px;">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill warning" style="font-size:11px;">Inactive</span>
+                                }
+                            </td>
+                            <td style="padding:12px 8px; text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@period.Id" style="margin:0;">
+                                        <button type="submit" class="console-btn secondary" style="padding:6px 10px; font-size:12px;">
+                                            @(period.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@period.Id" onsubmit="return confirm('Are you sure you want to delete this period? This may leave some scores orphaned.');" style="margin:0;">
+                                        <button type="submit" class="console-btn danger" style="padding:6px 10px; font-size:12px; display:inline-flex; align-items:center; gap:2px;">
+                                            <span class="material-symbols-outlined" style="font-size:14px;">delete</span> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+</div>

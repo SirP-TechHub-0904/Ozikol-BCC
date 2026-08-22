@@ -1,0 +1,55 @@
+@page
+@model LoginAuditModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Login Audit";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "Authentication Audit Logs",
+    Subtitle = "System-wide audit tracking for user logins, authentication attempts, and security actions.",
+    Icon = "verified",
+    Eyebrow = "Identity Console",
+    BackUrl = "/BcpConsole/Console/Dashboard"
+})
+
+<section class="m3-card bcp-card" style="padding:24px;">
+    <div class="card-header" style="margin-bottom:16px;">
+        <span class="card-title" style="font-size:18px; font-weight:600;">Recent Audit Events (@Model.AuditLogs.Count)</span>
+    </div>
+
+    @if (Model.AuditLogs.Count == 0)
+    {
+        <div style="padding:32px; text-align:center; color:var(--sidebar-color);">
+            <span class="material-symbols-outlined" style="font-size:48px; color:var(--sidebar-color);">history</span>
+            <p style="margin-top:12px; font-size:15px;">No audit events recorded yet.</p>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface-container-low);">
+                        <th style="padding:12px;">Timestamp</th>
+                        <th style="padding:12px;">Action</th>
+                        <th style="padding:12px;">Performed By</th>
+                        <th style="padding:12px;">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.AuditLogs)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant);">
+                            <td style="padding:12px;">@log.Date.ToString("yyyy-MM-dd HH:mm:ss UTC")</td>
+                            <td style="padding:12px;"><span class="badge-pill" style="background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); padding:2px 8px; border-radius:12px;">@log.ActionType</span></td>
+                            <td style="padding:12px; font-weight:500;">@(string.IsNullOrWhiteSpace(log.PerformedByFullName) ? (log.PerformedByProfileId ?? "System") : log.PerformedByFullName)</td>
+                            <td style="padding:12px;">@log.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

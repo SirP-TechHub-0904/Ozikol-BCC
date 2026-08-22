@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Console Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+
+  <style>
+    .console-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .console-title {
+      margin: 0 0 4px;
+      font-size: 22px;
+      line-height: 28px;
+      font-weight: 700;
+    }
+
+    .console-subtitle {
+      margin: 0;
+      color: var(--sidebar-header-color);
+      font-size: 13px;
+    }
+
+    .console-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .console-btn,
+    .widget-icon-btn {
+      border: 1px solid var(--md-sys-color-outline);
+      background: var(--md-sys-color-surface);
+      color: var(--sidebar-color);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .console-btn {
+      height: 36px;
+      gap: 7px;
+      padding: 0 13px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .console-btn.primary {
+      background: #f59e0b;
+      border-color: #f59e0b;
+      color: #111827;
+    }
+
+    .console-btn:hover,
+    .widget-icon-btn:hover {
+      border-color: var(--sidebar-active-color);
+      color: var(--sidebar-active-color);
+      background: var(--sidebar-active-bg);
+    }
+
+    .console-alert {
+      border: 1px solid rgba(124, 58, 237, 0.28);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      background: linear-gradient(110deg, rgba(124, 58, 237, 0.08), rgba(2, 132, 199, 0.06));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .console-alert strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .console-alert p {
+      margin: 0;
+      color: var(--sidebar-color);
+      font-size: 13px;
+    }
+
+    .console-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .console-widget {
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      background: var(--md-sys-color-surface);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .console-widget.hidden-widget {
+      display: none;
+    }
+
+    .widget-head {
+      min-height: 48px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--md-sys-color-outline);
+    }
+
+    .widget-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .drag-dot {
+      color: var(--sidebar-header-color);
+      cursor: grab;
+    }
+
+    .widget-title {
+      margin: 0;
+      font-size: 15px;
+      line-height: 20px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .info-link {
+      color: #2563eb;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .widget-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .widget-icon-btn {
+      width: 30px;
+      height: 30px;
+    }
+
+    .widget-body {
+      padding: 14px;
+    }
+
+    .console-widget.minimized .widget-body,
+    .console-widget.minimized .widget-footer {
+      display: none;
+    }
+
+    .console-widget.minimized .widget-head {
+      border-bottom: 0;
+    }
+
+    .widget-footer {
+      border-top: 1px solid var(--md-sys-color-outline);
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    .widget-footer a,
+    .console-link {
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .good { color: #0f766e; background: rgba(20, 184, 166, 0.12); }
+    .warn { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+    .bad { color: #dc2626; background: rgba(239, 68, 68, 0.12); }
+    .info { color: #2563eb; background: rgba(37, 99, 235, 0.1); }
+    .muted { color: #64748b; background: rgba(100, 116, 139, 0.12); }
+    .violet { color: #7c3aed; background: rgba(124, 58, 237, 0.12); }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card {
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      padding: 13px;
+      min-height: 112px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .metric-card:hover,
+    .feature-row:hover,
+    .list-row:hover,
+    .recommendation:hover,
+    .quick-action:hover {
+      border-color: var(--sidebar-active-color);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .metric-label {
+      color: var(--sidebar-header-color);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-value {
+      margin: 8px 0 5px;
+      font-size: 25px;
+      line-height: 30px;
+      font-weight: 700;
+    }
+
+    .metric-note {
+      color: var(--sidebar-header-color);
+      font-size: 12px;
+    }
+
+    .feature-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .feature-tab {
+      border: 1px solid var(--md-sys-color-outline);
+      background: transparent;
+      color: var(--sidebar-color);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .feature-tab.active,
+    .feature-tab:hover {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-color);
+      border-color: var(--sidebar-active-color);
+    }
+
+    .feature-list,
+    .list-stack,
+    .recommendation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .feature-row,
+    .list-row,
+    .recommendation {
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .feature-icon,
+    .list-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      background: var(--sidebar-hover-bg);
+      color: var(--sidebar-active-color);
+    }
+
+    .row-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .row-title {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-sub {
+      margin-top: 2px;
+      color: var(--sidebar-header-color);
+      font-size: 11.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .billing-layout {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .billing-amount {
+      font-size: 28px;
+      line-height: 34px;
+      font-weight: 700;
+      color: #2563eb;
+      margin: 6px 0;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: end;
+      gap: 12px;
+      height: 150px;
+      border-left: 1px solid var(--md-sys-color-outline);
+      border-bottom: 1px solid var(--md-sys-color-outline);
+      padding: 0 6px 0 14px;
+    }
+
+    .bar {
+      flex: 1;
+      min-width: 24px;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(#647dee 0 var(--fill), #d9467d var(--fill) 100%);
+      position: relative;
+    }
+
+    .bar span {
+      position: absolute;
+      left: 50%;
+      bottom: -22px;
+      transform: translateX(-50%);
+      color: var(--sidebar-header-color);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .progress-track {
+      height: 8px;
+      background: var(--sidebar-hover-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #2563eb;
+      width: var(--value);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .empty-state {
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--sidebar-header-color);
+      gap: 8px;
+    }
+
+    .empty-state .material-symbols-outlined {
+      font-size: 44px;
+      color: #94a3b8;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quick-action {
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--sidebar-color);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 11px;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .quick-action span:last-child {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(15, 23, 42, 0.38);
+      display: none;
+      justify-content: flex-end;
+    }
+
+    .drawer.open {
+      display: flex;
+    }
+
+    .drawer-panel {
+      width: min(420px, 100vw);
+      height: 100%;
+      background: var(--md-sys-color-surface);
+      border-left: 1px solid var(--md-sys-color-outline);
+      padding: 18px;
+      overflow-y: auto;
+    }
+
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 70;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.28);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1280px) {
+      .span-3, .span-4 { grid-column: span 6; }
+      .span-5, .span-6, .span-7, .span-8 { grid-column: span 12; }
+      .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .console-head,
+      .console-alert {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .console-actions {
+        justify-content: flex-start;
+      }
+
+      .span-3, .span-4, .span-5, .span-6, .span-7, .span-8, .span-12 {
+        grid-column: span 12;
+      }
+
+      .metric-grid,
+      .billing-layout,
+      .two-col,
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="brand-logo">
+        <span class="material-symbols-outlined">space_dashboard</span>
+        VELZON
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div id="pinned-sidebar-section"></div>
+
+      <div class="menu-title">Menu</div>
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Console Home" data-url="console-dashboard.html" data-icon="space_dashboard" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="dash">-</span>Console Home</span></a></li>
+          <li><a href="analytics-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Full Analytics</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <div class="menu-title">Components</div>
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="BCP Widgets" data-url="bcp-dashboard-widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>BCP Catalog</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+          <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+          <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Data Tables</span></a></li>
+          <li><a href="datatable.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Advanced Table</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search features, billing, reports..." aria-label="Search">
+        </div>
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="console-alert">
+        <div>
+          <strong>Platform console home</strong>
+          <p>Monitor active features, inactive setup work, billing, tracking, security, reports, recommendations, and system health from one place.</p>
+        </div>
+        <button class="console-btn" type="button" data-action="Open console setup guide"><span class="material-symbols-outlined">rocket_launch</span>Setup guide</button>
+      </div>
+
+      <div class="console-head">
+        <div>
+          <h1 class="console-title">Console Home</h1>
+          <p class="console-subtitle">General dashboard for 25+ platform features and their personal dashboards.</p>
+        </div>
+        <div class="console-actions">
+          <button class="console-btn" type="button" id="reset-layout"><span class="material-symbols-outlined">restart_alt</span>Reset layout</button>
+          <button class="console-btn primary" type="button" id="add-widgets"><span class="material-symbols-outlined">add</span>Add widgets</button>
+        </div>
+      </div>
+
+      <section class="console-grid" id="console-grid">
+        <article class="console-widget span-12" data-widget="overview" data-title="Platform Overview">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Platform overview</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="metric-grid">
+              <div class="metric-card" data-action="Open active features"><div class="metric-label">Active features</div><div class="metric-value">18 / 27</div><div class="metric-note">9 features need setup or activation</div></div>
+              <div class="metric-card" data-action="Open inactive features"><div class="metric-label">Inactive</div><div class="metric-value">7</div><div class="metric-note">3 locked by plan, 4 available</div></div>
+              <div class="metric-card" data-action="Open online users"><div class="metric-label">Users online</div><div class="metric-value">186</div><div class="metric-note">1,284 active today</div></div>
+              <div class="metric-card" data-action="Open billing"><div class="metric-label">Current bill</div><div class="metric-value">$3.56</div><div class="metric-note">Forecast $4.86 month end</div></div>
+              <div class="metric-card" data-action="Open attention queue"><div class="metric-label">Needs attention</div><div class="metric-value">24</div><div class="metric-note">Reports, billing, setup, security</div></div>
+              <div class="metric-card" data-action="Open system health"><div class="metric-label">System health</div><div class="metric-value">96%</div><div class="metric-note">1 scheduled change</div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="recent" data-title="Recently Visited">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Recently visited</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="two-col">
+              <div class="list-stack">
+                <div class="list-row" data-action="Open Billing"><span class="list-icon"><span class="material-symbols-outlined">credit_card</span></span><div class="row-main"><div class="row-title">Billing and subscriptions</div><div class="row-sub">Invoices, plan, limits, usage</div></div></div>
+                <div class="list-row" data-action="Open Finance"><span class="list-icon"><span class="material-symbols-outlined">account_balance_wallet</span></span><div class="row-main"><div class="row-title">Finance management</div><div class="row-sub">Payments, dues, ledger</div></div></div>
+                <div class="list-row" data-action="Open Reports"><span class="list-icon"><span class="material-symbols-outlined">summarize</span></span><div class="row-main"><div class="row-title">Report builder</div><div class="row-sub">Templates and exports</div></div></div>
+                <div class="list-row" data-action="Open Security"><span class="list-icon"><span class="material-symbols-outlined">shield</span></span><div class="row-main"><div class="row-title">Security center</div><div class="row-sub">Roles, MFA, audit log</div></div></div>
+              </div>
+              <div class="list-stack">
+                <div class="list-row" data-action="Open Visitor Tracking"><span class="list-icon"><span class="material-symbols-outlined">badge</span></span><div class="row-main"><div class="row-title">Visitor tracking</div><div class="row-sub">Gate logs and badges</div></div></div>
+                <div class="list-row" data-action="Open Staff"><span class="list-icon"><span class="material-symbols-outlined">groups</span></span><div class="row-main"><div class="row-title">Staff management</div><div class="row-sub">Attendance and profiles</div></div></div>
+                <div class="list-row" data-action="Open Inventory"><span class="list-icon"><span class="material-symbols-outlined">inventory_2</span></span><div class="row-main"><div class="row-title">Inventory</div><div class="row-sub">Stock and asset movement</div></div></div>
+                <div class="list-row" data-action="Open Settings"><span class="list-icon"><span class="material-symbols-outlined">settings</span></span><div class="row-main"><div class="row-title">Settings</div><div class="row-sub">Workspace and feature config</div></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="View all features">View all features</a></div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="features" data-title="Feature Status">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Feature status</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="feature-toolbar">
+              <button class="feature-tab active" type="button" data-feature-filter="all">All 27</button>
+              <button class="feature-tab" type="button" data-feature-filter="active">Active</button>
+              <button class="feature-tab" type="button" data-feature-filter="setup">Needs setup</button>
+              <button class="feature-tab" type="button" data-feature-filter="inactive">Inactive</button>
+              <button class="feature-tab" type="button" data-feature-filter="locked">Locked</button>
+            </div>
+            <div class="feature-list">
+              <div class="feature-row" data-status="active" data-action="Open Finance dashboard"><span class="feature-icon"><span class="material-symbols-outlined">payments</span></span><div class="row-main"><div class="row-title">Finance Management</div><div class="row-sub">2,744 actions this week</div></div><span class="status-pill good">Active</span></div>
+              <div class="feature-row" data-status="active" data-action="Open User dashboard"><span class="feature-icon"><span class="material-symbols-outlined">groups</span></span><div class="row-main"><div class="row-title">Users and Roles</div><div class="row-sub">1,284 active users</div></div><span class="status-pill good">Active</span></div>
+              <div class="feature-row" data-status="setup" data-action="Configure Inventory"><span class="feature-icon"><span class="material-symbols-outlined">inventory_2</span></span><div class="row-main"><div class="row-title">Inventory and Assets</div><div class="row-sub">Barcode rules missing</div></div><span class="status-pill warn">Needs setup</span></div>
+              <div class="feature-row" data-status="active" data-action="Open Visitor Tracking"><span class="feature-icon"><span class="material-symbols-outlined">sensor_occupied</span></span><div class="row-main"><div class="row-title">Visitor Tracking</div><div class="row-sub">427 visits today</div></div><span class="status-pill good">Active</span></div>
+              <div class="feature-row" data-status="inactive" data-action="Activate Payroll"><span class="feature-icon"><span class="material-symbols-outlined">price_check</span></span><div class="row-main"><div class="row-title">Payroll</div><div class="row-sub">Available but not enabled</div></div><span class="status-pill muted">Inactive</span></div>
+              <div class="feature-row" data-status="locked" data-action="Upgrade for AI Assistant"><span class="feature-icon"><span class="material-symbols-outlined">auto_awesome</span></span><div class="row-main"><div class="row-title">AI Assistant</div><div class="row-sub">Requires Pro plan</div></div><span class="status-pill violet">Locked</span></div>
+              <div class="feature-row" data-status="setup" data-action="Configure Integrations"><span class="feature-icon"><span class="material-symbols-outlined">hub</span></span><div class="row-main"><div class="row-title">Integrations</div><div class="row-sub">2 disconnected services</div></div><span class="status-pill bad">Attention</span></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Open feature directory">Open feature directory</a></div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="applications" data-title="Applications">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Applications (3)</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="list-stack">
+              <div class="list-row" data-action="Open Main Campus application"><span class="list-icon"><span class="material-symbols-outlined">domain</span></span><div class="row-main"><div class="row-title">Main Campus</div><div class="row-sub">Region: Lagos HQ</div></div><span class="status-pill good">Live</span></div>
+              <div class="list-row" data-action="Open Training Portal application"><span class="list-icon"><span class="material-symbols-outlined">school</span></span><div class="row-main"><div class="row-title">Training Portal</div><div class="row-sub">Setup 84% complete</div></div><span class="status-pill warn">Setup</span></div>
+              <div class="list-row" data-action="Open Mobile Staff App"><span class="list-icon"><span class="material-symbols-outlined">phone_iphone</span></span><div class="row-main"><div class="row-title">Mobile Staff App</div><div class="row-sub">Last deploy: 2 days ago</div></div><span class="status-pill info">Beta</span></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Create application">Create application</a></div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="attention" data-title="Attention Required">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Attention required</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="recommendation-list">
+              <div class="recommendation" data-action="Review failed payments"><span class="list-icon bad"><span class="material-symbols-outlined">error</span></span><div class="row-main"><div class="row-title">7 payments failed</div><div class="row-sub">Retry or contact account owners</div></div></div>
+              <div class="recommendation" data-action="Review overdue reports"><span class="list-icon warn"><span class="material-symbols-outlined">pending_actions</span></span><div class="row-main"><div class="row-title">4 reports overdue</div><div class="row-sub">Finance and inventory reports</div></div></div>
+              <div class="recommendation" data-action="Fix disconnected integrations"><span class="list-icon bad"><span class="material-symbols-outlined">link_off</span></span><div class="row-main"><div class="row-title">2 integrations disconnected</div><div class="row-sub">SMS gateway and email relay</div></div></div>
+              <div class="recommendation" data-action="Approve pending users"><span class="list-icon info"><span class="material-symbols-outlined">person_check</span></span><div class="row-main"><div class="row-title">3 users pending approval</div><div class="row-sub">New admin role requests</div></div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="health" data-title="System Health">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">System health</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="list-stack">
+              <div class="list-row" data-action="Open system health"><div class="row-main"><div class="row-title">Open issues</div><div class="progress-track"><div class="progress-fill" style="--value: 8%; background:#22c55e;"></div></div></div><strong>0</strong></div>
+              <div class="list-row" data-action="Open scheduled changes"><div class="row-main"><div class="row-title">Scheduled changes</div><div class="progress-track"><div class="progress-fill" style="--value: 22%; background:#f59e0b;"></div></div></div><strong>1</strong></div>
+              <div class="list-row" data-action="Open failed jobs"><div class="row-main"><div class="row-title">Failed jobs</div><div class="progress-track"><div class="progress-fill" style="--value: 14%; background:#ef4444;"></div></div></div><strong>2</strong></div>
+              <div class="list-row" data-action="Open backup status"><div class="row-main"><div class="row-title">Last backup</div><div class="row-sub">Today, 02:00 AM</div></div><span class="status-pill good">Healthy</span></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Go to system health">Go to system health</a></div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="billing" data-title="Billing and Usage">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Billing and usage</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body billing-layout">
+            <div>
+              <div class="metric-label">Current month</div>
+              <div class="billing-amount">$3.56 <span class="status-pill warn">5%</span></div>
+              <div class="metric-label">Forecasted month end</div>
+              <div class="billing-amount">$4.86 <span class="status-pill muted">0%</span></div>
+              <div style="margin-top:10px;"><a class="console-link" data-action="Open savings opportunities">Savings opportunities: not enabled</a></div>
+            </div>
+            <div class="bar-chart" aria-label="Monthly cost chart">
+              <div class="bar" style="height:72%; --fill: 88%;"><span>Feb</span></div>
+              <div class="bar" style="height:74%; --fill: 90%;"><span>Mar</span></div>
+              <div class="bar" style="height:70%; --fill: 86%;"><span>Apr</span></div>
+              <div class="bar" style="height:76%; --fill: 92%;"><span>May</span></div>
+              <div class="bar" style="height:78%; --fill: 91%;"><span>Jun</span></div>
+              <div class="bar" style="height:58%; --fill: 84%;"><span>Jul</span></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Go to Billing and Cost Management">Go to Billing and Cost Management</a></div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="tracking" data-title="Tracking Overview">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Tracking overview</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="metric-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+              <div class="metric-card" data-action="Open visitor tracking"><div class="metric-label">Visitors inside</div><div class="metric-value">18</div><div class="metric-note">6 pending checkout</div></div>
+              <div class="metric-card" data-action="Open staff attendance"><div class="metric-label">Staff checked in</div><div class="metric-value">142</div><div class="metric-note">12 late arrivals</div></div>
+              <div class="metric-card" data-action="Open asset movement"><div class="metric-label">Assets in transit</div><div class="metric-value">6</div><div class="metric-note">2 need confirmation</div></div>
+              <div class="metric-card" data-action="Open request tracking"><div class="metric-label">Open requests</div><div class="metric-value">31</div><div class="metric-note">11 awaiting approval</div></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Open tracking center">Open tracking center</a></div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="reports" data-title="Reports">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Reports</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="list-stack">
+              <div class="list-row" data-action="Open Daily Operations Summary"><span class="list-icon bad"><span class="material-symbols-outlined">picture_as_pdf</span></span><div class="row-main"><div class="row-title">Daily Operations Summary</div><div class="row-sub">Generated 9:10 AM by Operations</div></div><button class="console-btn" type="button">PDF</button></div>
+              <div class="list-row" data-action="Open Fee Collection Workbook"><span class="list-icon good"><span class="material-symbols-outlined">table</span></span><div class="row-main"><div class="row-title">Fee Collection Workbook</div><div class="row-sub">Generated 8:42 AM by Finance</div></div><button class="console-btn" type="button">Excel</button></div>
+              <div class="list-row" data-action="Open HR Attendance Digest"><span class="list-icon violet"><span class="material-symbols-outlined">summarize</span></span><div class="row-main"><div class="row-title">HR Attendance Digest</div><div class="row-sub">Pending approval from HR Lead</div></div><button class="console-btn" type="button">Preview</button></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Go to report center">Go to report center</a></div>
+        </article>
+
+        <article class="console-widget span-6" data-widget="security" data-title="Security">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Security</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="empty-state">
+              <span class="material-symbols-outlined">security</span>
+              <strong>No critical security data</strong>
+              <span>Assess MFA, role changes, failed logins, and audit activity.</span>
+              <button class="console-btn" type="button" data-action="Open Security Hub">Get started</button>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="Go to security center">Go to security center</a></div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="recommendations" data-title="Recommendations">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Recommendations</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="recommendation-list">
+              <div class="recommendation" data-action="Enable MFA"><span class="list-icon warn"><span class="material-symbols-outlined">lock</span></span><div class="row-main"><div class="row-title">Enable MFA for 12 admins</div><div class="row-sub">Improve access security</div></div></div>
+              <div class="recommendation" data-action="Complete payroll setup"><span class="list-icon info"><span class="material-symbols-outlined">task_alt</span></span><div class="row-main"><div class="row-title">Complete payroll setup</div><div class="row-sub">Feature is available but inactive</div></div></div>
+              <div class="recommendation" data-action="Configure backup retention"><span class="list-icon good"><span class="material-symbols-outlined">backup</span></span><div class="row-main"><div class="row-title">Configure backup retention</div><div class="row-sub">Set policy before growth</div></div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="announcements" data-title="Announcements">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Latest announcements</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="list-stack">
+              <div class="list-row" data-action="Read announcement"><div style="font-size:20px;font-weight:700;">JUL<br>23</div><div class="row-main"><div class="row-title">New feature dashboards available</div><div class="row-sub">Roll out personal dashboards per module</div></div></div>
+              <div class="list-row" data-action="Read billing notice"><div style="font-size:20px;font-weight:700;">JUL<br>22</div><div class="row-main"><div class="row-title">Billing usage alerts improved</div><div class="row-sub">SMS and AI usage now tracked separately</div></div></div>
+              <div class="list-row" data-action="Read maintenance notice"><div style="font-size:20px;font-weight:700;">JUL<br>21</div><div class="row-main"><div class="row-title">Maintenance window scheduled</div><div class="row-sub">Sunday 02:00 AM local time</div></div></div>
+            </div>
+          </div>
+          <div class="widget-footer"><a data-action="View all announcements">View all announcements</a></div>
+        </article>
+
+        <article class="console-widget span-4" data-widget="quick-actions" data-title="Quick Actions">
+          <div class="widget-head">
+            <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Quick actions</h2><a class="info-link" href="javascript:void(0)">Info</a></div>
+            <div class="widget-actions"><button class="widget-icon-btn minimize-widget" title="Minimize"><span class="material-symbols-outlined">remove</span></button><button class="widget-icon-btn dismiss-widget" title="Dismiss"><span class="material-symbols-outlined">close</span></button></div>
+          </div>
+          <div class="widget-body">
+            <div class="quick-grid">
+              <button class="quick-action" type="button" data-action="Create user"><span class="material-symbols-outlined">person_add</span><span>Create user</span></button>
+              <button class="quick-action" type="button" data-action="Activate feature"><span class="material-symbols-outlined">toggle_on</span><span>Activate feature</span></button>
+              <button class="quick-action" type="button" data-action="Generate report"><span class="material-symbols-outlined">summarize</span><span>Generate report</span></button>
+              <button class="quick-action" type="button" data-action="Open billing"><span class="material-symbols-outlined">receipt_long</span><span>Open billing</span></button>
+              <button class="quick-action" type="button" data-action="Create application"><span class="material-symbols-outlined">add_business</span><span>Create app</span></button>
+              <button class="quick-action" type="button" data-action="Invite staff"><span class="material-symbols-outlined">group_add</span><span>Invite staff</span></button>
+              <button class="quick-action" type="button" data-action="Open audit logs"><span class="material-symbols-outlined">manage_search</span><span>Audit logs</span></button>
+              <button class="quick-action" type="button" data-action="Configure tracking"><span class="material-symbols-outlined">conversion_path</span><span>Tracking</span></button>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <div class="drawer" id="widget-drawer" aria-hidden="true">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <div>
+          <h2 class="widget-title" style="font-size:18px;">Add widgets</h2>
+          <p class="console-subtitle">Restore dismissed widgets or reset the console layout.</p>
+        </div>
+        <button class="widget-icon-btn" type="button" id="close-drawer" title="Close"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="list-stack" id="restore-list"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="console-toast" role="status" aria-live="polite"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const storageKey = 'consoleWidgetState';
+      const widgets = Array.from(document.querySelectorAll('.console-widget'));
+      const drawer = document.getElementById('widget-drawer');
+      const restoreList = document.getElementById('restore-list');
+      const toast = document.getElementById('console-toast');
+      let toastTimer;
+
+      function getState() {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey)) || {};
+        } catch {
+          return {};
+        }
+      }
+
+      function saveState(state) {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      function applyState() {
+        const state = getState();
+        widgets.forEach((widget) => {
+          const id = widget.dataset.widget;
+          widget.classList.toggle('hidden-widget', !!state[id]?.hidden);
+          widget.classList.toggle('minimized', !!state[id]?.minimized);
+          const icon = widget.querySelector('.minimize-widget .material-symbols-outlined');
+          if (icon) icon.textContent = state[id]?.minimized ? 'add' : 'remove';
+        });
+        renderRestoreList();
+      }
+
+      function updateWidgetState(widget, patch) {
+        const state = getState();
+        const id = widget.dataset.widget;
+        state[id] = { ...(state[id] || {}), ...patch };
+        saveState(state);
+        applyState();
+      }
+
+      function renderRestoreList() {
+        const state = getState();
+        const hiddenWidgets = widgets.filter((widget) => state[widget.dataset.widget]?.hidden);
+        restoreList.innerHTML = '';
+
+        if (!hiddenWidgets.length) {
+          restoreList.innerHTML = '<div class="empty-state" style="min-height:160px;"><span class="material-symbols-outlined">widgets</span><strong>All widgets are visible</strong><span>Dismiss a widget to restore it from here.</span></div>';
+          return;
+        }
+
+        hiddenWidgets.forEach((widget) => {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'quick-action';
+          row.innerHTML = `<span class="material-symbols-outlined">add</span><span>${widget.dataset.title}</span>`;
+          row.addEventListener('click', () => {
+            updateWidgetState(widget, { hidden: false, minimized: false });
+            showToast(`${widget.dataset.title} restored`);
+          });
+          restoreList.appendChild(row);
+        });
+      }
+
+      widgets.forEach((widget) => {
+        widget.querySelector('.minimize-widget')?.addEventListener('click', () => {
+          const next = !widget.classList.contains('minimized');
+          updateWidgetState(widget, { minimized: next });
+          showToast(`${widget.dataset.title} ${next ? 'minimized' : 'expanded'}`);
+        });
+
+        widget.querySelector('.dismiss-widget')?.addEventListener('click', () => {
+          updateWidgetState(widget, { hidden: true });
+          showToast(`${widget.dataset.title} dismissed`);
+        });
+      });
+
+      document.querySelectorAll('[data-feature-filter]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const filter = btn.dataset.featureFilter;
+          document.querySelectorAll('[data-feature-filter]').forEach((item) => item.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.feature-row').forEach((row) => {
+            row.style.display = filter === 'all' || row.dataset.status === filter ? 'flex' : 'none';
+          });
+        });
+      });
+
+      document.getElementById('reset-layout')?.addEventListener('click', () => {
+        localStorage.removeItem(storageKey);
+        applyState();
+        showToast('Console layout reset');
+      });
+
+      document.getElementById('add-widgets')?.addEventListener('click', () => {
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+        renderRestoreList();
+      });
+
+      document.getElementById('close-drawer')?.addEventListener('click', () => {
+        drawer.classList.remove('open');
+        drawer.setAttribute('aria-hidden', 'true');
+      });
+
+      drawer.addEventListener('click', (event) => {
+        if (event.target === drawer) {
+          drawer.classList.remove('open');
+          drawer.setAttribute('aria-hidden', 'true');
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        const actionTarget = event.target.closest('[data-action]');
+        if (!actionTarget) return;
+        showToast(actionTarget.dataset.action);
+      });
+
+      applyState();
+    });
+  </script>
+  <script src="layout.js"></script>
+</body>
+</html>

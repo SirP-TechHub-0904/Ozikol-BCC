@@ -1,0 +1,21 @@
+@using System.Text.RegularExpressions;
+@{
+    var xsetting = ViewBag.ConfigSetting; var configsetting = ViewBag.ConfigSetting;
+    var supersetting = ViewBag.ManagementSetting; var config = ViewBag.ConfigSetting;
+    string murl = "";
+    Regex regex = new Regex("[^a-zA-Z0-9]");
+    if (!String.IsNullOrEmpty(ViewBag.ConfigSetting?.DefaultTitleBackgroundUrl))
+    {
+        murl = ViewBag.ConfigSetting.DefaultTitleBackgroundUrl;
+    }
+}
+
+<div class="page-title-section" style="background-image: url(@murl);">
+    <div class="container">
+        <h1>@ViewBag.datataitle</h1>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="#">@ViewBag.datataitle</a></li>
+        </ul>
+    </div>
+</div>

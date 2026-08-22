@@ -1,0 +1,27 @@
+@model IEnumerable<BcpKpiUserScore>
+
+<div class="bcp-table-wrap" data-tour="performance-score-table">
+    <table class="bcp-table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>Indicator</th>
+                <th>Score</th>
+                <th>Remarks</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Period</td>
+                    <td>@item.BcpKpiIndicator?.Title</td>
+                    <td>@item.Score / @(item.BcpKpiIndicator?.MaxScore ?? 0)</td>
+                    <td>@item.Remarks</td>
+                    <td>@item.Date.ToLocalTime().ToString("dd MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

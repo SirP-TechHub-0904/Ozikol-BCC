@@ -1,0 +1,27 @@
+@model Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto
+
+@{
+    var themeData = Context.Request.Query["previewTheme"].FirstOrDefault() ?? Model.TemplateLayoutKey;
+    var themeFolderName = themeData;
+    var componentKey = Model.SliderTemplateKey;
+    
+    // We attempt to load the specific component key template if it exists, otherwise fallback to the base template
+    var partialPath = string.IsNullOrEmpty(componentKey) ? $"~/Pages/Shared/Templates/{themeFolderName}/_Slider.cshtml" : $"~/Pages/Shared/Templates/{themeFolderName}/_Slider_{componentKey}.cshtml";
+}
+
+@try
+{
+    @await Html.PartialAsync(partialPath, Model)
+}
+catch (Exception ex)
+{
+    try
+    {
+        // Fallback to base slider if the specific keyed one is missing
+        @await Html.PartialAsync($"~/Pages/Shared/Templates/{themeFolderName}/_Slider.cshtml", Model)
+    }
+    catch (Exception innerEx)
+    {
+        <!-- Slider not found for theme @themeFolderName -->
+    }
+}

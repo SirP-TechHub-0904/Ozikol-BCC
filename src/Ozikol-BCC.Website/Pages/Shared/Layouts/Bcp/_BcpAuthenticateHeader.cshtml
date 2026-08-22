@@ -1,0 +1,35 @@
+@using Microsoft.EntityFrameworkCore
+@using Ozikol_BCC.Domain.Models
+@inject Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext DbContext
+@{
+    ConfigSetting? bcpConfig = null;
+
+    try
+    {
+        bcpConfig = await DbContext.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+    }
+    catch
+    {
+        // Authentication must remain reachable even before branding settings are fully available.
+    }
+
+    var logoUrl = bcpConfig?.UseWhiteLogoInLogin == true && !string.IsNullOrWhiteSpace(bcpConfig.CompanyWhiteLogoUrl)
+        ? bcpConfig.CompanyWhiteLogoUrl
+        : !string.IsNullOrWhiteSpace(bcpConfig?.CompanyLogoUrl)
+            ? bcpConfig.CompanyLogoUrl
+            : !string.IsNullOrWhiteSpace(bcpConfig?.CompanyIconUrl)
+                ? bcpConfig.CompanyIconUrl
+                : "/bcp/img/Ozikol-Logo.png";
+
+    var brandName = bcpConfig?.CompanyName
+        ?? bcpConfig?.WebsiteTitle
+        ?? bcpConfig?.DashboardTitle
+        ?? "BCP";
+}
+@* Lightweight public header for authentication screens. Keep this separate from the admin topbar
+   because public pages must not expose private navigation or role-gated feature shortcuts. *@
+<header class="bcp-authenticate-header">
+    <a class="bcp-authenticate-brand" href="/" aria-label="@brandName home">
+        <img src="@logoUrl" alt="@brandName" />
+    </a>
+</header>

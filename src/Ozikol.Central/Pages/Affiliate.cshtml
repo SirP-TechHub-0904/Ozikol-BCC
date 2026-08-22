@@ -1,0 +1,139 @@
+@page
+@model Ozikol.Central.Pages.AffiliateModel
+@{
+    ViewData["Title"] = "Affiliate & Partner Program - Ozikol BCC Cloud";
+}
+
+<div class="marketing-page">
+    <section class="page-hero-section">
+        <div class="marketing-container">
+            <div class="hero-badge" style="margin: 0 auto 12px auto;">
+                <span class="badge-dot"></span>
+                <span>PARTNER & REFERRAL PROGRAM</span>
+            </div>
+            <h1 class="page-hero-title">Earn 20% Lifetime Recurring Commission</h1>
+            <p class="page-hero-sub">
+                Partner with Ozikol BCC. Refer businesses, agencies, and institutions to own their dedicated multi-tenant MIS and earn continuous monthly revenue.
+            </p>
+        </div>
+    </section>
+
+    <section class="section-marketing">
+        <div class="marketing-container">
+            <div class="affiliate-page-grid">
+                <!-- Left: Application Form / Active Code -->
+                <div class="affiliate-form-card">
+                    <h3 class="affiliate-card-title">Join the Affiliate Network</h3>
+                    <p class="affiliate-card-sub">Choose your custom referral tracking code.</p>
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success" style="flex-direction: column; align-items: flex-start;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="alert-icon">🎉</span>
+                                <strong>@Model.SuccessMessage</strong>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.GeneratedPartnerCode))
+                            {
+                                <div style="margin-top: 12px; background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 8px; width: 100%;">
+                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Your Custom Referral Tracking Link:</div>
+                                    <code class="font-mono" style="font-size: 13px; color: #38bdf8; word-break: break-all;">
+                                        http://localhost:51030/signup?ref=@Model.GeneratedPartnerCode
+                                    </code>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            <span class="alert-icon">⚠️</span>
+                            <span>@Model.ErrorMessage</span>
+                        </div>
+                    }
+
+                    <form method="post" class="signup-form">
+                        <div class="form-group">
+                            <label asp-for="Input.FullName">Your Full Name</label>
+                            <input asp-for="Input.FullName" class="form-control" placeholder="e.g. Alex Morgan" />
+                            <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Input.Email">Payout Email Address</label>
+                            <input asp-for="Input.Email" type="email" class="form-control" placeholder="alex@partner.com" />
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Input.DesiredPartnerCode">Desired Custom Partner Code</label>
+                            <div class="subdomain-input-wrap">
+                                <input asp-for="Input.DesiredPartnerCode" class="form-control font-mono" placeholder="e.g. ALEX20 or BIZGROWTH" />
+                            </div>
+                            <span class="form-hint">Your referral link will be: <code>http://localhost:51030/signup?ref=&lt;CODE&gt;</code></span>
+                            <span asp-validation-for="Input.DesiredPartnerCode" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label asp-for="Input.PhoneNumber">Phone (Optional)</label>
+                                <input asp-for="Input.PhoneNumber" class="form-control" placeholder="+1 (555) 000-0000" />
+                            </div>
+                            <div class="form-group">
+                                <label asp-for="Input.WebsiteOrChannel">Website / Channel</label>
+                                <input asp-for="Input.WebsiteOrChannel" class="form-control" placeholder="youtube.com/tech or agency.com" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Input.PayoutDetails">Bank / PayPal Payout Preference (Optional)</label>
+                            <input asp-for="Input.PayoutDetails" class="form-control" placeholder="PayPal email or Bank account details" />
+                        </div>
+
+                        <button type="submit" class="btn btn-launch-workspace">
+                            <span>Activate Partner Account</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Program Benefits & Earnings Calculator -->
+                <div class="affiliate-info-col">
+                    <div class="affiliate-perk-card">
+                        <div class="perk-icon">💰</div>
+                        <h4 class="perk-title">20% Lifetime Recurring Commission</h4>
+                        <p class="perk-desc">Earn monthly revenue for as long as your referred organizations remain active on Ozikol BCC.</p>
+                    </div>
+
+                    <div class="affiliate-perk-card">
+                        <div class="perk-icon">📊</div>
+                        <h4 class="perk-title">Real-Time Referral Attribution</h4>
+                        <p class="perk-desc">Custom tracking links with 90-day cookie window ensuring you never miss a referral conversion.</p>
+                    </div>
+
+                    <!-- Earnings Projection Matrix -->
+                    <div class="calc-box">
+                        <h4 class="calc-title">Estimated Monthly Earnings (at $79/mo Plan)</h4>
+                        <div class="calc-row">
+                            <span class="calc-tenants">10 Active Workspaces:</span>
+                            <strong class="calc-payout text-success">$158.00 / month</strong>
+                        </div>
+                        <div class="calc-row">
+                            <span class="calc-tenants">50 Active Workspaces:</span>
+                            <strong class="calc-payout text-success">$790.00 / month</strong>
+                        </div>
+                        <div class="calc-row">
+                            <span class="calc-tenants">200 Active Workspaces:</span>
+                            <strong class="calc-payout text-success">$3,160.00 / month</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

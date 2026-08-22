@@ -1,0 +1,39 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Console.CreateModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Create User";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "User Directory",
+    Title = "Create User",
+    Subtitle = "Create a BCP profile, assign category/status, and optionally attach an Identity role.",
+    Icon = "person_add",
+    BackUrl = "/BcpUserManagement/Console/Users",
+    BackText = "Users"
+})
+
+<form method="post" class="m3-card bcp-card bcp-wide-form" data-tour="create-user-form">
+    <div asp-validation-summary="ModelOnly" class="bcp-validation-summary"></div>
+    <div class="bcp-form-grid">
+        <label class="bcp-field">Title<input class="bcp-input" asp-for="Input.Title" /></label>
+        <label class="bcp-field">Email<input class="bcp-input" asp-for="Input.Email" /></label>
+        <label class="bcp-field">First Name<input class="bcp-input" asp-for="Input.FirstName" /></label>
+        <label class="bcp-field">Last Name<input class="bcp-input" asp-for="Input.LastName" /></label>
+        <label class="bcp-field">Phone<input class="bcp-input" asp-for="Input.PhoneNumber" /></label>
+        <label class="bcp-field">Password<input class="bcp-input" asp-for="Input.Password" type="password" /></label>
+        <label class="bcp-field">Status<select class="bcp-input bcp-select" asp-for="Input.UserStatus" asp-items="Model.StatusOptions"></select></label>
+        <label class="bcp-field">Category<select class="bcp-input bcp-select" asp-for="Input.BcpUserCategoryId" asp-items="Model.CategoryOptions"></select></label>
+        <label class="bcp-field">Identity Role<select class="bcp-input bcp-select" asp-for="Input.RoleName" asp-items="Model.RoleOptions"></select></label>
+    </div>
+    <div style="margin-top: 16px;">
+        <label class="bcp-check"><input type="checkbox" asp-for="Input.AutoConfirmEmail" /><span>Auto-confirm Email Address (User can log in immediately)</span></label>
+    </div>
+    <button class="console-btn primary bcp-form-submit" style="margin-top: 20px;" type="submit"><span class="material-symbols-outlined">save</span>Create User</button>
+</form>
+
+<script type="application/json" id="bcp-page-tour">
+[{"selector":"[data-tour='create-user-form']","title":"Create profile","text":"This creates the tenant Identity user and stores the BCP business profile fields in the same Profile record.","placement":"top"}]
+</script>

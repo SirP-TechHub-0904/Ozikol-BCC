@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Ozikol_BCC.PaymentServices</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
