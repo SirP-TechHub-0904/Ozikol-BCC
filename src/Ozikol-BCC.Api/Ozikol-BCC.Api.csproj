@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ozikol_BCC.Api</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update=".env">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozikol-BCC.AiServices\Ozikol-BCC.AiServices.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.CloudinaryServices\Ozikol-BCC.CloudinaryServices.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.EmailServices.Postmark\Ozikol-BCC.EmailServices.Postmark.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.PaymentServices\Ozikol-BCC.PaymentServices.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Persistence.EF.SQL\Ozikol-BCC.Persistence.EF.SQL.csproj" />
+  </ItemGroup>
+
+</Project>

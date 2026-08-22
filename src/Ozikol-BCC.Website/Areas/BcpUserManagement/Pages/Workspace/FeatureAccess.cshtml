@@ -1,0 +1,10 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpUserManagement.Pages.Workspace.FeatureAccessModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "My Feature Access";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel { Eyebrow = "Workspace", Title = "My Feature Access", Subtitle = "Review the features and action levels assigned to your profile.", Icon = "verified_user", BackUrl = "/BcpWorkspace/Workspace/Dashboard" })
+<section class="m3-card bcp-card"><partial name="/Areas/BcpUserManagement/Pages/Common/FeatureAccessMatrix.cshtml" model="Model.FeatureRoles" /></section>
+<script type="application/json" id="bcp-page-tour">[{"selector":"[data-tour='feature-access-matrix']","title":"My feature access","text":"These are your active feature assignments. Admins manage the matrix from Console.","placement":"top"}]</script>

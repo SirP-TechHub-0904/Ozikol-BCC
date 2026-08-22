@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Ozikol Multi-Tenant Cloud</title>
+    <meta name="description" content="Ozikol BCC: Enterprise multi-tenant SaaS platform with isolated SQL databases, modular executive MIS, finance, and storefronts." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="main-navbar-wrapper">
+        <nav class="main-navbar">
+            <a asp-page="/Index" class="nav-brand">
+                <div class="brand-symbol">
+                    <span>O</span>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">OZIKOL<span class="brand-accent">.BCC</span></span>
+                    <span class="brand-sub">ENTERPRISE CLOUD</span>
+                </div>
+            </a>
+
+            <div class="nav-links">
+                <a asp-page="/Index" class="nav-item">Home</a>
+                <a asp-page="/About" class="nav-item">About</a>
+                <a asp-page="/Features" class="nav-item">Features</a>
+                <a asp-page="/Marketplace" class="nav-item">Marketplace</a>
+                <a asp-page="/Pricing" class="nav-item">Pricing</a>
+                <a asp-page="/Affiliate" class="nav-item nav-affiliate">
+                    <span>Affiliate Program</span>
+                    <span class="nav-badge-pill">Earn 20%</span>
+                </a>
+            </div>
+
+            <div class="nav-actions">
+                <a asp-page="/Account/Login" class="btn-nav-login">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                    <span>Operator Console</span>
+                </a>
+                <a asp-page="/Signup" class="btn-nav-signup">
+                    <span>Get Started</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Body Content -->
+    <main role="main" class="main-content-area">
+        @RenderBody()
+    </main>
+
+    <!-- Global Marketing Footer -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand-col">
+                    <a asp-page="/Index" class="nav-brand" style="margin-bottom: 14px;">
+                        <div class="brand-symbol"><span>O</span></div>
+                        <div class="brand-text">
+                            <span class="brand-name">OZIKOL<span class="brand-accent">.BCC</span></span>
+                            <span class="brand-sub">ENTERPRISE CLOUD</span>
+                        </div>
+                    </a>
+                    <p class="footer-about-text">
+                        Next-generation multi-tenant cloud platform empowering organizations with isolated SQL databases, executive MIS governance, storefronts, and automated provisioning.
+                    </p>
+                    <div class="footer-trust-pill">
+                        <span>🛡️ 100% Isolated SQL Database Architecture</span>
+                    </div>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Platform</h4>
+                    <ul class="footer-links">
+                        <li><a asp-page="/Index">Overview</a></li>
+                        <li><a asp-page="/Features">MIS Capabilities</a></li>
+                        <li><a asp-page="/Marketplace">Template Marketplace</a></li>
+                        <li><a asp-page="/Pricing">Pricing Plans</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Ecosystem</h4>
+                    <ul class="footer-links">
+                        <li><a asp-page="/Affiliate">Join Affiliate Program</a></li>
+                        <li><a asp-page="/About">Architecture & Mission</a></li>
+                        <li><a asp-page="/Signup">Create Organization</a></li>
+                        <li><a asp-page="/Account/Login">Operator Login (2FA)</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Operations</h4>
+                    <ul class="footer-links">
+                        <li><a asp-page="/Operations/Fleet">Fleet Migration Hub</a></li>
+                        <li><a asp-page="/Account/Login">SuperAdmin Console</a></li>
+                        <li><span class="footer-status-indicator">🟢 Cloud Fleet Operational</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copy">
+                    &copy; @DateTime.UtcNow.Year Ozikol BCC Cloud. All rights reserved. Built for enterprise scale and multi-tenant security.
+                </div>
+                <div class="footer-legal-links">
+                    <span>Privacy Policy</span>
+                    <span>•</span>
+                    <span>Terms of Service</span>
+                    <span>•</span>
+                    <span>Security Whitepaper</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

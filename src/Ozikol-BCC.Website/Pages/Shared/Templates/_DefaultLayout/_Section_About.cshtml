@@ -1,0 +1,32 @@
+@model Ozikol_BCC.Domain.Models.PageSection
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                @if (!string.IsNullOrEmpty(Model.MiniTitle))
+                {
+                    <span class="text-primary fw-bold text-uppercase">@Model.MiniTitle</span>
+                }
+                <h2 class="display-5 fw-bold mb-3">@Model.Title</h2>
+                <p class="lead text-muted mb-4">@Model.Description</p>
+                
+                @if (!string.IsNullOrEmpty(Model.ButtonText) && !string.IsNullOrEmpty(Model.ButtonLink))
+                {
+                    <a href="@Model.ButtonLink" class="btn btn-primary btn-lg px-4 me-md-2">@Model.ButtonText</a>
+                }
+            </div>
+            <div class="col-lg-6">
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" class="img-fluid rounded shadow-sm" alt="@Model.Title" />
+                }
+                else
+                {
+                    <!-- Placeholder image -->
+                    <img src="https://via.placeholder.com/600x400?text=About+Us" class="img-fluid rounded shadow-sm" alt="About Us" />
+                }
+            </div>
+        </div>
+    </div>
+</section>

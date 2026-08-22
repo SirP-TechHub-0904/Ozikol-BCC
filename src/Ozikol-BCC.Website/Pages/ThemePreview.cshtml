@@ -1,0 +1,21 @@
+@page
+@model Ozikol_BCC.Website.Pages.ThemePreviewModel
+@{
+    Layout = "~/Pages/Shared/Layouts/Layout1111.cshtml";
+    ViewData["Title"] = "Theme Preview";
+}
+
+@if (Model.SectionNames != null && Model.SectionNames.Any())
+{
+    @foreach (var sectionName in Model.SectionNames)
+    {
+        @await Html.PartialAsync($"~/Pages/Shared/Templates/AutoDetails/{sectionName}.cshtml")
+    }
+}
+else
+{
+    <div style="padding: 100px; text-align: center; color: white;">
+        <h2>Preview Mode Active</h2>
+        <p>Pass `?section=_Slider_1` or `?sections=_Menu_17ad,_Slider_1,_Footer_91b6` in the URL to render components.</p>
+    </div>
+}

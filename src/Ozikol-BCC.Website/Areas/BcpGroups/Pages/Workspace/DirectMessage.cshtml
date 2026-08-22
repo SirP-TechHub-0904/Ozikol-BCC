@@ -1,0 +1,141 @@
+@page "{groupId:guid}/{userId}"
+@model Ozikol_BCC.Website.Areas.BcpGroups.Pages.Workspace.DirectMessageModel
+@{
+    ViewData["Title"] = "DM with " + Model.TargetUser.FullName;
+    var targetInitial = string.IsNullOrWhiteSpace(Model.TargetUser.FirstName) ? "?" : Model.TargetUser.FirstName[..1];
+}
+
+<div class="bcp-chat-container">
+    <!-- CENTER PANEL: Private Direct Message Workspace -->
+    <div class="bcp-chat-main-panel" style="position:relative;" id="chatMainPanel">
+        <!-- Topbar Header -->
+        <div class="bcp-chat-topbar" style="position:relative; z-index:10;">
+            <div class="bcp-chat-topbar-info">
+                <a href="/BcpGroups/Workspace/Chat/@Model.Group.Id" class="console-btn secondary" style="padding:6px 10px;" title="Back to Group Chat">
+                    <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+                </a>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="bcp-avatar-circle lg status-online" style="position:relative;">
+                        @targetInitial
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; font-weight:700;">@Model.TargetUser.FullName</h3>
+                        <small style="font-size:12px; color:var(--sidebar-color);">Direct Message • @Model.Group.Title</small>
+                    </div>
+                </div>
+            </div>
+            <div class="bcp-chat-topbar-actions">
+                <a href="/BcpGroups/Workspace/Chat/@Model.Group.Id" class="console-btn secondary" style="padding:6px 10px;" title="Back to Group Chat">
+                    <span class="material-symbols-outlined" style="font-size:18px;">groups</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Messages Body Container -->
+        <div class="bcp-chat-messages" id="dmContainer">
+            <div style="text-align:center; padding:16px 0; color:var(--sidebar-color); font-size:12px;">
+                <span class="material-symbols-outlined" style="font-size:24px; vertical-align:middle; color:#2563eb;">lock</span>
+                End-to-End Direct Message thread inside <strong>@Model.Group.Title</strong>
+            </div>
+
+            @foreach (var msg in Model.Messages)
+            {
+                var isMine = msg.SenderUserId == Model.CurrentUserId;
+                <div class="bcp-msg-wrapper @(isMine ? "mine" : "other")">
+                    <div class="bcp-msg-row @(isMine ? "mine" : "other")">
+                        @if (!isMine)
+                        {
+                            <div class="bcp-avatar-circle sm status-online">@targetInitial</div>
+                        }
+                        <div class="bcp-msg-bubble @(isMine ? "mine" : "other")">
+                            @if (!isMine)
+                            {
+                                <div style="margin-bottom:4px; font-weight:700; font-size:12px; color:var(--sidebar-active-color);">
+                                    @Model.TargetUser.FullName
+                                </div>
+                            }
+                            <div class="message-content">@msg.Content</div>
+                            <div class="bcp-msg-meta">
+                                <span>@msg.CreatedAt.ToString("HH:mm")</span>
+                                @if (isMine)
+                                {
+                                    <span class="tick-icon"><span class="material-symbols-outlined" style="font-size:14px; color:#38bdf8;">done_all</span></span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Composer Bar -->
+        <div class="bcp-chat-composer">
+            <form id="dmForm" onsubmit="handleSendDm(event)" class="bcp-composer-form">
+                <input type="text" id="dmInput" class="bcp-input" placeholder="Type a private message to @Model.TargetUser.FirstName..." autocomplete="off" required />
+                <button type="submit" class="console-btn primary" style="padding:8px 14px; border-radius:20px;">
+                    <span class="material-symbols-outlined" style="font-size:20px;">send</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto scroll to bottom of chat on load
+        const dmContainer = document.getElementById('dmContainer');
+        if (dmContainer) {
+            dmContainer.scrollTop = dmContainer.scrollHeight;
+        }
+
+        function handleSendDm(e) {
+            e.preventDefault();
+            const input = document.getElementById('dmInput');
+            const content = input.value.trim();
+            if (!content) return;
+
+            input.value = '';
+
+            // Immediate optimistic UI append
+            appendMyDmBubble(content);
+
+            fetch(`/api/groups/dm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    receiverUserId: "@Model.TargetUser.Id",
+                    groupId: "@Model.Group.Id",
+                    content: content
+                })
+            }).catch(err => {
+                console.error("DM error:", err);
+            });
+        }
+
+        function appendMyDmBubble(content) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bcp-msg-wrapper mine';
+            wrapper.innerHTML = `
+                <div class="bcp-msg-row mine">
+                    <div class="bcp-msg-bubble mine">
+                        <div class="message-content">${escapeHtml(content)}</div>
+                        <div class="bcp-msg-meta">
+                            <span>${timeStr}</span>
+                            <span class="tick-icon"><span class="material-symbols-outlined" style="font-size:14px;">check</span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            dmContainer.appendChild(wrapper);
+            dmContainer.scrollTop = dmContainer.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+}

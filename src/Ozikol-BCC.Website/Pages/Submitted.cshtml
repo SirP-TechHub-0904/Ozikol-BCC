@@ -1,0 +1,77 @@
+@page
+@model JURAY.Web.Pages.SubmittedModel
+@{
+}
+@{
+    ViewData["Title"] = "";
+
+    ViewData["PageName"] = "";
+    ViewData["Description"] = Model.ConfigSetting.CompanyDescription;
+    ViewData["Image"] = Model.ConfigSetting.CompanyLogoUrl;
+
+    @if (Model.ConfigSetting.TemplateLayoutKey == "Layout1111")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/RedbizTheme/_RedbizLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout2222")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Carspot/_CarspotLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout3333")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Alina/_AlinaLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout4444")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Archo/_ArchoLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout5555")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Bizup/_BizupLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout6666")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Industry/_IndustryLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout7777")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Lawnella/_LawnellaLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout8888")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Mistro/_MistroLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout9999")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Senatory/_SenatoryLayout.cshtml";
+    }
+    else if (Model.ConfigSetting.TemplateLayoutKey == "Layout11111111")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Education/_EducationLayout.cshtml";
+    }
+    else if (Model.Templatechoose == "Layout12121212")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Streamlab/_StreamlabLayout.cshtml";
+    }
+    else if (Model.Templatechoose == "Layout13131313")
+    {
+        Layout = "/Pages/Shared/Layouts/Theme/Judge/_JudgeLayout.cshtml";
+    }
+}
+<partial name="Partials/_BreadcrumOthers" />
+
+<div class="section-block">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-12">
+                <div class="section-heading mt-15">
+                    <h2>
+                        SUBMITTED SUCCESSFULLY.
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

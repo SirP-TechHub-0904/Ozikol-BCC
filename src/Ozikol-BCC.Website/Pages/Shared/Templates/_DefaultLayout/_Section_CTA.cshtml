@@ -1,0 +1,17 @@
+@model Ozikol_BCC.Domain.Models.PageSection
+
+<section class="py-5 bg-primary text-white text-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-5 fw-bold mb-3">@Model.Title</h2>
+                <p class="lead mb-4">@Model.Description</p>
+                
+                @if (!string.IsNullOrEmpty(Model.ButtonText) && !string.IsNullOrEmpty(Model.ButtonLink))
+                {
+                    <a href="@Model.ButtonLink" class="btn btn-light btn-lg text-primary fw-bold px-5 rounded-pill">@Model.ButtonText</a>
+                }
+            </div>
+        </div>
+    </div>
+</section>

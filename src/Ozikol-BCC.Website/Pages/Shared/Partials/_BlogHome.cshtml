@@ -1,0 +1,26 @@
+@if (ViewBag.ConfigSetting?.AddBlogToHome == true)
+{
+    var themeData = Context.Request.Query["previewTheme"].FirstOrDefault() ?? ViewBag.ConfigSetting?.TemplateLayoutKey ?? "_DefaultLayout";
+    var themeFolderName = themeData;
+    var componentKey = ViewBag.ConfigSetting?.BlogTemplateKey;
+    
+    // We attempt to load the specific component key template if it exists, otherwise fallback to the base template
+    var partialPath = string.IsNullOrEmpty(componentKey) ? $"~/Pages/Shared/Templates/{themeFolderName}/_BlogHome.cshtml" : $"~/Pages/Shared/Templates/{themeFolderName}/_BlogHome_{componentKey}.cshtml";
+
+    try
+    {
+        @await Html.PartialAsync(partialPath)
+    }
+    catch (Exception ex)
+    {
+        try
+        {
+            // Fallback to base bloghome if the specific keyed one is missing
+            @await Html.PartialAsync($"~/Pages/Shared/Templates/{themeFolderName}/_BlogHome.cshtml")
+        }
+        catch (Exception innerEx)
+        {
+            <!-- BlogHome not found for theme @themeFolderName -->
+        }
+    }
+}

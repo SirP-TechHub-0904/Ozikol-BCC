@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Ozikol-BCC.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:51025;https://localhost:51026"
+    }
+  }
+}

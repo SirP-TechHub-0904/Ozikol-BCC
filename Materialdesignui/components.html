@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - UI Components</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@material/web/": "https://esm.run/@material/web/"
+      }
+    }
+  </script>
+  <script type="module">
+    import '@material/web/all.js';
+  </script>
+
+  <style>
+    .component-section {
+      margin-bottom: 32px;
+    }
+    .component-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .fab-container {
+      position: relative;
+      width: 100%;
+      height: 100px;
+      background: var(--md-sys-color-surface-variant);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+    md-fab {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+    }
+  </style>
+</head>
+<body class="">
+
+  <!-- Sidebar / Navigation Drawer -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="brand-logo">
+        <span class="material-symbols-outlined">space_dashboard</span>
+        VELZON
+      </a>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <!-- Section: PIN NAVIGATION (Dynamically Populated when items pinned) -->
+      <div id="pinned-sidebar-section"></div>
+
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+      
+      <!-- Group: Dashboards -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Dashboards" data-url="index.html" data-icon="dashboard" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Analytics</span></a></li>
+          <li><a href="index.html#crm" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>CRM</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Apps -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">grid_view</span>
+            <span>Apps</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Apps" data-url="javascript:void(0)" data-icon="grid_view" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="javascript:void(0)" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Calendar</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Layouts -->
+      <div class="nav-item">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">view_quilt</span>
+            <span>Layouts</span>
+            <span class="badge-pill badge-hot">Hot</span>
+          </div>
+          <button class="pin-btn" data-title="Layouts" data-url="javascript:void(0)" data-icon="view_quilt" title="Pin Task">
+            <span class="material-symbols-outlined">push_pin</span>
+          </button>
+        </a>
+      </div>
+
+      <!-- Section: PAGES -->
+      <div class="menu-title">Pages</div>
+
+      <!-- Group: Authentication -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">account_circle</span>
+            <span>Authentication</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Authentication" data-url="javascript:void(0)" data-icon="account_circle" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="javascript:void(0)" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Sign In</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI (Expanded Accordion) -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Base UI" data-url="buttons.html" data-icon="architecture" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Forms" data-url="forms.html" data-icon="edit_document" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Form Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Data Table" data-url="list.html" data-icon="table_chart" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="dash">-</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <!-- Company Icon Mark in Topbar -->
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <!-- Sleek Topbar Search Input Box (Desktop) -->
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <!-- Pinned Task Bar (Main Nav Task Chips) -->
+        <div id="pinned-taskbar" class="pinned-taskbar">
+          <!-- Dynamically populated chips -->
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        
+        <!-- Mobile Search Icon Button -->
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <!-- 1. Google-Style 3x6 Feature Grid Dropdown -->
+        <div class="apps-grid-wrapper">
+          <button type="button" class="topbar-action-btn" id="apps-grid-btn" title="Google-style Apps">
+            <span class="material-symbols-outlined">grid_view</span>
+          </button>
+
+          <div id="apps-grid-dropdown" class="apps-grid-dropdown">
+            <div class="apps-grid-header">Your Favorites</div>
+            <div class="apps-grid-container">
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+                  <span class="material-symbols-outlined">account_circle</span>
+                </div>
+                <span class="app-grid-label">Account</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(234, 179, 8, 0.12); color: #eab308;">
+                  <span class="material-symbols-outlined">add_to_drive</span>
+                </div>
+                <span class="app-grid-label">Drive</span>
+              </a>
+              <a href="index.html#analytics" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+                  <span class="material-symbols-outlined">analytics</span>
+                </div>
+                <span class="app-grid-label">Analytics</span>
+              </a>
+              <a href="index.html#crm" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                  <span class="material-symbols-outlined">mail</span>
+                </div>
+                <span class="app-grid-label">Gmail</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(249, 115, 22, 0.12); color: #f97316;">
+                  <span class="material-symbols-outlined">smart_display</span>
+                </div>
+                <span class="app-grid-label">YouTube</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+                  <span class="material-symbols-outlined">auto_awesome</span>
+                </div>
+                <span class="app-grid-label">Gemini</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">
+                  <span class="material-symbols-outlined">map</span>
+                </div>
+                <span class="app-grid-label">Maps</span>
+              </a>
+              <a href="index.html" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(234, 179, 8, 0.12); color: #ca8a04;">
+                  <span class="material-symbols-outlined">search</span>
+                </div>
+                <span class="app-grid-label">Search</span>
+              </a>
+              <a href="javascript:void(0)" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+                  <span class="material-symbols-outlined">calendar_month</span>
+                </div>
+                <span class="app-grid-label">Calendar</span>
+              </a>
+              <a href="javascript:void(0)" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(20, 184, 166, 0.12); color: #14b8a6;">
+                  <span class="material-symbols-outlined">newspaper</span>
+                </div>
+                <span class="app-grid-label">News</span>
+              </a>
+              <a href="javascript:void(0)" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(236, 72, 153, 0.12); color: #ec4899;">
+                  <span class="material-symbols-outlined">photo_library</span>
+                </div>
+                <span class="app-grid-label">Photos</span>
+              </a>
+              <a href="javascript:void(0)" class="app-grid-item">
+                <div class="app-grid-icon-box" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                  <span class="material-symbols-outlined">videocam</span>
+                </div>
+                <span class="app-grid-label">Meet</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Interactive Calendar Widget Dropdown -->
+        <div class="calendar-wrapper">
+          <button type="button" class="topbar-action-btn" id="calendar-btn" title="Calendar">
+            <span class="material-symbols-outlined">calendar_today</span>
+          </button>
+
+          <div id="calendar-dropdown" class="calendar-dropdown-menu">
+            <div class="calendar-header">
+              <span class="calendar-month-title">July 2026</span>
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
+                <button type="button" class="calendar-nav-btn"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
+              </div>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div class="calendar-days-grid">
+              <span class="day-cell empty">28</span>
+              <span class="day-cell empty">29</span>
+              <span class="day-cell empty">30</span>
+              <span class="day-cell">1</span>
+              <span class="day-cell">2</span>
+              <span class="day-cell">3</span>
+              <span class="day-cell">4</span>
+              <span class="day-cell">5</span>
+              <span class="day-cell">6</span>
+              <span class="day-cell">7</span>
+              <span class="day-cell">8</span>
+              <span class="day-cell">9</span>
+              <span class="day-cell">10</span>
+              <span class="day-cell">11</span>
+              <span class="day-cell">12</span>
+              <span class="day-cell">13</span>
+              <span class="day-cell">14</span>
+              <span class="day-cell">15</span>
+              <span class="day-cell">16</span>
+              <span class="day-cell">17</span>
+              <span class="day-cell">18</span>
+              <span class="day-cell">19</span>
+              <span class="day-cell">20</span>
+              <span class="day-cell">21</span>
+              <span class="day-cell today">22</span>
+              <span class="day-cell">23</span>
+              <span class="day-cell">24</span>
+              <span class="day-cell">25</span>
+              <span class="day-cell">26</span>
+              <span class="day-cell">27</span>
+              <span class="day-cell">28</span>
+              <span class="day-cell">29</span>
+              <span class="day-cell">30</span>
+              <span class="day-cell">31</span>
+              <span class="day-cell empty">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Fullscreen Toggle (Desktop) -->
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <!-- 4. Dark/Light Theme Toggle (Desktop) -->
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <!-- 5. Notifications Bell with Badge 3 & Dropdown -->
+        <div class="notifications-wrapper">
+          <button type="button" class="topbar-action-btn" id="notifications-btn" title="Notifications">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="action-badge badge-notify">3</span>
+          </button>
+
+          <div id="notifications-dropdown" class="notifications-dropdown-menu">
+            <div class="notifications-header">
+              <span class="notifications-title">Notifications <span class="badge-pill" style="background:var(--sidebar-active-color); font-size:10px;">3 New</span></span>
+              <button type="button" class="notifications-clear-btn">Clear All</button>
+            </div>
+
+            <div class="notifications-list">
+              <a href="javascript:void(0)" class="notification-item">
+                <div class="notification-avatar-icon" style="background:#0284c7;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">shopping_cart</span>
+                </div>
+                <div class="notification-body">
+                  <span class="notification-item-title">New Order #1294</span>
+                  <span class="notification-item-desc">Anna purchased Velzon Premium Admin Template</span>
+                  <span class="notification-item-time">2 mins ago</span>
+                </div>
+              </a>
+              <a href="javascript:void(0)" class="notification-item">
+                <div class="notification-avatar-icon" style="background:#0ab39c;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">task_alt</span>
+                </div>
+                <div class="notification-body">
+                  <span class="notification-item-title">Project Deployment Successful</span>
+                  <span class="notification-item-desc">Production server build completed cleanly</span>
+                  <span class="notification-item-time">45 mins ago</span>
+                </div>
+              </a>
+              <a href="javascript:void(0)" class="notification-item">
+                <div class="notification-avatar-icon" style="background:#f06548;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">error</span>
+                </div>
+                <div class="notification-body">
+                  <span class="notification-item-title">Server Load Alert</span>
+                  <span class="notification-item-desc">CPU usage peaked at 89% on US East Node</span>
+                  <span class="notification-item-time">2 hrs ago</span>
+                </div>
+              </a>
+            </div>
+
+            <div class="notifications-footer">
+              <a href="javascript:void(0)" class="notifications-footer-link">View All Notifications →</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Pinned Tasks Dropdown Menu -->
+        <div class="pinned-dropdown-wrapper">
+          <button type="button" class="topbar-action-btn" id="pinned-tasks-btn" title="Pinned Tasks">
+            <span class="material-symbols-outlined">push_pin</span>
+          </button>
+          <span id="pinned-count" class="pinned-count-badge" style="display:none;">0</span>
+          
+          <div id="pinned-menu-dropdown" class="pinned-menu-dropdown">
+            <div class="pinned-menu-header">
+              <span>📌 Pinned Tasks</span>
+              <button id="pin-current-page-btn" class="pinned-action-btn">+ Pin Page</button>
+            </div>
+            <div id="pinned-menu-list" class="pinned-menu-list">
+              <!-- Dynamically populated list -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. User Profile Trigger & Dropdown Menu -->
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+
+          <!-- User Profile Dropdown Card -->
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+
+            <!-- Mobile Quick Tools Grid (visible only on mobile screen widths <= 900px) -->
+            <div class="mobile-quick-tools">
+              <div class="mobile-tools-header">Quick Tools</div>
+              <div class="mobile-tools-grid">
+                <button type="button" class="mobile-tool-btn" data-target-menu="apps-grid-dropdown" title="Apps Grid">
+                  <span class="material-symbols-outlined">grid_view</span>
+                  <span class="mobile-tool-label">Apps</span>
+                </button>
+                <button type="button" class="mobile-tool-btn" data-target-menu="calendar-dropdown" title="Calendar">
+                  <span class="material-symbols-outlined">calendar_today</span>
+                  <span class="mobile-tool-label">Calendar</span>
+                </button>
+                <button type="button" class="mobile-tool-btn" data-target-menu="notifications-dropdown" title="Notifications">
+                  <span class="material-symbols-outlined">notifications</span>
+                  <span class="mobile-tool-label">Alerts</span>
+                </button>
+                <button type="button" class="mobile-tool-btn" data-action="theme" title="Toggle Theme">
+                  <span class="material-symbols-outlined">dark_mode</span>
+                  <span class="mobile-tool-label">Theme</span>
+                </button>
+                <button type="button" class="mobile-tool-btn" data-action="fullscreen" title="Fullscreen">
+                  <span class="material-symbols-outlined">fullscreen</span>
+                  <span class="mobile-tool-label">Full</span>
+                </button>
+              </div>
+            </div>
+            
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">account_circle</span>
+                <span>Profile</span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">chat_bubble</span>
+                <span>Messages</span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">task_alt</span>
+                <span>Taskboard</span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">help</span>
+                <span>Help</span>
+              </div>
+            </a>
+
+            <div class="profile-menu-divider"></div>
+
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>Balance : <span class="balance-text">$5971.67</span></span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">settings</span>
+                <span>Settings</span>
+              </div>
+              <span class="badge-pill badge-new">New</span>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">lock</span>
+                <span>Lock screen</span>
+              </div>
+            </a>
+            <a href="javascript:void(0)" class="profile-menu-item">
+              <div class="profile-menu-item-content">
+                <span class="material-symbols-outlined">logout</span>
+                <span>Logout</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Collapsible Mobile Search Input Bar -->
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      
+      <!-- Typography -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Typography</span>
+        <div style="margin-top: 16px;">
+          <div class="display-small">Display Small</div>
+          <div class="headline-large">Headline Large</div>
+          <div class="title-large">Title Large</div>
+          <div class="body-large">Body Large (Default for most text)</div>
+          <div class="label-large">Label Large (Used for buttons, tabs)</div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Buttons</span>
+        <div class="component-row">
+          <md-filled-button>Filled</md-filled-button>
+          <md-outlined-button>Outlined</md-outlined-button>
+          <md-text-button>Text</md-text-button>
+          <md-elevated-button>Elevated</md-elevated-button>
+          <md-filled-tonal-button>Tonal</md-filled-tonal-button>
+        </div>
+        
+        <div class="component-row">
+          <md-filled-button disabled>Disabled</md-filled-button>
+          <md-filled-button>
+            <md-icon slot="icon">send</md-icon>
+            With Icon
+          </md-filled-button>
+        </div>
+      </div>
+
+      <!-- Icon Buttons & FABs -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Icon Buttons & FABs</span>
+        <div class="component-row">
+          <md-icon-button><md-icon>favorite</md-icon></md-icon-button>
+          <md-filled-icon-button><md-icon>add</md-icon></md-filled-icon-button>
+          <md-filled-tonal-icon-button><md-icon>settings</md-icon></md-filled-tonal-icon-button>
+          <md-outlined-icon-button><md-icon>search</md-icon></md-outlined-icon-button>
+        </div>
+        
+        <div class="fab-container">
+          <md-fab variant="primary" label="Create">
+            <md-icon slot="icon">edit</md-icon>
+          </md-fab>
+        </div>
+      </div>
+
+      <!-- Chips -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Chips</span>
+        <div class="component-row">
+          <md-assist-chip label="Assist"></md-assist-chip>
+          <md-filter-chip label="Filter" selected></md-filter-chip>
+          <md-input-chip label="Input" remove-only></md-input-chip>
+          <md-suggestion-chip label="Suggestion"></md-suggestion-chip>
+        </div>
+      </div>
+
+      <!-- Progress Indicators -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Progress Indicators</span>
+        <div class="component-row">
+          <md-circular-progress indeterminate></md-circular-progress>
+          <md-circular-progress value="0.75"></md-circular-progress>
+        </div>
+        <div class="component-row" style="margin-top: 24px;">
+          <md-linear-progress indeterminate style="width: 100%;"></md-linear-progress>
+        </div>
+        <div class="component-row" style="margin-top: 16px;">
+          <md-linear-progress value="0.5" style="width: 100%;"></md-linear-progress>
+        </div>
+      </div>
+
+      <!-- Dialogs -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Dialogs</span>
+        <div class="component-row">
+          <md-filled-button id="open-dialog-btn">Open Dialog</md-filled-button>
+        </div>
+        
+        <md-dialog id="demo-dialog">
+          <div slot="headline">Discard draft?</div>
+          <div slot="content">This will permanently delete the current draft. You cannot undo this action.</div>
+          <div slot="actions">
+            <md-text-button form="form" value="cancel" id="cancel-dialog-btn">Cancel</md-text-button>
+            <md-filled-button form="form" value="discard" id="discard-dialog-btn">Discard</md-filled-button>
+          </div>
+        </md-dialog>
+      </div>
+
+      <!-- Tabs -->
+      <div class="m3-card component-section">
+        <span class="title-large" style="border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px; display: block;">Tabs</span>
+        <div style="margin-top: 16px;">
+          <md-tabs>
+            <md-primary-tab>Movies</md-primary-tab>
+            <md-primary-tab active>Photos</md-primary-tab>
+            <md-primary-tab>Music</md-primary-tab>
+          </md-tabs>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Dialog logic
+      const dialog = document.getElementById('demo-dialog');
+      const openBtn = document.getElementById('open-dialog-btn');
+      const cancelBtn = document.getElementById('cancel-dialog-btn');
+      const discardBtn = document.getElementById('discard-dialog-btn');
+      
+      openBtn.addEventListener('click', () => { dialog.show(); });
+      cancelBtn.addEventListener('click', () => { dialog.close(); });
+      discardBtn.addEventListener('click', () => { dialog.close(); });
+    });
+  </script>
+</body>
+</html>

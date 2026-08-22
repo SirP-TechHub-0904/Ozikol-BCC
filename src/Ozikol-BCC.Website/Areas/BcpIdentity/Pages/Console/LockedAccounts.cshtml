@@ -1,0 +1,74 @@
+@page
+@model LockedAccountsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Locked Accounts";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "Locked User Accounts",
+    Subtitle = "Monitor and unlock user accounts locked due to maximum failed login attempts.",
+    Icon = "lock_clock",
+    Eyebrow = "Identity Console",
+    BackUrl = "/BcpConsole/Console/Dashboard"
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px;">
+        <div>
+            <strong>Status Update</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+<section class="m3-card bcp-card" style="padding:24px;">
+    <div class="card-header" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <span class="card-title" style="font-size:18px; font-weight:600;">Locked Out Users (@Model.LockedUsers.Count)</span>
+    </div>
+
+    @if (Model.LockedUsers.Count == 0)
+    {
+        <div style="padding:32px; text-align:center; color:var(--sidebar-color);">
+            <span class="material-symbols-outlined" style="font-size:48px; color:var(--md-sys-color-primary);">verified_user</span>
+            <p style="margin-top:12px; font-size:15px;">No locked accounts currently found.</p>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface-container-low);">
+                        <th style="padding:12px;">User</th>
+                        <th style="padding:12px;">Email</th>
+                        <th style="padding:12px;">Failed Attempts</th>
+                        <th style="padding:12px;">Lockout End</th>
+                        <th style="padding:12px; text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.LockedUsers)
+                    {
+                        <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant);">
+                            <td style="padding:12px; font-weight:500;">@(string.IsNullOrWhiteSpace(user.FullName) ? "User" : user.FullName)</td>
+                            <td style="padding:12px;">@user.Email</td>
+                            <td style="padding:12px;"><span class="badge-pill" style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 8px; border-radius:12px;">@user.AccessFailedCount failed</span></td>
+                            <td style="padding:12px;">@user.LockoutEnd?.ToString("yyyy-MM-dd HH:mm UTC")</td>
+                            <td style="padding:12px; text-align:right;">
+                                <form method="post" asp-page-handler="Unlock" asp-route-userId="@user.Id" style="display:inline;">
+                                    <button type="submit" class="btn-custom active" style="padding:6px 12px; font-size:13px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                                        <span class="material-symbols-outlined" style="font-size:16px;">lock_open</span>
+                                        <span>Unlock Account</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

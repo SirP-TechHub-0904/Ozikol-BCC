@@ -1,0 +1,59 @@
+﻿@page "/kb"
+@model Ozikol_BCC.Website.Pages.KnowledgeBase.IndexModel
+@{
+    ViewData["Title"] = "Platform Documentation";
+    Layout = "_KbLayout";
+}
+
+<div class="mb-5">
+    <h2 class="fw-bold mb-2">Welcome to the Knowledge Base</h2>
+    <p class="text-muted fs-5">Browse our documentation to learn how to use the platform effectively.</p>
+</div>
+
+<div class="row g-4">
+    @if (Model.Manuals.Any())
+    {
+        @foreach (var manual in Model.Manuals)
+        {
+            <div class="col-md-6 col-lg-4 searchable-item">
+                <a href="/kb/@manual.ModuleFolder" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 kb-card-hover">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-folder2 text-primary fs-4"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-0">@manual.Title</h5>
+                            </div>
+                            <p class="text-muted fs-7 mb-0">@(manual.Overview ?? "Documentation for " + manual.Title)</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0 pb-4 px-4 text-primary fs-7 fw-semibold">
+                            Browse Articles <i class="bi bi-arrow-right ms-1"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-journal-x text-muted fs-1 mb-3 d-block opacity-50"></i>
+                <h5 class="text-muted">No documentation available</h5>
+                <p class="text-muted fs-7">There is no help content available for your current access level.</p>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .kb-card-hover {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kb-card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+</style>
+

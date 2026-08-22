@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - 15 Dashboard Widgets Showcase</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+
+  <style>
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .widget-badge-num {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: rgba(2, 132, 199, 0.12);
+      color: #0284c7;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Widgets" data-url="widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">15 Dashboard Widgets Showcase</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Explore 15 distinct, production-ready admin widgets including Crypto Wallets, System Meters, Real-time Traffic, Server Health, Support Tickets, Currency Converters, and Sticky Notes.</p>
+      </div>
+
+      <!-- 15 Widgets Grid -->
+      <div class="widget-grid">
+
+        <!-- WIDGET 1: Crypto Wallet & Balance Widget -->
+        <div class="m3-card" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #FFFFFF; border: none;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+            <div>
+              <span class="widget-badge-num" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">WIDGET 1</span>
+              <h4 style="font-size: 14px; font-weight: 700; margin: 6px 0 2px 0; color: #94a3b8;">Crypto Balance Widget</h4>
+              <h3 style="font-size: 24px; font-weight: 700; margin: 0; color: #FFFFFF;">$84,520.40</h3>
+            </div>
+            <span class="material-symbols-outlined" style="font-size: 32px; color: #38bdf8;">account_balance_wallet</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 8px; font-size: 12.5px;">
+            <div><span style="color:#94a3b8; font-size:11px; display:block;">BITCOIN (BTC)</span><strong style="color:#f59e0b;">2.485 BTC</strong></div>
+            <div><span style="color:#94a3b8; font-size:11px; display:block;">ETHEREUM (ETH)</span><strong style="color:#6366f1;">18.42 ETH</strong></div>
+          </div>
+        </div>
+
+        <!-- WIDGET 2: Cloud Storage Meter Widget -->
+        <div class="m3-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="widget-badge-num">WIDGET 2</span>
+            <span style="font-size: 13px; font-weight: 700; color: #0284c7;">78.4 GB / 100 GB</span>
+          </div>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 10px 0;">Cloud Storage Meter</h4>
+          <div style="width: 100%; height: 10px; background: var(--sidebar-hover-bg); border-radius: 5px; overflow: hidden; margin-bottom: 10px;">
+            <div style="width: 78.4%; height: 100%; background: linear-gradient(90deg, #0284c7, #0ea5e9); border-radius: 5px;"></div>
+          </div>
+          <span style="font-size: 12px; color: var(--sidebar-header-color);">21.6 GB remaining. Upgrade to 1 TB plan.</span>
+        </div>
+
+        <!-- WIDGET 3: Active Team Members Widget -->
+        <div class="m3-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="widget-badge-num">WIDGET 3</span>
+            <span class="badge-pill" style="background:#22c55e;">15 Online</span>
+          </div>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">Active Team Members</h4>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="David" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80" alt="Sarah" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center;">+12</div>
+          </div>
+        </div>
+
+        <!-- WIDGET 4: Revenue & Growth KPI Widget -->
+        <div class="m3-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="widget-badge-num">WIDGET 4</span>
+              <h4 style="font-size: 13px; font-weight: 600; color: var(--sidebar-header-color); margin: 6px 0 2px 0;">TOTAL REVENUE KPI</h4>
+              <h3 style="font-size: 24px; font-weight: 700; margin: 0;">$54,239.50</h3>
+              <span class="badge-pill" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; margin-top: 6px; display: inline-block;">+18.4% ↑</span>
+            </div>
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 5: Real-Time Traffic by Country Widget -->
+        <div class="m3-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="widget-badge-num">WIDGET 5</span>
+            <span style="font-size: 12px; font-weight: 700; color: #0284c7;">Live Traffic</span>
+          </div>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 10px 0;">Traffic by Country</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🇺🇸 United States</span>
+              <strong>45.2% (18.4k)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🇩🇪 Germany</span>
+              <strong>22.1% (9.2k)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🇬🇧 United Kingdom</span>
+              <strong>18.5% (7.6k)</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 6: Activity Timeline Feed Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 6</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 12px 0;">Activity Feed Timeline</h4>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12.5px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: #0ab39c;">check_circle</span>
+              <div><strong>Invoice #1094 Paid</strong> <span style="font-size: 11px; opacity: 0.7;">• 5m ago</span></div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">local_shipping</span>
+              <div><strong>Order #5541 Shipped</strong> <span style="font-size: 11px; opacity: 0.7;">• 1h ago</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 7: Task Progress Tracker Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 7</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Project Milestones Tracker</h4>
+          <div style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span>Sprint 44 Release</span><strong>84%</strong>
+            </div>
+            <md-linear-progress value="0.84" style="width: 100%;"></md-linear-progress>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span>Database Migration</span><strong>95%</strong>
+            </div>
+            <md-linear-progress value="0.95" style="width: 100%;"></md-linear-progress>
+          </div>
+        </div>
+
+        <!-- WIDGET 8: Weather & Forecast Widget -->
+        <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); color: #FFF; border: none;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="widget-badge-num" style="background: rgba(255,255,255,0.2); color: #FFF;">WIDGET 8</span>
+              <h4 style="font-size: 13px; font-weight: 600; margin: 6px 0 2px 0; opacity: 0.9;">San Francisco, CA</h4>
+              <h3 style="font-size: 28px; font-weight: 700; margin: 0;">72°F</h3>
+            </div>
+            <span class="material-symbols-outlined" style="font-size: 38px;">wb_sunny</span>
+          </div>
+          <span style="font-size: 12px; opacity: 0.9; display: block; margin-top: 8px;">Sunny & Clear • Humidity 42%</span>
+        </div>
+
+        <!-- WIDGET 9: Calendar Events Reminder Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 9</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Upcoming Reminders</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+            <div style="padding: 8px; background: rgba(2, 132, 199, 0.1); border-radius: 6px; border-left: 3px solid #0284c7;">
+              <strong>Team Sync Meeting</strong> <span style="font-size: 11px; opacity: 0.7; display: block;">2:00 PM - 2:30 PM</span>
+            </div>
+            <div style="padding: 8px; background: rgba(168, 85, 247, 0.1); border-radius: 6px; border-left: 3px solid #a855f7;">
+              <strong>Product Launch Demo</strong> <span style="font-size: 11px; opacity: 0.7; display: block;">4:00 PM - 5:00 PM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 10: Server Health & CPU Monitor Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 10</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Server System Health</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center;">
+            <div style="background: var(--sidebar-hover-bg); padding: 10px; border-radius: 8px;">
+              <span style="font-size: 11px; color: var(--sidebar-header-color); display: block;">CPU USAGE</span>
+              <strong style="font-size: 18px; color: #0284c7;">42.8%</strong>
+            </div>
+            <div style="background: var(--sidebar-hover-bg); padding: 10px; border-radius: 8px;">
+              <span style="font-size: 11px; color: var(--sidebar-header-color); display: block;">RAM USAGE</span>
+              <strong style="font-size: 18px; color: #a855f7;">68.4%</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 11: Top Selling Products Leaderboard Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 11</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Top Selling Products</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>1. Velzon Admin Template</span><strong>1,480 Sales</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>2. Material 3 Icon Pack</span><strong>920 Sales</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 12: Recent Invoice Transactions Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 12</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Recent Invoices</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>#INV-4412 • $250.00</span><span class="badge-pill" style="background:#0ab39c;">Paid</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>#INV-4413 • $89.00</span><span class="badge-pill" style="background:#f7b84b;">Pending</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 13: Customer Support Ticket Status Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 13</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Support Tickets Overview</h4>
+          <div style="display: flex; justify-content: space-between; text-align: center;">
+            <div><strong style="font-size: 20px; color: #ef4444;">14</strong><span style="font-size: 11px; display: block;">Open</span></div>
+            <div><strong style="font-size: 20px; color: #f59e0b;">5</strong><span style="font-size: 11px; display: block;">Pending</span></div>
+            <div><strong style="font-size: 20px; color: #22c55e;">28</strong><span style="font-size: 11px; display: block;">Resolved</span></div>
+          </div>
+        </div>
+
+        <!-- WIDGET 14: Currency Exchange Converter Widget -->
+        <div class="m3-card">
+          <span class="widget-badge-num">WIDGET 14</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 10px 0;">Quick Exchange Rates</h4>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px;">
+            <div style="display: flex; justify-content: space-between;"><span>1 USD =</span><strong>0.92 EUR</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>1 USD =</span><strong>0.78 GBP</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span>1 USD =</span><strong>154.20 JPY</strong></div>
+          </div>
+        </div>
+
+        <!-- WIDGET 15: Quick Notes Memo Scratchpad Widget -->
+        <div class="m3-card" style="background: rgba(254, 240, 138, 0.25); border-color: rgba(234, 179, 8, 0.3);">
+          <span class="widget-badge-num" style="background: rgba(234, 179, 8, 0.2); color: #ca8a04;">WIDGET 15</span>
+          <h4 style="font-size: 15px; font-weight: 700; margin: 6px 0 6px 0;">Quick Sticky Memo Pad</h4>
+          <textarea style="width: 100%; height: 60px; background: transparent; border: none; font-family: inherit; font-size: 13px; color: inherit; resize: none;" placeholder="Type scratchpad note here..."></textarea>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="layout.js"></script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Spatial UI & XR Layouts Showcase</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+
+  <style>
+    /* Spatial UI Glassmorphism & XR Styling */
+    .spatial-viewport-bg {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.85) 100%), 
+                  url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1600&auto=format&fit=crop&q=80');
+      background-size: cover;
+      background-position: center;
+      border-radius: 16px;
+      padding: 32px 24px;
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+      min-height: 480px;
+    }
+
+    .spatial-dock-pill {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 14px 10px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+    }
+    body.dark-mode .spatial-dock-pill {
+      background: rgba(15, 23, 42, 0.75);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .spatial-dock-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0284c7;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .spatial-dock-icon:hover, .spatial-dock-icon.active {
+      background: #0284c7;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    .spatial-glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18);
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    body.dark-mode .spatial-glass-card {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #FFFFFF;
+    }
+
+    .use-case-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(2, 132, 199, 0.15);
+      color: #0284c7;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Widgets" data-url="widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Page Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Spatial UI & Extended Reality (XR) Showcase</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Explore 5 practical ways to use Google Material Design for XR: Spatial Floating Dock Navigation, Glassmorphism Dual-Pane Inbox, Floating KPI Dashboards, Spatial Media Player, and Floating Inspector Overlays.</p>
+      </div>
+
+      <!-- ==========================================
+           WAY 1: DETACHED SPATIAL DOCK & DUAL-PANE INBOX
+           ========================================== -->
+      <div class="m3-card" style="margin-bottom: 32px;">
+        <span class="use-case-tag">WAY 1 OF 5</span>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0;">Detached Floating Dock & Dual-Pane Spatial Inbox (Exact M3 for XR Pattern)</h3>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Ideal for Email clients, Messenger apps, and Document Workspaces in 3D headsets and modern web apps.</p>
+
+        <div class="spatial-viewport-bg">
+          <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+            
+            <!-- Detached Floating Dock Pill -->
+            <div class="spatial-dock-pill">
+              <button class="spatial-dock-icon active" title="Inbox"><span class="material-symbols-outlined">mail</span></button>
+              <button class="spatial-dock-icon" title="Drafts"><span class="material-symbols-outlined">edit</span></button>
+              <button class="spatial-dock-icon" title="Call"><span class="material-symbols-outlined">call</span></button>
+              <button class="spatial-dock-icon" title="Starred"><span class="material-symbols-outlined">star</span></button>
+              <button class="spatial-dock-icon" title="Settings"><span class="material-symbols-outlined">settings</span></button>
+            </div>
+
+            <!-- Left Panel: Inbox Message List Card -->
+            <div class="spatial-glass-card" style="flex: 1; min-width: 280px; max-width: 340px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <span style="font-size: 14px; font-weight: 700;">Messages</span>
+                <span class="badge-pill badge-new">3 Unread</span>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="padding: 10px; background: rgba(2, 132, 199, 0.12); border-radius: 10px; border-left: 3px solid #0284c7;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 2px;">
+                    <span>So Dad</span>
+                    <span style="opacity: 0.7;">30m ago</span>
+                  </div>
+                  <div style="font-size: 12px; opacity: 0.85;">Dinner Club: I think it's time for us to try that new noodle shop downtown...</div>
+                </div>
+
+                <div style="padding: 10px; background: rgba(255,255,255,0.4); border-radius: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 2px;">
+                    <span>Lily McDonald</span>
+                    <span style="opacity: 0.7;">2h ago</span>
+                  </div>
+                  <div style="font-size: 12px; opacity: 0.85;">This food show is made for you...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel: Full Message Reader Card -->
+            <div class="spatial-glass-card" style="flex: 2; min-width: 320px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                  <h4 style="font-size: 16px; font-weight: 700; margin: 0 0 4px 0;">Dinner Club</h4>
+                  <span style="font-size: 12px; opacity: 0.75;">3 Messages in thread</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <md-icon-button aria-label="Archive"><md-icon>archive</md-icon></md-icon-button>
+                  <md-icon-button aria-label="Delete"><md-icon>delete</md-icon></md-icon-button>
+                </div>
+              </div>
+
+              <div style="font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
+                <p style="margin-top: 0;">To me, Zaid, and Lily,</p>
+                <p>I think it's time for us to finally try that new noodle shop downtown that doesn't use menus. Anyone else have other suggestions for dinner club this week?</p>
+              </div>
+
+              <div style="display: flex; gap: 10px;">
+                <md-filled-button style="--md-filled-button-container-color: #0284c7;">
+                  <md-icon slot="icon">reply</md-icon> Reply
+                </md-filled-button>
+                <md-outlined-button>Reply All</md-outlined-button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           WAY 2: FLOATING MULTI-LAYER ANALYTICS DASHBOARD
+           ========================================== -->
+      <div class="m3-card" style="margin-bottom: 32px;">
+        <span class="use-case-tag">WAY 2 OF 5</span>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0;">Spatial Multi-Layer KPI Analytics Overlay</h3>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Ideal for Executive Financial Overviews, Crypto Portfolios, and Live Monitoring Screens.</p>
+
+        <div class="spatial-viewport-bg" style="min-height: 320px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+            
+            <div class="spatial-glass-card">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #0284c7;">SPATIAL REVENUE</span>
+              <h3 style="font-size: 26px; font-weight: 700; margin: 8px 0 4px 0;">$124,590.00</h3>
+              <span class="badge-pill" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">+24.8% spatial growth</span>
+            </div>
+
+            <div class="spatial-glass-card">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #a855f7;">XR ACTIVE USERS</span>
+              <h3 style="font-size: 26px; font-weight: 700; margin: 8px 0 4px 0;">48,210</h3>
+              <span class="badge-pill" style="background: rgba(168, 85, 247, 0.2); color: #a855f7;">+14.2% concurrent</span>
+            </div>
+
+            <div class="spatial-glass-card">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #f59e0b;">SPATIAL SESSIONS</span>
+              <h3 style="font-size: 26px; font-weight: 700; margin: 8px 0 4px 0;">3,480 hrs</h3>
+              <span class="badge-pill" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">98.4% uptime</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           WAY 3: SPATIAL MEDIA PLAYER & STREAM CANVAS
+           ========================================== -->
+      <div class="m3-card" style="margin-bottom: 32px;">
+        <span class="use-case-tag">WAY 3 OF 5</span>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0;">Spatial Cinema & Media Player Canvas</h3>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Ideal for Video Streaming, 3D Canvas Previews, and Virtual Presentation Rooms.</p>
+
+        <div class="spatial-viewport-bg" style="display: flex; flex-direction: column; justify-content: flex-end; min-height: 380px;">
+          
+          <!-- Floating Control Bar -->
+          <div class="spatial-glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 48px; height: 48px; border-radius: 12px; background: #0284c7; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined">play_circle</span>
+              </div>
+              <div>
+                <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 2px 0;">Material Design for XR - Keynote</h4>
+                <span style="font-size: 12px; opacity: 0.75;">Google Developer Preview • 1080p Spatial Stream</span>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <md-icon-button><md-icon>skip_previous</md-icon></md-icon-button>
+              <button style="width: 44px; height: 44px; border-radius: 50%; background: #0284c7; color: #FFFFFF; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined">pause</span>
+              </button>
+              <md-icon-button><md-icon>skip_next</md-icon></md-icon-button>
+              <md-slider value="70" style="width: 140px;"></md-slider>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==========================================
+           WAY 4: FLOATING SPATIAL KANBAN BOARD
+           ========================================== -->
+      <div class="m3-card" style="margin-bottom: 32px;">
+        <span class="use-case-tag">WAY 4 OF 5</span>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0;">Spatial Floating Kanban & Task Workspace</h3>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Ideal for Agile Task Boards, Project Planning, and Collaborative Workspaces.</p>
+
+        <div class="spatial-viewport-bg" style="min-height: 340px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            
+            <!-- Column 1 -->
+            <div class="spatial-glass-card">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; margin-bottom: 12px;">
+                <span>TO DO</span>
+                <span class="badge-pill" style="background:#0284c7; color:#FFF;">2</span>
+              </div>
+              <div style="padding: 10px; background: rgba(255,255,255,0.4); border-radius: 8px; font-size: 12.5px; font-weight: 600;">
+                Integrate Spatial Dock Pill Navigation
+              </div>
+            </div>
+
+            <!-- Column 2 -->
+            <div class="spatial-glass-card">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; margin-bottom: 12px;">
+                <span>IN PROGRESS</span>
+                <span class="badge-pill" style="background:#f59e0b; color:#FFF;">1</span>
+              </div>
+              <div style="padding: 10px; background: rgba(2,132,199,0.15); border-radius: 8px; font-size: 12.5px; font-weight: 600; border-left: 3px solid #0284c7;">
+                Build M3 Glassmorphism Overlay Cards
+              </div>
+            </div>
+
+            <!-- Column 3 -->
+            <div class="spatial-glass-card">
+              <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 13px; margin-bottom: 12px;">
+                <span>DONE</span>
+                <span class="badge-pill" style="background:#22c55e; color:#FFF;">3</span>
+              </div>
+              <div style="padding: 10px; background: rgba(34,197,94,0.15); border-radius: 8px; font-size: 12.5px; font-weight: 600;">
+                Approved Material for XR Layout Plan
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           WAY 5: FLOATING INSPECTOR / PROFILE OVERLAY
+           ========================================== -->
+      <div class="m3-card">
+        <span class="use-case-tag">WAY 5 OF 5</span>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 6px 0;">Spatial Detached Inspector & User Profile Widget</h3>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Ideal for Quick Action Popovers, Property Inspectors, and User Context Cards.</p>
+
+        <div class="spatial-viewport-bg" style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
+          <div class="spatial-glass-card" style="max-width: 360px; width: 100%; text-align: center;">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="Anna Adame" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #0284c7; margin-bottom: 12px;">
+            <h4 style="font-size: 17px; font-weight: 700; margin: 0 0 2px 0;">Anna Adame</h4>
+            <span style="font-size: 12px; color: #0284c7; font-weight: 600; display: block; margin-bottom: 14px;">Spatial UI Architect</span>
+            
+            <div style="display: flex; justify-content: center; gap: 10px;">
+              <md-filled-button style="--md-filled-button-container-color: #0284c7;">Connect</md-filled-button>
+              <md-outlined-button>View Profile</md-outlined-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="layout.js"></script>
+</body>
+</html>

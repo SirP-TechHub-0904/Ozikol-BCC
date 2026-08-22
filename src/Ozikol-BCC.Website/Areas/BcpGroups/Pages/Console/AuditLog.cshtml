@@ -1,0 +1,48 @@
+@page "{id:guid}"
+@model Ozikol_BCC.Website.Areas.BcpGroups.Pages.Console.AuditLogModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Audit Log - " + Model.GroupTitle;
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "Committees & Groups",
+    Title = "Compliance Audit Log",
+    Subtitle = "Group: " + Model.GroupTitle + " — Preserved message history, edits, soft-deletions, and moderation records.",
+    Icon = "shield_check",
+    BackUrl = "/BcpGroups/Console/Details/" + Model.GroupId,
+    BackText = "Group Details"
+})
+
+<section class="m3-card bcp-card">
+    <div class="bcp-table-wrap">
+        <table class="bcp-table">
+            <thead>
+                <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Original Content</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.AuditLogs.Any())
+                {
+                    <tr><td colspan="5" class="text-center py-4 text-muted">No compliance audit entries logged for this group.</td></tr>
+                }
+                @foreach (var log in Model.AuditLogs)
+                {
+                    <tr>
+                        <td class="text-muted small">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td><strong>@(log.User?.FullName ?? "System")</strong></td>
+                        <td><span class="badge bg-light text-dark">@log.Action</span></td>
+                        <td><code class="small">@log.OriginalContent</code></td>
+                        <td><small class="text-muted">@log.Details</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

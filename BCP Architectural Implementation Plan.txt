@@ -1,0 +1,545 @@
+# BCP Architectural Implementation Plan
+
+This document is the corrected implementation plan for rebuilding the BCP platform from scratch inside the existing `Ozikol-BCC` solution.
+
+The old BCP Areas were deleted, but the solution still contains important BCP foundation code: domain models, DbContext registrations, authorization services, feature billing entities, tenant support, payment services, and background workers. The best approach is to preserve the useful foundation and rebuild the BCP UI and feature structure cleanly.
+
+---
+
+## 1. Current Solution Structure
+
+The solution currently contains these projects:
+
+### `Ozikol-BCC.Domain`
+Core entity/model layer.
+
+This project contains:
+
+* `Profile`
+* `AppRole`
+* `BcpFeature`
+* `BcpUserFeatureRole`
+* BCP models for reports, ticketing, elections, finance, grants, projects, equipment, newsletters, SMS, user management, and more.
+
+This project should remain the source of truth for business entities.
+
+### `Ozikol-BCC.Application`
+Application service and repository layer.
+
+This project contains:
+
+* DTOs
+* repositories
+* payment services
+* notification services
+* scheduler background services
+* current BCP User Management repository
+
+New feature-specific business logic should generally live here, not directly inside Razor PageModels.
+
+### `Ozikol-BCC.Infrastructure`
+Infrastructure and tenant support layer.
+
+This project contains:
+
+* `TenantProvider`
+* `TenantContext`
+* tenant configuration options
+
+Current tenancy is configuration-based. A central registry database can be added later when the System Admin app is introduced.
+
+### `Ozikol-BCC.Persistence.EF.SQL`
+Entity Framework SQL persistence layer.
+
+This project contains:
+
+* `DashboardDbContext`
+* EF migrations
+* BCP DbSets
+* seeders
+* EF infrastructure helpers
+
+This project already registers many BCP tables and should not be deleted during the UI rebuild.
+
+### `Ozikol-BCC.Persistence.EF.DbMigrator`
+Worker project for running database migrations.
+
+This project migrates the base database and configured tenant databases.
+
+### `Ozikol-BCC.Website`
+Main ASP.NET Core Razor Pages website.
+
+This project contains:
+
+* public website pages
+* Identity setup
+* middleware
+* controllers
+* filters
+* BCP authorization service
+* BCP dashboard toggle controller
+
+The old `Areas` folder has been deleted. This is currently expected, but some code still references deleted Area classes and must be corrected.
+
+### `Ozikol-BCC.CloudinaryServices`
+Cloudinary media upload integration.
+
+### `Ozikol-BCC.EmailServices.Postmark`
+Postmark email integration.
+
+### `Materialdesignui`
+Static UI reference files.
+
+This is not a .NET project, but it can guide the new BCP dashboard design.
+
+---
+
+## 2. Current Important Issue
+
+The solution currently has a broken reference caused by deleting the old BCP Areas.
+
+`BcpFeatureAccessFilter` still references:
+
+```csharp
+Ozikol_BCC.Website.Areas.BcpManagement.Pages.IndexModel.AvailableFeatures
+```
+
+Because the `Areas` folder was deleted, this reference is no longer valid.
+
+### Correction
+
+Feature definitions must not live inside a Razor PageModel.
+
+Create a central feature catalog, for example:
+
+```text
+Ozikol-BCC.Website/Services/BcpFeatureCatalog.cs
+```
+
+or, if later shared by multiple projects:
+
+```text
+Ozikol-BCC.Application/BCP/BcpFeatureCatalog.cs
+```
+
+The catalog should define stable feature metadata:
+
+* feature name
+* module folder / route key
+* description
+* icon
+* sort order
+* whether the feature has Console pages
+* whether the feature has Workspace pages
+
+Then `BcpFeatureAccessFilter`, dashboards, billing pages, sidebar navigation, and role assignment pages should all read from this one catalog.
+
+---
+
+## 3. Role-Based Access Control Strategy
+
+The platform should use layered roles.
+
+Do not rely on one simple `Admin` role for everything.
+
+### Layer 1: Platform Roles
+
+These are for the software/platform owner.
+
+Examples:
+
+* `SystemOwner`
+* `SystemSupport`
+* `SystemBillingAdmin`
+
+These roles belong in the future separate System Admin app. They should manage tenants, subscriptions, global pricing, and tenant suspension.
+
+### Layer 2: Tenant Roles
+
+These are broad roles inside one tenant organization.
+
+Examples:
+
+* `TenantOwner`
+* `TenantAdmin`
+* `TenantStaff`
+* `TenantUser`
+
+In the current app, some legacy roles already exist, such as:
+
+* `mSuperAdmin`
+* `mAdmin`
+* `Admin`
+* `Administrator`
+* `Editor`
+
+These can be preserved during transition, but the new BCP should gradually move toward clearer tenant role names.
+
+### Layer 3: Feature Roles
+
+These control access to specific BCP modules.
+
+This is already represented by:
+
+```csharp
+BcpUserFeatureRole
+```
+
+Current fields:
+
+* `ProfileId`
+* `FeatureAreaKey`
+* `ActionRole`
+* `IsActive`
+* `AssignedBy`
+* `Date`
+
+Recommended feature action roles:
+
+```text
+GlobalEditor
+FeatureEditor
+Readonly
+```
+
+Meaning:
+
+* `GlobalEditor`: can manage all BCP features within the tenant.
+* `FeatureEditor`: can manage one assigned feature.
+* `Readonly`: can view one assigned feature but cannot create, edit, delete, approve, or configure records.
+
+### Server-Side Enforcement
+
+Permissions must be enforced on the server.
+
+The UI can hide links and buttons, but that is not enough. The app must also block unauthorized page access and POST actions.
+
+Current services already point in this direction:
+
+* `IBcpAuthorizationService`
+* `BcpAuthorizationService`
+* `BcpFeatureAccessFilter`
+* `BcpAuthorizationHandler`
+
+These should be kept and cleaned up.
+
+---
+
+## 4. Workspace vs Console
+
+Each person should use one account.
+
+A normal user sees the Workspace.
+
+If that same user has at least one active `BcpUserFeatureRole`, they can switch into Console mode for the assigned feature or platform section.
+
+### Workspace
+
+Used for personal actions:
+
+* My Profile
+* My Tickets
+* My Dues
+* My Votes
+* My Applications
+* My Reports
+* My Notifications
+
+### Console
+
+Used for organizational management:
+
+* Manage Users
+* Manage Reports
+* Manage Ticketing
+* Manage Elections
+* Manage Finance
+* Manage Projects
+* Manage Communication
+
+The current working mode should be stored in a simple, reliable place such as session, claim, or a short-lived preference. The role does not change the user's identity. It only changes the portal context and navigation.
+
+---
+
+## 5. UI Strategy
+
+The rebuilt BCP UI should use Razor Pages Areas.
+
+Recommended base structure:
+
+```text
+Ozikol-BCC.Website/
+  Areas/
+    BCP/
+      Pages/
+        Dashboard/
+          Index.cshtml
+          Index.cshtml.cs
+        Shared/
+          _BcpLayout.cshtml
+          Partials/
+            _FeatureCard.cshtml
+            _StatCard.cshtml
+            _Sidebar.cshtml
+            _Topbar.cshtml
+    BcpUserManagement/
+      Pages/
+        Index.cshtml
+        Roles.cshtml
+        Categories.cshtml
+        Kpis.cshtml
+```
+
+### Partial Views
+
+Use partials for reusable UI blocks.
+
+Example:
+
+```html
+<partial name="Shared/Partials/_FeatureCard" model="feature" />
+```
+
+Partials should render UI only. Data should come from the PageModel or application services.
+
+Avoid putting important business rules or feature registry data inside `.cshtml` files or page-specific PageModels.
+
+---
+
+## 6. Feature Management And Billing
+
+The platform already has:
+
+```csharp
+BcpFeature
+BcpFeatureInvoice
+FeatureBillingStatus
+FeatureBillingDuration
+```
+
+These should be used for tenant-level module activation.
+
+Each feature can be:
+
+* `Disabled`
+* `Active`
+* `Suspended`
+
+The access filter should check:
+
+1. Does this route match a known feature in `BcpFeatureCatalog`?
+2. Is that feature enabled in the tenant database?
+3. Is the feature active, disabled, or suspended?
+4. Is the current user allowed to view or edit the feature?
+
+This protects paid modules and role-limited modules consistently.
+
+---
+
+## 7. Tenant Strategy
+
+Current tenant handling is configuration-based.
+
+`TenantProvider` selects a connection string from configured tenants and `DashboardDbContext` uses that selected connection string.
+
+This is acceptable for the first rebuild phase.
+
+### Later System Admin Strategy
+
+After the tenant BCP is stable, create a separate System Admin project.
+
+Possible name:
+
+```text
+Ozikol-BCC.SystemAdmin
+```
+
+This app should use a small central registry database with a table such as:
+
+```text
+TenantRegistries
+```
+
+Suggested fields:
+
+* `TenantName`
+* `DomainUrl`
+* `DbConnectionString`
+* `IsActive`
+* `IsSuspended`
+* `CreatedAt`
+* `SubscriptionStatus`
+
+This should not be the first step. Build the tenant BCP foundation first.
+
+---
+
+## 8. Recommended Rebuild Order
+
+### Phase 1: Restore Foundation
+
+* Add a central `BcpFeatureCatalog`.
+* Update `BcpFeatureAccessFilter` to stop referencing deleted Area pages.
+* Confirm the solution builds.
+* Keep existing `Bcp*` domain models and `DashboardDbContext`.
+
+### Phase 2: Rebuild BCP Shell
+
+* Create `/Areas/Bcp`.
+* Add BCP dashboard page.
+* Add shared BCP layout based on `Materialdesignui`.
+* Add sidebar and topbar partials.
+* Serve official BCP CSS, JavaScript, logo, and icon assets from `wwwroot/bcp`.
+* Preserve the Materialdesignui behavior for sidebar toggle, search, pinned tasks, dropdowns, theme toggle, mobile behavior, widget controls, and guided tour.
+* Add Workspace / Console toggle.
+* Show feature cards from `BcpFeatureCatalog`.
+
+### Phase 3: Build BCP Identity & Authentication First
+
+Authentication must come before user management, feature permissions, billing access, and dashboard personalization.
+
+Create:
+
+```text
+Areas/
+  BcpIdentity/
+    Pages/
+      Authenticate/
+      Console/
+      Workspace/
+      Common/
+```
+
+Authenticate pages:
+
+* login
+* optional registration
+* forgot password
+* reset password
+* confirm email
+* resend email confirmation
+* two-factor login
+* recovery-code login
+* invite accept
+* verify invite
+* access denied
+* locked out
+* session expired
+
+Authorized Workspace pages:
+
+* profile
+* security dashboard
+* change password
+* two-factor setup
+* recovery codes
+* active sessions
+* trusted devices
+* security log
+
+Console pages:
+
+* identity dashboard
+* users
+* roles
+* permissions
+* invitations
+* login audit
+* password policy
+* MFA policy
+* sessions
+* locked accounts
+
+Do not create a `TenantSelect` page. This platform is multi-tenant with separate databases, so tenant/database resolution belongs before or during authentication through host, configuration, or deployment context.
+
+Authenticate pages should use the BCP auth layout. Authorized identity pages should use the normal BCP admin layout.
+
+### Phase 4: Build User Management
+
+This must come before most other modules because permissions depend on it.
+
+Build:
+
+* user list
+* user categories
+* KPI indicators
+* KPI scoring
+* feature role assignment
+* readonly/editor behavior
+
+Use the existing `IBcpUserManagementRepository` as the starting point.
+
+### Phase 5: Build Feature Management
+
+Build tenant-level feature activation and billing management using:
+
+* `BcpFeature`
+* `BcpFeatureInvoice`
+
+This lets tenant owners activate, suspend, and review modules.
+
+### Phase 6: Build Core Modules One By One
+
+Recommended order:
+
+1. Dynamic Reports
+2. Ticketing
+3. Elections
+4. Finance / Dues
+5. Mass Communication
+6. Projects / Tasks
+7. Grants
+8. Recruitment
+9. Equipment / Assets
+10. LMS / DMS / Visitor Management
+
+Each module should have:
+
+* Console pages
+* Workspace pages where needed
+* Common partials and routes
+* feature role checks
+* sidebar registration
+* dashboard widgets
+* partials for repeated UI
+
+### Phase 7: Build System Admin App
+
+Only after the tenant BCP is stable:
+
+* create `Ozikol-BCC.SystemAdmin`
+* create registry database
+* manage tenant connection strings
+* manage global feature pricing
+* suspend/reactivate tenants
+* view high-level tenant health
+
+---
+
+## 9. Recommended Rule For New BCP Modules
+
+Every new BCP feature should follow the same pattern:
+
+```text
+Domain model -> DbContext DbSet -> Application DTO/repository/service -> Razor Area pages -> Partials -> Feature catalog entry -> Permission checks
+```
+
+This keeps the platform consistent and prevents each module from becoming a separate style of application.
+
+---
+
+## 10. Immediate Next Technical Task
+
+The next best implementation step is:
+
+```text
+Create BcpFeatureCatalog and update BcpFeatureAccessFilter to use it.
+```
+
+After that, run:
+
+```powershell
+dotnet build .\Ozikol-BCC.sln --no-restore
+```
+
+Once the solution builds again, rebuild the BCP shell.

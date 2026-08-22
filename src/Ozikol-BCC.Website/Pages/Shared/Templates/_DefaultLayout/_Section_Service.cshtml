@@ -1,0 +1,62 @@
+@model Ozikol_BCC.Domain.Models.PageSection
+
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                @if (!string.IsNullOrEmpty(Model.MiniTitle))
+                {
+                    <span class="text-primary fw-bold text-uppercase">@Model.MiniTitle</span>
+                }
+                <h2 class="display-6 fw-bold">@Model.Title</h2>
+                <p class="lead text-muted">@Model.Description</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Simulated grid of services for the default template -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+                        <h4 class="card-title">Professional Service</h4>
+                        <p class="card-text text-muted">We deliver top-quality results with dedicated professionals ready to assist you.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h4 class="card-title">Expert Support</h4>
+                        <p class="card-text text-muted">Our technical team is available 24/7 to ensure your systems run smoothly.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm text-center p-4">
+                    <div class="card-body">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h4 class="card-title">Growth Driven</h4>
+                        <p class="card-text text-muted">We focus on strategies that guarantee measurable growth and success for your business.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ButtonText) && !string.IsNullOrEmpty(Model.ButtonLink))
+        {
+            <div class="row mt-5 text-center">
+                <div class="col">
+                    <a href="@Model.ButtonLink" class="btn btn-outline-primary btn-lg">@Model.ButtonText</a>
+                </div>
+            </div>
+        }
+    </div>
+</section>

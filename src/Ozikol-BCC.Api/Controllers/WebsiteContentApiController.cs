@@ -1,0 +1,307 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Persistence.EF.SQL;
+
+namespace Ozikol_BCC.Api.Controllers
+{
+    /// <summary>
+    /// Public content delivery API for the client website, landing pages, and UI.
+    /// Fully anonymous, delivering published pages (including legal/terms SecurityPages),
+    /// navigation categories, layout sections, sliders, FAQs, and visitor telemetry.
+    /// </summary>
+    [ApiController]
+    [Route("api/[controller]")]
+    [AllowAnonymous]
+    [Tags("Website Content Delivery - Public UI")]
+    public class WebsiteContentApiController : ControllerBase
+    {
+        private readonly DashboardDbContext _context;
+
+        public WebsiteContentApiController(DashboardDbContext context)
+        {
+            _context = context;
+        }
+
+        // ==========================================
+        // 1. PUBLIC WEB PAGES
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all published website pages for navigation and footer links.
+        /// Includes standard pages and institutional/legal pages (marked with SecurityPage).
+        /// </summary>
+        [HttpGet("pages")]
+        public async Task<IActionResult> GetPublishedPages([FromQuery] bool? securityPagesOnly = null)
+        {
+            var query = _context.WebPages
+                .Include(p => p.PageCategory)
+                .Where(p => p.Publish);
+
+            if (securityPagesOnly.HasValue)
+            {
+                query = query.Where(p => p.SecurityPage == securityPagesOnly.Value);
+            }
+
+            var pages = await query
+                .OrderBy(p => p.SortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(pages, "Published web pages retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves full published page details and layout sections by unique slug.
+        /// </summary>
+        [HttpGet("pages/slug/{slug}")]
+        public async Task<IActionResult> GetPublishedPageBySlug(string slug)
+        {
+            var cleanSlug = slug.Trim().ToLowerInvariant();
+            var page = await _context.WebPages
+                .Include(p => p.PageCategory)
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
+                    .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
+
+            if (page == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
+            }
+
+            // Increment public page view counter
+            page.ViewCount++;
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves full published page details and layout sections by ID.
+        /// </summary>
+        [HttpGet("pages/{id:guid}")]
+        public async Task<IActionResult> GetPublishedPageById(Guid id)
+        {
+            var page = await _context.WebPages
+                .Include(p => p.PageCategory)
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
+                    .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .FirstOrDefaultAsync(p => p.Publish && p.Id == id);
+
+            if (page == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Page was not found or is unpublished."));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
+        }
+
+        // ==========================================
+        // 2. PUBLIC NAVIGATION CATEGORIES
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves published menu categories and their published pages for navbar dropdowns.
+        /// </summary>
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetPublishedCategories()
+        {
+            var categories = await _context.PageCategories
+                .Where(c => c.Publish)
+                .Include(c => c.WebPages!.Where(p => p.Publish).OrderBy(p => p.SortOrder))
+                .OrderBy(c => c.MenuSortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(categories, "Public navigation categories retrieved."));
+        }
+
+        // ==========================================
+        // 3. PUBLIC PAGE SECTIONS
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves published page sections for the homepage or a specific page.
+        /// </summary>
+        [HttpGet("sections")]
+        public async Task<IActionResult> GetPublishedSections([FromQuery] string? pageSet = null, [FromQuery] Guid? webPageId = null)
+        {
+            var query = _context.PageSections
+                .Include(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .Where(s => !s.Disable)
+                .AsQueryable();
+
+            if (webPageId.HasValue)
+            {
+                query = query.Where(s => s.WebPageId == webPageId.Value).OrderBy(s => s.PageSortOrder);
+            }
+            else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
+            {
+                query = query.Where(s => s.ShowInHome).OrderBy(s => s.HomePageSortOrder);
+            }
+
+            var sections = await query.ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(sections, "Page layout sections retrieved."));
+        }
+
+        // ==========================================
+        // 4. PUBLIC HERO SLIDERS
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all active hero carousels/sliders for the website.
+        /// </summary>
+        [HttpGet("sliders")]
+        public async Task<IActionResult> GetPublishedSliders()
+        {
+            var sliders = await _context.Sliders
+                .Where(s => s.Show)
+                .OrderBy(s => s.SortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(sliders, "Hero sliders retrieved."));
+        }
+
+        // ==========================================
+        // 5. PUBLIC FAQs
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves published FAQ categories with active FAQs.
+        /// </summary>
+        [HttpGet("faq-categories")]
+        public async Task<IActionResult> GetPublishedFaqCategories()
+        {
+            var categories = await _context.FAQCategories
+                .Where(c => c.Publish)
+                .Include(c => c.FAQs!.Where(f => f.Show).OrderBy(f => f.SortOrder))
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(categories, "FAQ categories retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves active FAQs, optionally filtered by FAQ category.
+        /// </summary>
+        [HttpGet("faqs")]
+        public async Task<IActionResult> GetPublishedFaqs([FromQuery] int? categoryId = null)
+        {
+            var query = _context.FAQs
+                .Include(f => f.FAQCategory)
+                .Where(f => f.Show)
+                .AsQueryable();
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(f => f.FAQCategoryId == categoryId.Value);
+            }
+
+            var faqs = await query.OrderBy(f => f.SortOrder).ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(faqs, "FAQs retrieved."));
+        }
+
+        // ==========================================
+        // 6. PUBLIC VISITOR TELEMETRY
+        // ==========================================
+
+        public class TrackViewRequest
+        {
+            public Guid? PageId { get; set; }
+            public string PageUrl { get; set; } = string.Empty;
+            public string? PageTitle { get; set; }
+            public int DurationSeconds { get; set; } = 0;
+            public int StatusCode { get; set; } = 200;
+        }
+
+        /// <summary>
+        /// Records anonymous visitor telemetry and view logs.
+        /// </summary>
+        [HttpPost("track-view")]
+        public async Task<IActionResult> TrackPageView([FromBody] TrackViewRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.PageUrl))
+            {
+                request.PageUrl = "/";
+            }
+
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var referer = Request.Headers["Referer"].ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+            var (deviceType, browser) = ParseClientDeviceAndBrowser(userAgent);
+
+            var log = new WebPageViewLog
+            {
+                WebPageId = request.PageId,
+                PageUrl = request.PageUrl,
+                PageTitle = request.PageTitle,
+                DeviceType = deviceType,
+                Browser = browser,
+                UserAgent = userAgent,
+                IpAddress = ip,
+                Referer = referer,
+                DurationSeconds = request.DurationSeconds,
+                StatusCode = request.StatusCode,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _context.WebPageViewLogs.Add(log);
+
+            if (request.PageId.HasValue && request.PageId.Value != Guid.Empty)
+            {
+                var page = await _context.WebPages.FindAsync(request.PageId.Value);
+                if (page != null)
+                {
+                    page.ViewCount += 1;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(new { logId = log.Id, deviceType, browser }, "Page view recorded."));
+        }
+
+        private static (string Device, string Browser) ParseClientDeviceAndBrowser(string? ua)
+        {
+            if (string.IsNullOrWhiteSpace(ua))
+            {
+                return ("Desktop (Windows/Mac)", "Other Browsers");
+            }
+
+            string device = "Desktop (Windows/Mac)";
+            if (ua.Contains("Huawei", StringComparison.OrdinalIgnoreCase) || ua.Contains("Honor", StringComparison.OrdinalIgnoreCase))
+            {
+                device = "Huawei & Other";
+            }
+            else if (ua.Contains("iPhone", StringComparison.OrdinalIgnoreCase) || ua.Contains("iPad", StringComparison.OrdinalIgnoreCase) || ua.Contains("iPod", StringComparison.OrdinalIgnoreCase))
+            {
+                device = "iOS (iPhone/iPad)";
+            }
+            else if (ua.Contains("Android", StringComparison.OrdinalIgnoreCase))
+            {
+                device = "Android Mobile";
+            }
+
+            string browser = "Other Browsers";
+            if (ua.Contains("Edg/", StringComparison.OrdinalIgnoreCase) || ua.Contains("Edge/", StringComparison.OrdinalIgnoreCase))
+            {
+                browser = "Microsoft Edge";
+            }
+            else if (ua.Contains("Chrome/", StringComparison.OrdinalIgnoreCase) && !ua.Contains("Edg/", StringComparison.OrdinalIgnoreCase))
+            {
+                browser = "Google Chrome";
+            }
+            else if (ua.Contains("Safari/", StringComparison.OrdinalIgnoreCase) && !ua.Contains("Chrome/", StringComparison.OrdinalIgnoreCase))
+            {
+                browser = "Apple Safari";
+            }
+            else if (ua.Contains("Firefox/", StringComparison.OrdinalIgnoreCase))
+            {
+                browser = "Mozilla Firefox";
+            }
+
+            return (device, browser);
+        }
+    }
+}

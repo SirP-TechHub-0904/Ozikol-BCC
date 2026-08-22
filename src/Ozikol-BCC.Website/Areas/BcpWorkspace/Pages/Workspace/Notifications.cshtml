@@ -1,0 +1,135 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpWorkspace.Pages.Workspace.NotificationsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "My Notifications";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "User Workspace",
+    Title = "My Notifications",
+    Subtitle = "Review historical alerts, security updates, announcements, and task assignments.",
+    Icon = "notifications",
+    BackUrl = "/BcpWorkspace/Workspace/Dashboard"
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px;">
+        <div>
+            <strong>Info</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+<div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+
+    <section class="m3-card bcp-card" style="padding:24px;">
+        @* Controls/Filters *@
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--md-sys-color-outline-variant);">
+            
+            @* Left: Tab filters *@
+            <div style="display:flex; gap:8px;">
+                <a href="?filter=all" class="console-btn @(Model.Filter == "all" ? "primary" : "secondary")" style="text-decoration:none; padding:8px 16px;">
+                    All Notifications
+                </a>
+                <a href="?filter=unread" class="console-btn @(Model.Filter == "unread" ? "primary" : "secondary")" style="text-decoration:none; padding:8px 16px;">
+                    Unread Only
+                </a>
+            </div>
+
+            @* Right: Bulk Actions *@
+            <div style="display:flex; gap:8px;">
+                <form method="post" asp-page-handler="MarkAllAsRead" style="margin:0;">
+                    <input type="hidden" name="filter" value="@Model.Filter" />
+                    <button type="submit" class="console-btn secondary" style="padding:8px 16px; display:inline-flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">done_all</span>
+                        <span>Mark All as Read</span>
+                    </button>
+                </form>
+                
+                <form method="post" asp-page-handler="ClearAll" onsubmit="return confirm('Are you sure you want to clear your notification history?');" style="margin:0;">
+                    <button type="submit" class="console-btn danger" style="padding:8px 16px; display:inline-flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">delete_sweep</span>
+                        <span>Clear All</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        @* Notifications List *@
+        @if (Model.Notifications.Count == 0)
+        {
+            <div style="text-align:center; padding:64px 0; color:var(--sidebar-color);">
+                <span class="material-symbols-outlined" style="font-size:48px; opacity:0.4; display:block; margin-bottom:12px;">notifications_off</span>
+                <h4 style="margin:0; font-size:16px; font-weight:600;">No notifications found</h4>
+                <p style="margin:4px 0 0 0; font-size:14px;">You are completely caught up!</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-stack">
+                @foreach (var notif in Model.Notifications)
+                {
+                    var isUnread = !notif.IsRead;
+                    var color = notif.IsBroadcast ? "#8b5cf6" : "var(--md-sys-color-primary)";
+                    
+                    <div class="list-row" style="padding:16px 20px; border-radius:12px; margin-bottom:10px; border:1px solid var(--md-sys-color-outline-variant); display:flex; justify-content:space-between; align-items:center; background:@(isUnread ? "var(--md-sys-color-primary-container, rgba(0,80,229,0.04))" : "var(--md-sys-color-surface)"); transition:transform 0.15s;"
+                         onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
+                        
+                        <div style="display:flex; gap:16px; align-items:center; flex:1;">
+                            @* Icon *@
+                            <span class="list-icon" style="background:@(isUnread ? "var(--md-sys-color-primary)" : "var(--md-sys-color-outline-variant)"); color:white; border-radius:50%; width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <span class="material-symbols-outlined" style="font-size:20px; color:@(isUnread ? "white" : "var(--sidebar-color)");">@(notif.Icon ?? "notifications")</span>
+                            </span>
+
+                            @* Body *@
+                            <div style="display:grid; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <strong style="font-size:15px; color:var(--md-sys-color-on-surface);">@notif.Title</strong>
+                                    @if (notif.IsBroadcast)
+                                    {
+                                        <span class="status-pill info" style="font-size:10px; padding:2px 6px;">Announcement</span>
+                                    }
+                                </div>
+                                <span style="font-size:14px; color:var(--sidebar-color);">@notif.Message</span>
+                                <small style="font-size:12px; color:var(--sidebar-color); margin-top:2px;">
+                                    @notif.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
+                                </small>
+                            </div>
+                        </div>
+
+                        @* Actions *@
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            @if (!string.IsNullOrWhiteSpace(notif.ActionUrl))
+                            {
+                                <form method="post" asp-page-handler="Go" asp-route-id="@notif.Id" style="margin:0;">
+                                    <button type="submit" class="console-btn secondary" style="padding:6px 12px; font-size:13px; display:inline-flex; align-items:center; gap:4px;">
+                                        <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>
+                                        <span>Go</span>
+                                    </button>
+                                </form>
+                            }
+
+                            @if (isUnread)
+                            {
+                                <form method="post" asp-page-handler="MarkAsRead" asp-route-id="@notif.Id" style="margin:0;">
+                                    <button type="submit" class="console-btn primary" style="padding:6px 12px; font-size:13px; display:inline-flex; align-items:center; gap:4px;">
+                                        <span class="material-symbols-outlined" style="font-size:16px;">done</span>
+                                        <span>Mark Read</span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+
+                    </div>
+                }
+            </div>
+        }
+
+    </section>
+
+</div>

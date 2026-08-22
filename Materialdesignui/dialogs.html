@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3 Admin - Dialogs & Modals Showcase</title>
+
+  <!-- Google Fonts: Roboto & Material Symbols Outlined -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Material Design 3 Web Components CDN Bundle -->
+  <script type="module" src="https://esm.run/@material/web/all.js"></script>
+</head>
+<body>
+
+  <!-- Navigation Drawer (Sidebar) -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="material-symbols-outlined">space_dashboard</span>
+      <span>VELZON</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Section: MENU -->
+      <div class="menu-title">Menu</div>
+
+      <!-- Group: Dashboards -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboards</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="console-dashboard.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Console Home</span></a></li>
+          <li><a href="index.html#analytics" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Analytics</span></a></li>
+          <li><a href="index.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Ecommerce</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Section: COMPONENTS -->
+      <div class="menu-title">Components</div>
+
+      <!-- Group: Base UI -->
+      <div class="nav-item has-sub open">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">architecture</span>
+            <span>Base UI</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="buttons.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Buttons</span></a></li>
+          <li><a href="cards.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Cards</span></a></li>
+          <li><a href="badges.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Badges</span></a></li>
+          <li><a href="spatial.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Spatial UI / XR</span></a></li>
+          <li><a href="tabs.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Tabs & Carousel</span></a></li>
+          <li><a href="dialogs.html" class="sub-nav-item active"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">fiber_manual_record</span>Dialogs & Modals</span></a></li>
+          <li><a href="components.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>UI Components</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Widgets -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="javascript:void(0)">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">widgets</span>
+            <span>Widgets</span>
+          </div>
+          <div class="nav-link-actions">
+            <button class="pin-btn" data-title="Widgets" data-url="widgets.html" data-icon="widgets" title="Pin Task">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Standard Widgets</span></a></li>
+          <li><a href="bcp-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Platform Widgets</span></a></li>
+          <li><a href="bcp-dashboard-widgets.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>BCP Dashboard Widgets</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Forms -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="forms.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">edit_document</span>
+            <span>Forms</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="forms.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Basic Elements</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Group: Tables -->
+      <div class="nav-item has-sub">
+        <a class="nav-link" href="list.html">
+          <div class="nav-link-content">
+            <span class="material-symbols-outlined">table_chart</span>
+            <span>Tables</span>
+          </div>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="list.html" class="sub-nav-item"><span class="sub-nav-content"><span class="material-symbols-outlined sub-nav-bullet" style="font-size: 8px;">circle</span>Data Tables</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <!-- Top App Bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-action-btn" id="toggle-sidebar" title="Toggle Navigation">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <a href="index.html" class="topbar-brand-logo" title="Velzon Dashboard">
+          <span class="material-symbols-outlined">space_dashboard</span>
+        </a>
+
+        <div class="topbar-search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div id="pinned-taskbar" class="pinned-taskbar"></div>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="topbar-action-btn mobile-search-btn" id="mobile-search-btn" title="Search">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-fullscreen" title="Toggle Fullscreen">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+
+        <button type="button" class="topbar-action-btn" id="toggle-theme" title="Toggle Theme">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <div class="user-profile-wrapper">
+          <button type="button" class="user-profile-btn" id="user-profile-btn" title="User Menu">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Anna Adame" class="user-avatar">
+            <div class="user-info">
+              <span class="user-name">Anna Adame</span>
+              <span class="user-role">Founder</span>
+            </div>
+          </button>
+          <div id="user-profile-dropdown" class="profile-dropdown-menu">
+            <div class="profile-menu-header">Welcome Anna!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-search-bar" class="mobile-search-bar">
+      <div class="mobile-search-inner">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Search..." aria-label="Mobile Search">
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="scroll-area">
+
+      <!-- Header Banner -->
+      <div class="m3-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #FFFFFF; border: none; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Dialogs, Modals & Toast Snackbars Showcase</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Explore 5 different kinds of interactive Material 3 modals: Basic Alert, Danger Delete Confirmation, Form Input Modal, Scrollable Terms, and Fullscreen Workspace Modal.</p>
+      </div>
+
+      <!-- Section 1: 5 Different Kinds of Modals -->
+      <div class="m3-card" style="margin-bottom: 32px;">
+        <div class="card-header">
+          <span class="card-title">1. Interactive Modal Dialog Triggers</span>
+        </div>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Click any button below to trigger its corresponding dialog modal with smooth backdrop animations and action buttons.</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+          <!-- Trigger 1: Basic Info Modal -->
+          <button type="button" class="btn-custom btn-primary" id="btn-open-basic">
+            <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
+            Basic Alert Dialog
+          </button>
+
+          <!-- Trigger 2: Delete Confirmation Modal -->
+          <button type="button" class="btn-custom btn-danger" id="btn-open-delete">
+            <span class="material-symbols-outlined" style="font-size: 18px;">delete_forever</span>
+            Delete Confirmation Dialog
+          </button>
+
+          <!-- Trigger 3: Form Input Modal -->
+          <button type="button" class="btn-custom btn-success" id="btn-open-form">
+            <span class="material-symbols-outlined" style="font-size: 18px;">edit_note</span>
+            Edit Profile Form Modal
+          </button>
+
+          <!-- Trigger 4: Scrollable Terms Modal -->
+          <button type="button" class="btn-custom btn-info" id="btn-open-terms">
+            <span class="material-symbols-outlined" style="font-size: 18px;">description</span>
+            Scrollable Terms Modal
+          </button>
+
+          <!-- Trigger 5: Fullscreen Modal -->
+          <button type="button" class="btn-custom btn-soft-primary" id="btn-open-fullscreen">
+            <span class="material-symbols-outlined" style="font-size: 18px;">open_in_full</span>
+            Fullscreen Workspace Modal
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 2: Toast Snackbars -->
+      <div class="m3-card">
+        <div class="card-header">
+          <span class="card-title">2. Toast Notification Snackbars</span>
+        </div>
+        <p style="color: var(--sidebar-header-color); font-size: 13.5px; margin-bottom: 20px;">Trigger toast alert popups that display dynamically in the bottom-right corner.</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+          <button type="button" class="btn-custom btn-success" id="show-success-toast">
+            <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
+            Show Success Toast
+          </button>
+
+          <button type="button" class="btn-custom btn-danger" id="show-error-toast">
+            <span class="material-symbols-outlined" style="font-size: 18px;">error</span>
+            Show Danger Toast
+          </button>
+
+          <button type="button" class="btn-custom btn-primary" id="show-info-toast">
+            <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
+            Show Info Toast
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==========================================
+       MODAL 1: BASIC ALERT DIALOG
+       ========================================== -->
+  <div class="m3-modal-overlay" id="modal-basic">
+    <div class="m3-modal-container">
+      <div class="m3-modal-header">
+        <div class="m3-modal-title">
+          <span class="material-symbols-outlined" style="color: #0284c7;">info</span>
+          System Notification
+        </div>
+        <button type="button" class="modal-close-icon modal-close-btn" style="background:none; border:none; cursor:pointer; color:inherit;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="m3-modal-body">
+        This is a basic alert notification dialog modal. It provides system information, updates, or simple user notifications with full background backdrop blur.
+      </div>
+      <div class="m3-modal-footer">
+        <button type="button" class="btn-custom btn-soft-primary modal-close-btn">Dismiss</button>
+        <button type="button" class="btn-custom btn-primary modal-close-btn">Acknowledge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: DELETE CONFIRMATION DIALOG
+       ========================================== -->
+  <div class="m3-modal-overlay" id="modal-delete">
+    <div class="m3-modal-container">
+      <div class="m3-modal-header" style="border-bottom-color: rgba(240, 101, 72, 0.2);">
+        <div class="m3-modal-title" style="color: #f06548;">
+          <span class="material-symbols-outlined" style="color: #f06548;">warning</span>
+          Confirm Permanent Deletion
+        </div>
+        <button type="button" class="modal-close-icon modal-close-btn" style="background:none; border:none; cursor:pointer; color:inherit;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="m3-modal-body">
+        Are you sure you want to permanently delete this user record? <strong>This action cannot be undone</strong> and all associated data will be removed.
+      </div>
+      <div class="m3-modal-footer">
+        <button type="button" class="btn-custom btn-soft-primary modal-close-btn">Cancel</button>
+        <button type="button" class="btn-custom btn-danger" id="btn-confirm-delete">
+          <span class="material-symbols-outlined" style="font-size:16px;">delete_forever</span>
+          Permanently Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 3: FORM INPUT EDIT PROFILE MODAL
+       ========================================== -->
+  <div class="m3-modal-overlay" id="modal-form">
+    <div class="m3-modal-container">
+      <div class="m3-modal-header">
+        <div class="m3-modal-title">
+          <span class="material-symbols-outlined" style="color: #0ab39c;">edit_square</span>
+          Edit User Profile
+        </div>
+        <button type="button" class="modal-close-icon modal-close-btn" style="background:none; border:none; cursor:pointer; color:inherit;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="m3-modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <md-outlined-text-field label="Full Name" value="Anna Adame" required></md-outlined-text-field>
+        <md-outlined-text-field label="Email Address" type="email" value="anna.adame@velzon.com" required></md-outlined-text-field>
+        <md-outlined-text-field label="Role / Department" value="Founder & CEO"></md-outlined-text-field>
+      </div>
+      <div class="m3-modal-footer">
+        <button type="button" class="btn-custom btn-soft-primary modal-close-btn">Cancel</button>
+        <button type="button" class="btn-custom btn-success" id="btn-save-form">
+          <span class="material-symbols-outlined" style="font-size:16px;">check</span>
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 4: SCROLLABLE TERMS & CONDITIONS MODAL
+       ========================================== -->
+  <div class="m3-modal-overlay" id="modal-terms">
+    <div class="m3-modal-container">
+      <div class="m3-modal-header">
+        <div class="m3-modal-title">
+          <span class="material-symbols-outlined" style="color: #0284c7;">description</span>
+          Terms & License Agreement
+        </div>
+        <button type="button" class="modal-close-icon modal-close-btn" style="background:none; border:none; cursor:pointer; color:inherit;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="m3-modal-body">
+        <h4 style="margin-top: 0; font-size: 15px; font-weight: 700;">1. Acceptance of Terms</h4>
+        <p>By accessing and using Velzon Material Design 3 UI Dashboard, you accept and agree to be bound by the terms and provision of this agreement.</p>
+        
+        <h4 style="font-size: 15px; font-weight: 700;">2. Component License & Usage</h4>
+        <p>Permission is hereby granted to use native Google Material 3 Web Components for commercial and non-commercial application development.</p>
+        
+        <h4 style="font-size: 15px; font-weight: 700;">3. Privacy & Data Protection</h4>
+        <p>We respect your privacy and process data in compliance with GDPR guidelines. All local preferences remain stored securely in your web browser environment.</p>
+
+        <h4 style="font-size: 15px; font-weight: 700;">4. Modifications to Service</h4>
+        <p>We reserve the right to modify or discontinue features at any time with prior release notes in the system walkthrough.</p>
+      </div>
+      <div class="m3-modal-footer">
+        <button type="button" class="btn-custom btn-soft-danger modal-close-btn">Decline</button>
+        <button type="button" class="btn-custom btn-primary modal-close-btn">I Agree & Accept</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 5: FULLSCREEN WORKSPACE MODAL
+       ========================================== -->
+  <div class="m3-modal-overlay" id="modal-fullscreen">
+    <div class="m3-modal-container fullscreen">
+      <div class="m3-modal-header">
+        <div class="m3-modal-title">
+          <span class="material-symbols-outlined" style="color: #a855f7;">open_in_full</span>
+          Fullscreen Task & Data Workspace
+        </div>
+        <button type="button" class="modal-close-icon modal-close-btn" style="background:none; border:none; cursor:pointer; color:inherit;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="m3-modal-body">
+        <div style="background: var(--sidebar-hover-bg); padding: 24px; border-radius: 12px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+          <span class="material-symbols-outlined" style="font-size: 54px; color: #a855f7; margin-bottom: 12px;">space_dashboard</span>
+          <h3 style="font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">Fullscreen Immersive Canvas</h3>
+          <p style="max-width: 500px; color: var(--sidebar-color); font-size: 14px; margin: 0 0 20px 0;">Fullscreen modals provide maximum focus area for complex tasks like reports generation, photo editing, or data table manipulation.</p>
+          <md-filled-button class="modal-close-btn" style="--md-filled-button-container-color: #a855f7;">Return to Main Dashboard</md-filled-button>
+        </div>
+      </div>
+      <div class="m3-modal-footer">
+        <button type="button" class="btn-custom btn-soft-primary modal-close-btn">Exit Fullscreen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 10000;"></div>
+
+  <!-- Custom Button & Toast Helper Styles -->
+  <style>
+    .btn-custom {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background-color: #0284c7; color: #FFFFFF; }
+    .btn-primary:hover { background-color: #0369a1; }
+    
+    .btn-success { background-color: #0ab39c; color: #FFFFFF; }
+    .btn-success:hover { background-color: #099885; }
+
+    .btn-danger { background-color: #f06548; color: #FFFFFF; }
+    .btn-danger:hover { background-color: #d95338; }
+
+    .btn-info { background-color: #299cdb; color: #FFFFFF; }
+    .btn-info:hover { background-color: #2086be; }
+
+    .btn-soft-primary { background-color: rgba(2, 132, 199, 0.12); color: #0284c7; border-color: rgba(2, 132, 199, 0.2); }
+    .btn-soft-primary:hover { background-color: #0284c7; color: #FFFFFF; }
+
+    .btn-soft-danger { background-color: rgba(240, 101, 72, 0.12); color: #f06548; border-color: rgba(240, 101, 72, 0.2); }
+    .btn-soft-danger:hover { background-color: #f06548; color: #FFFFFF; }
+
+    .toast-alert {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      color: #FFFFFF;
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+
+  <!-- Interactive Modal Controller Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Helper function to open modal
+      function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add('active');
+      }
+
+      // Helper function to close modal
+      function closeModal(modal) {
+        if (modal) modal.classList.remove('active');
+      }
+
+      // Modal Triggers
+      document.getElementById('btn-open-basic')?.addEventListener('click', () => openModal('modal-basic'));
+      document.getElementById('btn-open-delete')?.addEventListener('click', () => openModal('modal-delete'));
+      document.getElementById('btn-open-form')?.addEventListener('click', () => openModal('modal-form'));
+      document.getElementById('btn-open-terms')?.addEventListener('click', () => openModal('modal-terms'));
+      document.getElementById('btn-open-fullscreen')?.addEventListener('click', () => openModal('modal-fullscreen'));
+
+      // Close buttons logic
+      document.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const overlay = e.target.closest('.m3-modal-overlay');
+          closeModal(overlay);
+        });
+      });
+
+      // Click backdrop to close
+      document.querySelectorAll('.m3-modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) closeModal(overlay);
+        });
+      });
+
+      // Toast Notification Function
+      const toastContainer = document.getElementById('toast-container');
+      function showToast(msg, bg) {
+        if (!toastContainer) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast-alert';
+        toast.style.backgroundColor = bg;
+        toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">notifications</span> <span>${msg}</span>`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+      }
+
+      // Delete confirmation action
+      document.getElementById('btn-confirm-delete')?.addEventListener('click', () => {
+        closeModal(document.getElementById('modal-delete'));
+        showToast('Record deleted permanently!', '#f06548');
+      });
+
+      // Save form action
+      document.getElementById('btn-save-form')?.addEventListener('click', () => {
+        closeModal(document.getElementById('modal-form'));
+        showToast('Profile updated successfully!', '#0ab39c');
+      });
+
+      // Toast Triggers
+      document.getElementById('show-success-toast')?.addEventListener('click', () => showToast('Operation completed successfully!', '#0ab39c'));
+      document.getElementById('show-error-toast')?.addEventListener('click', () => showToast('Error processing request. Please retry.', '#f06548'));
+      document.getElementById('show-info-toast')?.addEventListener('click', () => showToast('New system update available.', '#0284c7'));
+    });
+  </script>
+
+  <script src="layout.js"></script>
+</body>
+</html>

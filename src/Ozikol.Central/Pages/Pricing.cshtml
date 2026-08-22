@@ -1,0 +1,97 @@
+@page
+@model Ozikol.Central.Pages.PricingModel
+@{
+    ViewData["Title"] = "Transparent Pricing - Ozikol BCC Multi-Tenant Cloud";
+}
+
+<div class="marketing-page">
+    <section class="page-hero-section">
+        <div class="marketing-container">
+            <span class="section-badge">TRANSPARENT CLOUD PRICING</span>
+            <h1 class="page-hero-title">Simple, Predictable Plans for Every Organization</h1>
+            <p class="page-hero-sub">
+                Every plan includes a 100% dedicated, isolated SQL database, executive MIS dashboard, and dynamic digital storefront.
+            </p>
+        </div>
+    </section>
+
+    <section class="section-marketing">
+        <div class="marketing-container">
+            <div class="pricing-grid">
+                <!-- Starter Tier -->
+                <div class="pricing-card">
+                    <div class="pricing-badge">STARTER</div>
+                    <h3 class="pricing-title">Essential MIS</h3>
+                    <p class="pricing-desc">Perfect for emerging organizations, clubs, and service businesses.</p>
+                    <div class="pricing-price-row">
+                        <span class="price-val">$29</span>
+                        <span class="price-period">/ month</span>
+                    </div>
+
+                    <ul class="pricing-features-list">
+                        <li>✓ 1 Dedicated Isolated SQL Database</li>
+                        <li>✓ Full Financial Ledger & Transactions</li>
+                        <li>✓ Digital Storefront & Up to 50 Products</li>
+                        <li>✓ Standard Template Marketplace Access</li>
+                        <li>✓ Up to 5 Admin & Manager Seats</li>
+                        <li>✓ Compulsory 2FA Security</li>
+                    </ul>
+
+                    <a asp-page="/Signup" class="btn-pricing-cta">
+                        <span>Get Started</span>
+                    </a>
+                </div>
+
+                <!-- Professional Tier (Featured) -->
+                <div class="pricing-card pricing-featured">
+                    <div class="featured-badge">MOST POPULAR</div>
+                    <div class="pricing-badge">PROFESSIONAL</div>
+                    <h3 class="pricing-title">Growth & Scale</h3>
+                    <p class="pricing-desc">For scaling enterprises requiring advanced finance, custom domains, and automated billing.</p>
+                    <div class="pricing-price-row">
+                        <span class="price-val">$79</span>
+                        <span class="price-period">/ month</span>
+                    </div>
+
+                    <ul class="pricing-features-list">
+                        <li>✓ 1 Dedicated Isolated SQL Database (High-Performance)</li>
+                        <li>✓ Custom Domain Mapping (SSL Included)</li>
+                        <li>✓ Unlimited Products & Digital Downloads</li>
+                        <li>✓ Multi-Currency Payment Gateways</li>
+                        <li>✓ All Premium Marketplace Templates Included</li>
+                        <li>✓ Unlimited Admin & Team Seats</li>
+                        <li>✓ Priority Email & Chat Support</li>
+                    </ul>
+
+                    <a asp-page="/Signup" class="btn-hero-primary" style="width: 100%; justify-content: center;">
+                        <span>Launch Professional Workspace</span>
+                    </a>
+                </div>
+
+                <!-- Enterprise Tier -->
+                <div class="pricing-card">
+                    <div class="pricing-badge">ENTERPRISE</div>
+                    <h3 class="pricing-title">Autonomous Cloud</h3>
+                    <p class="pricing-desc">For large institutions, franchises, and high-volume commerce networks.</p>
+                    <div class="pricing-price-row">
+                        <span class="price-val">$199</span>
+                        <span class="price-period">/ month</span>
+                    </div>
+
+                    <ul class="pricing-features-list">
+                        <li>✓ Dedicated SQL Server Instance Allocation</li>
+                        <li>✓ Multi-Tenant Franchise Fleet Governance</li>
+                        <li>✓ Custom API Webhooks & Integrations</li>
+                        <li>✓ Tailored Custom Marketplace Blueprints</li>
+                        <li>✓ 99.99% SLA Guarantee</li>
+                        <li>✓ Dedicated DevOps Account Manager</li>
+                    </ul>
+
+                    <a asp-page="/Signup" class="btn-pricing-cta">
+                        <span>Contact Enterprise Sales</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

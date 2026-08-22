@@ -1,0 +1,53 @@
+@using MediatR
+@using Ozikol_BCC.Application.Queries.SliderQueries
+@inject IMediator Mediator
+@{
+    var sliderData = await Mediator.Send(new GetSliderAggregatedDataQuery());
+    var xsetting = sliderData.ConfigSetting;
+    var configsetting = sliderData.ConfigSetting;
+}
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFIH35uu4vlamSU5Ymm0uXz4VxkRVp3t8&callback=initMap" async defer></script>
+
+<div id="mapid" style="height: 800px;"></div>
+
+
+<script>
+    function initMap() {
+        var clients = [
+            { name: "Client 1", lat: 8.95466, lng: 7.37137 },
+            { name: "Client 2", lat: 8.95896, lng: 7.68535 },
+            { name: "Client 6", lat: 9.069992, lng: 7.48495 },
+            // Add more clients as needed
+        ];
+
+        var map = new google.maps.Map(document.getElementById("mapid"), {
+            center: { lat: 9.069992, lng: 7.48495 },
+            zoom: 13,
+        });
+        var bounds = new google.maps.LatLngBounds();
+        clients.forEach(function (client) {
+            var position = new google.maps.LatLng(client.lat, client.lng);
+            bounds.extend(position);
+
+            var marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: client.name,
+            });
+            var line = new google.maps.Polyline({
+                path: [centerLatLng, position],
+                geodesic: true,
+                strokeColor: "#FF0000",
+                strokeOpacity: 1.0,
+                strokeWeight: 2,
+                map: map,
+            });
+        });
+
+        // Adjust map to fit all clients within the visible area
+        bounds.extend(centerLatLng);
+        map.fitBounds(bounds);
+    }
+
+
+</script>

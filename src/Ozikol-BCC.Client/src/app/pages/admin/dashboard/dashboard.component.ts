@@ -1,0 +1,349 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { ApiService } from '../../../core/services/api.service';
+
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
+    <div class="console-dashboard-container">
+      <!-- Header / Command Strip -->
+      <section class="console-head">
+        <div>
+          <h1 class="console-title">Console Dashboard</h1>
+          <p class="console-subtitle">Multi-tenant workspace command center, membership telemetry, and dynamic CMS studio.</p>
+        </div>
+        <div class="console-actions">
+          <button type="button" class="console-btn" (click)="loadMetrics()">
+            <span class="material-symbols-outlined" [class.spinning]="loading">refresh</span>
+            <span>Refresh Telemetry</span>
+          </button>
+          <a routerLink="/admin/content" class="console-btn primary">
+            <span class="material-symbols-outlined">add</span>
+            <span>New Web Page</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Main Widget Grid (12-column system) -->
+      <div class="console-grid">
+        <!-- 6-Metric Strip (Span 12) -->
+        <section class="console-widget span-12">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+              <h2 class="widget-title">Core Performance & Health Counters</h2>
+            </div>
+            <div class="widget-actions">
+              <span class="status-pill good"><span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> All Services Operational</span>
+            </div>
+          </div>
+          <div class="widget-body">
+            <div class="metric-grid">
+              <div class="metric-card" routerLink="/admin/users">
+                <div class="metric-label">Total Members</div>
+                <div class="metric-value">{{ metrics?.totalMembers || 0 }}</div>
+                <div class="metric-note text-success">↗ +12% active directory</div>
+              </div>
+
+              <div class="metric-card" routerLink="/admin/groups">
+                <div class="metric-label">Group Channels</div>
+                <div class="metric-value">{{ metrics?.totalGroups || 0 }}</div>
+                <div class="metric-note text-info">↗ Live real-time chat</div>
+              </div>
+
+              <div class="metric-card" routerLink="/admin/content">
+                <div class="metric-label">Published Pages</div>
+                <div class="metric-value">{{ metrics?.totalPublishedPages || 0 }}</div>
+                <div class="metric-note text-success">✓ 100% DB dynamic</div>
+              </div>
+
+              <div class="metric-card" routerLink="/admin/content">
+                <div class="metric-label">Hero Sliders</div>
+                <div class="metric-value">{{ metrics?.totalSliders || 0 }}</div>
+                <div class="metric-note text-warning">★ Visual carousel</div>
+              </div>
+
+              <div class="metric-card" routerLink="/admin/content">
+                <div class="metric-label">Active FAQs</div>
+                <div class="metric-value">{{ metrics?.totalFaqs || 0 }}</div>
+                <div class="metric-note text-info">ℹ Knowledge items</div>
+              </div>
+
+              <div class="metric-card" routerLink="/admin/identity">
+                <div class="metric-label">Platform Roles</div>
+                <div class="metric-value">3</div>
+                <div class="metric-note text-purple">🔒 RBAC Protected</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Left Column: Recently Registered Members (Span 7) -->
+        <section class="console-widget span-7">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+              <h2 class="widget-title">Recently Registered Members</h2>
+            </div>
+            <a routerLink="/admin/users" class="info-link">View Directory &rarr;</a>
+          </div>
+          <div class="widget-body" style="padding:0;">
+            <table class="table-clean">
+              <thead>
+                <tr>
+                  <th>Member Name</th>
+                  <th>Email</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of metrics?.recentUsers">
+                  <td>
+                    <div class="user-inline-cell">
+                      <div class="user-inline-avatar">{{ (user.fullName || 'U')[0] }}</div>
+                      <span class="user-inline-name">{{ user.fullName }}</span>
+                    </div>
+                  </td>
+                  <td class="code-cell">{{ user.email }}</td>
+                  <td><span class="status-pill info">{{ user.category || 'Member' }}</span></td>
+                  <td><span class="status-pill good">Active</span></td>
+                </tr>
+                <tr *ngIf="!metrics?.recentUsers?.length">
+                  <td colspan="4" class="empty-cell">No registered members yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="widget-footer">
+            <a routerLink="/admin/users">Manage all directory members</a>
+          </div>
+        </section>
+
+        <!-- Right Column: Quick Action Shortcuts & CMS Tools (Span 5) -->
+        <section class="console-widget span-5">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+              <h2 class="widget-title">Quick Actions & Shortcuts</h2>
+            </div>
+          </div>
+          <div class="widget-body">
+            <div class="quick-actions-stack">
+              <a routerLink="/admin/content" class="quick-action-row">
+                <div class="action-icon-circle bg-blue">
+                  <span class="material-symbols-outlined">add_circle</span>
+                </div>
+                <div class="action-info">
+                  <div class="action-title">Create Dynamic Web Page</div>
+                  <div class="action-desc">Add database-driven page to website navigation</div>
+                </div>
+                <span class="material-symbols-outlined arrow">chevron_right</span>
+              </a>
+
+              <a routerLink="/admin/users" class="quick-action-row">
+                <div class="action-icon-circle bg-green">
+                  <span class="material-symbols-outlined">person_add</span>
+                </div>
+                <div class="action-info">
+                  <div class="action-title">Register New Member</div>
+                  <div class="action-desc">Add profile and assign feature category</div>
+                </div>
+                <span class="material-symbols-outlined arrow">chevron_right</span>
+              </a>
+
+              <a routerLink="/admin/groups" class="quick-action-row">
+                <div class="action-icon-circle bg-purple">
+                  <span class="material-symbols-outlined">add_comment</span>
+                </div>
+                <div class="action-info">
+                  <div class="action-title">Create Group Channel</div>
+                  <div class="action-desc">Launch real-time team discussion space</div>
+                </div>
+                <span class="material-symbols-outlined arrow">chevron_right</span>
+              </a>
+
+              <a routerLink="/admin/settings" class="quick-action-row">
+                <div class="action-icon-circle bg-amber">
+                  <span class="material-symbols-outlined">palette</span>
+                </div>
+                <div class="action-info">
+                  <div class="action-title">Brand & Theme Customizer</div>
+                  <div class="action-desc">Update corporate colors, logo, and announcement</div>
+                </div>
+                <span class="material-symbols-outlined arrow">chevron_right</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom Audit Log Stream (Span 12) -->
+        <section class="console-widget span-12">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+              <h2 class="widget-title">Recent Activity & Audit Trail</h2>
+            </div>
+            <span class="status-pill muted">Telemetry Log</span>
+          </div>
+          <div class="widget-body" style="padding:0;">
+            <table class="table-clean">
+              <thead>
+                <tr>
+                  <th>Action Type</th>
+                  <th>Performed By</th>
+                  <th>Details & Description</th>
+                  <th>Date & Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let audit of metrics?.recentActivities">
+                  <td><span class="status-pill violet">{{ audit.action }}</span></td>
+                  <td><strong>{{ audit.user }}</strong></td>
+                  <td>{{ audit.details }}</td>
+                  <td class="code-cell">{{ audit.timestamp | date:'short' }}</td>
+                </tr>
+                <tr *ngIf="!metrics?.recentActivities?.length">
+                  <td colspan="4" class="empty-cell">No audit actions logged yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .console-dashboard-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .table-clean {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .table-clean th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--sidebar-header-color);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--md-sys-color-outline);
+    }
+    .table-clean td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--md-sys-color-outline);
+      color: var(--sidebar-color);
+    }
+    .user-inline-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-inline-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-active-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .user-inline-name {
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface);
+    }
+    .code-cell {
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .empty-cell {
+      text-align: center;
+      padding: 30px;
+      color: var(--sidebar-header-color);
+    }
+
+    .quick-actions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .quick-action-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.15s ease;
+    }
+    .quick-action-row:hover {
+      border-color: var(--sidebar-active-color);
+      background: var(--sidebar-active-bg);
+      transform: translateX(4px);
+    }
+    .action-icon-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .action-icon-circle span { font-size: 20px; }
+    .bg-blue { background: rgba(0, 80, 229, 0.12); color: #0050e5; }
+    .bg-green { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+    .bg-purple { background: rgba(168, 85, 247, 0.12); color: #9333ea; }
+    .bg-amber { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .action-info { flex: 1; min-width: 0; }
+    .action-title { font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); }
+    .action-desc { font-size: 11px; color: var(--sidebar-header-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .arrow { color: var(--sidebar-header-color); }
+  `]
+})
+export class DashboardComponent implements OnInit {
+  metrics: any = null;
+  loading = false;
+
+  constructor(private api: ApiService) { }
+
+  ngOnInit(): void {
+    this.loadMetrics();
+  }
+
+  loadMetrics(): void {
+    this.loading = true;
+    this.api.get<any>('DashboardApi/metrics').subscribe({
+      next: (res) => {
+        this.loading = false;
+        if (res?.data) {
+          this.metrics = res.data;
+          if (res.data.masterTenantInfo) {
+            console.groupCollapsed('%c[Master Catalog Multi-Tenant Resolution]', 'color: #0050e5; font-weight: bold;');
+            console.table(res.data.masterTenantInfo);
+            console.groupEnd();
+          }
+        }
+      },
+      error: () => {
+        this.loading = false;
+      }
+    });
+  }
+}

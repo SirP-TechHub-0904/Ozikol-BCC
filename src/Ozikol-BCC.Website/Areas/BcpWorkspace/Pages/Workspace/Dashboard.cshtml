@@ -1,0 +1,166 @@
+@page
+@model DashboardModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Workspace Dashboard";
+    var previousMonth = Model.VisibleMonth.AddMonths(-1);
+    var nextMonth = Model.VisibleMonth.AddMonths(1);
+    var displayName = string.IsNullOrWhiteSpace(Model.CurrentProfile?.FullName)
+        ? Model.CurrentProfile?.Email
+        : Model.CurrentProfile?.FullName;
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "Workspace",
+    Title = "Workspace Dashboard",
+    Subtitle = "Your schedule, assigned work, access, reminders, and recent activity.",
+    Icon = "dashboard",
+    Buttons =
+    [
+        new("My Profile", "/BcpUserManagement/Workspace/Profile", "person", true),
+        new("My Security", "/BcpIdentity/Workspace/Dashboard", "shield_lock"),
+        new("My Performance", "/BcpUserManagement/Workspace/Performance", "monitoring")
+    ]
+})
+
+<section class="workspace-summary-grid" data-tour="workspace-summary">
+    <article class="m3-card workspace-summary-card">
+        <div class="workspace-avatar">@((displayName ?? "U").Trim().FirstOrDefault())</div>
+        <div>
+            <div class="metric-label">Welcome</div>
+            <h2>@(displayName ?? "BCP User")</h2>
+            <p>@(Model.CurrentProfile?.BcpUserCategory?.Name ?? "No category assigned")</p>
+        </div>
+    </article>
+    <article class="m3-card bcp-card"><div class="card-header"><span class="card-title">Today</span></div><div class="metric-value">@Model.Today.ToString("dd")</div><p class="metric-note">@Model.Today.ToString("dddd, MMMM yyyy")</p></article>
+    <article class="m3-card bcp-card"><div class="card-header"><span class="card-title">Feature Access</span></div><div class="metric-value">@Model.FeatureAccessCount</div><p class="metric-note">Assigned BCP modules.</p></article>
+    <article class="m3-card bcp-card"><div class="card-header"><span class="card-title">Pending Actions</span></div><div class="metric-value">@Model.PendingActionsCount</div><p class="metric-note">Items in today's checklist.</p></article>
+</section>
+
+<section class="workspace-main-grid">
+    <article class="console-widget span-8 workspace-calendar-card" data-widget="workspace-calendar" data-title="Calendar" data-tour="workspace-calendar">
+        <div class="widget-head">
+            <div class="widget-title-wrap">
+                <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+                <h2 class="widget-title">@Model.VisibleMonth.ToString("MMMM yyyy")</h2>
+            </div>
+            <div class="workspace-calendar-actions">
+                <a class="widget-icon-btn" href="/BcpWorkspace/Workspace/Dashboard?year=@previousMonth.Year&month=@previousMonth.Month" title="Previous month"><span class="material-symbols-outlined">chevron_left</span></a>
+                <a class="console-btn" href="/BcpWorkspace/Workspace/Dashboard">Today</a>
+                <a class="widget-icon-btn" href="/BcpWorkspace/Workspace/Dashboard?year=@nextMonth.Year&month=@nextMonth.Month" title="Next month"><span class="material-symbols-outlined">chevron_right</span></a>
+            </div>
+        </div>
+        <div class="widget-body">
+            <div class="workspace-calendar-weekdays">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="workspace-calendar-grid">
+                @foreach (var day in Model.CalendarDays)
+                {
+                    <div class="workspace-calendar-day @(day.IsCurrentMonth ? "" : "muted") @(day.IsToday ? "today" : "")">
+                        <span class="workspace-calendar-number">@day.Date.Day</span>
+                        <div class="workspace-calendar-markers">
+                            @foreach (var marker in day.Markers.Distinct())
+                            {
+                                <span class="calendar-dot @marker"></span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="workspace-calendar-legend">
+                <span><i class="calendar-dot task"></i>Task</span>
+                <span><i class="calendar-dot event"></i>Event</span>
+                <span><i class="calendar-dot reminder"></i>Reminder</span>
+                <span><i class="calendar-dot deadline"></i>Deadline</span>
+            </div>
+        </div>
+    </article>
+
+    <article class="console-widget span-4 workspace-checklist-card" data-widget="today-checklist" data-title="Today Checklist" data-tour="today-checklist">
+        <div class="widget-head">
+            <div class="widget-title-wrap">
+                <span class="material-symbols-outlined drag-dot">drag_indicator</span>
+                <h2 class="widget-title">Today checklist</h2>
+            </div>
+        </div>
+        <div class="widget-body">
+            <div class="workspace-checklist-date">@Model.Today.ToString("dddd, MMMM dd, yyyy")</div>
+            <div class="workspace-checklist-list">
+                @foreach (var item in Model.TodayChecklist)
+                {
+                    var priorityClass = item.Priority.Equals("High", StringComparison.OrdinalIgnoreCase) ? "warn" : item.Priority.Equals("Low", StringComparison.OrdinalIgnoreCase) ? "muted" : "info";
+                    <label class="workspace-check-item">
+                        <input type="checkbox" checked="@item.IsDone" />
+                        <span class="workspace-check-time">@item.Time</span>
+                        <span class="row-main">
+                            <span class="row-title">@item.Title</span>
+                            <span class="row-sub">@item.Source</span>
+                        </span>
+                        <span class="status-pill @priorityClass">@item.Priority</span>
+                    </label>
+                }
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="console-widget span-12 workspace-shortcuts-widget" data-widget="workspace-shortcuts" data-title="Feature Shortcuts" data-tour="feature-shortcuts">
+    <div class="widget-head">
+        <div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">My feature shortcuts</h2></div>
+    </div>
+    <div class="widget-body">
+        <div class="workspace-shortcut-grid">
+            @foreach (var shortcut in Model.Shortcuts)
+            {
+                <a class="quick-action @(shortcut.IsActive ? "" : "disabled")" href="@shortcut.Url" aria-disabled="@(!shortcut.IsActive)">
+                    <span class="material-symbols-outlined">@shortcut.Icon</span>
+                    <span>
+                        <strong>@shortcut.Title</strong>
+                        <small>@shortcut.Subtitle</small>
+                    </span>
+                    @if (!shortcut.IsActive)
+                    {
+                        <span class="badge-pill badge-soon">Soon</span>
+                    }
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="workspace-bottom-grid">
+    <article class="console-widget span-6" data-widget="workspace-activity" data-title="Recent Activity" data-tour="workspace-activity">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Recent activity</h2></div></div>
+        <div class="widget-body">
+            <div class="list-stack">
+                @foreach (var item in Model.RecentActivity)
+                {
+                    <a class="list-row" href="@item.Url"><span class="list-icon @item.Tone"><span class="material-symbols-outlined">@item.Icon</span></span><span class="row-main"><span class="row-title">@item.Title</span><span class="row-sub">@item.Subtitle</span></span></a>
+                }
+            </div>
+        </div>
+    </article>
+
+    <article class="console-widget span-6" data-widget="workspace-notifications" data-title="Notifications" data-tour="workspace-notifications">
+        <div class="widget-head"><div class="widget-title-wrap"><span class="material-symbols-outlined drag-dot">drag_indicator</span><h2 class="widget-title">Notifications</h2></div></div>
+        <div class="widget-body">
+            <div class="recommendation-list">
+                @foreach (var item in Model.Notifications)
+                {
+                    <a class="recommendation" href="@item.Url"><span class="list-icon @item.Tone"><span class="material-symbols-outlined">@item.Icon</span></span><span class="row-main"><span class="row-title">@item.Title</span><span class="row-sub">@item.Subtitle</span></span></a>
+                }
+            </div>
+        </div>
+    </article>
+</section>
+
+<script type="application/json" id="bcp-page-tour">
+[
+  {"selector":"[data-tour='workspace-summary']","title":"Workspace summary","text":"The top row gives the signed-in user their profile, date, access count, and pending work count.","placement":"bottom"},
+  {"selector":"[data-tour='workspace-calendar']","title":"Calendar","text":"The calendar is the main planning widget. Feature modules will later feed events, deadlines, reports, tickets, leave, and project tasks here.","placement":"right"},
+  {"selector":"[data-tour='today-checklist']","title":"Today checklist","text":"This panel shows today's work in time order with source feature and priority.","placement":"left"},
+  {"selector":"[data-tour='feature-shortcuts']","title":"Feature shortcuts","text":"Users jump from here into the feature workspaces they can access.","placement":"top"}
+]
+</script>

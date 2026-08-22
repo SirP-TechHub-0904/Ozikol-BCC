@@ -1,0 +1,118 @@
+@using Microsoft.EntityFrameworkCore
+@using Ozikol_BCC.Domain.Models
+@inject Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext DbContext
+@{
+    ConfigSetting? bcpConfig = null;
+
+    try
+    {
+        bcpConfig = await DbContext.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+    }
+    catch
+    {
+        // Sidebar branding should not block navigation during first-run database work.
+    }
+
+    var path = Context.Request.Path.Value ?? string.Empty;
+    var brandName = bcpConfig?.DashboardTitle
+        ?? bcpConfig?.CompanyName
+        ?? bcpConfig?.WebsiteTitle
+        ?? "BCP";
+    var logoUrl = !string.IsNullOrWhiteSpace(bcpConfig?.CompanyLogoUrl)
+        ? bcpConfig.CompanyLogoUrl
+        : !string.IsNullOrWhiteSpace(bcpConfig?.CompanyIconUrl)
+            ? bcpConfig.CompanyIconUrl
+            : "/bcp/img/Ozikol-Logo.png";
+    var iconUrl = !string.IsNullOrWhiteSpace(bcpConfig?.CompanyIconUrl)
+        ? bcpConfig.CompanyIconUrl
+        : !string.IsNullOrWhiteSpace(bcpConfig?.CompanyLogoUrl)
+            ? bcpConfig.CompanyLogoUrl
+            : "/bcp/img/icon.png";
+
+    string Active(string url) => path.Equals(url, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    string Open(params string[] urls) => urls.Any(url => path.StartsWith(url, StringComparison.OrdinalIgnoreCase)) ? "open" : "";
+}
+
+<aside id="sidebar" aria-label="BCP workspace navigation" data-bcp-sidebar="workspace">
+    <div class="sidebar-header">
+        <a href="/BcpWorkspace/Workspace/Dashboard" class="brand-logo ozikol-brand-logo" title="@brandName">
+            <img src="@logoUrl" alt="@brandName" class="brand-logo-img">
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div id="pinned-sidebar-section"></div>
+
+        <div class="menu-title">Workspace</div>
+        <div class="nav-item has-sub @Open("/BcpWorkspace/Workspace", "/BcpIdentity/Workspace", "/BcpUserManagement/Workspace/Profile")">
+            <a class="nav-link" href="javascript:void(0)">
+                <div class="nav-link-content">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span>My Account</span>
+                </div>
+                <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu">
+                <li><a class="sub-nav-item @Active("/BcpWorkspace/Workspace/Dashboard")" href="/BcpWorkspace/Workspace/Dashboard"><span class="sub-nav-content"><span class="dash">-</span>Workspace Dashboard</span></a></li>
+                <li><a class="sub-nav-item @Active("/BcpIdentity/Workspace/Profile")" href="/BcpIdentity/Workspace/Profile"><span class="sub-nav-content"><span class="dash">-</span>My Profile</span></a></li>
+                <li><a class="sub-nav-item @Active("/BcpIdentity/Workspace/Security")" href="/BcpIdentity/Workspace/Security"><span class="sub-nav-content"><span class="dash">-</span>My Security</span></a></li>
+            </ul>
+        </div>
+
+        <div class="menu-title">My User Management</div>
+        <a class="nav-link @Active("/BcpUserManagement/Workspace/FeatureAccess")" href="/BcpUserManagement/Workspace/FeatureAccess"><span class="nav-link-content"><span class="material-symbols-outlined">verified_user</span><span>Feature Access</span></span></a>
+        <a class="nav-link @Active("/BcpUserManagement/Workspace/Category")" href="/BcpUserManagement/Workspace/Category"><span class="nav-link-content"><span class="material-symbols-outlined">category</span><span>My Category</span></span></a>
+        <a class="nav-link @Active("/BcpUserManagement/Workspace/Performance")" href="/BcpUserManagement/Workspace/Performance"><span class="nav-link-content"><span class="material-symbols-outlined">monitoring</span><span>My Performance</span></span></a>
+        <a class="nav-link @Active("/BcpUserManagement/Workspace/Activity")" href="/BcpUserManagement/Workspace/Activity"><span class="nav-link-content"><span class="material-symbols-outlined">history</span><span>My Activity</span></span></a>
+        <a class="nav-link @Active("/BcpUserManagement/Workspace/Notes")" href="/BcpUserManagement/Workspace/Notes"><span class="nav-link-content"><span class="material-symbols-outlined">sticky_note_2</span><span>My Notes</span></span></a>
+
+        <div class="menu-title">My Community</div>
+        <a class="nav-link @Active("/BcpGroups/Workspace/Dashboard")" href="/BcpGroups/Workspace/Dashboard"><span class="nav-link-content"><span class="material-symbols-outlined">diversity_3</span><span>My Groups</span></span></a>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">school</span><span>Alumni Directory</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>Submit Feedback</span><span class="badge-pill badge-soon">Soon</span></span></span>
+
+        <div class="menu-title">My Submissions</div>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>My Reports</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>My Forms</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">analytics</span><span>Survey Results</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>Knowledge Base</span><span class="badge-pill badge-soon">Soon</span></span></span>
+
+        <div class="menu-title">My Finance</div>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">payments</span><span>My Dues</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>My Tickets</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">approval</span><span>My Proposals</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">volunteer_activism</span><span>My Grant Tasks</span><span class="badge-pill badge-soon">Soon</span></span></span>
+
+        <div class="menu-title">My Work</div>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">work</span><span>My Applications</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>My Votes</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">precision_manufacturing</span><span>My Equipment</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">domain</span><span>My Assets</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">task_alt</span><span>My Projects</span><span class="badge-pill badge-soon">Soon</span></span></span>
+
+        <div class="menu-title">My Communication</div>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">auto_awesome</span><span>AI Assistant</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">campaign</span><span>Messages / Preferences</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>My Support Tickets</span><span class="badge-pill badge-soon">Soon</span></span></span>
+
+        <div class="menu-title">My Records</div>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">folder_managed</span><span>My Documents</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">cast_for_education</span><span>My Courses</span><span class="badge-pill badge-soon">Soon</span></span></span>
+        <span class="nav-link disabled"><span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>My Visitors</span><span class="badge-pill badge-soon">Soon</span></span></span>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-footer-brand">
+            <img src="@iconUrl" alt="@brandName" class="sidebar-footer-icon">
+            <div>
+                <div class="sidebar-footer-title">@brandName</div>
+                <div class="sidebar-footer-meta">Workspace</div>
+            </div>
+        </div>
+        <div class="sidebar-footer-actions">
+            <a href="javascript:void(0)" title="Help"><span class="material-symbols-outlined">help_outline</span></a>
+            <a href="javascript:void(0)" title="Docs"><span class="material-symbols-outlined">article</span></a>
+            <a href="/BcpIdentity/Workspace/Security" title="Settings"><span class="material-symbols-outlined">settings</span></a>
+        </div>
+    </div>
+</aside>

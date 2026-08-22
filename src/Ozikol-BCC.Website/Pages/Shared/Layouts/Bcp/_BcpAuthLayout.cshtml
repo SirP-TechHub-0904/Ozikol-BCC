@@ -1,0 +1,57 @@
+@using Microsoft.EntityFrameworkCore
+@using Ozikol_BCC.Domain.Models
+@inject Ozikol_BCC.Persistence.EF.SQL.DashboardDbContext DbContext
+@{
+    ConfigSetting? bcpConfig = null;
+
+    try
+    {
+        bcpConfig = await DbContext.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+    }
+    catch
+    {
+        // Legacy auth layout fallback should still render if settings are unavailable.
+    }
+
+    var brandName = bcpConfig?.DashboardTitle
+        ?? bcpConfig?.CompanyName
+        ?? bcpConfig?.WebsiteTitle
+        ?? "BCP";
+    var logoUrl = !string.IsNullOrWhiteSpace(bcpConfig?.CompanyLogoUrl)
+        ? bcpConfig.CompanyLogoUrl
+        : !string.IsNullOrWhiteSpace(bcpConfig?.CompanyIconUrl)
+            ? bcpConfig.CompanyIconUrl
+            : "/bcp/img/Ozikol-Logo.png";
+    var authTitle = bcpConfig?.LoginTitle ?? brandName;
+    var authNote = bcpConfig?.LoginNote ?? "Secure access for Console and Workspace operations.";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @await Html.PartialAsync("Layouts/Bcp/_BcpHeadTitle")
+    @await Html.PartialAsync("Layouts/Bcp/_BcpDashboardCSS")
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="bcp-auth-body">
+    <main class="bcp-auth-shell">
+        <section class="bcp-auth-brand">
+            <a href="/" class="brand-logo ozikol-brand-logo" title="@brandName">
+                <img src="@logoUrl" alt="@brandName" class="brand-logo-img" />
+            </a>
+            <div>
+                <h1>@authTitle</h1>
+                <p>@authNote</p>
+            </div>
+        </section>
+
+        <section class="bcp-auth-panel">
+            @RenderBody()
+        </section>
+    </main>
+
+    @await Html.PartialAsync("Layouts/Bcp/_BcpScript")
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

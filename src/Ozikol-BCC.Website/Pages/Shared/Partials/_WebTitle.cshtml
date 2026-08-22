@@ -1,0 +1,36 @@
+@model Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto
+@{
+    string title = ViewData["Title"]?.ToString();
+    string uppercaseTitle = title?.ToUpper();
+}
+<title>@uppercaseTitle | @Model.WebsiteTitle</title>
+<link rel="shortcut icon" href="@Model.CompanyIconUrl" type="image/x-icon" />
+
+
+@Html.Raw(ViewBag.DataConfigs.Configuration)
+
+<!-- Standard Meta Tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="@ViewData["Description"]">
+<meta name="keywords" content="@ViewData["Keywords"]">
+<meta name="author" content="@Model.CompanyName">
+<meta name="robots" content="index, follow">
+<meta name="language" content="en">
+
+<!-- Open Graph Meta Tags -->
+<meta property="og:site_name" content="@ViewData["Title"]">
+<meta property="og:title" content="@ViewData["PageName"]" />
+<meta property="og:description" content="@ViewData["Description"]" />
+<meta property="og:image" itemprop="image" content="@ViewData["Image"]">
+<meta property="og:url" content="@ViewData["Url"]">
+<meta property="og:type" content="website" />
+<meta property="og:updated_time" content="@DateTime.UtcNow.AddHours(1)" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image"> 
+<meta name="twitter:title" content="@ViewData["PageName"]">
+<meta name="twitter:description" content="@ViewData["Description"]">
+<meta name="twitter:image" content="@ViewData["Image"]">
+

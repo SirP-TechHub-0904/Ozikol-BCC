@@ -1,0 +1,15 @@
+@model Profile
+@{
+    var name = string.IsNullOrWhiteSpace(Model.FullName) ? Model.Email : Model.FullName;
+}
+<article class="m3-card bcp-profile-card" data-tour="profile-card">
+    <div class="bcp-profile-avatar">@((name ?? "U").Trim().FirstOrDefault())</div>
+    <div>
+        <h2>@name</h2>
+        <p>@Model.Email</p>
+        <div class="bcp-inline-badges">
+            <partial name="/Areas/BcpUserManagement/Pages/Common/UserStatusBadge.cshtml" model="Model.UserStatus" />
+            <partial name="/Areas/BcpUserManagement/Pages/Common/CategoryBadge.cshtml" model="Model.BcpUserCategory?.Name" />
+        </div>
+    </div>
+</article>

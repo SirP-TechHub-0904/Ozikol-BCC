@@ -1,0 +1,236 @@
+@page
+@model Ozikol.Central.Pages.Operations.FleetModel
+@{
+    ViewData["Title"] = "Database Fleet Operations Hub - Ozikol Central";
+}
+
+<div class="central-dashboard">
+    <!-- Operations Sub-Nav Tabs -->
+    <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
+        <a asp-page="/Operations/Fleet" style="color: #38bdf8; font-weight: 800; font-size: 13.5px; text-decoration: none; padding: 6px 14px; background: rgba(56, 189, 248, 0.12); border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25);">
+            📊 Database Fleet & Migrations
+        </a>
+        <a asp-page="/Operations/Users/Index" style="color: #94a3b8; font-weight: 700; font-size: 13.5px; text-decoration: none; padding: 6px 14px; border-radius: 6px; transition: all 0.15s ease;">
+            👥 Staff & Operator Roles
+        </a>
+    </div>
+
+    <!-- Header Banner -->
+    <header class="central-header">
+        <div class="header-left">
+            <div class="brand-badge">
+                <span class="badge-dot"></span>
+                <span>Ozikol Operator Console</span>
+            </div>
+            <h1 class="main-title">Database Fleet Synchronization & Governance</h1>
+            <p class="subtitle">SuperAdmin & Operator controls for dynamic SQL Server databases, live row analytics, and EF Core migrations.</p>
+        </div>
+        <div class="header-actions">
+            <form method="post" asp-page-handler="MigrateAllTenants">
+                <button type="submit" class="btn btn-sync-all" onclick="return confirm('Execute pending EF Core migrations across ALL active tenant databases?');">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                    <span>General Update (All Tenants)</span>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert @(Model.AlertIsError ? "alert-danger" : "alert-success")">
+            <div class="alert-icon">@(Model.AlertIsError ? "⚠️" : "✅")</div>
+            <div class="alert-text">@Model.AlertMessage</div>
+        </div>
+    }
+
+    <!-- Top Metrics Overview Grid -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <span class="metric-label">Master Catalog DB</span>
+            <div class="metric-val-row">
+                <span class="metric-value font-mono">@Model.MasterSummary.DatabaseName</span>
+                <span class="status-pill @(Model.MasterSummary.Status.IsReachable ? "status-online" : "status-offline")">
+                    @(Model.MasterSummary.Status.IsReachable ? "Online" : "Offline")
+                </span>
+            </div>
+            <span class="metric-sub">
+                @(Model.MasterSummary.Status.HasPendingMigrations ? $"{Model.MasterSummary.Status.PendingMigrations.Count} pending migrations" : "Schema up to date")
+            </span>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Total Tenant DBs</span>
+            <div class="metric-val-row">
+                <span class="metric-value">@Model.MasterSummary.TotalTenantsCount</span>
+                <span class="status-pill status-info">Isolated</span>
+            </div>
+            <span class="metric-sub">Managed via Master Catalog</span>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Synced Fleets</span>
+            <div class="metric-val-row">
+                <span class="metric-value text-success">@Model.MasterSummary.SyncedTenantsCount</span>
+                <span class="status-pill status-online">Up to Date</span>
+            </div>
+            <span class="metric-sub">Zero pending migrations</span>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Action Required</span>
+            <div class="metric-val-row">
+                <span class="metric-value @(Model.MasterSummary.PendingTenantsCount > 0 ? "text-warning" : "text-muted")">@Model.MasterSummary.PendingTenantsCount</span>
+                <span class="status-pill @(Model.MasterSummary.PendingTenantsCount > 0 ? "status-warning" : "status-neutral")">
+                    @(Model.MasterSummary.PendingTenantsCount > 0 ? "Update Needed" : "None")
+                </span>
+            </div>
+            <span class="metric-sub">Tenants needing migration</span>
+        </div>
+    </div>
+
+    <!-- Master Database Control Section -->
+    <section class="section-card master-card">
+        <div class="section-head">
+            <div>
+                <span class="section-eyebrow">CENTRAL CATALOG</span>
+                <h2 class="section-title">Master Database (MasterCatalogDbContext)</h2>
+                <p class="section-desc">Houses Central Identity, tenant registrations, affiliate partner network, and transactional email logs.</p>
+            </div>
+            <div class="section-actions">
+                <form method="post" asp-page-handler="MigrateMaster">
+                    <button type="submit" class="btn btn-master-migrate" @(Model.MasterSummary.Status.HasPendingMigrations ? "" : "disabled")>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                        <span>@(Model.MasterSummary.Status.HasPendingMigrations ? $"Apply {Model.MasterSummary.Status.PendingMigrations.Count} Migration(s)" : "Master DB Synced")</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="migration-chips-box">
+            <div class="chip-group">
+                <span class="chip-label">Applied Migrations (@Model.MasterSummary.Status.AppliedMigrations.Count):</span>
+                <div class="chips-wrap">
+                    @if (Model.MasterSummary.Status.AppliedMigrations.Count > 0)
+                    {
+                        @foreach (var m in Model.MasterSummary.Status.AppliedMigrations)
+                        {
+                            <span class="chip chip-applied">✓ @m</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="chip chip-empty">No applied migrations recorded</span>
+                    }
+                </div>
+            </div>
+
+            @if (Model.MasterSummary.Status.PendingMigrations.Count > 0)
+            {
+                <div class="chip-group">
+                    <span class="chip-label text-warning">Pending Migrations (@Model.MasterSummary.Status.PendingMigrations.Count):</span>
+                    <div class="chips-wrap">
+                        @foreach (var m in Model.MasterSummary.Status.PendingMigrations)
+                        {
+                            <span class="chip chip-pending">⏳ @m</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Tenant Databases Fleet Cards Section -->
+    <section class="section-card">
+        <div class="section-head">
+            <div>
+                <span class="section-eyebrow">TENANT FLEET MANAGEMENT</span>
+                <h2 class="section-title">Tenant Databases (@Model.Tenants.Count Registered)</h2>
+                <p class="section-desc">Real-time table counts, row summation, and schema update actions for each isolated database.</p>
+            </div>
+        </div>
+
+        @if (Model.Tenants.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <h3>No Tenants Registered</h3>
+                <p>There are currently no tenant databases registered in the Master Catalog.</p>
+                <a asp-page="/Signup" class="btn-hero-primary" style="margin-top: 14px; display: inline-flex;">Create First Tenant Workspace</a>
+            </div>
+        }
+        else
+        {
+            <div class="tenant-cards-grid">
+                @foreach (var tenant in Model.Tenants)
+                {
+                    <div class="tenant-fleet-card">
+                        <div class="card-top-row">
+                            <div class="card-title-group">
+                                <h3 class="card-org-title">@tenant.OrganizationName</h3>
+                                <span class="tenant-key-tag"><code>@tenant.TenantKey</code></span>
+                            </div>
+                            <div>
+                                @if (!tenant.Status.IsReachable)
+                                {
+                                    <span class="status-badge badge-danger">Offline</span>
+                                }
+                                else if (tenant.Status.HasPendingMigrations)
+                                {
+                                    <span class="status-badge badge-warning">@tenant.Status.PendingMigrations.Count Update Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge badge-success">✓ Up to Date</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="card-domains-row">
+                            <span class="domain-pill">🌐 @tenant.PrimaryDomain</span>
+                            @if (!string.IsNullOrEmpty(tenant.CustomDomain))
+                            {
+                                <span class="domain-pill domain-custom">🔗 @tenant.CustomDomain</span>
+                            }
+                        </div>
+
+                        <div class="card-db-box">
+                            <div class="db-stat-row">
+                                <span class="db-stat-label">Database:</span>
+                                <code class="db-name-code">@tenant.DatabaseName</code>
+                            </div>
+                            <div class="db-stats-split">
+                                <div class="db-mini-stat">
+                                    <span class="mini-label">Total Tables</span>
+                                    <strong class="mini-value">@tenant.TotalTablesCount</strong>
+                                </div>
+                                <div class="db-mini-stat">
+                                    <span class="mini-label">Total Records (Rows)</span>
+                                    <strong class="mini-value text-success">@tenant.FormattedTotalRecords</strong>
+                                </div>
+                                <div class="db-mini-stat">
+                                    <span class="mini-label">Created</span>
+                                    <span class="mini-value-date">@tenant.CreatedUtc.ToString("dd MMM yyyy")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer-actions">
+                            <a asp-page="/Tenants/Details" asp-route-key="@tenant.TenantKey" class="btn-card-details">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+                                <span>View Details & Tables</span>
+                            </a>
+
+                            <form method="post" asp-page-handler="MigrateTenant" class="inline-form">
+                                <input type="hidden" name="tenantKey" value="@tenant.TenantKey" />
+                                <button type="submit" class="btn-card-update" @(tenant.Status.HasPendingMigrations ? "" : "disabled") title="Update this tenant database schema">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                                    <span>@(tenant.Status.HasPendingMigrations ? "Update Database" : "Up to Date")</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>

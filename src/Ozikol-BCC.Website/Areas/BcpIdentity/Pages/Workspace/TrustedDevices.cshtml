@@ -1,0 +1,52 @@
+@page
+@model TrustedDevicesModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Trusted Devices";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Title = "Trusted Devices & Browsers",
+    Subtitle = "Manage browsers and devices where 2FA prompts are remembered and bypassed.",
+    Icon = "phonelink_setup",
+    Eyebrow = "User Workspace",
+    BackUrl = "/BcpIdentity/Workspace/Security"
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <section class="console-alert" style="margin-bottom:20px; padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px;">
+        <div>
+            <strong>Status Update</strong>
+            <p style="margin:4px 0 0 0;">@Model.StatusMessage</p>
+        </div>
+    </section>
+}
+
+<div style="max-width:700px;" class="m3-card bcp-card" style="padding:24px;">
+    <div class="card-header" style="margin-bottom:16px;">
+        <span class="card-title" style="font-size:18px; font-weight:600;">Browser Memory Status</span>
+    </div>
+
+    <div style="margin-bottom:20px; font-size:14px;">
+        @if (Model.Is2FaBrowserRemembered)
+        {
+            <p style="color:var(--md-sys-color-primary); font-weight:500;">This browser is currently remembered for 2FA bypass.</p>
+        }
+        else
+        {
+            <p style="color:var(--sidebar-color);">This browser is not remembered. You will be prompted for 2FA verification when logging in.</p>
+        }
+    </div>
+
+    @if (Model.Is2FaBrowserRemembered)
+    {
+        <form method="post" asp-page-handler="ForgetBrowser">
+            <button type="submit" class="btn-custom active" style="padding:10px 20px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;">
+                <span class="material-symbols-outlined">browser_updated</span>
+                <span>Forget This Browser</span>
+            </button>
+        </form>
+    }
+</div>

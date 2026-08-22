@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Ozikol_BCC.StorageServices.AwsS3</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.400.75" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

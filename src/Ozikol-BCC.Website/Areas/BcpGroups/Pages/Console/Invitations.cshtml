@@ -1,0 +1,141 @@
+@page
+@model Ozikol_BCC.Website.Areas.BcpGroups.Pages.Console.InvitationsModel
+@attribute [Authorize]
+@{
+    ViewData["Title"] = "Group Invitations";
+}
+
+@await Html.PartialAsync("Layouts/Bcp/_BcpPageHeader", new BcpPageHeaderModel
+{
+    Eyebrow = "Committees & Groups",
+    Title = "Group Invitations",
+    Subtitle = "Manage all pending, accepted, and declined group invitations across the platform.",
+    Icon = "mail",
+    BackUrl = "/BcpGroups/Console/Dashboard",
+    Buttons =
+    [
+        new("Group Directory", "/BcpGroups/Console/Groups", "groups"),
+        new("Create Group", "/BcpGroups/Console/Create", "add_circle", true)
+    ]
+})
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div style="padding:12px 16px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); border-radius:8px; font-size:14px; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-outlined" style="font-size:20px;">info</span>
+        <span>@Model.StatusMessage</span>
+    </div>
+}
+
+<section class="console-grid" style="width:100%;">
+    <article class="console-widget span-12" data-widget="invitation-metrics">
+        <div class="widget-body">
+            <div class="metric-grid" style="grid-template-columns:repeat(3, minmax(0,1fr));">
+                <a class="metric-card" href="?Filter=Pending">
+                    <div class="metric-label">Pending</div>
+                    <div class="metric-value" style="color:var(--sidebar-active-color);">@Model.TotalPending</div>
+                    <div class="metric-note">Awaiting response</div>
+                </a>
+                <a class="metric-card" href="?Filter=Accepted">
+                    <div class="metric-label">Accepted</div>
+                    <div class="metric-value" style="color:#16a34a;">@Model.TotalAccepted</div>
+                    <div class="metric-note">Joined groups</div>
+                </a>
+                <a class="metric-card" href="?Filter=Declined">
+                    <div class="metric-label">Declined</div>
+                    <div class="metric-value" style="color:var(--md-sys-color-error);">@Model.TotalDeclined</div>
+                    <div class="metric-note">Rejected invitations</div>
+                </a>
+            </div>
+        </div>
+    </article>
+</section>
+
+<form method="get" class="m3-card bcp-card mb-4" style="width:100%; padding:20px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr auto auto; gap:14px; align-items:end;">
+        <label class="bcp-field">
+            Search
+            <input class="bcp-input" asp-for="Search" placeholder="User name, email, or group title..." />
+        </label>
+        <label class="bcp-field">
+            Filter by Status
+            <select class="bcp-input bcp-select" asp-for="Filter">
+                <option value="">All Invitations</option>
+                <option value="Pending">Pending</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Declined">Declined</option>
+            </select>
+        </label>
+        <button class="console-btn primary" type="submit" style="min-height:44px;">
+            <span class="material-symbols-outlined">search</span> Filter
+        </button>
+        <a class="console-btn secondary" href="/BcpGroups/Console/Invitations" style="min-height:44px;">
+            <span class="material-symbols-outlined">restart_alt</span> Reset
+        </a>
+    </div>
+</form>
+
+<section class="m3-card bcp-card" style="width:100%;">
+    <div class="bcp-table-wrap">
+        <table class="bcp-table">
+            <thead>
+                <tr>
+                    <th style="width:22%;">Invited User</th>
+                    <th style="width:20%;">Group</th>
+                    <th style="width:18%;">Invited By</th>
+                    <th style="width:10%;">Status</th>
+                    <th style="width:15%;">Date</th>
+                    <th style="width:15%; text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Invitations.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No invitations found matching your criteria.</td>
+                    </tr>
+                }
+                @foreach (var inv in Model.Invitations)
+                {
+                    <tr>
+                        <td>
+                            <span class="bcp-member-name">@inv.InvitedUser?.FullName</span>
+                            <span class="bcp-member-email">@inv.InvitedUser?.Email</span>
+                        </td>
+                        <td><strong style="font-size:13px;">@inv.Group?.Title</strong></td>
+                        <td style="font-size:12px; color:var(--sidebar-color);">@inv.InvitedByUser?.FullName</td>
+                        <td>
+                            @if (inv.Status == "Pending")
+                            {
+                                <span class="bcp-badge warning">Pending</span>
+                            }
+                            else if (inv.Status == "Accepted")
+                            {
+                                <span class="bcp-badge success">Accepted</span>
+                            }
+                            else
+                            {
+                                <span class="bcp-badge danger">Declined</span>
+                            }
+                        </td>
+                        <td style="font-size:12px; color:var(--sidebar-color);">@inv.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                        <td style="text-align:right;">
+                            @if (inv.Status == "Pending")
+                            {
+                                <form method="post" asp-page-handler="Revoke" asp-route-id="@inv.Id" style="display:inline;">
+                                    <button type="submit" class="console-btn secondary" onclick="return confirm('Revoke this invitation?')">
+                                        <span class="material-symbols-outlined">cancel</span> Revoke
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span style="font-size:11px; color:var(--sidebar-color);">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

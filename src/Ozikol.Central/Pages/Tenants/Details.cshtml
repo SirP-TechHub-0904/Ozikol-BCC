@@ -1,0 +1,247 @@
+@page
+@model Ozikol.Central.Pages.Tenants.DetailsModel
+@{
+    var tenant = Model.DeepDive?.Tenant;
+    ViewData["Title"] = tenant != null ? $"{tenant.OrganizationName} - Database Details" : "Tenant Database Details";
+}
+
+<div class="central-dashboard">
+    <!-- Breadcrumb & Back Navigation -->
+    <div class="breadcrumb-bar">
+        <a asp-page="/Index" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span>Back to Database Fleet</span>
+        </a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">@(tenant?.OrganizationName ?? "Tenant Details")</span>
+    </div>
+
+    @if (Model.DeepDive == null)
+    {
+        <div class="alert alert-danger">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text">Unable to load tenant database details.</div>
+        </div>
+    }
+    else
+    {
+        <!-- Tenant Details Header -->
+        <header class="central-header details-header">
+            <div class="header-left">
+                <div class="details-title-row">
+                    <h1 class="main-title">@tenant!.OrganizationName</h1>
+                    <span class="tenant-key-badge"><code>@tenant.TenantKey</code></span>
+                    <span class="status-pill @(Model.DeepDive.IsReachable ? "status-online" : "status-offline")">
+                        @(Model.DeepDive.IsReachable ? "Database Online" : "Database Offline")
+                    </span>
+                    @if (Model.DeepDive.HasPendingMigrations)
+                    {
+                        <span class="status-pill status-warning">@Model.DeepDive.PendingMigrations.Count Update(s) Pending</span>
+                    }
+                    else if (Model.DeepDive.IsReachable)
+                    {
+                        <span class="status-pill status-online">✓ Schema Up to Date</span>
+                    }
+                </div>
+                <p class="subtitle">Detailed inspection of isolated SQL tables, records count, and EF Core migration schema.</p>
+            </div>
+            <div class="header-actions">
+                <form method="post" asp-page-handler="Migrate">
+                    <input type="hidden" name="key" value="@tenant.TenantKey" />
+                    <button type="submit" class="btn btn-sync-all" @(Model.DeepDive.HasPendingMigrations ? "" : "disabled") title="Apply pending migrations to this tenant database">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                        <span>@(Model.DeepDive.HasPendingMigrations ? $"Apply {Model.DeepDive.PendingMigrations.Count} Update(s)" : "Database Synced")</span>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(Model.AlertMessage))
+        {
+            <div class="alert @(Model.AlertIsError ? "alert-danger" : "alert-success")">
+                <div class="alert-icon">@(Model.AlertIsError ? "⚠️" : "✅")</div>
+                <div class="alert-text">@Model.AlertMessage</div>
+            </div>
+        }
+
+        <!-- Top Metrics Cards Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Target Database</span>
+                <div class="metric-val-row">
+                    <span class="metric-value font-mono">@tenant.DatabaseName</span>
+                </div>
+                <span class="metric-sub">Dedicated isolated SQL catalog</span>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-label">Total Tables</span>
+                <div class="metric-val-row">
+                    <span class="metric-value">@Model.DeepDive.TotalTablesCount</span>
+                    <span class="status-pill status-info">User Tables</span>
+                </div>
+                <span class="metric-sub">Schema: <code>dbo</code></span>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-label">Total Records (Rows)</span>
+                <div class="metric-val-row">
+                    <span class="metric-value text-success">@Model.DeepDive.FormattedTotalRecords</span>
+                </div>
+                <span class="metric-sub">Live summation across all tables</span>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-label">Total Storage Used</span>
+                <div class="metric-val-row">
+                    <span class="metric-value">@Model.DeepDive.FormattedTotalStorage</span>
+                </div>
+                <span class="metric-sub">Data & index allocation</span>
+            </div>
+        </div>
+
+        <!-- Connection & Routing Information Card -->
+        <section class="section-card">
+            <div class="section-head">
+                <div>
+                    <span class="section-eyebrow">CONFIGURATION & ROUTING</span>
+                    <h2 class="section-title">Tenant Metadata & Networking</h2>
+                </div>
+            </div>
+            <div class="metadata-grid">
+                <div class="meta-item">
+                    <span class="meta-label">Primary Routing Domain:</span>
+                    <span class="domain-pill">🌐 @tenant.PrimaryDomain</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Custom Domain:</span>
+                    <span class="domain-pill @(!string.IsNullOrEmpty(tenant.CustomDomain) ? "domain-custom" : "")">
+                        @(!string.IsNullOrEmpty(tenant.CustomDomain) ? $"🔗 {tenant.CustomDomain}" : "None configured")
+                    </span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Date Provisioned:</span>
+                    <span class="meta-val">@tenant.CreatedUtc.ToString("dd MMM yyyy, HH:mm UTC")</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Context Type:</span>
+                    <span class="meta-val"><code>DashboardDbContext</code></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table-by-Table Records Breakdown -->
+        <section class="section-card">
+            <div class="section-head">
+                <div>
+                    <span class="section-eyebrow">DATABASE SCHEMA & STORAGE</span>
+                    <h2 class="section-title">Table Breakdown & Record Counts (@Model.DeepDive.Tables.Count Tables)</h2>
+                    <p class="section-desc">Live row count and storage allocation for each individual table in <code>@tenant.DatabaseName</code>.</p>
+                </div>
+                <div class="search-box">
+                    <form method="get">
+                        <input type="hidden" name="key" value="@tenant.TenantKey" />
+                        <input type="text" name="q" value="@Model.SearchQuery" placeholder="Search table name..." class="search-input" />
+                        @if (!string.IsNullOrEmpty(Model.SearchQuery))
+                        {
+                            <a asp-page="/Tenants/Details" asp-route-key="@tenant.TenantKey" class="clear-search">✕</a>
+                        }
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.DeepDive.Tables.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h3>No Tables Found</h3>
+                    <p>No tables matching your filter or the database has not been populated yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="tenants-table-wrapper">
+                    <table class="central-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Table Name</th>
+                                <th>Schema</th>
+                                <th>Total Records (Rows)</th>
+                                <th>Storage Used</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int rowIdx = 1; }
+                            @foreach (var table in Model.DeepDive.Tables)
+                            {
+                                <tr>
+                                    <td class="text-muted font-mono">@rowIdx</td>
+                                    <td>
+                                        <div class="table-name-cell">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                                            <strong class="table-name-text">@table.TableName</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="schema-badge">@table.SchemaName</span>
+                                    </td>
+                                    <td>
+                                        <span class="row-count-badge @(table.TotalRows > 0 ? "has-records" : "empty-records")">
+                                            @table.FormattedRows
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="storage-badge">@table.FormattedStorage</span>
+                                    </td>
+                                </tr>
+                                rowIdx++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <!-- EF Core Migrations History Box -->
+        <section class="section-card">
+            <div class="section-head">
+                <div>
+                    <span class="section-eyebrow">SCHEMA MIGRATION TIMELINE</span>
+                    <h2 class="section-title">Applied EF Core Migrations (@Model.DeepDive.AppliedMigrations.Count)</h2>
+                </div>
+            </div>
+
+            <div class="migration-chips-box">
+                <div class="chip-group">
+                    <div class="chips-wrap">
+                        @if (Model.DeepDive.AppliedMigrations.Count > 0)
+                        {
+                            @foreach (var m in Model.DeepDive.AppliedMigrations)
+                            {
+                                <span class="chip chip-applied">✓ @m</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="chip chip-empty">No applied migrations recorded in [__EFMigrationsHistory]</span>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.DeepDive.PendingMigrations.Count > 0)
+                {
+                    <div class="chip-group">
+                        <span class="chip-label text-warning">Pending Migrations (@Model.DeepDive.PendingMigrations.Count):</span>
+                        <div class="chips-wrap">
+                            @foreach (var m in Model.DeepDive.PendingMigrations)
+                            {
+                                <span class="chip chip-pending">⏳ @m</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>

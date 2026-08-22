@@ -1,0 +1,7 @@
+@* Reusable category form. Kept in Common because the same feature can expose setup from dashboards or settings pages. *@
+<form method="post" asp-page-handler="AddCategory" class="bcp-inline-form" data-tour="add-category-form">
+    <label class="bcp-field">Name<input class="bcp-input" name="Name" required /></label>
+    <label class="bcp-field">Description<input class="bcp-input" name="Description" /></label>
+    <label class="bcp-field">Sort Order<input class="bcp-input" name="SortOrder" type="number" value="0" /></label>
+    <button class="console-btn primary" type="submit"><span class="material-symbols-outlined">add</span>Add Category</button>
+</form>
