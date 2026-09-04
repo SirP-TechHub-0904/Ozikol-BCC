@@ -26,20 +26,6 @@
                     @SharedLocalizer["Pricing_Hero_Desc"]
                 </p>
             </div>
-
-            <!-- Currency Selector Pills -->
-            <div class="oz-currency-selector-wrap" role="group" aria-label="@SharedLocalizer["Pricing_Currency_Label"]">
-                @foreach (var curr in Model.SupportedCurrencies)
-                {
-                    var isActive = curr.Code.Equals(Model.SelectedCurrency, StringComparison.OrdinalIgnoreCase);
-                    <a href="?currency=@curr.Code" 
-                       class="oz-currency-pill @(isActive ? "is-active" : "")" 
-                       data-currency="@curr.Code"
-                       aria-pressed="@(isActive ? "true" : "false")">
-                        @curr.PillLabel
-                    </a>
-                }
-            </div>
         </div>
     </section>
 
