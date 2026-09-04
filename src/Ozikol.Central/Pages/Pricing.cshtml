@@ -1,94 +1,98 @@
 @page "/pricing"
 @model Ozikol.Central.Pages.PricingModel
 @{
-    ViewData["Title"] = "Simple, Transparent Pricing | Ozikol";
-    ViewData["MetaDescription"] = "Explore Ozikol's transparent pricing plans. Access all 33 modular tools with zero hidden per-user fees, predictable monthly or annual billing, and a 14-day free trial.";
+    ViewData["Title"] = SharedLocalizer["Pricing_Meta_Title"].Value;
+    ViewData["MetaDescription"] = SharedLocalizer["Pricing_Meta_Desc"].Value;
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+    if (currentCulture != "en" && currentCulture != "fr" && currentCulture != "es" && currentCulture != "de")
+    {
+        currentCulture = "en";
+    }
 }
 
 <div class="oz-pricing-page">
-    <!-- Hero Section -->
+    <!-- Section 1: Hero Banner & Billing Cycle Toggle -->
     <section class="oz-pricing-hero">
         <div class="container">
             <div class="oz-pricing-hero-badge">
                 <span class="oz-pricing-hero-badge-dot"></span>
-                <span>Transparent, Predictable Value</span>
+                <span>@SharedLocalizer["Pricing_Hero_Badge"]</span>
             </div>
             <h1 class="oz-pricing-hero-title">
-                Simple, transparent pricing for <span>every organisation</span>
+                @SharedLocalizer["Pricing_Hero_Title"]
             </h1>
             <p class="oz-pricing-hero-desc">
-                Access all 33 modular business, workforce, and community management tools. No per-user penalties, no hidden add-ons, and no lock-in contracts.
+                @SharedLocalizer["Pricing_Hero_Desc"]
             </p>
 
             <!-- Billing Toggle -->
             <div class="oz-pricing-toggle-wrap">
-                <span class="oz-pricing-toggle-label is-active" id="labelMonthly">Monthly</span>
+                <span class="oz-pricing-toggle-label is-active" id="labelMonthly">@SharedLocalizer["Pricing_Toggle_Monthly"]</span>
                 <button type="button" class="oz-pricing-toggle-btn" id="billingToggle" aria-label="Toggle annual or monthly billing" aria-checked="false" role="switch">
                     <span class="oz-pricing-toggle-thumb"></span>
                 </button>
                 <span class="oz-pricing-toggle-label" id="labelAnnual">
-                    Annual
-                    <span class="oz-pricing-save-badge">Save 20%</span>
+                    @SharedLocalizer["Pricing_Toggle_Annual"]
+                    <span class="oz-pricing-save-badge">@SharedLocalizer["Pricing_Toggle_Save"]</span>
                 </span>
             </div>
         </div>
     </section>
 
-    <!-- Pricing Cards Section -->
+    <!-- Section 2: 4 Tier Pricing Cards -->
     <section class="oz-pricing-cards-section">
         <div class="container">
             <div class="oz-pricing-grid">
                 <!-- Tier 1: Starter -->
                 <div class="oz-pricing-card">
                     <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">Starter</div>
-                        <h3 class="oz-pricing-card-name">Small Teams & Clubs</h3>
-                        <p class="oz-pricing-card-sub">Perfect for growing community groups, local non-profits, and small setups.</p>
+                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier1_Tag"]</div>
+                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier1_Title"]</h2>
+                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier1_Desc"]</p>
                         <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">&pound;</span>
-                            <span class="oz-pricing-amount" data-monthly="49" data-annual="39">49</span>
-                            <span class="oz-pricing-period">/ month</span>
+                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
+                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier1_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier1_Price_Annual"]">@SharedLocalizer["Pricing_Tier1_Price_Monthly"]</span>
+                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
                         </div>
-                        <div class="oz-pricing-billed-note" data-monthly="Billed monthly" data-annual="Billed &pound;468 annually (Save 20%)">Billed monthly</div>
+                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
                     </div>
                     <div class="oz-pricing-card-body">
-                        <a href="/get-started" class="oz-pricing-btn oz-pricing-btn--outline">Start 14-Day Free Trial</a>
+                        <a href="/@currentCulture/auth/get-started?plan=starter" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier1_Btn"]</a>
                         <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Up to <strong>25 Active Users</strong></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <strong>Core 10 Modules</strong> (Rota, Chat, Invoicing)</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Web Application & Mobile PWA Access</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 10 GB Cloud Document Storage</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Standard Email & Knowledge Base Support</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 99.5% Uptime Availability SLA</li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Up to <strong>25 Active Users</strong></span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>Core Suites</strong> (Messenger, Rota, Forms)</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Responsive Web Application &amp; Mobile PWA</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>15 GB Sovereign Cloud Document Storage</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Standard Community &amp; Knowledge Support</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>99.5% Uptime Availability SLA</span></li>
                         </ul>
                     </div>
                 </div>
 
                 <!-- Tier 2: Professional (Popular) -->
                 <div class="oz-pricing-card is-popular">
-                    <div class="oz-pricing-popular-badge">Most Popular</div>
+                    <div class="oz-pricing-popular-badge">@SharedLocalizer["Pricing_Tier2_Badge"]</div>
                     <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">Professional</div>
-                        <h3 class="oz-pricing-card-name">Growing Organisations</h3>
-                        <p class="oz-pricing-card-sub">Everything mid-sized organisations need to unite workforce, assets, and finance.</p>
+                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier2_Tag"]</div>
+                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier2_Title"]</h2>
+                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier2_Desc"]</p>
                         <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">&pound;</span>
-                            <span class="oz-pricing-amount" data-monthly="149" data-annual="119">149</span>
-                            <span class="oz-pricing-period">/ month</span>
+                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
+                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier2_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier2_Price_Annual"]">@SharedLocalizer["Pricing_Tier2_Price_Monthly"]</span>
+                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
                         </div>
-                        <div class="oz-pricing-billed-note" data-monthly="Billed monthly" data-annual="Billed &pound;1,428 annually (Save 20%)">Billed monthly</div>
+                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
                     </div>
                     <div class="oz-pricing-card-body">
-                        <a href="/get-started" class="oz-pricing-btn oz-pricing-btn--primary">Start 14-Day Free Trial</a>
+                        <a href="/@currentCulture/auth/get-started?plan=pro" class="oz-pricing-btn oz-pricing-btn--primary">@SharedLocalizer["Pricing_Tier2_Btn"]</a>
                         <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Up to <strong>150 Active Users</strong></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <strong>All 33 Modular Features Included</strong></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> MIS Executive Management Console</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Android & iOS Native Mobile Apps</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 100 GB Encrypted Document Vault</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> AI Smart Assist (Bring Your Own Key)</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Priority Live Chat & Ticket Support</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 99.9% High-Availability SLA</li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Up to <strong>150 Active Users</strong></span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>All 37 Capabilities in 9 Suites</strong></span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Private AI Gateway (Bring Your Own Key)</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Android &amp; iOS Mobile Applications</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Verifiable Cryptographic QR Badges &amp; Passes</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Field Surveyor Mobile Census &amp; GPS Sync</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Priority 24/7 Support &amp; 99.9% Uptime SLA</span></li>
                         </ul>
                     </div>
                 </div>
@@ -96,26 +100,50 @@
                 <!-- Tier 3: Enterprise -->
                 <div class="oz-pricing-card">
                     <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">Enterprise</div>
-                        <h3 class="oz-pricing-card-name">Multi-Site & Scale</h3>
-                        <p class="oz-pricing-card-sub">Maximum capacity, dedicated compliance, and custom infrastructure integrations.</p>
+                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier3_Tag"]</div>
+                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier3_Title"]</h2>
+                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier3_Desc"]</p>
                         <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">&pound;</span>
-                            <span class="oz-pricing-amount" data-monthly="399" data-annual="319">399</span>
-                            <span class="oz-pricing-period">/ month</span>
+                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
+                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier3_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier3_Price_Annual"]">@SharedLocalizer["Pricing_Tier3_Price_Monthly"]</span>
+                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
                         </div>
-                        <div class="oz-pricing-billed-note" data-monthly="Billed monthly" data-annual="Billed &pound;3,828 annually (Save 20%)">Billed monthly</div>
+                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
                     </div>
                     <div class="oz-pricing-card-body">
-                        <a href="/support-hub/contact-sales" class="oz-pricing-btn oz-pricing-btn--outline">Talk to Enterprise Sales</a>
+                        <a href="/@currentCulture/auth/get-started?plan=enterprise" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier3_Btn"]</a>
                         <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <strong>Unlimited Users & Workspaces</strong></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <strong>All 37 Features + Custom Modules</strong></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Single Sign-On (SAML / Okta / Azure AD)</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Unlimited Cloud Document Storage</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Dedicated Technical Account Manager</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Custom REST APIs & Real-time Webhooks</li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 99.99% Enterprise SLA with 24/7 Phone Support</li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>Unlimited Active Users</strong> &amp; Multi-Branch</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Dedicated Tenant Database Schema Isolation</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Fine-Grained Role-Based Access Control (RBAC)</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Audit Vault &amp; Anonymous Whistleblowing Hub</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Automated Financial Ledger Bi-Directional Sync</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Dedicated Account Manager &amp; Migration Specialist</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>99.99% High-Availability Enterprise SLA</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tier 4: Sovereign Dedicated -->
+                <div class="oz-pricing-card">
+                    <div class="oz-pricing-card-header">
+                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier4_Tag"]</div>
+                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier4_Title"]</h2>
+                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier4_Desc"]</p>
+                        <div class="oz-pricing-price-wrap">
+                            <span class="oz-pricing-amount">@SharedLocalizer["Pricing_Tier4_Price"]</span>
+                        </div>
+                        <div class="oz-pricing-billed-note">@SharedLocalizer["Pricing_Tier4_Period"]</div>
+                    </div>
+                    <div class="oz-pricing-card-body">
+                        <a href="/@currentCulture/customer/contact-sales" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier4_Btn"]</a>
+                        <ul class="oz-pricing-features-list">
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Private Cloud or On-Premises VPC Deployment</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Zero Model Retention Private AI Sovereignty</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Custom SSO / SAML / Active Directory &amp; LDAP</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Tailored Data Retention &amp; Regional Jurisdiction</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Penetration Test Reports &amp; Custom Legal Rider</span></li>
+                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>24/7 Phone Incident Line &amp; 15-Minute Response SLA</span></li>
                         </ul>
                     </div>
                 </div>
@@ -123,162 +151,272 @@
         </div>
     </section>
 
-    <!-- Value Assurance / Guarantees -->
-    <section class="oz-pricing-guarantees">
+    <!-- Section 3: Interactive 9-Suite Capability Comparison Matrix -->
+    <section class="oz-matrix-section">
         <div class="container">
-            <div class="oz-pricing-guarantees-grid">
-                <div class="oz-guarantee-item">
-                    <div class="oz-guarantee-icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Pricing_Matrix_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Pricing_Matrix_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Pricing_Matrix_Desc"]</p>
+            </div>
+
+            <div class="oz-matrix-table-wrap">
+                <table class="oz-matrix-table" aria-label="Feature comparison matrix">
+                    <thead>
+                        <tr>
+                            <th scope="col">@SharedLocalizer["Pricing_Matrix_FeatureCol"]</th>
+                            <th scope="col">@SharedLocalizer["Pricing_Tier1_Tag"]</th>
+                            <th scope="col">@SharedLocalizer["Pricing_Tier2_Tag"]</th>
+                            <th scope="col">@SharedLocalizer["Pricing_Tier3_Tag"]</th>
+                            <th scope="col">@SharedLocalizer["Pricing_Tier4_Tag"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Suite 1: People & Collaboration -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 1: People, Community &amp; Collaboration</td></tr>
+                        <tr><td>Community Messenger &amp; Channels</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Committees &amp; Working Sub-Groups</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Alumni &amp; Member Registry</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Anonymous Whistleblowing &amp; Safeguarding</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 2: Workforce & Rota -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 2: Workforce, Rota &amp; Scheduling</td></tr>
+                        <tr><td>Departmental Rota &amp; Shift Grid</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Peer-to-Peer Shift Swaps &amp; Leave</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Geo-Fenced Mobile Digital Clock-In</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Recruitment Pipeline &amp; ATS Hiring</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 3: Reports & Forms -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 3: Reports, Forms &amp; Intervals</td></tr>
+                        <tr><td>Custom Drag-and-Drop Form Builder</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Interval KPI Reporting &amp; Executive MIS</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Survey Analytics &amp; Polls</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Bio Link Trees &amp; Brand Landing Hubs</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 4: Events & Credentials -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 4: Events, Training &amp; Verifiable Credentials</td></tr>
+                        <tr><td>Event Ticketing &amp; Check-In</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Cryptographic QR Certificate Designer &amp; Verification</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Learning Management System (LMS)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Speaker &amp; Session Scheduling</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 5: Finance & Revenue -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 5: Finance, Revenue &amp; Billing</td></tr>
+                        <tr><td>Invoicing &amp; Dues Billing</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Store &amp; E-Commerce Portal</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Grant Ledger &amp; Funding Allocation</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 6: Operations & Workflows -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 6: Operations, Workflows &amp; Assets</td></tr>
+                        <tr><td>Company Asset Lifecycle Management</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Equipment &amp; Fleet Inspection Logs</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Project &amp; Task Milestone Tracking</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Visitor Gate &amp; Access Kiosk</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 7: Communication & AI -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 7: Communication, Live Chat &amp; AI</td></tr>
+                        <tr><td>Private AI Gateway (BYOK Zero Retention)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Mass Communication (Email &amp; SMS Broadcast)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Live Chat Floating Widget &amp; Inbox</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Social Media Post Manager &amp; Scheduler</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 8: Compliance & Governance -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 8: Compliance, Governance &amp; Security</td></tr>
+                        <tr><td>Document Policy Vault &amp; Approvals</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Cryptographic Online Voting &amp; Elections</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Public Appointment &amp; Resource Booking</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Helpdesk &amp; Service Ticketing</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+
+                        <!-- Suite 9: Demographics & Census -->
+                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 9: Demographics, Census &amp; Field Surveying</td></tr>
+                        <tr><td>Civic Census &amp; Household Mapping</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Field Enumerator Mobile Toolkit (Offline Sync)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Resident Digital ID Cards &amp; QR Passes</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                        <tr><td>Demographic Analytics &amp; Ward Reporting</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Enterprise FAQ Accordion -->
+    <section class="oz-faq-section">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Pricing_Faq_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Pricing_Faq_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Pricing_Faq_Desc"]</p>
+            </div>
+
+            <div class="oz-faq-grid">
+                <!-- FAQ 1 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq1_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq1_A"]</p>
                     </div>
-                    <h4>14-Day Free Trial</h4>
-                    <p>Test drive all 33 features immediately. No credit card required to get started.</p>
                 </div>
-                <div class="oz-guarantee-item">
-                    <div class="oz-guarantee-icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+
+                <!-- FAQ 2 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq2_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq2_A"]</p>
                     </div>
-                    <h4>100% Data Ownership</h4>
-                    <p>Your organisation's data is strictly yours. Export all member, finance, and rota records anytime in 1 click.</p>
                 </div>
-                <div class="oz-guarantee-item">
-                    <div class="oz-guarantee-icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+
+                <!-- FAQ 3 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq3_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq3_A"]</p>
                     </div>
-                    <h4>No Hidden Fees</h4>
-                    <p>Predictable monthly or annual pricing. Never worry about sudden surge bills as your staff roster scales.</p>
                 </div>
-                <div class="oz-guarantee-item">
-                    <div class="oz-guarantee-icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+
+                <!-- FAQ 4 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq4_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq4_A"]</p>
                     </div>
-                    <h4>Non-Profit Discount</h4>
-                    <p>Registered charities, schools, and non-profits qualify for an additional 15% discount on all plans.</p>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq5_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq5_A"]</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 6 -->
+                <div class="oz-faq-item">
+                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                        <span>@SharedLocalizer["Pricing_Faq6_Q"]</span>
+                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Pricing_Faq6_A"]</p>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- FAQ Accordion -->
-    <section class="oz-pricing-faq">
+    <!-- Section 5: High-Conversion Final CTA Banner -->
+    <section class="oz-final-cta-section">
         <div class="container">
-            <div class="oz-pricing-faq-header">
-                <span class="design-mark"></span>
-                <h2 class="oz-pricing-faq-title">Frequently Asked Questions</h2>
-                <p class="oz-pricing-faq-desc">Everything you need to know about our plans, billing, and trial setup.</p>
-            </div>
-
-            <div class="oz-pricing-faq-list">
-                <details class="oz-faq-item" open>
-                    <summary class="oz-faq-question">
-                        <span>How does the 14-day free trial work?</span>
-                        <svg class="oz-faq-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>You can sign up and immediately access the full Ozikol suite without entering any credit card details. At the end of your 14 days, you can choose the plan that best fits your organisation's scale, or your workspace will gracefully pause with all your data preserved.</p>
+            <div class="oz-final-cta-card">
+                <h2 class="oz-final-cta-title">@SharedLocalizer["Pricing_Cta_Title"]</h2>
+                <p class="oz-final-cta-desc">@SharedLocalizer["Pricing_Cta_Desc"]</p>
+                <div class="oz-final-cta-buttons">
+                    <a href="/@currentCulture/auth/get-started" class="oz-btn-primary-cta">
+                        <span>@SharedLocalizer["Pricing_Cta_BtnPrimary"]</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                    <a href="/@currentCulture/customer/contact-sales" class="oz-btn-secondary-cta">
+                        <span>@SharedLocalizer["Pricing_Cta_BtnSecondary"]</span>
+                    </a>
+                </div>
+                <div class="oz-final-cta-trust">
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust1"]</span>
                     </div>
-                </details>
-
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>Can I change or cancel my plan at any time?</span>
-                        <svg class="oz-faq-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>Yes. You can upgrade, downgrade, or cancel your subscription directly from your billing settings at any time. If you cancel, your access continues until the end of your prepaid billing period.</p>
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust2"]</span>
                     </div>
-                </details>
-
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>How does BYOK (Bring Your Own Key) for AI work?</span>
-                        <svg class="oz-faq-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>Ozikol gives you total control over AI costs. Rather than paying 5x token markups, you can paste your own OpenAI, Google Gemini, or Anthropic Claude API key. Your team uses AI assistants directly inside your workflows at direct provider pricing.</p>
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust3"]</span>
                     </div>
-                </details>
-
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>What payment methods do you accept?</span>
-                        <svg class="oz-faq-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>We accept all major credit/debit cards (Visa, Mastercard, American Express) via Stripe. For Annual Professional and Enterprise subscriptions, we also support automated direct debit (BACS / SEPA) and corporate invoice bank transfers.</p>
-                    </div>
-                </details>
-
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>Are the mobile apps included in the subscription?</span>
-                        <svg class="oz-faq-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>Yes! Both the Android and iOS apps, as well as the mobile web portal (PWA), are included in all active plans. Your staff and members can download the app from Google Play or the App Store and log in using your organisation code at no extra charge.</p>
-                    </div>
-                </details>
-            </div>
-        </div>
-    </section>
-
-    <!-- Bottom CTA Banner -->
-    <section class="oz-pricing-cta-banner">
-        <div class="container">
-            <div class="oz-pricing-cta-box">
-                <h2>Ready to transform the way your organisation runs?</h2>
-                <p>Join over 160,000+ organisations worldwide. Start your 14-day free trial today.</p>
-                <div class="oz-pricing-cta-actions">
-                    <a href="/get-started" class="oz-pricing-btn oz-pricing-btn--primary">Get Started Free</a>
-                    <a href="/support-hub/contact-sales" class="oz-pricing-btn oz-pricing-btn--white">Book a 1-on-1 Demo</a>
                 </div>
             </div>
         </div>
     </section>
 </div>
 
-<!-- Interactive Billing Toggle Script -->
+<!-- Interactive Scripts: Billing Cycle Switcher & FAQ Accordion -->
 <script>
-    (function () {
-        var toggle = document.getElementById('billingToggle');
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Billing Cycle Toggle Logic
+        var billingBtn = document.getElementById('billingToggle');
         var labelMonthly = document.getElementById('labelMonthly');
         var labelAnnual = document.getElementById('labelAnnual');
-        var amounts = document.querySelectorAll('.oz-pricing-amount');
-        var notes = document.querySelectorAll('.oz-pricing-billed-note');
+        var amounts = document.querySelectorAll('.oz-pricing-amount[data-monthly]');
+        var billedNotes = document.querySelectorAll('.oz-pricing-billed-note[data-monthly]');
         var isAnnual = false;
 
-        if (!toggle) return;
-
-        function updatePricing() {
-            toggle.setAttribute('aria-checked', isAnnual);
-            toggle.classList.toggle('is-annual', isAnnual);
-            labelMonthly.classList.toggle('is-active', !isAnnual);
-            labelAnnual.classList.toggle('is-active', isAnnual);
-
+        function setBillingCycle(annual) {
+            isAnnual = annual;
+            if (billingBtn) {
+                billingBtn.classList.toggle('is-active', isAnnual);
+                billingBtn.setAttribute('aria-checked', isAnnual.toString());
+            }
+            if (labelMonthly && labelAnnual) {
+                labelMonthly.classList.toggle('is-active', !isAnnual);
+                labelAnnual.classList.toggle('is-active', isAnnual);
+            }
             amounts.forEach(function (el) {
                 var val = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
-                el.textContent = val;
+                if (val) el.textContent = val;
             });
-
-            notes.forEach(function (el) {
-                var text = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
-                el.textContent = text;
+            billedNotes.forEach(function (el) {
+                var note = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
+                if (note) el.textContent = note;
             });
         }
 
-        toggle.addEventListener('click', function () {
-            isAnnual = !isAnnual;
-            updatePricing();
-        });
+        if (billingBtn) {
+            billingBtn.addEventListener('click', function () {
+                setBillingCycle(!isAnnual);
+            });
+        }
+        if (labelMonthly) {
+            labelMonthly.addEventListener('click', function () {
+                setBillingCycle(false);
+            });
+        }
+        if (labelAnnual) {
+            labelAnnual.addEventListener('click', function () {
+                setBillingCycle(true);
+            });
+        }
 
-        labelMonthly.addEventListener('click', function () {
-            isAnnual = false;
-            updatePricing();
+        // 2. FAQ Accordion Logic
+        var faqItems = document.querySelectorAll('.oz-faq-item');
+        faqItems.forEach(function (item) {
+            var btn = item.querySelector('.oz-faq-question');
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    var wasOpen = item.classList.contains('is-open');
+                    faqItems.forEach(function (other) {
+                        other.classList.remove('is-open');
+                        var otherBtn = other.querySelector('.oz-faq-question');
+                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                    });
+                    if (!wasOpen) {
+                        item.classList.add('is-open');
+                        btn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
         });
-
-        labelAnnual.addEventListener('click', function () {
-            isAnnual = true;
-            updatePricing();
-        });
-    })();
+    });
 </script>

@@ -982,7 +982,184 @@
   <data name="Home_Cta_Trust2" xml:space="preserve">
     <value>Instant tenant deployment</value>
   </data>
-  <data name="Home_Cta_Trust3" xml:space="preserve">
-    <value>99.9% Uptime SLA</value>
+  <data name="Pricing_Meta_Title" xml:space="preserve">
+    <value>Transparent Enterprise Pricing | Ozikol</value>
+  </data>
+  <data name="Pricing_Meta_Desc" xml:space="preserve">
+    <value>Explore transparent pricing plans across all 37 modular capabilities. No per-seat penalties, predictable monthly or annual billing, and a 14-day free trial.</value>
+  </data>
+  <data name="Pricing_Hero_Badge" xml:space="preserve">
+    <value>TRANSPARENT ENTERPRISE PRICING</value>
+  </data>
+  <data name="Pricing_Hero_Title" xml:space="preserve">
+    <value>Simple, predictable pricing for every organization</value>
+  </data>
+  <data name="Pricing_Hero_Desc" xml:space="preserve">
+    <value>Access all 37 modular capabilities across 9 integrated suites. No per-user penalties, zero hidden fees, and complete customer data sovereignty.</value>
+  </data>
+  <data name="Pricing_Toggle_Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Pricing_Toggle_Annual" xml:space="preserve">
+    <value>Annual</value>
+  </data>
+  <data name="Pricing_Toggle_Save" xml:space="preserve">
+    <value>Save 20%</value>
+  </data>
+  <data name="Pricing_Currency" xml:space="preserve">
+    <value>£</value>
+  </data>
+  <data name="Pricing_Period" xml:space="preserve">
+    <value>/ month</value>
+  </data>
+  <data name="Pricing_Billed_Monthly" xml:space="preserve">
+    <value>Billed monthly</value>
+  </data>
+  <data name="Pricing_Billed_Annual_Save" xml:space="preserve">
+    <value>Billed annually (Save 20%)</value>
+  </data>
+  <data name="Pricing_Tier1_Tag" xml:space="preserve">
+    <value>Starter</value>
+  </data>
+  <data name="Pricing_Tier1_Title" xml:space="preserve">
+    <value>Community &amp; Small Teams</value>
+  </data>
+  <data name="Pricing_Tier1_Desc" xml:space="preserve">
+    <value>Ideal for clubs, local charities, and small teams uniting their daily workflows.</value>
+  </data>
+  <data name="Pricing_Tier1_Price_Monthly" xml:space="preserve">
+    <value>49</value>
+  </data>
+  <data name="Pricing_Tier1_Price_Annual" xml:space="preserve">
+    <value>39</value>
+  </data>
+  <data name="Pricing_Tier1_Btn" xml:space="preserve">
+    <value>Start 14-Day Free Trial</value>
+  </data>
+  <data name="Pricing_Tier2_Badge" xml:space="preserve">
+    <value>Most Popular</value>
+  </data>
+  <data name="Pricing_Tier2_Tag" xml:space="preserve">
+    <value>Professional</value>
+  </data>
+  <data name="Pricing_Tier2_Title" xml:space="preserve">
+    <value>Growing Organizations</value>
+  </data>
+  <data name="Pricing_Tier2_Desc" xml:space="preserve">
+    <value>Complete platform power for mid-sized organizations, care providers, and operational networks.</value>
+  </data>
+  <data name="Pricing_Tier2_Price_Monthly" xml:space="preserve">
+    <value>149</value>
+  </data>
+  <data name="Pricing_Tier2_Price_Annual" xml:space="preserve">
+    <value>119</value>
+  </data>
+  <data name="Pricing_Tier2_Btn" xml:space="preserve">
+    <value>Start 14-Day Free Trial</value>
+  </data>
+  <data name="Pricing_Tier3_Tag" xml:space="preserve">
+    <value>Enterprise</value>
+  </data>
+  <data name="Pricing_Tier3_Title" xml:space="preserve">
+    <value>Multi-Site &amp; Scale</value>
+  </data>
+  <data name="Pricing_Tier3_Desc" xml:space="preserve">
+    <value>Advanced scale and governance for large institutions, multi-academy trusts, and distributed teams.</value>
+  </data>
+  <data name="Pricing_Tier3_Price_Monthly" xml:space="preserve">
+    <value>399</value>
+  </data>
+  <data name="Pricing_Tier3_Price_Annual" xml:space="preserve">
+    <value>319</value>
+  </data>
+  <data name="Pricing_Tier3_Btn" xml:space="preserve">
+    <value>Start Enterprise Trial</value>
+  </data>
+  <data name="Pricing_Tier4_Tag" xml:space="preserve">
+    <value>Sovereign</value>
+  </data>
+  <data name="Pricing_Tier4_Title" xml:space="preserve">
+    <value>Government &amp; Regulated</value>
+  </data>
+  <data name="Pricing_Tier4_Desc" xml:space="preserve">
+    <value>Dedicated sovereign cloud or on-premises VPC for public sector, NHS trusts, and regulated bodies.</value>
+  </data>
+  <data name="Pricing_Tier4_Price" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Pricing_Tier4_Period" xml:space="preserve">
+    <value>Tailored to your procurement requirements</value>
+  </data>
+  <data name="Pricing_Tier4_Btn" xml:space="preserve">
+    <value>Contact Sales</value>
+  </data>
+  <data name="Pricing_Matrix_Badge" xml:space="preserve">
+    <value>COMPLETE CAPABILITY BREAKDOWN</value>
+  </data>
+  <data name="Pricing_Matrix_Title" xml:space="preserve">
+    <value>Compare all 37 capabilities across our 9 suites</value>
+  </data>
+  <data name="Pricing_Matrix_Desc" xml:space="preserve">
+    <value>Everything you need to evaluate which plan fits your operational and compliance scale.</value>
+  </data>
+  <data name="Pricing_Matrix_FeatureCol" xml:space="preserve">
+    <value>Feature / Capability</value>
+  </data>
+  <data name="Pricing_Faq_Badge" xml:space="preserve">
+    <value>FREQUENTLY ASKED QUESTIONS</value>
+  </data>
+  <data name="Pricing_Faq_Title" xml:space="preserve">
+    <value>Everything you need to know about pricing and onboarding</value>
+  </data>
+  <data name="Pricing_Faq_Desc" xml:space="preserve">
+    <value>Clear answers about subscriptions, Bring Your Own Key AI, data sovereignty, and migrations.</value>
+  </data>
+  <data name="Pricing_Faq1_Q" xml:space="preserve">
+    <value>Can we change plans or cancel our subscription anytime?</value>
+  </data>
+  <data name="Pricing_Faq1_A" xml:space="preserve">
+    <value>Yes. You can upgrade, downgrade, or cancel your subscription at any time directly from your organization management console. If you cancel, your access continues until the end of your billing cycle with zero penalties.</value>
+  </data>
+  <data name="Pricing_Faq2_Q" xml:space="preserve">
+    <value>How does Private Bring Your Own Key (BYOK) AI work, and is our data private?</value>
+  </data>
+  <data name="Pricing_Faq2_A" xml:space="preserve">
+    <value>With Ozikol Private AI, you connect your own OpenAI, Anthropic Claude, or Google Gemini API key. Queries are processed directly through your account with strict zero model retention. Your data is never used for training public models.</value>
+  </data>
+  <data name="Pricing_Faq3_Q" xml:space="preserve">
+    <value>What happens to our data if we ever decide to leave Ozikol?</value>
+  </data>
+  <data name="Pricing_Faq3_A" xml:space="preserve">
+    <value>We guarantee 100% customer data sovereignty. You can generate a full database export of your schemas, records, policies, and files anytime in standard open formats with instant 1-click portability.</value>
+  </data>
+  <data name="Pricing_Faq4_Q" xml:space="preserve">
+    <value>Do you offer special pricing for charities, non-profits, and educational institutions?</value>
+  </data>
+  <data name="Pricing_Faq4_A" xml:space="preserve">
+    <value>Yes. Registered charities, non-profit organizations, schools, and academic trusts qualify for our 20% social impact discount on all annual plans. Contact our team to apply.</value>
+  </data>
+  <data name="Pricing_Faq5_Q" xml:space="preserve">
+    <value>Where is our organizational data hosted and stored?</value>
+  </data>
+  <data name="Pricing_Faq5_A" xml:space="preserve">
+    <value>Your tenant database is isolated inside regional ISO 27001 and SOC 2 Type II certified cloud facilities in your jurisdiction (UK / EU / US), fully compliant with GDPR and regional data protection regulations.</value>
+  </data>
+  <data name="Pricing_Faq6_Q" xml:space="preserve">
+    <value>How does migration from our current software work?</value>
+  </data>
+  <data name="Pricing_Faq6_A" xml:space="preserve">
+    <value>Ozikol provides automated CSV and spreadsheet import wizards for staff rotas, member directories, past assets, and financial ledger data. Our enterprise onboarding specialists assist with end-to-end data migration.</value>
+  </data>
+  <data name="Pricing_Cta_Title" xml:space="preserve">
+    <value>Unify your operations with complete confidence</value>
+  </data>
+  <data name="Pricing_Cta_Desc" xml:space="preserve">
+    <value>Join over 160,000 organizations and communities running on Ozikol today. Start your 14-day free trial with zero risk.</value>
+  </data>
+  <data name="Pricing_Cta_BtnPrimary" xml:space="preserve">
+    <value>Start 14-day free trial</value>
+  </data>
+  <data name="Pricing_Cta_BtnSecondary" xml:space="preserve">
+    <value>Book live demo</value>
   </data>
 </root>
