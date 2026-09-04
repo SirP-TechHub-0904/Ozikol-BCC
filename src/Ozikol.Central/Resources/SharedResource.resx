@@ -142,4 +142,208 @@
     <value>Security</value>
     <comment>Footer security link</comment>
   </data>
+  <data name="Nav_Customer" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="Menu_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Menu_Back" xml:space="preserve">
+    <value>Back to Main Menu</value>
+  </data>
+  <data name="Suites_Title" xml:space="preserve">
+    <value>Feature Suites</value>
+  </data>
+  <data name="Customer_NavTitle" xml:space="preserve">
+    <value>Customer Resources</value>
+  </data>
+  <data name="Customer_SupportOps" xml:space="preserve">
+    <value>Support &amp; Operations</value>
+  </data>
+  <data name="Customer_PortalChannels" xml:space="preserve">
+    <value>Portal &amp; Channels</value>
+  </data>
+  <data name="Customer_SupportHeader" xml:space="preserve">
+    <value>Customer Support</value>
+  </data>
+  <data name="Customer_SupportDesc" xml:space="preserve">
+    <value>Guides, live status, and direct contact for assistance.</value>
+  </data>
+  <data name="Customer_SupportHubTitle" xml:space="preserve">
+    <value>Support Hub &amp; Help Centre</value>
+  </data>
+  <data name="Customer_SupportHubDesc" xml:space="preserve">
+    <value>Searchable tutorials, feature walkthroughs, and knowledge base.</value>
+  </data>
+  <data name="Customer_ContactSalesTitle" xml:space="preserve">
+    <value>Contact Support &amp; Sales</value>
+  </data>
+  <data name="Customer_ContactSalesDesc" xml:space="preserve">
+    <value>Reach our team for product questions, account inquiries, or assistance.</value>
+  </data>
+  <data name="Customer_StatusTitle" xml:space="preserve">
+    <value>System Status &amp; Uptime</value>
+  </data>
+  <data name="Customer_StatusDesc" xml:space="preserve">
+    <value>Real-time platform availability, cloud health, and incident history.</value>
+  </data>
+  <data name="Customer_LegalHubTitle" xml:space="preserve">
+    <value>Governance &amp; Legal Hub</value>
+  </data>
+  <data name="Customer_LegalHubDesc" xml:space="preserve">
+    <value>Compliance frameworks, security standards, and terms of service.</value>
+  </data>
+  <data name="Customer_PlatformAccessHeader" xml:space="preserve">
+    <value>Platform Access</value>
+  </data>
+  <data name="Customer_PlatformAccessDesc" xml:space="preserve">
+    <value>Admin gateway and dedicated multi-channel experiences.</value>
+  </data>
+  <data name="Customer_ClientLoginTitle" xml:space="preserve">
+    <value>Client Admin Sign In Gateway</value>
+  </data>
+  <data name="Customer_ClientLoginDesc" xml:space="preserve">
+    <value>The official login gateway for organization admins and managers.</value>
+  </data>
+  <data name="Customer_WebsiteTitle" xml:space="preserve">
+    <value>Dedicated Website</value>
+  </data>
+  <data name="Customer_WebsiteDesc" xml:space="preserve">
+    <value>Custom branded organization website with on-demand feature activation.</value>
+  </data>
+  <data name="Customer_MisTitle" xml:space="preserve">
+    <value>MIS System</value>
+  </data>
+  <data name="Customer_MisDesc" xml:space="preserve">
+    <value>Executive management information system and institutional intelligence.</value>
+  </data>
+  <data name="Customer_MobileTitle" xml:space="preserve">
+    <value>Mobile Apps (iOS &amp; Android)</value>
+  </data>
+  <data name="Customer_MobileDesc" xml:space="preserve">
+    <value>Native mobile experience on Apple App Store &amp; Google Play.</value>
+  </data>
+  <data name="Customer_DesktopTitle" xml:space="preserve">
+    <value>Desktop App (Windows)</value>
+  </data>
+  <data name="Customer_DesktopDesc" xml:space="preserve">
+    <value>High-performance Windows client for multi-monitor workstations.</value>
+  </data>
+  <data name="Footer_FollowTitle" xml:space="preserve">
+    <value>Follow Ozikol</value>
+  </data>
+  <data name="Footer_ColSolutions" xml:space="preserve">
+    <value>Solutions</value>
+  </data>
+  <data name="Footer_ColPlatform" xml:space="preserve">
+    <value>Platform</value>
+  </data>
+  <data name="Footer_ColPricing" xml:space="preserve">
+    <value>Pricing &amp; Value</value>
+  </data>
+  <data name="Footer_ColMarketplace" xml:space="preserve">
+    <value>Marketplace</value>
+  </data>
+  <data name="Footer_ColResources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
+  <data name="Footer_ColCompany" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Footer_AllFeaturesHub" xml:space="preserve">
+    <value>All 37 Features Hub →</value>
+  </data>
+  <data name="Footer_StaffRota" xml:space="preserve">
+    <value>Staff Rota &amp; Shifts</value>
+  </data>
+  <data name="Footer_InvoicingDues" xml:space="preserve">
+    <value>Invoicing &amp; Member Dues</value>
+  </data>
+  <data name="Footer_CommunityMessenger" xml:space="preserve">
+    <value>Community Messenger</value>
+  </data>
+  <data name="Footer_EquipmentFleet" xml:space="preserve">
+    <value>Fleet &amp; Equipment</value>
+  </data>
+  <data name="Footer_VisitorSecurity" xml:space="preserve">
+    <value>Visitor &amp; Gate Security</value>
+  </data>
+  <data name="Footer_DedicatedWebsite" xml:space="preserve">
+    <value>Dedicated Website</value>
+  </data>
+  <data name="Footer_MisSystem" xml:space="preserve">
+    <value>MIS System</value>
+  </data>
+  <data name="Footer_MobileApps" xml:space="preserve">
+    <value>Mobile Apps (iOS &amp; Android)</value>
+  </data>
+  <data name="Footer_DesktopApp" xml:space="preserve">
+    <value>Desktop App (Windows)</value>
+  </data>
+  <data name="Footer_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Footer_PayAsYouGo" xml:space="preserve">
+    <value>Pay-As-You-Go</value>
+  </data>
+  <data name="Footer_CustomQuote" xml:space="preserve">
+    <value>Custom Enterprise Quote</value>
+  </data>
+  <data name="Footer_CreatorProgram" xml:space="preserve">
+    <value>Creator Partner Program</value>
+  </data>
+  <data name="Footer_RequestCustomUi" xml:space="preserve">
+    <value>Request Custom UI</value>
+  </data>
+  <data name="Footer_DeveloperApi" xml:space="preserve">
+    <value>Developer API &amp; Webhooks</value>
+  </data>
+  <data name="Footer_SupportHub" xml:space="preserve">
+    <value>Support Hub &amp; Help Centre</value>
+  </data>
+  <data name="Footer_NewsReleases" xml:space="preserve">
+    <value>News &amp; Releases</value>
+  </data>
+  <data name="Footer_CaseStudies" xml:space="preserve">
+    <value>Customer Case Studies</value>
+  </data>
+  <data name="Footer_SystemStatus" xml:space="preserve">
+    <value>System Status &amp; Uptime</value>
+  </data>
+  <data name="Footer_AboutOzikol" xml:space="preserve">
+    <value>About Ozikol</value>
+  </data>
+  <data name="Footer_Leadership" xml:space="preserve">
+    <value>Leadership &amp; Executives</value>
+  </data>
+  <data name="Footer_Culture" xml:space="preserve">
+    <value>Core Values &amp; Culture</value>
+  </data>
+  <data name="Footer_Careers" xml:space="preserve">
+    <value>Careers</value>
+  </data>
+  <data name="Footer_LegalCompliance" xml:space="preserve">
+    <value>Legal &amp; Compliance Hub</value>
+  </data>
+  <data name="Footer_PrivacyChoices" xml:space="preserve">
+    <value>Your Privacy Choices</value>
+  </data>
+  <data name="Footer_ContactOzikol" xml:space="preserve">
+    <value>Contact Ozikol</value>
+  </data>
+  <data name="Footer_PrivacyNotice" xml:space="preserve">
+    <value>Privacy Notice</value>
+  </data>
+  <data name="Footer_TermsOfUse" xml:space="preserve">
+    <value>Terms of Use</value>
+  </data>
+  <data name="Footer_CookiePolicy" xml:space="preserve">
+    <value>Cookie Policy</value>
+  </data>
+  <data name="Footer_PoliciesReports" xml:space="preserve">
+    <value>Policies &amp; Reports</value>
+  </data>
+  <data name="Footer_Copyright" xml:space="preserve">
+    <value>© Ozikol 2026. All rights reserved.</value>
+  </data>
 </root>
