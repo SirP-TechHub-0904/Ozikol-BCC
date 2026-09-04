@@ -2780,4 +2780,122 @@
   <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
     <value>Explore All 37 Features</value>
   </data>
+
+  <data name="Partner_Reg_Page_Title" xml:space="preserve">
+    <value>Partner Application &amp; Registration | Ozikol</value>
+  </data>
+  <data name="Partner_Reg_Hero_Badge" xml:space="preserve">
+    <value>Partner Application</value>
+  </data>
+  <data name="Partner_Reg_Hero_Title" xml:space="preserve">
+    <value>Join the Ozikol <span class="oz-gradient-text">Partner &amp; Affiliate Network</span></value>
+  </data>
+  <data name="Partner_Reg_Hero_Lead" xml:space="preserve">
+    <value>Apply today to earn recurring commissions, publish marketplace blueprints, or deploy enterprise solutions with dedicated co-selling support.</value>
+  </data>
+  <data name="Partner_Form_Step1_Title" xml:space="preserve">
+    <value>Select Partnership Track</value>
+  </data>
+  <data name="Partner_Form_Step1_Desc" xml:space="preserve">
+    <value>Choose the primary partnership pathway that best aligns with your business model.</value>
+  </data>
+  <data name="Partner_Form_Track1_Margin" xml:space="preserve">
+    <value>Up to 35% Margin</value>
+  </data>
+  <data name="Partner_Form_Track1_Summary" xml:space="preserve">
+    <value>Deploy client projects, register enterprise deals, and access dedicated sandbox developer tenants.</value>
+  </data>
+  <data name="Partner_Form_Track2_Margin" xml:space="preserve">
+    <value>Up to 80% Revenue Share</value>
+  </data>
+  <data name="Partner_Form_Track2_Summary" xml:space="preserve">
+    <value>Publish layout blueprints, header navbars, and industry suites to the Ozikol UI Marketplace.</value>
+  </data>
+  <data name="Partner_Form_Track3_Margin" xml:space="preserve">
+    <value>25% Recurring Commission</value>
+  </data>
+  <data name="Partner_Form_Track3_Summary" xml:space="preserve">
+    <value>Earn monthly recurring lifetime commissions on every active referred client subscription.</value>
+  </data>
+  <data name="Partner_Form_Step2_Title" xml:space="preserve">
+    <value>Applicant Profile &amp; Information</value>
+  </data>
+  <data name="Partner_Form_Step2_Desc" xml:space="preserve">
+    <value>Tell us about yourself or your organization.</value>
+  </data>
+  <data name="Partner_Field_FullName" xml:space="preserve">
+    <value>Full Legal Name</value>
+  </data>
+  <data name="Partner_Field_Email" xml:space="preserve">
+    <value>Business Email Address</value>
+  </data>
+  <data name="Partner_Field_Phone" xml:space="preserve">
+    <value>Phone Number</value>
+  </data>
+  <data name="Partner_Field_Organization" xml:space="preserve">
+    <value>Company, Agency or Brand Name</value>
+  </data>
+  <data name="Partner_Field_Website" xml:space="preserve">
+    <value>Website, Portfolio or Channel URL</value>
+  </data>
+  <data name="Partner_Field_Code" xml:space="preserve">
+    <value>Requested Partner Referral Code</value>
+  </data>
+  <data name="Partner_Field_CodeHint" xml:space="preserve">
+    <value>Alphanumeric code for your tracking links (e.g. ACME-TECH). Auto-generated if left blank.</value>
+  </data>
+  <data name="Partner_Field_Pitch" xml:space="preserve">
+    <value>Strategy &amp; Growth Pitch</value>
+  </data>
+  <data name="Partner_Field_PitchPlaceholder" xml:space="preserve">
+    <value>Briefly describe your target audience, agency experience, or how you plan to implement or promote Ozikol.</value>
+  </data>
+  <data name="Partner_Field_AgreeTerms" xml:space="preserve">
+    <value>I agree to the <strong>Ozikol Partner Program Terms &amp; Conditions</strong> and confirm all submitted information is accurate.</value>
+  </data>
+  <data name="Partner_Btn_Submit" xml:space="preserve">
+    <value>Submit Partnership Application</value>
+  </data>
+  <data name="Partner_Err_TermsRequired" xml:space="preserve">
+    <value>You must accept the Partner Program Terms &amp; Conditions to proceed.</value>
+  </data>
+  <data name="Partner_Err_EmailExists" xml:space="preserve">
+    <value>An application with this email address has already been submitted and is currently under review.</value>
+  </data>
+  <data name="Partner_Guar_1" xml:space="preserve">
+    <value>Fast 24-48h Application Review</value>
+  </data>
+  <data name="Partner_Guar_2" xml:space="preserve">
+    <value>Zero Upfront Fees or Onboarding Costs</value>
+  </data>
+  <data name="Partner_Guar_3" xml:space="preserve">
+    <value>Automated Monthly Payouts</value>
+  </data>
+  <data name="Partner_Success_Title" xml:space="preserve">
+    <value>Application Submitted Successfully</value>
+  </data>
+  <data name="Partner_Success_Desc" xml:space="preserve">
+    <value>Thank you for applying to the Ozikol Partner Network. Our alliances team is reviewing your details and will activate your partner portal credentials shortly.</value>
+  </data>
+  <data name="Partner_Success_RefLabel" xml:space="preserve">
+    <value>Assigned Partner Tracking Code</value>
+  </data>
+  <data name="Partner_Success_NextSteps_Title" xml:space="preserve">
+    <value>What Happens Next</value>
+  </data>
+  <data name="Partner_Success_Step1" xml:space="preserve">
+    <value>Application review by our partner onboarding team within 24 to 48 business hours</value>
+  </data>
+  <data name="Partner_Success_Step2" xml:space="preserve">
+    <value>Email invitation with your Partner Portal access and developer sandbox keys</value>
+  </data>
+  <data name="Partner_Success_Step3" xml:space="preserve">
+    <value>Access to partner pitch collateral, marketing toolkits, and deal registration</value>
+  </data>
+  <data name="Partner_Success_BtnOverview" xml:space="preserve">
+    <value>View Partner Network</value>
+  </data>
+  <data name="Partner_Success_BtnHome" xml:space="preserve">
+    <value>Return to Home</value>
+  </data>
 </root>

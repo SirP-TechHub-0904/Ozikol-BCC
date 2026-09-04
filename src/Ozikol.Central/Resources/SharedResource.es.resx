@@ -2783,4 +2783,122 @@
   <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
     <value>Explorar las 37 funciones</value>
   </data>
+
+  <data name="Partner_Reg_Page_Title" xml:space="preserve">
+    <value>Solicitud y registro de socios | Ozikol</value>
+  </data>
+  <data name="Partner_Reg_Hero_Badge" xml:space="preserve">
+    <value>Solicitud de socio</value>
+  </data>
+  <data name="Partner_Reg_Hero_Title" xml:space="preserve">
+    <value>Únase a la <span class="oz-gradient-text">red de socios y afiliados</span> de Ozikol</value>
+  </data>
+  <data name="Partner_Reg_Hero_Lead" xml:space="preserve">
+    <value>Solicite hoy para ganar comisiones recurrentes, publicar diseños en el marketplace o implementar soluciones empresariales.</value>
+  </data>
+  <data name="Partner_Form_Step1_Title" xml:space="preserve">
+    <value>Seleccione su modalidad de asociación</value>
+  </data>
+  <data name="Partner_Form_Step1_Desc" xml:space="preserve">
+    <value>Elija la vía de asociación que mejor se alinee con su modelo de negocio.</value>
+  </data>
+  <data name="Partner_Form_Track1_Margin" xml:space="preserve">
+    <value>Hasta 35% de margen</value>
+  </data>
+  <data name="Partner_Form_Track1_Summary" xml:space="preserve">
+    <value>Implemente proyectos de clientes, registre acuerdos empresariales y acceda a entornos sandbox dedicados.</value>
+  </data>
+  <data name="Partner_Form_Track2_Margin" xml:space="preserve">
+    <value>Hasta 80% de participación en ingresos</value>
+  </data>
+  <data name="Partner_Form_Track2_Summary" xml:space="preserve">
+    <value>Publique diseños, barras de navegación y suites sectoriales en el Marketplace de Ozikol.</value>
+  </data>
+  <data name="Partner_Form_Track3_Margin" xml:space="preserve">
+    <value>25% de comisión recurrente</value>
+  </data>
+  <data name="Partner_Form_Track3_Summary" xml:space="preserve">
+    <value>Gane comisiones mensuales recurrentes de por vida por cada suscripción activa recomendada.</value>
+  </data>
+  <data name="Partner_Form_Step2_Title" xml:space="preserve">
+    <value>Perfil e información del solicitante</value>
+  </data>
+  <data name="Partner_Form_Step2_Desc" xml:space="preserve">
+    <value>Cuéntenos sobre usted o su organización.</value>
+  </data>
+  <data name="Partner_Field_FullName" xml:space="preserve">
+    <value>Nombre legal completo</value>
+  </data>
+  <data name="Partner_Field_Email" xml:space="preserve">
+    <value>Correo electrónico corporativo</value>
+  </data>
+  <data name="Partner_Field_Phone" xml:space="preserve">
+    <value>Número de teléfono</value>
+  </data>
+  <data name="Partner_Field_Organization" xml:space="preserve">
+    <value>Empresa, agencia o marca</value>
+  </data>
+  <data name="Partner_Field_Website" xml:space="preserve">
+    <value>Sitio web, portafolio o canal</value>
+  </data>
+  <data name="Partner_Field_Code" xml:space="preserve">
+    <value>Código de referencia solicitado</value>
+  </data>
+  <data name="Partner_Field_CodeHint" xml:space="preserve">
+    <value>Código alfanumérico para sus enlaces (ej. ACME-TECH). Se generará automáticamente si está vacío.</value>
+  </data>
+  <data name="Partner_Field_Pitch" xml:space="preserve">
+    <value>Estrategia y propuesta de crecimiento</value>
+  </data>
+  <data name="Partner_Field_PitchPlaceholder" xml:space="preserve">
+    <value>Describa brevemente su público objetivo, experiencia en agencia o cómo planea promocionar Ozikol.</value>
+  </data>
+  <data name="Partner_Field_AgreeTerms" xml:space="preserve">
+    <value>Acepto los <strong>Términos y Condiciones del Programa de Socios de Ozikol</strong> y confirmo que la información es precisa.</value>
+  </data>
+  <data name="Partner_Btn_Submit" xml:space="preserve">
+    <value>Enviar solicitud de asociación</value>
+  </data>
+  <data name="Partner_Err_TermsRequired" xml:space="preserve">
+    <value>Debe aceptar los Términos y Condiciones del Programa de Socios para continuar.</value>
+  </data>
+  <data name="Partner_Err_EmailExists" xml:space="preserve">
+    <value>Ya se ha enviado una solicitud con este correo electrónico y está actualmente en revisión.</value>
+  </data>
+  <data name="Partner_Guar_1" xml:space="preserve">
+    <value>Revisión rápida de solicitudes en 24-48h</value>
+  </data>
+  <data name="Partner_Guar_2" xml:space="preserve">
+    <value>Cero tarifas iniciales o costes de incorporación</value>
+  </data>
+  <data name="Partner_Guar_3" xml:space="preserve">
+    <value>Pagos mensuales automatizados</value>
+  </data>
+  <data name="Partner_Success_Title" xml:space="preserve">
+    <value>Solicitud enviada con éxito</value>
+  </data>
+  <data name="Partner_Success_Desc" xml:space="preserve">
+    <value>Gracias por solicitar unirse a la Red de Socios de Ozikol. Nuestro equipo está revisando su solicitud y activará sus credenciales en breve.</value>
+  </data>
+  <data name="Partner_Success_RefLabel" xml:space="preserve">
+    <value>Código de seguimiento de socio asignado</value>
+  </data>
+  <data name="Partner_Success_NextSteps_Title" xml:space="preserve">
+    <value>Próximos pasos</value>
+  </data>
+  <data name="Partner_Success_Step1" xml:space="preserve">
+    <value>Revisión de la solicitud por nuestro equipo en un plazo de 24 a 48 horas hábiles</value>
+  </data>
+  <data name="Partner_Success_Step2" xml:space="preserve">
+    <value>Invitación por correo electrónico con acceso al Portal de Socios y claves de sandbox</value>
+  </data>
+  <data name="Partner_Success_Step3" xml:space="preserve">
+    <value>Acceso a recursos de presentación, kits de marketing y registro de oportunidades</value>
+  </data>
+  <data name="Partner_Success_BtnOverview" xml:space="preserve">
+    <value>Ver red de socios</value>
+  </data>
+  <data name="Partner_Success_BtnHome" xml:space="preserve">
+    <value>Volver al inicio</value>
+  </data>
 </root>
