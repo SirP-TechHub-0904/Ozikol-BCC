@@ -2262,15 +2262,57 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
 }
 
 .oz-feat-card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     background: var(--ozikol-primary-light);
     color: var(--ozikol-primary);
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+.oz-feat-card-icon svg {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+}
+.oz-feat-card:hover .oz-feat-card-icon {
+    transform: scale(1.08);
+}
+.oz-feat-card-icon.oz-icon-crimson, .oz-feat-card-icon--crimson {
+    background: rgba(229, 23, 63, 0.12) !important;
+    color: #e5173f !important;
+}
+.oz-feat-card-icon.oz-icon-indigo, .oz-feat-card-icon--indigo {
+    background: rgba(99, 102, 241, 0.12) !important;
+    color: #4f46e5 !important;
+}
+.oz-feat-card-icon.oz-icon-emerald, .oz-feat-card-icon--emerald {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #059669 !important;
+}
+.oz-feat-card-icon.oz-icon-amber, .oz-feat-card-icon--amber {
+    background: rgba(245, 158, 11, 0.14) !important;
+    color: #d97706 !important;
+}
+.oz-feat-card-icon.oz-icon-violet, .oz-feat-card-icon--violet {
+    background: rgba(139, 92, 246, 0.12) !important;
+    color: #7c3aed !important;
+}
+.oz-feat-card-icon.oz-icon-cyan, .oz-feat-card-icon--cyan {
+    background: rgba(6, 182, 212, 0.12) !important;
+    color: #0891b2 !important;
+}
+.oz-feat-card-icon.oz-icon-blue, .oz-feat-card-icon--blue {
+    background: rgba(37, 99, 235, 0.12) !important;
+    color: #2563eb !important;
+}
+.oz-feat-card-icon.oz-icon-rose, .oz-feat-card-icon--rose {
+    background: rgba(244, 63, 94, 0.12) !important;
+    color: #e11d48 !important;
 }
 
 .oz-feat-card h3 {
