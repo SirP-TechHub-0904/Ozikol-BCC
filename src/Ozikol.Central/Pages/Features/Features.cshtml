@@ -1,7 +1,8 @@
 @page "/features"
 @model Ozikol.Central.Pages.FeaturesModel
 @{
-    ViewData["Title"] = "Platform Capabilities & 9 Enterprise Suites - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Features_Meta_Title"].Value;
+    ViewData["MetaDescription"] = SharedLocalizer["Features_Meta_Desc"].Value;
     ViewData["MetaDescription"] = "Explore all 37 modular cloud capabilities across 9 integrated suites on Ozikol. Included in one simple annual subscription.";
 }
 
@@ -12,26 +13,26 @@
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Ozikol Platform Capabilities</span>
+                    <span>@SharedLocalizer["Features_Hero_Badge"]</span>
                 </div>
                 <h1 class="oz-pricing-hero-title">
-                    Everything Your Organization Needs to Collaborate, Operate, and Scale
+                    @SharedLocalizer["Features_Hero_Title"]
                 </h1>
                 <p class="oz-pricing-hero-desc">
-                    Explore all 37 integrated cloud capabilities across 9 modular enterprise suites. Every feature is unlocked out of the box with your single annual subscription.
+                    @SharedLocalizer["Features_Hero_Desc"]
                 </p>
             </div>
 
             <div class="oz-single-cta-group">
                 <a href="/@Model.CurrentCulture/register" class="oz-single-btn-primary">
-                    <span>Start 14-Day Free Trial</span>
+                    <span>@SharedLocalizer["Features_Hero_Btn_Trial"]</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                         <polyline points="12 5 19 12 12 19"></polyline>
                     </svg>
                 </a>
                 <a href="#suite-people" class="oz-features-btn-outline">
-                    Explore All 9 Suites
+                    @SharedLocalizer["Features_Hero_Btn_Explore"]
                 </a>
             </div>
         </div>
@@ -41,32 +42,32 @@
     <nav class="oz-features-jump-bar" aria-label="Suite Quick Navigation">
         <div class="container">
             <div class="oz-features-jump-row">
-                <span class="oz-jump-label">Jump to Suite:</span>
-                <a href="#suite-people" class="oz-jump-chip">People & Community</a>
-                <a href="#suite-workforce" class="oz-jump-chip">Workforce & Shifts</a>
-                <a href="#suite-reports" class="oz-jump-chip">Reports & Forms</a>
-                <a href="#suite-events" class="oz-jump-chip">Events & Training</a>
-                <a href="#suite-finance" class="oz-jump-chip">Finance & Revenue</a>
-                <a href="#suite-operations" class="oz-jump-chip">Operations & Assets</a>
-                <a href="#suite-communication" class="oz-jump-chip">Communication & AI</a>
-                <a href="#suite-compliance" class="oz-jump-chip">Compliance & Certs</a>
-                <a href="#suite-demographics" class="oz-jump-chip">Demographics & Census</a>
+                <span class="oz-jump-label">@SharedLocalizer["Features_Jump_Label"]</span>
+                <a href="#suite-people" class="oz-jump-chip">@SharedLocalizer["Features_Suite_01_Chip"]</a>
+                <a href="#suite-workforce" class="oz-jump-chip">@SharedLocalizer["Features_Suite_02_Chip"]</a>
+                <a href="#suite-reports" class="oz-jump-chip">@SharedLocalizer["Features_Suite_03_Chip"]</a>
+                <a href="#suite-events" class="oz-jump-chip">@SharedLocalizer["Features_Suite_04_Chip"]</a>
+                <a href="#suite-finance" class="oz-jump-chip">@SharedLocalizer["Features_Suite_05_Chip"]</a>
+                <a href="#suite-operations" class="oz-jump-chip">@SharedLocalizer["Features_Suite_06_Chip"]</a>
+                <a href="#suite-communication" class="oz-jump-chip">@SharedLocalizer["Features_Suite_07_Chip"]</a>
+                <a href="#suite-compliance" class="oz-jump-chip">@SharedLocalizer["Features_Suite_08_Chip"]</a>
+                <a href="#suite-demographics" class="oz-jump-chip">@SharedLocalizer["Features_Suite_09_Chip"]</a>
             </div>
         </div>
     </nav>
 
     <!-- Main Content: All 9 Suites -->
     <main class="container">
-        <!-- Suite 01: People, Community and Collaboration -->
+        <!-- Suite 01: @SharedLocalizer["Features_Suite_01_Title"] -->
         <section id="suite-people" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 01</span>
+                    <span>@SharedLocalizer["Features_Suite_01_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">People, Community, and Collaboration</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_01_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Connect internal staff, leadership teams, volunteers, and external alumni networks on a secure unified communication fabric.
+                    @SharedLocalizer["Features_Suite_01_Desc"]
                 </p>
             </div>
 
@@ -79,33 +80,31 @@
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Community Messenger</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_CommunityMessenger_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Real-time direct messaging and departmental channels that replace fragmented third-party chat apps with an internal audit trail.
+                            @SharedLocalizer["Feat_CommunityMessenger_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Real-time direct messages and topic rooms</span>
+                                <span>@SharedLocalizer["Feat_CommunityMessenger_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Floating live web chat widget</span>
+                                <span>@SharedLocalizer["Feat_CommunityMessenger_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Secure file sharing with audit logs</span>
+                                <span>@SharedLocalizer["Feat_CommunityMessenger_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/community-messenger" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -120,33 +119,31 @@
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Committees and Sub-Groups</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_Committees_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Empower leadership councils, project task forces, and regional boards with meeting agendas, attendance records, and resolutions.
+                            @SharedLocalizer["Feat_Committees_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Committee roster and officer roles</span>
+                                <span>@SharedLocalizer["Feat_Committees_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Meeting calendar and agenda scheduling</span>
+                                <span>@SharedLocalizer["Feat_Committees_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Formal resolutions archive with voting</span>
+                                <span>@SharedLocalizer["Feat_Committees_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/committees" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -159,33 +156,31 @@
                                 <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Alumni Networking Directory</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_AlumniDirectory_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            A searchable member directory for associations, universities, and professional networks with chapter filtering and profile management.
+                            @SharedLocalizer["Feat_AlumniDirectory_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Searchable graduation class and chapter registry</span>
+                                <span>@SharedLocalizer["Feat_AlumniDirectory_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Member profile self-updates</span>
+                                <span>@SharedLocalizer["Feat_AlumniDirectory_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Career directory and mentor matching</span>
+                                <span>@SharedLocalizer["Feat_AlumniDirectory_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/alumni-directory" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -198,48 +193,46 @@
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Anonymous Whistleblowing</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_WhistleblowingFeedback_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Encrypted, zero-knowledge reporting channel allowing staff and stakeholders to report sensitive ethical or compliance concerns safely.
+                            @SharedLocalizer["Feat_WhistleblowingFeedback_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Zero-knowledge identity protection</span>
+                                <span>@SharedLocalizer["Feat_WhistleblowingFeedback_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Encrypted two-way investigative chat</span>
+                                <span>@SharedLocalizer["Feat_WhistleblowingFeedback_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Audited case resolution workflows</span>
+                                <span>@SharedLocalizer["Feat_WhistleblowingFeedback_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/whistleblowing-feedback" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 02: Workforce Scheduling & Shift Management -->
+        <!-- Suite 02: @SharedLocalizer["Features_Suite_02_Title"] -->
         <section id="suite-workforce" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 02</span>
+                    <span>@SharedLocalizer["Features_Suite_02_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Workforce Scheduling and Shift Management</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_02_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Eliminate scheduling headaches, control labor costs, and streamline clock-ins across physical branches and remote teams.
+                    @SharedLocalizer["Features_Suite_02_Desc"]
                 </p>
             </div>
 
@@ -255,33 +248,31 @@
                                 <line x1="3" y1="10" x2="21" y2="10"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Staff Rota</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_StaffRota_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Drag-and-drop weekly and monthly rota scheduling with automatic shift conflict detection, labor budgeting, and instant publishing.
+                            @SharedLocalizer["Feat_StaffRota_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-branch weekly drag-and-drop grid</span>
+                                <span>@SharedLocalizer["Feat_StaffRota_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automatic overtime and conflict alerts</span>
+                                <span>@SharedLocalizer["Feat_StaffRota_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Mobile shift notifications to workers</span>
+                                <span>@SharedLocalizer["Feat_StaffRota_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/staff-rota" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -296,33 +287,31 @@
                                 <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Shift Swaps and Leave</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_ShiftSwapsLeave_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Peer-to-peer shift exchange requests with managerial sign-off, annual leave accrual calculations, and sick leave documentation.
+                            @SharedLocalizer["Feat_ShiftSwapsLeave_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Employee shift swap marketplace</span>
+                                <span>@SharedLocalizer["Feat_ShiftSwapsLeave_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Leave entitlement balance calculator</span>
+                                <span>@SharedLocalizer["Feat_ShiftSwapsLeave_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>One-tap manager approval workflows</span>
+                                <span>@SharedLocalizer["Feat_ShiftSwapsLeave_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/shift-swaps-leave" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -335,48 +324,46 @@
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Attendance Tracking</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_AttendanceTracking_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Geofenced mobile clock-in/out, biometric terminal synchronization, late-arrival logging, and timesheet exports ready for payroll.
+                            @SharedLocalizer["Feat_AttendanceTracking_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>GPS geofenced mobile clock-in</span>
+                                <span>@SharedLocalizer["Feat_AttendanceTracking_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated tardiness and break tracking</span>
+                                <span>@SharedLocalizer["Feat_AttendanceTracking_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>One-click CSV and Excel payroll export</span>
+                                <span>@SharedLocalizer["Feat_AttendanceTracking_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/attendance-tracking" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 03: Reports, Surveys & Custom Forms -->
+        <!-- Suite 03: @SharedLocalizer["Features_Suite_03_Title"] -->
         <section id="suite-reports" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 03</span>
+                    <span>@SharedLocalizer["Features_Suite_03_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Reports, Surveys, and Custom Forms</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_03_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Collect structured operational data from any device, schedule recurring interval reports, and gain business intelligence from survey analytics.
+                    @SharedLocalizer["Features_Suite_03_Desc"]
                 </p>
             </div>
 
@@ -393,33 +380,31 @@
                                 <polyline points="10 9 9 9 8 9"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Form Builder</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_FormBuilder_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Drag-and-drop dynamic form designer with conditional branch logic, signature inputs, file uploads, and shareable public links.
+                            @SharedLocalizer["Feat_FormBuilder_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>No-code drag-and-drop form creator</span>
+                                <span>@SharedLocalizer["Feat_FormBuilder_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Conditional logic branches and signatures</span>
+                                <span>@SharedLocalizer["Feat_FormBuilder_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Embeddable widgets and direct share links</span>
+                                <span>@SharedLocalizer["Feat_FormBuilder_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/form-builder" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -433,33 +418,31 @@
                                 <line x1="6" y1="20" x2="6" y2="14"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Interval Reporting</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_IntervalReporting_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Automate daily, weekly, and monthly status submissions from managers and departments with overdue escalation alerts.
+                            @SharedLocalizer["Feat_IntervalReporting_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Scheduled periodic reporting cadences</span>
+                                <span>@SharedLocalizer["Feat_IntervalReporting_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated overdue submission reminders</span>
+                                <span>@SharedLocalizer["Feat_IntervalReporting_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Executive aggregation dashboards</span>
+                                <span>@SharedLocalizer["Feat_IntervalReporting_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/interval-reporting" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -474,48 +457,46 @@
                                 <line x1="15" y1="9" x2="15.01" y2="9"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Survey Analytics</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_SurveyAnalytics_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Measure member sentiment, customer satisfaction (CSAT), and net promoter scores (NPS) with automated breakdown visualization.
+                            @SharedLocalizer["Feat_SurveyAnalytics_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-question survey campaigns</span>
+                                <span>@SharedLocalizer["Feat_SurveyAnalytics_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated Net Promoter Score calculation</span>
+                                <span>@SharedLocalizer["Feat_SurveyAnalytics_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Sentiment analysis and keyword heatmaps</span>
+                                <span>@SharedLocalizer["Feat_SurveyAnalytics_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/survey-analytics" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 04: Events, Ticketing & Learning -->
+        <!-- Suite 04: @SharedLocalizer["Features_Suite_04_Title"] -->
         <section id="suite-events" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 04</span>
+                    <span>@SharedLocalizer["Features_Suite_04_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Events, Ticketing, and Learning Management</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_04_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Host memorable in-person or virtual conferences, issue instant digital QR passes, and deliver structured education courses.
+                    @SharedLocalizer["Features_Suite_04_Desc"]
                 </p>
             </div>
 
@@ -531,33 +512,31 @@
                                 <path d="M13 11v2"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Event Ticketing</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_EventTicketing_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Sell multi-tier admission tickets, set early-bird pricing, apply discount promo codes, and issue digital passes with QR verification.
+                            @SharedLocalizer["Feat_EventTicketing_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-tier VIP and General Admission tickets</span>
+                                <span>@SharedLocalizer["Feat_EventTicketing_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Instant digital tickets with QR barcodes</span>
+                                <span>@SharedLocalizer["Feat_EventTicketing_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Zero ticket transaction percentage fees</span>
+                                <span>@SharedLocalizer["Feat_EventTicketing_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/event-ticketing" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -571,33 +550,31 @@
                                 <polyline points="16 11 18 13 22 9"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Attendee Management</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_AttendeeManagement_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Fast check-in desk app with mobile camera barcode scanning, attendee status tracking, and badge name printing.
+                            @SharedLocalizer["Feat_AttendeeManagement_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Mobile camera QR check-in scanning</span>
+                                <span>@SharedLocalizer["Feat_AttendeeManagement_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Real-time guest arrival dashboard</span>
+                                <span>@SharedLocalizer["Feat_AttendeeManagement_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Onsite conference badge generation</span>
+                                <span>@SharedLocalizer["Feat_AttendeeManagement_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/attendee-management" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -612,33 +589,31 @@
                                 <line x1="8" y1="23" x2="16" y2="23"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Speaker Sessions</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_SpeakerSessions_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Multi-track conference agendas, speaker biographies, session presentation slide downloads, and attendee feedback ratings.
+                            @SharedLocalizer["Feat_SpeakerSessions_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-room conference schedule builder</span>
+                                <span>@SharedLocalizer["Feat_SpeakerSessions_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Speaker profiles and topic summaries</span>
+                                <span>@SharedLocalizer["Feat_SpeakerSessions_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Slide deck attachment downloads</span>
+                                <span>@SharedLocalizer["Feat_SpeakerSessions_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/speaker-sessions" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -651,48 +626,46 @@
                                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Learning Management</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_LearningManagement_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Create self-paced staff onboarding and training courses, track quiz completions, and issue automated verifiable graduation certificates.
+                            @SharedLocalizer["Feat_LearningManagement_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-lesson curriculum builder</span>
+                                <span>@SharedLocalizer["Feat_LearningManagement_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Quiz scoring and passing thresholds</span>
+                                <span>@SharedLocalizer["Feat_LearningManagement_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated completion certificates</span>
+                                <span>@SharedLocalizer["Feat_LearningManagement_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/learning-management" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 05: Finance, Dues & Revenue Operations -->
+        <!-- Suite 05: @SharedLocalizer["Features_Suite_05_Title"] -->
         <section id="suite-finance" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 05</span>
+                    <span>@SharedLocalizer["Features_Suite_05_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Finance, Dues, and Revenue Operations</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_05_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Bill customers, collect membership dues automatically, reconcile online e-commerce sales, and track restricted grant disbursements.
+                    @SharedLocalizer["Features_Suite_05_Desc"]
                 </p>
             </div>
 
@@ -706,33 +679,31 @@
                                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Invoicing and Dues</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_InvoicingDues_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Automate annual and monthly recurring membership dues, issue professional PDF invoices, and reconcile card payments and bank transfers.
+                            @SharedLocalizer["Feat_InvoicingDues_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Recurring membership dues invoicing</span>
+                                <span>@SharedLocalizer["Feat_InvoicingDues_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Direct pay links via Paystack, Stripe, Flutterwave</span>
+                                <span>@SharedLocalizer["Feat_InvoicingDues_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated overdue reminder emails</span>
+                                <span>@SharedLocalizer["Feat_InvoicingDues_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/invoicing-dues" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -745,33 +716,31 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Grant Ledger</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_GrantLedger_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Track donor funding allocations, monitor project milestones against expenditures, and generate audit-ready compliance reports.
+                            @SharedLocalizer["Feat_GrantLedger_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Restricted donor fund segregation</span>
+                                <span>@SharedLocalizer["Feat_GrantLedger_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Milestone-based disbursement tracking</span>
+                                <span>@SharedLocalizer["Feat_GrantLedger_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Audit-ready financial compliance reports</span>
+                                <span>@SharedLocalizer["Feat_GrantLedger_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/grant-ledger" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -786,33 +755,31 @@
                                 <line x1="3" y1="10" x2="21" y2="10"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Appointment Booking</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_AppointmentBooking_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Client self-service booking calendar with staff availability syncing, automated SMS/email reminders, and optional deposit payments.
+                            @SharedLocalizer["Feat_AppointmentBooking_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Self-service online booking portal</span>
+                                <span>@SharedLocalizer["Feat_AppointmentBooking_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Google Calendar and Outlook two-way sync</span>
+                                <span>@SharedLocalizer["Feat_AppointmentBooking_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated SMS and email reminders</span>
+                                <span>@SharedLocalizer["Feat_AppointmentBooking_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/appointment-booking" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -826,48 +793,46 @@
                                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Store and E-Commerce</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_StoreEcommerce_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Complete online storefront with shopping cart, variant management, real-time stock sync with physical POS, and zero transaction commissions.
+                            @SharedLocalizer["Feat_StoreEcommerce_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Modern mobile-optimized digital storefront</span>
+                                <span>@SharedLocalizer["Feat_StoreEcommerce_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Unified inventory across store and physical POS</span>
+                                <span>@SharedLocalizer["Feat_StoreEcommerce_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>0% sales commission on every order</span>
+                                <span>@SharedLocalizer["Feat_StoreEcommerce_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/store-ecommerce" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 06: Operations, Workflows & Assets -->
+        <!-- Suite 06: @SharedLocalizer["Features_Suite_06_Title"] -->
         <section id="suite-operations" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 06</span>
+                    <span>@SharedLocalizer["Features_Suite_06_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Operations, Workflows, and Assets</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_06_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Control equipment lifecycles, manage commercial B2B sales pipelines, track projects on Kanban boards, and recruit top talent.
+                    @SharedLocalizer["Features_Suite_06_Desc"]
                 </p>
             </div>
 
@@ -881,33 +846,31 @@
                                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Company Assets</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_CompanyAssets_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Catalog laptops, office hardware, and physical inventory with barcode asset tagging, custodian handovers, and depreciation tracking.
+                            @SharedLocalizer["Feat_CompanyAssets_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Barcode asset registry and tagging</span>
+                                <span>@SharedLocalizer["Feat_CompanyAssets_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Employee custodian assignment history</span>
+                                <span>@SharedLocalizer["Feat_CompanyAssets_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Straight-line depreciation calculator</span>
+                                <span>@SharedLocalizer["Feat_CompanyAssets_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/company-assets" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -922,33 +885,31 @@
                                 <circle cx="18.5" cy="18.5" r="2.5"></circle>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Equipment and Fleet</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_EquipmentFleet_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Vehicle mileage logging, regular machinery servicing schedules, breakdown request tickets, and fuel expense management.
+                            @SharedLocalizer["Feat_EquipmentFleet_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Scheduled maintenance preventative alerts</span>
+                                <span>@SharedLocalizer["Feat_EquipmentFleet_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Vehicle mileage and fuel consumption logs</span>
+                                <span>@SharedLocalizer["Feat_EquipmentFleet_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Breakdown repair dispatch tickets</span>
+                                <span>@SharedLocalizer["Feat_EquipmentFleet_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/equipment-fleet" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -961,33 +922,31 @@
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Project and Task Tracking</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_ProjectTaskTracking_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Visual Kanban boards, milestone roadmaps, sub-task delegation, file attachments, and team workload capacity dashboards.
+                            @SharedLocalizer["Feat_ProjectTaskTracking_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Interactive Kanban board workflows</span>
+                                <span>@SharedLocalizer["Feat_ProjectTaskTracking_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Milestones with timeline Gantt views</span>
+                                <span>@SharedLocalizer["Feat_ProjectTaskTracking_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Team capacity and workload analytics</span>
+                                <span>@SharedLocalizer["Feat_ProjectTaskTracking_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/project-task-tracking" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -999,33 +958,31 @@
                                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Proposal Pipeline</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_ProposalPipeline_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            B2B sales and grant proposal management, deal stage progression, commercial document drafts, and closing rate forecasts.
+                            @SharedLocalizer["Feat_ProposalPipeline_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-stage deal pipeline tracking</span>
+                                <span>@SharedLocalizer["Feat_ProposalPipeline_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Proposal document generation and drafts</span>
+                                <span>@SharedLocalizer["Feat_ProposalPipeline_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Win/loss probability forecasting</span>
+                                <span>@SharedLocalizer["Feat_ProposalPipeline_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/proposal-pipeline" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1040,48 +997,46 @@
                                 <line x1="23" y1="11" x2="17" y2="11"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Recruitment and Hiring</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_RecruitmentHiring_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Job opening postings, applicant resume tracking (ATS), interviewer evaluation scoring, and digital offer letter generation.
+                            @SharedLocalizer["Feat_RecruitmentHiring_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Branded public careers job board</span>
+                                <span>@SharedLocalizer["Feat_RecruitmentHiring_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Applicant resume review and pipeline</span>
+                                <span>@SharedLocalizer["Feat_RecruitmentHiring_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Standardized interview scorecards</span>
+                                <span>@SharedLocalizer["Feat_RecruitmentHiring_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/recruitment-hiring" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 07: Communication, Live Support & AI -->
+        <!-- Suite 07: @SharedLocalizer["Features_Suite_07_Title"] -->
         <section id="suite-communication" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 07</span>
+                    <span>@SharedLocalizer["Features_Suite_07_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Communication, Live Support, and AI</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_07_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Omnichannel customer support, automated SMS/email broadcasts, social scheduling, bio link trees, and private AI assistance.
+                    @SharedLocalizer["Features_Suite_07_Desc"]
                 </p>
             </div>
 
@@ -1094,33 +1049,31 @@
                                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Live Chat</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_LiveChat_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Website visitor live chat widget with automated routing to support agents, canned replies, and offline contact captures.
+                            @SharedLocalizer["Feat_LiveChat_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Customizable embeddable web chat widget</span>
+                                <span>@SharedLocalizer["Feat_LiveChat_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Agent routing and departmental queues</span>
+                                <span>@SharedLocalizer["Feat_LiveChat_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Saved shortcut responses and typing indicators</span>
+                                <span>@SharedLocalizer["Feat_LiveChat_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/live-chat" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1134,33 +1087,31 @@
                                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Helpdesk Support</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_HelpdeskSupport_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Centralized ticket management with SLA response timers, email-to-ticket conversion, priority matrices, and resolution feedback.
+                            @SharedLocalizer["Feat_HelpdeskSupport_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-channel ticket inbox</span>
+                                <span>@SharedLocalizer["Feat_HelpdeskSupport_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>SLA breach countdown alerts</span>
+                                <span>@SharedLocalizer["Feat_HelpdeskSupport_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Public knowledgebase and FAQ self-help</span>
+                                <span>@SharedLocalizer["Feat_HelpdeskSupport_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/helpdesk-support" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1173,33 +1124,31 @@
                                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Mass Communication</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_MassCommunication_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Send targeted bulk SMS broadcasts, segmented email newsletters, and push notifications with real-time delivery rate analytics.
+                            @SharedLocalizer["Feat_MassCommunication_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Segmented bulk SMS with custom Sender IDs</span>
+                                <span>@SharedLocalizer["Feat_MassCommunication_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Drag-and-drop HTML email newsletter editor</span>
+                                <span>@SharedLocalizer["Feat_MassCommunication_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Open, click, and delivery rate reporting</span>
+                                <span>@SharedLocalizer["Feat_MassCommunication_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/mass-communication" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1211,33 +1160,31 @@
                                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Social Media Manager</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_SocialMediaManager_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Compose and schedule social posts across Facebook, Instagram, LinkedIn, and X (Twitter) with unified social inbox monitoring.
+                            @SharedLocalizer["Feat_SocialMediaManager_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Cross-platform post publishing calendar</span>
+                                <span>@SharedLocalizer["Feat_SocialMediaManager_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Multi-account scheduling with visual previews</span>
+                                <span>@SharedLocalizer["Feat_SocialMediaManager_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Engagement metrics and reach analytics</span>
+                                <span>@SharedLocalizer["Feat_SocialMediaManager_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/social-media-manager" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1249,33 +1196,31 @@
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">AI Smart Assist</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_AiSmartAssist_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            AI-powered writing assistant that drafts email announcements, summarizes long meetings, and suggests intelligent responses.
+                            @SharedLocalizer["Feat_AiSmartAssist_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Bring Your Own Key (BYOK) privacy isolation</span>
+                                <span>@SharedLocalizer["Feat_AiSmartAssist_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated minutes and document summaries</span>
+                                <span>@SharedLocalizer["Feat_AiSmartAssist_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Zero data retention model for privacy</span>
+                                <span>@SharedLocalizer["Feat_AiSmartAssist_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/ai-smart-assist" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1288,48 +1233,46 @@
                                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Bio Link Tree</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_BioLinkTree_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Create a branded mobile bio landing page with links to your store, ticket events, donation drives, and social profiles.
+                            @SharedLocalizer["Feat_BioLinkTree_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>High-converting mobile landing link hub</span>
+                                <span>@SharedLocalizer["Feat_BioLinkTree_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Custom brand colors and font themes</span>
+                                <span>@SharedLocalizer["Feat_BioLinkTree_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Integrated click and conversion tracking</span>
+                                <span>@SharedLocalizer["Feat_BioLinkTree_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/bio-link-tree" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 08: Compliance, IDs & Verifiable Certs -->
+        <!-- Suite 08: @SharedLocalizer["Features_Suite_08_Title"] -->
         <section id="suite-compliance" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 08</span>
+                    <span>@SharedLocalizer["Features_Suite_08_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Compliance, IDs, and Verifiable Certificates</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_08_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Issue tamper-proof credentials, print digital photo membership cards, secure confidential governance files, and run auditable e-voting.
+                    @SharedLocalizer["Features_Suite_08_Desc"]
                 </p>
             </div>
 
@@ -1343,33 +1286,31 @@
                                 <polyline points="9 12 11 14 15 10"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Certificate Verification</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_CertificateVerification_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Issue cryptographically verifiable graduation, compliance, and training certificates with public QR verification URLs.
+                            @SharedLocalizer["Feat_CertificateVerification_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Cryptographically signed digital credentials</span>
+                                <span>@SharedLocalizer["Feat_CertificateVerification_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Instant public QR verification portal</span>
+                                <span>@SharedLocalizer["Feat_CertificateVerification_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Batch certificate generation and PDF dispatch</span>
+                                <span>@SharedLocalizer["Feat_CertificateVerification_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/certificate-verification" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1385,33 +1326,31 @@
                                 <line x1="7" y1="16" x2="17" y2="16"></line>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Resident ID Cards</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_ResidentIdCards_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Design and generate printable and mobile photo ID membership badges with dynamic barcodes for estate gates and corporate facilities.
+                            @SharedLocalizer["Feat_ResidentIdCards_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>CR80 plastic card print template designer</span>
+                                <span>@SharedLocalizer["Feat_ResidentIdCards_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Dynamic scannable QR and Code128 barcodes</span>
+                                <span>@SharedLocalizer["Feat_ResidentIdCards_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Digital wallet pass support for Apple and Android</span>
+                                <span>@SharedLocalizer["Feat_ResidentIdCards_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/resident-id-cards" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1423,33 +1362,31 @@
                                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Document Management</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_DocumentManagement_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Role-governed cloud document repository with strict permission tiers, full version control, and confidential watermarking.
+                            @SharedLocalizer["Feat_DocumentManagement_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Role-based file permission tiers</span>
+                                <span>@SharedLocalizer["Feat_DocumentManagement_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Version history with instant rollbacks</span>
+                                <span>@SharedLocalizer["Feat_DocumentManagement_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Confidential dynamic watermark overlays</span>
+                                <span>@SharedLocalizer["Feat_DocumentManagement_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/document-management" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1462,48 +1399,46 @@
                                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Elections and E-Voting</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_ElectionsEvoting_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Cryptographically audited digital election ballots, voter token verification, quorum calculations, and instant certified tallies.
+                            @SharedLocalizer["Feat_ElectionsEvoting_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Tamper-proof secret ballot encryption</span>
+                                <span>@SharedLocalizer["Feat_ElectionsEvoting_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>One-time voter tokens via SMS and email</span>
+                                <span>@SharedLocalizer["Feat_ElectionsEvoting_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Live quorum tracking and audited results PDF</span>
+                                <span>@SharedLocalizer["Feat_ElectionsEvoting_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/elections-evoting" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- Suite 09: Demographics & Community Census -->
+        <!-- Suite 09: @SharedLocalizer["Features_Suite_09_Title"] -->
         <section id="suite-demographics" class="oz-features-suite-block">
             <div class="oz-section-header">
                 <div class="oz-pricing-hero-badge">
                     <span class="oz-pricing-hero-badge-dot"></span>
-                    <span>Suite 09</span>
+                    <span>@SharedLocalizer["Features_Suite_09_Badge"]</span>
                 </div>
-                <h2 class="oz-pricing-hero-title">Demographics and Community Census</h2>
+                <h2 class="oz-pricing-hero-title">@SharedLocalizer["Features_Suite_09_Title"]</h2>
                 <p class="oz-pricing-hero-desc">
-                    Census data collection, offline-first mobile survey field enumeration, population demographic analytics, and security gate visitor logs.
+                    @SharedLocalizer["Features_Suite_09_Desc"]
                 </p>
             </div>
 
@@ -1517,33 +1452,31 @@
                                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Community Census</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_CommunityCensus_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Household headcounts, demographic profiling, kinship mapping, and geographic clustering for residential estates and local communities.
+                            @SharedLocalizer["Feat_CommunityCensus_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Household member and dwelling registry</span>
+                                <span>@SharedLocalizer["Feat_CommunityCensus_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Age, occupation, and dependency ratios</span>
+                                <span>@SharedLocalizer["Feat_CommunityCensus_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Residential street and zone clustering</span>
+                                <span>@SharedLocalizer["Feat_CommunityCensus_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/community-census" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1556,33 +1489,31 @@
                                 <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Demographic Analytics</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_DemographicAnalytics_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Interactive population pyramids, age cohort breakdowns, geographic heatmaps, and trend projections for municipal planning.
+                            @SharedLocalizer["Feat_DemographicAnalytics_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Interactive age and gender population pyramids</span>
+                                <span>@SharedLocalizer["Feat_DemographicAnalytics_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Geographic density map visualizations</span>
+                                <span>@SharedLocalizer["Feat_DemographicAnalytics_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Historical growth trend projections</span>
+                                <span>@SharedLocalizer["Feat_DemographicAnalytics_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/demographic-analytics" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1595,33 +1526,31 @@
                                 <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Field Surveyor</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_FieldSurveyor_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Offline-first mobile survey data collection for field enumerators and inspectors, with automatic GPS location stamping and cloud sync.
+                            @SharedLocalizer["Feat_FieldSurveyor_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Offline-first data collection on mobile devices</span>
+                                <span>@SharedLocalizer["Feat_FieldSurveyor_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated GPS location coordinate tagging</span>
+                                <span>@SharedLocalizer["Feat_FieldSurveyor_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Background synchronization when online</span>
+                                <span>@SharedLocalizer["Feat_FieldSurveyor_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/field-surveyor" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
 
@@ -1634,33 +1563,31 @@
                                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
                             </svg>
                         </div>
-                        <h3 class="oz-feat-card-title">Visitor and Gate Management</h3>
+                        <h3 class="oz-feat-card-title">@SharedLocalizer["Feat_VisitorGateManagement_Title"]</h3>
                         <p class="oz-feat-card-desc">
-                            Digital visitor pass issuance via SMS, security checkpoint QR code scanning, license plate logging, and host notifications.
+                            @SharedLocalizer["Feat_VisitorGateManagement_Desc"]
                         </p>
                         <ul class="oz-feat-checklist">
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Resident pre-authorized guest entry codes</span>
+                                <span>@SharedLocalizer["Feat_VisitorGateManagement_Pt1"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Security guard tablet QR scanner</span>
+                                <span>@SharedLocalizer["Feat_VisitorGateManagement_Pt2"]</span>
                             </li>
                             <li class="oz-feat-check-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <span>Automated host arrival SMS and push alerts</span>
+                                <span>@SharedLocalizer["Feat_VisitorGateManagement_Pt3"]</span>
                             </li>
                         </ul>
                     </div>
                     <div class="oz-feat-card-actions">
                         <a href="/@Model.CurrentCulture/features/visitor-gate-management" class="oz-btn-readmore">
-                            <span>Read More</span>
+                            <span>@SharedLocalizer["Features_Btn_ReadMore"]</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                         </a>
-                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
-                            Get Started
-                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">@SharedLocalizer["Features_Btn_GetStarted"]</a>
                     </div>
                 </article>
             </div>
@@ -1671,18 +1598,18 @@
     <section class="oz-pricing-cta-banner">
         <div class="container">
             <div class="oz-pricing-cta-box">
-                <h2>Ready to scale your organization with all 37 capabilities?</h2>
-                <p>Start your 14-day free trial today. All 9 suites unlocked with one simple annual subscription. You only buy your domain.</p>
+                <h2>@SharedLocalizer["Features_Cta_Title"]</h2>
+                <p>@SharedLocalizer["Features_Cta_Desc"]</p>
                 <div class="oz-pricing-cta-actions">
                     <a href="/@Model.CurrentCulture/register" class="oz-single-btn-primary">
-                        <span>Start 14-Day Free Trial</span>
+                        <span>@SharedLocalizer["Features_Hero_Btn_Trial"]</span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                             <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
                     </a>
                     <a href="/@Model.CurrentCulture/contact" class="oz-cta-btn-outline">
-                        Contact Sales
+                        @SharedLocalizer["Features_Cta_Btn_Sales"]
                     </a>
                 </div>
             </div>
