@@ -42,6 +42,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterEmailLog> MasterEmailLogs { get; set; } = null!;
     public DbSet<MasterAffiliatePartner> MasterAffiliatePartners { get; set; } = null!;
     public DbSet<MasterAffiliateReferral> MasterAffiliateReferrals { get; set; } = null!;
+    public DbSet<MasterCurrencyRate> MasterCurrencyRates { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -326,6 +327,22 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.CommissionStatus);
             entity.Property(e => e.SubscriptionAmount).HasPrecision(18, 2);
             entity.Property(e => e.CommissionEarned).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<MasterCurrencyRate>(entity =>
+        {
+            entity.ToTable("MasterCurrencyRates");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CurrencyCode).IsUnique();
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.SortOrder);
+            entity.Property(e => e.CurrencyCode).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.CurrencySymbol).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.DisplayName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.CultureName).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.PillLabel).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.RateFromUsd).HasPrecision(18, 4);
+            entity.Property(e => e.AssociatedCountryCodes).HasMaxLength(250);
         });
     }
 }

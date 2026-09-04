@@ -25,8 +25,9 @@ namespace Ozikol.Central.Services
                     return;
                 }
 
-                // Only seed Central Operator Roles and Default SuperAdmin
+                // Seed Central Operator Roles, Default SuperAdmin, and the 10 platform currency rates
                 await MasterCatalogDataSeeder.SeedRolesAndSuperAdminAsync(dbContext, roleManager, userManager);
+                await MasterCatalogDataSeeder.SeedCurrenciesAsync(dbContext);
             }
             catch
             {
