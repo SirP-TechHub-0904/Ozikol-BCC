@@ -458,12 +458,42 @@
     text-align: center;
     margin-top: 36px;
 }
-.oz-hero-pill-text {
-    font-size: 12px;
+/* Hero Modern Pill Badge */
+.oz-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px 6px 12px;
+    background: rgba(229, 23, 63, 0.14);
+    border: 1px solid rgba(229, 23, 63, 0.35);
+    border-radius: 9999px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(229, 23, 63, 0.2);
+    width: fit-content;
+}
+.oz-hero-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e5173f;
+    box-shadow: 0 0 10px #e5173f, 0 0 4px #ffffff;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.oz-hero-badge__text {
+    font-size: 11.5px;
     font-weight: 700;
-    color: #ffffff;
-    letter-spacing: 0.05em;
+    color: #ff6b8b;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    white-space: nowrap;
+}
+@media (max-width: 600px) {
+    .oz-hero-badge__text {
+        white-space: normal;
+        font-size: 10.5px;
+    }
 }
 
 /* Mockup Components for Interactive Tabs */
