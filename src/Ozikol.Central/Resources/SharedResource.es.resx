@@ -325,4 +325,415 @@
   <data name="Footer_Copyright" xml:space="preserve">
     <value>© Ozikol 2026. Todos los derechos reservados.</value>
   </data>
+  <data name="Menu_MainMenu" xml:space="preserve">
+    <value>Menú principal</value>
+  </data>
+  <data name="Catalog_Title" xml:space="preserve">
+    <value>Catálogo de funciones</value>
+  </data>
+  <data name="Catalog_ExploreAll" xml:space="preserve">
+    <value>Explorar las 37 funciones &rarr;</value>
+  </data>
+  <data name="Suite_People_Nav" xml:space="preserve">
+    <value>Personas, comunidad y colaboración</value>
+  </data>
+  <data name="Suite_People_Title" xml:space="preserve">
+    <value>Personas y <span class="text-primary">Comunidad</span></value>
+  </data>
+  <data name="Suite_People_Desc" xml:space="preserve">
+    <value>Conecte equipos, una comités y empodere a los antiguos alumnos.</value>
+  </data>
+  <data name="Feat_Messenger_Title" xml:space="preserve">
+    <value>Mensajería comunitaria y Chat de equipo</value>
+  </data>
+  <data name="Feat_Messenger_Desc" xml:space="preserve">
+    <value>Mensajes directos en tiempo real, canales grupales y chat flotante en toda la plataforma.</value>
+  </data>
+  <data name="Feat_Committees_Title" xml:space="preserve">
+    <value>Comités y Subgrupos</value>
+  </data>
+  <data name="Feat_Committees_Desc" xml:space="preserve">
+    <value>Administre líderes de comités, calendarios de reuniones, actas y resoluciones.</value>
+  </data>
+  <data name="Feat_Alumni_Title" xml:space="preserve">
+    <value>Directorio de redes de antiguos alumnos</value>
+  </data>
+  <data name="Feat_Alumni_Desc" xml:space="preserve">
+    <value>Registro de exalumnos con filtros por capítulo y graduación.</value>
+  </data>
+  <data name="Feat_Whistleblowing_Title" xml:space="preserve">
+    <value>Denuncias anónimas y Comentarios</value>
+  </data>
+  <data name="Feat_Whistleblowing_Desc" xml:space="preserve">
+    <value>Informes anónimos cifrados y comentarios bidireccionales seguros.</value>
+  </data>
+  <data name="Suite_Workforce_Nav" xml:space="preserve">
+    <value>Personal, turnos y horarios</value>
+  </data>
+  <data name="Suite_Workforce_Title" xml:space="preserve">
+    <value>Personal y <span class="text-primary">Horarios</span></value>
+  </data>
+  <data name="Suite_Workforce_Desc" xml:space="preserve">
+    <value>Planifique turnos, gestione disponibilidad, citas y hojas de horas.</value>
+  </data>
+  <data name="Feat_StaffRota_Title" xml:space="preserve">
+    <value>Horarios del personal y Turnos</value>
+  </data>
+  <data name="Feat_StaffRota_Desc" xml:space="preserve">
+    <value>Planificación por departamentos, calendarios semanales/mensuales y publicación.</value>
+  </data>
+  <data name="Feat_ShiftSwaps_Title" xml:space="preserve">
+    <value>Cambios de turno, disponibilidad y permisos</value>
+  </data>
+  <data name="Feat_ShiftSwaps_Desc" xml:space="preserve">
+    <value>Intercambios de turnos entre compañeros, disponibilidad y aprobación de permisos.</value>
+  </data>
+  <data name="Feat_Attendance_Title" xml:space="preserve">
+    <value>Asistencia y Control horario</value>
+  </data>
+  <data name="Feat_Attendance_Desc" xml:space="preserve">
+    <value>Fichaje digital geovallado, control de asistencia en vivo y validación de horas.</value>
+  </data>
+  <data name="Feat_Appointments_Title" xml:space="preserve">
+    <value>Reserva de citas y Calendario</value>
+  </data>
+  <data name="Feat_Appointments_Desc" xml:space="preserve">
+    <value>Programación automatizada de citas individuales y grupales con Meet, Zoom y pagos.</value>
+  </data>
+  <data name="Suite_Reports_Nav" xml:space="preserve">
+    <value>Informes, formularios y analítica</value>
+  </data>
+  <data name="Suite_Reports_Title" xml:space="preserve">
+    <value>Informes y <span class="text-primary">Formularios</span></value>
+  </data>
+  <data name="Suite_Reports_Desc" xml:space="preserve">
+    <value>Recopilación dinámica de datos, informes periódicos y análisis.</value>
+  </data>
+  <data name="Feat_IntervalReporting_Title" xml:space="preserve">
+    <value>Informes por intervalos dinámicos</value>
+  </data>
+  <data name="Feat_IntervalReporting_Desc" xml:space="preserve">
+    <value>Informes periódicos automatizados (semanales, mensuales, trimestrales) y KPIs.</value>
+  </data>
+  <data name="Feat_FormBuilder_Title" xml:space="preserve">
+    <value>Creador de formularios y Encuestas</value>
+  </data>
+  <data name="Feat_FormBuilder_Desc" xml:space="preserve">
+    <value>Formularios personalizados de arrastrar y soltar, encuestas y flujos de trabajo.</value>
+  </data>
+  <data name="Feat_SurveyAnalytics_Title" xml:space="preserve">
+    <value>Analítica de encuestas e información</value>
+  </data>
+  <data name="Feat_SurveyAnalytics_Desc" xml:space="preserve">
+    <value>Gráficos visuales, filtros por cohortes y análisis de opiniones.</value>
+  </data>
+  <data name="Suite_Events_Nav" xml:space="preserve">
+    <value>Gestión de eventos y formación</value>
+  </data>
+  <data name="Suite_Events_Title" xml:space="preserve">
+    <value>Eventos y <span class="text-primary">Formación</span></value>
+  </data>
+  <data name="Suite_Events_Desc" xml:space="preserve">
+    <value>Conferencias, entradas, ponentes, sesiones y control de acceso.</value>
+  </data>
+  <data name="Feat_EventTicketing_Title" xml:space="preserve">
+    <value>Venta de entradas y Check-in</value>
+  </data>
+  <data name="Feat_EventTicketing_Desc" xml:space="preserve">
+    <value>Entradas de pago y gratuitas, precios por niveles, pases QR y control de acceso.</value>
+  </data>
+  <data name="Feat_SpeakerSessions_Title" xml:space="preserve">
+    <value>Gestión de ponentes y sesiones</value>
+  </data>
+  <data name="Feat_SpeakerSessions_Desc" xml:space="preserve">
+    <value>Ponentes principales, formadores, agendas de talleres y aforo de salas.</value>
+  </data>
+  <data name="Feat_AttendeeManagement_Title" xml:space="preserve">
+    <value>Gestión de asistentes y registros</value>
+  </data>
+  <data name="Feat_AttendeeManagement_Desc" xml:space="preserve">
+    <value>Directorio de participantes, confirmaciones, control de asistencia y badges.</value>
+  </data>
+  <data name="Suite_Finance_Nav" xml:space="preserve">
+    <value>Finanzas e ingresos comerciales</value>
+  </data>
+  <data name="Suite_Finance_Title" xml:space="preserve">
+    <value>Finanzas e <span class="text-primary">Ingresos</span></value>
+  </data>
+  <data name="Suite_Finance_Desc" xml:space="preserve">
+    <value>Facturación, tienda en línea, libros de subvenciones y propuestas.</value>
+  </data>
+  <data name="Feat_InvoicingDues_Title" xml:space="preserve">
+    <value>Facturación y Cobro de cuotas</value>
+  </data>
+  <data name="Feat_InvoicingDues_Desc" xml:space="preserve">
+    <value>Cuotas de membresía automáticas, tarifas de suscripción, facturas y pagos online.</value>
+  </data>
+  <data name="Feat_StoreEcommerce_Title" xml:space="preserve">
+    <value>Tienda y Comercio Electrónico</value>
+  </data>
+  <data name="Feat_StoreEcommerce_Desc" xml:space="preserve">
+    <value>Tienda digital y física de productos, catálogo, carrito y procesamiento de pagos.</value>
+  </data>
+  <data name="Feat_ProposalPipeline_Title" xml:space="preserve">
+    <value>Pipeline de propuestas y Contratos</value>
+  </data>
+  <data name="Feat_ProposalPipeline_Desc" xml:space="preserve">
+    <value>Seguimiento de propuestas comerciales y subvenciones a través de etapas de revisión.</value>
+  </data>
+  <data name="Feat_GrantLedger_Title" xml:space="preserve">
+    <value>Libro de subvenciones y Financiación</value>
+  </data>
+  <data name="Feat_GrantLedger_Desc" xml:space="preserve">
+    <value>Seguimiento de fondos de donantes, calendarios de desembolso y libros contables.</value>
+  </data>
+  <data name="Suite_Operations_Nav" xml:space="preserve">
+    <value>Operaciones y flujos de trabajo</value>
+  </data>
+  <data name="Suite_Operations_Title" xml:space="preserve">
+    <value>Operaciones y <span class="text-primary">Flujos de trabajo</span></value>
+  </data>
+  <data name="Suite_Operations_Desc" xml:space="preserve">
+    <value>Contratación, votaciones, flotas, activos y sprints de proyectos.</value>
+  </data>
+  <data name="Feat_RecruitmentHiring_Title" xml:space="preserve">
+    <value>Reclutamiento y Contratación (ATS)</value>
+  </data>
+  <data name="Feat_RecruitmentHiring_Desc" xml:space="preserve">
+    <value>Publicación de ofertas, candidatos, currículums y fichas de entrevistas.</value>
+  </data>
+  <data name="Feat_ElectionsEvoting_Title" xml:space="preserve">
+    <value>Elecciones y Voto electrónico</value>
+  </data>
+  <data name="Feat_ElectionsEvoting_Desc" xml:space="preserve">
+    <value>Votación criptográfica segura, acreditación de votantes y recuento certificado.</value>
+  </data>
+  <data name="Feat_EquipmentFleet_Title" xml:space="preserve">
+    <value>Ciclo de vida de flotas y equipos</value>
+  </data>
+  <data name="Feat_EquipmentFleet_Desc" xml:space="preserve">
+    <value>Mantenimiento de maquinaria y vehículos, préstamos y depreciación.</value>
+  </data>
+  <data name="Feat_CompanyAssets_Title" xml:space="preserve">
+    <value>Gestión de activos empresariales</value>
+  </data>
+  <data name="Feat_CompanyAssets_Desc" xml:space="preserve">
+    <value>Activos fijos de capital, bienes raíces, valoraciones y registro de contratos.</value>
+  </data>
+  <data name="Feat_ProjectTask_Title" xml:space="preserve">
+    <value>Seguimiento de proyectos y tareas</value>
+  </data>
+  <data name="Feat_ProjectTask_Desc" xml:space="preserve">
+    <value>Ciclos de sprint, delegación de tareas, tableros Kanban y carga de trabajo.</value>
+  </data>
+  <data name="Suite_Communication_Nav" xml:space="preserve">
+    <value>Comunicación, IA y soporte</value>
+  </data>
+  <data name="Suite_Communication_Title" xml:space="preserve">
+    <value>Comunicación e <span class="text-primary">IA</span></value>
+  </data>
+  <data name="Suite_Communication_Desc" xml:space="preserve">
+    <value>Asistencia por IA, enlaces de biografía, difusiones masivas, soporte y redes.</value>
+  </data>
+  <data name="Feat_AiSmartAssist_Title" xml:space="preserve">
+    <value>Asistente inteligente de IA (BYOK)</value>
+  </data>
+  <data name="Feat_AiSmartAssist_Desc" xml:space="preserve">
+    <value>Conecte OpenAI, Gemini o Claude para redactar contenidos y tareas.</value>
+  </data>
+  <data name="Feat_MassCommunication_Title" xml:space="preserve">
+    <value>Comunicación masiva</value>
+  </data>
+  <data name="Feat_MassCommunication_Desc" xml:space="preserve">
+    <value>Envío masivo de boletines informativos, alertas SMS y registros de entrega.</value>
+  </data>
+  <data name="Feat_HelpdeskSupport_Title" xml:space="preserve">
+    <value>Helpdesk y Soporte</value>
+  </data>
+  <data name="Feat_HelpdeskSupport_Desc" xml:space="preserve">
+    <value>Colas de tickets, plazos SLA y respuestas predefinidas de agentes.</value>
+  </data>
+  <data name="Feat_LiveChat_Title" xml:space="preserve">
+    <value>Chat en vivo y Mensajería</value>
+  </data>
+  <data name="Feat_LiveChat_Desc" xml:space="preserve">
+    <value>Widget de chat para visitantes web, bandeja de entrada y captación de clientes.</value>
+  </data>
+  <data name="Feat_SocialMediaManager_Title" xml:space="preserve">
+    <value>Gestor de redes sociales</value>
+  </data>
+  <data name="Feat_SocialMediaManager_Desc" xml:space="preserve">
+    <value>Publicación programada multiplataforma y análisis de interacción.</value>
+  </data>
+  <data name="Feat_BioLinkHub_Title" xml:space="preserve">
+    <value>Hub de enlaces biográficos (Link Tree)</value>
+  </data>
+  <data name="Feat_BioLinkHub_Desc" xml:space="preserve">
+    <value>Página de biografía de enlace único para mostrar sus redes, productos y campañas.</value>
+  </data>
+  <data name="Suite_Compliance_Nav" xml:space="preserve">
+    <value>Cumplimiento, aprendizaje y certificación</value>
+  </data>
+  <data name="Suite_Compliance_Title" xml:space="preserve">
+    <value>Cumplimiento y <span class="text-primary">Certificación</span></value>
+  </data>
+  <data name="Suite_Compliance_Desc" xml:space="preserve">
+    <value>Bóveda de documentos, LMS de video, credenciales verificables y control de visitas.</value>
+  </data>
+  <data name="Feat_DocumentManagement_Title" xml:space="preserve">
+    <value>Sistema de gestión documental</value>
+  </data>
+  <data name="Feat_DocumentManagement_Desc" xml:space="preserve">
+    <value>Bóveda segura de políticas, control de versiones y auditorías de firma.</value>
+  </data>
+  <data name="Feat_LearningManagement_Title" xml:space="preserve">
+    <value>Sistema de gestión de aprendizaje (LMS)</value>
+  </data>
+  <data name="Feat_LearningManagement_Desc" xml:space="preserve">
+    <value>Cursos multimedia en video, cuestionarios y seguimiento de alumnos.</value>
+  </data>
+  <data name="Feat_CertificateVerification_Title" xml:space="preserve">
+    <value>Diseñador de certificados y Verificación</value>
+  </data>
+  <data name="Feat_CertificateVerification_Desc" xml:space="preserve">
+    <value>Generador visual de certificados y portal de verificación QR criptográfica.</value>
+  </data>
+  <data name="Feat_VisitorGate_Title" xml:space="preserve">
+    <value>Control de visitas y accesos</value>
+  </data>
+  <data name="Feat_VisitorGate_Desc" xml:space="preserve">
+    <value>Check-in en kiosco, pases de visita, alertas a anfitriones y registro de accesos.</value>
+  </data>
+  <data name="Suite_Demographics_Nav" xml:space="preserve">
+    <value>Demografía y censo cívico</value>
+  </data>
+  <data name="Suite_Demographics_Title" xml:space="preserve">
+    <value>Demografía y <span class="text-primary">Censo</span></value>
+  </data>
+  <data name="Suite_Demographics_Desc" xml:space="preserve">
+    <value>Cuente poblaciones, mapee hogares, realice encuestas y emita documentos de residencia.</value>
+  </data>
+  <data name="Feat_CommunityCensus_Title" xml:space="preserve">
+    <value>Censo comunitario y de hogares</value>
+  </data>
+  <data name="Feat_CommunityCensus_Desc" xml:space="preserve">
+    <value>Árboles genealógicos, cabezas de familia, validación de residencia y ocupación.</value>
+  </data>
+  <data name="Feat_FieldSurveyor_Title" xml:space="preserve">
+    <value>Censo de campo y Encuestador móvil</value>
+  </data>
+  <data name="Feat_FieldSurveyor_Desc" xml:space="preserve">
+    <value>Herramientas de encuestador puerta a puerta con GPS, modo offline y sincronización.</value>
+  </data>
+  <data name="Feat_ResidentIdCards_Title" xml:space="preserve">
+    <value>Tarjetas digitales de identificación ciudadana</value>
+  </data>
+  <data name="Feat_ResidentIdCards_Desc" xml:space="preserve">
+    <value>Pases de censo con código QR criptográfico, comprobante de residencia y escáner.</value>
+  </data>
+  <data name="Feat_DemographicAnalytics_Title" xml:space="preserve">
+    <value>Analítica demográfica e Informes</value>
+  </data>
+  <data name="Feat_DemographicAnalytics_Desc" xml:space="preserve">
+    <value>Pirámides de población, ratios de dependencia, estadísticas socioeconómicas e informes PDF.</value>
+  </data>
+  <data name="About_Discover_Nav" xml:space="preserve">
+    <value>Descubra Ozikol</value>
+  </data>
+  <data name="About_Discover_Title" xml:space="preserve">
+    <value>Somos <span class="text-primary">Ozikol</span></value>
+  </data>
+  <data name="About_Discover_Desc" xml:space="preserve">
+    <value>Impulsando la nueva era del software para empresas, comunidades y equipos.</value>
+  </data>
+  <data name="About_Story_Title" xml:space="preserve">
+    <value>Nuestra historia y misión</value>
+  </data>
+  <data name="About_Story_Desc" xml:space="preserve">
+    <value>Por qué creamos Ozikol y nuestra visión del software unificado.</value>
+  </data>
+  <data name="About_Culture_Title" xml:space="preserve">
+    <value>Valores fundamentales y cultura</value>
+  </data>
+  <data name="About_Culture_Desc" xml:space="preserve">
+    <value>Simplicidad, transparencia, soberanía del cliente e innovación.</value>
+  </data>
+  <data name="About_Offices_Title" xml:space="preserve">
+    <value>Oficinas y sedes globales</value>
+  </data>
+  <data name="About_Offices_Desc" xml:space="preserve">
+    <value>Sede global en Londres y red de operaciones en la nube.</value>
+  </data>
+  <data name="About_Leadership_Title" xml:space="preserve">
+    <value>Equipo directivo</value>
+  </data>
+  <data name="About_Leadership_Desc" xml:space="preserve">
+    <value>Conozca a los ejecutivos e innovadores que lideran la plataforma.</value>
+  </data>
+  <data name="About_Partners_Title" xml:space="preserve">
+    <value>Red de socios y afiliados</value>
+  </data>
+  <data name="About_Partners_Desc" xml:space="preserve">
+    <value>Agencias, consultores y creadores que impulsan el crecimiento digital.</value>
+  </data>
+  <data name="About_Ecosystem_Nav" xml:space="preserve">
+    <value>Noticias y ecosistema</value>
+  </data>
+  <data name="About_Ecosystem_Title" xml:space="preserve">
+    <value>Noticias y <span class="text-primary">Ecosistema</span></value>
+  </data>
+  <data name="About_Ecosystem_Desc" xml:space="preserve">
+    <value>Últimos anuncios, herramientas para desarrolladores y oportunidades para creadores.</value>
+  </data>
+  <data name="About_NewsPress_Title" xml:space="preserve">
+    <value>Noticias de la empresa y prensa</value>
+  </data>
+  <data name="About_NewsPress_Desc" xml:space="preserve">
+    <value>Comunicados oficiales de la compañía y novedades para medios.</value>
+  </data>
+  <data name="About_CreatorProgram_Title" xml:space="preserve">
+    <value>Programa para creadores</value>
+  </data>
+  <data name="About_CreatorProgram_Desc" xml:space="preserve">
+    <value>Cree plantillas seccionales y comercialícelas en el marketplace.</value>
+  </data>
+  <data name="About_DeveloperApi_Title" xml:space="preserve">
+    <value>API para desarrolladores y Webhooks</value>
+  </data>
+  <data name="About_DeveloperApi_Desc" xml:space="preserve">
+    <value>Endpoints REST, eventos webhook y SDKs oficiales.</value>
+  </data>
+  <data name="About_Security_Nav" xml:space="preserve">
+    <value>Seguridad y privacidad</value>
+  </data>
+  <data name="About_Security_Title" xml:space="preserve">
+    <value>Seguridad y <span class="text-primary">Privacidad</span></value>
+  </data>
+  <data name="About_Security_Desc" xml:space="preserve">
+    <value>Privacidad de datos, seguridad de cuenta y alojamiento fiable en la nube.</value>
+  </data>
+  <data name="About_AccountSecurity_Title" xml:space="preserve">
+    <value>Seguridad de la cuenta (2FA y Roles)</value>
+  </data>
+  <data name="About_AccountSecurity_Desc" xml:space="preserve">
+    <value>Autenticación de dos factores, control de accesos RBAC y protección de sesiones.</value>
+  </data>
+  <data name="About_PrivacyData_Title" xml:space="preserve">
+    <value>Privacidad y Exportación de datos en 1 clic</value>
+  </data>
+  <data name="About_PrivacyData_Desc" xml:space="preserve">
+    <value>Cumplimiento RGPD, propiedad total de datos y descarga instantánea.</value>
+  </data>
+  <data name="About_AiSecurity_Title" xml:space="preserve">
+    <value>Protección de datos en IA (BYOK)</value>
+  </data>
+  <data name="About_AiSecurity_Desc" xml:space="preserve">
+    <value>Traiga su propia clave (BYOK) sin entrenamiento en modelos públicos.</value>
+  </data>
+  <data name="About_Reliability_Title" xml:space="preserve">
+    <value>Copias de seguridad en la nube y 99.9% de uptime</value>
+  </data>
+  <data name="About_Reliability_Desc" xml:space="preserve">
+    <value>Copias de seguridad automáticas diarias y SLA de alta disponibilidad.</value>
+  </data>
 </root>
