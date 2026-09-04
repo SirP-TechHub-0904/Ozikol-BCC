@@ -2218,4 +2218,569 @@
   <data name="Feat_VisitorGateManagement_Pt3" xml:space="preserve">
     <value>Libro de registro electrónico con sellado temporal</value>
   </data>
+
+  <data name="About_Page_Title" xml:space="preserve">
+    <value>Sobre nosotros - Nuestra historia, misión y arquitectura | Ozikol</value>
+  </data>
+  <data name="About_Hero_Badge" xml:space="preserve">
+    <value>Somos Ozikol</value>
+  </data>
+  <data name="About_Hero_Title" xml:space="preserve">
+    <value>Unificando cómo las organizaciones modernas <span class="oz-gradient-text">operan, colaboran y escalan</span></value>
+  </data>
+  <data name="About_Hero_Lead" xml:space="preserve">
+    <value>Desde turnos de trabajo y registros demográficos hasta certificación digital verificable, mensajería masiva y flujos de IA — Ozikol ofrece un ecosistema en la nube modular todo en uno.</value>
+  </data>
+  <data name="About_Hero_BtnPrimary" xml:space="preserve">
+    <value>Prueba gratuita de 14 días</value>
+  </data>
+  <data name="About_Hero_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
+  <data name="About_Metric_Capabilities" xml:space="preserve">
+    <value>Funciones modulares</value>
+  </data>
+  <data name="About_Metric_Suites" xml:space="preserve">
+    <value>Suites empresariales</value>
+  </data>
+  <data name="About_Metric_Blueprints" xml:space="preserve">
+    <value>Modelos del marketplace</value>
+  </data>
+  <data name="About_Metric_Uptime" xml:space="preserve">
+    <value>Disponibilidad en la nube</value>
+  </data>
+  <data name="About_Mission_Tag" xml:space="preserve">
+    <value>Nuestro propósito</value>
+  </data>
+  <data name="About_Mission_Title" xml:space="preserve">
+    <value>Por qué creamos Ozikol</value>
+  </data>
+  <data name="About_Mission_P1" xml:space="preserve">
+    <value>Las empresas e instituciones modernas están cansadas de hacer malabarismos con más de 10 herramientas SaaS fragmentadas que crean silos de datos y duplican los costos. Coordinar turnos en una herramienta, enviar anuncios en otra y rastrear cuotas en otra agota a los equipos.</value>
+  </data>
+  <data name="About_Mission_P2" xml:space="preserve">
+    <value>Ozikol elimina esta fricción con una arquitectura modular unificada. Activa solo los módulos que tu organización necesita hoy, escala sin problemas y mantén la soberanía total sobre tus datos.</value>
+  </data>
+  <data name="About_Advantage_Title" xml:space="preserve">
+    <value>La ventaja de la plataforma Ozikol</value>
+  </data>
+  <data name="About_Adv_1_Title" xml:space="preserve">
+    <value>Cero sobrecarga</value>
+  </data>
+  <data name="About_Adv_1_Desc" xml:space="preserve">
+    <value>Habilite o deshabilite cualquiera de las 37 funciones a pedido con precios fijos y transparentes.</value>
+  </data>
+  <data name="About_Adv_2_Title" xml:space="preserve">
+    <value>Soberanía total de datos</value>
+  </data>
+  <data name="About_Adv_2_Desc" xml:space="preserve">
+    <value>Aislamiento total de la base de datos del cliente. Exporte todos sus datos en formatos estándar en cualquier momento.</value>
+  </data>
+  <data name="About_Adv_3_Title" xml:space="preserve">
+    <value>Modelos del mercado de interfaces</value>
+  </data>
+  <data name="About_Adv_3_Desc" xml:space="preserve">
+    <value>Instale con un solo clic diseños modulares, encabezados adaptables y suites sectoriales.</value>
+  </data>
+  <data name="About_Adv_4_Title" xml:space="preserve">
+    <value>Automatización con IA privada (BYOK)</value>
+  </data>
+  <data name="About_Adv_4_Desc" xml:space="preserve">
+    <value>Traiga su propia clave para flujos inteligentes sin comprometer la privacidad de los datos.</value>
+  </data>
+  <data name="About_Pillars_Tag" xml:space="preserve">
+    <value>Arquitectura central</value>
+  </data>
+  <data name="About_Pillars_Title" xml:space="preserve">
+    <value>Construido sobre cuatro pilares arquitectónicos</value>
+  </data>
+  <data name="About_Pillars_Desc" xml:space="preserve">
+    <value>Ingeniería empresarial que prioriza el rendimiento, la seguridad y la extensibilidad.</value>
+  </data>
+  <data name="About_Pillar_Modular_Title" xml:space="preserve">
+    <value>Diseño de suites modulares</value>
+  </data>
+  <data name="About_Pillar_Modular_Desc" xml:space="preserve">
+    <value>9 suites desacopladas que funcionan juntas como un único motor operativo unificado.</value>
+  </data>
+  <data name="About_Pillar_Sovereignty_Title" xml:space="preserve">
+    <value>Soberanía de datos</value>
+  </data>
+  <data name="About_Pillar_Sovereignty_Desc" xml:space="preserve">
+    <value>Límites de datos aislados que evitan la contaminación cruzada y la dependencia del proveedor.</value>
+  </data>
+  <data name="About_Pillar_Marketplace_Title" xml:space="preserve">
+    <value>Marketplace del ecosistema</value>
+  </data>
+  <data name="About_Pillar_Marketplace_Desc" xml:space="preserve">
+    <value>Permite a creadores y agencias monetizar diseños y flujos de trabajo.</value>
+  </data>
+  <data name="About_Pillar_Ai_Title" xml:space="preserve">
+    <value>Automatización con IA confidencial</value>
+  </data>
+  <data name="About_Pillar_Ai_Desc" xml:space="preserve">
+    <value>Conectores LLM privados sin entrenamiento sobre los datos de su organización.</value>
+  </data>
+  <data name="About_Hub_Tag" xml:space="preserve">
+    <value>Explorar Ozikol</value>
+  </data>
+  <data name="About_Hub_Title" xml:space="preserve">
+    <value>Conozca nuestra organización</value>
+  </data>
+  <data name="About_Hub_Desc" xml:space="preserve">
+    <value>Conozca más sobre nuestro liderazgo, cultura laboral, sedes globales y redes de socios.</value>
+  </data>
+  <data name="About_Link_LearnMore" xml:space="preserve">
+    <value>Más información</value>
+  </data>
+  <data name="About_Cta_Badge" xml:space="preserve">
+    <value>Plataforma en la nube unificada</value>
+  </data>
+  <data name="About_Cta_Title" xml:space="preserve">
+    <value>¿Listo para modernizar su organización?</value>
+  </data>
+  <data name="About_Cta_Desc" xml:space="preserve">
+    <value>Únase a instituciones y empresas innovadoras que gestionan sus operaciones en Ozikol Business Cloud.</value>
+  </data>
+  <data name="About_Cta_BtnPrimary" xml:space="preserve">
+    <value>Comenzar prueba de 14 días</value>
+  </data>
+  <data name="About_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
+  <data name="Culture_Page_Title" xml:space="preserve">
+    <value>Valores fundamentales y cultura - El estilo Ozikol | Ozikol</value>
+  </data>
+  <data name="Culture_Hero_Badge" xml:space="preserve">
+    <value>Valores fundamentales y cultura</value>
+  </data>
+  <data name="Culture_Hero_Title" xml:space="preserve">
+    <value>Principios que guían <span class="oz-gradient-text">cómo construimos, apoyamos y escalamos</span></value>
+  </data>
+  <data name="Culture_Hero_Lead" xml:space="preserve">
+    <value>Creemos que el software empresarial debe empoderar a las organizaciones sin bloquear sus datos, inflar suscripciones o complicar las tareas diarias.</value>
+  </data>
+  <data name="Culture_Hero_BtnPrimary" xml:space="preserve">
+    <value>Prueba gratuita de 14 días</value>
+  </data>
+  <data name="Culture_Hero_BtnSecondary" xml:space="preserve">
+    <value>Sobre Ozikol</value>
+  </data>
+  <data name="Culture_Values_Tag" xml:space="preserve">
+    <value>Principios fundamentales</value>
+  </data>
+  <data name="Culture_Values_Title" xml:space="preserve">
+    <value>Cuatro principios rectores</value>
+  </data>
+  <data name="Culture_Values_Desc" xml:space="preserve">
+    <value>Los compromisos fundamentales que definen cada función, versión de código e interacción con el cliente.</value>
+  </data>
+  <data name="Culture_Val1_Badge" xml:space="preserve">
+    <value>100% exportable</value>
+  </data>
+  <data name="Culture_Val1_Title" xml:space="preserve">
+    <value>Soberanía del cliente primero</value>
+  </data>
+  <data name="Culture_Val1_Desc" xml:space="preserve">
+    <value>Sus datos pertenecen exclusivamente a su organización. Ofrecemos exportación completa en 1 clic sin bloqueo de proveedor.</value>
+  </data>
+  <data name="Culture_Val2_Badge" xml:space="preserve">
+    <value>Cero sobrecarga</value>
+  </data>
+  <data name="Culture_Val2_Title" xml:space="preserve">
+    <value>Simplicidad modular</value>
+  </data>
+  <data name="Culture_Val2_Desc" xml:space="preserve">
+    <value>Rechazamos los sistemas sobrecargados. Las organizaciones solo activan las funciones necesarias, cuidando la agilidad y el presupuesto.</value>
+  </data>
+  <data name="Culture_Val3_Badge" xml:space="preserve">
+    <value>Precios predecibles</value>
+  </data>
+  <data name="Culture_Val3_Title" xml:space="preserve">
+    <value>Transparencia radical</value>
+  </data>
+  <data name="Culture_Val3_Desc" xml:space="preserve">
+    <value>Sin sorpresas en los precios ni tarifas ocultas. Publicamos actualizaciones de hoja de ruta transparentes, SLA claros y métricas públicas.</value>
+  </data>
+  <data name="Culture_Val4_Badge" xml:space="preserve">
+    <value>Lanzamientos mensuales</value>
+  </data>
+  <data name="Culture_Val4_Title" xml:space="preserve">
+    <value>Velocidad continua</value>
+  </data>
+  <data name="Culture_Val4_Desc" xml:space="preserve">
+    <value>Lanzamos mejoras cada mes y escuchamos de forma proactiva a los clientes para elevar la experiencia continuamente.</value>
+  </data>
+  <data name="Culture_Standards_Tag" xml:space="preserve">
+    <value>Filosofía operativa</value>
+  </data>
+  <data name="Culture_Standards_Title" xml:space="preserve">
+    <value>Cómo trabajamos en Ozikol</value>
+  </data>
+  <data name="Culture_Standards_Desc" xml:space="preserve">
+    <value>Nuestra cultura laboral refleja nuestra plataforma: descentralizada, asíncrona y orientada a resultados tangibles.</value>
+  </data>
+  <data name="Culture_Std1_Title" xml:space="preserve">
+    <value>Asíncrono por defecto</value>
+  </data>
+  <data name="Culture_Std1_Desc" xml:space="preserve">
+    <value>Priorizamos la concentración técnica profunda, documentación exhaustiva y colaboración estructurada por escrito.</value>
+  </data>
+  <data name="Culture_Std2_Title" xml:space="preserve">
+    <value>Seguridad por diseño</value>
+  </data>
+  <data name="Culture_Std2_Desc" xml:space="preserve">
+    <value>Cada ingeniero está capacitado en seguridad defensiva, acceso con privilegios mínimos y aislamiento de inquilinos.</value>
+  </data>
+  <data name="Culture_Std3_Title" xml:space="preserve">
+    <value>Soporte centrado en el cliente</value>
+  </data>
+  <data name="Culture_Std3_Desc" xml:space="preserve">
+    <value>Nuestros ingenieros de soporte trabajan junto al equipo de desarrollo para resolver consultas con rapidez y eficacia.</value>
+  </data>
+  <data name="Culture_Cta_Badge" xml:space="preserve">
+    <value>Únase a nuestra comunidad</value>
+  </data>
+  <data name="Culture_Cta_Title" xml:space="preserve">
+    <value>Experimente un software creado con principios reales</value>
+  </data>
+  <data name="Culture_Cta_Desc" xml:space="preserve">
+    <value>Comience su prueba de 14 días y descubra por qué las organizaciones confían en Ozikol Cloud.</value>
+  </data>
+  <data name="Culture_Cta_BtnPrimary" xml:space="preserve">
+    <value>Iniciar prueba de 14 días</value>
+  </data>
+  <data name="Culture_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
+  <data name="Leadership_Page_Title" xml:space="preserve">
+    <value>Liderazgo ejecutivo y gobernanza | Ozikol</value>
+  </data>
+  <data name="Leadership_Hero_Badge" xml:space="preserve">
+    <value>Liderazgo ejecutivo y gobernanza</value>
+  </data>
+  <data name="Leadership_Hero_Title" xml:space="preserve">
+    <value>Guiados por la arquitectura, <span class="oz-gradient-text">comprometidos con la gobernanza</span></value>
+  </data>
+  <data name="Leadership_Hero_Lead" xml:space="preserve">
+    <value>Conozca a los directores de ingeniería, arquitectos de sistemas y estrategas que supervisan el ecosistema Ozikol Business Cloud.</value>
+  </data>
+  <data name="Leadership_Hero_BtnPrimary" xml:space="preserve">
+    <value>Prueba gratuita de 14 días</value>
+  </data>
+  <data name="Leadership_Hero_BtnSecondary" xml:space="preserve">
+    <value>Sobre Ozikol</value>
+  </data>
+  <data name="Leadership_Divisions_Tag" xml:space="preserve">
+    <value>Supervisión del liderazgo</value>
+  </data>
+  <data name="Leadership_Divisions_Title" xml:space="preserve">
+    <value>Arquitectura ejecutiva y gobernanza</value>
+  </data>
+  <data name="Leadership_Divisions_Desc" xml:space="preserve">
+    <value>Cuatro pilares clave que guían la innovación, la fiabilidad y el crecimiento empresarial.</value>
+  </data>
+  <data name="Leadership_Div1_Badge" xml:space="preserve">
+    <value>Estrategia y crecimiento</value>
+  </data>
+  <data name="Leadership_Div1_Title" xml:space="preserve">
+    <value>Liderazgo ejecutivo y operaciones</value>
+  </data>
+  <data name="Leadership_Div1_Desc" xml:space="preserve">
+    <value>Guiar la expansión global, la gobernanza de clientes, el cumplimiento ético y la visión a largo plazo.</value>
+  </data>
+  <data name="Leadership_Div2_Badge" xml:space="preserve">
+    <value>Arquitectura en la nube</value>
+  </data>
+  <data name="Leadership_Div2_Title" xml:space="preserve">
+    <value>Infraestructura central y DevOps</value>
+  </data>
+  <data name="Leadership_Div2_Desc" xml:space="preserve">
+    <value>Supervisar el despliegue multi-región, segregación de bases de datos, lanzamientos sin interrupciones y baja latencia.</value>
+  </data>
+  <data name="Leadership_Div3_Badge" xml:space="preserve">
+    <value>Producto y ecosistema</value>
+  </data>
+  <data name="Leadership_Div3_Title" xml:space="preserve">
+    <value>Experiencia de producto y marketplace</value>
+  </data>
+  <data name="Leadership_Div3_Desc" xml:space="preserve">
+    <value>Dirigir el diseño modular en las 9 suites empresariales, estándares de UI y consolas administrativas intuitivas.</value>
+  </data>
+  <data name="Leadership_Div4_Badge" xml:space="preserve">
+    <value>Seguridad de la información</value>
+  </data>
+  <data name="Leadership_Div4_Title" xml:space="preserve">
+    <value>Seguridad, privacidad y cumplimiento</value>
+  </data>
+  <data name="Leadership_Div4_Desc" xml:space="preserve">
+    <value>Aplicar límites Zero-Trust, estándares ISO 27001, RGPD y salvaguardas de privacidad para IA (BYOK).</value>
+  </data>
+  <data name="Leadership_Gov_Tag" xml:space="preserve">
+    <value>Gobernanza de la plataforma</value>
+  </data>
+  <data name="Leadership_Gov_Title" xml:space="preserve">
+    <value>Estándares de responsabilidad empresarial</value>
+  </data>
+  <data name="Leadership_Gov_Desc" xml:space="preserve">
+    <value>Procesos rigurosos de gobernanza que garantizan la integridad operativa de cada entorno de inquilino.</value>
+  </data>
+  <data name="Leadership_Gov1_Title" xml:space="preserve">
+    <value>Aislamiento estricto de inquilinos</value>
+  </data>
+  <data name="Leadership_Gov1_Desc" xml:space="preserve">
+    <value>La separación arquitectónica del catálogo maestro y la base de datos elimina cualquier riesgo de fuga de datos.</value>
+  </data>
+  <data name="Leadership_Gov2_Title" xml:space="preserve">
+    <value>Consejo de producto bimensual</value>
+  </data>
+  <data name="Leadership_Gov2_Desc" xml:space="preserve">
+    <value>Las hojas de ruta de funciones se priorizan abiertamente en función de las opiniones de la comunidad.</value>
+  </data>
+  <data name="Leadership_Gov3_Title" xml:space="preserve">
+    <value>Verificación independiente</value>
+  </data>
+  <data name="Leadership_Gov3_Desc" xml:space="preserve">
+    <value>Auditorías externas anuales de penetración, escaneo automatizado continuo y métricas de estado públicas.</value>
+  </data>
+  <data name="Leadership_Cta_Badge" xml:space="preserve">
+    <value>Gobernanza empresarial</value>
+  </data>
+  <data name="Leadership_Cta_Title" xml:space="preserve">
+    <value>Asóciese con una plataforma en la que puede confiar</value>
+  </data>
+  <data name="Leadership_Cta_Desc" xml:space="preserve">
+    <value>Descubra cómo nuestra arquitectura de gobernanza y seguridad protege los datos de su organización.</value>
+  </data>
+  <data name="Leadership_Cta_BtnPrimary" xml:space="preserve">
+    <value>Comenzar prueba de 14 días</value>
+  </data>
+  <data name="Leadership_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
+  <data name="Offices_Page_Title" xml:space="preserve">
+    <value>Presencia global y ubicaciones de infraestructura | Ozikol</value>
+  </data>
+  <data name="Offices_Hero_Badge" xml:space="preserve">
+    <value>Presencia global e infraestructura</value>
+  </data>
+  <data name="Offices_Hero_Title" xml:space="preserve">
+    <value>Conectando organizaciones de todo el mundo <span class="oz-gradient-text">con tecnología en la nube de baja latencia</span></value>
+  </data>
+  <data name="Offices_Hero_Lead" xml:space="preserve">
+    <value>Con sede central en Londres, centros de operaciones distribuidos, soporte al cliente continuo e infraestructura en la nube de alta velocidad.</value>
+  </data>
+  <data name="Offices_Hero_BtnPrimary" xml:space="preserve">
+    <value>Contáctenos</value>
+  </data>
+  <data name="Offices_Hero_BtnSecondary" xml:space="preserve">
+    <value>Sobre Ozikol</value>
+  </data>
+  <data name="Offices_Metric_Regions" xml:space="preserve">
+    <value>Regiones en la nube</value>
+  </data>
+  <data name="Offices_Metric_Latency" xml:space="preserve">
+    <value>Latencia mediana</value>
+  </data>
+  <data name="Offices_Metric_Uptime" xml:space="preserve">
+    <value>SLA garantizado</value>
+  </data>
+  <data name="Offices_Metric_Noc" xml:space="preserve">
+    <value>Centro de operaciones activo</value>
+  </data>
+  <data name="Offices_Hubs_Tag" xml:space="preserve">
+    <value>Centros operativos</value>
+  </data>
+  <data name="Offices_Hubs_Title" xml:space="preserve">
+    <value>Nuestras sedes globales y nodos edge</value>
+  </data>
+  <data name="Offices_Hubs_Desc" xml:space="preserve">
+    <value>Ubicaciones estratégicas que garantizan disponibilidad continua y soporte empresarial directo.</value>
+  </data>
+  <data name="Offices_Hub1_Badge" xml:space="preserve">
+    <value>Sede central mundial</value>
+  </data>
+  <data name="Offices_Hub1_Title" xml:space="preserve">
+    <value>Londres, Reino Unido</value>
+  </data>
+  <data name="Offices_Hub1_Desc" xml:space="preserve">
+    <value>Gestión ejecutiva, asociaciones estratégicas, arquitectura central de productos y cumplimiento legal internacional.</value>
+  </data>
+  <data name="Offices_Hub1_Contact" xml:space="preserve">
+    <value>+44 (0) 20 7946 0912</value>
+  </data>
+  <data name="Offices_Hub2_Badge" xml:space="preserve">
+    <value>Sede América del Norte</value>
+  </data>
+  <data name="Offices_Hub2_Title" xml:space="preserve">
+    <value>Nueva York y Toronto</value>
+  </data>
+  <data name="Offices_Hub2_Desc" xml:space="preserve">
+    <value>Éxito de clientes empresariales, ingeniería de soluciones y alianzas estratégicas en la nube.</value>
+  </data>
+  <data name="Offices_Hub2_Contact" xml:space="preserve">
+    <value>na-support@ozikol.cloud</value>
+  </data>
+  <data name="Offices_Hub3_Badge" xml:space="preserve">
+    <value>Operaciones 24/7</value>
+  </data>
+  <data name="Offices_Hub3_Title" xml:space="preserve">
+    <value>Ingeniería y soporte EMEA</value>
+  </data>
+  <data name="Offices_Hub3_Desc" xml:space="preserve">
+    <value>Operaciones técnicas distribuidas, respuesta a incidentes y asistencia personalizada en varios idiomas.</value>
+  </data>
+  <data name="Offices_Hub3_Contact" xml:space="preserve">
+    <value>emea-support@ozikol.cloud</value>
+  </data>
+  <data name="Offices_Hub4_Badge" xml:space="preserve">
+    <value>Distribución Asia-Pacífico</value>
+  </data>
+  <data name="Offices_Hub4_Title" xml:space="preserve">
+    <value>Red Edge APAC</value>
+  </data>
+  <data name="Offices_Hub4_Desc" xml:space="preserve">
+    <value>Entrega de contenido de baja latencia, enrutamiento multidivisa y pasarelas de pago locales.</value>
+  </data>
+  <data name="Offices_Hub4_Contact" xml:space="preserve">
+    <value>apac-support@ozikol.cloud</value>
+  </data>
+  <data name="Offices_Cta_Badge" xml:space="preserve">
+    <value>Operaciones globales</value>
+  </data>
+  <data name="Offices_Cta_Title" xml:space="preserve">
+    <value>Conéctese con nuestro equipo internacional</value>
+  </data>
+  <data name="Offices_Cta_Desc" xml:space="preserve">
+    <value>Nuestros representantes regionales están disponibles las 24 horas para responder preguntas y programar demostraciones.</value>
+  </data>
+  <data name="Offices_Cta_BtnPrimary" xml:space="preserve">
+    <value>Contactar con ventas</value>
+  </data>
+  <data name="Offices_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
+  <data name="Partners_Page_Title" xml:space="preserve">
+    <value>Red de socios y afiliados | Ozikol</value>
+  </data>
+  <data name="Partners_Hero_Badge" xml:space="preserve">
+    <value>Ecosistema y red de socios</value>
+  </data>
+  <data name="Partners_Hero_Title" xml:space="preserve">
+    <value>Haga crecer su negocio <span class="oz-gradient-text">con la red de socios de Ozikol</span></value>
+  </data>
+  <data name="Partners_Hero_Lead" xml:space="preserve">
+    <value>Únase a agencias de software, integradores de sistemas, creadores de plantillas y consultores empresariales que impulsan la transformación digital con Ozikol.</value>
+  </data>
+  <data name="Partners_Hero_BtnPrimary" xml:space="preserve">
+    <value>Solicitar unirse a la red de socios</value>
+  </data>
+  <data name="Partners_Hero_BtnSecondary" xml:space="preserve">
+    <value>Sobre Ozikol</value>
+  </data>
+  <data name="Partners_Tracks_Tag" xml:space="preserve">
+    <value>Modalidades de asociación</value>
+  </data>
+  <data name="Partners_Tracks_Title" xml:space="preserve">
+    <value>Tres caminos para acelerar el crecimiento</value>
+  </data>
+  <data name="Partners_Tracks_Desc" xml:space="preserve">
+    <value>Programas diseñados para recompensar la experiencia técnica, el diseño creativo y las recomendaciones de clientes.</value>
+  </data>
+  <data name="Partners_Track1_Badge" xml:space="preserve">
+    <value>Implementación empresarial</value>
+  </data>
+  <data name="Partners_Track1_Title" xml:space="preserve">
+    <value>Integradores de soluciones y sistemas</value>
+  </data>
+  <data name="Partners_Track1_Desc" xml:space="preserve">
+    <value>Implemente, configure y migre clientes empresariales a Ozikol. Obtenga márgenes de venta conjunta y entornos sandbox.</value>
+  </data>
+  <data name="Partners_Track1_F1" xml:space="preserve">
+    <value>Gestor técnico de socios dedicado</value>
+  </data>
+  <data name="Partners_Track1_F2" xml:space="preserve">
+    <value>Margen de venta conjunta y registro de proyectos</value>
+  </data>
+  <data name="Partners_Track1_F3" xml:space="preserve">
+    <value>Entornos sandbox de desarrollo gratuitos</value>
+  </data>
+  <data name="Partners_Track2_Badge" xml:space="preserve">
+    <value>Modelos del marketplace</value>
+  </data>
+  <data name="Partners_Track2_Title" xml:space="preserve">
+    <value>Creadores de secciones y diseños UI</value>
+  </data>
+  <data name="Partners_Track2_Desc" xml:space="preserve">
+    <value>Diseñe y publique diseños adaptables, encabezados y plantillas sectoriales en el Marketplace de Ozikol.</value>
+  </data>
+  <data name="Partners_Track2_F1" xml:space="preserve">
+    <value>Hasta un 80% de participación en ingresos</value>
+  </data>
+  <data name="Partners_Track2_F2" xml:space="preserve">
+    <value>Audiencia integrada en todos los clientes de Ozikol</value>
+  </data>
+  <data name="Partners_Track2_F3" xml:space="preserve">
+    <value>Licencias automatizadas y pagos de regalías</value>
+  </data>
+  <data name="Partners_Track3_Badge" xml:space="preserve">
+    <value>Comisiones recurrentes</value>
+  </data>
+  <data name="Partners_Track3_Title" xml:space="preserve">
+    <value>Afiliados y promotores estratégicos</value>
+  </data>
+  <data name="Partners_Track3_Desc" xml:space="preserve">
+    <value>Recomiende Ozikol a organizaciones y obtenga generosas comisiones mensuales recurrentes de por vida.</value>
+  </data>
+  <data name="Partners_Track3_F1" xml:space="preserve">
+    <value>25% de comisión recurrente de por vida</value>
+  </data>
+  <data name="Partners_Track3_F2" xml:space="preserve">
+    <value>Cookie de seguimiento de 90 días</value>
+  </data>
+  <data name="Partners_Track3_F3" xml:space="preserve">
+    <value>Portal de analíticas de ganancias en tiempo real</value>
+  </data>
+  <data name="Partners_Steps_Tag" xml:space="preserve">
+    <value>Proceso de incorporación</value>
+  </data>
+  <data name="Partners_Steps_Title" xml:space="preserve">
+    <value>Cómo unirse a la red</value>
+  </data>
+  <data name="Partners_Steps_Desc" xml:space="preserve">
+    <value>Comience en tres sencillos pasos.</value>
+  </data>
+  <data name="Partners_Step1_Title" xml:space="preserve">
+    <value>Envíe su solicitud</value>
+  </data>
+  <data name="Partners_Step1_Desc" xml:space="preserve">
+    <value>Complete nuestro breve formulario detallando su experiencia o portafolio de creador.</value>
+  </data>
+  <data name="Partners_Step2_Title" xml:space="preserve">
+    <value>Acceda al entorno de pruebas</value>
+  </data>
+  <data name="Partners_Step2_Desc" xml:space="preserve">
+    <value>Reciba credenciales del portal, materiales de certificación y recursos de ventas.</value>
+  </data>
+  <data name="Partners_Step3_Title" xml:space="preserve">
+    <value>Lance y monetice</value>
+  </data>
+  <data name="Partners_Step3_Desc" xml:space="preserve">
+    <value>Implemente proyectos, publique plantillas UI o comparta enlaces y comience a generar ingresos recurrentes.</value>
+  </data>
+  <data name="Partners_Cta_Badge" xml:space="preserve">
+    <value>Alianzas de socios</value>
+  </data>
+  <data name="Partners_Cta_Title" xml:space="preserve">
+    <value>¿Listo para crecer junto a Ozikol?</value>
+  </data>
+  <data name="Partners_Cta_Desc" xml:space="preserve">
+    <value>Únase a una plataforma modular en rápido crecimiento y abra nuevas fuentes de ingresos hoy.</value>
+  </data>
+  <data name="Partners_Cta_BtnPrimary" xml:space="preserve">
+    <value>Solicitar unirse a la red de socios</value>
+  </data>
+  <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar las 37 funciones</value>
+  </data>
 </root>

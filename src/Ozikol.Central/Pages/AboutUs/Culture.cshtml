@@ -1,51 +1,128 @@
 @page "/about-us/culture"
 @model Ozikol.Central.Pages.AboutUs.CultureModel
 @{
-    ViewData["Title"] = "Core Values & Culture - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Culture_Page_Title"];
 }
 
-<div class="about-subpage">
-    <section class="ozikol-hero-banner branded-banner branded-banner--evo">
-        <div class="ozikol-hero-container">
-            <div class="ozikol-hero-badge">
-                <span class="ozikol-hero-dot"></span>
-                The Ozikol Way
+<div class="oz-corp-page">
+    <!-- Hero Banner -->
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["Culture_Hero_Badge"]
             </div>
-            <h1 class="ozikol-hero-title">
-                Built on Simplicity, Transparency & Impact
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["Culture_Hero_Title"].Value)
             </h1>
-            <p class="ozikol-hero-desc">
-                Our culture defines how we build software, how we support customers, and how we empower teams worldwide.
+            <p class="oz-corp-lead">
+                @SharedLocalizer["Culture_Hero_Lead"]
             </p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Get in Touch</a>
-                <a href="/about-us" class="btn btn-secondary--alt">About Ozikol</a>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Culture_Hero_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/about-us" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Culture_Hero_BtnSecondary"]</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </a>
             </div>
         </div>
     </section>
 
-    <main class="container" style="max-width: 1100px; margin: 50px auto; padding: 0 20px;">
-        <div class="ozikol-grid-3">
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">Simplicity First</h3>
-                <p class="ozikol-card-desc">We believe software should be intuitive and fast to deploy without requiring weeks of specialized training.</p>
+    <!-- Main Content -->
+    <main class="oz-corp-container">
+        <!-- 4 Core Tenets Grid -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["Culture_Values_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Culture_Values_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["Culture_Values_Desc"]</p>
             </div>
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">Customer Sovereignty</h3>
-                <p class="ozikol-card-desc">Your data belongs entirely to you. We provide 1-click exports and transparent modular controls.</p>
+            <div class="oz-corp-grid-2">
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Culture_Val1_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Val1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Val1_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Culture_Val2_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Val2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Val2_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Culture_Val3_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Val3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Val3_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-blue" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Culture_Val4_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Val4_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Val4_Desc"]</p>
+                </div>
             </div>
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">Continuous Innovation</h3>
-                <p class="ozikol-card-desc">We deliver rapid monthly feature drops and keep our platform flexible with the UI Marketplace.</p>
-            </div>
-        </div>
+        </section>
 
-        <section class="ozikol-bottom-cta">
-            <h2>Ready to learn more about Ozikol?</h2>
-            <p>Connect with our team to discover how our modular cloud platform can power your organization.</p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
-                <a href="/features" class="btn btn-secondary--alt">Explore All Features</a>
+        <!-- Working Principles -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["Culture_Standards_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Culture_Standards_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["Culture_Standards_Desc"]</p>
+            </div>
+            <div class="oz-corp-grid-3">
+                <div class="oz-corp-card">
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Std1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Std1_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Std2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Std2_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Culture_Std3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Culture_Std3_Desc"]</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <div class="oz-feat-cta-badge">
+                <span class="oz-feat-cta-badge-dot"></span>
+                @SharedLocalizer["Culture_Cta_Badge"]
+            </div>
+            <h2>@SharedLocalizer["Culture_Cta_Title"]</h2>
+            <p>@SharedLocalizer["Culture_Cta_Desc"]</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Culture_Cta_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Culture_Cta_BtnSecondary"]</span>
+                </a>
             </div>
         </section>
     </main>

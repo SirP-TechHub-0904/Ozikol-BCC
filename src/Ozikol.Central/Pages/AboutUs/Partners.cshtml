@@ -1,51 +1,174 @@
 @page "/about-us/partners"
 @model Ozikol.Central.Pages.AboutUs.PartnersModel
 @{
-    ViewData["Title"] = "Partner & Affiliate Network - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Partners_Page_Title"];
 }
 
-<div class="about-subpage">
-    <section class="ozikol-hero-banner branded-banner branded-banner--evo">
-        <div class="ozikol-hero-container">
-            <div class="ozikol-hero-badge">
-                <span class="ozikol-hero-dot"></span>
-                Ecosystem & Growth
+<div class="oz-corp-page">
+    <!-- Hero Banner -->
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["Partners_Hero_Badge"]
             </div>
-            <h1 class="ozikol-hero-title">
-                Grow Your Business with the Ozikol Partner Network
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["Partners_Hero_Title"].Value)
             </h1>
-            <p class="ozikol-hero-desc">
-                Join our community of agency partners, system integrators, and software affiliates driving modern digital transformation.
+            <p class="oz-corp-lead">
+                @SharedLocalizer["Partners_Hero_Lead"]
             </p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Get in Touch</a>
-                <a href="/about-us" class="btn btn-secondary--alt">About Ozikol</a>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Partners_Hero_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/about-us" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Partners_Hero_BtnSecondary"]</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </a>
             </div>
         </div>
     </section>
 
-    <main class="container" style="max-width: 1100px; margin: 50px auto; padding: 0 20px;">
-        <div class="ozikol-grid-3">
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">Agency & Solution Partners</h3>
-                <p class="ozikol-card-desc">Implement and customize Ozikol BCP for your enterprise clients with co-selling support.</p>
+    <!-- Main Content -->
+    <main class="oz-corp-container">
+        <!-- 3 Partner Tracks -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["Partners_Tracks_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Partners_Tracks_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["Partners_Tracks_Desc"]</p>
             </div>
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">UI Marketplace Creators</h3>
-                <p class="ozikol-card-desc">Publish layout blueprints, header navbars, and hero sections to earn recurring revenue.</p>
+            <div class="oz-corp-grid-3">
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Partners_Track1_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Track1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Track1_Desc"]</p>
+                    <ul class="oz-corp-list">
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track1_F1"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track1_F2"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track1_F3"]</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Partners_Track2_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Track2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Track2_Desc"]</p>
+                    <ul class="oz-corp-list">
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track2_F1"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track2_F2"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track2_F3"]</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Partners_Track3_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Track3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Track3_Desc"]</p>
+                    <ul class="oz-corp-list">
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track3_F1"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track3_F2"]</span>
+                        </li>
+                        <li class="oz-corp-list-item">
+                            <span class="oz-corp-check">&#10003;</span>
+                            <span>@SharedLocalizer["Partners_Track3_F3"]</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div class="ozikol-card">
-                <h3 class="ozikol-card-title">Affiliate Advocates</h3>
-                <p class="ozikol-card-desc">Earn generous lifetime commissions referring organizations to Ozikol Cloud.</p>
-            </div>
-        </div>
+        </section>
 
-        <section class="ozikol-bottom-cta">
-            <h2>Ready to learn more about Ozikol?</h2>
-            <p>Connect with our team to discover how our modular cloud platform can power your organization.</p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
-                <a href="/features" class="btn btn-secondary--alt">Explore All Features</a>
+        <!-- 3-Step Journey -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["Partners_Steps_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Partners_Steps_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["Partners_Steps_Desc"]</p>
+            </div>
+            <div class="oz-corp-grid-3">
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">Step 01</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Step1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Step1_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-blue" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">Step 02</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Step2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Step2_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">Step 03</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Partners_Step3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Partners_Step3_Desc"]</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <div class="oz-feat-cta-badge">
+                <span class="oz-feat-cta-badge-dot"></span>
+                @SharedLocalizer["Partners_Cta_Badge"]
+            </div>
+            <h2>@SharedLocalizer["Partners_Cta_Title"]</h2>
+            <p>@SharedLocalizer["Partners_Cta_Desc"]</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Partners_Cta_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Partners_Cta_BtnSecondary"]</span>
+                </a>
             </div>
         </section>
     </main>
