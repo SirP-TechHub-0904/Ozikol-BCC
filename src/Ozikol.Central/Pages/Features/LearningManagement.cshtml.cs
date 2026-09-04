@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
+namespace Ozikol.Central.Pages.Features;
 
-namespace Ozikol.Central.Pages.Features
+/// <summary>
+/// Page model for the LearningManagement feature detail page.
+/// Inherits standardized culture resolution and metadata from <see cref="FeatureDetailPageModel"/>.
+/// </summary>
+public class LearningManagementModel : FeatureDetailPageModel
 {
-    public class LearningManagementModel : PageModel
-    {
-        public void OnGet()
-        {
-        }
-    }
 }

@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
+namespace Ozikol.Central.Pages.Features;
 
-namespace Ozikol.Central.Pages.Features
+/// <summary>
+/// Page model for the VisitorGateManagement feature detail page.
+/// Inherits standardized culture resolution and metadata from <see cref="FeatureDetailPageModel"/>.
+/// </summary>
+public class VisitorGateManagementModel : FeatureDetailPageModel
 {
-    public class VisitorGateManagementModel : PageModel
-    {
-        public void OnGet()
-        {
-        }
-    }
 }
