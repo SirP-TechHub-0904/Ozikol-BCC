@@ -151,11 +151,13 @@
     font-weight: 800;
     line-height: 1.25;
     letter-spacing: -0.02em;
-    color: #ffffff;
+    color: var(--ozikol-text-heading, #0f172a);
     margin-bottom: 16px;
 }
-.theme-light .oz-section-title {
-    color: #0f172a;
+.oz-section--dark .oz-section-title,
+.oz-video-showcase-section .oz-section-title,
+.oz-final-cta-section .oz-section-title {
+    color: #ffffff;
 }
 .oz-section-title strong {
     color: #e5173f;
@@ -163,11 +165,12 @@
 .oz-section-desc {
     font-size: 17px;
     line-height: 1.6;
-    color: #94a3b8;
+    color: var(--ozikol-text-secondary, #475569);
     margin: 0;
 }
-.theme-light .oz-section-desc {
-    color: #475569;
+.oz-section--dark .oz-section-desc,
+.oz-video-showcase-section .oz-section-desc {
+    color: #cbd5e1;
 }
 
 /* Section 3: 9-Suite Architecture Grid */
@@ -188,8 +191,8 @@
     }
 }
 .oz-suite-card {
-    background: #18191f;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 30px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -198,10 +201,6 @@
     text-decoration: none;
     position: relative;
     overflow: hidden;
-}
-.theme-light .oz-suite-card {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 .oz-suite-card:hover {
@@ -227,21 +226,15 @@
 .oz-suite-card-title {
     font-size: 18px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--ozikol-text-heading, #0f172a);
     margin-bottom: 10px;
-}
-.theme-light .oz-suite-card-title {
-    color: #0f172a;
 }
 .oz-suite-card-desc {
     font-size: 14px;
     line-height: 1.55;
-    color: #94a3b8;
+    color: var(--ozikol-text-secondary, #64748b);
     margin-bottom: 18px;
     flex-grow: 1;
-}
-.theme-light .oz-suite-card-desc {
-    color: #64748b;
 }
 .oz-suite-card-link {
     font-size: 13px;
@@ -265,21 +258,16 @@
     gap: 8px;
     padding: 12px 24px;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #ffffff;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
 }
-.theme-light .oz-btn-ghost-arrow {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.12);
-    color: #0f172a;
-}
 .oz-btn-ghost-arrow:hover {
-    background: rgba(229, 23, 63, 0.15);
+    background: rgba(229, 23, 63, 0.08);
     border-color: #e5173f;
     color: #e5173f;
     transform: translateY(-1px);
@@ -289,46 +277,51 @@
 .oz-tabs-nav {
     display: flex;
     justify-content: center;
-    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 40px;
-    overflow-x: auto;
     padding: 6px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    max-width: 960px;
+    background: transparent;
+    max-width: 1040px;
     margin-left: auto;
     margin-right: auto;
 }
-.theme-light .oz-tabs-nav {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: rgba(0, 0, 0, 0.08);
-}
 .oz-tab-btn {
-    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
     border-radius: 9999px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    color: #94a3b8;
-    background: transparent;
-    border: none;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
-}
-.theme-light .oz-tab-btn {
-    color: #64748b;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 .oz-tab-btn:hover {
-    color: #ffffff;
-}
-.theme-light .oz-tab-btn:hover {
-    color: #0f172a;
+    color: #e5173f;
+    background: #ffffff;
+    border-color: #e5173f;
+    box-shadow: 0 4px 14px rgba(229, 23, 63, 0.18);
+    transform: translateY(-2px);
 }
 .oz-tab-btn.active {
     background: #e5173f;
+    border-color: #e5173f;
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(229, 23, 63, 0.35);
+    box-shadow: 0 8px 24px rgba(229, 23, 63, 0.35);
+    transform: translateY(-1px);
+}
+.oz-tab-btn.active:hover {
+    color: #ffffff;
+    background: #cc1033;
+    border-color: #cc1033;
+    transform: translateY(-2px);
 }
 .oz-tab-pane {
     display: none;
@@ -452,12 +445,10 @@
     background: rgba(0, 0, 0, 0.15);
 }
 
-/* Surface & Layout Variations (No Inline CSS) */
 .oz-section--surface-alt {
-    background: rgba(255, 255, 255, 0.02);
-}
-.theme-light .oz-section--surface-alt {
-    background: rgba(0, 0, 0, 0.018);
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
 }
 .oz-video-wrapper {
     max-width: 960px;
@@ -684,32 +675,24 @@
     }
 }
 .oz-metric-card {
-    background: #18191f;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 20px;
     padding: 36px 30px;
     text-align: center;
     transition: all 0.3s ease;
-}
-.theme-light .oz-metric-card {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
 }
 .oz-metric-card:hover {
     transform: translateY(-4px);
     border-color: rgba(229, 23, 63, 0.3);
+    box-shadow: 0 16px 40px rgba(229, 23, 63, 0.1);
 }
 .oz-metric-number {
     font-size: 54px;
     font-weight: 800;
     line-height: 1;
     margin-bottom: 12px;
-    background: linear-gradient(135deg, #ffffff 30%, #e5173f 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.theme-light .oz-metric-number {
     background: linear-gradient(135deg, #0f172a 30%, #e5173f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -717,20 +700,14 @@
 .oz-metric-title {
     font-size: 18px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--ozikol-text-heading, #0f172a);
     margin-bottom: 10px;
-}
-.theme-light .oz-metric-title {
-    color: #0f172a;
 }
 .oz-metric-desc {
     font-size: 14px;
     line-height: 1.55;
-    color: #94a3b8;
+    color: var(--ozikol-text-secondary, #64748b);
     margin: 0;
-}
-.theme-light .oz-metric-desc {
-    color: #64748b;
 }
 
 /* Section 7: Testimonials */
@@ -747,22 +724,19 @@
     }
 }
 .oz-testimonial-card {
-    background: #18191f;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 20px;
     padding: 32px;
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
-}
-.theme-light .oz-testimonial-card {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
 }
 .oz-testimonial-card:hover {
     transform: translateY(-4px);
     border-color: rgba(229, 23, 63, 0.3);
+    box-shadow: 0 16px 40px rgba(229, 23, 63, 0.1);
 }
 .oz-stars {
     color: #fbbf24;
@@ -774,23 +748,17 @@
 .oz-testimonial-quote {
     font-size: 15px;
     line-height: 1.65;
-    color: #e2e8f0;
+    color: var(--ozikol-text-body, #334155);
     font-style: italic;
     margin-bottom: 24px;
     flex-grow: 1;
-}
-.theme-light .oz-testimonial-quote {
-    color: #334155;
 }
 .oz-testimonial-author-wrap {
     display: flex;
     align-items: center;
     gap: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid #e2e8f0;
     padding-top: 16px;
-}
-.theme-light .oz-testimonial-author-wrap {
-    border-top-color: rgba(0, 0, 0, 0.08);
 }
 .oz-author-avatar {
     width: 42px;
@@ -808,17 +776,11 @@
 .oz-author-name {
     font-size: 14px;
     font-weight: 700;
-    color: #ffffff;
-}
-.theme-light .oz-author-name {
-    color: #0f172a;
+    color: var(--ozikol-text-heading, #0f172a);
 }
 .oz-author-role {
     font-size: 12px;
-    color: #94a3b8;
-}
-.theme-light .oz-author-role {
-    color: #64748b;
+    color: var(--ozikol-text-muted, #64748b);
 }
 
 /* Section 8: Security & Sovereignty */
@@ -840,20 +802,17 @@
     }
 }
 .oz-security-card {
-    background: #18191f;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 26px;
     transition: all 0.3s ease;
-}
-.theme-light .oz-security-card {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 .oz-security-card:hover {
     transform: translateY(-3px);
     border-color: rgba(229, 23, 63, 0.3);
+    box-shadow: 0 12px 30px rgba(229, 23, 63, 0.1);
 }
 .oz-security-icon {
     width: 44px;
@@ -869,20 +828,14 @@
 .oz-security-card-title {
     font-size: 16px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--ozikol-text-heading, #0f172a);
     margin-bottom: 8px;
-}
-.theme-light .oz-security-card-title {
-    color: #0f172a;
 }
 .oz-security-card-desc {
     font-size: 13px;
     line-height: 1.55;
-    color: #94a3b8;
+    color: var(--ozikol-text-secondary, #64748b);
     margin: 0;
-}
-.theme-light .oz-security-card-desc {
-    color: #64748b;
 }
 
 /* Section 10: High-Conversion Final CTA */

@@ -803,13 +803,13 @@
     <value>Recensement civique &amp; Enquêteur terrain</value>
   </data>
   <data name="Home_Tab3_Desc" xml:space="preserve">
-    <value>Effectuez des recensements porte-à-porte avec synchronisation GPS hors-ligne, cartographie des foyers et cartes d'identité résident cryptographiques.</value>
+    <value>Effectuez des recensements sur le terrain avec synchronisation GPS hors ligne, cartographie des foyers et cartes d'identité résident cryptographiques.</value>
   </data>
   <data name="Home_Tab4_Title" xml:space="preserve">
     <value>Assistant IA privé (BYOK)</value>
   </data>
   <data name="Home_Tab4_Desc" xml:space="preserve">
-    <value>Connectez vos propres clés API OpenAI, Gemini ou Claude. Rédigez des comptes-rendus et automatisez les réponses sans entraînement de modèles publics.</value>
+    <value>Connectez vos propres clés API OpenAI, Gemini ou Claude. Rédigez des comptes rendus et automatisez les réponses sans entraînement de modèles publics.</value>
   </data>
   <data name="Home_Tab5_Title" xml:space="preserve">
     <value>Certifications QR vérifiables</value>
@@ -929,7 +929,7 @@
     <value>Authentification à deux facteurs (2FA), contrôle des accès par rôle (RBAC) et traçabilité complète des audits.</value>
   </data>
   <data name="Home_Security_Pillar4_Title" xml:space="preserve">
-    <value>Portabilité instantanée en 1 clic</value>
+    <value>Portabilité instantanée en un clic</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
     <value>Souveraineté absolue de vos données. Exportez votre base complète, vos politiques et documents à tout moment.</value>

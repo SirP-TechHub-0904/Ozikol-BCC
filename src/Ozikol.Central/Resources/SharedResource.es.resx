@@ -929,7 +929,7 @@
     <value>Autenticación de dos factores (2FA), control de accesos por roles (RBAC) y registros de auditoría.</value>
   </data>
   <data name="Home_Security_Pillar4_Title" xml:space="preserve">
-    <value>Portabilidad inmediata en 1 clic</value>
+    <value>Portabilidad inmediata en un clic</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
     <value>Soberanía absoluta de sus datos. Exporte su base de datos, políticas y archivos en cualquier momento.</value>
