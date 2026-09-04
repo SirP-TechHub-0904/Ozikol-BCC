@@ -1,0 +1,84 @@
+@page "/developer-api"
+@model Ozikol.Central.Pages.DeveloperApiModel
+@{
+    ViewData["Title"] = "Developer REST API & Real-Time Webhooks - Ozikol";
+    ViewData["MetaDescription"] = "Comprehensive REST API documentation, webhook subscriptions, API key security, and SDK snippets in cURL, .NET 9, Node.js, and Python.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Developer REST API & Real-Time Webhooks</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <span class="oz-feat-pill">Developer Hub • REST &amp; Webhooks</span>
+            </div>
+            <h1 class="oz-feat-title">Developer API &amp; Real-Time Webhooks</h1>
+            <p class="oz-feat-lead">Integrate Ozikol directly into your software architecture. Automate shift creation, sync invoices, capture census field data, and stream real-time webhook events.</p>
+            <div class="oz-feat-actions">
+                <a href="/client-login" class="btn btn-primary">Generate API Keys</a>
+                <a href="/support-hub" class="btn btn-secondary--alt">Read API Reference</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Features Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Extensible Architecture</div>
+            <h2>Built by Developers, for Developers</h2>
+            <p class="oz-feat-card-desc">RESTful JSON endpoints, predictable pagination, and cryptographic HMAC webhook signatures.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Real-Time Webhook Subscriptions</h3>
+                <p class="oz-feat-card-desc">Subscribe to live events such as <code>rota.shift.claimed</code>, <code>invoice.payment.succeeded</code>, and <code>census.household.verified</code>.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Granular Scoped API Tokens</h3>
+                <p class="oz-feat-card-desc">Issue read-only or read-write tokens restricted to specific modules (e.g. Rota-only, Census-only, or Invoicing-only).</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Comprehensive SDKs</h3>
+                <p class="oz-feat-card-desc">Official client libraries for .NET 9 (C#), TypeScript / Node.js, Python, and Go with typed data models and retry logic.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Experience the Power of Ozikol</h2>
+            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>

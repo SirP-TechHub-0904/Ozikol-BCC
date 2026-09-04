@@ -1,0 +1,125 @@
+@page "/features/community-census"
+@model Ozikol.Central.Pages.Features.CommunityCensusModel
+@{
+    ViewData["Title"] = "Community & Household Census - Ozikol BCP Feature";
+    ViewData["MetaDescription"] = "Enumerate populations, manage household hierarchies, map residency records, and maintain verified community demographic registries with Ozikol.";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#demographics-census">Demographics & Civic Census</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Community & Household Census</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge">
+                    <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <div class="oz-feat-suite-pill">
+                    Suite 09 &bull; Demographics & Civic Census
+                </div>
+                <h1 class="oz-feat-title">
+                    Community & Household Census
+                </h1>
+                <p class="oz-feat-lead">
+                    Enumerate populations, structure family trees, validate residency status, and maintain an immutable demographic registry for any municipal ward, residential community, or association.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Platform Overview</h2>
+            <p>
+                Ozikol's Community Census platform replaces chaotic paper forms and outdated spreadsheets with a unified demographic database. Whether you are conducting a municipal town census, an estate residency registration, or a diaspora headcount, Ozikol structures data by household, verifies identities, and keeps population records up to date automatically.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Comprehensive Enumeration</div>
+                <h2>Core Census Features</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    </div>
+                    <h3>Household & Family Trees</h3>
+                    <p>Link heads of household to spouses, children, dependents, and resident domestic staff in unified genealogical trees.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <h3>Geo-Zoning & Street Clusters</h3>
+                    <p>Organize populations by ward, residential street, apartment blocks, or municipal clusters with GPS coordinate bounds.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3>Residency & Tenancy Status</h3>
+                    <p>Categorize individuals as owner-occupiers, long-term tenants, temporary visitors, or verified diaspora members.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                    </div>
+                    <h3>Vulnerability & Social Aid Indexing</h3>
+                    <p>Flag senior citizens, persons with disabilities, and low-income households for targeted community welfare and food aid.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <h3>Privacy & GDPR Compliance</h3>
+                    <p>Granular data permissioning ensures sensitive demographic information is encrypted and accessible only to certified administrators.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </div>
+                    <h3>1-Click Data Import & Export</h3>
+                    <p>Bulk import past paper records via CSV/Excel or export verified census registries for government or legal filings.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="oz-feat-cta-box">
+            <h2>Ready to conduct your community's official census?</h2>
+            <p>Join hundreds of community unions, estates, and municipal bodies using Ozikol for accurate population data.</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/get-started" class="btn btn-primary">Start 14-Day Free Trial</a>
+                <a href="/support-hub/contact-sales" class="btn btn-secondary--alt">Talk to Civic Specialist</a>
+            </div>
+        </section>
+    </main>
+</div>

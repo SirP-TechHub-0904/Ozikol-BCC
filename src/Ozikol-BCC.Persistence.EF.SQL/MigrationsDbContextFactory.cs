@@ -27,8 +27,12 @@ public class MigrationsDbContextFactory : IDesignTimeDbContextFactory<DashboardD
         var root = FindRepositoryRoot();
 
         LoadEnvFile(Path.Combine(root, ".env"));
+        LoadEnvFile(Path.Combine(root, "src", "Ozikol-BCC.Api", ".env"));
+        LoadEnvFile(Path.Combine(root, "src", "Ozikol.Central", ".env"));
 
-        var fromEnvironment = Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString");
+        var fromEnvironment = Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
         if (!string.IsNullOrWhiteSpace(fromEnvironment))
         {
             return fromEnvironment;
@@ -41,7 +45,8 @@ public class MigrationsDbContextFactory : IDesignTimeDbContextFactory<DashboardD
         }
 
         throw new InvalidOperationException(
-            "Design-time migration connection string not found. Set TenantConfiguration__ConnectionString in .env/environment or TenantConfiguration:ConnectionString in appsettings.json.");
+            "Design-time Tenant database connection string not found. " +
+            "Please ensure 'TenantConfiguration__ConnectionString' is set in your .env file or environment variables.");
     }
 
     private static string FindRepositoryRoot()

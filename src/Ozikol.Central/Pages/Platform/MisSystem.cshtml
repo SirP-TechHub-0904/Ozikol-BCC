@@ -1,0 +1,84 @@
+@page "/platform/mis-system"
+@model Ozikol.Central.Pages.Platform.MisSystemModel
+@{
+    ViewData["Title"] = "MIS System - Management Information System - Ozikol";
+    ViewData["MetaDescription"] = "Centralized executive intelligence, cross-departmental oversight, staff compliance, census analytics, and role-based permissions.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>MIS System - Management Information System</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <span class="oz-feat-pill">Executive Portal • Enterprise Control</span>
+            </div>
+            <h1 class="oz-feat-title">Executive MIS Intelligence Console</h1>
+            <p class="oz-feat-lead">Unified institutional management information system providing executive leadership with cross-departmental telemetry, financial audits, staff compliance, and demographic census tracking.</p>
+            <div class="oz-feat-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Schedule MIS Walkthrough</a>
+                <a href="/features" class="btn btn-secondary--alt">View Integrated Modules</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Executive Oversight</div>
+            <h2>Total Transparency for Decision Makers</h2>
+            <p class="oz-feat-card-desc">Consolidate operations from 37 modular engines into a single executive command dashboard.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Role-Based Access Control (RBAC)</h3>
+                <p class="oz-feat-card-desc">Define granular security tiers for executives, HR managers, census enumerators, and regional supervisors.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Real-Time Operational Telemetry</h3>
+                <p class="oz-feat-card-desc">Live charts on rota coverage, budget disbursement, dues collection, census field enumeration, and asset status.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Automated Audit & Compliance</h3>
+                <p class="oz-feat-card-desc">Generate exportable PDF and CSV compliance reports with 1-click for regulatory and executive board review.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Experience the Power of Ozikol</h2>
+            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>

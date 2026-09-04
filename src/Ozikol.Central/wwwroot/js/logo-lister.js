@@ -1,0 +1,1 @@
+import{S as e}from"./core-565014ce.js";import{P as o}from"./pagination-5236f751.js";import"./create-element-if-not-defined-bb8c8288.js";document.querySelectorAll(".js-logoLister").forEach((r=>{const t=r.querySelector(".js-logoListerCarousel"),s=r.querySelector(".js-carouselBullets");t&&new e(t,{modules:[o],pagination:{el:s,type:"bullets"},slidesPerView:"auto"})}));

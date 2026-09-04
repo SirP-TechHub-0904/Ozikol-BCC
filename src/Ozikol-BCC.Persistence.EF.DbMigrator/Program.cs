@@ -1,4 +1,5 @@
 using System.Reflection;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.DbMigrator;
@@ -45,7 +46,9 @@ IHost host = Host.CreateDefaultBuilder(args)
         
         var masterConnStr = hostContext.Configuration["TenantConfiguration:ConnectionString"] 
             ?? hostContext.Configuration.GetConnectionString("DefaultConnection") 
-            ?? "Server=JSS\\SQLEXPRESS;Database=Ozikol_MasterCatalogDb;Integrated Security=true;TrustServerCertificate=True;";
+            ?? throw new InvalidOperationException(
+                "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +
+                "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
         services.AddDbContext<MasterCatalogDbContext>(options =>
             options.UseSqlServer(masterConnStr));

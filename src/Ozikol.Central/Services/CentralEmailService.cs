@@ -1,5 +1,5 @@
-using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Services;
 

@@ -1,0 +1,86 @@
+@page "/platform/desktop-app"
+@model Ozikol.Central.Pages.Platform.DesktopAppModel
+@{
+    ViewData["Title"] = "Windows Desktop Application - Ozikol";
+    ViewData["MetaDescription"] = "Native Windows desktop client for high-volume back-office workstations. Multi-monitor support, offline database caching, and direct USB peripheral hardware integration.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <a href="/platform/website">Platform</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Desktop App (Windows)</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <span class="oz-feat-pill">Desktop Channel • Windows 10 &amp; 11</span>
+            </div>
+            <h1 class="oz-feat-title">High-Performance Windows Desktop Application</h1>
+            <p class="oz-feat-lead">Engineered for back-office dispatchers, finance teams, and gate operators who need multi-monitor layouts, instant search across 100,000+ records, and direct hardware printer/scanner integration.</p>
+            <div class="oz-feat-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Request Desktop Build</a>
+                <a href="/platform/mis-system" class="btn btn-secondary--alt">Explore MIS System</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Workstation Performance</div>
+            <h2>Unrestricted Power for High-Volume Operators</h2>
+            <p class="oz-feat-card-desc">Zero browser tab memory bottlenecks, full local hardware acceleration.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Multi-Monitor &amp; Floating Windows</h3>
+                <p class="oz-feat-card-desc">Detach live rota shift schedules onto screen 1 while managing member dues and financial ledgers simultaneously on screen 2.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Direct USB Hardware Integration</h3>
+                <p class="oz-feat-card-desc">Print gate passes directly to thermal receipt printers, scan driver licenses with USB passport scanners, and issue encrypted NFC smart cards.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Local SQLite Data Cache</h3>
+                <p class="oz-feat-card-desc">Perform sub-millisecond filtering across hundreds of thousands of census records, alumni directories, and inventory assets.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Equip Your Front-Desk &amp; Back-Office</h2>
+            <p>Deploy MSI enterprise installers across your Windows fleet with Active Directory Group Policy.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Request MSI Installer Package</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>

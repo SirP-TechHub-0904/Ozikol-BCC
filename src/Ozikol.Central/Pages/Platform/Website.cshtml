@@ -1,0 +1,84 @@
+@page "/platform/website"
+@model Ozikol.Central.Pages.Platform.WebsiteModel
+@{
+    ViewData["Title"] = "Dedicated Website & Custom Web Portal - Ozikol";
+    ViewData["MetaDescription"] = "Get your own customized, branded organization website with responsive templates; enable any of the 37 features on demand.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Dedicated Website & Custom Web Portal</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                </div>
+                <span class="oz-feat-pill">Platform Channel • Web Experience</span>
+            </div>
+            <h1 class="oz-feat-title">Your Own Dedicated, Branded Website</h1>
+            <p class="oz-feat-lead">Launch a fully customized web presence with tailored domains, responsive layouts, and instant activation of any of Ozikol's 37 modular capabilities.</p>
+            <div class="oz-feat-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Request Web Deployment</a>
+                <a href="/marketplace" class="btn btn-secondary--alt">Browse UI Templates</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Web Architecture</div>
+            <h2>Built Specifically for Your Brand</h2>
+            <p class="oz-feat-card-desc">Complete freedom to enable the exact operational modules your team and members need.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Enable Features On-Demand</h3>
+                <p class="oz-feat-card-desc">Activate staff rotas, census registries, event ticketing, or invoicing dues whenever needed with zero code changes.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">100% Responsive Design</h3>
+                <p class="oz-feat-card-desc">Pixel-perfect performance across desktop monitors, tablets, and smartphones, delivering seamless experiences everywhere.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Custom Domain & Branding</h3>
+                <p class="oz-feat-card-desc">Bind your own custom domain (e.g. portal.yourorg.com) with automatic SSL, brand color injection, and custom typography.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Experience the Power of Ozikol</h2>
+            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>

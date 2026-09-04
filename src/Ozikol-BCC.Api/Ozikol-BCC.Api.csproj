@@ -29,6 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ozikol.MasterDomain\Ozikol.MasterDomain.csproj" />
+    <ProjectReference Include="..\Ozikol.MasterPersistence.EF.MasterSQL\Ozikol.MasterPersistence.EF.MasterSQL.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.AiServices\Ozikol-BCC.AiServices.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.CloudinaryServices\Ozikol-BCC.CloudinaryServices.csproj" />

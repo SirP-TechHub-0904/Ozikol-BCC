@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ozikol.MasterDomain\Ozikol.MasterDomain.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Domain\Ozikol-BCC.Domain.csproj" />
   </ItemGroup>
 

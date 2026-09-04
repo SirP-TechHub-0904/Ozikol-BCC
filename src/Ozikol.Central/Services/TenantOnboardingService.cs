@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
@@ -185,6 +187,35 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
 
             await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+
+            // Step F: Automatically Provision Compulsory Core Feature Subscriptions ($0 / Base Tier)
+            var compulsoryFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.IsCompulsory && f.IsActive)
+                .ToListAsync(cancellationToken);
+
+            foreach (var coreFeature in compulsoryFeatures)
+            {
+                _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = catalogEntry.Id,
+                    MasterFeatureCatalogId = coreFeature.Id,
+                    DurationType = SubscriptionBillingDuration.Yearly,
+                    RecurringPrice = 0.00m,
+                    StartsAtUtc = DateTime.UtcNow,
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(10), // Core features stay active
+                    AutoRenew = true,
+                    IsActive = true,
+                    Status = "Active",
+                    CreatedUtc = DateTime.UtcNow
+                });
+            }
+
+            if (compulsoryFeatures.Count > 0)
+            {
+                await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+            }
 
             _logger.LogInformation("✅ TENANT [{TenantKey}] ONBOARDED SUCCESSFULLY!", cleanKey);
             _logger.LogInformation("================================================================");

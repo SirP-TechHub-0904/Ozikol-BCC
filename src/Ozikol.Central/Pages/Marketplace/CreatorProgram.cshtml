@@ -1,0 +1,84 @@
+@page "/marketplace/creator-program"
+@model Ozikol.Central.Pages.Marketplace.CreatorProgramModel
+@{
+    ViewData["Title"] = "Creator Partner Program - Build & Sell Templates - Ozikol";
+    ViewData["MetaDescription"] = "Join our developer and designer partner program. Build sectional templates, workflow blueprints, and sell directly to Ozikol customers.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Creator Partner Program - Build & Sell Templates</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                </div>
+                <span class="oz-feat-pill">Developer Program • Monetize Templates</span>
+            </div>
+            <h1 class="oz-feat-title">Build Sectional Templates &amp; Earn Revenue</h1>
+            <p class="oz-feat-lead">Join the Ozikol Creator Partner Program. Craft responsive hero designs, operational dashboards, and industry blueprints, then sell directly to thousands of organizations on the UI Marketplace.</p>
+            <div class="oz-feat-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Apply as a Creator</a>
+                <a href="/marketplace" class="btn btn-secondary--alt">Explore Marketplace</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Creator Benefits Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Creator Opportunities</div>
+            <h2>Why Build on Ozikol?</h2>
+            <p class="oz-feat-card-desc">High revenue share, global distribution, and complete developer tooling.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">75% Revenue Share</h3>
+                <p class="oz-feat-card-desc">Keep 75% of every template download or premium layout license purchased by Ozikol business customers.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Verified Developer Badge</h3>
+                <p class="oz-feat-card-desc">Showcase your design studio or agency with a verified partner badge, driving inbound enterprise custom design leads.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Pre-Built Design Tokens</h3>
+                <p class="oz-feat-card-desc">Leverage Ozikol's native CSS custom properties and token system to guarantee 100% theme compatibility out of the box.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Experience the Power of Ozikol</h2>
+            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>

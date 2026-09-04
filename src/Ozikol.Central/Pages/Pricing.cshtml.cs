@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Ozikol.Central.Pages;
-
-public class PricingModel : PageModel
+namespace Ozikol.Central.Pages
 {
-    public void OnGet()
+    public class PricingModel : PageModel
     {
+        public void OnGet()
+        {
+        }
     }
 }

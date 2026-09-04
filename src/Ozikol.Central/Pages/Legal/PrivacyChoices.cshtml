@@ -1,0 +1,84 @@
+@page "/privacy-choices"
+@model Ozikol.Central.Pages.Legal.PrivacyChoicesModel
+@{
+    ViewData["Title"] = "Your Privacy Choices & Consent Management - Ozikol";
+    ViewData["MetaDescription"] = "Manage your organizational data preferences, tracking consent, cookies, and regulatory privacy rights.";
+}
+
+<div class="oz-feat-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Your Privacy Choices & Consent Management</span>
+                </div>
+                <partial name="_BackToFeaturesLink" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Banner -->
+    <section class="oz-feat-hero">
+        <div class="container">
+            <div class="oz-feat-badge-wrap">
+                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <span class="oz-feat-pill">Privacy Center • Data Sovereignty</span>
+            </div>
+            <h1 class="oz-feat-title">Your Privacy Choices</h1>
+            <p class="oz-feat-lead">We respect your privacy and data sovereignty. Review your consent preferences, manage optional telemetry, and exercise your GDPR/CCPA data rights.</p>
+            <div class="oz-feat-actions">
+                <a href="/privacy-notice" class="btn btn-primary">Full Privacy Notice</a>
+                <a href="/cookies" class="btn btn-secondary--alt">Cookie Settings</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Preferences Grid -->
+    <section class="container oz-feat-capabilities-section">
+        <div class="oz-feat-section-header">
+            <div class="oz-feat-tagline">Consent Controls</div>
+            <h2>Manage Your Preferences</h2>
+            <p class="oz-feat-card-desc">Granular controls over how your information is handled.</p>
+        </div>
+        <div class="oz-feat-grid">
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Strictly Necessary Cookies</h3>
+                <p class="oz-feat-card-desc">Essential for secure authentication, CSRF token validation, and session management. Always active.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Analytics &amp; Performance</h3>
+                <p class="oz-feat-card-desc">Aggregated telemetry used to optimize page speed, detect errors, and improve platform workflows.</p>
+            </div>
+            <div class="oz-feat-card">
+                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                </div>
+                <h3 class="oz-feat-card-title">Zero Third-Party Ad Tracking</h3>
+                <p class="oz-feat-card-desc">Ozikol never sells your data, never shares customer information with data brokers, and employs zero ad tracking.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="oz-feat-cta-banner">
+        <div class="container">
+            <h2>Experience the Power of Ozikol</h2>
+            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton" />
+            </div>
+        </div>
+    </section>
+</div>
