@@ -66,7 +66,7 @@ namespace Ozikol.MasterPersistence.EF.DbMigrator
 
         private async Task SeedMasterDataAsync(IServiceProvider sp, MasterCatalogDbContext dbContext, CancellationToken ct)
         {
-            _logger.LogInformation("🌱 Running Master Catalog Comprehensive Seeders (Roles, SuperAdmin, 7 Categories, 21 Templates, 25 Features)...");
+            _logger.LogInformation("🌱 Running Master Catalog Seeders (Roles & SuperAdmin)...");
 
             var roleManager = sp.GetService<RoleManager<CentralRole>>();
             var userManager = sp.GetService<UserManager<CentralUser>>();
@@ -74,7 +74,7 @@ namespace Ozikol.MasterPersistence.EF.DbMigrator
             await Ozikol.MasterPersistence.EF.MasterSQL.Seeding.MasterCatalogDataSeeder.SeedAllAsync(
                 dbContext, roleManager, userManager, ct);
 
-            _logger.LogInformation("✨ Master Catalog Seeding Successfully Finished (21 Templates & 25 Platform Features Active).");
+            _logger.LogInformation("✨ Master Catalog Seeding Successfully Finished (Roles & SuperAdmin Active).");
         }
     }
 }
