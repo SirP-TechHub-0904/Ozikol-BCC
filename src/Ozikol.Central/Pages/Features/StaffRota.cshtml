@@ -9,9 +9,9 @@
     <div class="oz-breadcrumb-bar">
         <div class="oz-breadcrumb-wrap">
             <div class="oz-breadcrumb-trail">
-                <a href="/features">Features</a>
+                <a href="/@Model.CurrentCulture/features">Features</a>
                 <span>&rsaquo;</span>
-                <a href="/features#workforce-scheduling">Workforce, Rota & Scheduling</a>
+                <a href="/@Model.CurrentCulture/features#suite-workforce">Workforce, Shifts and Scheduling</a>
                 <span>&rsaquo;</span>
                 <span class="oz-breadcrumb-current">Staff Rota & Shift Scheduling</span>
             </div>
@@ -23,9 +23,8 @@
     <section class="oz-feat-hero">
         <div class="oz-feat-hero-container">
             <div class="oz-feat-hero-content">
-                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-<div class="oz-feat-suite-pill">
-                    Workforce, Rota & Scheduling
+                <div class="oz-feat-suite-pill">
+                    Workforce, Shifts and Scheduling
                 </div>
                 <h1 class="oz-feat-title">
                     Staff Rota & Shift Scheduling
@@ -34,8 +33,19 @@
                     Departmental shift planning, weekly/monthly rota grids, and roster publishing.
                 </p>
                 <div class="oz-feat-actions">
-                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
-                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start 14-Day Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#capabilities" class="oz-btn-outline-hero">
+                        <span>Explore Capabilities</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </a>
                 </div>
             </div>
         </div>
@@ -60,34 +70,51 @@
                 <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
             </div>
             <div class="oz-feat-grid">
-                    <div class="oz-feat-card">
-                        <div class="oz-feat-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <h3>Visual Rota Grid</h3>
-                        <p>Drag-and-drop shifts across days, departments, and roles in daily, weekly, or monthly views.</p>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+                        </svg>
                     </div>
-                    <div class="oz-feat-card">
-                        <div class="oz-feat-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <h3>Skill & Coverage Rules</h3>
-                        <p>Set minimum staffing requirements (e.g. at least 1 first-aider and 2 supervisors on duty).</p>
+                    <h3>Visual Rota Grid</h3>
+                    <p>Drag-and-drop shifts across days, departments, and roles in daily, weekly, or monthly views.</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="m9 12 2 2 4-4"></path>
+                        </svg>
                     </div>
-                    <div class="oz-feat-card">
-                        <div class="oz-feat-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <h3>Open Shift Broadcasting</h3>
-                        <p>Broadcast unfilled shifts to eligible team members for instant mobile claiming.</p>
+                    <h3>Skill & Coverage Rules</h3>
+                    <p>Set minimum staffing requirements (e.g. at least 1 first-aider and 2 supervisors on duty).</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        </svg>
                     </div>
-                    <div class="oz-feat-card">
-                        <div class="oz-feat-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <h3>Overtime Budget Alerts</h3>
-                        <p>Real-time alerts when scheduled hours exceed contracted limits or trigger overtime pay.</p>
+                    <h3>Open Shift Broadcasting</h3>
+                    <p>Broadcast unfilled shifts to eligible team members for instant mobile claiming.</p>
+                </div>
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon oz-icon-crimson" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="4"></line>
+                        </svg>
                     </div>
+                    <h3>Overtime Budget Alerts</h3>
+                    <p>Real-time alerts when scheduled hours exceed contracted limits or trigger overtime pay.</p>
+                </div>
             </div>
         </section>
 
@@ -178,11 +205,31 @@
 
         <!-- Bottom CTA -->
         <section class="oz-feat-cta-banner">
-            <h2>50</h2>
-            <p>36</p>
-            <div class="oz-feat-cta-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
-                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            <div class="oz-feat-cta-inner">
+                <div class="oz-feat-cta-badge">
+                    <span class="oz-feat-cta-badge-dot"></span>
+                    <span>Enterprise Workforce Management</span>
+                </div>
+                <h2 class="oz-feat-cta-title">Ready to Streamline Staff Scheduling and Cut Overtime?</h2>
+                <p class="oz-feat-cta-desc">
+                    Get full access to Staff Rota and all 37 integrated cloud capabilities with your single annual subscription. Start your 14-day free trial today.
+                </p>
+                <div class="oz-feat-cta-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start 14-Day Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                        <span>View All 37 Features</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                </div>
             </div>
         </section>
     </main>
