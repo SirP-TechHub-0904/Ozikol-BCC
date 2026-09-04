@@ -879,6 +879,114 @@
     margin: 0;
 }
 
+/* Section 9: Trusted Organisations Marquee */
+.oz-marquee-section {
+    padding: 80px 0;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    overflow: hidden;
+    position: relative;
+}
+.oz-marquee-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding: 14px 0 26px 0;
+    mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 1) 8%, rgba(0, 0, 0, 1) 92%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 1) 8%, rgba(0, 0, 0, 1) 92%, transparent 100%);
+}
+.oz-marquee-track {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: max-content;
+    animation: ozMarqueeScroll 42s linear infinite;
+    will-change: transform;
+}
+.oz-marquee-track:hover {
+    animation-play-state: paused;
+}
+@keyframes ozMarqueeScroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+.oz-client-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 24px 12px 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    white-space: nowrap;
+    cursor: default;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+}
+.oz-client-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(229, 23, 63, 0.4);
+    box-shadow: 0 10px 26px rgba(229, 23, 63, 0.12);
+    background: #ffffff;
+}
+.oz-client-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(229, 23, 63, 0.08);
+    color: #e5173f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+}
+.oz-client-card:hover .oz-client-icon {
+    background: #e5173f;
+    color: #ffffff;
+    transform: scale(1.06);
+}
+.oz-client-info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+.oz-client-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ozikol-text-heading, #0f172a);
+    line-height: 1.25;
+}
+.oz-client-sector {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ozikol-text-muted, #64748b);
+    line-height: 1.2;
+    margin-top: 2px;
+}
+@media (max-width: 768px) {
+    .oz-marquee-section {
+        padding: 50px 0;
+    }
+    .oz-marquee-track {
+        gap: 14px;
+        animation-duration: 32s;
+    }
+    .oz-client-card {
+        padding: 10px 18px 10px 12px;
+    }
+    .oz-client-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
 /* Section 10: High-Conversion Final CTA */
 .oz-final-cta-section {
     padding: 60px 0 100px 0;

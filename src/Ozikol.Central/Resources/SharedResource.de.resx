@@ -934,8 +934,14 @@
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
     <value>Volle Datensouveränität. Exportieren Sie Ihre gesamte Datenbank, Richtlinien und Dokumente jederzeit.</value>
   </data>
+  <data name="Home_Marquee_Badge" xml:space="preserve">
+    <value>GLOBALES VERTRAUEN</value>
+  </data>
   <data name="Home_Marquee_Heading" xml:space="preserve">
     <value>Geschätzt von über 160.000 Organisationen und Communities weltweit</value>
+  </data>
+  <data name="Home_Marquee_Desc" xml:space="preserve">
+    <value>Unterstützt tägliche Abläufe, Schichtplanung und Bürgerbeteiligung führender Institutionen.</value>
   </data>
   <data name="Home_Cta_Title" xml:space="preserve">
     <value>Bereit, Ihre Organisation auf Ozikol zu vereinen?</value>
