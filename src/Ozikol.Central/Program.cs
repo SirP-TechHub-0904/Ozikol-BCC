@@ -30,12 +30,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // 2. Configure Native ASP.NET Core Multi-Language Localization Engine
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
 
 builder.Services.AddRazorPages(options =>
 {
-    // Enable optional /{culture?} route prefix across all portal Razor pages (e.g. /fr/pricing, /es/about-us)
+    // Enable optional /{culture} route prefix constrained strictly to supported language codes
     options.Conventions.AddFolderRouteModelConvention("/", model =>
     {
         var selectors = model.Selectors.ToList();
@@ -43,18 +43,12 @@ builder.Services.AddRazorPages(options =>
         {
             var existingTemplate = selector.AttributeRouteModel?.Template ?? "";
 
-            // Skip dedicated internal endpoints like SetLanguage
-            if (existingTemplate.StartsWith("SetLanguage", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
             model.Selectors.Add(new SelectorModel
             {
                 AttributeRouteModel = new AttributeRouteModel
                 {
                     Order = -1,
-                    Template = AttributeRouteModel.CombineTemplates("{culture?}", existingTemplate)
+                    Template = AttributeRouteModel.CombineTemplates("{culture:regex(^(en|fr|es|de)$)?}", existingTemplate)
                 }
             });
         }
@@ -158,20 +152,19 @@ localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultur
 
 app.UseRequestLocalization(localizationOptions);
 
-// 10. Enforce culture segment in portal URLs (e.g. '/' redirects to '/en', '/pricing' to '/en/pricing')
+// 10. Enforce culture segment in portal URLs and sync culture cookie
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "";
 
-    // Skip static assets, APIs, and SetLanguage endpoint
+    // Skip static assets, bundles, and APIs
     if (path.StartsWith("/css", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/js", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/images", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/fonts", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/SetLanguage", StringComparison.OrdinalIgnoreCase))
+        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
@@ -183,11 +176,21 @@ app.Use(async (context, next) =>
                             path.StartsWith("/es", StringComparison.OrdinalIgnoreCase) ||
                             path.StartsWith("/de", StringComparison.OrdinalIgnoreCase);
 
-    if (!isCulturePrefixed)
+    if (isCulturePrefixed)
     {
+        // Keep culture cookie synchronized with the active URL prefix
+        var cultureSegment = path.Substring(1, 2).ToLowerInvariant();
+        context.Response.Cookies.Append(
+            CookieRequestCultureProvider.DefaultCookieName,
+            CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(cultureSegment)),
+            new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, SameSite = SameSiteMode.Lax });
+    }
+    else
+    {
+        // Redirect to /{detectedCulture}{path}
         var cultureFeature = context.Features.Get<IRequestCultureFeature>();
         var culture = cultureFeature?.RequestCulture.Culture.TwoLetterISOLanguageName ?? "en";
-        if (string.IsNullOrWhiteSpace(culture) || culture.Length > 3)
+        if (string.IsNullOrWhiteSpace(culture) || (culture != "en" && culture != "fr" && culture != "es" && culture != "de"))
         {
             culture = "en";
         }

@@ -835,12 +835,18 @@
                 <div class="mega-menu__secondary-area">
                     @{
                         var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
-                        var rawPath = Context.Request.Path.Value ?? "/";
-                        if (rawPath.StartsWith("/SetLanguage", StringComparison.OrdinalIgnoreCase))
+                        if (currentCulture != "en" && currentCulture != "fr" && currentCulture != "es" && currentCulture != "de")
                         {
-                            rawPath = $"/{currentCulture}";
+                            currentCulture = "en";
                         }
-                        var returnUrl = rawPath + Context.Request.QueryString;
+
+                        var pathValue = Context.Request.Path.Value ?? "/en";
+                        var routeRemainder = System.Text.RegularExpressions.Regex.Replace(pathValue, @"^/(en|fr|es|de)(/|$)", "/");
+                        if (!routeRemainder.StartsWith("/")) routeRemainder = "/" + routeRemainder;
+                        if (routeRemainder == "/") routeRemainder = "";
+
+                        string BuildLangUrl(string lang) => $"/{lang}{routeRemainder}{Context.Request.QueryString}";
+
                         var currentFlag = currentCulture switch
                         {
                             "fr" => "🇫🇷 FR",
@@ -857,19 +863,19 @@
                             </svg>
                         </button>
                         <div class="oz-lang-menu">
-                            <a href="/SetLanguage?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "en" ? "active" : "")">
+                            <a href="@BuildLangUrl("en")" class="oz-lang-item @(currentCulture == "en" ? "active" : "")">
                                 <span>🇬🇧</span>
                                 <span>English</span>
                             </a>
-                            <a href="/SetLanguage?culture=fr&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "fr" ? "active" : "")">
+                            <a href="@BuildLangUrl("fr")" class="oz-lang-item @(currentCulture == "fr" ? "active" : "")">
                                 <span>🇫🇷</span>
                                 <span>Français</span>
                             </a>
-                            <a href="/SetLanguage?culture=es&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "es" ? "active" : "")">
+                            <a href="@BuildLangUrl("es")" class="oz-lang-item @(currentCulture == "es" ? "active" : "")">
                                 <span>🇪🇸</span>
                                 <span>Español</span>
                             </a>
-                            <a href="/SetLanguage?culture=de&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "de" ? "active" : "")">
+                            <a href="@BuildLangUrl("de")" class="oz-lang-item @(currentCulture == "de" ? "active" : "")">
                                 <span>🇩🇪</span>
                                 <span>Deutsch</span>
                             </a>
