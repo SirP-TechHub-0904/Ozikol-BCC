@@ -1,600 +1,1691 @@
 @page "/features"
 @model Ozikol.Central.Pages.FeaturesModel
 @{
-    ViewData["Title"] = "All Features & Capabilities - Ozikol BCP";
+    ViewData["Title"] = "Platform Capabilities & 9 Enterprise Suites - Ozikol";
+    ViewData["MetaDescription"] = "Explore all 37 modular cloud capabilities across 9 integrated suites on Ozikol. Included in one simple annual subscription.";
 }
 
-<div class="features-page">
-    <!-- Hero Banner -->
-    <section class="oz-hub-banner">
-        <div class="oz-hub-banner-wrap">
-            <div class="oz-hub-badge">
-                <span class="oz-hub-badge-dot"></span>
-                Comprehensive Business Cloud Platform (BCP)
-            
+<div class="oz-features-page">
+    <!-- Section 1: Hero Banner -->
+    <section class="oz-features-hero">
+        <div class="container">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Ozikol Platform Capabilities</span>
+                </div>
+                <h1 class="oz-pricing-hero-title">
+                    Everything Your Organization Needs to Collaborate, Operate, and Scale
+                </h1>
+                <p class="oz-pricing-hero-desc">
+                    Explore all 37 integrated cloud capabilities across 9 modular enterprise suites. Every feature is unlocked out of the box with your single annual subscription.
+                </p>
             </div>
-            <h1 class="oz-hub-banner-title">
-                Everything Your Organization Needs to <span>Collaborate, Operate & Scale</span>
-            </h1>
-            <p class="oz-hub-banner-desc">
-                Explore all 37 core capabilities across 9 modular suites — from workforce shift planning and demographic census registries to verifiable certification, social media management, and bio link trees.
-            </p>
-            <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
-                <a href="#groups-overview" class="btn btn-secondary--alt">Explore All 9 Suites</a>
+
+            <div class="oz-single-cta-group">
+                <a href="/@Model.CurrentCulture/register" class="oz-single-btn-primary">
+                    <span>Start 14-Day Free Trial</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="#suite-people" class="oz-features-btn-outline">
+                    Explore All 9 Suites
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- Category Jump Navigation -->
-    <nav id="groups-overview" class="oz-hub-jump-nav">
-        <div class="oz-hub-jump-nav-inner">
-            <div class="oz-hub-jump-row">
-                <span class="oz-hub-jump-label">Jump to Suite:</span>
-                <a href="#people-community" class="category-chip">People & Community</a>
-                <a href="#workforce-scheduling" class="category-chip">Workforce & Shifts</a>
-                <a href="#reports-forms" class="category-chip">Reports & Forms</a>
-                <a href="#events-training" class="category-chip">Events & Training</a>
-                <a href="#finance-revenue" class="category-chip">Finance & Revenue</a>
-                <a href="#operations-workflows" class="category-chip">Operations & Assets</a>
-                <a href="#communication-ai" class="category-chip">Communication & AI</a>
-                <a href="#compliance-certification" class="category-chip">Compliance & Certs</a>
-                <a href="#demographics-census" class="category-chip category-chip--active">Demographics & Census</a>
+    <!-- Sticky Jump Navigation Bar -->
+    <nav class="oz-features-jump-bar" aria-label="Suite Quick Navigation">
+        <div class="container">
+            <div class="oz-features-jump-row">
+                <span class="oz-jump-label">Jump to Suite:</span>
+                <a href="#suite-people" class="oz-jump-chip">People & Community</a>
+                <a href="#suite-workforce" class="oz-jump-chip">Workforce & Shifts</a>
+                <a href="#suite-reports" class="oz-jump-chip">Reports & Forms</a>
+                <a href="#suite-events" class="oz-jump-chip">Events & Training</a>
+                <a href="#suite-finance" class="oz-jump-chip">Finance & Revenue</a>
+                <a href="#suite-operations" class="oz-jump-chip">Operations & Assets</a>
+                <a href="#suite-communication" class="oz-jump-chip">Communication & AI</a>
+                <a href="#suite-compliance" class="oz-jump-chip">Compliance & Certs</a>
+                <a href="#suite-demographics" class="oz-jump-chip">Demographics & Census</a>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content Container -->
-    <main class="oz-hub-container">
-        <!-- Suite 01: People, Community & Collaboration -->
-        <section id="people-community" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 01</div>
-                <h2>People, Community & Collaboration</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
+    <!-- Main Content: All 9 Suites -->
+    <main class="container">
+        <!-- Suite 01: People, Community and Collaboration -->
+        <section id="suite-people" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 01</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">People, Community, and Collaboration</h2>
+                <p class="oz-pricing-hero-desc">
+                    Connect internal staff, leadership teams, volunteers, and external alumni networks on a secure unified communication fabric.
+                </p>
             </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+
+            <div class="oz-features-grid">
+                <!-- Feature 1: Community Messenger -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--crimson" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Community Messenger</h3>
+                        <p class="oz-feat-card-desc">
+                            Real-time direct messaging and departmental channels that replace fragmented third-party chat apps with an internal audit trail.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Real-time direct messages and topic rooms</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Floating live web chat widget</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Secure file sharing with audit logs</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Community Messenger & Team Chat</h3>
-                    <p>Real-time 1-to-1 DMs, group channels, and platform-wide floating quick chat.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/community-messenger" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/community-messenger" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--teal">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </article>
+
+                <!-- Feature 2: Committees and Sub-Groups -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--indigo" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Committees and Sub-Groups</h3>
+                        <p class="oz-feat-card-desc">
+                            Empower leadership councils, project task forces, and regional boards with meeting agendas, attendance records, and resolutions.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Committee roster and officer roles</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Meeting calendar and agenda scheduling</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Formal resolutions archive with voting</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Committees & Sub-Groups</h3>
-                    <p>Manage committee leadership, meeting schedules, minutes, and resolutions.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/committees" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/committees" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--maroon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                </article>
+
+                <!-- Feature 3: Alumni Networking Directory -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--emerald" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Alumni Networking Directory</h3>
+                        <p class="oz-feat-card-desc">
+                            A searchable member directory for associations, universities, and professional networks with chapter filtering and profile management.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Searchable graduation class and chapter registry</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Member profile self-updates</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Career directory and mentor matching</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Alumni Networking Directory</h3>
-                    <p>Searchable alumni registry with chapter and graduation filters.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/alumni-directory" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/alumni-directory" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--orange">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </article>
+
+                <!-- Feature 4: Anonymous Whistleblowing -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--amber" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Anonymous Whistleblowing</h3>
+                        <p class="oz-feat-card-desc">
+                            Encrypted, zero-knowledge reporting channel allowing staff and stakeholders to report sensitive ethical or compliance concerns safely.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Zero-knowledge identity protection</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Encrypted two-way investigative chat</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Audited case resolution workflows</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Anonymous Whistleblowing & Feedback</h3>
-                    <p>Encrypted, anonymous reporting and secure two-way feedback.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/whistleblowing-feedback" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/whistleblowing-feedback" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 02: Workforce, Rota & Scheduling -->
-        <section id="workforce-scheduling" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 02</div>
-                <h2>Workforce, Rota & Scheduling</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Staff Rota & Shift Scheduling</h3>
-                    <p>Departmental shift planning, weekly/monthly rota grids, and roster publishing.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/staff-rota" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--blue">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                    </div>
-                    <h3>Shift Swaps, Availability & Leave</h3>
-                    <p>Peer-to-peer shift trades, availability windows, and time-off approvals.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/shift-swaps-leave" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--green">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                    <h3>Attendance & Time Tracking</h3>
-                    <p>Geo-fenced digital clock-in/out, live attendance monitoring, and timesheet sign-offs.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/attendance-tracking" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--indigo">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Appointment Booking & Calendar</h3>
-                    <p>Automated 1-on-1 and group appointment scheduling with Google Meet, Zoom, and paid bookings.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/appointment-booking" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 03: Reports, Forms & Analytics -->
-        <section id="reports-forms" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 03</div>
-                <h2>Reports, Forms & Analytics</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--purple">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    </div>
-                    <h3>Dynamic Interval Reporting</h3>
-                    <p>Automated periodic reports (weekly, monthly, quarterly) and KPI tracking.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/interval-reporting" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--pink">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                    </div>
-                    <h3>Custom Form Builder & Surveys</h3>
-                    <p>Drag-and-drop custom forms, surveys, and submission workflows.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/form-builder" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--amber">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
-                    </div>
-                    <h3>Survey Analytics & Insights</h3>
-                    <p>Visual chart breakdowns, cohort filtering, and sentiment analytics.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/survey-analytics" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 04: Events & Training Management -->
-        <section id="events-training" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 04</div>
-                <h2>Events & Training Management</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
-                    </div>
-                    <h3>Event Ticketing & Check-In</h3>
-                    <p>Paid & free event ticketing, tier pricing, digital QR passes, and gate check-in scanning.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/event-ticketing" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--indigo">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
-                    </div>
-                    <h3>Speaker & Session Management</h3>
-                    <p>Keynote speakers, trainers, workshop agendas, breakout tracks, and session capacity.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/speaker-sessions" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--green">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2H9.17A3.001 3.001 0 0112 14z"/></svg>
-                    </div>
-                    <h3>Attendee & Registration Management</h3>
-                    <p>Attendee directory, RSVPs, attendance tracking, and guest badge generation.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/attendee-management" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 05: Finance & Commercial Revenue -->
-        <section id="finance-revenue" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 05</div>
-                <h2>Finance & Commercial Revenue</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--green">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Invoicing & Dues Billing</h3>
-                    <p>Automated membership dues, subscription fee schedules, invoices, and online payments.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/invoicing-dues" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                    </div>
-                    <h3>Store & E-Commerce</h3>
-                    <p>Digital and physical merchandise store, product catalog, cart, and payment processing.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/store-ecommerce" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--blue">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </div>
-                    <h3>Proposal Pipeline & Contracts</h3>
-                    <p>Commercial and grant proposal tracking across review stages.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/proposal-pipeline" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--teal">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                    <h3>Grant Ledger & Funding Tracking</h3>
-                    <p>Donor award tracking, disbursement schedules, and compliance ledgers.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/grant-ledger" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 06: Operations & Workflows -->
-        <section id="operations-workflows" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 06</div>
-                <h2>Operations & Workflows</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Recruitment & Hiring (ATS)</h3>
-                    <p>Job postings, applicant pipelines, resumes, and interview scorecards.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/recruitment-hiring" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--purple">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                    </div>
-                    <h3>Elections & E-Voting</h3>
-                    <p>Secure cryptographic voting, voter accreditation, and live certified tallying.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/elections-evoting" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--orange">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    </div>
-                    <h3>Fleet & Equipment Lifecycle</h3>
-                    <p>Machinery, vehicle, and gadget maintenance, checkouts, and depreciation.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/equipment-fleet" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--indigo">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    </div>
-                    <h3>Company Asset Management</h3>
-                    <p>Capital fixed assets, real estate, valuations, and contract registry.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/company-assets" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--blue">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-                    </div>
-                    <h3>Project & Task Tracking</h3>
-                    <p>Sprint cycles, task delegation, Kanban boards, and workload tracking.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/project-task-tracking" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 07: Communication, AI & Support -->
-        <section id="communication-ai" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 07</div>
-                <h2>Communication, AI & Support</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    </div>
-                    <h3>AI Smart Assist (BYOK)</h3>
-                    <p>Connect OpenAI, Gemini, or Claude for content drafting & tasks.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/ai-smart-assist" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--blue">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Mass Communication</h3>
-                    <p>Broadcast email newsletters, SMS alerts, and delivery logs.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/mass-communication" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--orange">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </div>
-                    <h3>Helpdesk & Support</h3>
-                    <p>Ticket queues, SLA countdowns, and agent canned replies.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/helpdesk-support" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--green">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                    </div>
-                    <h3>Live Chat & Messaging</h3>
-                    <p>Website visitor chat widget, agent inbox, and lead capture.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/live-chat" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--pink">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-                    </div>
-                    <h3>Social Media Manager</h3>
-                    <p>Multi-platform scheduled publishing and engagement analytics.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/social-media-manager" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--purple">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                    </div>
-                    <h3>Bio Link Hub (Link Tree)</h3>
-                    <p>Single-link customizable bio page to showcase all your links, socials, products, and campaigns.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/bio-link-tree" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Suite 08: Compliance, Learning & Certification -->
-        <section id="compliance-certification" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 08</div>
-                <h2>Compliance, Learning & Certification</h2>
-                <p>Explore specialized capabilities designed to scale operations and accelerate performance.</p>
-            </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </div>
-                    <h3>Document Management System</h3>
-                    <p>Secure policy vault, version control, and sign-off audits.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/document-management" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--indigo">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3>Learning Management System (LMS)</h3>
-                    <p>Multimedia video courses, quizzes, and learner tracking.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/learning-management" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--amber">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-                    </div>
-                    <h3>Certificate Designer & Verification</h3>
-                    <p>Visual certificate builder, cryptographic QR verification portal.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/certificate-verification" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--blue">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </div>
-                    <h3>Visitor & Gate Management</h3>
-                    <p>Kiosk check-in, visitor badges, host alerts, and gate logs.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/visitor-gate-management" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
+                </article>
             </div>
         </section>
 
-        <!-- Suite 09: Demographics, Census & Civic Registry -->
-        <section id="demographics-census" class="feature-suite-section">
-            <div class="suite-header">
-                <div class="suite-badge">Suite 09</div>
-                <h2>Demographics, Census &amp; Civic Registry</h2>
-                <p>Enumerate populations, map households, field survey offline, and issue verified digital resident IDs.</p>
+        <!-- Suite 02: Workforce Scheduling & Shift Management -->
+        <section id="suite-workforce" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 02</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Workforce Scheduling and Shift Management</h2>
+                <p class="oz-pricing-hero-desc">
+                    Eliminate scheduling headaches, control labor costs, and streamline clock-ins across physical branches and remote teams.
+                </p>
             </div>
-            <div class="feature-grid-cards">
-                <div class="feature-card">
-                    <div class="feature-card__icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    </div>
-                    <h3>Community &amp; Household Census</h3>
-                    <p>Family trees, heads of household, residency validation, and occupancy tracking.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/community-census" class="know-more-btn">
-                            Know More &raquo;
-                        </a>
-                    </div>
-                </div>
 
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--green">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <div class="oz-features-grid">
+                <!-- Feature 5: Staff Rota -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--blue" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Staff Rota</h3>
+                        <p class="oz-feat-card-desc">
+                            Drag-and-drop weekly and monthly rota scheduling with automatic shift conflict detection, labor budgeting, and instant publishing.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-branch weekly drag-and-drop grid</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automatic overtime and conflict alerts</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Mobile shift notifications to workers</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Field Enumeration &amp; Mobile Surveyor</h3>
-                    <p>Door-to-door surveyor app with GPS coordinates, offline mode, and auto-sync.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/field-surveyor" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/staff-rota" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
+                </article>
 
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--indigo">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                <!-- Feature 6: Shift Swaps and Leave -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--violet" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="17 1 21 5 17 9"></polyline>
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                <polyline points="7 23 3 19 7 15"></polyline>
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Shift Swaps and Leave</h3>
+                        <p class="oz-feat-card-desc">
+                            Peer-to-peer shift exchange requests with managerial sign-off, annual leave accrual calculations, and sick leave documentation.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Employee shift swap marketplace</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Leave entitlement balance calculator</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>One-tap manager approval workflows</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Resident &amp; Citizen Digital ID Cards</h3>
-                    <p>Cryptographic QR-coded digital census passes, proof of residence, and scanner.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/resident-id-cards" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/shift-swaps-leave" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
+                </article>
 
-                <div class="feature-card">
-                    <div class="feature-card__icon feature-card__icon--amber">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <!-- Feature 7: Attendance Tracking -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--teal" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Attendance Tracking</h3>
+                        <p class="oz-feat-card-desc">
+                            Geofenced mobile clock-in/out, biometric terminal synchronization, late-arrival logging, and timesheet exports ready for payroll.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>GPS geofenced mobile clock-in</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated tardiness and break tracking</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>One-click CSV and Excel payroll export</span>
+                            </li>
+                        </ul>
                     </div>
-                    <h3>Demographic Analytics &amp; Reports</h3>
-                    <p>Population pyramids, dependency ratios, socioeconomic stats, and PDF reports.</p>
-                    <div class="feature-card__footer">
-                        <a href="/features/demographic-analytics" class="know-more-btn">
-                            Know More &raquo;
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/attendance-tracking" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
                         </a>
                     </div>
-                </div>
+                </article>
             </div>
         </section>
 
-        <!-- Bottom CTA -->
-        <section class="oz-hub-bottom-cta">
-            <h2>Ready to deploy Ozikol BCP for your organization?</h2>
-            <p>Choose the suites that fit your needs today, and scale seamlessly with modular feature activation.</p>
-            <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
-                <a href="/client-login" class="btn btn-secondary--alt">Client Login</a>
+        <!-- Suite 03: Reports, Surveys & Custom Forms -->
+        <section id="suite-reports" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 03</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Reports, Surveys, and Custom Forms</h2>
+                <p class="oz-pricing-hero-desc">
+                    Collect structured operational data from any device, schedule recurring interval reports, and gain business intelligence from survey analytics.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 8: Form Builder -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--amber" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Form Builder</h3>
+                        <p class="oz-feat-card-desc">
+                            Drag-and-drop dynamic form designer with conditional branch logic, signature inputs, file uploads, and shareable public links.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>No-code drag-and-drop form creator</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Conditional logic branches and signatures</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Embeddable widgets and direct share links</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/form-builder" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 9: Interval Reporting -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--crimson" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Interval Reporting</h3>
+                        <p class="oz-feat-card-desc">
+                            Automate daily, weekly, and monthly status submissions from managers and departments with overdue escalation alerts.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Scheduled periodic reporting cadences</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated overdue submission reminders</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Executive aggregation dashboards</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/interval-reporting" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 10: Survey Analytics -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--cyan" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Survey Analytics</h3>
+                        <p class="oz-feat-card-desc">
+                            Measure member sentiment, customer satisfaction (CSAT), and net promoter scores (NPS) with automated breakdown visualization.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-question survey campaigns</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated Net Promoter Score calculation</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Sentiment analysis and keyword heatmaps</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/survey-analytics" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 04: Events, Ticketing & Learning -->
+        <section id="suite-events" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 04</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Events, Ticketing, and Learning Management</h2>
+                <p class="oz-pricing-hero-desc">
+                    Host memorable in-person or virtual conferences, issue instant digital QR passes, and deliver structured education courses.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 11: Event Ticketing -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--rose" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+                                <path d="M13 5v2"></path>
+                                <path d="M13 17v2"></path>
+                                <path d="M13 11v2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Event Ticketing</h3>
+                        <p class="oz-feat-card-desc">
+                            Sell multi-tier admission tickets, set early-bird pricing, apply discount promo codes, and issue digital passes with QR verification.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-tier VIP and General Admission tickets</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Instant digital tickets with QR barcodes</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Zero ticket transaction percentage fees</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/event-ticketing" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 12: Attendee Management -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--indigo" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <polyline points="16 11 18 13 22 9"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Attendee Management</h3>
+                        <p class="oz-feat-card-desc">
+                            Fast check-in desk app with mobile camera barcode scanning, attendee status tracking, and badge name printing.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Mobile camera QR check-in scanning</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Real-time guest arrival dashboard</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Onsite conference badge generation</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/attendee-management" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 13: Speaker Sessions -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--amber" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Speaker Sessions</h3>
+                        <p class="oz-feat-card-desc">
+                            Multi-track conference agendas, speaker biographies, session presentation slide downloads, and attendee feedback ratings.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-room conference schedule builder</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Speaker profiles and topic summaries</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Slide deck attachment downloads</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/speaker-sessions" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 14: Learning Management (LMS) -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--blue" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Learning Management</h3>
+                        <p class="oz-feat-card-desc">
+                            Create self-paced staff onboarding and training courses, track quiz completions, and issue automated verifiable graduation certificates.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-lesson curriculum builder</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Quiz scoring and passing thresholds</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated completion certificates</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/learning-management" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 05: Finance, Dues & Revenue Operations -->
+        <section id="suite-finance" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 05</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Finance, Dues, and Revenue Operations</h2>
+                <p class="oz-pricing-hero-desc">
+                    Bill customers, collect membership dues automatically, reconcile online e-commerce sales, and track restricted grant disbursements.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 15: Invoicing and Dues -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--emerald" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Invoicing and Dues</h3>
+                        <p class="oz-feat-card-desc">
+                            Automate annual and monthly recurring membership dues, issue professional PDF invoices, and reconcile card payments and bank transfers.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Recurring membership dues invoicing</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Direct pay links via Paystack, Stripe, Flutterwave</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated overdue reminder emails</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/invoicing-dues" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 16: Grant Ledger -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--teal" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Grant Ledger</h3>
+                        <p class="oz-feat-card-desc">
+                            Track donor funding allocations, monitor project milestones against expenditures, and generate audit-ready compliance reports.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Restricted donor fund segregation</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Milestone-based disbursement tracking</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Audit-ready financial compliance reports</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/grant-ledger" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 17: Appointment Booking -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--violet" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Appointment Booking</h3>
+                        <p class="oz-feat-card-desc">
+                            Client self-service booking calendar with staff availability syncing, automated SMS/email reminders, and optional deposit payments.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Self-service online booking portal</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Google Calendar and Outlook two-way sync</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated SMS and email reminders</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/appointment-booking" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 18: Store and E-Commerce -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--crimson" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="9" cy="21" r="1"></circle>
+                                <circle cx="20" cy="21" r="1"></circle>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Store and E-Commerce</h3>
+                        <p class="oz-feat-card-desc">
+                            Complete online storefront with shopping cart, variant management, real-time stock sync with physical POS, and zero transaction commissions.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Modern mobile-optimized digital storefront</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Unified inventory across store and physical POS</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>0% sales commission on every order</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/store-ecommerce" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 06: Operations, Workflows & Assets -->
+        <section id="suite-operations" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 06</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Operations, Workflows, and Assets</h2>
+                <p class="oz-pricing-hero-desc">
+                    Control equipment lifecycles, manage commercial B2B sales pipelines, track projects on Kanban boards, and recruit top talent.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 19: Company Assets -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--indigo" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Company Assets</h3>
+                        <p class="oz-feat-card-desc">
+                            Catalog laptops, office hardware, and physical inventory with barcode asset tagging, custodian handovers, and depreciation tracking.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Barcode asset registry and tagging</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Employee custodian assignment history</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Straight-line depreciation calculator</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/company-assets" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 20: Equipment and Fleet -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--cyan" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="3" width="15" height="13"></rect>
+                                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Equipment and Fleet</h3>
+                        <p class="oz-feat-card-desc">
+                            Vehicle mileage logging, regular machinery servicing schedules, breakdown request tickets, and fuel expense management.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Scheduled maintenance preventative alerts</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Vehicle mileage and fuel consumption logs</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Breakdown repair dispatch tickets</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/equipment-fleet" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 21: Project and Task Tracking -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--emerald" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Project and Task Tracking</h3>
+                        <p class="oz-feat-card-desc">
+                            Visual Kanban boards, milestone roadmaps, sub-task delegation, file attachments, and team workload capacity dashboards.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Interactive Kanban board workflows</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Milestones with timeline Gantt views</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Team capacity and workload analytics</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/project-task-tracking" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 22: Proposal Pipeline -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--amber" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Proposal Pipeline</h3>
+                        <p class="oz-feat-card-desc">
+                            B2B sales and grant proposal management, deal stage progression, commercial document drafts, and closing rate forecasts.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-stage deal pipeline tracking</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Proposal document generation and drafts</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Win/loss probability forecasting</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/proposal-pipeline" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 23: Recruitment and Hiring -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--rose" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <line x1="20" y1="8" x2="20" y2="14"></line>
+                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Recruitment and Hiring</h3>
+                        <p class="oz-feat-card-desc">
+                            Job opening postings, applicant resume tracking (ATS), interviewer evaluation scoring, and digital offer letter generation.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Branded public careers job board</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Applicant resume review and pipeline</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Standardized interview scorecards</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/recruitment-hiring" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 07: Communication, Live Support & AI -->
+        <section id="suite-communication" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 07</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Communication, Live Support, and AI</h2>
+                <p class="oz-pricing-hero-desc">
+                    Omnichannel customer support, automated SMS/email broadcasts, social scheduling, bio link trees, and private AI assistance.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 24: Live Chat -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--blue" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Live Chat</h3>
+                        <p class="oz-feat-card-desc">
+                            Website visitor live chat widget with automated routing to support agents, canned replies, and offline contact captures.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Customizable embeddable web chat widget</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Agent routing and departmental queues</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Saved shortcut responses and typing indicators</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/live-chat" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 25: Helpdesk Support -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--violet" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Helpdesk Support</h3>
+                        <p class="oz-feat-card-desc">
+                            Centralized ticket management with SLA response timers, email-to-ticket conversion, priority matrices, and resolution feedback.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-channel ticket inbox</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>SLA breach countdown alerts</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Public knowledgebase and FAQ self-help</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/helpdesk-support" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 26: Mass Communication -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--crimson" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Mass Communication</h3>
+                        <p class="oz-feat-card-desc">
+                            Send targeted bulk SMS broadcasts, segmented email newsletters, and push notifications with real-time delivery rate analytics.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Segmented bulk SMS with custom Sender IDs</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Drag-and-drop HTML email newsletter editor</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Open, click, and delivery rate reporting</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/mass-communication" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 27: Social Media Manager -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--teal" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Social Media Manager</h3>
+                        <p class="oz-feat-card-desc">
+                            Compose and schedule social posts across Facebook, Instagram, LinkedIn, and X (Twitter) with unified social inbox monitoring.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Cross-platform post publishing calendar</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Multi-account scheduling with visual previews</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Engagement metrics and reach analytics</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/social-media-manager" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 28: AI Smart Assist -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--indigo" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">AI Smart Assist</h3>
+                        <p class="oz-feat-card-desc">
+                            AI-powered writing assistant that drafts email announcements, summarizes long meetings, and suggests intelligent responses.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Bring Your Own Key (BYOK) privacy isolation</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated minutes and document summaries</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Zero data retention model for privacy</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/ai-smart-assist" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 29: Bio Link Tree -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--rose" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Bio Link Tree</h3>
+                        <p class="oz-feat-card-desc">
+                            Create a branded mobile bio landing page with links to your store, ticket events, donation drives, and social profiles.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>High-converting mobile landing link hub</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Custom brand colors and font themes</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Integrated click and conversion tracking</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/bio-link-tree" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 08: Compliance, IDs & Verifiable Certs -->
+        <section id="suite-compliance" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 08</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Compliance, IDs, and Verifiable Certificates</h2>
+                <p class="oz-pricing-hero-desc">
+                    Issue tamper-proof credentials, print digital photo membership cards, secure confidential governance files, and run auditable e-voting.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 30: Certificate Verification -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--emerald" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <polyline points="9 12 11 14 15 10"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Certificate Verification</h3>
+                        <p class="oz-feat-card-desc">
+                            Issue cryptographically verifiable graduation, compliance, and training certificates with public QR verification URLs.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Cryptographically signed digital credentials</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Instant public QR verification portal</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Batch certificate generation and PDF dispatch</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/certificate-verification" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 31: Resident ID Cards -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--blue" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+                                <circle cx="9" cy="10" r="2"></circle>
+                                <line x1="15" y1="8" x2="17" y2="8"></line>
+                                <line x1="15" y1="12" x2="17" y2="12"></line>
+                                <line x1="7" y1="16" x2="17" y2="16"></line>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Resident ID Cards</h3>
+                        <p class="oz-feat-card-desc">
+                            Design and generate printable and mobile photo ID membership badges with dynamic barcodes for estate gates and corporate facilities.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>CR80 plastic card print template designer</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Dynamic scannable QR and Code128 barcodes</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Digital wallet pass support for Apple and Android</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/resident-id-cards" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 32: Document Management -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--violet" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Document Management</h3>
+                        <p class="oz-feat-card-desc">
+                            Role-governed cloud document repository with strict permission tiers, full version control, and confidential watermarking.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Role-based file permission tiers</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Version history with instant rollbacks</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Confidential dynamic watermark overlays</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/document-management" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 33: Elections and E-Voting -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--cyan" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 11 12 14 22 4"></polyline>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Elections and E-Voting</h3>
+                        <p class="oz-feat-card-desc">
+                            Cryptographically audited digital election ballots, voter token verification, quorum calculations, and instant certified tallies.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Tamper-proof secret ballot encryption</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>One-time voter tokens via SMS and email</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Live quorum tracking and audited results PDF</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/elections-evoting" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Suite 09: Demographics & Community Census -->
+        <section id="suite-demographics" class="oz-features-suite-block">
+            <div class="oz-section-header">
+                <div class="oz-pricing-hero-badge">
+                    <span class="oz-pricing-hero-badge-dot"></span>
+                    <span>Suite 09</span>
+                </div>
+                <h2 class="oz-pricing-hero-title">Demographics and Community Census</h2>
+                <p class="oz-pricing-hero-desc">
+                    Census data collection, offline-first mobile survey field enumeration, population demographic analytics, and security gate visitor logs.
+                </p>
+            </div>
+
+            <div class="oz-features-grid">
+                <!-- Feature 34: Community Census -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--crimson" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Community Census</h3>
+                        <p class="oz-feat-card-desc">
+                            Household headcounts, demographic profiling, kinship mapping, and geographic clustering for residential estates and local communities.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Household member and dwelling registry</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Age, occupation, and dependency ratios</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Residential street and zone clustering</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/community-census" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 35: Demographic Analytics -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--amber" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Demographic Analytics</h3>
+                        <p class="oz-feat-card-desc">
+                            Interactive population pyramids, age cohort breakdowns, geographic heatmaps, and trend projections for municipal planning.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Interactive age and gender population pyramids</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Geographic density map visualizations</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Historical growth trend projections</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/demographic-analytics" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 36: Field Surveyor -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--teal" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Field Surveyor</h3>
+                        <p class="oz-feat-card-desc">
+                            Offline-first mobile survey data collection for field enumerators and inspectors, with automatic GPS location stamping and cloud sync.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Offline-first data collection on mobile devices</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated GPS location coordinate tagging</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Background synchronization when online</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/field-surveyor" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Feature 37: Visitor and Gate Management -->
+                <article class="oz-feat-card">
+                    <div class="oz-feat-card-top">
+                        <div class="oz-feat-card-icon oz-feat-card-icon--indigo" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="oz-feat-card-title">Visitor and Gate Management</h3>
+                        <p class="oz-feat-card-desc">
+                            Digital visitor pass issuance via SMS, security checkpoint QR code scanning, license plate logging, and host notifications.
+                        </p>
+                        <ul class="oz-feat-checklist">
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Resident pre-authorized guest entry codes</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Security guard tablet QR scanner</span>
+                            </li>
+                            <li class="oz-feat-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Automated host arrival SMS and push alerts</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="oz-feat-card-actions">
+                        <a href="/@Model.CurrentCulture/features/visitor-gate-management" class="oz-btn-readmore">
+                            <span>Read More</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/@Model.CurrentCulture/register" class="oz-btn-getstarted">
+                            Get Started
+                        </a>
+                    </div>
+                </article>
             </div>
         </section>
     </main>
+
+    <!-- Bottom Conversion CTA Banner -->
+    <section class="oz-pricing-cta-banner">
+        <div class="container">
+            <div class="oz-pricing-cta-box">
+                <h2>Ready to scale your organization with all 37 capabilities?</h2>
+                <p>Start your 14-day free trial today. All 9 suites unlocked with one simple annual subscription. You only buy your domain.</p>
+                <div class="oz-pricing-cta-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-single-btn-primary">
+                        <span>Start 14-Day Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="/@Model.CurrentCulture/contact" class="oz-cta-btn-outline">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
-
-
