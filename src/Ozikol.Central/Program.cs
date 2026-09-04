@@ -104,6 +104,7 @@ builder.Services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 builder.Services.AddScoped<ICentralEmailService, CentralEmailService>();
 builder.Services.AddScoped<ICentralTwoFactorService, CentralTwoFactorService>();
 builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
+builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 
 var app = builder.Build();
 

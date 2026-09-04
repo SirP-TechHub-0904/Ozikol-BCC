@@ -11,7 +11,7 @@
 }
 
 <div class="oz-pricing-page">
-    <!-- Section 1: Hero Banner & Billing Cycle Toggle -->
+    <!-- Section 1: Hero Banner & Currency Selector -->
     <section class="oz-pricing-hero">
         <div class="container">
             <div class="oz-pricing-hero-badge">
@@ -25,235 +25,414 @@
                 @SharedLocalizer["Pricing_Hero_Desc"]
             </p>
 
-            <!-- Billing Toggle -->
-            <div class="oz-pricing-toggle-wrap">
-                <span class="oz-pricing-toggle-label is-active" id="labelMonthly">@SharedLocalizer["Pricing_Toggle_Monthly"]</span>
-                <button type="button" class="oz-pricing-toggle-btn" id="billingToggle" aria-label="Toggle annual or monthly billing" aria-checked="false" role="switch">
-                    <span class="oz-pricing-toggle-thumb"></span>
-                </button>
-                <span class="oz-pricing-toggle-label" id="labelAnnual">
-                    @SharedLocalizer["Pricing_Toggle_Annual"]
-                    <span class="oz-pricing-save-badge">@SharedLocalizer["Pricing_Toggle_Save"]</span>
-                </span>
+            <!-- Currency Selector Pills -->
+            <div class="oz-currency-selector-wrap" role="group" aria-label="@SharedLocalizer["Pricing_Currency_Label"]">
+                @foreach (var curr in Model.SupportedCurrencies)
+                {
+                    var isActive = curr.Code.Equals(Model.SelectedCurrency, StringComparison.OrdinalIgnoreCase);
+                    <a href="?currency=@curr.Code" 
+                       class="oz-currency-pill @(isActive ? "is-active" : "")" 
+                       data-currency="@curr.Code"
+                       aria-pressed="@(isActive ? "true" : "false")">
+                        @curr.PillLabel
+                    </a>
+                }
             </div>
         </div>
     </section>
 
-    <!-- Section 2: 4 Tier Pricing Cards -->
-    <section class="oz-pricing-cards-section">
+    <!-- Section 2: 40k All-Inclusive Spotlight Card -->
+    <section class="oz-single-card-section">
         <div class="container">
-            <div class="oz-pricing-grid">
-                <!-- Tier 1: Starter -->
-                <div class="oz-pricing-card">
-                    <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier1_Tag"]</div>
-                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier1_Title"]</h2>
-                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier1_Desc"]</p>
-                        <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
-                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier1_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier1_Price_Annual"]">@SharedLocalizer["Pricing_Tier1_Price_Monthly"]</span>
-                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
-                        </div>
-                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
+            <div class="oz-single-price-card">
+                <!-- Header -->
+                <div class="oz-single-card-header">
+                    <div class="oz-single-card-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Badge"]</span>
                     </div>
-                    <div class="oz-pricing-card-body">
-                        <a href="/@currentCulture/auth/get-started?plan=starter" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier1_Btn"]</a>
-                        <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Up to <strong>25 Active Users</strong></span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>Core Suites</strong> (Messenger, Rota, Forms)</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Responsive Web Application &amp; Mobile PWA</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>15 GB Sovereign Cloud Document Storage</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Standard Community &amp; Knowledge Support</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>99.5% Uptime Availability SLA</span></li>
-                        </ul>
+                    <h2 class="oz-single-card-title">@SharedLocalizer["Pricing_Card_Title"]</h2>
+                    <p class="oz-single-card-desc">@SharedLocalizer["Pricing_Card_Desc"]</p>
+                </div>
+
+                <!-- Price Block -->
+                <div class="oz-single-price-wrap">
+                    <div class="oz-single-price-row">
+                        <span class="oz-single-price-figure" id="annualPriceDisplay">@Model.FormattedAnnualPrice</span>
+                        <span class="oz-single-price-period">@SharedLocalizer["Pricing_Per_Year"]</span>
+                    </div>
+                    <div class="oz-single-price-subnote">
+                        @SharedLocalizer["Pricing_Monthly_Equiv"] <strong id="monthlyEquivDisplay">@Model.FormattedMonthlyEquivalent</strong> @SharedLocalizer["Pricing_Monthly_Suffix"]
                     </div>
                 </div>
 
-                <!-- Tier 2: Professional (Popular) -->
-                <div class="oz-pricing-card is-popular">
-                    <div class="oz-pricing-popular-badge">@SharedLocalizer["Pricing_Tier2_Badge"]</div>
-                    <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier2_Tag"]</div>
-                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier2_Title"]</h2>
-                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier2_Desc"]</p>
-                        <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
-                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier2_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier2_Price_Annual"]">@SharedLocalizer["Pricing_Tier2_Price_Monthly"]</span>
-                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
-                        </div>
-                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
+                <!-- Domain Callout Box -->
+                <div class="oz-domain-callout-box">
+                    <div class="oz-domain-callout-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
                     </div>
-                    <div class="oz-pricing-card-body">
-                        <a href="/@currentCulture/auth/get-started?plan=pro" class="oz-pricing-btn oz-pricing-btn--primary">@SharedLocalizer["Pricing_Tier2_Btn"]</a>
-                        <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Up to <strong>150 Active Users</strong></span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>All 37 Capabilities in 9 Suites</strong></span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Private AI Gateway (Bring Your Own Key)</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Android &amp; iOS Mobile Applications</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Verifiable Cryptographic QR Badges &amp; Passes</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Field Surveyor Mobile Census &amp; GPS Sync</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Priority 24/7 Support &amp; 99.9% Uptime SLA</span></li>
-                        </ul>
+                    <div class="oz-domain-callout-text">
+                        <h4>@SharedLocalizer["Pricing_Domain_Callout_Title"]</h4>
+                        <p>@SharedLocalizer["Pricing_Domain_Callout_Desc"]</p>
                     </div>
                 </div>
 
-                <!-- Tier 3: Enterprise -->
-                <div class="oz-pricing-card">
-                    <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier3_Tag"]</div>
-                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier3_Title"]</h2>
-                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier3_Desc"]</p>
-                        <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-currency">@SharedLocalizer["Pricing_Currency"]</span>
-                            <span class="oz-pricing-amount" data-monthly="@SharedLocalizer["Pricing_Tier3_Price_Monthly"]" data-annual="@SharedLocalizer["Pricing_Tier3_Price_Annual"]">@SharedLocalizer["Pricing_Tier3_Price_Monthly"]</span>
-                            <span class="oz-pricing-period">@SharedLocalizer["Pricing_Period"]</span>
-                        </div>
-                        <div class="oz-pricing-billed-note" data-monthly="@SharedLocalizer["Pricing_Billed_Monthly"]" data-annual="@SharedLocalizer["Pricing_Billed_Annual_Save"]">@SharedLocalizer["Pricing_Billed_Monthly"]</div>
+                <!-- Action Buttons -->
+                <div class="oz-single-cta-group">
+                    <a href="/@currentCulture/register" class="oz-single-btn-primary">
+                        <span>@SharedLocalizer["Pricing_Btn_Trial"]</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="/@currentCulture/register" class="oz-single-btn-secondary">
+                        @SharedLocalizer["Pricing_Btn_Instant"]
+                    </a>
+                </div>
+
+                <!-- Trust Points -->
+                <div class="oz-single-trust-row">
+                    <div class="oz-single-trust-item">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Trust_Trial"]</span>
                     </div>
-                    <div class="oz-pricing-card-body">
-                        <a href="/@currentCulture/auth/get-started?plan=enterprise" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier3_Btn"]</a>
-                        <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span><strong>Unlimited Active Users</strong> &amp; Multi-Branch</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Dedicated Tenant Database Schema Isolation</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Fine-Grained Role-Based Access Control (RBAC)</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Audit Vault &amp; Anonymous Whistleblowing Hub</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Automated Financial Ledger Bi-Directional Sync</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Dedicated Account Manager &amp; Migration Specialist</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>99.99% High-Availability Enterprise SLA</span></li>
-                        </ul>
+                    <div class="oz-single-trust-item">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Trust_NoCard"]</span>
+                    </div>
+                    <div class="oz-single-trust-item">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Trust_Setup"]</span>
                     </div>
                 </div>
 
-                <!-- Tier 4: Sovereign Dedicated -->
-                <div class="oz-pricing-card">
-                    <div class="oz-pricing-card-header">
-                        <div class="oz-pricing-card-tag">@SharedLocalizer["Pricing_Tier4_Tag"]</div>
-                        <h2 class="oz-pricing-card-name">@SharedLocalizer["Pricing_Tier4_Title"]</h2>
-                        <p class="oz-pricing-card-sub">@SharedLocalizer["Pricing_Tier4_Desc"]</p>
-                        <div class="oz-pricing-price-wrap">
-                            <span class="oz-pricing-amount">@SharedLocalizer["Pricing_Tier4_Price"]</span>
-                        </div>
-                        <div class="oz-pricing-billed-note">@SharedLocalizer["Pricing_Tier4_Period"]</div>
+                <!-- All 9 Features Grid Inside Card -->
+                <div class="oz-single-features-grid">
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat1"]</span>
                     </div>
-                    <div class="oz-pricing-card-body">
-                        <a href="/@currentCulture/customer/contact-sales" class="oz-pricing-btn oz-pricing-btn--outline">@SharedLocalizer["Pricing_Tier4_Btn"]</a>
-                        <ul class="oz-pricing-features-list">
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Private Cloud or On-Premises VPC Deployment</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Zero Model Retention Private AI Sovereignty</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Custom SSO / SAML / Active Directory &amp; LDAP</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Tailored Data Retention &amp; Regional Jurisdiction</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Penetration Test Reports &amp; Custom Legal Rider</span></li>
-                            <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>24/7 Phone Incident Line &amp; 15-Minute Response SLA</span></li>
-                        </ul>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat2"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat3"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat4"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat5"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat6"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat7"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat8"]</span>
+                    </div>
+                    <div class="oz-single-feat-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>@SharedLocalizer["Pricing_Card_Feat9"]</span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Section 3: Interactive 9-Suite Capability Comparison Matrix -->
-    <section class="oz-matrix-section">
+    <!-- Section 3: Bring Your Own Domain 3-Step Guide -->
+    <section class="oz-domain-section">
         <div class="container">
-            <div class="oz-section-header">
-                <span class="oz-badge">@SharedLocalizer["Pricing_Matrix_Badge"]</span>
-                <h2 class="oz-section-title">@SharedLocalizer["Pricing_Matrix_Title"]</h2>
-                <p class="oz-section-desc">@SharedLocalizer["Pricing_Matrix_Desc"]</p>
+            <div class="oz-pricing-hero-badge">
+                <span class="oz-pricing-hero-badge-dot"></span>
+                <span>@SharedLocalizer["Pricing_Domain_Section_Badge"]</span>
             </div>
+            <h2 class="oz-pricing-hero-title">@SharedLocalizer["Pricing_Domain_Section_Title"]</h2>
+            <p class="oz-pricing-hero-desc">@SharedLocalizer["Pricing_Domain_Section_Desc"]</p>
 
-            <div class="oz-matrix-table-wrap">
-                <table class="oz-matrix-table" aria-label="Feature comparison matrix">
-                    <thead>
-                        <tr>
-                            <th scope="col">@SharedLocalizer["Pricing_Matrix_FeatureCol"]</th>
-                            <th scope="col">@SharedLocalizer["Pricing_Tier1_Tag"]</th>
-                            <th scope="col">@SharedLocalizer["Pricing_Tier2_Tag"]</th>
-                            <th scope="col">@SharedLocalizer["Pricing_Tier3_Tag"]</th>
-                            <th scope="col">@SharedLocalizer["Pricing_Tier4_Tag"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Suite 1: People & Collaboration -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 1: People, Community &amp; Collaboration</td></tr>
-                        <tr><td>Community Messenger &amp; Channels</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Committees &amp; Working Sub-Groups</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Alumni &amp; Member Registry</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Anonymous Whistleblowing &amp; Safeguarding</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+            <div class="oz-domain-steps-grid">
+                <!-- Step 1 -->
+                <div class="oz-domain-step-card">
+                    <div class="oz-domain-step-num">@SharedLocalizer["Pricing_Domain_Step1_Num"]</div>
+                    <h3 class="oz-domain-step-title">@SharedLocalizer["Pricing_Domain_Step1_Title"]</h3>
+                    <p class="oz-domain-step-desc">@SharedLocalizer["Pricing_Domain_Step1_Desc"]</p>
+                </div>
 
-                        <!-- Suite 2: Workforce & Rota -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 2: Workforce, Rota &amp; Scheduling</td></tr>
-                        <tr><td>Departmental Rota &amp; Shift Grid</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Peer-to-Peer Shift Swaps &amp; Leave</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Geo-Fenced Mobile Digital Clock-In</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Recruitment Pipeline &amp; ATS Hiring</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
+                <!-- Step 2 -->
+                <div class="oz-domain-step-card">
+                    <div class="oz-domain-step-num">@SharedLocalizer["Pricing_Domain_Step2_Num"]</div>
+                    <h3 class="oz-domain-step-title">@SharedLocalizer["Pricing_Domain_Step2_Title"]</h3>
+                    <p class="oz-domain-step-desc">@SharedLocalizer["Pricing_Domain_Step2_Desc"]</p>
+                </div>
 
-                        <!-- Suite 3: Reports & Forms -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 3: Reports, Forms &amp; Intervals</td></tr>
-                        <tr><td>Custom Drag-and-Drop Form Builder</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Interval KPI Reporting &amp; Executive MIS</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Survey Analytics &amp; Polls</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Bio Link Trees &amp; Brand Landing Hubs</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 4: Events & Credentials -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 4: Events, Training &amp; Verifiable Credentials</td></tr>
-                        <tr><td>Event Ticketing &amp; Check-In</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Cryptographic QR Certificate Designer &amp; Verification</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Learning Management System (LMS)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Speaker &amp; Session Scheduling</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 5: Finance & Revenue -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 5: Finance, Revenue &amp; Billing</td></tr>
-                        <tr><td>Invoicing &amp; Dues Billing</td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Store &amp; E-Commerce Portal</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Grant Ledger &amp; Funding Allocation</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 6: Operations & Workflows -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 6: Operations, Workflows &amp; Assets</td></tr>
-                        <tr><td>Company Asset Lifecycle Management</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Equipment &amp; Fleet Inspection Logs</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Project &amp; Task Milestone Tracking</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Visitor Gate &amp; Access Kiosk</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 7: Communication & AI -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 7: Communication, Live Chat &amp; AI</td></tr>
-                        <tr><td>Private AI Gateway (BYOK Zero Retention)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Mass Communication (Email &amp; SMS Broadcast)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Live Chat Floating Widget &amp; Inbox</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Social Media Post Manager &amp; Scheduler</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 8: Compliance & Governance -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 8: Compliance, Governance &amp; Security</td></tr>
-                        <tr><td>Document Policy Vault &amp; Approvals</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Cryptographic Online Voting &amp; Elections</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Public Appointment &amp; Resource Booking</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Helpdesk &amp; Service Ticketing</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-
-                        <!-- Suite 9: Demographics & Census -->
-                        <tr class="oz-matrix-suite-header"><td colspan="5">Suite 9: Demographics, Census &amp; Field Surveying</td></tr>
-                        <tr><td>Civic Census &amp; Household Mapping</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Field Enumerator Mobile Toolkit (Offline Sync)</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Resident Digital ID Cards &amp; QR Passes</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                        <tr><td>Demographic Analytics &amp; Ward Reporting</td><td><span class="oz-matrix-dash">&mdash;</span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td><td><span class="oz-matrix-check"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span></td></tr>
-                    </tbody>
-                </table>
+                <!-- Step 3 -->
+                <div class="oz-domain-step-card">
+                    <div class="oz-domain-step-num">@SharedLocalizer["Pricing_Domain_Step3_Num"]</div>
+                    <h3 class="oz-domain-step-title">@SharedLocalizer["Pricing_Domain_Step3_Title"]</h3>
+                    <p class="oz-domain-step-desc">@SharedLocalizer["Pricing_Domain_Step3_Desc"]</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Section 4: Enterprise FAQ Accordion -->
+    <!-- Section 4: Why ₦40,000 / Year? (Radical Value & Transparency) -->
+    <section class="oz-why-section">
+        <div class="container">
+            <div class="oz-pricing-hero-badge">
+                <span class="oz-pricing-hero-badge-dot"></span>
+                <span>@SharedLocalizer["Pricing_Why_Badge"]</span>
+            </div>
+            <h2 class="oz-pricing-hero-title">@SharedLocalizer["Pricing_Why_Title"]</h2>
+            <p class="oz-pricing-hero-desc">@SharedLocalizer["Pricing_Why_Desc"]</p>
+
+            <div class="oz-why-grid">
+                <div class="oz-why-card">
+                    <div class="oz-why-icon-wrap" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="oz-why-card-title">@SharedLocalizer["Pricing_Why1_Title"]</h3>
+                    <p class="oz-why-card-desc">@SharedLocalizer["Pricing_Why1_Desc"]</p>
+                </div>
+
+                <div class="oz-why-card">
+                    <div class="oz-why-icon-wrap" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3 class="oz-why-card-title">@SharedLocalizer["Pricing_Why2_Title"]</h3>
+                    <p class="oz-why-card-desc">@SharedLocalizer["Pricing_Why2_Desc"]</p>
+                </div>
+
+                <div class="oz-why-card">
+                    <div class="oz-why-icon-wrap" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="oz-why-card-title">@SharedLocalizer["Pricing_Why3_Title"]</h3>
+                    <p class="oz-why-card-desc">@SharedLocalizer["Pricing_Why3_Desc"]</p>
+                </div>
+
+                <div class="oz-why-card">
+                    <div class="oz-why-icon-wrap" aria-hidden="true">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="oz-why-card-title">@SharedLocalizer["Pricing_Why4_Title"]</h3>
+                    <p class="oz-why-card-desc">@SharedLocalizer["Pricing_Why4_Desc"]</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: What 40k Gets You (9 Suites Grid) -->
+    <section class="oz-suites-section">
+        <div class="container">
+            <div class="oz-pricing-hero-badge">
+                <span class="oz-pricing-hero-badge-dot"></span>
+                <span>@SharedLocalizer["Pricing_Suites_Badge"]</span>
+            </div>
+            <h2 class="oz-pricing-hero-title">@SharedLocalizer["Pricing_Suites_Title"]</h2>
+            <p class="oz-pricing-hero-desc">@SharedLocalizer["Pricing_Suites_Desc"]</p>
+
+            <div class="oz-suites-grid">
+                <!-- Suite 1 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>1. Core Point of Sale (POS)</h4>
+                        <p>Fast retail checkout, offline transactions, barcode printing, and cash drawer balancing.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 2 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>2. Omnichannel Inventory</h4>
+                        <p>Real-time multi-branch stock levels, low-inventory alerts, and central catalog control.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 3 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>3. Payments & Settlements</h4>
+                        <p>Integrated card terminals, bank transfers, mobile money, and automated reconciliations.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 4 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>4. CRM & VIP Customer Loyalty</h4>
+                        <p>Customer profiles, purchase histories, loyalty points, and digital membership cards.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 5 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>5. Marketing Automation</h4>
+                        <p>Targeted SMS and email campaigns, customer win-backs, and automated promotions.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 6 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>6. AI & Demand Forecasting</h4>
+                        <p>Predictive inventory replenishment, smart pricing recommendations, and churn analytics.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 7 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="3" width="15" height="13"></rect>
+                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>7. Supply Chain & Fulfillment</h4>
+                        <p>Multi-warehouse routing, courier tracking, supplier purchase orders, and stock receiving.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 8 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>8. Developer APIs & Webhooks</h4>
+                        <p>REST & GraphQL endpoints, event webhooks, sandbox environment, and ERP integrations.</p>
+                    </div>
+                </div>
+
+                <!-- Suite 9 -->
+                <div class="oz-suite-card">
+                    <div class="oz-suite-card-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div class="oz-suite-card-body">
+                        <h4>9. Security & Cloud Backups</h4>
+                        <p>Isolated tenant architecture, role-based permissions, automated daily backups, and SSL.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: FAQ Accordion -->
     <section class="oz-faq-section">
         <div class="container">
-            <div class="oz-section-header">
-                <span class="oz-badge">@SharedLocalizer["Pricing_Faq_Badge"]</span>
-                <h2 class="oz-section-title">@SharedLocalizer["Pricing_Faq_Title"]</h2>
-                <p class="oz-section-desc">@SharedLocalizer["Pricing_Faq_Desc"]</p>
+            <div class="oz-pricing-hero-badge">
+                <span class="oz-pricing-hero-badge-dot"></span>
+                <span>@SharedLocalizer["Pricing_Faq_Badge"]</span>
             </div>
+            <h2 class="oz-pricing-hero-title">@SharedLocalizer["Pricing_Faq_Title"]</h2>
+            <p class="oz-pricing-hero-desc">@SharedLocalizer["Pricing_Faq_Desc"]</p>
 
             <div class="oz-faq-grid">
                 <!-- FAQ 1 -->
-                <div class="oz-faq-item">
-                    <button type="button" class="oz-faq-question" aria-expanded="false">
+                <div class="oz-faq-item is-open">
+                    <button type="button" class="oz-faq-question" aria-expanded="true">
                         <span>@SharedLocalizer["Pricing_Faq1_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq1_A"]</p>
@@ -264,7 +443,9 @@
                 <div class="oz-faq-item">
                     <button type="button" class="oz-faq-question" aria-expanded="false">
                         <span>@SharedLocalizer["Pricing_Faq2_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq2_A"]</p>
@@ -275,7 +456,9 @@
                 <div class="oz-faq-item">
                     <button type="button" class="oz-faq-question" aria-expanded="false">
                         <span>@SharedLocalizer["Pricing_Faq3_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq3_A"]</p>
@@ -286,7 +469,9 @@
                 <div class="oz-faq-item">
                     <button type="button" class="oz-faq-question" aria-expanded="false">
                         <span>@SharedLocalizer["Pricing_Faq4_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq4_A"]</p>
@@ -297,7 +482,9 @@
                 <div class="oz-faq-item">
                     <button type="button" class="oz-faq-question" aria-expanded="false">
                         <span>@SharedLocalizer["Pricing_Faq5_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq5_A"]</p>
@@ -308,7 +495,9 @@
                 <div class="oz-faq-item">
                     <button type="button" class="oz-faq-question" aria-expanded="false">
                         <span>@SharedLocalizer["Pricing_Faq6_Q"]</span>
-                        <svg class="oz-faq-arrow" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                     <div class="oz-faq-answer">
                         <p>@SharedLocalizer["Pricing_Faq6_A"]</p>
@@ -318,33 +507,25 @@
         </div>
     </section>
 
-    <!-- Section 5: High-Conversion Final CTA Banner -->
-    <section class="oz-final-cta-section">
+    <!-- Section 7: Final Conversion CTA -->
+    <section class="oz-cta-section">
         <div class="container">
-            <div class="oz-final-cta-card">
-                <h2 class="oz-final-cta-title">@SharedLocalizer["Pricing_Cta_Title"]</h2>
-                <p class="oz-final-cta-desc">@SharedLocalizer["Pricing_Cta_Desc"]</p>
-                <div class="oz-final-cta-buttons">
-                    <a href="/@currentCulture/auth/get-started" class="oz-btn-primary-cta">
-                        <span>@SharedLocalizer["Pricing_Cta_BtnPrimary"]</span>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                    </a>
-                    <a href="/@currentCulture/customer/contact-sales" class="oz-btn-secondary-cta">
-                        <span>@SharedLocalizer["Pricing_Cta_BtnSecondary"]</span>
-                    </a>
-                </div>
-                <div class="oz-final-cta-trust">
-                    <div class="oz-trust-item">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span>@SharedLocalizer["Home_Cta_Trust1"]</span>
-                    </div>
-                    <div class="oz-trust-item">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span>@SharedLocalizer["Home_Cta_Trust2"]</span>
-                    </div>
-                    <div class="oz-trust-item">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span>@SharedLocalizer["Home_Cta_Trust3"]</span>
+            <div class="oz-cta-card">
+                <div class="oz-cta-glow" aria-hidden="true"></div>
+                <div class="oz-cta-content">
+                    <h2 class="oz-cta-title">@SharedLocalizer["Pricing_Cta_Title"]</h2>
+                    <p class="oz-cta-desc">@SharedLocalizer["Pricing_Cta_Desc"]</p>
+                    <div class="oz-cta-actions">
+                        <a href="/@currentCulture/register" class="btn btn-primary oz-btn-lg">
+                            <span>@SharedLocalizer["Pricing_Cta_BtnPrimary"]</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </a>
+                        <a href="/@currentCulture/contact" class="btn btn-outline oz-btn-lg">
+                            @SharedLocalizer["Pricing_Cta_BtnSecondary"]
+                        </a>
                     </div>
                 </div>
             </div>
@@ -352,65 +533,23 @@
     </section>
 </div>
 
-<!-- Interactive Scripts: Billing Cycle Switcher & FAQ Accordion -->
+@section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // 1. Billing Cycle Toggle Logic
-        var billingBtn = document.getElementById('billingToggle');
-        var labelMonthly = document.getElementById('labelMonthly');
-        var labelAnnual = document.getElementById('labelAnnual');
-        var amounts = document.querySelectorAll('.oz-pricing-amount[data-monthly]');
-        var billedNotes = document.querySelectorAll('.oz-pricing-billed-note[data-monthly]');
-        var isAnnual = false;
-
-        function setBillingCycle(annual) {
-            isAnnual = annual;
-            if (billingBtn) {
-                billingBtn.classList.toggle('is-active', isAnnual);
-                billingBtn.setAttribute('aria-checked', isAnnual.toString());
-            }
-            if (labelMonthly && labelAnnual) {
-                labelMonthly.classList.toggle('is-active', !isAnnual);
-                labelAnnual.classList.toggle('is-active', isAnnual);
-            }
-            amounts.forEach(function (el) {
-                var val = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
-                if (val) el.textContent = val;
-            });
-            billedNotes.forEach(function (el) {
-                var note = isAnnual ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
-                if (note) el.textContent = note;
-            });
-        }
-
-        if (billingBtn) {
-            billingBtn.addEventListener('click', function () {
-                setBillingCycle(!isAnnual);
-            });
-        }
-        if (labelMonthly) {
-            labelMonthly.addEventListener('click', function () {
-                setBillingCycle(false);
-            });
-        }
-        if (labelAnnual) {
-            labelAnnual.addEventListener('click', function () {
-                setBillingCycle(true);
-            });
-        }
-
-        // 2. FAQ Accordion Logic
+        // FAQ Accordion Interactivity
         var faqItems = document.querySelectorAll('.oz-faq-item');
         faqItems.forEach(function (item) {
             var btn = item.querySelector('.oz-faq-question');
             if (btn) {
                 btn.addEventListener('click', function () {
                     var wasOpen = item.classList.contains('is-open');
+                    // Close other items
                     faqItems.forEach(function (other) {
                         other.classList.remove('is-open');
                         var otherBtn = other.querySelector('.oz-faq-question');
                         if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
                     });
+                    // Toggle current
                     if (!wasOpen) {
                         item.classList.add('is-open');
                         btn.setAttribute('aria-expanded', 'true');
@@ -420,3 +559,4 @@
         });
     });
 </script>
+}
