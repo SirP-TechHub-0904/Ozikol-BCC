@@ -1037,5 +1037,34 @@
     <script src="~/js/hero-case-study-carousel.js" asp-append-version="true"></script>
     <script src="~/js/listing.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Interactive Language Switcher dropdown toggle & accessibility
+        (function () {
+            const switcher = document.getElementById('ozLangSwitcher');
+            if (!switcher) return;
+            const btn = switcher.querySelector('.oz-lang-btn');
+            if (!btn) return;
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = switcher.classList.toggle('is-open');
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!switcher.contains(e.target)) {
+                    switcher.classList.remove('is-open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    switcher.classList.remove('is-open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

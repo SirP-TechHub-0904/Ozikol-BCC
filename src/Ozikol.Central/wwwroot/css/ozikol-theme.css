@@ -39,8 +39,14 @@
     background: rgba(0, 0, 0, 0.08);
     border-color: rgba(0, 0, 0, 0.2);
 }
+.oz-lang-btn svg {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.oz-lang-switcher:hover .oz-lang-btn svg,
+.oz-lang-switcher.is-open .oz-lang-btn svg {
+    transform: rotate(180deg);
+}
 .oz-lang-menu {
-    display: none;
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
@@ -52,6 +58,20 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     z-index: 9999;
     backdrop-filter: blur(20px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
+}
+/* Invisible hover bridge spanning the 8px gap between button and dropdown so hover is never lost */
+.oz-lang-menu::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
 }
 .theme-light .oz-lang-menu {
     background: #ffffff;
@@ -59,8 +79,12 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
 }
 .oz-lang-switcher:hover .oz-lang-menu,
-.oz-lang-switcher:focus-within .oz-lang-menu {
-    display: block;
+.oz-lang-switcher:focus-within .oz-lang-menu,
+.oz-lang-switcher.is-open .oz-lang-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 .oz-lang-item {
     display: flex;
