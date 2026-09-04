@@ -1,11 +1,11 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Identity;
+using Ozikol.Central;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
-using Ozikol.Central.Resources;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
@@ -157,6 +157,53 @@ localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultur
 });
 
 app.UseRequestLocalization(localizationOptions);
+
+// 10. Enforce culture segment in portal URLs (e.g. '/' redirects to '/en', '/pricing' to '/en/pricing')
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+
+    // Skip static assets, APIs, and SetLanguage endpoint
+    if (path.StartsWith("/css", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/js", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/images", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/fonts", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/SetLanguage", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    // Check if the path starts with a supported culture prefix (/en, /fr, /es, /de)
+    var isCulturePrefixed = path.StartsWith("/en", StringComparison.OrdinalIgnoreCase) ||
+                            path.StartsWith("/fr", StringComparison.OrdinalIgnoreCase) ||
+                            path.StartsWith("/es", StringComparison.OrdinalIgnoreCase) ||
+                            path.StartsWith("/de", StringComparison.OrdinalIgnoreCase);
+
+    if (!isCulturePrefixed)
+    {
+        var cultureFeature = context.Features.Get<IRequestCultureFeature>();
+        var culture = cultureFeature?.RequestCulture.Culture.TwoLetterISOLanguageName ?? "en";
+        if (string.IsNullOrWhiteSpace(culture) || culture.Length > 3)
+        {
+            culture = "en";
+        }
+
+        var target = path == "/" || string.IsNullOrEmpty(path) ? $"/{culture}" : $"/{culture}{path}";
+        if (context.Request.QueryString.HasValue)
+        {
+            target += context.Request.QueryString.Value;
+        }
+
+        context.Response.Redirect(target, permanent: false);
+        return;
+    }
+
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

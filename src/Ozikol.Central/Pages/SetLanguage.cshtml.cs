@@ -46,8 +46,10 @@ namespace Ozikol.Central.Pages
                     HttpOnly = false // Allow client-side scripts to read active culture if required
                 });
 
-            // Validate returnUrl to avoid open redirect vulnerabilities
-            if (string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl))
+            // Validate returnUrl to avoid open redirect vulnerabilities or recursive SetLanguage calls
+            if (string.IsNullOrWhiteSpace(returnUrl) || 
+                !Url.IsLocalUrl(returnUrl) || 
+                returnUrl.Contains("SetLanguage", StringComparison.OrdinalIgnoreCase))
             {
                 return LocalRedirect($"/{culture}");
             }
@@ -59,17 +61,14 @@ namespace Ozikol.Central.Pages
                 cleanPath = "/" + cleanPath;
             }
 
-            // Build the new localized destination URL
-            string localizedTarget;
-            if (cleanPath == "/")
+            // Prevent SetLanguage loop if cleanPath is SetLanguage
+            if (cleanPath.StartsWith("/SetLanguage", StringComparison.OrdinalIgnoreCase))
             {
-                localizedTarget = $"/{culture}";
-            }
-            else
-            {
-                localizedTarget = $"/{culture}{cleanPath}";
+                cleanPath = "/";
             }
 
+            // Build the new localized destination URL
+            string localizedTarget = cleanPath == "/" ? $"/{culture}" : $"/{culture}{cleanPath}";
             return LocalRedirect(localizedTarget);
         }
     }

@@ -835,7 +835,12 @@
                 <div class="mega-menu__secondary-area">
                     @{
                         var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
-                        var returnUrl = Context.Request.Path + Context.Request.QueryString;
+                        var rawPath = Context.Request.Path.Value ?? "/";
+                        if (rawPath.StartsWith("/SetLanguage", StringComparison.OrdinalIgnoreCase))
+                        {
+                            rawPath = $"/{currentCulture}";
+                        }
+                        var returnUrl = rawPath + Context.Request.QueryString;
                         var currentFlag = currentCulture switch
                         {
                             "fr" => "🇫🇷 FR",
@@ -871,10 +876,10 @@
                         </div>
                     </div>
 
-                    <a href="/auth/login" class="nav-login-link">
+                    <a href="/@currentCulture/auth/login" class="nav-login-link">
                         @SharedLocalizer["Nav_SignIn"]
                     </a>
-                    <a href="/auth/get-started" class="btn-get-started">
+                    <a href="/@currentCulture/auth/get-started" class="btn-get-started">
                         @SharedLocalizer["Nav_GetStarted"]
                     </a>
                 </div>
