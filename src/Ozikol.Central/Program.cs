@@ -97,14 +97,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
 
-Console.WriteLine("================================================================");
-Console.WriteLine("🚀 OZIKOL.CENTRAL ENTERPRISE PLATFORM & OPERATIONS HUB LOADED");
-Console.WriteLine("   ├── Master Database: " + (masterConnectionString.Contains("Database=") ? masterConnectionString.Split(';').FirstOrDefault(s => s.StartsWith("Database=") || s.StartsWith("Initial Catalog=")) : "Master DB Configured"));
-Console.WriteLine("   ├── Marketing Portal:  http://localhost:51030");
-Console.WriteLine("   ├── Public Signup:     http://localhost:51030/signup");
-Console.WriteLine("   ├── Affiliate Network: http://localhost:51030/affiliate");
-Console.WriteLine("   ├── Marketplace:       http://localhost:51030/marketplace");
-Console.WriteLine("   └── Operator Console:  http://localhost:51030/Account/Login");
-Console.WriteLine("================================================================");
-
 app.Run();
