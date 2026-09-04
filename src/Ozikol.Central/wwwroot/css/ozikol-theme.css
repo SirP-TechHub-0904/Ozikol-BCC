@@ -1115,9 +1115,19 @@
     overflow: hidden;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
+.oz-section-header {
+    text-align: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto 36px auto;
+}
 .oz-pricing-hero-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 6px 16px;
     border-radius: 9999px;
@@ -1127,7 +1137,9 @@
     font-weight: 700;
     color: #e5173f;
     letter-spacing: 0.06em;
-    margin-bottom: 20px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 20px !important;
 }
 .oz-pricing-hero-badge-dot {
     width: 8px;
