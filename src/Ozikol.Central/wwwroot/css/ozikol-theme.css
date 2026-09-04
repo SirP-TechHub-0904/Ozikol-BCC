@@ -1867,45 +1867,54 @@
 }
 
 .oz-feat-card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.oz-feat-card-icon svg {
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
 }
-.oz-feat-card-icon--crimson {
-    background: rgba(229, 23, 63, 0.1);
+.oz-feat-card:hover .oz-feat-card-icon {
+    transform: scale(1.08);
+}
+.oz-icon-crimson, .oz-feat-card-icon--crimson {
+    background: rgba(229, 23, 63, 0.12);
     color: #e5173f;
 }
-.oz-feat-card-icon--indigo {
-    background: rgba(99, 102, 241, 0.1);
-    color: #6366f1;
+.oz-icon-indigo, .oz-feat-card-icon--indigo {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
 }
-.oz-feat-card-icon--emerald {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+.oz-icon-emerald, .oz-feat-card-icon--emerald {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
 }
-.oz-feat-card-icon--amber {
-    background: rgba(245, 158, 11, 0.12);
+.oz-icon-amber, .oz-feat-card-icon--amber {
+    background: rgba(245, 158, 11, 0.14);
     color: #d97706;
 }
-.oz-feat-card-icon--violet {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
+.oz-icon-violet, .oz-feat-card-icon--violet {
+    background: rgba(139, 92, 246, 0.12);
+    color: #7c3aed;
 }
-.oz-feat-card-icon--cyan {
-    background: rgba(6, 182, 212, 0.1);
+.oz-icon-cyan, .oz-feat-card-icon--cyan {
+    background: rgba(6, 182, 212, 0.12);
     color: #0891b2;
 }
-.oz-feat-card-icon--blue {
-    background: rgba(37, 99, 235, 0.1);
+.oz-icon-blue, .oz-feat-card-icon--blue {
+    background: rgba(37, 99, 235, 0.12);
     color: #2563eb;
 }
-.oz-feat-card-icon--rose {
-    background: rgba(244, 63, 94, 0.1);
+.oz-icon-rose, .oz-feat-card-icon--rose {
+    background: rgba(244, 63, 94, 0.12);
     color: #e11d48;
 }
 
