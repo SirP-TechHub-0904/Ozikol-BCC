@@ -97,6 +97,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddMemoryCache();
+builder.Services.Configure<PricingSettings>(builder.Configuration.GetSection("PricingSettings"));
 
 // 7. Register Central Services
 builder.Services.AddScoped<ICentralMigrationService, CentralMigrationService>();
@@ -104,6 +105,7 @@ builder.Services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 builder.Services.AddScoped<ICentralEmailService, CentralEmailService>();
 builder.Services.AddScoped<ICentralTwoFactorService, CentralTwoFactorService>();
 builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
+builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 
 var app = builder.Build();

@@ -61,18 +61,12 @@ public class PricingModel : PageModel
     /// <param name="currency">Optional currency ISO code passed via URL query parameter.</param>
     public void OnGet([FromQuery] string? currency)
     {
-        // Resolve currency precedence: Query Parameter -> Existing Cookie -> Default NGN
-        string? resolvedCode = currency;
-        if (string.IsNullOrWhiteSpace(resolvedCode))
-        {
-            Request.Cookies.TryGetValue("oz_currency", out resolvedCode);
-        }
-
-        ActiveCurrency = _currencyService.ResolveCurrency(resolvedCode);
-        SelectedCurrency = ActiveCurrency.Code;
+        // 1. Resolve currency using 4-tier waterfall: Query Param -> Cookie -> Cloudflare/GeoIP -> Accept-Language -> Default
+        SelectedCurrency = _currencyService.ResolveCurrencyCodeFromRequest(HttpContext, currency);
+        ActiveCurrency = _currencyService.ResolveCurrency(SelectedCurrency);
         PriceBook = _currencyService.GetPriceBook(SelectedCurrency);
 
-        // Persist currency selection cookie for subsequent requests if explicitly specified
+        // 2. Persist currency selection cookie for subsequent visits if explicitly chosen via query param
         if (!string.IsNullOrWhiteSpace(currency))
         {
             Response.Cookies.Append("oz_currency", SelectedCurrency, new CookieOptions

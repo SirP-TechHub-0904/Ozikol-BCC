@@ -29,8 +29,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             UserManager<CentralUser>? userManager = null,
             CancellationToken cancellationToken = default)
         {
-            // Seed only the central security governance roles and initial SuperAdmin account
+            // Seed the central security governance roles and initial SuperAdmin account
             await SeedRolesAndSuperAdminAsync(dbContext, roleManager, userManager, cancellationToken);
+
+            // Seed the 10 global & African regional platform currency exchange rates
+            await SeedCurrenciesAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
@@ -147,6 +150,169 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Programmatically seeds the 10 core global and African regional platform currencies
+        /// with exchange rates relative to the USD $25.00 baseline.
+        /// Avoids migration drift by verifying presence in the database prior to insertion.
+        /// </summary>
+        /// <param name="dbContext">The master catalog database context instance.</param>
+        /// <param name="ct">Cancellation token for async operations.</param>
+        /// <returns>A task representing the asynchronous currency seeding operation.</returns>
+        public static async Task SeedCurrenciesAsync(MasterCatalogDbContext dbContext, CancellationToken ct = default)
+        {
+            if (await dbContext.MasterCurrencyRates.AnyAsync(ct))
+            {
+                return; // Already initialized
+            }
+
+            var defaultCurrencies = new[]
+            {
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "USD",
+                    CurrencySymbol = "$",
+                    DisplayName = "US Dollar",
+                    CultureName = "en-US",
+                    PillLabel = "USD ($)",
+                    RateFromUsd = 1.0m,
+                    IsBaseCurrency = true,
+                    IsActive = true,
+                    SortOrder = 1,
+                    AssociatedCountryCodes = "US",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "NGN",
+                    CurrencySymbol = "\u20A6",
+                    DisplayName = "Nigerian Naira",
+                    CultureName = "en-NG",
+                    PillLabel = "NGN (\u20A6)",
+                    RateFromUsd = 1600.0m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 2,
+                    AssociatedCountryCodes = "NG",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "GBP",
+                    CurrencySymbol = "\u00A3",
+                    DisplayName = "British Pound",
+                    CultureName = "en-GB",
+                    PillLabel = "GBP (\u00A3)",
+                    RateFromUsd = 0.80m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 3,
+                    AssociatedCountryCodes = "GB",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "EUR",
+                    CurrencySymbol = "\u20AC",
+                    DisplayName = "Euro",
+                    CultureName = "de-DE",
+                    PillLabel = "EUR (\u20AC)",
+                    RateFromUsd = 0.92m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 4,
+                    AssociatedCountryCodes = "DE,FR,ES,IT,NL,BE,IE,PT,AT,FI,GR",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "GHS",
+                    CurrencySymbol = "GH\u20B5",
+                    DisplayName = "Ghanaian Cedi",
+                    CultureName = "en-GH",
+                    PillLabel = "GHS (GH\u20B5)",
+                    RateFromUsd = 14.0m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 5,
+                    AssociatedCountryCodes = "GH",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "KES",
+                    CurrencySymbol = "KSh",
+                    DisplayName = "Kenyan Shilling",
+                    CultureName = "sw-KE",
+                    PillLabel = "KES (KSh)",
+                    RateFromUsd = 130.0m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 6,
+                    AssociatedCountryCodes = "KE",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "ZAR",
+                    CurrencySymbol = "R",
+                    DisplayName = "South African Rand",
+                    CultureName = "en-ZA",
+                    PillLabel = "ZAR (R)",
+                    RateFromUsd = 18.0m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 7,
+                    AssociatedCountryCodes = "ZA",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "CAD",
+                    CurrencySymbol = "CA$",
+                    DisplayName = "Canadian Dollar",
+                    CultureName = "en-CA",
+                    PillLabel = "CAD (CA$)",
+                    RateFromUsd = 1.36m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 8,
+                    AssociatedCountryCodes = "CA",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "AED",
+                    CurrencySymbol = "AED",
+                    DisplayName = "UAE Dirham",
+                    CultureName = "ar-AE",
+                    PillLabel = "AED",
+                    RateFromUsd = 3.67m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 9,
+                    AssociatedCountryCodes = "AE",
+                    CreatedAtUtc = DateTime.UtcNow
+                },
+                new MasterCurrencyRate
+                {
+                    CurrencyCode = "INR",
+                    CurrencySymbol = "\u20B9",
+                    DisplayName = "Indian Rupee",
+                    CultureName = "en-IN",
+                    PillLabel = "INR (\u20B9)",
+                    RateFromUsd = 84.0m,
+                    IsBaseCurrency = false,
+                    IsActive = true,
+                    SortOrder = 10,
+                    AssociatedCountryCodes = "IN",
+                    CreatedAtUtc = DateTime.UtcNow
+                }
+            };
+
+            await dbContext.MasterCurrencyRates.AddRangeAsync(defaultCurrencies, ct);
+            await dbContext.SaveChangesAsync(ct);
         }
     }
 }
