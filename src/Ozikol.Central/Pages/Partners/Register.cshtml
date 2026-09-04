@@ -1,0 +1,248 @@
+@page "/partners/register"
+@model Ozikol.Central.Pages.Partners.RegisterModel
+@{
+    ViewData["Title"] = SharedLocalizer["Partner_Reg_Page_Title"];
+}
+
+<div class="oz-corp-page">
+    <!-- Hero Header -->
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["Partner_Reg_Hero_Badge"]
+            </div>
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["Partner_Reg_Hero_Title"].Value)
+            </h1>
+            <p class="oz-corp-lead">
+                @SharedLocalizer["Partner_Reg_Hero_Lead"]
+            </p>
+        </div>
+    </section>
+
+    <!-- Application Form or Success State -->
+    <main class="oz-corp-container oz-corp-section">
+        @if (Model.IsSubmitted)
+        {
+            <!-- Success Confirmation Screen -->
+            <div class="oz-partner-success-wrap">
+                <div class="oz-partner-success-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald oz-partner-success-icon" aria-hidden="true">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@Model.ConfirmedTrackName Track</span>
+                    <h2 class="oz-partner-success-title">@SharedLocalizer["Partner_Success_Title"]</h2>
+                    <p class="oz-partner-success-desc">
+                        @SharedLocalizer["Partner_Success_Desc"]
+                    </p>
+
+                    <div class="oz-partner-ref-box">
+                        <div class="oz-partner-ref-label">@SharedLocalizer["Partner_Success_RefLabel"]</div>
+                        <div class="oz-partner-ref-code">@Model.AssignedPartnerCode</div>
+                    </div>
+
+                    <div class="oz-partner-next-steps">
+                        <h4>@SharedLocalizer["Partner_Success_NextSteps_Title"]</h4>
+                        <ul class="oz-corp-list">
+                            <li class="oz-corp-list-item">
+                                <span class="oz-corp-check">&#10003;</span>
+                                <span>@SharedLocalizer["Partner_Success_Step1"]</span>
+                            </li>
+                            <li class="oz-corp-list-item">
+                                <span class="oz-corp-check">&#10003;</span>
+                                <span>@SharedLocalizer["Partner_Success_Step2"]</span>
+                            </li>
+                            <li class="oz-corp-list-item">
+                                <span class="oz-corp-check">&#10003;</span>
+                                <span>@SharedLocalizer["Partner_Success_Step3"]</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="oz-feat-actions oz-feat-actions--center oz-partner-success-actions">
+                        <a href="/@Model.CurrentCulture/about-us/partners" class="oz-btn-outline-hero">
+                            <span>@SharedLocalizer["Partner_Success_BtnOverview"]</span>
+                        </a>
+                        <a href="/@Model.CurrentCulture" class="oz-btn-primary-hero">
+                            <span>@SharedLocalizer["Partner_Success_BtnHome"]</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Registration Form Card -->
+            <div class="oz-partner-form-wrap">
+                <div class="oz-partner-form-card">
+                    <form method="post" class="oz-partner-form" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="oz-partner-alert-error" role="alert">
+                                <div asp-validation-summary="All"></div>
+                            </div>
+                        }
+
+                        <!-- Step 1: Select Partner Track -->
+                        <div class="oz-partner-step-block">
+                            <div class="oz-partner-step-header">
+                                <span class="oz-partner-step-num">1</span>
+                                <div>
+                                    <h3 class="oz-partner-step-title">@SharedLocalizer["Partner_Form_Step1_Title"]</h3>
+                                    <p class="oz-partner-step-desc">@SharedLocalizer["Partner_Form_Step1_Desc"]</p>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-track-grid">
+                                <label class="oz-partner-track-card @(Model.Input.PartnerTrack == "Enterprise" ? "is-selected" : "")">
+                                    <input type="radio" asp-for="Input.PartnerTrack" value="Enterprise" class="oz-partner-track-radio" />
+                                    <div class="oz-corp-card-icon oz-icon-indigo" aria-hidden="true">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                                    </div>
+                                    <div class="oz-partner-track-name">@SharedLocalizer["Partners_Track1_Title"]</div>
+                                    <div class="oz-partner-track-badge">@SharedLocalizer["Partner_Form_Track1_Margin"]</div>
+                                    <div class="oz-partner-track-summary">@SharedLocalizer["Partner_Form_Track1_Summary"]</div>
+                                </label>
+
+                                <label class="oz-partner-track-card @(Model.Input.PartnerTrack == "Creator" ? "is-selected" : "")">
+                                    <input type="radio" asp-for="Input.PartnerTrack" value="Creator" class="oz-partner-track-radio" />
+                                    <div class="oz-corp-card-icon oz-icon-amber" aria-hidden="true">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                                    </div>
+                                    <div class="oz-partner-track-name">@SharedLocalizer["Partners_Track2_Title"]</div>
+                                    <div class="oz-partner-track-badge">@SharedLocalizer["Partner_Form_Track2_Margin"]</div>
+                                    <div class="oz-partner-track-summary">@SharedLocalizer["Partner_Form_Track2_Summary"]</div>
+                                </label>
+
+                                <label class="oz-partner-track-card @(Model.Input.PartnerTrack == "Affiliate" ? "is-selected" : "")">
+                                    <input type="radio" asp-for="Input.PartnerTrack" value="Affiliate" class="oz-partner-track-radio" />
+                                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                                    </div>
+                                    <div class="oz-partner-track-name">@SharedLocalizer["Partners_Track3_Title"]</div>
+                                    <div class="oz-partner-track-badge">@SharedLocalizer["Partner_Form_Track3_Margin"]</div>
+                                    <div class="oz-partner-track-summary">@SharedLocalizer["Partner_Form_Track3_Summary"]</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Applicant Profile -->
+                        <div class="oz-partner-step-block">
+                            <div class="oz-partner-step-header">
+                                <span class="oz-partner-step-num">2</span>
+                                <div>
+                                    <h3 class="oz-partner-step-title">@SharedLocalizer["Partner_Form_Step2_Title"]</h3>
+                                    <p class="oz-partner-step-desc">@SharedLocalizer["Partner_Form_Step2_Desc"]</p>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.FullName" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_FullName"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="e.g. Alexander Vance" required />
+                                    <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.Email" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_Email"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="alexander@agency.com" required />
+                                    <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.PhoneNumber" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_Phone"]
+                                    </label>
+                                    <input asp-for="Input.PhoneNumber" type="tel" class="oz-partner-input" placeholder="+1 (555) 019-2834" />
+                                    <span asp-validation-for="Input.PhoneNumber" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.OrganizationOrAgency" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_Organization"]
+                                    </label>
+                                    <input asp-for="Input.OrganizationOrAgency" class="oz-partner-input" placeholder="e.g. Vance Digital Consultants" />
+                                    <span asp-validation-for="Input.OrganizationOrAgency" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.WebsiteOrChannel" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_Website"]
+                                    </label>
+                                    <input asp-for="Input.WebsiteOrChannel" class="oz-partner-input" placeholder="https://www.yourdomain.com" />
+                                    <span asp-validation-for="Input.WebsiteOrChannel" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.RequestedPartnerCode" class="oz-partner-label">
+                                        @SharedLocalizer["Partner_Field_Code"]
+                                    </label>
+                                    <input asp-for="Input.RequestedPartnerCode" class="oz-partner-input oz-partner-input--code" placeholder="e.g. VANCE-TECH" maxlength="25" />
+                                    <div class="oz-partner-hint">@SharedLocalizer["Partner_Field_CodeHint"]</div>
+                                    <span asp-validation-for="Input.RequestedPartnerCode" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-field">
+                                <label asp-for="Input.Pitch" class="oz-partner-label">
+                                    @SharedLocalizer["Partner_Field_Pitch"]
+                                </label>
+                                <textarea asp-for="Input.Pitch" class="oz-partner-textarea" rows="4" placeholder="@SharedLocalizer["Partner_Field_PitchPlaceholder"]"></textarea>
+                                <span asp-validation-for="Input.Pitch" class="oz-partner-field-error"></span>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Terms & Submission -->
+                        <div class="oz-partner-step-block">
+                            <label class="oz-partner-checkbox-label">
+                                <input asp-for="Input.AgreeToTerms" type="checkbox" class="oz-partner-checkbox" required />
+                                <span>
+                                    @Html.Raw(SharedLocalizer["Partner_Field_AgreeTerms"].Value)
+                                </span>
+                            </label>
+                            <span asp-validation-for="Input.AgreeToTerms" class="oz-partner-field-error"></span>
+
+                            <div class="oz-partner-submit-wrap">
+                                <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn">
+                                    <span>@SharedLocalizer["Partner_Btn_Submit"]</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Trust Guarantee Bar -->
+                <div class="oz-partner-guarantee-bar">
+                    <div class="oz-partner-guarantee-item">
+                        <span class="oz-corp-check">&#10003;</span>
+                        <span>@SharedLocalizer["Partner_Guar_1"]</span>
+                    </div>
+                    <div class="oz-partner-guarantee-item">
+                        <span class="oz-corp-check">&#10003;</span>
+                        <span>@SharedLocalizer["Partner_Guar_2"]</span>
+                    </div>
+                    <div class="oz-partner-guarantee-item">
+                        <span class="oz-corp-check">&#10003;</span>
+                        <span>@SharedLocalizer["Partner_Guar_3"]</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </main>
+</div>
