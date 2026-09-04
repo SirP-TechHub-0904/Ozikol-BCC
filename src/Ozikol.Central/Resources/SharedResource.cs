@@ -1,4 +1,4 @@
-namespace Ozikol.Central.Resources
+namespace Ozikol.Central
 {
     /// <summary>
     /// Marker class used by ASP.NET Core localization tooling and <see cref="Microsoft.Extensions.Localization.IStringLocalizer{T}"/>
