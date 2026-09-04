@@ -1,51 +1,145 @@
 @page "/about-us/offices"
 @model Ozikol.Central.Pages.AboutUs.OfficesModel
 @{
-    ViewData["Title"] = "Global Locations & Offices - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Offices_Page_Title"];
 }
 
-<div class="about-subpage">
-    <section class="ozikol-hero-banner branded-banner branded-banner--evo">
-        <div class="ozikol-hero-container">
-            <div class="ozikol-hero-badge">
-                <span class="ozikol-hero-dot"></span>
-                Global Presence
+<div class="oz-corp-page">
+    <!-- Hero Banner -->
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["Offices_Hero_Badge"]
             </div>
-            <h1 class="ozikol-hero-title">
-                Connecting Organizations Worldwide
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["Offices_Hero_Title"].Value)
             </h1>
-            <p class="ozikol-hero-desc">
-                Ozikol operates across major operational centres and high-speed cloud infrastructure regions.
+            <p class="oz-corp-lead">
+                @SharedLocalizer["Offices_Hero_Lead"]
             </p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Get in Touch</a>
-                <a href="/about-us" class="btn btn-secondary--alt">About Ozikol</a>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Offices_Hero_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/about-us" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Offices_Hero_BtnSecondary"]</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </a>
             </div>
         </div>
     </section>
 
-    <main class="container" style="max-width: 1100px; margin: 50px auto; padding: 0 20px;">
-        <div class="ozikol-grid-2">
-            <div class="ozikol-card">
-                <span style="display: inline-block; font-size: 12px; font-weight: 700; color: var(--ozikol-primary); text-transform: uppercase; margin-bottom: 8px;">Global Headquarters</span>
-                <h3 style="font-size: 20px; font-weight: 700; color: var(--ozikol-dark); margin-bottom: 12px;">London, United Kingdom</h3>
-                <p class="ozikol-card-desc" style="margin-bottom: 14px;">100 Technology Square, Suite 400<br/>London, United Kingdom</p>
-                <div style="font-size: 13.5px; color: #334155; font-weight: 600;">Support: +44 (0) 20 7946 0912</div>
-            </div>
-            <div class="ozikol-card">
-                <span style="display: inline-block; font-size: 12px; font-weight: 700; color: #0284c7; text-transform: uppercase; margin-bottom: 8px;">Cloud Operations & Support</span>
-                <h3 style="font-size: 20px; font-weight: 700; color: var(--ozikol-dark); margin-bottom: 12px;">24/7 Global Digital Network</h3>
-                <p class="ozikol-card-desc" style="margin-bottom: 14px;">Distributed engineering, 99.9% uptime monitoring, and customer support desks.</p>
-                <div style="font-size: 13.5px; color: #334155; font-weight: 600;">support@ozikol.cloud</div>
+    <!-- Global Network Metrics -->
+    <div class="oz-corp-container">
+        <div class="oz-corp-metrics-bar">
+            <div class="oz-corp-metrics-grid">
+                <div>
+                    <div class="oz-corp-metric-num oz-corp-metric-num--primary">12+</div>
+                    <div class="oz-corp-metric-label">@SharedLocalizer["Offices_Metric_Regions"]</div>
+                </div>
+                <div>
+                    <div class="oz-corp-metric-num">&lt;45ms</div>
+                    <div class="oz-corp-metric-label">@SharedLocalizer["Offices_Metric_Latency"]</div>
+                </div>
+                <div>
+                    <div class="oz-corp-metric-num oz-corp-metric-num--primary">99.9%</div>
+                    <div class="oz-corp-metric-label">@SharedLocalizer["Offices_Metric_Uptime"]</div>
+                </div>
+                <div>
+                    <div class="oz-corp-metric-num">24/7</div>
+                    <div class="oz-corp-metric-label">@SharedLocalizer["Offices_Metric_Noc"]</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <section class="ozikol-bottom-cta">
-            <h2>Ready to learn more about Ozikol?</h2>
-            <p>Connect with our team to discover how our modular cloud platform can power your organization.</p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
-                <a href="/features" class="btn btn-secondary--alt">Explore All Features</a>
+    <!-- Main Content -->
+    <main class="oz-corp-container">
+        <!-- Operational Hubs Grid -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["Offices_Hubs_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Offices_Hubs_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["Offices_Hubs_Desc"]</p>
+            </div>
+            <div class="oz-corp-grid-2">
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-crimson" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Offices_Hub1_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Offices_Hub1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Offices_Hub1_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <span>@SharedLocalizer["Offices_Hub1_Contact"]</span>
+                        <span>London, UK</span>
+                    </div>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-blue" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Offices_Hub2_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Offices_Hub2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Offices_Hub2_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <span>@SharedLocalizer["Offices_Hub2_Contact"]</span>
+                        <span>North America</span>
+                    </div>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Offices_Hub3_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Offices_Hub3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Offices_Hub3_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <span>@SharedLocalizer["Offices_Hub3_Contact"]</span>
+                        <span>EMEA</span>
+                    </div>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["Offices_Hub4_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["Offices_Hub4_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["Offices_Hub4_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <span>@SharedLocalizer["Offices_Hub4_Contact"]</span>
+                        <span>APAC</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <div class="oz-feat-cta-badge">
+                <span class="oz-feat-cta-badge-dot"></span>
+                @SharedLocalizer["Offices_Cta_Badge"]
+            </div>
+            <h2>@SharedLocalizer["Offices_Cta_Title"]</h2>
+            <p>@SharedLocalizer["Offices_Cta_Desc"]</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["Offices_Cta_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["Offices_Cta_BtnSecondary"]</span>
+                </a>
             </div>
         </section>
     </main>

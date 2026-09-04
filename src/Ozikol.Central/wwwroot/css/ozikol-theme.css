@@ -2234,3 +2234,362 @@
     align-items: center;
     flex-wrap: wrap;
 }
+
+/* ==========================================================================
+   Mega Menu Navigation Link Cards (Upgraded About Dropdown)
+   ========================================================================== */
+.mega-menu-nav-card {
+    margin-bottom: 8px;
+}
+.mega-menu-nav-card__link {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+}
+.mega-menu-nav-card__link:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+.mega-menu-nav-card__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.22s ease;
+}
+.mega-menu-nav-card__icon svg {
+    width: 22px;
+    height: 22px;
+}
+.mega-menu-nav-card__link:hover .mega-menu-nav-card__icon {
+    transform: scale(1.08);
+}
+.mega-menu-nav-card__body {
+    flex: 1;
+    min-width: 0;
+}
+.mega-menu-nav-card__title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.35;
+    margin-bottom: 3px;
+    transition: color 0.2s ease;
+}
+.mega-menu-nav-card__link:hover .mega-menu-nav-card__title {
+    color: #e5173f;
+}
+.mega-menu-nav-card__description {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+/* ==========================================================================
+   Corporate & About Us Pages Design Suite (Zero Inline CSS)
+   ========================================================================== */
+.oz-corp-page {
+    background: #ffffff;
+    color: #0f172a;
+    font-family: inherit;
+}
+
+.oz-corp-banner {
+    position: relative;
+    padding: 88px 24px 64px 24px;
+    text-align: center;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.oz-corp-banner-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.oz-corp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: rgba(229, 23, 63, 0.08);
+    color: #e5173f;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 24px;
+}
+
+.oz-corp-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e5173f;
+    box-shadow: 0 0 6px rgba(229, 23, 63, 0.6);
+}
+
+.oz-corp-title {
+    font-size: clamp(32px, 4.5vw, 48px);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+    margin-bottom: 20px;
+}
+
+.oz-corp-title span {
+    background: linear-gradient(135deg, #e5173f 0%, #b91c1c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.oz-corp-lead {
+    font-size: clamp(16px, 2vw, 18.5px);
+    line-height: 1.65;
+    color: #475569;
+    max-width: 720px;
+    margin: 0 auto 32px auto;
+}
+
+.oz-corp-metrics-bar {
+    background: #0f172a;
+    padding: 32px 24px;
+    color: #ffffff;
+    border-radius: 20px;
+    margin: -32px auto 60px auto;
+    max-width: 1140px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+}
+
+.oz-corp-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    text-align: center;
+}
+
+@media (max-width: 860px) {
+    .oz-corp-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+.oz-corp-metric-num {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    color: #ffffff;
+}
+
+.oz-corp-metric-num--primary {
+    color: #e5173f;
+}
+
+.oz-corp-metric-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.oz-corp-container {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.oz-corp-section {
+    padding: 56px 0;
+}
+
+.oz-corp-section-header {
+    text-align: center;
+    max-width: 740px;
+    margin: 0 auto 48px auto;
+}
+
+.oz-corp-section-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #e5173f;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+}
+
+.oz-corp-section-title {
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+}
+
+.oz-corp-section-desc {
+    font-size: 16px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.oz-corp-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+}
+
+.oz-corp-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.oz-corp-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 960px) {
+    .oz-corp-grid-3, .oz-corp-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .oz-corp-grid-2, .oz-corp-grid-3, .oz-corp-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-corp-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 36px 30px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.oz-corp-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+    border-color: #cbd5e1;
+}
+
+.oz-corp-card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.oz-corp-card-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.oz-corp-card:hover .oz-corp-card-icon {
+    transform: scale(1.08);
+}
+
+.oz-corp-card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+
+.oz-corp-card-tag {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.oz-corp-card-desc {
+    font-size: 14.5px;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0 0 18px 0;
+}
+
+.oz-corp-card-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.oz-corp-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oz-corp-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: #334155;
+}
+
+.oz-corp-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.oz-corp-badge-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+}

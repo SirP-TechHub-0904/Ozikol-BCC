@@ -1,11 +1,19 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using Ozikol.Central.Pages.Features;
 
 namespace Ozikol.Central.Pages
 {
-    public class AboutUsModel : PageModel
+    /// <summary>
+    /// Page model for the About Us corporate overview page, explaining Ozikol's mission,
+    /// architectural vision, modular cloud capabilities, and platform metrics.
+    /// </summary>
+    public class AboutUsModel : FeatureDetailPageModel
     {
-        public void OnGet()
+        /// <summary>
+        /// Handles HTTP GET requests to render the About Us corporate overview page.
+        /// </summary>
+        public override void OnGet()
         {
+            base.OnGet();
         }
     }
 }
