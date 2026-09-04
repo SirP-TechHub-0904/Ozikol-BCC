@@ -1168,4 +1168,1039 @@
   <data name="Pricing_Cta_BtnSecondary" xml:space="preserve">
     <value>Réserver une démo</value>
   </data>
+  <data name="Features_Meta_Title" xml:space="preserve">
+    <value>Toutes les Fonctionnalités et Capacités - Plateforme Ozikol</value>
+  </data>
+  <data name="Features_Meta_Desc" xml:space="preserve">
+    <value>Découvrez l'ensemble des 37 fonctionnalités cloud réparties en 9 suites modulaires incluses avec votre abonnement Ozikol.</value>
+  </data>
+  <data name="Features_Hero_Badge" xml:space="preserve">
+    <value>Capacités de la Plateforme Ozikol</value>
+  </data>
+  <data name="Features_Hero_Title" xml:space="preserve">
+    <value>Tout ce dont votre organisation a besoin pour collaborer, opérer et grandir</value>
+  </data>
+  <data name="Features_Hero_Desc" xml:space="preserve">
+    <value>Explorez l'ensemble des 37 fonctionnalités cloud réparties en 9 suites modulaires. Chaque outil est disponible dès le départ avec votre abonnement annuel unique.</value>
+  </data>
+  <data name="Features_Hero_Btn_Trial" xml:space="preserve">
+    <value>Commencer l'essai gratuit de 14 jours</value>
+  </data>
+  <data name="Features_Hero_Btn_Explore" xml:space="preserve">
+    <value>Explorer les 9 suites</value>
+  </data>
+  <data name="Features_Jump_Label" xml:space="preserve">
+    <value>Accéder à la suite :</value>
+  </data>
+  <data name="Features_Btn_ReadMore" xml:space="preserve">
+    <value>En savoir plus</value>
+  </data>
+  <data name="Features_Btn_GetStarted" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Features_Cta_Title" xml:space="preserve">
+    <value>Prêt à transformer votre gestion ?</value>
+  </data>
+  <data name="Features_Cta_Desc" xml:space="preserve">
+    <value>Accédez aux 37 fonctionnalités dès aujourd'hui. Aucune carte bancaire requise pour démarrer votre essai gratuit de 14 jours.</value>
+  </data>
+  <data name="Features_Cta_Btn_Trial" xml:space="preserve">
+    <value>Démarrer l'essai gratuit de 14 jours</value>
+  </data>
+  <data name="Features_Cta_Btn_Sales" xml:space="preserve">
+    <value>Contacter l'équipe commerciale</value>
+  </data>
+  <data name="Features_Suite_01_Chip" xml:space="preserve">
+    <value>Membres &amp; Communauté</value>
+  </data>
+  <data name="Features_Suite_01_Badge" xml:space="preserve">
+    <value>Suite 01</value>
+  </data>
+  <data name="Features_Suite_01_Title" xml:space="preserve">
+    <value>Membres, Communauté et Collaboration</value>
+  </data>
+  <data name="Features_Suite_01_Desc" xml:space="preserve">
+    <value>Développez l'engagement et restez connecté avec vos membres, bénévoles et responsables de communauté.</value>
+  </data>
+  <data name="Features_Suite_02_Chip" xml:space="preserve">
+    <value>Équipes &amp; Plannings</value>
+  </data>
+  <data name="Features_Suite_02_Badge" xml:space="preserve">
+    <value>Suite 02</value>
+  </data>
+  <data name="Features_Suite_02_Title" xml:space="preserve">
+    <value>Gestion des Équipes, Horaires et Plannings</value>
+  </data>
+  <data name="Features_Suite_02_Desc" xml:space="preserve">
+    <value>Supprimez les conflits d'horaires, optimisez les disponibilités et suivez automatiquement les présences sur site.</value>
+  </data>
+  <data name="Features_Suite_03_Chip" xml:space="preserve">
+    <value>Formulaires &amp; Rapports</value>
+  </data>
+  <data name="Features_Suite_03_Badge" xml:space="preserve">
+    <value>Suite 03</value>
+  </data>
+  <data name="Features_Suite_03_Title" xml:space="preserve">
+    <value>Collecte de Données, Rapports et Formulaires</value>
+  </data>
+  <data name="Features_Suite_03_Desc" xml:space="preserve">
+    <value>Recueillez les informations clés grâce aux formulaires modulaires, aux sondages dynamiques et à l'analyse documentaire.</value>
+  </data>
+  <data name="Features_Suite_04_Chip" xml:space="preserve">
+    <value>Événements &amp; Formations</value>
+  </data>
+  <data name="Features_Suite_04_Badge" xml:space="preserve">
+    <value>Suite 04</value>
+  </data>
+  <data name="Features_Suite_04_Title" xml:space="preserve">
+    <value>Événements, Billetterie et Formations</value>
+  </data>
+  <data name="Features_Suite_04_Desc" xml:space="preserve">
+    <value>Organisez des rassemblements présentiels et virtuels avec billetterie numérique et salles interactives d'apprentissage.</value>
+  </data>
+  <data name="Features_Suite_05_Chip" xml:space="preserve">
+    <value>Finances &amp; Revenus</value>
+  </data>
+  <data name="Features_Suite_05_Badge" xml:space="preserve">
+    <value>Suite 05</value>
+  </data>
+  <data name="Features_Suite_05_Title" xml:space="preserve">
+    <value>Finances, Contributions et Revenus</value>
+  </data>
+  <data name="Features_Suite_05_Desc" xml:space="preserve">
+    <value>Optimisez votre gestion financière avec encaissement multidevise, dons en ligne et comptabilité automatisée.</value>
+  </data>
+  <data name="Features_Suite_06_Chip" xml:space="preserve">
+    <value>Opérations &amp; Matériel</value>
+  </data>
+  <data name="Features_Suite_06_Badge" xml:space="preserve">
+    <value>Suite 06</value>
+  </data>
+  <data name="Features_Suite_06_Title" xml:space="preserve">
+    <value>Opérations, Logistique et Bâtiments</value>
+  </data>
+  <data name="Features_Suite_06_Desc" xml:space="preserve">
+    <value>Gérez les stocks, coordonnez les prêts d'équipement et réservez des salles sans risque de double réservation.</value>
+  </data>
+  <data name="Features_Suite_07_Chip" xml:space="preserve">
+    <value>Communications &amp; IA</value>
+  </data>
+  <data name="Features_Suite_07_Badge" xml:space="preserve">
+    <value>Suite 07</value>
+  </data>
+  <data name="Features_Suite_07_Title" xml:space="preserve">
+    <value>Communication et Intelligence Artificielle</value>
+  </data>
+  <data name="Features_Suite_07_Desc" xml:space="preserve">
+    <value>Communiquez instantanément par SMS, WhatsApp et e-mail tout en automatisant les demandes grâce à l'IA.</value>
+  </data>
+  <data name="Features_Suite_08_Chip" xml:space="preserve">
+    <value>Conformité &amp; Certificats</value>
+  </data>
+  <data name="Features_Suite_08_Badge" xml:space="preserve">
+    <value>Suite 08</value>
+  </data>
+  <data name="Features_Suite_08_Title" xml:space="preserve">
+    <value>Gouvernance, Conformité et Protection</value>
+  </data>
+  <data name="Features_Suite_08_Desc" xml:space="preserve">
+    <value>Respectez les normes réglementaires, suivez les pistes d'audit et protégez les enfants ainsi que les données.</value>
+  </data>
+  <data name="Features_Suite_09_Chip" xml:space="preserve">
+    <value>Démographie &amp; Recensement</value>
+  </data>
+  <data name="Features_Suite_09_Badge" xml:space="preserve">
+    <value>Suite 09</value>
+  </data>
+  <data name="Features_Suite_09_Title" xml:space="preserve">
+    <value>Démographie, Recensement et Statistiques</value>
+  </data>
+  <data name="Features_Suite_09_Desc" xml:space="preserve">
+    <value>Cartographiez votre zone d'influence, menez des enquêtes terrain et anticipez les tendances de croissance.</value>
+  </data>
+  <data name="Feat_Messenger_Pt1" xml:space="preserve">
+    <value>Communication directe chiffrée de bout en bout</value>
+  </data>
+  <data name="Feat_Messenger_Pt2" xml:space="preserve">
+    <value>Permissions de visibilité basées sur les rôles</value>
+  </data>
+  <data name="Feat_Messenger_Pt3" xml:space="preserve">
+    <value>Notifications sur ordinateur et mobile</value>
+  </data>
+  <data name="Feat_Directory_Title" xml:space="preserve">
+    <value>Annuaire des Membres</value>
+  </data>
+  <data name="Feat_Directory_Desc" xml:space="preserve">
+    <value>Base centralisée des profils avec étiquettes personnalisées, liens familiaux et historique des activités.</value>
+  </data>
+  <data name="Feat_Directory_Pt1" xml:space="preserve">
+    <value>Filtrage et étiquetage démographique sur mesure</value>
+  </data>
+  <data name="Feat_Directory_Pt2" xml:space="preserve">
+    <value>Paramètres de confidentialité par utilisateur</value>
+  </data>
+  <data name="Feat_Directory_Pt3" xml:space="preserve">
+    <value>Exportation en un clic aux formats CSV et PDF</value>
+  </data>
+  <data name="Feat_GroupChat_Title" xml:space="preserve">
+    <value>Salons et Groupes de Discussion</value>
+  </data>
+  <data name="Feat_GroupChat_Desc" xml:space="preserve">
+    <value>Organisez les échanges par canaux ouverts ou modérés dédiés à chaque projet, département ou groupe d'intérêt.</value>
+  </data>
+  <data name="Feat_GroupChat_Pt1" xml:space="preserve">
+    <value>Salons dédiés par département et comité</value>
+  </data>
+  <data name="Feat_GroupChat_Pt2" xml:space="preserve">
+    <value>Partage de fichiers, images et documents</value>
+  </data>
+  <data name="Feat_GroupChat_Pt3" xml:space="preserve">
+    <value>Modération d'administration et filtres de sécurité</value>
+  </data>
+  <data name="Feat_MediaVault_Title" xml:space="preserve">
+    <value>Médiathèque Sécurisée</value>
+  </data>
+  <data name="Feat_MediaVault_Desc" xml:space="preserve">
+    <value>Espace cloud sécurisé pour vos photos d'événements, enregistrements audio, chartes et vidéos de présentation.</value>
+  </data>
+  <data name="Feat_MediaVault_Pt1" xml:space="preserve">
+    <value>Diffusion de fichiers cloud rapide et fluide</value>
+  </data>
+  <data name="Feat_MediaVault_Pt2" xml:space="preserve">
+    <value>Permissions d'accès définies par dossier</value>
+  </data>
+  <data name="Feat_MediaVault_Pt3" xml:space="preserve">
+    <value>Liens de partage publics avec date d'expiration</value>
+  </data>
+  <data name="Feat_StaffRota_Pt1" xml:space="preserve">
+    <value>Calendriers hebdomadaires et mensuels interactifs</value>
+  </data>
+  <data name="Feat_StaffRota_Pt2" xml:space="preserve">
+    <value>Alertes automatiques sur heures supplémentaires et conflits</value>
+  </data>
+  <data name="Feat_StaffRota_Pt3" xml:space="preserve">
+    <value>Rappels de service par SMS et notifications</value>
+  </data>
+  <data name="Feat_ShiftSwap_Title" xml:space="preserve">
+    <value>Échange de Gardes</value>
+  </data>
+  <data name="Feat_ShiftSwap_Desc" xml:space="preserve">
+    <value>Portail d'échange de gardes en libre-service permettant aux collaborateurs de permuter avec validation managériale.</value>
+  </data>
+  <data name="Feat_ShiftSwap_Pt1" xml:space="preserve">
+    <value>Demandes directes d'échange entre collègues</value>
+  </data>
+  <data name="Feat_ShiftSwap_Pt2" xml:space="preserve">
+    <value>Circuit de validation en un clic pour les managers</value>
+  </data>
+  <data name="Feat_ShiftSwap_Pt3" xml:space="preserve">
+    <value>Mise à jour automatique du planning sans ressaisie</value>
+  </data>
+  <data name="Feat_ClockIn_Title" xml:space="preserve">
+    <value>Pointage et Présence GPS</value>
+  </data>
+  <data name="Feat_ClockIn_Desc" xml:space="preserve">
+    <value>Système de pointage géolocalisé garantissant la précision des heures d'arrivée, de pause et de départ.</value>
+  </data>
+  <data name="Feat_ClockIn_Pt1" xml:space="preserve">
+    <value>Validation du périmètre par géolocalisation GPS</value>
+  </data>
+  <data name="Feat_ClockIn_Pt2" xml:space="preserve">
+    <value>Lecteur QR code pour bornes de pointage sur place</value>
+  </data>
+  <data name="Feat_ClockIn_Pt3" xml:space="preserve">
+    <value>Export des feuilles d'heures pour vos logiciels de paie</value>
+  </data>
+  <data name="Feat_Availability_Title" xml:space="preserve">
+    <value>Gestion des Disponibilités</value>
+  </data>
+  <data name="Feat_Availability_Desc" xml:space="preserve">
+    <value>Les équipes renseignent leurs créneaux récurrents, jours d'indisponibilité et congés directement depuis leur mobile.</value>
+  </data>
+  <data name="Feat_Availability_Pt1" xml:space="preserve">
+    <value>Horaires de disponibilité hebdomadaire récurrents</value>
+  </data>
+  <data name="Feat_Availability_Pt2" xml:space="preserve">
+    <value>Gestion complète des congés payés et non payés</value>
+  </data>
+  <data name="Feat_Availability_Pt3" xml:space="preserve">
+    <value>Alertes en cas d'assignation d'un agent indisponible</value>
+  </data>
+  <data name="Feat_FormBuilder_Pt1" xml:space="preserve">
+    <value>Plus de 20 champs de saisie personnalisables</value>
+  </data>
+  <data name="Feat_FormBuilder_Pt2" xml:space="preserve">
+    <value>Logique conditionnelle et progression par étapes</value>
+  </data>
+  <data name="Feat_FormBuilder_Pt3" xml:space="preserve">
+    <value>Synchronisation automatique avec l'annuaire des membres</value>
+  </data>
+  <data name="Feat_Surveys_Title" xml:space="preserve">
+    <value>Sondages Dynamiques</value>
+  </data>
+  <data name="Feat_Surveys_Desc" xml:space="preserve">
+    <value>Recueillez les avis de la communauté, organisez des votes et mesurez la satisfaction grâce aux statistiques automatiques.</value>
+  </data>
+  <data name="Feat_Surveys_Pt1" xml:space="preserve">
+    <value>Modes de réponse anonyme ou nominative</value>
+  </data>
+  <data name="Feat_Surveys_Pt2" xml:space="preserve">
+    <value>Graphiques sectoriels et barres en temps réel</value>
+  </data>
+  <data name="Feat_Surveys_Pt3" xml:space="preserve">
+    <value>Envoi programmé des sondages par e-mail et SMS</value>
+  </data>
+  <data name="Feat_DocScanner_Title" xml:space="preserve">
+    <value>Numérisation et OCR</value>
+  </data>
+  <data name="Feat_DocScanner_Desc" xml:space="preserve">
+    <value>Moteur OCR convertissant reçus papier, cartes d'identité et courriers en documents numériques exploitables.</value>
+  </data>
+  <data name="Feat_DocScanner_Pt1" xml:space="preserve">
+    <value>Détection automatique des contours et recadrage</value>
+  </data>
+  <data name="Feat_DocScanner_Pt2" xml:space="preserve">
+    <value>Extraction de texte multilingue par reconnaissance OCR</value>
+  </data>
+  <data name="Feat_DocScanner_Pt3" xml:space="preserve">
+    <value>Génération de PDF indexables et archivage d'images</value>
+  </data>
+  <data name="Feat_IncidentLog_Title" xml:space="preserve">
+    <value>Registre des Incidents</value>
+  </data>
+  <data name="Feat_IncidentLog_Desc" xml:space="preserve">
+    <value>Outil confidentiel de déclaration des accidents de travail, dégradations, alertes de sécurité et signalements.</value>
+  </data>
+  <data name="Feat_IncidentLog_Pt1" xml:space="preserve">
+    <value>Chiffrement strict pour les signalements sensibles</value>
+  </data>
+  <data name="Feat_IncidentLog_Pt2" xml:space="preserve">
+    <value>Attribution et suivi des mesures correctives</value>
+  </data>
+  <data name="Feat_IncidentLog_Pt3" xml:space="preserve">
+    <value>Escalade automatique vers la direction</value>
+  </data>
+  <data name="Feat_Ticketing_Title" xml:space="preserve">
+    <value>Billetterie en Ligne</value>
+  </data>
+  <data name="Feat_Ticketing_Desc" xml:space="preserve">
+    <value>Vendez des billets, émettez des badges QR et contrôlez les jauges pour vos conférences, galas et ateliers.</value>
+  </data>
+  <data name="Feat_Ticketing_Pt1" xml:space="preserve">
+    <value>Tarifs gratuits, payants et formules d'accès VIP</value>
+  </data>
+  <data name="Feat_Ticketing_Pt2" xml:space="preserve">
+    <value>Codes QR uniques sur les billets mobiles</value>
+  </data>
+  <data name="Feat_Ticketing_Pt3" xml:space="preserve">
+    <value>Application de scan rapide à l'entrée par caméra</value>
+  </data>
+  <data name="Feat_CalSync_Title" xml:space="preserve">
+    <value>Synchronisation des Agendas</value>
+  </data>
+  <data name="Feat_CalSync_Desc" xml:space="preserve">
+    <value>Intégration bidirectionnelle synchronisant vos événements avec Google Agenda, Microsoft Outlook et Apple iCal.</value>
+  </data>
+  <data name="Feat_CalSync_Pt1" xml:space="preserve">
+    <value>Synchronisation cloud bidirectionnelle en temps réel</value>
+  </data>
+  <data name="Feat_CalSync_Pt2" xml:space="preserve">
+    <value>Flux d'abonnement pour les événements publics</value>
+  </data>
+  <data name="Feat_CalSync_Pt3" xml:space="preserve">
+    <value>Conversion automatique des fuseaux horaires</value>
+  </data>
+  <data name="Feat_VirtualClass_Title" xml:space="preserve">
+    <value>Salle de Formation Virtuelle</value>
+  </data>
+  <data name="Feat_VirtualClass_Desc" xml:space="preserve">
+    <value>Espace d'apprentissage vidéo interactif avec partage d'écran, messagerie, enregistrement et documents d'étude.</value>
+  </data>
+  <data name="Feat_VirtualClass_Pt1" xml:space="preserve">
+    <value>Visioconférence HD sans installation de plugin</value>
+  </data>
+  <data name="Feat_VirtualClass_Pt2" xml:space="preserve">
+    <value>Tableau blanc collaboratif et réactions en direct</value>
+  </data>
+  <data name="Feat_VirtualClass_Pt3" xml:space="preserve">
+    <value>Enregistrement vidéo des cours et revisionnage cloud</value>
+  </data>
+  <data name="Feat_Attendance_Pt1" xml:space="preserve">
+    <value>Pointage rapide d'appel d'un simple clic</value>
+  </data>
+  <data name="Feat_Attendance_Pt2" xml:space="preserve">
+    <value>Alertes d'absence pour renouer le contact</value>
+  </data>
+  <data name="Feat_Attendance_Pt3" xml:space="preserve">
+    <value>Courbes et graphiques d'évolution des présences</value>
+  </data>
+  <data name="Feat_Tithes_Title" xml:space="preserve">
+    <value>Dîmes et Dons en Ligne</value>
+  </data>
+  <data name="Feat_Tithes_Desc" xml:space="preserve">
+    <value>Paiement en ligne sécurisé acceptant cartes bancaires, virements, Apple Pay et solutions mobile money.</value>
+  </data>
+  <data name="Feat_Tithes_Pt1" xml:space="preserve">
+    <value>Options de contributions récurrentes hebdo et mensuelles</value>
+  </data>
+  <data name="Feat_Tithes_Pt2" xml:space="preserve">
+    <value>Ventilation par projets et campagnes spécifiques</value>
+  </data>
+  <data name="Feat_Tithes_Pt3" xml:space="preserve">
+    <value>Reçus fiscaux automatisés envoyés instantanément</value>
+  </data>
+  <data name="Feat_Pledges_Title" xml:space="preserve">
+    <value>Suivi des Engagements de Dons</value>
+  </data>
+  <data name="Feat_Pledges_Desc" xml:space="preserve">
+    <value>Supervisez les promesses de dons sur le long terme pour vos projets immobiliers, missions et fonds d'entraide.</value>
+  </data>
+  <data name="Feat_Pledges_Pt1" xml:space="preserve">
+    <value>Jauges visuelles d'avancement des objectifs</value>
+  </data>
+  <data name="Feat_Pledges_Pt2" xml:space="preserve">
+    <value>Rappels programmés d'échéance de versement</value>
+  </data>
+  <data name="Feat_Pledges_Pt3" xml:space="preserve">
+    <value>Statistiques de concrétisation et prévisions</value>
+  </data>
+  <data name="Feat_Billing_Title" xml:space="preserve">
+    <value>Facturation Récurrente</value>
+  </data>
+  <data name="Feat_Billing_Desc" xml:space="preserve">
+    <value>Gestion automatique des cotisations avec relances intelligentes et fréquences de facturation modulables.</value>
+  </data>
+  <data name="Feat_Billing_Pt1" xml:space="preserve">
+    <value>Tarifications mensuelles, trimestrielles et annuelles</value>
+  </data>
+  <data name="Feat_Billing_Pt2" xml:space="preserve">
+    <value>Relances automatiques intelligentes des impayés</value>
+  </data>
+  <data name="Feat_Billing_Pt3" xml:space="preserve">
+    <value>Espace client autonome de consultation des factures</value>
+  </data>
+  <data name="Feat_Ledger_Title" xml:space="preserve">
+    <value>Grand Livre Multidevise</value>
+  </data>
+  <data name="Feat_Ledger_Desc" xml:space="preserve">
+    <value>Journal comptable en partie double enregistrant les flux en USD, NGN, GBP, EUR, GHS, KES et autres devises.</value>
+  </data>
+  <data name="Feat_Ledger_Pt1" xml:space="preserve">
+    <value>Conversion de change automatique en direct</value>
+  </data>
+  <data name="Feat_Ledger_Pt2" xml:space="preserve">
+    <value>Plan comptable adapté aux associations et ONG</value>
+  </data>
+  <data name="Feat_Ledger_Pt3" xml:space="preserve">
+    <value>Bilans, balances et journaux certifiés pour audit</value>
+  </data>
+  <data name="Feat_EquipLoan_Title" xml:space="preserve">
+    <value>Prêt de Matériel</value>
+  </data>
+  <data name="Feat_EquipLoan_Desc" xml:space="preserve">
+    <value>Gérez les emprunts de projecteurs, tables de mixage, caméras, ordinateurs portables et barnums.</value>
+  </data>
+  <data name="Feat_EquipLoan_Pt1" xml:space="preserve">
+    <value>Sortie et retour par lecture code-barres et QR</value>
+  </data>
+  <data name="Feat_EquipLoan_Pt2" xml:space="preserve">
+    <value>Alertes automatiques en cas de retard de retour</value>
+  </data>
+  <data name="Feat_EquipLoan_Pt3" xml:space="preserve">
+    <value>Contrôle de l'état du matériel lors de la restitution</value>
+  </data>
+  <data name="Feat_Inventory_Title" xml:space="preserve">
+    <value>Gestion des Stocks</value>
+  </data>
+  <data name="Feat_Inventory_Desc" xml:space="preserve">
+    <value>Gérez les consommables, brochures de sensibilisation, produits d'entretien et articles personnalisés.</value>
+  </data>
+  <data name="Feat_Inventory_Pt1" xml:space="preserve">
+    <value>Alertes e-mail de franchissement de seuil critique</value>
+  </data>
+  <data name="Feat_Inventory_Pt2" xml:space="preserve">
+    <value>Suivi des stocks répartis sur plusieurs réserves</value>
+  </data>
+  <data name="Feat_Inventory_Pt3" xml:space="preserve">
+    <value>Bons de commande et répertoire fournisseurs</value>
+  </data>
+  <data name="Feat_RoomBooking_Title" xml:space="preserve">
+    <value>Réservation des Salles</value>
+  </data>
+  <data name="Feat_RoomBooking_Desc" xml:space="preserve">
+    <value>Planning d'occupation pour auditoriums, salles de réunion, foyers de jeunes et cuisines collectives.</value>
+  </data>
+  <data name="Feat_RoomBooking_Pt1" xml:space="preserve">
+    <value>Détection automatique évitant toute double réservation</value>
+  </data>
+  <data name="Feat_RoomBooking_Pt2" xml:space="preserve">
+    <value>Attribution des équipements associés à la salle</value>
+  </data>
+  <data name="Feat_RoomBooking_Pt3" xml:space="preserve">
+    <value>Affichage sur tablettes et écrans à l'entrée des salles</value>
+  </data>
+  <data name="Feat_Maintenance_Title" xml:space="preserve">
+    <value>Suivi de Maintenance</value>
+  </data>
+  <data name="Feat_Maintenance_Desc" xml:space="preserve">
+    <value>Outil de gestion des ordres de travail pour générateurs, climatisation, plomberie, électricité et toiture.</value>
+  </data>
+  <data name="Feat_Maintenance_Pt1" xml:space="preserve">
+    <value>Calendriers d'entretien préventif régulier</value>
+  </data>
+  <data name="Feat_Maintenance_Pt2" xml:space="preserve">
+    <value>Attribution aux prestataires et suivi des devis</value>
+  </data>
+  <data name="Feat_Maintenance_Pt3" xml:space="preserve">
+    <value>Téléversement de photos avant et après intervention</value>
+  </data>
+  <data name="Feat_Broadcast_Title" xml:space="preserve">
+    <value>Moteur de Diffusion</value>
+  </data>
+  <data name="Feat_Broadcast_Desc" xml:space="preserve">
+    <value>Envoyez des alertes d'urgence, newsletters et points d'information par SMS, WhatsApp et e-mail.</value>
+  </data>
+  <data name="Feat_Broadcast_Pt1" xml:space="preserve">
+    <value>Diffusion multicanale depuis une interface unique</value>
+  </data>
+  <data name="Feat_Broadcast_Pt2" xml:space="preserve">
+    <value>Segmentation fine par étiquettes et critères démographiques</value>
+  </data>
+  <data name="Feat_Broadcast_Pt3" xml:space="preserve">
+    <value>Accusés de réception et statistiques d'ouverture</value>
+  </data>
+  <data name="Feat_SmartAssistant_Title" xml:space="preserve">
+    <value>Assistant IA Intelligent</value>
+  </data>
+  <data name="Feat_SmartAssistant_Desc" xml:space="preserve">
+    <value>Agent conversationnel IA formé sur les règles internes, plannings, foires aux questions et événements.</value>
+  </data>
+  <data name="Feat_SmartAssistant_Pt1" xml:space="preserve">
+    <value>Compréhension des questions en langage naturel</value>
+  </data>
+  <data name="Feat_SmartAssistant_Pt2" xml:space="preserve">
+    <value>Réponses instantanées 24/7 aux questions courantes</value>
+  </data>
+  <data name="Feat_SmartAssistant_Pt3" xml:space="preserve">
+    <value>Transfert fluide vers un collaborateur si nécessaire</value>
+  </data>
+  <data name="Feat_MultilingualVoice_Title" xml:space="preserve">
+    <value>Traduction Vocale Multilingue</value>
+  </data>
+  <data name="Feat_MultilingualVoice_Desc" xml:space="preserve">
+    <value>Traduisez les annonces en direct et transcriptions audio dans plusieurs langues pour une audience multiculturelle.</value>
+  </data>
+  <data name="Feat_MultilingualVoice_Pt1" xml:space="preserve">
+    <value>Transcription et traduction audio en temps réel</value>
+  </data>
+  <data name="Feat_MultilingualVoice_Pt2" xml:space="preserve">
+    <value>Prise en charge de l'anglais, français, espagnol et allemand</value>
+  </data>
+  <data name="Feat_MultilingualVoice_Pt3" xml:space="preserve">
+    <value>Synthèse vocale automatique des messages texte</value>
+  </data>
+  <data name="Feat_AutomatedWorkflows_Title" xml:space="preserve">
+    <value>Flux de Travail Automatisés</value>
+  </data>
+  <data name="Feat_AutomatedWorkflows_Desc" xml:space="preserve">
+    <value>Déclenchez des parcours automatisés : accueil des nouveaux venus, intégration des bénévoles et anniversaires.</value>
+  </data>
+  <data name="Feat_AutomatedWorkflows_Pt1" xml:space="preserve">
+    <value>Créateur visuel de scénarios basé sur des déclencheurs</value>
+  </data>
+  <data name="Feat_AutomatedWorkflows_Pt2" xml:space="preserve">
+    <value>Intervalles programmés entre chaque étape de relance</value>
+  </data>
+  <data name="Feat_AutomatedWorkflows_Pt3" xml:space="preserve">
+    <value>Journal des performances et taux de réponse</value>
+  </data>
+  <data name="Feat_AuditTrail_Title" xml:space="preserve">
+    <value>Piste d'Audit et Traçabilité</value>
+  </data>
+  <data name="Feat_AuditTrail_Desc" xml:space="preserve">
+    <value>Journal infalsifiable consignant les créations, consultations, modifications et suppressions de données.</value>
+  </data>
+  <data name="Feat_AuditTrail_Pt1" xml:space="preserve">
+    <value>Empreinte cryptographique garantissant l'intégrité</value>
+  </data>
+  <data name="Feat_AuditTrail_Pt2" xml:space="preserve">
+    <value>Historisation de l'identité de l'utilisateur et de l'adresse IP</value>
+  </data>
+  <data name="Feat_AuditTrail_Pt3" xml:space="preserve">
+    <value>Rapports filtrables prêts pour les auditeurs externes</value>
+  </data>
+  <data name="Feat_ChildProtection_Title" xml:space="preserve">
+    <value>Protection de l'Enfance</value>
+  </data>
+  <data name="Feat_ChildProtection_Desc" xml:space="preserve">
+    <value>Système de protection vérifiant casiers judiciaires, habilitations des encadrants et autorisations parentales.</value>
+  </data>
+  <data name="Feat_ChildProtection_Pt1" xml:space="preserve">
+    <value>Alertes d'expiration des habilitations et vérifications</value>
+  </data>
+  <data name="Feat_ChildProtection_Pt2" xml:space="preserve">
+    <value>Autorisations parentales et fiches médicales d'urgence</value>
+  </data>
+  <data name="Feat_ChildProtection_Pt3" xml:space="preserve">
+    <value>Accès ultra-sécurisé aux dossiers des mineurs</value>
+  </data>
+  <data name="Feat_AccessMatrix_Title" xml:space="preserve">
+    <value>Matrice des Permissions</value>
+  </data>
+  <data name="Feat_AccessMatrix_Desc" xml:space="preserve">
+    <value>Contrôle d'accès basé sur les rôles (RBAC) permettant de définir finement droits de lecture, écriture et export.</value>
+  </data>
+  <data name="Feat_AccessMatrix_Pt1" xml:space="preserve">
+    <value>Définition de rôles sur mesure et héritage de droits</value>
+  </data>
+  <data name="Feat_AccessMatrix_Pt2" xml:space="preserve">
+    <value>Cloisonnement strict par antenne et département</value>
+  </data>
+  <data name="Feat_AccessMatrix_Pt3" xml:space="preserve">
+    <value>Authentification à deux facteurs (2FA) obligatoire</value>
+  </data>
+  <data name="Feat_ESignatures_Title" xml:space="preserve">
+    <value>Signatures Électroniques</value>
+  </data>
+  <data name="Feat_ESignatures_Desc" xml:space="preserve">
+    <value>Signature électronique de documents : résolutions, engagements de bénévolat et contrats de service.</value>
+  </data>
+  <data name="Feat_ESignatures_Pt1" xml:space="preserve">
+    <value>Signature au doigt ou au stylet sur tablettes et mobiles</value>
+  </data>
+  <data name="Feat_ESignatures_Pt2" xml:space="preserve">
+    <value>Certificat de signature cryptographique apposé aux PDF</value>
+  </data>
+  <data name="Feat_ESignatures_Pt3" xml:space="preserve">
+    <value>Relances automatiques par notification des signataires</value>
+  </data>
+  <data name="Feat_SafetyInspection_Title" xml:space="preserve">
+    <value>Inspections de Sécurité</value>
+  </data>
+  <data name="Feat_SafetyInspection_Desc" xml:space="preserve">
+    <value>Listes de contrôle numériques pour extincteurs, trousses de secours, issues de secours et hygiène.</value>
+  </data>
+  <data name="Feat_SafetyInspection_Pt1" xml:space="preserve">
+    <value>Listes d'inspection avec notation conforme ou non conforme</value>
+  </data>
+  <data name="Feat_SafetyInspection_Pt2" xml:space="preserve">
+    <value>Création immédiate d'un ticket d'anomalie en cas de défaut</value>
+  </data>
+  <data name="Feat_SafetyInspection_Pt3" xml:space="preserve">
+    <value>Rappels programmés d'inspections récurrentes</value>
+  </data>
+  <data name="Feat_GeoMapper_Title" xml:space="preserve">
+    <value>Cartographie Géographique</value>
+  </data>
+  <data name="Feat_GeoMapper_Desc" xml:space="preserve">
+    <value>Carte interactive visualisant la répartition des membres, points de ralliement et zones de proximité.</value>
+  </data>
+  <data name="Feat_GeoMapper_Pt1" xml:space="preserve">
+    <value>Cartes thermiques analysant la densité géographique</value>
+  </data>
+  <data name="Feat_GeoMapper_Pt2" xml:space="preserve">
+    <value>Recherche par rayon de proximité autour des locaux</value>
+  </data>
+  <data name="Feat_GeoMapper_Pt3" xml:space="preserve">
+    <value>Découpage territorial pour les équipes de proximité</value>
+  </data>
+  <data name="Feat_FieldSurveyor_Pt1" xml:space="preserve">
+    <value>Collecte hors-ligne avec synchronisation dès reconnexion</value>
+  </data>
+  <data name="Feat_FieldSurveyor_Pt2" xml:space="preserve">
+    <value>Géolocalisation GPS associée à chaque réponse</value>
+  </data>
+  <data name="Feat_FieldSurveyor_Pt3" xml:space="preserve">
+    <value>Enregistrement de notes vocales et entretiens</value>
+  </data>
+  <data name="Feat_FamilyCensus_Title" xml:space="preserve">
+    <value>Recensement des Familles</value>
+  </data>
+  <data name="Feat_FamilyCensus_Desc" xml:space="preserve">
+    <value>Registres familiaux reliant parents, enfants, personnes à charge, anniversaires et adresses du foyer.</value>
+  </data>
+  <data name="Feat_FamilyCensus_Pt1" xml:space="preserve">
+    <value>Arbre généalogique visuel et structure du foyer</value>
+  </data>
+  <data name="Feat_FamilyCensus_Pt2" xml:space="preserve">
+    <value>Désignation du contact principal du foyer</value>
+  </data>
+  <data name="Feat_FamilyCensus_Pt3" xml:space="preserve">
+    <value>Alertes pour anniversaires de mariage et de naissance</value>
+  </data>
+  <data name="Feat_GrowthPredictor_Title" xml:space="preserve">
+    <value>Prévision de Croissance</value>
+  </data>
+  <data name="Feat_GrowthPredictor_Desc" xml:space="preserve">
+    <value>Analyses prédictives projetant l'évolution des présences, la fidélisation et les besoins en ressources.</value>
+  </data>
+  <data name="Feat_GrowthPredictor_Pt1" xml:space="preserve">
+    <value>Modèles prédictifs d'assiduité basés sur l'IA</value>
+  </data>
+  <data name="Feat_GrowthPredictor_Pt2" xml:space="preserve">
+    <value>Détection précoce des signaux de désengagement</value>
+  </data>
+  <data name="Feat_GrowthPredictor_Pt3" xml:space="preserve">
+    <value>Recommandations de capacités pour vos futurs événements</value>
+  </data>
+  <data name="Feat_CommunityMessenger_Title" xml:space="preserve">
+    <value>Messagerie Communautaire</value>
+  </data>
+  <data name="Feat_CommunityMessenger_Desc" xml:space="preserve">
+    <value>Messagerie instantanée et canaux thématiques remplaçant les applications externes par une solution interne sécurisée.</value>
+  </data>
+  <data name="Feat_CommunityMessenger_Pt1" xml:space="preserve">
+    <value>Messages directs en direct et salons thématiques</value>
+  </data>
+  <data name="Feat_CommunityMessenger_Pt2" xml:space="preserve">
+    <value>Widget de chat web interactif</value>
+  </data>
+  <data name="Feat_CommunityMessenger_Pt3" xml:space="preserve">
+    <value>Partage de fichiers sécurisé avec journal d'audit</value>
+  </data>
+  <data name="Feat_Committees_Pt1" xml:space="preserve">
+    <value>Composition des comités et rôles des responsables</value>
+  </data>
+  <data name="Feat_Committees_Pt2" xml:space="preserve">
+    <value>Calendrier des réunions et gestion des ordres du jour</value>
+  </data>
+  <data name="Feat_Committees_Pt3" xml:space="preserve">
+    <value>Registre des délibérations et vote en ligne</value>
+  </data>
+  <data name="Feat_AlumniDirectory_Title" xml:space="preserve">
+    <value>Annuaire des Anciens et Réseau</value>
+  </data>
+  <data name="Feat_AlumniDirectory_Desc" xml:space="preserve">
+    <value>Annuaire interactif pour associations, universités et réseaux professionnels avec filtres géographiques et profils complets.</value>
+  </data>
+  <data name="Feat_AlumniDirectory_Pt1" xml:space="preserve">
+    <value>Registre par promotions et antennes régionales</value>
+  </data>
+  <data name="Feat_AlumniDirectory_Pt2" xml:space="preserve">
+    <value>Mise à jour autonome du profil par le membre</value>
+  </data>
+  <data name="Feat_AlumniDirectory_Pt3" xml:space="preserve">
+    <value>Annuaire professionnel et jumelage de mentorat</value>
+  </data>
+  <data name="Feat_WhistleblowingFeedback_Title" xml:space="preserve">
+    <value>Ligne d'Alerte Anonyme</value>
+  </data>
+  <data name="Feat_WhistleblowingFeedback_Desc" xml:space="preserve">
+    <value>Canal d'alerte chiffré à divulgation nulle permettant de signaler en toute sécurité les manquements éthiques.</value>
+  </data>
+  <data name="Feat_WhistleblowingFeedback_Pt1" xml:space="preserve">
+    <value>Protection totale de l'anonymat du déclarant</value>
+  </data>
+  <data name="Feat_WhistleblowingFeedback_Pt2" xml:space="preserve">
+    <value>Dialogue chiffré bidirectionnel avec l'enquêteur</value>
+  </data>
+  <data name="Feat_WhistleblowingFeedback_Pt3" xml:space="preserve">
+    <value>Circuit de traitement des dossiers avec traçabilité</value>
+  </data>
+  <data name="Feat_ShiftSwapsLeave_Title" xml:space="preserve">
+    <value>Échanges de Gardes et Congés</value>
+  </data>
+  <data name="Feat_ShiftSwapsLeave_Desc" xml:space="preserve">
+    <value>Demandes d'échange de gardes entre collègues, calcul automatique des congés payés et justificatifs d'absence.</value>
+  </data>
+  <data name="Feat_ShiftSwapsLeave_Pt1" xml:space="preserve">
+    <value>Bourse interne d'échange de créneaux</value>
+  </data>
+  <data name="Feat_ShiftSwapsLeave_Pt2" xml:space="preserve">
+    <value>Calculateur automatique des droits à congés</value>
+  </data>
+  <data name="Feat_ShiftSwapsLeave_Pt3" xml:space="preserve">
+    <value>Validation managériale d'un simple clic</value>
+  </data>
+  <data name="Feat_AttendanceTracking_Title" xml:space="preserve">
+    <value>Pointage et Assiduité</value>
+  </data>
+  <data name="Feat_AttendanceTracking_Desc" xml:space="preserve">
+    <value>Pointage mobile géolocalisé, scan QR sur borne physique et feuilles d'heures automatisées pour la paie.</value>
+  </data>
+  <data name="Feat_AttendanceTracking_Pt1" xml:space="preserve">
+    <value>Pointage d'entrée et de sortie géolocalisé</value>
+  </data>
+  <data name="Feat_AttendanceTracking_Pt2" xml:space="preserve">
+    <value>Mode borne d'accueil sur tablette</value>
+  </data>
+  <data name="Feat_AttendanceTracking_Pt3" xml:space="preserve">
+    <value>Export des feuilles d'heures vers tableur et API de paie</value>
+  </data>
+  <data name="Feat_IntervalReporting_Pt1" xml:space="preserve">
+    <value>Génération automatique de rapports PDF programmés</value>
+  </data>
+  <data name="Feat_IntervalReporting_Pt2" xml:space="preserve">
+    <value>Comparatifs d'activité sur les périodes précédentes</value>
+  </data>
+  <data name="Feat_IntervalReporting_Pt3" xml:space="preserve">
+    <value>Envoi automatique par e-mail aux décideurs</value>
+  </data>
+  <data name="Feat_SurveyAnalytics_Pt1" xml:space="preserve">
+    <value>Graphiques de réponses actualisés en direct</value>
+  </data>
+  <data name="Feat_SurveyAnalytics_Pt2" xml:space="preserve">
+    <value>Modes d'enquête nominatifs ou strictement anonymes</value>
+  </data>
+  <data name="Feat_SurveyAnalytics_Pt3" xml:space="preserve">
+    <value>Croisement des données et filtres par population</value>
+  </data>
+  <data name="Feat_EventTicketing_Pt1" xml:space="preserve">
+    <value>Tarifs différenciés et codes promotionnels</value>
+  </data>
+  <data name="Feat_EventTicketing_Pt2" xml:space="preserve">
+    <value>Transmission immédiate des billets QR sur mobile</value>
+  </data>
+  <data name="Feat_EventTicketing_Pt3" xml:space="preserve">
+    <value>Scan des entrées via l'appareil photo du smartphone</value>
+  </data>
+  <data name="Feat_AttendeeManagement_Pt1" xml:space="preserve">
+    <value>Création et impression de badges nominatifs par lots</value>
+  </data>
+  <data name="Feat_AttendeeManagement_Pt2" xml:space="preserve">
+    <value>Suivi des régimes alimentaires et besoins d'accessibilité</value>
+  </data>
+  <data name="Feat_AttendeeManagement_Pt3" xml:space="preserve">
+    <value>Rappels automatiques envoyés par SMS et e-mail</value>
+  </data>
+  <data name="Feat_SpeakerSessions_Pt1" xml:space="preserve">
+    <value>Programme interactif articulé en plusieurs salles</value>
+  </data>
+  <data name="Feat_SpeakerSessions_Pt2" xml:space="preserve">
+    <value>Fiches détaillées des intervenants et supports à télécharger</value>
+  </data>
+  <data name="Feat_SpeakerSessions_Pt3" xml:space="preserve">
+    <value>Questions-réponses en direct et notation des interventions</value>
+  </data>
+  <data name="Feat_LearningManagement_Pt1" xml:space="preserve">
+    <value>Créateur de leçons multimédias (vidéo, texte et supports)</value>
+  </data>
+  <data name="Feat_LearningManagement_Pt2" xml:space="preserve">
+    <value>Évaluations chronométrées avec seuil de validation</value>
+  </data>
+  <data name="Feat_LearningManagement_Pt3" xml:space="preserve">
+    <value>Génération automatique d'attestations nominatives</value>
+  </data>
+  <data name="Feat_InvoicingDues_Pt1" xml:space="preserve">
+    <value>Factures PDF conformes arborant votre logo</value>
+  </data>
+  <data name="Feat_InvoicingDues_Pt2" xml:space="preserve">
+    <value>Prélèvement et renouvellement automatique des cotisations</value>
+  </data>
+  <data name="Feat_InvoicingDues_Pt3" xml:space="preserve">
+    <value>Règlement en ligne immédiat par carte bancaire</value>
+  </data>
+  <data name="Feat_GrantLedger_Pt1" xml:space="preserve">
+    <value>Gestion séparée des fonds affectés et des fonds libres</value>
+  </data>
+  <data name="Feat_GrantLedger_Pt2" xml:space="preserve">
+    <value>Affectation détaillée des dépenses par convention</value>
+  </data>
+  <data name="Feat_GrantLedger_Pt3" xml:space="preserve">
+    <value>États financiers détaillés prêts pour l'audit</value>
+  </data>
+  <data name="Feat_AppointmentBooking_Title" xml:space="preserve">
+    <value>Prise de Rendez-Vous</value>
+  </data>
+  <data name="Feat_AppointmentBooking_Desc" xml:space="preserve">
+    <value>Permettez la réservation en ligne de consultations et rendez-vous d'accompagnement synchronisés avec votre agenda.</value>
+  </data>
+  <data name="Feat_AppointmentBooking_Pt1" xml:space="preserve">
+    <value>Gestion des disponibilités avec temps de battement</value>
+  </data>
+  <data name="Feat_AppointmentBooking_Pt2" xml:space="preserve">
+    <value>Rappels automatiques par SMS et e-mail</value>
+  </data>
+  <data name="Feat_AppointmentBooking_Pt3" xml:space="preserve">
+    <value>Synchronisation bidirectionnelle avec vos agendas</value>
+  </data>
+  <data name="Feat_StoreEcommerce_Pt1" xml:space="preserve">
+    <value>Gestion des stocks par déclinaisons et références</value>
+  </data>
+  <data name="Feat_StoreEcommerce_Pt2" xml:space="preserve">
+    <value>Calcul des frais d'expédition et retrait sur place</value>
+  </data>
+  <data name="Feat_StoreEcommerce_Pt3" xml:space="preserve">
+    <value>Téléchargement immédiat et sécurisé des fichiers achetés</value>
+  </data>
+  <data name="Feat_CompanyAssets_Pt1" xml:space="preserve">
+    <value>Étiquetage par numéro de série et code-barres</value>
+  </data>
+  <data name="Feat_CompanyAssets_Pt2" xml:space="preserve">
+    <value>Localisation précise par pièce et bâtiment</value>
+  </data>
+  <data name="Feat_CompanyAssets_Pt3" xml:space="preserve">
+    <value>Tableau d'amortissement et valeur comptable nette</value>
+  </data>
+  <data name="Feat_EquipmentFleet_Pt1" xml:space="preserve">
+    <value>Planning d'utilisation et vérification du conducteur</value>
+  </data>
+  <data name="Feat_EquipmentFleet_Pt2" xml:space="preserve">
+    <value>Relevé des kilomètres, trajets et frais de carburant</value>
+  </data>
+  <data name="Feat_EquipmentFleet_Pt3" xml:space="preserve">
+    <value>Rappels des contrôles périodiques et assurances</value>
+  </data>
+  <data name="Feat_ProjectTaskTracking_Title" xml:space="preserve">
+    <value>Gestion de Projets et Tâches</value>
+  </data>
+  <data name="Feat_ProjectTaskTracking_Desc" xml:space="preserve">
+    <value>Pilotez vos chantiers et initiatives grâce aux tableaux Kanban, diagrammes de Gantt et rappels d'échéances.</value>
+  </data>
+  <data name="Feat_ProjectTaskTracking_Pt1" xml:space="preserve">
+    <value>Vues en tableau Kanban et liste des tâches à accomplir</value>
+  </data>
+  <data name="Feat_ProjectTaskTracking_Pt2" xml:space="preserve">
+    <value>Sous-tâches hiérarchisées et liens de dépendance</value>
+  </data>
+  <data name="Feat_ProjectTaskTracking_Pt3" xml:space="preserve">
+    <value>Alertes d'échéances et relances des retards</value>
+  </data>
+  <data name="Feat_ProposalPipeline_Pt1" xml:space="preserve">
+    <value>Entonnoir visuel des opportunités par étapes de validation</value>
+  </data>
+  <data name="Feat_ProposalPipeline_Pt2" xml:space="preserve">
+    <value>Historique des pièces jointes et versions successives</value>
+  </data>
+  <data name="Feat_ProposalPipeline_Pt3" xml:space="preserve">
+    <value>Pondération financière selon probabilité de succès</value>
+  </data>
+  <data name="Feat_RecruitmentHiring_Pt1" xml:space="preserve">
+    <value>Espace recrutement public intégré à votre site web</value>
+  </data>
+  <data name="Feat_RecruitmentHiring_Pt2" xml:space="preserve">
+    <value>Fiches d'évaluation des candidats et comptes rendus</value>
+  </data>
+  <data name="Feat_RecruitmentHiring_Pt3" xml:space="preserve">
+    <value>Génération d'offres d'embauche et réponses automatiques</value>
+  </data>
+  <data name="Feat_LiveChat_Pt1" xml:space="preserve">
+    <value>Module personnalisable aux couleurs de votre charte graphique</value>
+  </data>
+  <data name="Feat_LiveChat_Pt2" xml:space="preserve">
+    <value>Orientation intelligente vers les conseillers disponibles</value>
+  </data>
+  <data name="Feat_LiveChat_Pt3" xml:space="preserve">
+    <value>Réponses préenregistrées pour accélérer le traitement</value>
+  </data>
+  <data name="Feat_HelpdeskSupport_Pt1" xml:space="preserve">
+    <value>Transformation automatique des e-mails en tickets d'assistance</value>
+  </data>
+  <data name="Feat_HelpdeskSupport_Pt2" xml:space="preserve">
+    <value>Surveillance des délais d'intervention et relances d'urgence</value>
+  </data>
+  <data name="Feat_HelpdeskSupport_Pt3" xml:space="preserve">
+    <value>Base d'articles consultable en libre-service</value>
+  </data>
+  <data name="Feat_MassCommunication_Pt1" xml:space="preserve">
+    <value>Diffusion combinée par SMS, WhatsApp et e-mail</value>
+  </data>
+  <data name="Feat_MassCommunication_Pt2" xml:space="preserve">
+    <value>Ciblage fin par établissement, groupe et statut d'adhésion</value>
+  </data>
+  <data name="Feat_MassCommunication_Pt3" xml:space="preserve">
+    <value>Accusés de réception et rapports détaillés d'envoi</value>
+  </data>
+  <data name="Feat_SocialMediaManager_Pt1" xml:space="preserve">
+    <value>Planificateur universel de publications multi-réseaux</value>
+  </data>
+  <data name="Feat_SocialMediaManager_Pt2" xml:space="preserve">
+    <value>Recadrage d'images adapté aux formats de chaque réseau</value>
+  </data>
+  <data name="Feat_SocialMediaManager_Pt3" xml:space="preserve">
+    <value>Statistiques d'engagement et suivi de votre audience</value>
+  </data>
+  <data name="Feat_AiSmartAssist_Pt1" xml:space="preserve">
+    <value>Génération assistée de comptes rendus et annonces</value>
+  </data>
+  <data name="Feat_AiSmartAssist_Pt2" xml:space="preserve">
+    <value>Traduction immédiate vers quatre langues majeures</value>
+  </data>
+  <data name="Feat_AiSmartAssist_Pt3" xml:space="preserve">
+    <value>Transcription d'enregistrements et synthèse des points clés</value>
+  </data>
+  <data name="Feat_BioLinkTree_Title" xml:space="preserve">
+    <value>Page Bio et Liens</value>
+  </data>
+  <data name="Feat_BioLinkTree_Desc" xml:space="preserve">
+    <value>Concevez une page d'atterrissage mobile regroupant vos liens sociaux, dons, formulaires et actualités.</value>
+  </data>
+  <data name="Feat_BioLinkTree_Pt1" xml:space="preserve">
+    <value>Page d'accueil mobile personnalisée avec vos couleurs</value>
+  </data>
+  <data name="Feat_BioLinkTree_Pt2" xml:space="preserve">
+    <value>Suivi détaillé des clics et taux de conversion</value>
+  </data>
+  <data name="Feat_BioLinkTree_Pt3" xml:space="preserve">
+    <value>Intégration directe des dons en ligne et prochains rendez-vous</value>
+  </data>
+  <data name="Feat_CertificateVerification_Pt1" xml:space="preserve">
+    <value>Empreinte cryptographique et code QR de contrôle</value>
+  </data>
+  <data name="Feat_CertificateVerification_Pt2" xml:space="preserve">
+    <value>Page de contrôle publique attestant la validité du titre</value>
+  </data>
+  <data name="Feat_CertificateVerification_Pt3" xml:space="preserve">
+    <value>Gestion des annulations et des durées de validité</value>
+  </data>
+  <data name="Feat_ResidentIdCards_Pt1" xml:space="preserve">
+    <value>Outil de création graphique avec cadrage photo</value>
+  </data>
+  <data name="Feat_ResidentIdCards_Pt2" xml:space="preserve">
+    <value>Génération de passes pour portefeuilles numériques mobiles</value>
+  </data>
+  <data name="Feat_ResidentIdCards_Pt3" xml:space="preserve">
+    <value>Exportation par lots vers imprimantes à badges</value>
+  </data>
+  <data name="Feat_DocumentManagement_Pt1" xml:space="preserve">
+    <value>Autorisations d'accès par dossier et par rôle utilisateur</value>
+  </data>
+  <data name="Feat_DocumentManagement_Pt2" xml:space="preserve">
+    <value>Historique exhaustif des révisions et restauration</value>
+  </data>
+  <data name="Feat_DocumentManagement_Pt3" xml:space="preserve">
+    <value>Recherche textuelle au cœur des fichiers PDF importés</value>
+  </data>
+  <data name="Feat_ElectionsEvoting_Pt1" xml:space="preserve">
+    <value>Scrutin secret garanti par vérification cryptographique</value>
+  </data>
+  <data name="Feat_ElectionsEvoting_Pt2" xml:space="preserve">
+    <value>Contrôle des électeurs inscrits par jeton personnel unique</value>
+  </data>
+  <data name="Feat_ElectionsEvoting_Pt3" xml:space="preserve">
+    <value>Procès-verbal de dépouillement officiel prêt pour archivage</value>
+  </data>
+  <data name="Feat_CommunityCensus_Pt1" xml:space="preserve">
+    <value>Rattachement familial structuré au sein du foyer</value>
+  </data>
+  <data name="Feat_CommunityCensus_Pt2" xml:space="preserve">
+    <value>Répertoire des compétences et professions représentées</value>
+  </data>
+  <data name="Feat_CommunityCensus_Pt3" xml:space="preserve">
+    <value>Affectation par quartiers et zones géographiques</value>
+  </data>
+  <data name="Feat_DemographicAnalytics_Pt1" xml:space="preserve">
+    <value>Pyramides des âges et répartition des générations</value>
+  </data>
+  <data name="Feat_DemographicAnalytics_Pt2" xml:space="preserve">
+    <value>Analyse de la rétention par promotions d'adhérents</value>
+  </data>
+  <data name="Feat_DemographicAnalytics_Pt3" xml:space="preserve">
+    <value>Cartographie thermique de la densité des membres</value>
+  </data>
+  <data name="Feat_VisitorGateManagement_Title" xml:space="preserve">
+    <value>Gestion des Visiteurs et Accès</value>
+  </data>
+  <data name="Feat_VisitorGateManagement_Desc" xml:space="preserve">
+    <value>Enregistrez les visiteurs au poste de sécurité, délivrez des badges et prévenez l'hôte de leur arrivée.</value>
+  </data>
+  <data name="Feat_VisitorGateManagement_Pt1" xml:space="preserve">
+    <value>Enregistrement autonome des invités sur borne tablette</value>
+  </data>
+  <data name="Feat_VisitorGateManagement_Pt2" xml:space="preserve">
+    <value>Alerte immédiate de l'hôte par SMS et notification</value>
+  </data>
+  <data name="Feat_VisitorGateManagement_Pt3" xml:space="preserve">
+    <value>Registre numérique des entrées et sorties horodaté</value>
+  </data>
 </root>
