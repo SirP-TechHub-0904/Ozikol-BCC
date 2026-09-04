@@ -1675,3 +1675,76 @@
     max-height: 300px;
     padding-bottom: 24px;
 }
+
+/* Bottom CTA Banner */
+.oz-pricing-cta-banner {
+    padding: 20px 0 90px 0;
+}
+.oz-pricing-cta-box {
+    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #0f172a 100%);
+    border-radius: 28px;
+    padding: 64px 48px;
+    text-align: center;
+    color: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.oz-pricing-cta-box h2 {
+    font-size: 36px;
+    font-weight: 800;
+    margin: 0 auto 16px auto !important;
+    letter-spacing: -0.025em;
+    color: #ffffff !important;
+    line-height: 1.2;
+    text-align: center !important;
+    max-width: 780px;
+}
+.oz-pricing-cta-box p {
+    font-size: 17px;
+    color: #94a3b8 !important;
+    max-width: 620px;
+    margin: 0 auto 36px auto !important;
+    line-height: 1.6;
+    text-align: center !important;
+}
+.oz-pricing-cta-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.oz-cta-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 32px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff !important;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+.oz-cta-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #ffffff;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+}
+@media (max-width: 768px) {
+    .oz-pricing-cta-box {
+        padding: 44px 24px;
+        border-radius: 20px;
+    }
+    .oz-pricing-cta-box h2 {
+        font-size: 26px;
+    }
+    .oz-pricing-cta-box p {
+        font-size: 15px;
+    }
+}
