@@ -1557,9 +1557,20 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     background: radial-gradient(circle at 50% 0%, rgba(229, 23, 63, 0.04) 0%, transparent 60%);
 }
 
+.oz-section-header {
+    text-align: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto 36px auto;
+}
+
 .oz-pricing-hero-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     background: var(--ozikol-primary-subtle);
     color: var(--ozikol-primary);
@@ -1567,7 +1578,9 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     border-radius: 9999px;
     font-size: 13px;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 20px !important;
 }
 
 .oz-pricing-hero-badge-dot {
