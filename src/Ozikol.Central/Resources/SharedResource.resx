@@ -757,4 +757,226 @@
   <data name="About_Reliability_Desc" xml:space="preserve">
     <value>Daily automated snapshots and high-availability SLA.</value>
   </data>
+  <data name="Home_Hero_Badge" xml:space="preserve">
+    <value>The Unified Business Cloud Suite</value>
+  </data>
+  <data name="Home_Hero_Title" xml:space="preserve">
+    <value>Ozikol unites your people, operations, and community in one intelligent cloud.</value>
+  </data>
+  <data name="Home_Hero_Desc" xml:space="preserve">
+    <value>Replace dozens of disconnected subscriptions with a single platform across workforce scheduling, finance, events, governance, and private AI. Built for your sector, trusted by organizations worldwide.</value>
+  </data>
+  <data name="Home_Hero_BtnSolutions" xml:space="preserve">
+    <value>Find your solution</value>
+  </data>
+  <data name="Home_Hero_BtnStory" xml:space="preserve">
+    <value>Watch our story</value>
+  </data>
+  <data name="FastNav_WorkIn" xml:space="preserve">
+    <value>I work in</value>
+  </data>
+  <data name="FastNav_ChooseSector" xml:space="preserve">
+    <value>Choose sector</value>
+  </data>
+  <data name="FastNav_Need" xml:space="preserve">
+    <value>I need</value>
+  </data>
+  <data name="FastNav_ChooseSolution" xml:space="preserve">
+    <value>Choose solution</value>
+  </data>
+  <data name="FastNav_GetStarted" xml:space="preserve">
+    <value>Get started</value>
+  </data>
+  <data name="Home_Suites_Badge" xml:space="preserve">
+    <value>COMPLETE MODULAR PLATFORM</value>
+  </data>
+  <data name="Home_Suites_Title" xml:space="preserve">
+    <value>One Platform. 37 Capabilities. 9 Integrated Suites.</value>
+  </data>
+  <data name="Home_Suites_Desc" xml:space="preserve">
+    <value>Every tool you need to run, govern, and scale your organization—natively connected without third-party integration headaches.</value>
+  </data>
+  <data name="Home_Suites_ExploreAll" xml:space="preserve">
+    <value>Explore the complete feature catalog →</value>
+  </data>
+  <data name="Home_Tabs_Badge" xml:space="preserve">
+    <value>CORE PLATFORM ENGINES</value>
+  </data>
+  <data name="Home_Tabs_Title" xml:space="preserve">
+    <value>Five technological pillars designed for enterprise scale</value>
+  </data>
+  <data name="Home_Tabs_Desc" xml:space="preserve">
+    <value>Engineered from the ground up for speed, sovereign data isolation, and total organizational reliability.</value>
+  </data>
+  <data name="Home_Tab1_Title" xml:space="preserve">
+    <value>Sovereign Workspace &amp; Directory</value>
+  </data>
+  <data name="Home_Tab1_Desc" xml:space="preserve">
+    <value>Centralized staff, volunteers, committees, and member directories with granular role-based permissions and instant cross-department collaboration.</value>
+  </data>
+  <data name="Home_Tab2_Title" xml:space="preserve">
+    <value>Shift &amp; Rota Automation</value>
+  </data>
+  <data name="Home_Tab2_Desc" xml:space="preserve">
+    <value>Automate departmental rota publishing, peer-to-peer shift swaps, leave approvals, and geo-fenced mobile clock-in attendance tracking.</value>
+  </data>
+  <data name="Home_Tab3_Title" xml:space="preserve">
+    <value>Civic Census &amp; Field Surveyor</value>
+  </data>
+  <data name="Home_Tab3_Desc" xml:space="preserve">
+    <value>Conduct door-to-door demographic surveys with offline GPS sync, household family tree mapping, and cryptographic resident ID card generation.</value>
+  </data>
+  <data name="Home_Tab4_Title" xml:space="preserve">
+    <value>Private AI Smart Assist (BYOK)</value>
+  </data>
+  <data name="Home_Tab4_Desc" xml:space="preserve">
+    <value>Connect your organization's own OpenAI, Gemini, or Claude API keys. Draft minutes, analyze policies, and automate responses with zero public model training.</value>
+  </data>
+  <data name="Home_Tab5_Title" xml:space="preserve">
+    <value>Verifiable QR Credentials</value>
+  </data>
+  <data name="Home_Tab5_Desc" xml:space="preserve">
+    <value>Issue tamper-proof digital certificates, training badges, and membership passes verifiable in milliseconds via secure cryptographic QR verification.</value>
+  </data>
+  <data name="Home_Video_Badge" xml:space="preserve">
+    <value>PLATFORM IN ACTION</value>
+  </data>
+  <data name="Home_Video_Title" xml:space="preserve">
+    <value>Most software sits alongside your business. Ozikol runs inside it.</value>
+  </data>
+  <data name="Home_Video_Desc" xml:space="preserve">
+    <value>Your people, data, and workflows unified into a single pane of glass without custom integrations or brittle API glue. Built for teams of all technical levels.</value>
+  </data>
+  <data name="Home_Video_Btn" xml:space="preserve">
+    <value>Discover Ozikol</value>
+  </data>
+  <data name="Home_Metrics_Badge" xml:space="preserve">
+    <value>MEASURABLE IMPACT</value>
+  </data>
+  <data name="Home_Metrics_Title" xml:space="preserve">
+    <value>Real operational transformation delivered at scale</value>
+  </data>
+  <data name="Home_Metrics_Desc" xml:space="preserve">
+    <value>Organizations switching to Ozikol eliminate software sprawl, cut administrative overhead, and empower their teams to focus on mission-critical goals.</value>
+  </data>
+  <data name="Home_Metric1_Value" xml:space="preserve">
+    <value>+140%</value>
+  </data>
+  <data name="Home_Metric1_Title" xml:space="preserve">
+    <value>Operational Efficiency</value>
+  </data>
+  <data name="Home_Metric1_Desc" xml:space="preserve">
+    <value>Gained by uniting workforce scheduling, instant team communication, and automated approvals on one shared canvas.</value>
+  </data>
+  <data name="Home_Metric2_Value" xml:space="preserve">
+    <value>100%</value>
+  </data>
+  <data name="Home_Metric2_Title" xml:space="preserve">
+    <value>Shift Compliance</value>
+  </data>
+  <data name="Home_Metric2_Desc" xml:space="preserve">
+    <value>Eliminated unapproved overtime and scheduling clashes through rule-based shift validation and geofenced attendance logs.</value>
+  </data>
+  <data name="Home_Metric3_Value" xml:space="preserve">
+    <value>50%</value>
+  </data>
+  <data name="Home_Metric3_Title" xml:space="preserve">
+    <value>Faster Onboarding</value>
+  </data>
+  <data name="Home_Metric3_Desc" xml:space="preserve">
+    <value>Reduction in candidate and new member turnaround time through automated digital accreditation and custom forms.</value>
+  </data>
+  <data name="Home_Testimonials_Badge" xml:space="preserve">
+    <value>CLIENT FEEDBACK</value>
+  </data>
+  <data name="Home_Testimonials_Title" xml:space="preserve">
+    <value>Trusted by operational leaders worldwide</value>
+  </data>
+  <data name="Home_Testimonials_Desc" xml:space="preserve">
+    <value>Discover how businesses, charities, and institutions scale their daily operations smoothly with Ozikol.</value>
+  </data>
+  <data name="Home_Testimonial1_Quote" xml:space="preserve">
+    <value>&quot;Ozikol replaced four separate platforms we were juggling. Our staff rotas, committee meetings, and team chat now run seamlessly in one place.&quot;</value>
+  </data>
+  <data name="Home_Testimonial1_Author" xml:space="preserve">
+    <value>Sarah Jenkins</value>
+  </data>
+  <data name="Home_Testimonial1_Role" xml:space="preserve">
+    <value>Director of Operations, Horizon Care Trust</value>
+  </data>
+  <data name="Home_Testimonial2_Quote" xml:space="preserve">
+    <value>&quot;The verifiable QR certificate issuance and demographic survey toolkit saved our field workers hundreds of manual hours every single month.&quot;</value>
+  </data>
+  <data name="Home_Testimonial2_Author" xml:space="preserve">
+    <value>David Adebayo</value>
+  </data>
+  <data name="Home_Testimonial2_Role" xml:space="preserve">
+    <value>Head of Digital Infrastructure, Civic Forward Alliance</value>
+  </data>
+  <data name="Home_Testimonial3_Quote" xml:space="preserve">
+    <value>&quot;Having private BYOK AI integrated right into our forms and ticket workflows gives our staff supercharged productivity with total data privacy.&quot;</value>
+  </data>
+  <data name="Home_Testimonial3_Author" xml:space="preserve">
+    <value>Marcus Weber</value>
+  </data>
+  <data name="Home_Testimonial3_Role" xml:space="preserve">
+    <value>Chief Information Officer, Apex Engineering Ltd</value>
+  </data>
+  <data name="Home_Security_Badge" xml:space="preserve">
+    <value>ENTERPRISE SOVEREIGNTY</value>
+  </data>
+  <data name="Home_Security_Title" xml:space="preserve">
+    <value>Built with bank-grade security and complete customer sovereignty</value>
+  </data>
+  <data name="Home_Security_Desc" xml:space="preserve">
+    <value>Your data belongs to you. We provide dedicated tenant isolation, private AI with zero public model training, and instant database export.</value>
+  </data>
+  <data name="Home_Security_Pillar1_Title" xml:space="preserve">
+    <value>Strict Schema Isolation</value>
+  </data>
+  <data name="Home_Security_Pillar1_Desc" xml:space="preserve">
+    <value>Dedicated database tenant isolation guarantees zero risk of cross-tenant data leakage.</value>
+  </data>
+  <data name="Home_Security_Pillar2_Title" xml:space="preserve">
+    <value>Zero Model Retention (BYOK AI)</value>
+  </data>
+  <data name="Home_Security_Pillar2_Desc" xml:space="preserve">
+    <value>Bring your own OpenAI, Claude, or Gemini key. Your organizational queries are never used to train public models.</value>
+  </data>
+  <data name="Home_Security_Pillar3_Title" xml:space="preserve">
+    <value>Bank-Grade Compliance</value>
+  </data>
+  <data name="Home_Security_Pillar3_Desc" xml:space="preserve">
+    <value>Two-factor authentication (2FA), granular role-based access control (RBAC), and full audit logging.</value>
+  </data>
+  <data name="Home_Security_Pillar4_Title" xml:space="preserve">
+    <value>Instant 1-Click Portability</value>
+  </data>
+  <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
+    <value>Full customer data sovereignty. Export your entire database, policies, and files anytime in open formats.</value>
+  </data>
+  <data name="Home_Marquee_Heading" xml:space="preserve">
+    <value>Trusted by 160,000+ organisations and communities worldwide</value>
+  </data>
+  <data name="Home_Cta_Title" xml:space="preserve">
+    <value>Ready to unify your organization on Ozikol?</value>
+  </data>
+  <data name="Home_Cta_Desc" xml:space="preserve">
+    <value>Start free today and discover how Ozikol simplifies workforce, operations, and community management in one place.</value>
+  </data>
+  <data name="Home_Cta_BtnPrimary" xml:space="preserve">
+    <value>Get started free</value>
+  </data>
+  <data name="Home_Cta_BtnSecondary" xml:space="preserve">
+    <value>Schedule live demo</value>
+  </data>
+  <data name="Home_Cta_Trust1" xml:space="preserve">
+    <value>No credit card required</value>
+  </data>
+  <data name="Home_Cta_Trust2" xml:space="preserve">
+    <value>Instant tenant deployment</value>
+  </data>
+  <data name="Home_Cta_Trust3" xml:space="preserve">
+    <value>99.9% Uptime SLA</value>
+  </data>
 </root>
