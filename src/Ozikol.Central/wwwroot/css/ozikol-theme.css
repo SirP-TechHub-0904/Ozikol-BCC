@@ -1141,12 +1141,13 @@
     font-weight: 800;
     letter-spacing: -0.03em;
     color: #0f172a;
+    margin-top: 0;
     margin-bottom: 18px;
     max-width: 860px;
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: auto !important;
+    margin-right: auto !important;
     line-height: 1.18;
-    text-align: center;
+    text-align: center !important;
 }
 @media (max-width: 768px) {
     .oz-pricing-hero-title {

@@ -1582,8 +1582,9 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     font-weight: 800;
     color: var(--ozikol-dark);
     letter-spacing: -0.025em;
-    margin: 0 0 16px 0;
+    margin: 0 auto 16px auto;
     line-height: 1.15;
+    text-align: center;
 }
 
 .oz-pricing-hero-title span {
