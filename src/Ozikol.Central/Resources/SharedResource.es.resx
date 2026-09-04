@@ -736,4 +736,226 @@
   <data name="About_Reliability_Desc" xml:space="preserve">
     <value>Copias de seguridad automáticas diarias y SLA de alta disponibilidad.</value>
   </data>
+  <data name="Home_Hero_Badge" xml:space="preserve">
+    <value>La suite empresarial unificada en la nube</value>
+  </data>
+  <data name="Home_Hero_Title" xml:space="preserve">
+    <value>Ozikol une a sus equipos, operaciones y comunidad en una nube inteligente.</value>
+  </data>
+  <data name="Home_Hero_Desc" xml:space="preserve">
+    <value>Reemplace decenas de suscripciones desconectadas por una plataforma única para gestión de personal, finanzas, eventos, gobernanza e IA privada.</value>
+  </data>
+  <data name="Home_Hero_BtnSolutions" xml:space="preserve">
+    <value>Encuentre su solución</value>
+  </data>
+  <data name="Home_Hero_BtnStory" xml:space="preserve">
+    <value>Ver nuestra historia</value>
+  </data>
+  <data name="FastNav_WorkIn" xml:space="preserve">
+    <value>Trabajo en</value>
+  </data>
+  <data name="FastNav_ChooseSector" xml:space="preserve">
+    <value>Elegir sector</value>
+  </data>
+  <data name="FastNav_Need" xml:space="preserve">
+    <value>Necesito</value>
+  </data>
+  <data name="FastNav_ChooseSolution" xml:space="preserve">
+    <value>Elegir solución</value>
+  </data>
+  <data name="FastNav_GetStarted" xml:space="preserve">
+    <value>Empezar</value>
+  </data>
+  <data name="Home_Suites_Badge" xml:space="preserve">
+    <value>PLATAFORMA MODULAR COMPLETA</value>
+  </data>
+  <data name="Home_Suites_Title" xml:space="preserve">
+    <value>Una plataforma. 37 funciones. 9 suites integradas.</value>
+  </data>
+  <data name="Home_Suites_Desc" xml:space="preserve">
+    <value>Todas las herramientas necesarias para operar, gobernar y escalar su organización, conectadas de forma nativa sin complicaciones.</value>
+  </data>
+  <data name="Home_Suites_ExploreAll" xml:space="preserve">
+    <value>Explorar el catálogo completo de funciones →</value>
+  </data>
+  <data name="Home_Tabs_Badge" xml:space="preserve">
+    <value>MOTORES CLAVE DE LA PLATAFORMA</value>
+  </data>
+  <data name="Home_Tabs_Title" xml:space="preserve">
+    <value>Cinco pilares tecnológicos diseñados a escala empresarial</value>
+  </data>
+  <data name="Home_Tabs_Desc" xml:space="preserve">
+    <value>Diseñados desde cero para velocidad, aislamiento soberano de datos y máxima fiabilidad organizativa.</value>
+  </data>
+  <data name="Home_Tab1_Title" xml:space="preserve">
+    <value>Espacio de trabajo soberano y Directorio</value>
+  </data>
+  <data name="Home_Tab1_Desc" xml:space="preserve">
+    <value>Directorio centralizado de personal, voluntarios, comités y socios con permisos detallados y colaboración departamental.</value>
+  </data>
+  <data name="Home_Tab2_Title" xml:space="preserve">
+    <value>Automatización de turnos y cuadrantes</value>
+  </data>
+  <data name="Home_Tab2_Desc" xml:space="preserve">
+    <value>Automatice la publicación de horarios, intercambios de turnos entre compañeros, vacaciones y fichaje móvil geovallado.</value>
+  </data>
+  <data name="Home_Tab3_Title" xml:space="preserve">
+    <value>Censo cívico y Encuestador de campo</value>
+  </data>
+  <data name="Home_Tab3_Desc" xml:space="preserve">
+    <value>Realice encuestas puerta a puerta con sincronización GPS offline, mapas familiares y generación de identificaciones digitales para residentes.</value>
+  </data>
+  <data name="Home_Tab4_Title" xml:space="preserve">
+    <value>Asistente inteligente de IA privado (BYOK)</value>
+  </data>
+  <data name="Home_Tab4_Desc" xml:space="preserve">
+    <value>Conecte sus propias claves API de OpenAI, Gemini o Claude. Redacte actas y automatice respuestas sin entrenamiento en modelos públicos.</value>
+  </data>
+  <data name="Home_Tab5_Title" xml:space="preserve">
+    <value>Credenciales QR verificables</value>
+  </data>
+  <data name="Home_Tab5_Desc" xml:space="preserve">
+    <value>Emita certificados digitales inviolables, insignias y credenciales verificables al instante mediante códigos QR criptográficos.</value>
+  </data>
+  <data name="Home_Video_Badge" xml:space="preserve">
+    <value>LA PLATAFORMA EN ACCIÓN</value>
+  </data>
+  <data name="Home_Video_Title" xml:space="preserve">
+    <value>La mayoría del software se queda al margen de su empresa. Ozikol opera desde su interior.</value>
+  </data>
+  <data name="Home_Video_Desc" xml:space="preserve">
+    <value>Sus equipos, datos y flujos unificados en un panel único sin integraciones complejas ni código frágil.</value>
+  </data>
+  <data name="Home_Video_Btn" xml:space="preserve">
+    <value>Descubra Ozikol</value>
+  </data>
+  <data name="Home_Metrics_Badge" xml:space="preserve">
+    <value>IMPACTO MEDIBLE</value>
+  </data>
+  <data name="Home_Metrics_Title" xml:space="preserve">
+    <value>Verdadera transformación operativa a gran escala</value>
+  </data>
+  <data name="Home_Metrics_Desc" xml:space="preserve">
+    <value>Las organizaciones que eligen Ozikol eliminan la fragmentación de software, reducen costes de gestión y potencian a sus equipos.</value>
+  </data>
+  <data name="Home_Metric1_Value" xml:space="preserve">
+    <value>+140%</value>
+  </data>
+  <data name="Home_Metric1_Title" xml:space="preserve">
+    <value>Eficiencia operativa</value>
+  </data>
+  <data name="Home_Metric1_Desc" xml:space="preserve">
+    <value>Lograda al unir la planificación de turnos, comunicación de equipo y aprobaciones automáticas.</value>
+  </data>
+  <data name="Home_Metric2_Value" xml:space="preserve">
+    <value>100%</value>
+  </data>
+  <data name="Home_Metric2_Title" xml:space="preserve">
+    <value>Cumplimiento de turnos</value>
+  </data>
+  <data name="Home_Metric2_Desc" xml:space="preserve">
+    <value>Eliminación de horas extra no autorizadas y conflictos de turnos mediante validación basada en reglas.</value>
+  </data>
+  <data name="Home_Metric3_Value" xml:space="preserve">
+    <value>50%</value>
+  </data>
+  <data name="Home_Metric3_Title" xml:space="preserve">
+    <value>Incorporación más rápida</value>
+  </data>
+  <data name="Home_Metric3_Desc" xml:space="preserve">
+    <value>Reducción en los plazos de contratación e incorporación gracias a acreditaciones y formularios digitales.</value>
+  </data>
+  <data name="Home_Testimonials_Badge" xml:space="preserve">
+    <value>OPINIONES DE CLIENTES</value>
+  </data>
+  <data name="Home_Testimonials_Title" xml:space="preserve">
+    <value>Respaldado por líderes y directores de operaciones</value>
+  </data>
+  <data name="Home_Testimonials_Desc" xml:space="preserve">
+    <value>Descubra cómo empresas, asociaciones e instituciones escalan sus operaciones con Ozikol.</value>
+  </data>
+  <data name="Home_Testimonial1_Quote" xml:space="preserve">
+    <value>« Ozikol reemplazó cuatro herramientas distintas. Nuestros cuadrantes, comités y comunicaciones funcionan ahora en un solo lugar. »</value>
+  </data>
+  <data name="Home_Testimonial1_Author" xml:space="preserve">
+    <value>Sarah Jenkins</value>
+  </data>
+  <data name="Home_Testimonial1_Role" xml:space="preserve">
+    <value>Directora de Operaciones, Horizon Care Trust</value>
+  </data>
+  <data name="Home_Testimonial2_Quote" xml:space="preserve">
+    <value>« La emisión de certificados QR verificables y las encuestas de campo ahorran a nuestros equipos cientos de horas cada mes. »</value>
+  </data>
+  <data name="Home_Testimonial2_Author" xml:space="preserve">
+    <value>David Adebayo</value>
+  </data>
+  <data name="Home_Testimonial2_Role" xml:space="preserve">
+    <value>Responsable de Infraestructura Digital, Civic Forward Alliance</value>
+  </data>
+  <data name="Home_Testimonial3_Quote" xml:space="preserve">
+    <value>« Contar con IA privada integrada en nuestros formularios y tickets brinda máxima productividad con total privacidad de datos. »</value>
+  </data>
+  <data name="Home_Testimonial3_Author" xml:space="preserve">
+    <value>Marcus Weber</value>
+  </data>
+  <data name="Home_Testimonial3_Role" xml:space="preserve">
+    <value>Director de Sistemas, Apex Engineering Ltd</value>
+  </data>
+  <data name="Home_Security_Badge" xml:space="preserve">
+    <value>SOBERANÍA EMPRESARIAL</value>
+  </data>
+  <data name="Home_Security_Title" xml:space="preserve">
+    <value>Construido con seguridad de nivel bancario y soberanía total del cliente</value>
+  </data>
+  <data name="Home_Security_Desc" xml:space="preserve">
+    <value>Sus datos le pertenecen. Aislamiento dedicado por organización, IA privada sin entrenamiento externo y exportación inmediata.</value>
+  </data>
+  <data name="Home_Security_Pillar1_Title" xml:space="preserve">
+    <value>Aislamiento estricto de esquemas</value>
+  </data>
+  <data name="Home_Security_Pillar1_Desc" xml:space="preserve">
+    <value>El aislamiento dedicado por organización garantiza la total protección de sus datos.</value>
+  </data>
+  <data name="Home_Security_Pillar2_Title" xml:space="preserve">
+    <value>Cero retención en modelos (IA BYOK)</value>
+  </data>
+  <data name="Home_Security_Pillar2_Desc" xml:space="preserve">
+    <value>Aporte sus propias claves API. Sus consultas jamás se emplean para entrenar modelos públicos.</value>
+  </data>
+  <data name="Home_Security_Pillar3_Title" xml:space="preserve">
+    <value>Cumplimiento de nivel bancario</value>
+  </data>
+  <data name="Home_Security_Pillar3_Desc" xml:space="preserve">
+    <value>Autenticación de dos factores (2FA), control de accesos por roles (RBAC) y registros de auditoría.</value>
+  </data>
+  <data name="Home_Security_Pillar4_Title" xml:space="preserve">
+    <value>Portabilidad inmediata en 1 clic</value>
+  </data>
+  <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
+    <value>Soberanía absoluta de sus datos. Exporte su base de datos, políticas y archivos en cualquier momento.</value>
+  </data>
+  <data name="Home_Marquee_Heading" xml:space="preserve">
+    <value>Con la confianza de más de 160.000 organizaciones y comunidades en todo el mundo</value>
+  </data>
+  <data name="Home_Cta_Title" xml:space="preserve">
+    <value>¿Listo para unificar su organización en Ozikol?</value>
+  </data>
+  <data name="Home_Cta_Desc" xml:space="preserve">
+    <value>Comience gratis hoy y descubra cómo Ozikol simplifica la gestión de personal, operaciones y comunidad en un solo lugar.</value>
+  </data>
+  <data name="Home_Cta_BtnPrimary" xml:space="preserve">
+    <value>Empezar gratis</value>
+  </data>
+  <data name="Home_Cta_BtnSecondary" xml:space="preserve">
+    <value>Solicitar demostración</value>
+  </data>
+  <data name="Home_Cta_Trust1" xml:space="preserve">
+    <value>Sin tarjeta de crédito</value>
+  </data>
+  <data name="Home_Cta_Trust2" xml:space="preserve">
+    <value>Despliegue inmediato</value>
+  </data>
+  <data name="Home_Cta_Trust3" xml:space="preserve">
+    <value>99.9% de disponibilidad garantizada</value>
+  </data>
 </root>

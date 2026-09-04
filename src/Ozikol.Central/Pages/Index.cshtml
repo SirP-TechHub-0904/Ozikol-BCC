@@ -1,33 +1,39 @@
 @page ""
 @model Ozikol.Central.Pages.IndexModel
 @{
-    ViewData["Title"] = "Ozikol | Business Management Software";
+    ViewData["Title"] = "Ozikol | Unified Business Cloud Platform";
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+    if (currentCulture != "en" && currentCulture != "fr" && currentCulture != "es" && currentCulture != "de")
+    {
+        currentCulture = "en";
+    }
 }
 
 <div>
-    <!-- Hero Banner Section -->
+    <!-- Section 1: Hero Banner Section -->
     <section class="oz-hero-section">
         <div class="oz-hero-container">
             <div class="oz-hero-content">
                 <div class="oz-hero-toggle" aria-hidden="true">
                     <div class="oz-hero-toggle__pill">
                         <span class="oz-hero-toggle__dot"></span>
+                        <span style="font-size: 12px; font-weight: 700; color: #ffffff; letter-spacing: 0.05em; text-transform: uppercase;">@SharedLocalizer["Home_Hero_Badge"]</span>
                     </div>
                 </div>
 
                 <h1 class="oz-hero-title">
-                    <strong>Ozikol</strong> does more, so your people can be more
+                    @SharedLocalizer["Home_Hero_Title"]
                 </h1>
 
                 <p class="oz-hero-desc">
-                    One AI platform that sits across all the systems you already use, taking on the work that gets in the way. Built for your sector, trusted by 160,000+ organisations.
+                    @SharedLocalizer["Home_Hero_Desc"]
                 </p>
 
                 <div class="oz-hero-ctas">
-                    <a href="#solutions" class="oz-hero-btn-outline">Find your solution</a>
+                    <a href="#solutions" class="oz-hero-btn-outline">@SharedLocalizer["Home_Hero_BtnSolutions"]</a>
 
-                    <a href="/about-us" class="oz-hero-btn-white">
-                        <span>Watch our story</span>
+                    <a href="/@currentCulture/about-us" class="oz-hero-btn-white">
+                        <span>@SharedLocalizer["Home_Hero_BtnStory"]</span>
                         <span class="oz-hero-btn-arrow">
                             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                                 <path d="M1.5 5H8.5M8.5 5L5 1.5M8.5 5L5 8.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -40,21 +46,21 @@
             <!-- In-Div Image: Hidden on Desktop, Shown on Mobile -->
             <div class="oz-hero-mobile-image-wrap" aria-hidden="true">
                 <img src="/images/hero-banner.jpg"
-                     alt="Empowered staff using Ozikol"
+                     alt="Ozikol Cloud Workspace"
                      class="oz-hero-mobile-img" />
                 <div class="oz-hero-mobile-gradient"></div>
             </div>
         </div>
     </section>
 
-    <!-- Floating FastNav Search Form ("The Little Form") -->
+    <!-- Section 2: Floating FastNav Solution Finder ("The Little Form") -->
     <section class="oz-fastnav-wrapper" id="solutions">
         <div class="oz-fastnav-card">
             <!-- Sector Field -->
             <div class="oz-fastnav-field" id="ozSectorField">
-                <span class="oz-fastnav-label">I work in</span>
+                <span class="oz-fastnav-label">@SharedLocalizer["FastNav_WorkIn"]</span>
                 <div class="oz-fastnav-pill" id="ozSectorPill" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="oz-fastnav-display is-placeholder" id="ozSectorDisplay">Choose sector</span>
+                    <span class="oz-fastnav-display is-placeholder" id="ozSectorDisplay">@SharedLocalizer["FastNav_ChooseSector"]</span>
                     <span class="oz-fastnav-chevron" aria-hidden="true">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                             <path d="M2 3.5L5 6.5L8 3.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -63,27 +69,25 @@
                 </div>
                 <div class="oz-fastnav-menu" id="ozSectorMenu" role="listbox"></div>
                 <select id="ozFastSector" class="oz-fastnav-native" aria-hidden="true">
-                    <option value="">Choose sector</option>
-                    <option value="not-for-profit" data-options='[{"title":"grant ledger","url":"/features/grant-ledger"},{"title":"volunteer & attendee management","url":"/features/attendee-management"},{"title":"community messenger","url":"/features/community-messenger"},{"title":"form builder","url":"/features/form-builder"},{"title":"invoicing & dues","url":"/features/invoicing-dues"},{"title":"document management","url":"/features/document-management"}]'>charities and not for profit</option>
-                    <option value="construction" data-options='[{"title":"project & task tracking","url":"/features/project-task-tracking"},{"title":"equipment & fleet","url":"/features/equipment-fleet"},{"title":"company assets","url":"/features/company-assets"},{"title":"staff rota & scheduling","url":"/features/staff-rota"},{"title":"invoicing & dues","url":"/features/invoicing-dues"},{"title":"whistleblowing & feedback","url":"/features/whistleblowing-feedback"}]'>construction and engineering</option>
-                    <option value="education" data-options='[{"title":"learning management (LMS)","url":"/features/learning-management"},{"title":"attendance tracking","url":"/features/attendance-tracking"},{"title":"certificate verification","url":"/features/certificate-verification"},{"title":"alumni directory","url":"/features/alumni-directory"},{"title":"elections & e-voting","url":"/features/elections-evoting"},{"title":"mass communication","url":"/features/mass-communication"}]'>education and academies</option>
-                    <option value="event-management" data-options='[{"title":"event ticketing","url":"/features/event-ticketing"},{"title":"attendee management","url":"/features/attendee-management"},{"title":"speaker & sessions","url":"/features/speaker-sessions"},{"title":"visitor gate management","url":"/features/visitor-gate-management"},{"title":"store & ecommerce","url":"/features/store-ecommerce"}]'>event management and venues</option>
-                    <option value="finance-accounting" data-options='[{"title":"invoicing & dues","url":"/features/invoicing-dues"},{"title":"grant ledger","url":"/features/grant-ledger"},{"title":"interval reporting","url":"/features/interval-reporting"},{"title":"company assets","url":"/features/company-assets"},{"title":"proposal pipeline","url":"/features/proposal-pipeline"}]'>finance and accounting</option>
-                    <option value="health-social-care" data-options='[{"title":"shift swaps & leave","url":"/features/shift-swaps-leave"},{"title":"staff rota","url":"/features/staff-rota"},{"title":"appointment booking","url":"/features/appointment-booking"},{"title":"live chat","url":"/features/live-chat"},{"title":"whistleblowing & feedback","url":"/features/whistleblowing-feedback"}]'>health, support and care</option>
-                    <option value="hospitality" data-options='[{"title":"staff rota","url":"/features/staff-rota"},{"title":"shift swaps & leave","url":"/features/shift-swaps-leave"},{"title":"appointment booking","url":"/features/appointment-booking"},{"title":"store & ecommerce","url":"/features/store-ecommerce"},{"title":"visitor gate management","url":"/features/visitor-gate-management"}]'>hospitality and leisure</option>
-                    <option value="hr-payroll" data-options='[{"title":"recruitment & hiring","url":"/features/recruitment-hiring"},{"title":"staff rota","url":"/features/staff-rota"},{"title":"shift swaps & leave","url":"/features/shift-swaps-leave"},{"title":"attendance tracking","url":"/features/attendance-tracking"},{"title":"survey analytics","url":"/features/survey-analytics"}]'>HR and workforce</option>
-                    <option value="legal" data-options='[{"title":"committees","url":"/features/committees"},{"title":"elections & e-voting","url":"/features/elections-evoting"},{"title":"document management","url":"/features/document-management"},{"title":"whistleblowing & feedback","url":"/features/whistleblowing-feedback"}]'>legal and governance</option>
-                    <option value="manufacturing" data-options='[{"title":"equipment & fleet","url":"/features/equipment-fleet"},{"title":"company assets","url":"/features/company-assets"},{"title":"project & task tracking","url":"/features/project-task-tracking"},{"title":"interval reporting","url":"/features/interval-reporting"}]'>manufacturing and logistics</option>
-                    <option value="recruitment" data-options='[{"title":"recruitment & hiring","url":"/features/recruitment-hiring"},{"title":"proposal pipeline","url":"/features/proposal-pipeline"},{"title":"survey analytics","url":"/features/survey-analytics"},{"title":"bio link tree","url":"/features/bio-link-tree"}]'>recruitment and talent</option>
-                    <option value="public-sector" data-options='[{"title":"community messenger","url":"/features/community-messenger"},{"title":"mass communication","url":"/features/mass-communication"},{"title":"helpdesk support","url":"/features/helpdesk-support"},{"title":"social media manager","url":"/features/social-media-manager"}]'>public sector and communities</option>
+                    <option value="">@SharedLocalizer["FastNav_ChooseSector"]</option>
+                    <option value="not-for-profit" data-options='[{"title":"Grant Ledger &amp; Funding","url":"/@currentCulture/features/grant-ledger"},{"title":"Attendee &amp; Volunteer Management","url":"/@currentCulture/features/attendee-management"},{"title":"Community Messenger","url":"/@currentCulture/features/community-messenger"},{"title":"Custom Form Builder","url":"/@currentCulture/features/form-builder"},{"title":"Invoicing &amp; Dues Billing","url":"/@currentCulture/features/invoicing-dues"},{"title":"Document Vault","url":"/@currentCulture/features/document-management"}]'>Charities &amp; Not for Profit</option>
+                    <option value="construction" data-options='[{"title":"Project &amp; Task Tracking","url":"/@currentCulture/features/project-task-tracking"},{"title":"Fleet &amp; Equipment Lifecycle","url":"/@currentCulture/features/equipment-fleet"},{"title":"Company Asset Management","url":"/@currentCulture/features/company-assets"},{"title":"Staff Rota &amp; Scheduling","url":"/@currentCulture/features/staff-rota"},{"title":"Invoicing &amp; Dues","url":"/@currentCulture/features/invoicing-dues"},{"title":"Anonymous Whistleblowing","url":"/@currentCulture/features/whistleblowing-feedback"}]'>Construction &amp; Engineering</option>
+                    <option value="education" data-options='[{"title":"Learning Management (LMS)","url":"/@currentCulture/features/learning-management"},{"title":"Attendance &amp; Time Tracking","url":"/@currentCulture/features/attendance-tracking"},{"title":"Certificate Verification","url":"/@currentCulture/features/certificate-verification"},{"title":"Alumni Directory","url":"/@currentCulture/features/alumni-directory"},{"title":"Elections &amp; E-Voting","url":"/@currentCulture/features/elections-evoting"},{"title":"Mass Communication","url":"/@currentCulture/features/mass-communication"}]'>Education &amp; Academies</option>
+                    <option value="event-management" data-options='[{"title":"Event Ticketing &amp; Check-In","url":"/@currentCulture/features/event-ticketing"},{"title":"Attendee &amp; Guest Management","url":"/@currentCulture/features/attendee-management"},{"title":"Speaker &amp; Session Management","url":"/@currentCulture/features/speaker-sessions"},{"title":"Visitor Gate Kiosk","url":"/@currentCulture/features/visitor-gate-management"},{"title":"Store &amp; E-Commerce","url":"/@currentCulture/features/store-ecommerce"}]'>Event Management &amp; Venues</option>
+                    <option value="finance-accounting" data-options='[{"title":"Invoicing &amp; Dues Billing","url":"/@currentCulture/features/invoicing-dues"},{"title":"Grant Ledger &amp; Funding","url":"/@currentCulture/features/grant-ledger"},{"title":"Interval KPI Reporting","url":"/@currentCulture/features/interval-reporting"},{"title":"Company Assets","url":"/@currentCulture/features/company-assets"},{"title":"Proposal Pipeline","url":"/@currentCulture/features/proposal-pipeline"}]'>Finance &amp; Professional Services</option>
+                    <option value="health-social-care" data-options='[{"title":"Shift Swaps &amp; Leave Approvals","url":"/@currentCulture/features/shift-swaps-leave"},{"title":"Staff Rota &amp; Scheduling","url":"/@currentCulture/features/staff-rota"},{"title":"Appointment Booking","url":"/@currentCulture/features/appointment-booking"},{"title":"Live Chat Support","url":"/@currentCulture/features/live-chat"},{"title":"Whistleblowing &amp; Safeguarding","url":"/@currentCulture/features/whistleblowing-feedback"}]'>Health &amp; Social Care</option>
+                    <option value="hospitality" data-options='[{"title":"Staff Rota &amp; Shifts","url":"/@currentCulture/features/staff-rota"},{"title":"Shift Swaps &amp; Availability","url":"/@currentCulture/features/shift-swaps-leave"},{"title":"Appointment Booking","url":"/@currentCulture/features/appointment-booking"},{"title":"Store &amp; E-Commerce","url":"/@currentCulture/features/store-ecommerce"},{"title":"Visitor Gate Management","url":"/@currentCulture/features/visitor-gate-management"}]'>Hospitality &amp; Leisure</option>
+                    <option value="hr-workforce" data-options='[{"title":"Recruitment &amp; ATS Hiring","url":"/@currentCulture/features/recruitment-hiring"},{"title":"Staff Rota &amp; Scheduling","url":"/@currentCulture/features/staff-rota"},{"title":"Shift Swaps &amp; Leave","url":"/@currentCulture/features/shift-swaps-leave"},{"title":"Geofenced Attendance","url":"/@currentCulture/features/attendance-tracking"},{"title":"Survey Analytics","url":"/@currentCulture/features/survey-analytics"}]'>HR &amp; People Operations</option>
+                    <option value="legal-governance" data-options='[{"title":"Committees &amp; Sub-Groups","url":"/@currentCulture/features/committees"},{"title":"Cryptographic E-Voting","url":"/@currentCulture/features/elections-evoting"},{"title":"Document Policy Vault","url":"/@currentCulture/features/document-management"},{"title":"Whistleblowing &amp; Feedback","url":"/@currentCulture/features/whistleblowing-feedback"}]'>Legal &amp; Governance</option>
+                    <option value="public-sector" data-options='[{"title":"Community Census &amp; Household","url":"/@currentCulture/features/community-census"},{"title":"Field Enumeration Surveyor","url":"/@currentCulture/features/field-surveyor"},{"title":"Resident Digital ID Cards","url":"/@currentCulture/features/resident-id-cards"},{"title":"Demographic Analytics","url":"/@currentCulture/features/demographic-analytics"},{"title":"Mass Communication","url":"/@currentCulture/features/mass-communication"}]'>Public Sector &amp; Civic Communities</option>
                 </select>
             </div>
 
             <!-- Product / Solution Field -->
             <div class="oz-fastnav-field" id="ozProductField">
-                <span class="oz-fastnav-label">I need</span>
+                <span class="oz-fastnav-label">@SharedLocalizer["FastNav_Need"]</span>
                 <div class="oz-fastnav-pill" id="ozProductPill" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="oz-fastnav-display is-placeholder" id="ozProductDisplay">Choose solution</span>
+                    <span class="oz-fastnav-display is-placeholder" id="ozProductDisplay">@SharedLocalizer["FastNav_ChooseSolution"]</span>
                     <span class="oz-fastnav-chevron" aria-hidden="true">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                             <path d="M2 3.5L5 6.5L8 3.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -92,13 +96,13 @@
                 </div>
                 <div class="oz-fastnav-menu" id="ozProductMenu" role="listbox"></div>
                 <select id="ozFastProduct" class="oz-fastnav-native" aria-hidden="true">
-                    <option value="">Choose solution</option>
+                    <option value="">@SharedLocalizer["FastNav_ChooseSolution"]</option>
                 </select>
             </div>
 
             <!-- Action Button -->
-            <a id="ozFastBtn" href="/features" class="oz-fastnav-btn">
-                <span>Get started</span>
+            <a id="ozFastBtn" href="/@currentCulture/features" class="oz-fastnav-btn">
+                <span>@SharedLocalizer["FastNav_GetStarted"]</span>
                 <span class="oz-fastnav-btn-arrow">
                     <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                         <path d="M1.5 4.5H7.5M7.5 4.5L4.5 1.5M7.5 4.5L4.5 7.5" stroke="#e5173f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -108,26 +112,632 @@
         </div>
     </section>
 
-    <!-- Custom Padded Dropdown Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var sectorPill = document.getElementById('ozSectorPill');
-            var sectorMenu = document.getElementById('ozSectorMenu');
-            var sectorDisplay = document.getElementById('ozSectorDisplay');
-            var sectorSelect = document.getElementById('ozFastSector');
+    <!-- Section 3: The 9-Suite Architecture Grid -->
+    <section class="oz-home-section" style="background: transparent;">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Suites_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Suites_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Suites_Desc"]</p>
+            </div>
 
-            var productPill = document.getElementById('ozProductPill');
-            var productMenu = document.getElementById('ozProductMenu');
-            var productDisplay = document.getElementById('ozProductDisplay');
-            var productSelect = document.getElementById('ozFastProduct');
+            <div class="oz-suites-grid">
+                <!-- Suite 1 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_People_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_People_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
 
-            var startBtn = document.getElementById('ozFastBtn');
+                <!-- Suite 2 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Workforce_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Workforce_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
 
-            if (!sectorPill || !sectorMenu || !productPill || !productMenu) return;
+                <!-- Suite 3 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Reports_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Reports_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
 
-            // Populate Sector Custom Menu Options from Native Select
+                <!-- Suite 4 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Events_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Events_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+
+                <!-- Suite 5 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Finance_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Finance_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+
+                <!-- Suite 6 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Operations_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Operations_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+
+                <!-- Suite 7 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Communication_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Communication_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+
+                <!-- Suite 8 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Compliance_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Compliance_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+
+                <!-- Suite 9 -->
+                <a href="/@currentCulture/features" class="oz-suite-card">
+                    <div class="oz-suite-icon-wrap">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    </div>
+                    <h3 class="oz-suite-card-title">@SharedLocalizer["Suite_Demographics_Nav"]</h3>
+                    <p class="oz-suite-card-desc">@SharedLocalizer["Suite_Demographics_Desc"]</p>
+                    <span class="oz-suite-card-link">Explore suite &rarr;</span>
+                </a>
+            </div>
+
+            <div class="oz-suites-bottom-cta">
+                <a href="/@currentCulture/features" class="oz-btn-ghost-arrow">
+                    <span>@SharedLocalizer["Home_Suites_ExploreAll"]</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Core Capabilities Modern Interactive Tabs -->
+    <section class="oz-home-section">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Tabs_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Tabs_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Tabs_Desc"]</p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="oz-tabs-nav" role="tablist">
+                <button type="button" class="oz-tab-btn active" data-tab="tab-workspace" role="tab" aria-selected="true">1. Workspace &amp; Directory</button>
+                <button type="button" class="oz-tab-btn" data-tab="tab-rota" role="tab" aria-selected="false">2. Rota &amp; Shifts</button>
+                <button type="button" class="oz-tab-btn" data-tab="tab-census" role="tab" aria-selected="false">3. Civic Census</button>
+                <button type="button" class="oz-tab-btn" data-tab="tab-ai" role="tab" aria-selected="false">4. Private AI (BYOK)</button>
+                <button type="button" class="oz-tab-btn" data-tab="tab-credentials" role="tab" aria-selected="false">5. QR Credentials</button>
+            </div>
+
+            <!-- Tab Panes -->
+            <div class="oz-tabs-content">
+                <!-- Pane 1: Workspace -->
+                <div class="oz-tab-pane active" id="tab-workspace" role="tabpanel">
+                    <div class="oz-tab-content-card">
+                        <div class="oz-tab-text-side">
+                            <h3 class="oz-tab-text-title">@SharedLocalizer["Home_Tab1_Title"]</h3>
+                            <p class="oz-tab-text-desc">@SharedLocalizer["Home_Tab1_Desc"]</p>
+                            <ul class="oz-tab-bullets">
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Single sign-on across all 37 organizational capabilities</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Granular committee and department role access</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Searchable alumni registry with verification filters</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oz-tab-preview-box">
+                            <div class="oz-preview-header">
+                                <div class="oz-preview-dots">
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                </div>
+                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Ozikol Workspace OS</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <span style="color: #ffffff; font-size: 13px; font-weight: 600;">Operations Board</span>
+                                    <span style="color: #10b981; font-size: 12px; font-weight: 700;">● Active</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <span style="color: #ffffff; font-size: 13px; font-weight: 600;">Executive Committee</span>
+                                    <span style="color: #e5173f; font-size: 12px; font-weight: 700;">🔒 Restricted</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <span style="color: #ffffff; font-size: 13px; font-weight: 600;">Alumni Network</span>
+                                    <span style="color: #3b82f6; font-size: 12px; font-weight: 700;">2,450 Members</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 2: Rota & Shifts -->
+                <div class="oz-tab-pane" id="tab-rota" role="tabpanel">
+                    <div class="oz-tab-content-card">
+                        <div class="oz-tab-text-side">
+                            <h3 class="oz-tab-text-title">@SharedLocalizer["Home_Tab2_Title"]</h3>
+                            <p class="oz-tab-text-desc">@SharedLocalizer["Home_Tab2_Desc"]</p>
+                            <ul class="oz-tab-bullets">
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Automated weekly &amp; monthly rota grid publishing</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Peer-to-peer mobile shift trading with manager sign-off</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Geo-fenced mobile digital clock-in and attendance timesheets</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oz-tab-preview-box">
+                            <div class="oz-preview-header">
+                                <div class="oz-preview-dots">
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                </div>
+                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Live Rota Grid (Week 36)</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px;">
+                                <div style="padding: 10px; background: rgba(229,23,63,0.1); border: 1px solid rgba(229,23,63,0.25); border-radius: 8px;">
+                                    <div style="color: #e5173f; font-weight: 700;">Morning Shift</div>
+                                    <div style="color: #cbd5e1; font-size: 11px;">08:00 - 16:00</div>
+                                    <div style="color: #10b981; font-size: 10px; margin-top: 4px;">✔ 8/8 Staffed</div>
+                                </div>
+                                <div style="padding: 10px; background: rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <div style="color: #ffffff; font-weight: 700;">Evening Shift</div>
+                                    <div style="color: #cbd5e1; font-size: 11px;">16:00 - 00:00</div>
+                                    <div style="color: #10b981; font-size: 10px; margin-top: 4px;">✔ 6/6 Staffed</div>
+                                </div>
+                                <div style="padding: 10px; background: rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <div style="color: #ffffff; font-weight: 700;">Night Shift</div>
+                                    <div style="color: #cbd5e1; font-size: 11px;">00:00 - 08:00</div>
+                                    <div style="color: #f59e0b; font-size: 10px; margin-top: 4px;">⚡ 1 Swap Pending</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 3: Civic Census -->
+                <div class="oz-tab-pane" id="tab-census" role="tabpanel">
+                    <div class="oz-tab-content-card">
+                        <div class="oz-tab-text-side">
+                            <h3 class="oz-tab-text-title">@SharedLocalizer["Home_Tab3_Title"]</h3>
+                            <p class="oz-tab-text-desc">@SharedLocalizer["Home_Tab3_Desc"]</p>
+                            <ul class="oz-tab-bullets">
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Door-to-door mobile surveyor toolkit with offline sync</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Household mapping, family trees, and residency verification</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Instant cryptographic QR citizen and resident ID passes</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oz-tab-preview-box">
+                            <div class="oz-preview-header">
+                                <div class="oz-preview-dots">
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                </div>
+                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Mobile Field Surveyor</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; display: flex; justify-content: space-between;">
+                                    <span style="color: #ffffff; font-size: 13px;">Households Surveyed</span>
+                                    <span style="color: #10b981; font-weight: 700;">14,280 Verified</span>
+                                </div>
+                                <div style="padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; display: flex; justify-content: space-between;">
+                                    <span style="color: #ffffff; font-size: 13px;">Offline GPS Queue</span>
+                                    <span style="color: #3b82f6; font-weight: 700;">0 Pending (Synced)</span>
+                                </div>
+                                <div style="padding: 10px 14px; background: rgba(229,23,63,0.1); border-radius: 8px; display: flex; justify-content: space-between;">
+                                    <span style="color: #ffffff; font-size: 13px;">Digital Resident IDs</span>
+                                    <span style="color: #e5173f; font-weight: 700;">QR Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 4: Private AI (BYOK) -->
+                <div class="oz-tab-pane" id="tab-ai" role="tabpanel">
+                    <div class="oz-tab-content-card">
+                        <div class="oz-tab-text-side">
+                            <h3 class="oz-tab-text-title">@SharedLocalizer["Home_Tab4_Title"]</h3>
+                            <p class="oz-tab-text-desc">@SharedLocalizer["Home_Tab4_Desc"]</p>
+                            <ul class="oz-tab-bullets">
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Bring Your Own Key: Connect OpenAI, Anthropic Claude, or Gemini</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Zero model retention: Organizational data is never used for training</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Draft meeting minutes, auto-triage tickets, and build custom surveys</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oz-tab-preview-box">
+                            <div class="oz-preview-header">
+                                <div class="oz-preview-dots">
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                </div>
+                                <span style="font-size: 11px; color: #10b981; font-weight: 600;">BYOK AI Gateway (Zero Retention)</span>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">User Request:</div>
+                                <div style="font-size: 13px; color: #ffffff;">"Generate shift schedule based on 12 staff availability constraints"</div>
+                            </div>
+                            <div style="background: rgba(229,23,63,0.08); border-left: 3px solid #e5173f; border-radius: 0 8px 8px 0; padding: 12px;">
+                                <div style="font-size: 11px; color: #e5173f; font-weight: 700; margin-bottom: 4px;">Ozikol AI Engine:</div>
+                                <div style="font-size: 12px; color: #e2e8f0;">"Schedule optimized with 0 conflicts. 12 shifts allocated. Ready to publish to mobile staff app."</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 5: QR Credentials -->
+                <div class="oz-tab-pane" id="tab-credentials" role="tabpanel">
+                    <div class="oz-tab-content-card">
+                        <div class="oz-tab-text-side">
+                            <h3 class="oz-tab-text-title">@SharedLocalizer["Home_Tab5_Title"]</h3>
+                            <p class="oz-tab-text-desc">@SharedLocalizer["Home_Tab5_Desc"]</p>
+                            <ul class="oz-tab-bullets">
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Visual drag-and-drop designer for certificates and passes</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Cryptographic QR validation portal with instant audit log</span>
+                                </li>
+                                <li class="oz-tab-bullet-item">
+                                    <span class="oz-tab-check-icon">&check;</span>
+                                    <span>Automated issuance on training course or event completion</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oz-tab-preview-box">
+                            <div class="oz-preview-header">
+                                <div class="oz-preview-dots">
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                    <span class="oz-preview-dot"></span>
+                                </div>
+                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Cryptographic Verification</span>
+                            </div>
+                            <div style="padding: 16px; border: 1px dashed rgba(229,23,63,0.3); border-radius: 12px; text-align: center;">
+                                <div style="display: inline-block; padding: 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px;">
+                                    <!-- QR Code Graphic Mock -->
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="#18191f">
+                                        <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 2h2v4h-2v-4zm-4-2h4v2h-4v-2zm4 0h2v2h-2v-2zm-2 4h4v2h-4v-2z"/>
+                                    </svg>
+                                </div>
+                                <div style="font-size: 13px; font-weight: 700; color: #ffffff;">Verified Credential #OZ-98214</div>
+                                <div style="font-size: 11px; color: #10b981; margin-top: 2px;">✔ Authenticated via Ozikol Public Ledger</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Video Showcase -->
+    <section class="oz-home-section" style="background: rgba(255, 255, 255, 0.02);">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Video_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Video_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Video_Desc"]</p>
+            </div>
+
+            <div class="oz-video-section-wrap" style="max-width: 960px; margin: 0 auto;">
+                <div class="oz-video-player-container" id="ozVideoPlayer" data-video-id="QPcYivo8_Wc">
+                    <div class="oz-video-poster-wrap" id="ozVideoPoster">
+                        <div class="oz-media-placeholder"><span class="oz-media-badge">Ozikol Cloud Experience</span></div>
+                        <div class="oz-video-overlay"></div>
+                        <button type="button" class="oz-video-play-btn" aria-label="Play video">
+                            <span class="oz-video-play-pulse"></span>
+                            <span class="oz-video-play-circle">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86A1 1 0 008 5.14z" fill="#ffffff"/>
+                                </svg>
+                            </span>
+                            <span class="oz-video-play-label">Play Video</span>
+                        </button>
+                    </div>
+                    <div class="oz-video-iframe-slot" id="ozVideoSlot"></div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 36px;">
+                <a href="/@currentCulture/features" class="btn btn-primary">
+                    @SharedLocalizer["Home_Video_Btn"]
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Real-World Metrics & Operational Impact -->
+    <section class="oz-home-section">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Metrics_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Metrics_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Metrics_Desc"]</p>
+            </div>
+
+            <div class="oz-metrics-grid">
+                <!-- Metric 1 -->
+                <div class="oz-metric-card">
+                    <div class="oz-metric-number">@SharedLocalizer["Home_Metric1_Value"]</div>
+                    <h3 class="oz-metric-title">@SharedLocalizer["Home_Metric1_Title"]</h3>
+                    <p class="oz-metric-desc">@SharedLocalizer["Home_Metric1_Desc"]</p>
+                </div>
+
+                <!-- Metric 2 -->
+                <div class="oz-metric-card">
+                    <div class="oz-metric-number">@SharedLocalizer["Home_Metric2_Value"]</div>
+                    <h3 class="oz-metric-title">@SharedLocalizer["Home_Metric2_Title"]</h3>
+                    <p class="oz-metric-desc">@SharedLocalizer["Home_Metric2_Desc"]</p>
+                </div>
+
+                <!-- Metric 3 -->
+                <div class="oz-metric-card">
+                    <div class="oz-metric-number">@SharedLocalizer["Home_Metric3_Value"]</div>
+                    <h3 class="oz-metric-title">@SharedLocalizer["Home_Metric3_Title"]</h3>
+                    <p class="oz-metric-desc">@SharedLocalizer["Home_Metric3_Desc"]</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Verified Customer Testimonials -->
+    <section class="oz-home-section" style="background: rgba(255, 255, 255, 0.02);">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Testimonials_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Testimonials_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Testimonials_Desc"]</p>
+            </div>
+
+            <div class="oz-testimonials-grid">
+                <!-- Testimonial 1 -->
+                <div class="oz-testimonial-card">
+                    <div class="oz-stars">★★★★★</div>
+                    <p class="oz-testimonial-quote">@SharedLocalizer["Home_Testimonial1_Quote"]</p>
+                    <div class="oz-testimonial-author-wrap">
+                        <div class="oz-author-avatar">SJ</div>
+                        <div>
+                            <div class="oz-author-name">@SharedLocalizer["Home_Testimonial1_Author"]</div>
+                            <div class="oz-author-role">@SharedLocalizer["Home_Testimonial1_Role"]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="oz-testimonial-card">
+                    <div class="oz-stars">★★★★★</div>
+                    <p class="oz-testimonial-quote">@SharedLocalizer["Home_Testimonial2_Quote"]</p>
+                    <div class="oz-testimonial-author-wrap">
+                        <div class="oz-author-avatar">DA</div>
+                        <div>
+                            <div class="oz-author-name">@SharedLocalizer["Home_Testimonial2_Author"]</div>
+                            <div class="oz-author-role">@SharedLocalizer["Home_Testimonial2_Role"]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="oz-testimonial-card">
+                    <div class="oz-stars">★★★★★</div>
+                    <p class="oz-testimonial-quote">@SharedLocalizer["Home_Testimonial3_Quote"]</p>
+                    <div class="oz-testimonial-author-wrap">
+                        <div class="oz-author-avatar">MW</div>
+                        <div>
+                            <div class="oz-author-name">@SharedLocalizer["Home_Testimonial3_Author"]</div>
+                            <div class="oz-author-role">@SharedLocalizer["Home_Testimonial3_Role"]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 8: Enterprise Security, Sovereignty & Compliance (4 Pillars) -->
+    <section class="oz-home-section">
+        <div class="container">
+            <div class="oz-section-header">
+                <span class="oz-badge">@SharedLocalizer["Home_Security_Badge"]</span>
+                <h2 class="oz-section-title">@SharedLocalizer["Home_Security_Title"]</h2>
+                <p class="oz-section-desc">@SharedLocalizer["Home_Security_Desc"]</p>
+            </div>
+
+            <div class="oz-security-grid">
+                <!-- Pillar 1 -->
+                <div class="oz-security-card">
+                    <div class="oz-security-icon">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                    <h3 class="oz-security-card-title">@SharedLocalizer["Home_Security_Pillar1_Title"]</h3>
+                    <p class="oz-security-card-desc">@SharedLocalizer["Home_Security_Pillar1_Desc"]</p>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="oz-security-card">
+                    <div class="oz-security-icon">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <h3 class="oz-security-card-title">@SharedLocalizer["Home_Security_Pillar2_Title"]</h3>
+                    <p class="oz-security-card-desc">@SharedLocalizer["Home_Security_Pillar2_Desc"]</p>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="oz-security-card">
+                    <div class="oz-security-icon">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3 class="oz-security-card-title">@SharedLocalizer["Home_Security_Pillar3_Title"]</h3>
+                    <p class="oz-security-card-desc">@SharedLocalizer["Home_Security_Pillar3_Desc"]</p>
+                </div>
+
+                <!-- Pillar 4 -->
+                <div class="oz-security-card">
+                    <div class="oz-security-icon">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </div>
+                    <h3 class="oz-security-card-title">@SharedLocalizer["Home_Security_Pillar4_Title"]</h3>
+                    <p class="oz-security-card-desc">@SharedLocalizer["Home_Security_Pillar4_Desc"]</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 9: Trusted Organisations Marquee (Positioned at Bottom End) -->
+    <section class="oz-marquee-section" aria-label="Trusted Organisations">
+        <div class="container">
+            <h3 class="oz-marquee-heading">
+                @SharedLocalizer["Home_Marquee_Heading"]
+            </h3>
+        </div>
+
+        <div class="oz-marquee-container">
+            <div class="oz-marquee-track">
+                <!-- Set 1: Brand Badges -->
+                <div class="oz-marquee-item"><span class="client-logo-badge">NHS</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">FatFace</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Jamie Oliver</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">British Thyroid Foundation</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Caring Care</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Farnborough Airport</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Neves Solicitors</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">The Circle Trust</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Brown &amp; Co</span></div>
+                <div class="oz-marquee-item"><span class="client-logo-badge">Blenheim Palace</span></div>
+
+                <!-- Set 2: Seamless Infinite Duplicate -->
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">NHS</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">FatFace</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Jamie Oliver</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">British Thyroid Foundation</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Caring Care</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Farnborough Airport</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Neves Solicitors</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">The Circle Trust</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Brown &amp; Co</span></div>
+                <div class="oz-marquee-item" aria-hidden="true"><span class="client-logo-badge">Blenheim Palace</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 10: High-Conversion Final CTA Banner -->
+    <section class="oz-final-cta-section">
+        <div class="container">
+            <div class="oz-final-cta-card">
+                <h2 class="oz-final-cta-title">@SharedLocalizer["Home_Cta_Title"]</h2>
+                <p class="oz-final-cta-desc">@SharedLocalizer["Home_Cta_Desc"]</p>
+                <div class="oz-final-cta-buttons">
+                    <a href="/@currentCulture/auth/get-started" class="oz-btn-primary-cta">
+                        <span>@SharedLocalizer["Home_Cta_BtnPrimary"]</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                    <a href="/@currentCulture/customer/contact-sales" class="oz-btn-secondary-cta">
+                        <span>@SharedLocalizer["Home_Cta_BtnSecondary"]</span>
+                    </a>
+                </div>
+                <div class="oz-final-cta-trust">
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust1"]</span>
+                    </div>
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust2"]</span>
+                    </div>
+                    <div class="oz-trust-item">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>@SharedLocalizer["Home_Cta_Trust3"]</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Interactive Scripts: FastNav Selector, Tabs, Video Player -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // FastNav Dropdown Logic
+        var sectorPill = document.getElementById('ozSectorPill');
+        var sectorMenu = document.getElementById('ozSectorMenu');
+        var sectorDisplay = document.getElementById('ozSectorDisplay');
+        var sectorSelect = document.getElementById('ozFastSector');
+
+        var productPill = document.getElementById('ozProductPill');
+        var productMenu = document.getElementById('ozProductMenu');
+        var productDisplay = document.getElementById('ozProductDisplay');
+        var productSelect = document.getElementById('ozFastProduct');
+
+        var startBtn = document.getElementById('ozFastBtn');
+
+        if (sectorPill && sectorMenu && productPill && productMenu && sectorSelect) {
             Array.from(sectorSelect.options).forEach(function (opt, idx) {
-                if (idx === 0) return; // Skip placeholder
+                if (idx === 0) return;
                 var item = document.createElement('div');
                 item.className = 'oz-fastnav-option';
                 item.textContent = opt.textContent;
@@ -139,7 +749,7 @@
                 sectorMenu.appendChild(item);
             });
 
-            function closeAllMenus() {
+            function closeAllFastNav() {
                 sectorMenu.classList.remove('is-open');
                 sectorPill.classList.remove('is-active');
                 sectorPill.setAttribute('aria-expanded', 'false');
@@ -152,7 +762,7 @@
             sectorPill.addEventListener('click', function (e) {
                 e.stopPropagation();
                 var isOpen = sectorMenu.classList.contains('is-open');
-                closeAllMenus();
+                closeAllFastNav();
                 if (!isOpen) {
                     sectorMenu.classList.add('is-open');
                     sectorPill.classList.add('is-active');
@@ -163,7 +773,7 @@
             productPill.addEventListener('click', function (e) {
                 e.stopPropagation();
                 var isOpen = productMenu.classList.contains('is-open');
-                closeAllMenus();
+                closeAllFastNav();
                 if (!isOpen) {
                     productMenu.classList.add('is-open');
                     productPill.classList.add('is-active');
@@ -172,7 +782,7 @@
             });
 
             document.addEventListener('click', function () {
-                closeAllMenus();
+                closeAllFastNav();
             });
 
             function selectSector(val, text, rawOptions) {
@@ -180,30 +790,26 @@
                 sectorDisplay.textContent = text;
                 sectorDisplay.classList.remove('is-placeholder');
 
-                // Mark selected in sector menu
                 Array.from(sectorMenu.children).forEach(function (child) {
                     child.classList.toggle('is-selected', child.textContent === text);
                 });
 
-                closeAllMenus();
+                closeAllFastNav();
 
-                // Clear and rebuild product menu
                 productMenu.innerHTML = '';
-                productSelect.innerHTML = '<option value="">Choose solution</option>';
-                productDisplay.textContent = 'Choose solution';
+                productSelect.innerHTML = '<option value="">' + (productDisplay.getAttribute('data-default') || 'Choose solution') + '</option>';
+                productDisplay.textContent = productDisplay.getAttribute('data-default') || 'Choose solution';
                 productDisplay.classList.add('is-placeholder');
 
                 if (rawOptions) {
                     try {
                         var items = JSON.parse(rawOptions);
                         items.forEach(function (sol, sIdx) {
-                            // Native option
                             var nOpt = document.createElement('option');
                             nOpt.value = sol.url;
                             nOpt.textContent = sol.title;
                             productSelect.appendChild(nOpt);
 
-                            // Custom option with generous padding
                             var cOpt = document.createElement('div');
                             cOpt.className = 'oz-fastnav-option';
                             cOpt.textContent = sol.title;
@@ -214,7 +820,6 @@
                             });
                             productMenu.appendChild(cOpt);
 
-                            // Auto-select first item
                             if (sIdx === 0) {
                                 selectProduct(sol.url, sol.title);
                             }
@@ -235,7 +840,7 @@
                 });
 
                 startBtn.setAttribute('href', url);
-                closeAllMenus();
+                closeAllFastNav();
             }
 
             startBtn.addEventListener('click', function (e) {
@@ -244,1271 +849,55 @@
                     sectorPill.click();
                 }
             });
+        }
+
+        // Interactive Capabilities Tabs Logic
+        var tabBtns = document.querySelectorAll('.oz-tab-btn');
+        var tabPanes = document.querySelectorAll('.oz-tab-pane');
+
+        tabBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetTabId = btn.getAttribute('data-tab');
+
+                tabBtns.forEach(function (b) {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                tabPanes.forEach(function (p) {
+                    p.classList.remove('active');
+                });
+
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                var targetPane = document.getElementById(targetTabId);
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                }
+            });
         });
-    </script>
-</div>
 
-        <div>
-            <!-- Clickable Infinite Logo Marquee -->
-            <section class="oz-marquee-section" aria-label="Trusted Organisations">
-                <div class="container">
-                    <h3 class="oz-marquee-heading">
-                        Trusted by <span>160,000+</span> organisations worldwide
-                    </h3>
-                </div>
-
-                <div class="oz-marquee-container">
-                    <div class="oz-marquee-track">
-                        <!-- Set 1: Clickable Logos with Company Website URLs -->
-                        <a href="https://www.nhs.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit NHS Website">
-                            <span class="client-logo-badge">NHS</span>
-                        </a>
-                        <a href="https://www.fatface.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit FatFace Website">
-                            <span class="client-logo-badge">FatFace</span>
-                        </a>
-                        <a href="https://www.jamieoliver.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Jamie Oliver Restaurants Website">
-                            <span class="client-logo-badge">Jamie Oliver</span>
-                        </a>
-                        <a href="https://www.btf-thyroid.org/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit British Thyroid Foundation Website">
-                            <span class="client-logo-badge">British Thyroid Foundation</span>
-                        </a>
-                        <a href="https://www.caringcare.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Caring Care Website">
-                            <span class="client-logo-badge">Caring Care</span>
-                        </a>
-                        <a href="https://www.farnboroughairport.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Farnborough Airport Website">
-                            <span class="client-logo-badge">Farnborough Airport</span>
-                        </a>
-                        <a href="https://www.neves.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Neves Solicitors Website">
-                            <span class="client-logo-badge">Neves Solicitors</span>
-                        </a>
-                        <a href="https://thecircletrust.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit The Circle Trust Website">
-                            <span class="client-logo-badge">The Circle Trust</span>
-                        </a>
-                        <a href="https://www.brown-co.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Brown & Co Website">
-                            <span class="client-logo-badge">Brown & Co</span>
-                        </a>
-                        <a href="https://www.blenheimpalace.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Blenheim Palace Website">
-                            <span class="client-logo-badge">Blenheim Palace</span>
-                        </a>
-
-                        <!-- Set 2: Seamless Infinite Marquee Loop Duplicate -->
-                        <a href="https://www.nhs.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit NHS Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">NHS</span>
-                        </a>
-                        <a href="https://www.fatface.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit FatFace Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">FatFace</span>
-                        </a>
-                        <a href="https://www.jamieoliver.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Jamie Oliver Restaurants Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Jamie Oliver</span>
-                        </a>
-                        <a href="https://www.btf-thyroid.org/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit British Thyroid Foundation Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">British Thyroid Foundation</span>
-                        </a>
-                        <a href="https://www.caringcare.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Caring Care Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Caring Care</span>
-                        </a>
-                        <a href="https://www.farnboroughairport.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Farnborough Airport Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Farnborough Airport</span>
-                        </a>
-                        <a href="https://www.neves.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Neves Solicitors Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Neves Solicitors</span>
-                        </a>
-                        <a href="https://thecircletrust.co.uk/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit The Circle Trust Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">The Circle Trust</span>
-                        </a>
-                        <a href="https://www.brown-co.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Brown & Co Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Brown & Co</span>
-                        </a>
-                        <a href="https://www.blenheimpalace.com/" target="_blank" rel="noopener noreferrer" class="oz-marquee-item" title="Visit Blenheim Palace Website" aria-hidden="true" tabindex="-1">
-                            <span class="client-logo-badge">Blenheim Palace</span>
-                        </a>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div>
-            <section class="video-row" id="anchor-1bc7f2c4-f133-46c6-a3e3-2f79b18a8be4">
-                <div class="container">
-                    <div class="video-row__inner">
-                        <div class="video-row__header">
-                            <div class="design-mark"></div>
-                            <h2 class="video-row__title">Most AI tools sit alongside your business. Ozikol runs inside it.</h2>
-                        </div>
-                        <div class="video-row__text rte"><p>Your people, your data and your workflows, connected and working without anyone having to stitch them together. Built to be used by whole teams, not just the technical ones.</p></div>
-                        <div class="video-row__ctas">
-                            <a href='/features' class='btn btn-primary'>Discover Ozikol</a>
-                        </div>
-            <div class="oz-video-section-wrap">
-                <div class="oz-video-player-container" id="ozVideoPlayer" data-video-id="QPcYivo8_Wc">
-                    <div class="oz-video-poster-wrap" id="ozVideoPoster">
-                        <div class="oz-media-placeholder"><span class="oz-media-badge">Ozikol Cloud</span></div>
-                        <div class="oz-video-overlay"></div>
-                        <button type="button" class="oz-video-play-btn" aria-label="Play video">
-                            <span class="oz-video-play-pulse"></span>
-                            <span class="oz-video-play-circle">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86A1 1 0 008 5.14z" fill="#ffffff"/>
-                                </svg>
-                            </span>
-                            <span class="oz-video-play-label">Play Video</span>
-                        </button>
-                    </div>
-                    <div class="oz-video-iframe-slot" id="ozVideoSlot"></div>
-                </div>
-
-                <script>
-                    (function () {
-                        var player = document.getElementById('ozVideoPlayer');
-                        var poster = document.getElementById('ozVideoPoster');
-                        var slot = document.getElementById('ozVideoSlot');
-                        if (!player || !poster || !slot) return;
-
-                        player.addEventListener('click', function () {
-                            var videoId = player.getAttribute('data-video-id');
-                            if (!videoId) return;
-
-                            var iframe = document.createElement('iframe');
-                            iframe.className = 'oz-video-iframe';
-                            iframe.src = 'https://www.youtube-nocookie.com/embed/' + videoId + '?autoplay=1&rel=0&modestbranding=1';
-                            iframe.title = 'Ozikol Video';
-                            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-                            iframe.setAttribute('allowfullscreen', 'true');
-
-                            slot.innerHTML = '';
-                            slot.appendChild(iframe);
-                            poster.style.display = 'none';
-                        });
-                    })();
-                </script>
-            </div>
-        </div>
-    </div>
-</section>
-        </div>
-        <div >
-            <section class="js-tabbedContent tabbed-content" id="anchor-170f8793-e28c-4420-ad08-71c52bfea6e9">
-        <div class="tabbed-content__inner">
-                <div class="tabbed-content__header-block">
-                    <div class="tabbed-content__text-block">
-                        <span class="design-mark"></span>
-                            <h2 class="tabbed-content__title">Five capabilities that take on the work only software should
-                            </h2>
-                    </div>
-                </div>
-                <div class="tabbed-content-selectors">
-                        <button class="js-tabbedContentSelectorToggle tabbed-content-selectors__mobile-toggle"
-                            type="button" aria-expanded="false" aria-label="expand tab list"></button>
-                    <div class="tabbed-content-selectors__items" role="tablist" aria-label="Tabs">
-                            <button type="button" class="js-tabbedContentPrev tabbed-content-arrow tabbed-content-arrow--prev">
-                                <span class="sr-only">Previous</span>
-                                <i class="icon-arrow-left"></i>
-                            </button>
-                        <div class="js-tabbedContentSelectorsContainer tabbed-content-selectors__items-list">
-                            <div class="js-tabbedContentSelectorsItemsListWrapper tabbed-content-selectors__items-list-wrapper">
-                                    <button role="tab" aria-selected="true" class="js-tabbedContentSelector tabbed-content-selector"
-                                            tabindex="0">
-                                            <div class="tabbed-content-selector__icon">
-                                                <span class="client-logo-badge">Ozikol Navigator icon</span>
-                                            </div>
-                                        <span>Ozikol Navigator</span>
-                                    </button>
-                                    <button role="tab" aria-selected="true" class="js-tabbedContentSelector tabbed-content-selector"
-                                            tabindex="1">
-                                            <div class="tabbed-content-selector__icon">
-                                                <span class="client-logo-badge">Ozikol Researcher icon</span>
-                                            </div>
-                                        <span>Ozikol Researcher</span>
-                                    </button>
-                                    <button role="tab" aria-selected="true" class="js-tabbedContentSelector tabbed-content-selector"
-                                            tabindex="2">
-                                            <div class="tabbed-content-selector__icon">
-                                                <span class="client-logo-badge"></span>
-                                            </div>
-                                        <span>Ozikol Workflow</span>
-                                    </button>
-                                    <button role="tab" aria-selected="true" class="js-tabbedContentSelector tabbed-content-selector"
-                                            tabindex="3">
-                                            <div class="tabbed-content-selector__icon">
-                                                <span class="client-logo-badge">Ozikol Assistants icon</span>
-                                            </div>
-                                        <span>Ozikol Assistants</span>
-                                    </button>
-                                    <button role="tab" aria-selected="true" class="js-tabbedContentSelector tabbed-content-selector"
-                                            tabindex="4">
-                                            <div class="tabbed-content-selector__icon">
-                                                <span class="client-logo-badge"></span>
-                                            </div>
-                                        <span>Ozikol Data Engine</span>
-                                    </button>
-                            </div>
-                        </div>
-                            <button type="button" class="js-tabbedContentNext tabbed-content-arrow tabbed-content-arrow--next">
-                                <span class="sr-only">Next</span>
-                                <i class="icon-arrow-right"></i>
-                            </button>
-                    </div>
-                </div>
-                <div class="tabbed-content__tab-panels">
-                        <div class="tabbed-content-panel" role="tabpanel" tabindex="0" aria-label="Ozikol Navigator">
-                            
-<div class="fifty-fifty--seventy-thirty--container" id="anchor-23cde0a7-a344-4053-87e3-01519af890e3">
-        <section class="fifty-fifty    js-inViewObs"
-                 id="anchor-43723af5-5710-4f80-b9b2-ef2192e34aab">
-            <div class="container">
-                <div class="fifty-fifty__inner">
-                    <div class="fifty-fifty__content-panel">
-                        <div class="fifty-fifty__design-mark design-mark"></div>
-                            <h2 class="fifty-fifty__heading">Ozikol Navigator</h2>
-                        <div class="rte">
-                            <p>Most people open five or six systems before they have done a single thing. Ozikol Navigator changes that. Tasks, messages and priorities are there in one place, already sorted, ready to act on. Ask in everyday language with Quick Asks and get something you can use straight away.&nbsp;</p>
-                        </div>
-
-                    </div>
-
-
-    <div class="fifty-fifty__image-panel">
-         <div class="fifty-fifty__image">
-            
-            <picture>
-                <span class="client-logo-badge">Product screenshot of Ozikol Navigator</span>
-            </picture>
-        </div>
-
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-    </div>
-
-                </div>
-            </div>
-        </section>
-</div>
-                        </div>
-                        <div class="tabbed-content-panel" role="tabpanel" tabindex="1" aria-label="Ozikol Researcher">
-                            
-<div class="fifty-fifty--seventy-thirty--container" id="anchor-3af367e7-fb0b-47f9-82bd-863d7be90696">
-        <section class="fifty-fifty    js-inViewObs"
-                 id="anchor-ae799d3e-d933-4a42-a8da-b1ab88f9b856">
-            <div class="container">
-                <div class="fifty-fifty__inner">
-                    <div class="fifty-fifty__content-panel">
-                        <div class="fifty-fifty__design-mark design-mark"></div>
-                            <h2 class="fifty-fifty__heading">Ozikol Researcher</h2>
-                        <div class="rte">
-                            <p>Ask anything about your business and get an answer you can use. Not from the internet. From your own data, your documents, your contracts. The questions you never had time to ask, the ones buried three systems deep, now take a sentence to answer. You stay in control of what happens next.</p>
-                        </div>
-
-                    </div>
-
-
-    <div class="fifty-fifty__image-panel">
-         <div class="fifty-fifty__image">
-            
-            <picture>
-                <span class="client-logo-badge">Product screenshot of Ozikol Researcher</span>
-            </picture>
-        </div>
-
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-    </div>
-
-                </div>
-            </div>
-        </section>
-</div>
-                        </div>
-                        <div class="tabbed-content-panel" role="tabpanel" tabindex="2" aria-label="Ozikol Workflow">
-                            
-<div class="fifty-fifty--seventy-thirty--container" id="anchor-99ac3da8-d5f8-43f5-8ed0-19be0733572c">
-        <section class="fifty-fifty    js-inViewObs"
-                 id="anchor-053e47f6-2fdd-4f8a-be08-e5694679cbda">
-            <div class="container">
-                <div class="fifty-fifty__inner">
-                    <div class="fifty-fifty__content-panel">
-                        <div class="fifty-fifty__design-mark design-mark"></div>
-                            <h2 class="fifty-fifty__heading">Ozikol Workflow</h2>
-                        <div class="rte">
-                            <p>Most businesses run on information scattered across half a dozen systems, and someone always ends up moving it by hand. Ozikol Workflow joins them up. Connect your systems visually, set the frequency, and the right data arrives where it needs to be on its own. No coding, no developer, no more copying between screens.</p>
-                        </div>
-
-                    </div>
-
-
-    <div class="fifty-fifty__image-panel">
-         <div class="fifty-fifty__image">
-            
-            <picture>
-                <span class="client-logo-badge">product screenshot of Ozikol Workflow</span>
-            </picture>
-        </div>
-
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-    </div>
-
-                </div>
-            </div>
-        </section>
-</div>
-                        </div>
-                        <div class="tabbed-content-panel" role="tabpanel" tabindex="3" aria-label="Ozikol Assistants">
-                            
-<div class="fifty-fifty--seventy-thirty--container" id="anchor-80dc020b-e7af-4f7c-92dd-ef6fe7c2bec3">
-        <section class="fifty-fifty    js-inViewObs"
-                 id="anchor-768bd7c8-bff1-4132-905d-241eb9c445cb">
-            <div class="container">
-                <div class="fifty-fifty__inner">
-                    <div class="fifty-fifty__content-panel">
-                        <div class="fifty-fifty__design-mark design-mark"></div>
-                            <h2 class="fifty-fifty__heading">Ozikol Assistants</h2>
-                        <div class="rte">
-                            <p>Behind every high-performing team is a pile of repetitive work that just has to get done. Ozikol Assistants take it on, from chasing timesheets to building rotas and running reports, coming to a person only when a real decision needs making.</p>
-                        </div>
-
-                    </div>
-
-
-    <div class="fifty-fifty__image-panel">
-         <div class="fifty-fifty__image">
-            
-            <picture>
-                <span class="client-logo-badge">Product screenshot of Ozikol Assistants</span>
-            </picture>
-        </div>
-
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-    </div>
-
-                </div>
-            </div>
-        </section>
-</div>
-                        </div>
-                        <div class="tabbed-content-panel" role="tabpanel" tabindex="4" aria-label="Ozikol Data Engine">
-                            
-<div class="fifty-fifty--seventy-thirty--container" id="anchor-c58aa978-6b3e-4f85-8c5a-a774bde5d144">
-        <section class="fifty-fifty    js-inViewObs"
-                 id="anchor-b2dd3df2-bf25-4fe4-b04f-c408f05b0936">
-            <div class="container">
-                <div class="fifty-fifty__inner">
-                    <div class="fifty-fifty__content-panel">
-                        <div class="fifty-fifty__design-mark design-mark"></div>
-                            <h2 class="fifty-fifty__heading">Ozikol Data Engine</h2>
-                        <div class="rte">
-                            <p>Your business has questions its data could answer, sitting in a queue with the few people who know how to pull the numbers. Ozikol Data Engine clears that queue, connecting your systems and turning the data into analytics your team can act on. The answers arrive when they are needed, and your data specialists get back to the work only they can do.</p>
-<p>The report that used to mean a ticket and a week's wait, ready when you ask for it.</p>
-                        </div>
-
-                    </div>
-
-
-    <div class="fifty-fifty__image-panel">
-         <div class="fifty-fifty__image">
-            
-            <picture>
-                <span class="client-logo-badge">Product screenshot of Ozikol data engine</span>
-            </picture>
-        </div>
-
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-            <div class="shard"></div>
-    </div>
-
-                </div>
-            </div>
-        </section>
-</div>
-                        </div>
-                </div>
-        </div>
-    </section>
-
-        </div>
-        <div >
-                <section class="js-heroCaseStudyCarousel hero-case-study-carousel" id="anchor-6521494d-10f4-43b5-992d-8c5d18d6853f">
-            <div class="js-heroCaseStudyContent hero-case-study-carousel__content swiper">
-                <div class="swiper-wrapper">
-                        <div class="swiper-slide hero-case-study-carousel__slide hero-case-study-carousel__slide--left">
-                                <div class="hero-case-study__background" aria-hidden="true">
-                                    <picture>
-                                        <span class="client-logo-badge"></span>
-                                    </picture>
-                                </div>
-                            <div class="hero-case-study__content">
-                                    <span class="client-logo-badge"></span>
-                                <h2 class="hero-case-study__title">&quot;Having Ozikol&#x2019;s AI tools is like having an extra pair of hands.&quot;</h2>
-                                    <div class="hero-case-study__description rte">
-                                        <p >Fashion and Textile Children's Trust (FTCT) is a small charity that struggled to manage its costly, developer-dependent website. Switching to our charity website platform gave them one platform for content, donations, and compliance - and with Ozikol's AI tools now built in - FTCT's small comms team works like a much bigger one.&nbsp;</p>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden flex--lg">
-                                        <p class="hero-case-study__author">Jill Haines</p>
-                                            <p class="hero-case-study__role">Marketing and Communications Manager</p>
-                                    </div>
-                                    <div class="hero-case-study__ctas">
-
-
-
-<a href='/about-us/partners' target='' data-gtm_content_event="select_content" data-gtm_content_type="case_study_page" data-gtm_published_date="06/10/2025" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="fashion_and_textile_childrens_trust" data-gtm_cta_text="Read more" class='btn btn-primary btn-primary--alt'>Read more</a>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden--lg">
-                                        <p class="hero-case-study__author">Jill Haines</p>
-                                            <p class="hero-case-study__role">Marketing and Communications Manager</p>
-                                    </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide hero-case-study-carousel__slide hero-case-study-carousel__slide--right">
-                                <div class="hero-case-study__background" aria-hidden="true">
-                                    <picture>
-                                        <span class="client-logo-badge"></span>
-                                    </picture>
-                                </div>
-                            <div class="hero-case-study__content">
-                                    <span class="client-logo-badge"></span>
-                                <h2 class="hero-case-study__title">Wynne Construction doubles tender capacity </h2>
-                                    <div class="hero-case-study__description rte">
-                                        <p>Wynne Construction is a family contractor specialising in schools, hospitals, commercial buildings and social housing. After years of estimating on Excel and Word, they used our construction software to modernise the process.</p>
-<p><em>"The usability was key... it was just the process of making your schedule work, sending enquiries, tracking them, doing comparisons, and feeding them into your tender—all in one system that speaks to each other."&nbsp;</em></p>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden flex--lg">
-                                        <p class="hero-case-study__author">David Wynne</p>
-                                            <p class="hero-case-study__role">Director</p>
-                                    </div>
-                                    <div class="hero-case-study__stats">
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">&#x2B;100%</span>
-                                                    <span class="hero-case-study__stat-label">Tender output</span>
-                                            </div>
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">7 days &#x2192; 1 day</span>
-                                                    <span class="hero-case-study__stat-label">Turnaround time</span>
-                                            </div>
-                                    </div>
-                                    <div class="hero-case-study__ctas">
-
-
-
-<a href='/about-us/partners' target='' data-gtm_content_event="select_content" data-gtm_content_type="case_study_page" data-gtm_published_date="13/02/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="wynne_construction" data-gtm_cta_text="Read more" class='btn btn-primary btn-primary--alt'>Read more</a>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden--lg">
-                                        <p class="hero-case-study__author">David Wynne</p>
-                                            <p class="hero-case-study__role">Director</p>
-                                    </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide hero-case-study-carousel__slide hero-case-study-carousel__slide--left">
-                                <div class="hero-case-study__background" aria-hidden="true">
-                                    <picture>
-                                        <span class="client-logo-badge"></span>
-                                    </picture>
-                                </div>
-                            <div class="hero-case-study__content">
-                                    <span class="client-logo-badge"></span>
-                                <h2 class="hero-case-study__title">Bay Care moves to a fully digital operation</h2>
-                                    <div class="hero-case-study__description rte">
-                                        <p >Bay Care Domiciliary Care Ltd, has been an Ozikol customer since 2016, moving from paper-based rotas and care plans to a fully digital operation using our health, support and social care software,&nbsp;meaning hours once spent on checks, printing and filing are now spent on supporting carers and ensuring excellent care on the ground.</p>
-<p >The software no longer just reduces admin, it enables better care and a stronger, future ready organisation.</p>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden flex--lg">
-                                        <p class="hero-case-study__author">Bay Care Team</p>
-                                    </div>
-                                    <div class="hero-case-study__stats">
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">-40%</span>
-                                                    <span class="hero-case-study__stat-label">Sickness absence</span>
-                                            </div>
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">Many hours</span>
-                                                    <span class="hero-case-study__stat-label">Saved on admin</span>
-                                            </div>
-                                    </div>
-                                    <div class="hero-case-study__ctas">
-
-
-
-<a href='/about-us/partners' target='' data-gtm_content_event="select_content" data-gtm_content_type="case_study_page" data-gtm_published_date="13/02/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="bay_care" data-gtm_cta_text="Read more" class='btn btn-primary btn-primary--alt'>Read more</a>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden--lg">
-                                        <p class="hero-case-study__author">Bay Care Team</p>
-                                    </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide hero-case-study-carousel__slide hero-case-study-carousel__slide--right">
-                                <div class="hero-case-study__background" aria-hidden="true">
-                                    <picture>
-                                        <span class="client-logo-badge"></span>
-                                    </picture>
-                                </div>
-                            <div class="hero-case-study__content">
-                                    <span class="client-logo-badge"></span>
-                                <h2 class="hero-case-study__title">Outlook Care cuts candidate turnaround time by 50%</h2>
-                                    <div class="hero-case-study__description rte">
-                                        <p ><span style="mso-ansi-language: EN-GB;">Outlook Care is a not-for-profit supporting people with learning disabilities, mental health needs and older people. Previously juggling separate manual processes for DBS checks, references and occupational health across multiple portals and email chains, the HR team consolidated everything into our pre-employment screening software.</span></p>
-<p ><span style="mso-ansi-language: EN-GB;"><em>"It’s&nbsp;revolutionised the way we do screening. It’s made it so much more efficient and because all of us on the HR team have got access to the system, the continuity and the consistency is much better."</em></span></p>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden flex--lg">
-                                        <p class="hero-case-study__author">An Margison</p>
-                                            <p class="hero-case-study__role">Assistant Director of Human Resources</p>
-                                    </div>
-                                    <div class="hero-case-study__stats">
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">-50%</span>
-                                                    <span class="hero-case-study__stat-label">Candidate turnaround time</span>
-                                            </div>
-                                            <div class="hero-case-study__stat">
-                                                <span class="hero-case-study__stat-value">10 &#x2192; 5 weeks </span>
-                                                    <span class="hero-case-study__stat-label">Time to hire</span>
-                                            </div>
-                                    </div>
-                                    <div class="hero-case-study__ctas">
-
-
-
-<a href='/features/recruitment-hiring/' target='' data-gtm_content_event="select_content" data-gtm_content_type="case_study_page" data-gtm_published_date="30/08/2024" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="outlook_care" data-gtm_cta_text="Read more" class='btn btn-primary btn-primary--alt'>Read more</a>
-                                    </div>
-                                    <div class="hero-case-study__attribution hidden--lg">
-                                        <p class="hero-case-study__author">An Margison</p>
-                                            <p class="hero-case-study__role">Assistant Director of Human Resources</p>
-                                    </div>
-                            </div>
-                        </div>
-                </div>
-            </div>
-
-            <div class="hero-case-study-carousel__controls">
-                <div class="js-carouselControls carousel-controls carousel-controls--light">
-                    <div class="js-carouselBullets carousel-bullets"></div>
-                    <div class="carousel-controls__arrows">
-                        <button type="button" aria-label="Previous Carousel Item"
-                                class="js-carouselPrev swiper-button-prev btn btn-control btn-control--prev"></button>
-                        <button type="button" aria-label="Next Carousel Item"
-                                class="js-carouselNext swiper-button-next btn-control btn-control--next"></button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        </div>
-        <div >
-        
-    <section class="customer-testimonials bg-light-grey"
-    id="solutions">
-        <div class="customer-testimonials__inner">
-                <h2 class="customer-testimonials__title container">
-                    A platform built for your sector
-                </h2>
-            <div class="js-carousel carousel swiper" >
-                <div class="swiper-wrapper">
-                            <div class="swiper-slide">
-<a href='/features#people-community/' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="12/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="h_r" data-gtm_cta_text="HR and Payroll" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">HR &amp; Payroll</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our flexible solutions span the entire employee lifecycle, from core HR software and payroll, to recruitment, talent, performance and workforce management.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>HR and Payroll</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features#finance-revenue/' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="21/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="finance" data-gtm_cta_text="Finance" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Finance</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our leading finance systems are designed to support the needs of complex businesses and Not For Profit organisations, giving you business-wide efficiency and insight to support strategic growth.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Finance</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features/invoicing-dues/' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="product_page" data-gtm_published_date="28/07/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="payments_solutions" data-gtm_cta_text="Payments" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Payments</span>
-        <div class="case-study-card__text rte">
-            <p><span >From Direct Debit and card processing to open banking and payment facilitation, Ozikol PaySuite is your dedicated payments partner, providing online, phone or face-to-face payments that reduce cost and free up time for innovation, growth and great service.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Payments</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features/learning-management/' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="20/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="digital_learning" data-gtm_cta_text="Digital Learning" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Digital Learning</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our solution offers an award-winning learning management system, CPD certified compliance and regulatory eLearning, and highly engaging personal and professional development training.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Digital Learning</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="20/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="hospitality" data-gtm_cta_text="Hospitality" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Hospitality</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our market-leading hospitality software helps operators deliver great guest experiences, improve gross profit through streamlined operations and attract, retain and engage team members.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Hospitality</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="27/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="construction" data-gtm_cta_text="Construction" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Construction</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our secure, cloud-hosted suites connect construction teams for seamless collaboration and empower construction leaders to make intelligent, data-driven decisions and control cash flow.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Construction</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="27/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="legal" data-gtm_cta_text="Legal" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Legal</span>
-        <div class="case-study-card__text rte">
-            <p>Our suite of law firm management software includes everything a practice needs. Award-winning cloud-based case management and practice management, finance and accounting, compliance and learning through to HR and CRM.&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Legal</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features/recruitment-hiring/' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="07/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="recruitment" data-gtm_cta_text="Recruitment Agencies" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Recruitment Agencies</span>
-        <div class="case-study-card__text rte">
-            <div >
-<p ><span >Drive revenue, manage reporting and slash operating costs with RecOS, our recruitment agency software. An all-in-one recruitment platform that combines CRM/ATS, background checks, recruitment websites and pay and bill solutions to accelerate performance, productivity and pipeline.</span> <span ></span></p>
-</div>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Recruitment Agencies</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="19/06/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="health_social_care" data-gtm_cta_text="Health, Support and Social Care" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Health, Support and Social Care</span>
-        <div class="case-study-card__text rte">
-            <p>Our portfolio of integrated solutions help professionals in healthcare, support and social care services to deliver joined-up quality and preventative care.</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Health, Support and Social Care</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="30/07/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="local_authority" data-gtm_cta_text="Local Authorities" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Local Authorities</span>
-        <div class="case-study-card__text rte">
-            <p>We are trusted by multiple health, local government and care organisations across the UK as their critical provider of digital transformation for health and care services.</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Local Authorities</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="06/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="wholesale_distribution_software" data-gtm_cta_text="Wholesale and Distribution" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Wholesale and Distribution</span>
-        <div class="case-study-card__text rte">
-            <p>One system across depot, back-office, customer-facing and delivery teams, all working from the same information. Higher volumes, leaner operations, better service for your customers.</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Wholesale and Distribution</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="06/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="w_m_s_warehouse_management_system" data-gtm_cta_text="Warehousing and Fulfilment" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Warehousing and Fulfilment</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our warehouse management software improves warehouse efficiency and productivity through intelligent automation. Designed for 3PLs, ecommerce and wholesale businesses, our solution gets operations running smoother than ever before.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Warehousing and Fulfilment</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="01/09/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="waste_management" data-gtm_cta_text="Waste Management" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Waste Management</span>
-        <div class="case-study-card__text rte">
-            <p><span >Unlock the full potential of waste management operations with Ozikol Weighsoft. Efficiently track and plan operational logistics through cost-saving digital processes.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Waste Management</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="20/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="manufacturing" data-gtm_cta_text="Manufacturing" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Manufacturing</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our industry-leading factory production management software helps run production lines lean and efficiently. Powerful collaboration tools inform quicker, more effective decision-making.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Manufacturing</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="16/07/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="education" data-gtm_cta_text="Education" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Education</span>
-        <div class="case-study-card__text rte">
-            <p>Whether you're running the school, the office or the classroom, our software for education takes the pressure off school and trust teams. From financial management and HR to revision tools and parent communications, we help you reduce admin and save time so your staff can do what they do best.</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Education</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #e5173f' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="03/06/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="not_for_profit" data-gtm_cta_text="Charities and Not for Profit" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Charities and Not For Profit</span>
-        <div class="case-study-card__text rte">
-            <p>Grow income, recruit and retain volunteers, and reach more of the people who need you. Our charity software takes care of the day-to-day, so your team can spend more time on the work that changes lives.</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Charities and Not for Profit</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #54b9b3' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="30/07/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="managed_i_t_services" data-gtm_cta_text="Managed IT Services" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Managed IT services</span>
-        <div class="case-study-card__text rte">
-            <p><span >Ozikol Managed Services provides fully managed hosted IT solutions that enable businesses to embrace hybrid and remote working and meet the demands of an evolving working world.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Managed IT Services</span>
-        </div>
-</a>                            </div>
-                            <div class="swiper-slide">
-<a href='/features' target='' style='--theme: #4b112c' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="10/04/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="visitor_attractions" data-gtm_cta_text="Visitor Attractions" class='case-study-card'>    <div class="case-study-card__inner">
-            <span class="case-study-card__title">Visitor Attractions</span>
-        <div class="case-study-card__text rte">
-            <p><span >Our attraction management suite helps improve operational efficiency, reduce costs and deliver a better experience for more than 47 million visitors every year.</span>&nbsp;</p>
-        </div>
-    </div>
-        <div class="case-study-card__footer">
-            <span>Visitor Attractions</span>
-        </div>
-</a>                            </div>
-                </div>
-                <div class="js-carouselControls carousel-controls">
-                    <div class="js-carouselBullets carousel-bullets"></div>
-                    <div class="carousel-controls__arrows">
-                        <button type="button"
-                                aria-label="Previous Carousel Item"
-                                class="js-carouselPrev swiper-button-prev btn btn-control btn-control--prev"></button>
-                        <button type="button"
-                                aria-label="Next Carousel Item"
-                                class="js-carouselNext swiper-button-next btn-control btn-control--next"></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-        </div>
-        <div >
-        
-        <section class="horizontal-benefits pattern-bg-4" style="background: #ffffff"
-                 id="anchor-270734f2-517d-47ce-b8e4-a11d53b17e7a">
-            <div class="container">
-                <div class="horizontal-benefits__header">
-                    <div class="horizontal-benefits__design-mark design-mark"></div>
-                        <h2 class="horizontal-benefits__heading">
-                            Your data - safe and secure with Ozikol
-                        </h2>
-
-                </div>
-                <div class="horizontal-benefits__wrap horizontal-benefits__wrap--cols-4">
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-icon"
-                            >
-                                
-                <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            ISO-certified security, privacy and AI
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>We hold internationally recognised ISO/IEC certifications covering information security (ISO/IEC 27001), privacy management (ISO/IEC 27701), and AI management systems (ISO/IEC 42001), all independently audited and regularly reviewed.</p>
-            </div>
-    </div>
-
-                            </div>
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-icon"
-                            >
-                                
-                <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            30+ years' expertise
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>Built on decades of sector-specific knowledge across care, legal, hospitality, finance, education and more.</p>
-            </div>
-    </div>
-
-                            </div>
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-icon"
-                            >
-                                
-                <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            160,000+ organisations
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>From growing businesses to established enterprises, organisations across 20+ sectors trust Ozikol to run their operations.</p>
-            </div>
-    </div>
-
-                            </div>
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-icon"
-                            >
-                                
-                <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            8,500+ employees
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>A team of sector specialists who understand your industry, not just your software.</p>
-            </div>
-    </div>
-
-                            </div>
-                    </div>
-
-                </div>
-            </section>
-
-        </div>
-        <div >
-        
-        <section class="horizontal-benefits pattern-bg-4" style="background: #eeeeee"
-                 id="anchor-ec1ab8df-eb2b-4b9a-9a41-ae6c0bff357a">
-            <div class="container">
-                <div class="horizontal-benefits__header">
-                    <div class="horizontal-benefits__design-mark design-mark"></div>
-                        <h2 class="horizontal-benefits__heading">
-                            The support you expect
-                        </h2>
-
-                        <div class="horizontal-benefits__intro rte">
-                            <p>Our support teams have walked in our customers' shoes, from nurse managers to construction planners, lawyers and recruitment experts, and we're dedicated to providing you with services tailor-made to help you get the most out of your software. &nbsp; &nbsp;</p>
-                        </div>
-                </div>
-                <div class="horizontal-benefits__wrap horizontal-benefits__wrap--cols-4">
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-full-width"
-                            data-gtm_content_event="select_content"data-gtm_content_type="product_page"data-gtm_published_date="04/08/2025"data-gtm_content_author=""data-gtm_blog_title=""data-gtm_content_title="flight_paths"data-gtm_cta_text="Seamless implementation">
-                                
-            <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            Seamless implementation
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>Our passionate teams of experts go the extra mile to ensure a seamless and efficient setup process, tailored to meet your specific industry needs.</p>
-            </div>
-
-
-<a href='/support-hub' target='' data-gtm_content_event="select_content" data-gtm_content_type="product_page" data-gtm_published_date="04/08/2025" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="flight_paths" data-gtm_cta_text="Learn more" class='btn btn btn-secondary'>Learn more</a>    </div>
-
-                            </div>
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-full-width"
-                            data-gtm_content_event="select_content"data-gtm_content_type="product_page"data-gtm_published_date="19/12/2024"data-gtm_content_author=""data-gtm_blog_title=""data-gtm_content_title="success_plans"data-gtm_cta_text="Outcome-driven success plans">
-                                
-            <span class="client-logo-badge">Ozikol employee giving presentation</span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            Outcome-driven success plans
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>Your success is our passion and our outcome-driven customer success plans help you to achieve your goals – fast. </p>
-            </div>
-
-
-<a href='/support-hub' target='' data-gtm_content_event="select_content" data-gtm_content_type="product_page" data-gtm_published_date="19/12/2024" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="success_plans" data-gtm_cta_text="Learn more" class='btn btn btn-secondary'>Learn more</a>    </div>
-
-                            </div>
-                        <div class="horizontal-benefits-item
-                            horizontal-benefits-item-full-width"
-                            data-gtm_content_event="select_content"data-gtm_content_type="suite_page"data-gtm_published_date="06/08/2025"data-gtm_content_author=""data-gtm_blog_title=""data-gtm_content_title="customer_success_services"data-gtm_cta_text="Award-winning support">
-                                
-            <span class="client-logo-badge"></span>
-    <div class="horizontal-benefits-item__inner">
-        <h3 class="horizontal-benefits-item__heading">
-            Award-winning support
-        </h3>
-            <div class="horizontal-benefits-item__description rte">
-                <p>Our experts are here to help you get the most out of your software so you can be more productive.</p>
-            </div>
-
-
-<a href='/support-hub' target='' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="06/08/2025" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="customer_success_services" data-gtm_cta_text="Learn more" class='btn btn btn-secondary'>Learn more</a>    </div>
-
-                            </div>
-                    </div>
-
-                </div>
-            </section>
-
-        </div>
-        <div >
-        
-
-    <section class="lister-carousel js-carousel" id="anchor-39ddd998-5812-4a0f-ab61-ce982b1b578f">
-        <div class="lister-carousel__inner">
-            <div class="lister-carousel__text-block container container-padding-left--lg">
-                <div class="lister-carousel__text-inner">
-                    <div class="design-mark"></div>
-                        <h2 class="lister-carousel__title">Latest from Access</h2>
-                    <div class="lister-carousel__text rte">
-                            <p>News, thinking and updates from the people building a better way to work.</p>
-                        <a href='/news/' target='' class='btn btn-secondary'>Read all news</a>
-                    </div>
-                </div>
-            </div>
-            <div class="lister-carousel__carousel carousel swiper container-padding-left--xs container-padding-right--xs">                
-                <div class="swiper-wrapper">
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">July 09 2026</span>
-                                        <p class="card__title">
-                                            Ozikol pledges &#xA3;1.5 million for global causes and unveils its FY27 global charity partners
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">June 29 2026</span>
-                                        <p class="card__title">
-                                            Science Based Targets Initiative validates Ozikol&#x2019;s commitment to reducing carbon emissions
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">June 17 2026</span>
-                                        <p class="card__title">
-                                            Ozikol PaySuite acquires Ordo&#x27;s Open Banking infrastructure
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">June 02 2026</span>
-                                        <p class="card__title">
-                                            Ozikol appoints Sally Johnson as new Chief Financial Officer&#x202F;
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">22nd April 2026</span>
-                                        <p class="card__title">
-                                            Ozikol marks Earth Day with global student hackathon to build green AI skills
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">2nd April 2026</span>
-                                        <p class="card__title">
-                                            Ozikol recognised for Best Wellbeing in the Workplace Strategy: Large Company, at the 2026 Great British Workplace Wellbeing Awards
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">16th March 2026</span>
-                                        <p class="card__title">
-                                            Study indicates Britain&#x27;s workforce is winging it with AI in the workplace - nearly 70% of surveyed employees using AI are experimenting
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">10th March 2026</span>
-                                        <p class="card__title">
-                                            Ozikol named &#x2018;Human Company of The Year&#x2019; as UK Tech sector faces growing humanity gap
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">18th February 2026</span>
-                                        <p class="card__title">
-                                            Almost half of employees fear AI&#x2019;s impact on their jobs as HR leaders underestimate workforce anxiety and lag on guidance
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">17th February 2026</span>
-                                        <p class="card__title">
-                                            Ozikol celebrates Graduate Academy success, empowering Malaysia&#x2019;s next generation of tech talent
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">12th February 2026</span>
-                                        <p class="card__title">
-                                            Ozikol strengthens charity software proposition with Enthuse acquisition
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">10th February 2026</span>
-                                        <p class="card__title">
-                                            Ozikol introduces 119 AI Apprenticeships and backs Government Levy Reform
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">29th January 2026</span>
-                                        <p class="card__title">
-                                            Ozikollves to new CEO model to accelerate customer-focused AI transformation
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="swiper-slide">
-                            <div class="card">                            
-                                <div class="card__image">
-                                        <span class="client-logo-badge"></span>   
-                                </div>
-                                <div class="card__inner">
-                                    <div class="card__above-fold">
-                                            <span class="card__date">15th January 2026</span>
-                                        <p class="card__title">
-                                            Ozikol acquires route optimisation platform MaxOptra
-                                        </p>
-                                    </div>
-                                        <div class="card__below-fold">
-                                            <div class="card__below-fold-inner">
-                                                <a href='/news' target='' class='btn btn-primary btn-primary--alt'>Read more</a>                                                                                   
-                                            </div>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                </div>
-                
-                <div class="lister-carousel__controls container">
-                    <div class="js-carouselControls carousel-controls">
-                        <div class="js-carouselBullets carousel-bullets"></div>
-                        <div class="carousel-controls__arrows">
-                        <button type="button" aria-label="Previous Carousel Item" class="js-carouselPrev swiper-button-prev btn btn-control btn-control--prev"></button>
-                        <button type="button" aria-label="Next Carousel Item" class="js-carouselNext swiper-button-next btn-control btn-control--next"></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-        </div>
-        <div >
-        
-    <section class="call-to-action bg-teal" id="anchor-92125827-1de1-457c-89f6-c8ef59102a68">
-        <div class="container">
-            <div class="call-to-action__wrap">
-                <div class="call-to-action__design-mark design-mark"></div>
-                <h2 class="call-to-action__heading">
-                    Feel what it's like when everything just works
-                </h2>
-
-                    <div class="call-to-action__description"></div>
-                    <div class="call-to-action__buttons">
-<a href='/features/' target='' data-gtm_content_event="select_content" data-gtm_content_type="suite_page" data-gtm_published_date="19/08/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="e_v_o" data-gtm_cta_text="Ozikol" class='btn btn-primary'>Ozikol</a>                    </div>
-            </div>
-        </div>
-    </section>
-
-        </div>
-
-    
+        // Video Player Modal / Inline Play
+        var player = document.getElementById('ozVideoPlayer');
+        var poster = document.getElementById('ozVideoPoster');
+        var slot = document.getElementById('ozVideoSlot');
+
+        if (player && poster && slot) {
+            player.addEventListener('click', function () {
+                var videoId = player.getAttribute('data-video-id');
+                if (!videoId) return;
+
+                var iframe = document.createElement('iframe');
+                iframe.className = 'oz-video-iframe';
+                iframe.src = 'https://www.youtube-nocookie.com/embed/' + videoId + '?autoplay=1&rel=0&modestbranding=1';
+                iframe.title = 'Ozikol Cloud Video';
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', 'true');
+
+                slot.innerHTML = '';
+                slot.appendChild(iframe);
+                poster.style.display = 'none';
+            });
+        }
+    });
+</script>
