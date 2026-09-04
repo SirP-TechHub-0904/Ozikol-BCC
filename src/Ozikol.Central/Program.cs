@@ -1,5 +1,11 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Localization.Routing;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central.Resources;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
@@ -23,9 +29,43 @@ if (File.Exists(envPath))
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
-// 2. Add Razor Pages & HTTP Client
+// 2. Configure Native ASP.NET Core Multi-Language Localization Engine
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddHttpClient();
-builder.Services.AddRazorPages();
+
+builder.Services.AddRazorPages(options =>
+{
+    // Enable optional /{culture?} route prefix across all portal Razor pages (e.g. /fr/pricing, /es/about-us)
+    options.Conventions.AddFolderRouteModelConvention("/", model =>
+    {
+        var selectors = model.Selectors.ToList();
+        foreach (var selector in selectors)
+        {
+            var existingTemplate = selector.AttributeRouteModel?.Template ?? "";
+
+            // Skip dedicated internal endpoints like SetLanguage
+            if (existingTemplate.StartsWith("SetLanguage", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            model.Selectors.Add(new SelectorModel
+            {
+                AttributeRouteModel = new AttributeRouteModel
+                {
+                    Order = -1,
+                    Template = AttributeRouteModel.CombineTemplates("{culture?}", existingTemplate)
+                }
+            });
+        }
+    });
+})
+.AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix)
+.AddDataAnnotationsLocalization(options =>
+{
+    options.DataAnnotationLocalizerProvider = (type, factory) =>
+        factory.Create(typeof(SharedResource));
+});
 
 // 3. Multi-Tenant Infrastructure Support
 builder.Services.AddTenantSupport(builder.Configuration);
@@ -92,6 +132,31 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// 9. Configure Request Localization Pipeline (Route -> Cookie -> Accept-Language -> Default en)
+var supportedCultures = new[]
+{
+    new CultureInfo("en"),
+    new CultureInfo("fr"),
+    new CultureInfo("es"),
+    new CultureInfo("de")
+};
+
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("en"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+};
+
+// RouteData provider takes precedence so /fr/, /es/, /de/ directly control the culture
+localizationOptions.RequestCultureProviders.Insert(0, new RouteDataRequestCultureProvider
+{
+    RouteDataStringKey = "culture",
+    UIRouteDataStringKey = "culture"
+});
+
+app.UseRequestLocalization(localizationOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();

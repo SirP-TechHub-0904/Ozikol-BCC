@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nav_Solutions" xml:space="preserve">
+    <value>Solutions</value>
+  </data>
+  <data name="Nav_Pricing" xml:space="preserve">
+    <value>Pricing</value>
+  </data>
+  <data name="Nav_Marketplace" xml:space="preserve">
+    <value>Marketplace</value>
+  </data>
+  <data name="Nav_AboutUs" xml:space="preserve">
+    <value>About Us</value>
+  </data>
+  <data name="Nav_News" xml:space="preserve">
+    <value>News</value>
+  </data>
+  <data name="Nav_Contact" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Nav_Careers" xml:space="preserve">
+    <value>Careers</value>
+  </data>
+  <data name="Nav_SignIn" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Nav_GetStarted" xml:space="preserve">
+    <value>Get Started</value>
+  </data>
+  <data name="Nav_ExploreFeatures" xml:space="preserve">
+    <value>Explore all features</value>
+  </data>
+  <data name="Nav_SearchPlaceholder" xml:space="preserve">
+    <value>Search products, solutions and features...</value>
+  </data>
+  <data name="Nav_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Btn_FindSolution" xml:space="preserve">
+    <value>Find your solution</value>
+  </data>
+  <data name="Btn_WatchStory" xml:space="preserve">
+    <value>Watch our story</value>
+  </data>
+  <data name="Btn_ContactSales" xml:space="preserve">
+    <value>Contact Sales</value>
+  </data>
+  <data name="Btn_ExploreAllFeatures" xml:space="preserve">
+    <value>Explore all 28 features</value>
+  </data>
+  <data name="Footer_Rights" xml:space="preserve">
+    <value>All rights reserved.</value>
+  </data>
+  <data name="Footer_Privacy" xml:space="preserve">
+    <value>Privacy Notice</value>
+  </data>
+  <data name="Footer_Terms" xml:space="preserve">
+    <value>Terms of Use</value>
+  </data>
+  <data name="Footer_Cookies" xml:space="preserve">
+    <value>Cookies</value>
+  </data>
+  <data name="Footer_Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+</root>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -65,7 +65,7 @@
 
 <li class="mega-menu__link-wrap">
     <button class="mega-menu__link js-megaMenuMidLevelOpen">
-        Features
+        @SharedLocalizer["Nav_Solutions"]
     </button>
 
     <div class="mega-menu__panel js-megaMenuPanel ">
@@ -529,14 +529,14 @@
     </div>
 </div>    
 </li><li class="mega-menu__link-wrap">
-    <a href='/marketplace' class='mega-menu__link mega-menu__link--bold'>UI Marketplace</a>
+    <a href='/marketplace' class='mega-menu__link mega-menu__link--bold'>@SharedLocalizer["Nav_Marketplace"]</a>
 </li>
 <li class="mega-menu__link-wrap">
-    <a href='/pricing' class='mega-menu__link mega-menu__link--bold'>Pricing</a>
+    <a href='/pricing' class='mega-menu__link mega-menu__link--bold'>@SharedLocalizer["Nav_Pricing"]</a>
 </li>
 <li class="mega-menu__link-wrap">
     <button class="mega-menu__link js-megaMenuMidLevelOpen">
-        About Us
+        @SharedLocalizer["Nav_AboutUs"]
     </button>
 
     <div class="mega-menu__panel js-megaMenuPanel expanded-panel">
@@ -699,7 +699,7 @@
     </div>
 </div>    
 </li><li class="mega-menu__link-wrap">
-    <a href='/careers' class='mega-menu__link mega-menu__link--bold'>Careers</a>
+    <a href='/careers' class='mega-menu__link mega-menu__link--bold'>@SharedLocalizer["Nav_Careers"]</a>
 </li>
 <li class="mega-menu__link-wrap">
     <button class="mega-menu__link js-megaMenuMidLevelOpen">
@@ -833,11 +833,49 @@
                 </button>
             </div>
                 <div class="mega-menu__secondary-area">
-                    <a href="/login" class="nav-login-link">
-                        Log In
+                    @{
+                        var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+                        var returnUrl = Context.Request.Path + Context.Request.QueryString;
+                        var currentFlag = currentCulture switch
+                        {
+                            "fr" => "🇫🇷 FR",
+                            "es" => "🇪🇸 ES",
+                            "de" => "🇩🇪 DE",
+                            _ => "🇬🇧 EN"
+                        };
+                    }
+                    <div class="oz-lang-switcher" id="ozLangSwitcher">
+                        <button type="button" class="oz-lang-btn" aria-expanded="false" aria-label="Select Language">
+                            <span class="oz-lang-flag">@currentFlag</span>
+                            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 1L5 5L9 1"/>
+                            </svg>
+                        </button>
+                        <div class="oz-lang-menu">
+                            <a href="/SetLanguage?culture=en&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "en" ? "active" : "")">
+                                <span>🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                            <a href="/SetLanguage?culture=fr&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "fr" ? "active" : "")">
+                                <span>🇫🇷</span>
+                                <span>Français</span>
+                            </a>
+                            <a href="/SetLanguage?culture=es&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "es" ? "active" : "")">
+                                <span>🇪🇸</span>
+                                <span>Español</span>
+                            </a>
+                            <a href="/SetLanguage?culture=de&returnUrl=@Uri.EscapeDataString(returnUrl)" class="oz-lang-item @(currentCulture == "de" ? "active" : "")">
+                                <span>🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="/auth/login" class="nav-login-link">
+                        @SharedLocalizer["Nav_SignIn"]
                     </a>
-                    <a href="/get-started" class="btn-get-started">
-                        Get Started
+                    <a href="/auth/get-started" class="btn-get-started">
+                        @SharedLocalizer["Nav_GetStarted"]
                     </a>
                 </div>
         </div>
