@@ -965,183 +965,222 @@
     <value>99,9 % Verfügbarkeit (SLA)</value>
   </data>
   <data name="Pricing_Meta_Title" xml:space="preserve">
-    <value>Transparente Unternehmenspreise | Ozikol</value>
+    <value>All-Inclusive Jahrestarif 40.000 ₦ / Jahr | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Transparente Preispläne für alle 37 modularen Funktionen. Keine Kosten pro Nutzer, verlässliche Abrechnung und 14 Tage kostenlos testen.</value>
+    <value>Betreiben Sie Ihr gesamtes Handelsgeschäft auf Ozikol für 40.000 ₦ pro Jahr. 9 Suites und 37 Funktionen ohne Verkaufsprovision. Sie kaufen nur Ihre Domain.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
-    <value>TRANSPARENTE PREISE FÜR UNTERNEHMEN</value>
+    <value>ALL-INCLUSIVE JAHRESTARIF</value>
   </data>
   <data name="Pricing_Hero_Title" xml:space="preserve">
-    <value>Einfache, verlässliche Preisgestaltung für jede Organisation</value>
+    <value>Alles nutzen für 40.000 ₦ pro Jahr</value>
   </data>
   <data name="Pricing_Hero_Desc" xml:space="preserve">
-    <value>Zugriff auf alle 37 modularen Funktionen in 9 integrierten Suites. Keine Strafgebühren pro Nutzer, keine versteckten Kosten und vollständige Datensouveränität.</value>
+    <value>Steuern Sie Filialen, Online-Shop, Warenwirtschaft und Personal auf Ozikol. Eine einfache Jahresgebühr schaltet alle Funktionen frei. Sie kaufen lediglich Ihre eigene Web-Domain.</value>
   </data>
-  <data name="Pricing_Toggle_Monthly" xml:space="preserve">
-    <value>Monatlich</value>
+  <data name="Pricing_Currency_Label" xml:space="preserve">
+    <value>Währung wählen</value>
   </data>
-  <data name="Pricing_Toggle_Annual" xml:space="preserve">
-    <value>Jährlich</value>
+  <data name="Pricing_Card_Badge" xml:space="preserve">
+    <value>VOLLZUGRIFFS-PASS</value>
   </data>
-  <data name="Pricing_Toggle_Save" xml:space="preserve">
-    <value>20% sparen</value>
+  <data name="Pricing_Card_Title" xml:space="preserve">
+    <value>Ozikol All-Inclusive Commerce Plattform</value>
   </data>
-  <data name="Pricing_Currency" xml:space="preserve">
-    <value>€</value>
+  <data name="Pricing_Card_Desc" xml:space="preserve">
+    <value>Vollständiger Zugriff auf das gesamte Handelsbetriebssystem für 365 Tage. Keine gesperrten Funktionen, keine Verkaufsprovisionen und unbegrenzte Mitarbeiter.</value>
   </data>
-  <data name="Pricing_Period" xml:space="preserve">
-    <value>/ Monat</value>
+  <data name="Pricing_Per_Year" xml:space="preserve">
+    <value>/ Jahr</value>
   </data>
-  <data name="Pricing_Billed_Monthly" xml:space="preserve">
-    <value>Monatlich abgerechnet</value>
+  <data name="Pricing_Monthly_Equiv" xml:space="preserve">
+    <value>Umgerechnet ca.</value>
   </data>
-  <data name="Pricing_Billed_Annual_Save" xml:space="preserve">
-    <value>Jährlich abgerechnet (20% Ersparnis)</value>
+  <data name="Pricing_Monthly_Suffix" xml:space="preserve">
+    <value>/ Monat (jährlich abgerechnet)</value>
   </data>
-  <data name="Pricing_Tier1_Tag" xml:space="preserve">
-    <value>Starter</value>
+  <data name="Pricing_Domain_Callout_Title" xml:space="preserve">
+    <value>Sie kaufen nur Ihre Domain</value>
   </data>
-  <data name="Pricing_Tier1_Title" xml:space="preserve">
-    <value>Community &amp; Kleine Teams</value>
+  <data name="Pricing_Domain_Callout_Desc" xml:space="preserve">
+    <value>Registrieren Sie Ihren Wunschnamen (z. B. ihrunternehmen.com) bei einem beliebigen Domain-Registrar. Wir übernehmen DNS-Routing und automatische SSL-Zertifikate kostenfrei.</value>
   </data>
-  <data name="Pricing_Tier1_Desc" xml:space="preserve">
-    <value>Ideal für Vereine, gemeinnützige Initiativen und kleine Teams, die ihre Prozesse digitalisieren.</value>
-  </data>
-  <data name="Pricing_Tier1_Price_Monthly" xml:space="preserve">
-    <value>55</value>
-  </data>
-  <data name="Pricing_Tier1_Price_Annual" xml:space="preserve">
-    <value>44</value>
-  </data>
-  <data name="Pricing_Tier1_Btn" xml:space="preserve">
+  <data name="Pricing_Btn_Trial" xml:space="preserve">
     <value>14 Tage kostenlos testen</value>
   </data>
-  <data name="Pricing_Tier2_Badge" xml:space="preserve">
-    <value>Beliebteste Wahl</value>
+  <data name="Pricing_Btn_Instant" xml:space="preserve">
+    <value>Shop jetzt starten</value>
   </data>
-  <data name="Pricing_Tier2_Tag" xml:space="preserve">
-    <value>Professional</value>
-  </data>
-  <data name="Pricing_Tier2_Title" xml:space="preserve">
-    <value>Wachsende Organisationen</value>
-  </data>
-  <data name="Pricing_Tier2_Desc" xml:space="preserve">
-    <value>Die gesamte Plattformstärke für mittelständische Betriebe, Pflegedienste und operative Netzwerke.</value>
-  </data>
-  <data name="Pricing_Tier2_Price_Monthly" xml:space="preserve">
-    <value>169</value>
-  </data>
-  <data name="Pricing_Tier2_Price_Annual" xml:space="preserve">
-    <value>135</value>
-  </data>
-  <data name="Pricing_Tier2_Btn" xml:space="preserve">
+  <data name="Pricing_Trust_Trial" xml:space="preserve">
     <value>14 Tage kostenlos testen</value>
   </data>
-  <data name="Pricing_Tier3_Tag" xml:space="preserve">
-    <value>Enterprise</value>
+  <data name="Pricing_Trust_NoCard" xml:space="preserve">
+    <value>Keine Kreditkarte erforderlich</value>
   </data>
-  <data name="Pricing_Tier3_Title" xml:space="preserve">
-    <value>Multi-Standort &amp; Skalierung</value>
+  <data name="Pricing_Trust_Setup" xml:space="preserve">
+    <value>Sofortige Cloud-Bereitstellung</value>
   </data>
-  <data name="Pricing_Tier3_Desc" xml:space="preserve">
-    <value>Erweiterte Governance und Skalierbarkeit für große Institutionen, Schulträger und verteilte Teams.</value>
+  <data name="Pricing_Card_Feat1" xml:space="preserve">
+    <value>Alle 9 integrierten Produktsuites und 37 Kernfunktionen</value>
   </data>
-  <data name="Pricing_Tier3_Price_Monthly" xml:space="preserve">
-    <value>449</value>
+  <data name="Pricing_Card_Feat2" xml:space="preserve">
+    <value>Omnichannel Point of Sale (POS) mit Offline-Modus</value>
   </data>
-  <data name="Pricing_Tier3_Price_Annual" xml:space="preserve">
-    <value>359</value>
+  <data name="Pricing_Card_Feat3" xml:space="preserve">
+    <value>Unbegrenzte Produkte, Zentralkatalog und Barcode-Generator</value>
   </data>
-  <data name="Pricing_Tier3_Btn" xml:space="preserve">
-    <value>Enterprise-Testphase starten</value>
+  <data name="Pricing_Card_Feat4" xml:space="preserve">
+    <value>Unbegrenzte Transaktionen mit 0% Ozikol-Verkaufsprovision</value>
   </data>
-  <data name="Pricing_Tier4_Tag" xml:space="preserve">
-    <value>Sovereign</value>
+  <data name="Pricing_Card_Feat5" xml:space="preserve">
+    <value>Mehrere Filialen und Multi-Lager-Warenwirtschaft</value>
   </data>
-  <data name="Pricing_Tier4_Title" xml:space="preserve">
-    <value>Öffentlicher Sektor &amp; Regulierte</value>
+  <data name="Pricing_Card_Feat6" xml:space="preserve">
+    <value>KI-Bedarfsprognose und intelligente Nachbestellung</value>
   </data>
-  <data name="Pricing_Tier4_Desc" xml:space="preserve">
-    <value>Dedizierte souveräne Cloud oder lokale private VPC für öffentliche Träger und regulierte Einrichtungen.</value>
+  <data name="Pricing_Card_Feat7" xml:space="preserve">
+    <value>Treuepunkte, VIP-Stufen und automatisierte Kampagnen</value>
   </data>
-  <data name="Pricing_Tier4_Price" xml:space="preserve">
-    <value>Individuell</value>
+  <data name="Pricing_Card_Feat8" xml:space="preserve">
+    <value>Windows Desktop-App und mobiler Zugriff (iOS &amp; Android)</value>
   </data>
-  <data name="Pricing_Tier4_Period" xml:space="preserve">
-    <value>Abgestimmt auf Ihre Beschaffungs- und Vergaberichtlinien</value>
+  <data name="Pricing_Card_Feat9" xml:space="preserve">
+    <value>Kostenlose SSL-Zertifikate, Cloud-Hosting und tägliche Backups</value>
   </data>
-  <data name="Pricing_Tier4_Btn" xml:space="preserve">
-    <value>Vertrieb kontaktieren</value>
+  <data name="Pricing_Domain_Section_Badge" xml:space="preserve">
+    <value>EIGENE DOMAIN NUTZEN</value>
   </data>
-  <data name="Pricing_Matrix_Badge" xml:space="preserve">
-    <value>VOLLSTÄNDIGE FUNKTIONSÜBERSICHT</value>
+  <data name="Pricing_Domain_Section_Title" xml:space="preserve">
+    <value>So funktionieren eigene Domains bei Ozikol</value>
   </data>
-  <data name="Pricing_Matrix_Title" xml:space="preserve">
-    <value>Vergleichen Sie alle 37 Funktionen in unseren 9 Suites</value>
+  <data name="Pricing_Domain_Section_Desc" xml:space="preserve">
+    <value>Sie behalten 100% Eigentum an Ihrer Marke und Domain. Die Verknüpfung mit Ozikol dauert weniger als 2 Minuten.</value>
   </data>
-  <data name="Pricing_Matrix_Desc" xml:space="preserve">
-    <value>Alle Details auf einen Blick, um den perfekten Plan für Ihre betrieblichen Anforderungen zu wählen.</value>
+  <data name="Pricing_Domain_Step1_Num" xml:space="preserve">
+    <value>01</value>
   </data>
-  <data name="Pricing_Matrix_FeatureCol" xml:space="preserve">
-    <value>Funktion / Modul</value>
+  <data name="Pricing_Domain_Step1_Title" xml:space="preserve">
+    <value>Ozikol abonnieren</value>
+  </data>
+  <data name="Pricing_Domain_Step1_Desc" xml:space="preserve">
+    <value>Aktivieren Sie Ihren Jahreszugang für 40.000 ₦/Jahr und erhalten Sie sofort Ihren Cloud-Workspace (z. B. ihrshop.ozikol.com).</value>
+  </data>
+  <data name="Pricing_Domain_Step2_Num" xml:space="preserve">
+    <value>02</value>
+  </data>
+  <data name="Pricing_Domain_Step2_Title" xml:space="preserve">
+    <value>Domain registrieren</value>
+  </data>
+  <data name="Pricing_Domain_Step2_Desc" xml:space="preserve">
+    <value>Erwerben Sie Ihre Wunschdomain bei einem Registrar Ihrer Wahl (z. B. Namecheap, GoDaddy, Strato oder IONOS).</value>
+  </data>
+  <data name="Pricing_Domain_Step3_Num" xml:space="preserve">
+    <value>03</value>
+  </data>
+  <data name="Pricing_Domain_Step3_Title" xml:space="preserve">
+    <value>Mit 1 Klick verbinden</value>
+  </data>
+  <data name="Pricing_Domain_Step3_Desc" xml:space="preserve">
+    <value>Geben Sie Ihre Domain im Ozikol-Adminbereich ein. Wir aktivieren automatisch SSL-Schutz und weltweites Routing.</value>
+  </data>
+  <data name="Pricing_Why_Badge" xml:space="preserve">
+    <value>RADIKALE TRANSPARENZ &amp; WERT</value>
+  </data>
+  <data name="Pricing_Why_Title" xml:space="preserve">
+    <value>Warum nur 40.000 ₦ pro Jahr?</value>
+  </data>
+  <data name="Pricing_Why_Desc" xml:space="preserve">
+    <value>Wir sind überzeugt, dass erstklassige Handelsinfrastruktur Unternehmen stärken muss, anstatt deren Wachstum durch Gebühren zu bremsen.</value>
+  </data>
+  <data name="Pricing_Why1_Title" xml:space="preserve">
+    <value>0% Verkaufsprovision</value>
+  </data>
+  <data name="Pricing_Why1_Desc" xml:space="preserve">
+    <value>Im Gegensatz zu anderen Anbietern verlangt Ozikol keine Umsatzbeteiligung. 100% Ihrer Einnahmen bleiben bei Ihnen.</value>
+  </data>
+  <data name="Pricing_Why2_Title" xml:space="preserve">
+    <value>Keine Gebühren pro Nutzer</value>
+  </data>
+  <data name="Pricing_Why2_Desc" xml:space="preserve">
+    <value>Legen Sie so viele Kassen-, Filial- und Lagermitarbeiter an, wie Sie benötigen, ganz ohne Zusatzkosten.</value>
+  </data>
+  <data name="Pricing_Why3_Title" xml:space="preserve">
+    <value>Alle Funktionen freigeschaltet</value>
+  </data>
+  <data name="Pricing_Why3_Desc" xml:space="preserve">
+    <value>Keine künstlichen Einschränkungen. Von vorausschauender KI bis zu Multi-Lager-Routen sind alle 37 Funktionen nutzbar.</value>
+  </data>
+  <data name="Pricing_Why4_Title" xml:space="preserve">
+    <value>Cloud-Hosting &amp; Backups</value>
+  </data>
+  <data name="Pricing_Why4_Desc" xml:space="preserve">
+    <value>Beinhaltet verwaltetes Cloud-Hosting, automatische Software-Updates, Bankenstandard-Verschlüsselung und tägliche Datensicherungen.</value>
+  </data>
+  <data name="Pricing_Suites_Badge" xml:space="preserve">
+    <value>WAS DER TARIF ENTHÄLT</value>
+  </data>
+  <data name="Pricing_Suites_Title" xml:space="preserve">
+    <value>Entdecken Sie alle 9 integrierten Suiten</value>
+  </data>
+  <data name="Pricing_Suites_Desc" xml:space="preserve">
+    <value>Alles, was Sie für den erfolgreichen Betrieb und die Skalierung Ihres Handelsgeschäfts benötigen.</value>
   </data>
   <data name="Pricing_Faq_Badge" xml:space="preserve">
     <value>HÄUFIG GESTELLTE FRAGEN</value>
   </data>
   <data name="Pricing_Faq_Title" xml:space="preserve">
-    <value>Alles Wissenswerte zu Preisen, Sicherheit und Einführung</value>
+    <value>Wichtige Fragen zu unserem 40k-Jahrestarif</value>
   </data>
   <data name="Pricing_Faq_Desc" xml:space="preserve">
-    <value>Transparente Antworten zu Abonnements, privater KI, Datensouveränität und Datenmigration.</value>
+    <value>Verlässliche Antworten zu Domains, Verlängerung, internationalen Währungen und Funktionen.</value>
   </data>
   <data name="Pricing_Faq1_Q" xml:space="preserve">
-    <value>Können wir den Plan jederzeit wechseln oder kündigen?</value>
+    <value>Sind es wirklich nur 40.000 ₦ für das ganze Jahr mit allen Funktionen?</value>
   </data>
   <data name="Pricing_Faq1_A" xml:space="preserve">
-    <value>Ja. Sie können Ihr Abonnement jederzeit über die Organisationsverwaltung anpassen oder kündigen. Der Zugriff bleibt bis zum Ende des bezahlten Abrechnungszeitraums ohne Zusatzkosten bestehen.</value>
+    <value>Ja. Für 40.000 ₦ erhalten Sie 365 Tage lang uneingeschränkten Zugriff auf die gesamte Plattform ohne monatliche Zusatzkosten.</value>
   </data>
   <data name="Pricing_Faq2_Q" xml:space="preserve">
-    <value>Wie funktioniert Private KI (BYOK) und bleiben unsere Daten vertraulich?</value>
+    <value>Was bedeutet «Sie kaufen nur Ihre Domain»?</value>
   </data>
   <data name="Pricing_Faq2_A" xml:space="preserve">
-    <value>Mit Ozikol Private KI binden Sie Ihre eigenen API-Schlüssel von OpenAI, Claude oder Gemini ein. Ihre Abfragen unterliegen strikter Null-Retention und werden niemals zum Training öffentlicher Modelle verwendet.</value>
+    <value>Sie erwerben Ihren Wunschnamen direkt bei Ihrem bevorzugten Domain-Registrar. Ozikol stellt alles andere: Hosting, SSL, Datenbanken, POS und Warenwirtschaft.</value>
   </data>
   <data name="Pricing_Faq3_Q" xml:space="preserve">
-    <value>Was passiert mit unseren Daten, falls wir Ozikol verlassen?</value>
+    <value>Kann ich eine bereits bestehende Domain verwenden?</value>
   </data>
   <data name="Pricing_Faq3_A" xml:space="preserve">
-    <value>Wir garantieren 100% Datensouveränität. Sie können Ihre gesamten Datenbanken, Richtlinien und Dateien jederzeit mit einem einzigen Klick in offenen Standards exportieren.</value>
+    <value>Ja! Sie können jede vorhandene Domain in wenigen Minuten über die im Admin-Panel angegebenen DNS-Einträge verknüpfen.</value>
   </data>
   <data name="Pricing_Faq4_Q" xml:space="preserve">
-    <value>Gibt es Rabatte für Vereine, NGOs und Bildungseinrichtungen?</value>
+    <value>Kann ich in US-Dollar, Britischen Pfund oder Ghana-Cedi bezahlen?</value>
   </data>
   <data name="Pricing_Faq4_A" xml:space="preserve">
-    <value>Ja. Gemeinnützige Vereine, Wohlfahrtsverbände und Bildungseinrichtungen erhalten 20% Sozialrabatt auf alle Jahresverträge.</value>
+    <value>Ja. Sie können in USD (25 $/Jahr), GBP (20 £/Jahr) oder GHS (350 GH₵/Jahr) über den Währungsschalter abrechnen.</value>
   </data>
   <data name="Pricing_Faq5_Q" xml:space="preserve">
-    <value>Wo werden unsere Daten gehostet und gespeichert?</value>
+    <value>Was geschieht nach Ablauf des ersten Jahres?</value>
   </data>
   <data name="Pricing_Faq5_A" xml:space="preserve">
-    <value>Ihre Datenbank ist in ISO-27001- und SOC-2-zertifizierten Rechenzentren innerhalb der Europäischen Union isoliert und erfüllt die DSGVO vollumfänglich.</value>
+    <value>Ihr Abonnement verlängert sich zum selben transparenten Jahrestarif. Sie erhalten 30 Tage vorher eine Erinnerung und können Ihre Daten jederzeit exportieren.</value>
   </data>
   <data name="Pricing_Faq6_Q" xml:space="preserve">
-    <value>Wie läuft die Migration von bisherigen Systemen ab?</value>
+    <value>Gibt es eine kostenlose Testphase vor der Zahlung?</value>
   </data>
   <data name="Pricing_Faq6_A" xml:space="preserve">
-    <value>Ozikol bietet automatisierte Import-Assistenten für Schichtpläne, Mitgliederverzeichnisse, Anlagen und Finanzdaten. Unsere Spezialisten unterstützen Sie bei der Einführung.</value>
+    <value>Ja. Sie können alle Funktionen 14 Tage lang ohne Kreditkarte oder Vorauszahlung risikofrei testen.</value>
   </data>
   <data name="Pricing_Cta_Title" xml:space="preserve">
-    <value>Vereinen Sie Ihre Abläufe mit voller Sicherheit</value>
+    <value>Bereit, Ihr Geschäft für 40.000 ₦ / Jahr zu skalieren?</value>
   </data>
   <data name="Pricing_Cta_Desc" xml:space="preserve">
-    <value>Schließen Sie sich über 160.000 Organisationen an, die täglich mit Ozikol arbeiten. Starten Sie Ihre 14-tägige kostenlose Testphase.</value>
+    <value>Starten Sie Ihre kostenlose 14-tägige Testphase heute. Erstellen Sie Ihren Katalog, verbinden Sie Ihre Domain und verkaufen Sie in Minuten.</value>
   </data>
   <data name="Pricing_Cta_BtnPrimary" xml:space="preserve">
     <value>14 Tage kostenlos testen</value>
   </data>
   <data name="Pricing_Cta_BtnSecondary" xml:space="preserve">
-    <value>Live-Demo buchen</value>
+    <value>Support kontaktieren</value>
   </data>
 </root>
