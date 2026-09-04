@@ -786,15 +786,16 @@
 .oz-testimonial-author-wrap {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     border-top: 1px solid #e2e8f0;
-    padding-top: 16px;
+    padding-top: 18px;
+    margin-top: auto;
 }
 .oz-author-avatar {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: rgba(229, 23, 63, 0.15);
+    background: rgba(229, 23, 63, 0.12);
     color: #e5173f;
     display: flex;
     align-items: center;
@@ -803,14 +804,24 @@
     font-size: 15px;
     flex-shrink: 0;
 }
+.oz-author-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
 .oz-author-name {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
+    line-height: 1.3;
     color: var(--ozikol-text-heading, #0f172a);
+    margin: 0;
 }
 .oz-author-role {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.45;
     color: var(--ozikol-text-muted, #64748b);
+    margin: 0;
 }
 
 /* Section 8: Security & Sovereignty */
