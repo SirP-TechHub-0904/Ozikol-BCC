@@ -773,7 +773,7 @@
     <value>One Platform. 37 Capabilities. 9 Integrated Suites.</value>
   </data>
   <data name="Home_Suites_Desc" xml:space="preserve">
-    <value>Every tool you need to run, govern, and scale your organization—natively connected without third-party integration headaches.</value>
+    <value>Every tool you need to run, govern, and scale your organization, natively connected without external integration headaches.</value>
   </data>
   <data name="Home_Suites_ExploreAll" xml:space="preserve">
     <value>Explore the complete feature catalog →</value>
@@ -791,19 +791,19 @@
     <value>Sovereign Workspace &amp; Directory</value>
   </data>
   <data name="Home_Tab1_Desc" xml:space="preserve">
-    <value>Centralized staff, volunteers, committees, and member directories with granular role-based permissions and instant cross-department collaboration.</value>
+    <value>Centralized staff, volunteers, committees, and member directories with granular role based permissions and instant cross department collaboration.</value>
   </data>
   <data name="Home_Tab2_Title" xml:space="preserve">
     <value>Shift &amp; Rota Automation</value>
   </data>
   <data name="Home_Tab2_Desc" xml:space="preserve">
-    <value>Automate departmental rota publishing, peer-to-peer shift swaps, leave approvals, and geo-fenced mobile clock-in attendance tracking.</value>
+    <value>Automate departmental rota publishing, team shift swaps, leave approvals, and mobile attendance tracking.</value>
   </data>
   <data name="Home_Tab3_Title" xml:space="preserve">
     <value>Civic Census &amp; Field Surveyor</value>
   </data>
   <data name="Home_Tab3_Desc" xml:space="preserve">
-    <value>Conduct door-to-door demographic surveys with offline GPS sync, household family tree mapping, and cryptographic resident ID card generation.</value>
+    <value>Conduct in person demographic surveys with offline GPS sync, household family tree mapping, and cryptographic resident ID card generation.</value>
   </data>
   <data name="Home_Tab4_Title" xml:space="preserve">
     <value>Private AI Smart Assist (BYOK)</value>
@@ -815,7 +815,7 @@
     <value>Verifiable QR Credentials</value>
   </data>
   <data name="Home_Tab5_Desc" xml:space="preserve">
-    <value>Issue tamper-proof digital certificates, training badges, and membership passes verifiable in milliseconds via secure cryptographic QR verification.</value>
+    <value>Issue tamper evident digital certificates, training badges, and membership passes verifiable in milliseconds via secure cryptographic QR verification.</value>
   </data>
   <data name="Home_Video_Badge" xml:space="preserve">
     <value>PLATFORM IN ACTION</value>
@@ -914,7 +914,7 @@
     <value>Strict Schema Isolation</value>
   </data>
   <data name="Home_Security_Pillar1_Desc" xml:space="preserve">
-    <value>Dedicated database tenant isolation guarantees zero risk of cross-tenant data leakage.</value>
+    <value>Dedicated database tenant isolation guarantees zero risk of multi tenant data leakage.</value>
   </data>
   <data name="Home_Security_Pillar2_Title" xml:space="preserve">
     <value>Zero Model Retention (BYOK AI)</value>
@@ -923,13 +923,13 @@
     <value>Bring your own OpenAI, Claude, or Gemini key. Your organizational queries are never used to train public models.</value>
   </data>
   <data name="Home_Security_Pillar3_Title" xml:space="preserve">
-    <value>Bank-Grade Compliance</value>
+    <value>Enterprise Grade Compliance</value>
   </data>
   <data name="Home_Security_Pillar3_Desc" xml:space="preserve">
-    <value>Two-factor authentication (2FA), granular role-based access control (RBAC), and full audit logging.</value>
+    <value>Multi factor authentication (MFA), granular role based access control (RBAC), and full audit logging.</value>
   </data>
   <data name="Home_Security_Pillar4_Title" xml:space="preserve">
-    <value>Instant 1-Click Portability</value>
+    <value>Instant One Click Portability</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
     <value>Full customer data sovereignty. Export your entire database, policies, and files anytime in open formats.</value>

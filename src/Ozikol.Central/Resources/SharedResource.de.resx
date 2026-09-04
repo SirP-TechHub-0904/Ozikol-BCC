@@ -773,13 +773,13 @@
     <value>Eine Plattform. 37 Funktionen. 9 integrierte Suites.</value>
   </data>
   <data name="Home_Suites_Desc" xml:space="preserve">
-    <value>Alle Werkzeuge für Führung, Verwaltung und Skalierung Ihrer Organisation – nativ integriert ohne Integrationsaufwand.</value>
+    <value>Alle Werkzeuge für Führung, Verwaltung und Skalierung Ihrer Organisation, nativ integriert ohne Integrationsaufwand.</value>
   </data>
   <data name="Home_Suites_ExploreAll" xml:space="preserve">
     <value>Den gesamten Funktionskatalog entdecken →</value>
   </data>
   <data name="Home_Tabs_Badge" xml:space="preserve">
-    <value>KERNSYSTEM-ENGINES</value>
+    <value>KERNSYSTEM ENGINES</value>
   </data>
   <data name="Home_Tabs_Title" xml:space="preserve">
     <value>Fünf technologische Säulen für Unternehmensmaßstäbe</value>
@@ -791,31 +791,31 @@
     <value>Souveräner Arbeitsbereich &amp; Verzeichnis</value>
   </data>
   <data name="Home_Tab1_Desc" xml:space="preserve">
-    <value>Zentrales Mitarbeiter-, Helfer-, Komitee- und Mitgliederverzeichnis mit granularen Berechtigungen und schneller Zusammenarbeit.</value>
+    <value>Zentrales Mitarbeiter, Helfer, Komitee und Mitgliederverzeichnis mit granularen Berechtigungen und schneller Zusammenarbeit.</value>
   </data>
   <data name="Home_Tab2_Title" xml:space="preserve">
-    <value>Schicht- &amp; Dienstplan-Automatisierung</value>
+    <value>Schicht und Dienstplan Automatisierung</value>
   </data>
   <data name="Home_Tab2_Desc" xml:space="preserve">
-    <value>Automatisieren Sie Dienstpläne, Schichttreffen, Urlaubsanträge und mobile Geofencing-Zeiterfassung.</value>
+    <value>Automatisieren Sie Dienstpläne, Schichttreffen, Urlaubsanträge und mobile Geofencing Zeiterfassung.</value>
   </data>
   <data name="Home_Tab3_Title" xml:space="preserve">
     <value>Bürgerzählung &amp; Mobiler Erheber</value>
   </data>
   <data name="Home_Tab3_Desc" xml:space="preserve">
-    <value>Führen Sie Vor-Ort-Befragungen mit Offline-GPS-Sync, Haushaltsabbildung und kryptografischen Einwohnerausweisen durch.</value>
+    <value>Führen Sie Befragungen vor Ort mit Offline GPS Synchronisierung, Haushaltsabbildung und kryptografischen Einwohnerausweisen durch.</value>
   </data>
   <data name="Home_Tab4_Title" xml:space="preserve">
-    <value>Privater smarter KI-Assistent (BYOK)</value>
+    <value>Privater smarter KI Assistent (BYOK)</value>
   </data>
   <data name="Home_Tab4_Desc" xml:space="preserve">
-    <value>Verbinden Sie eigene API-Keys von OpenAI, Gemini oder Claude. Erstellen Sie Protokolle und automatisieren Sie Antworten ohne Training öffentlicher Modelle.</value>
+    <value>Verbinden Sie eigene API Schlüssel von OpenAI, Gemini oder Claude. Erstellen Sie Protokolle und automatisieren Sie Antworten ohne Training öffentlicher Modelle.</value>
   </data>
   <data name="Home_Tab5_Title" xml:space="preserve">
-    <value>Verifizierbare QR-Zertifikate</value>
+    <value>Verifizierbare QR Zertifikate</value>
   </data>
   <data name="Home_Tab5_Desc" xml:space="preserve">
-    <value>Stellen Sie manipulationssichere Zertifikate, Schulungsnachweise und Ausweise mit kryptografischer QR-Prüfung aus.</value>
+    <value>Stellen Sie manipulationssichere Zertifikate, Schulungsnachweise und Ausweise mit kryptografischer QR Prüfung aus.</value>
   </data>
   <data name="Home_Video_Badge" xml:space="preserve">
     <value>DIE PLATTFORM IN AKTION</value>
@@ -824,7 +824,7 @@
     <value>Die meiste Software läuft neben Ihrem Unternehmen. Ozikol arbeitet direkt darin.</value>
   </data>
   <data name="Home_Video_Desc" xml:space="preserve">
-    <value>Mitarbeiter, Daten und Workflows auf einer Oberfläche vereint – ganz ohne fehleranfällige Bastellösungen.</value>
+    <value>Mitarbeiter, Daten und Workflows auf einer Oberfläche vereint, ganz ohne fehleranfällige Bastellösungen.</value>
   </data>
   <data name="Home_Video_Btn" xml:space="preserve">
     <value>Ozikol entdecken</value>
@@ -917,19 +917,19 @@
     <value>Dedizierte Mandantendatenbanken verhindern jegliches Risiko von Datenlecks zwischen Organisationen.</value>
   </data>
   <data name="Home_Security_Pillar2_Title" xml:space="preserve">
-    <value>Kein Training an Modellen (BYOK-KI)</value>
+    <value>Kein Training an Modellen (BYOK KI)</value>
   </data>
   <data name="Home_Security_Pillar2_Desc" xml:space="preserve">
-    <value>Bringen Sie Ihre eigenen API-Schlüssel mit. Ihre Anfragen werden niemals für das Training öffentlicher Modelle genutzt.</value>
+    <value>Bringen Sie Ihre eigenen API Schlüssel mit. Ihre Anfragen werden niemals für das Training öffentlicher Modelle genutzt.</value>
   </data>
   <data name="Home_Security_Pillar3_Title" xml:space="preserve">
     <value>Compliance auf Bankenniveau</value>
   </data>
   <data name="Home_Security_Pillar3_Desc" xml:space="preserve">
-    <value>Zwei-Faktor-Authentifizierung (2FA), rollenbasierte Zugriffskontrolle (RBAC) und vollständige Audit-Logs.</value>
+    <value>Mehrfaktor Authentifizierung (MFA), rollenbasierte Zugriffskontrolle (RBAC) und vollständige Audit Logs.</value>
   </data>
   <data name="Home_Security_Pillar4_Title" xml:space="preserve">
-    <value>1-Klick-Datenportabilität</value>
+    <value>Sofortige Datenportabilität mit einem Klick</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
     <value>Volle Datensouveränität. Exportieren Sie Ihre gesamte Datenbank, Richtlinien und Dokumente jederzeit.</value>
