@@ -73,10 +73,10 @@
         <div class="mega-menu__mid-items-scroll">
             <button class="mega-menu__back js-megaMenuMidLevelBack">
                 <i class="icon icon-arrow-left"></i>
-                Back to Main Menu
+                @SharedLocalizer["Menu_Back"]
             </button>
                 <div class="mega-menu__mid-items-group">
-                    <div class="mega-menu__nav-title">Feature Suites</div>
+                    <div class="mega-menu__nav-title">@SharedLocalizer["Suites_Title"]</div>
                         
                         <!-- People, Community & Collaboration -->
                         <div class="mega-menu__link-wrap">
@@ -544,10 +544,10 @@
         <div class="mega-menu__mid-items-scroll">
             <button class="mega-menu__back js-megaMenuMidLevelBack">
                 <i class="icon icon-arrow-left"></i>
-                Back to Main Menu
+                @SharedLocalizer["Menu_Back"]
             </button>
                 <div class="mega-menu__mid-items-group">
-                    <div class="mega-menu__nav-title">About Ozikol</div>
+                    <div class="mega-menu__nav-title">@SharedLocalizer["Footer_AboutOzikol"]</div>
                                                 <!-- Tab 1: Discover Ozikol -->
                         <div class="mega-menu__link-wrap">
                                 <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
@@ -703,7 +703,7 @@
 </li>
 <li class="mega-menu__link-wrap">
     <button class="mega-menu__link js-megaMenuMidLevelOpen">
-        Customer
+        @SharedLocalizer["Nav_Customer"]
     </button>
 
     <div class="mega-menu__panel js-megaMenuPanel expanded-panel">
@@ -711,53 +711,53 @@
         <div class="mega-menu__mid-items-scroll">
             <button class="mega-menu__back js-megaMenuMidLevelBack">
                 <i class="icon icon-arrow-left"></i>
-                Back to Main Menu
+                @SharedLocalizer["Menu_Back"]
             </button>
                 <div class="mega-menu__mid-items-group">
-                    <div class="mega-menu__nav-title">Customer Resources</div>
+                    <div class="mega-menu__nav-title">@SharedLocalizer["Customer_NavTitle"]</div>
                         
                                                 <!-- Tab 1: Support & Operations -->
                         <div class="mega-menu__link-wrap">
                                 <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    Support &amp; Operations
+                                    @SharedLocalizer["Customer_SupportOps"]
                                 </button>
                                 <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
                                     <div class="mega-menu-sub__inner">
                                         <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">Customer <span class="text-primary">Support</span></div>
+                                            <div class="mega-menu-sub__title">@Html.Raw(SharedLocalizer["Customer_SupportHeader"])</div>
                                             <div class="mega-menu-sub__description rte">
-                                                <p>Guides, live status, and direct contact for assistance.</p>
+                                                <p>@SharedLocalizer["Customer_SupportDesc"]</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mega-menu-sub__content">
                                         <button class="mega-menu-sub__close js-megaMenuClose">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>Close</span>
+                                            <span>@SharedLocalizer["Menu_Close"]</span>
                                         </button>
                                         <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/support-hub">
-                                                    <div class="mega-menu-text-link__title">Support Hub &amp; Help Centre</div>
-                                                    <div class="mega-menu-text-link__description">Searchable tutorials, feature walkthroughs, and knowledge base.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_SupportHubTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_SupportHubDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/status">
-                                                    <div class="mega-menu-text-link__title">System Status &amp; Uptime</div>
-                                                    <div class="mega-menu-text-link__description">Real-time platform availability, cloud health, and incident history.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_StatusTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_StatusDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/support-hub/contact-sales">
-                                                    <div class="mega-menu-text-link__title">Contact Support &amp; Sales</div>
-                                                    <div class="mega-menu-text-link__description">Reach our team for product questions, account inquiries, or assistance.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_ContactSalesTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_ContactSalesDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/legal-hub">
-                                                    <div class="mega-menu-text-link__title">Governance &amp; Legal Hub</div>
-                                                    <div class="mega-menu-text-link__description">Compliance frameworks, security standards, and terms of service.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_LegalHubTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_LegalHubDesc"]</div>
                                                 </a>
                                             </article>
                                         </div>
@@ -768,51 +768,51 @@
                         <!-- Tab 2: Portal & Channels -->
                         <div class="mega-menu__link-wrap">
                                 <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    Portal &amp; Channels
+                                    @SharedLocalizer["Customer_PortalChannels"]
                                 </button>
                                 <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
                                     <div class="mega-menu-sub__inner">
                                         <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">Platform <span class="text-primary">Access</span></div>
+                                            <div class="mega-menu-sub__title">@Html.Raw(SharedLocalizer["Customer_PlatformAccessHeader"])</div>
                                             <div class="mega-menu-sub__description rte">
-                                                <p>Admin gateway and dedicated multi-channel experiences.</p>
+                                                <p>@SharedLocalizer["Customer_PlatformAccessDesc"]</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mega-menu-sub__content">
                                         <button class="mega-menu-sub__close js-megaMenuClose">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>Close</span>
+                                            <span>@SharedLocalizer["Menu_Close"]</span>
                                         </button>
                                         <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/client-login">
-                                                    <div class="mega-menu-text-link__title">Client Admin Sign In Gateway</div>
-                                                    <div class="mega-menu-text-link__description">The official login gateway for organization admins and managers.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_ClientLoginTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_ClientLoginDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/platform/website">
-                                                    <div class="mega-menu-text-link__title">Dedicated Website</div>
-                                                    <div class="mega-menu-text-link__description">Custom branded organization website with on-demand feature activation.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_WebsiteTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_WebsiteDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/platform/mis-system">
-                                                    <div class="mega-menu-text-link__title">MIS System</div>
-                                                    <div class="mega-menu-text-link__description">Executive management information system and institutional intelligence.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_MisTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_MisDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/platform/mobile-app">
-                                                    <div class="mega-menu-text-link__title">Mobile Apps (iOS &amp; Android)</div>
-                                                    <div class="mega-menu-text-link__description">Native mobile experience on Apple App Store &amp; Google Play.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_MobileTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_MobileDesc"]</div>
                                                 </a>
                                             </article>
                                             <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
                                                 <a href="/platform/desktop-app">
-                                                    <div class="mega-menu-text-link__title">Desktop App (Windows)</div>
-                                                    <div class="mega-menu-text-link__description">High-performance Windows client for multi-monitor workstations.</div>
+                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_DesktopTitle"]</div>
+                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_DesktopDesc"]</div>
                                                 </a>
                                             </article>
                                         </div>
@@ -902,7 +902,7 @@
     <div class="oz-ms-footer-follow">
         <div class="container">
             <div class="oz-ms-follow-wrap">
-                <span class="oz-ms-follow-title">Follow Ozikol</span>
+                <span class="oz-ms-follow-title">@SharedLocalizer["Footer_FollowTitle"]</span>
                 <div class="oz-ms-follow-icons">
                     <a href="https://x.com/ozikol" target="_blank" rel="noopener noreferrer" class="oz-ms-social-btn" aria-label="Follow Ozikol on X">
                         <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -927,69 +927,69 @@
             <div class="oz-ms-footer-grid">
                 <!-- Col 1: Solutions -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Solutions</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColSolutions"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/features/staff-rota">Staff Rota &amp; Shifts</a></li>
-                        <li><a href="/features/invoicing-dues">Invoicing &amp; Member Dues</a></li>
-                        <li><a href="/features/community-messenger">Community Messenger</a></li>
-                        <li><a href="/features/equipment-fleet">Fleet &amp; Equipment</a></li>
-                        <li><a href="/features/visitor-gate-management">Visitor &amp; Gate Security</a></li>
-                        <li><a href="/features" class="oz-ms-highlight-link">All 37 Features Hub &rarr;</a></li>
+                        <li><a href="/features/staff-rota">@SharedLocalizer["Footer_StaffRota"]</a></li>
+                        <li><a href="/features/invoicing-dues">@SharedLocalizer["Footer_InvoicingDues"]</a></li>
+                        <li><a href="/features/community-messenger">@SharedLocalizer["Footer_CommunityMessenger"]</a></li>
+                        <li><a href="/features/equipment-fleet">@SharedLocalizer["Footer_EquipmentFleet"]</a></li>
+                        <li><a href="/features/visitor-gate-management">@SharedLocalizer["Footer_VisitorSecurity"]</a></li>
+                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub"]</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 2: Platform -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Platform</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColPlatform"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/platform/website">Dedicated Website</a></li>
-                        <li><a href="/platform/mis-system">MIS System</a></li>
-                        <li><a href="/platform/mobile-app">Mobile Apps (iOS &amp; Android)</a></li>
-                        <li><a href="/platform/desktop-app">Desktop App (Windows)</a></li>
+                        <li><a href="/platform/website">@SharedLocalizer["Footer_DedicatedWebsite"]</a></li>
+                        <li><a href="/platform/mis-system">@SharedLocalizer["Footer_MisSystem"]</a></li>
+                        <li><a href="/platform/mobile-app">@SharedLocalizer["Footer_MobileApps"]</a></li>
+                        <li><a href="/platform/desktop-app">@SharedLocalizer["Footer_DesktopApp"]</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 3: Pricing & Value -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Pricing &amp; Value</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColPricing"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/pricing" class="oz-ms-highlight-link">Subscription</a></li>
-                        <li><a href="/pricing/pay-as-you-go">Pay-As-You-Go</a></li>
-                        <li><a href="/pricing/custom">Custom Enterprise Quote</a></li>
+                        <li><a href="/pricing" class="oz-ms-highlight-link">@SharedLocalizer["Footer_Subscription"]</a></li>
+                        <li><a href="/pricing/pay-as-you-go">@SharedLocalizer["Footer_PayAsYouGo"]</a></li>
+                        <li><a href="/pricing/custom">@SharedLocalizer["Footer_CustomQuote"]</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 4: Marketplace -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Marketplace</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColMarketplace"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/marketplace">UI Marketplace</a></li>
-                        <li><a href="/marketplace/creator-program">Creator Partner Program</a></li>
-                        <li><a href="/marketplace/custom-ui">Request Custom UI</a></li>
-                        <li><a href="/developer-api">Developer API &amp; Webhooks</a></li>
+                        <li><a href="/marketplace">@SharedLocalizer["Nav_Marketplace"]</a></li>
+                        <li><a href="/marketplace/creator-program">@SharedLocalizer["Footer_CreatorProgram"]</a></li>
+                        <li><a href="/marketplace/custom-ui">@SharedLocalizer["Footer_RequestCustomUi"]</a></li>
+                        <li><a href="/developer-api">@SharedLocalizer["Footer_DeveloperApi"]</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 5: Resources -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Resources</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColResources"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/support-hub">Support Hub &amp; Help Centre</a></li>
-                        <li><a href="/news">News &amp; Releases</a></li>
-                        <li><a href="/case-studies">Customer Case Studies</a></li>
-                        <li><a href="/status">System Status &amp; Uptime</a></li>
+                        <li><a href="/support-hub">@SharedLocalizer["Customer_SupportHubTitle"]</a></li>
+                        <li><a href="/news">@SharedLocalizer["Footer_NewsReleases"]</a></li>
+                        <li><a href="/case-studies">@SharedLocalizer["Footer_CaseStudies"]</a></li>
+                        <li><a href="/status">@SharedLocalizer["Customer_StatusTitle"]</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 6: Company & Legal -->
                 <div class="oz-ms-col">
-                    <h3 class="oz-ms-col-title">Company</h3>
+                    <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColCompany"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/about-us">About Ozikol</a></li>
-                        <li><a href="/about-us/leadership">Leadership &amp; Executives</a></li>
-                        <li><a href="/about-us/culture">Core Values &amp; Culture</a></li>
-                        <li><a href="/careers">Careers</a></li>
-                        <li><a href="/legal-hub">Legal &amp; Compliance Hub</a></li>
+                        <li><a href="/about-us">@SharedLocalizer["Footer_AboutOzikol"]</a></li>
+                        <li><a href="/about-us/leadership">@SharedLocalizer["Footer_Leadership"]</a></li>
+                        <li><a href="/about-us/culture">@SharedLocalizer["Footer_Culture"]</a></li>
+                        <li><a href="/careers">@SharedLocalizer["Footer_Careers"]</a></li>
+                        <li><a href="/legal-hub">@SharedLocalizer["Customer_LegalHubTitle"]</a></li>
                     </ul>
                 </div>
             </div>
@@ -1004,23 +1004,23 @@
                 <div class="oz-ms-sub-left">
                     <div class="oz-ms-locale">
                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Global (English)</span>
+                        <span>@(currentCulture == "de" ? "Deutschland (Deutsch)" : currentCulture == "fr" ? "France (Français)" : currentCulture == "es" ? "España (Español)" : "Global (English)")</span>
                     </div>
                     <a href="/privacy-choices" class="oz-ms-privacy-choices">
                         <svg width="24" height="12" viewBox="0 0 26 12" fill="none"><path d="M20.5 1h-15C2.5 1 .5 3 .5 6s2 5 5 5h15c3 0 5-2 5-5s-2-5-5-5z" fill="#0078d4"/><path d="M20.5 1c3 0 5 2 5 5s-2 5-5 5-5-2-5-5 2-5 5-5z" fill="#0078d4"/><path d="M5.5 11C2.5 11 .5 9 .5 6s2-5 5-5 5 2 5 5-2 5-5 5z" fill="#ffffff"/><path d="M3.8 6.2l1.6 1.6 3.8-3.8" stroke="#0078d4" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.8 3.8l3.6 3.6m0-3.6l-3.6 3.6" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>Your Privacy Choices</span>
+                        <span>@SharedLocalizer["Footer_PrivacyChoices"]</span>
                     </a>
                 </div>
 
                 <!-- Right: Legal Links & Copyright -->
                 <div class="oz-ms-sub-right">
                     <ul class="oz-ms-sub-links">
-                        <li><a href="/support-hub/contact-sales">Contact Ozikol</a></li>
-                        <li><a href="/privacy-notice">Privacy Notice</a></li>
-                        <li><a href="/terms-of-use">Terms of Use</a></li>
-                        <li><a href="/cookies">Cookie Policy</a></li>
-                        <li><a href="/policies-and-reports">Policies &amp; Reports</a></li>
-                        <li class="oz-ms-sub-copy">&copy; Ozikol 2026</li>
+                        <li><a href="/support-hub/contact-sales">@SharedLocalizer["Footer_ContactOzikol"]</a></li>
+                        <li><a href="/privacy-notice">@SharedLocalizer["Footer_PrivacyNotice"]</a></li>
+                        <li><a href="/terms-of-use">@SharedLocalizer["Footer_TermsOfUse"]</a></li>
+                        <li><a href="/cookies">@SharedLocalizer["Footer_CookiePolicy"]</a></li>
+                        <li><a href="/policies-and-reports">@SharedLocalizer["Footer_PoliciesReports"]</a></li>
+                        <li class="oz-ms-sub-copy">@SharedLocalizer["Footer_Copyright"]</li>
                     </ul>
                 </div>
             </div>
