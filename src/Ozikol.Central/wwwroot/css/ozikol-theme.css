@@ -1146,6 +1146,7 @@
     margin-left: auto;
     margin-right: auto;
     line-height: 1.18;
+    text-align: center;
 }
 @media (max-width: 768px) {
     .oz-pricing-hero-title {
@@ -1160,6 +1161,7 @@
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 34px;
+    text-align: center;
 }
 .oz-currency-selector-wrap {
     display: inline-flex;
@@ -1245,6 +1247,7 @@
     color: #0f172a;
     line-height: 1.25;
     margin-bottom: 8px;
+    text-align: center;
 }
 .oz-single-card-desc {
     font-size: 15.5px;
@@ -1252,6 +1255,7 @@
     color: #64748b;
     max-width: 620px;
     margin: 0 auto;
+    text-align: center;
 }
 
 /* Price Display Block */
