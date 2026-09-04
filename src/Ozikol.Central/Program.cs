@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Ozikol.Central.Services;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -23,20 +25,17 @@ builder.Configuration.AddEnvironmentVariables();
 
 // 2. Add Razor Pages & HTTP Client
 builder.Services.AddHttpClient();
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AuthorizeFolder("/Operations");
-});
+builder.Services.AddRazorPages();
 
 // 3. Multi-Tenant Infrastructure Support
 builder.Services.AddTenantSupport(builder.Configuration);
 
-// 4. Resolve Master Database Connection strictly from .env / Environment Variables
+// 4. Resolve Master Database Connection strictly from .env / Configuration / Environment Variables
 var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"]
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-    ?? "Server=JSS\\SQLEXPRESS;Database=Ozikol_MasterCatalogDb;Integrated Security=true;TrustServerCertificate=True;";
+    ?? throw new InvalidOperationException(
+        "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +
+        "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
 // 5. Register MasterCatalogDbContext
 builder.Services.AddDbContext<MasterCatalogDbContext>(options =>
@@ -58,8 +57,8 @@ builder.Services.AddIdentity<CentralUser, CentralRole>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/Login";
+    options.LoginPath = "/Auth/Login";
+    options.AccessDeniedPath = "/Auth/Login";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
 });
 
@@ -70,6 +69,7 @@ builder.Services.AddScoped<ICentralMigrationService, CentralMigrationService>();
 builder.Services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 builder.Services.AddScoped<ICentralEmailService, CentralEmailService>();
 builder.Services.AddScoped<ICentralTwoFactorService, CentralTwoFactorService>();
+builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
 
 var app = builder.Build();
 

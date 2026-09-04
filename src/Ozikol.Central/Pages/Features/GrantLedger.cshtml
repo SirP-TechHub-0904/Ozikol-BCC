@@ -1,0 +1,191 @@
+@page "/features/grant-ledger"
+@model Ozikol.Central.Pages.Features.GrantLedgerModel
+@{
+    ViewData["Title"] = "Grant Ledger & Funding Tracking - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#finance-revenue">Finance & Commercial Revenue</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Grant Ledger & Funding Tracking</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+<div class="oz-feat-suite-pill">
+                    Finance & Commercial Revenue
+                </div>
+                <h1 class="oz-feat-title">
+                    Grant Ledger & Funding Tracking
+                </h1>
+                <p class="oz-feat-lead">
+                    Donor award tracking, disbursement schedules, and compliance ledgers.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Ensure strict financial compliance for grant-funded programs. Track awarded funds, disbursement drawdowns, allowable cost categories, line-item expenditures, and donor compliance reporting schedules.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Grant Award Master Ledger</h3>
+                        <p>Record donor awards, project codes, performance periods, and disbursement dates.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Budget Burn-Rate Meter</h3>
+                        <p>Visual tracking of funds spent versus budget allocations across project milestones.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Allowable Expense Verification</h3>
+                        <p>Tag expenditures to specific grant budget lines with attached receipt verification.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Donor Compliance Reporting</h3>
+                        <p>Generate audit-ready financial statements formatted to donor specifications.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete control, configuration, audit reporting, and supervisory approval queues.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Register grant agreements
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Track drawdown milestones
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Monitor expense compliance
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Export donor reports
+                            </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Streamlined interfaces optimized for rapid collaboration and daily task execution.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Log project expenses
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Attach receipts & invoices
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> View category budget balances
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Track milestone deliverables
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            1
+                        </div>
+                        <h3 class="oz-feat-step-title">Setup Award</h3>
+                        <p class="oz-feat-step-desc">Record grant budget breakdown by line item and funding milestone.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            2
+                        </div>
+                        <h3 class="oz-feat-step-title">Track Expenses</h3>
+                        <p class="oz-feat-step-desc">Project teams log allowable costs with proof-of-purchase receipts.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            3
+                        </div>
+                        <h3 class="oz-feat-step-title">Donor Audit</h3>
+                        <p class="oz-feat-step-desc">Generate audited financial reports for donor submission.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>50</h2>
+            <p>36</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
+                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+

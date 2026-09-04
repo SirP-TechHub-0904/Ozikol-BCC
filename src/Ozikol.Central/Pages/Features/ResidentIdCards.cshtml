@@ -1,0 +1,124 @@
+@page "/features/resident-id-cards"
+@model Ozikol.Central.Pages.Features.ResidentIdCardsModel
+@{
+    ViewData["Title"] = "Resident & Citizen Digital ID Cards - Ozikol BCP Feature";
+    ViewData["MetaDescription"] = "Issue cryptographic QR-coded digital census ID cards, verified resident passes, and instant access accreditation for community members with Ozikol.";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#demographics-census">Demographics & Civic Census</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Resident & Citizen Digital ID Cards</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge">
+                    <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                </div>
+                <div class="oz-feat-suite-pill">
+                    Suite 09 &bull; Demographics & Civic Census
+                </div>
+                <h1 class="oz-feat-title">
+                    Resident & Citizen Digital ID Cards
+                </h1>
+                <p class="oz-feat-lead">
+                    Generate tamper-proof digital census identity cards with cryptographic QR codes. Give residents instant proof of enumeration, gated community access, and accredited voter eligibility.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        <section class="oz-feat-overview-card">
+            <h2>Digital Identity Overview</h2>
+            <p>
+                Once an individual or household is enumerated in your census, Ozikol automatically provisions an official Digital Citizen Card. Residents can save their pass to Apple Wallet or Google Wallet, display it on mobile screens, or print standard PVC/laminated ID cards. Community security guards, estate gate scanners, and election officers can scan the QR code in under 1 second to verify identity.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Accreditation & Trust</div>
+                <h2>Key Digital ID Features</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                    </div>
+                    <h3>Cryptographic QR Verification</h3>
+                    <p>Each card features an encrypted, signed QR code. Any smartphone camera instantly verifies genuine membership without exposing private records.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Apple & Google Wallet Integration</h3>
+                    <p>Residents can add their verified digital community pass directly to their smartphone digital wallet in one tap.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3>Estate Gate & Security Access</h3>
+                    <p>Integrates with Ozikol Visitor Gate kiosks and barriers to grant seamless access to accredited residents and household members.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                    <h3>Election Voter Accreditation</h3>
+                    <p>Link census enumeration directly to Ozikol E-Voting so only verified, accredited community members receive digital election ballots.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    </div>
+                    <h3>Batch PVC Printing Support</h3>
+                    <p>Generate print-ready, high-resolution PDF sheets for physical plastic PVC badge printers with custom branding and barcodes.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728B9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    </div>
+                    <h3>Instant Revocation & Expiry</h3>
+                    <p>When a tenant moves out or an individual leaves the association, administrators revoke the digital pass instantly with live cloud invalidation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="oz-feat-cta-box">
+            <h2>Issue official digital ID cards to your community</h2>
+            <p>Empower your residents with instant digital recognition and secure verified access.</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/get-started" class="btn btn-primary">Start Free Trial</a>
+                <a href="/support-hub/contact-sales" class="btn btn-secondary--alt">Talk to an Expert</a>
+            </div>
+        </section>
+    </main>
+</div>

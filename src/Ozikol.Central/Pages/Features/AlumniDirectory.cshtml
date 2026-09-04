@@ -1,0 +1,191 @@
+@page "/features/alumni-directory"
+@model Ozikol.Central.Pages.Features.AlumniDirectoryModel
+@{
+    ViewData["Title"] = "Alumni Networking Directory - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#people-community">People, Community & Collaboration</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Alumni Networking Directory</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg></div>
+<div class="oz-feat-suite-pill">
+                    People, Community & Collaboration
+                </div>
+                <h1 class="oz-feat-title">
+                    Alumni Networking Directory
+                </h1>
+                <p class="oz-feat-lead">
+                    Searchable alumni registry with chapter and graduation filters.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Maintain lifelong engagement with former members, graduates, and alumni. Provides a searchable directory, regional chapter mapping, career milestone tracking, and professional networking channels.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Smart Directory Search</h3>
+                        <p>Filter members by graduation year, industry, current employer, skill tags, or chapter location.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Regional Chapters</h3>
+                        <p>Organize local or international alumni chapters with dedicated bulletin boards and events.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Profile & Career History</h3>
+                        <p>Alumni update LinkedIn links, career milestones, mentorship availability, and contact preferences.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Verification & Accreditation</h3>
+                        <p>Admins verify member credentials and graduation records to maintain directory integrity.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete control, configuration, audit reporting, and supervisory approval queues.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Verify alumni profiles
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Manage regional chapters
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Publish alumni news & bulletins
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Export directory datasets
+                            </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Streamlined interfaces optimized for rapid collaboration and daily task execution.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Browse alumni directory
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Connect with industry peers
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Update professional bio
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Join local chapters
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            1
+                        </div>
+                        <h3 class="oz-feat-step-title">Profile Onboarding</h3>
+                        <p class="oz-feat-step-desc">Alumni claim their profile and submit graduation/career details for verification.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            2
+                        </div>
+                        <h3 class="oz-feat-step-title">Directory Search</h3>
+                        <p class="oz-feat-step-desc">Members search for mentors, hiring managers, and regional contacts.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            3
+                        </div>
+                        <h3 class="oz-feat-step-title">Network & Collaborate</h3>
+                        <p class="oz-feat-step-desc">Participate in chapter events and alumni community initiatives.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>50</h2>
+            <p>36</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
+                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+

@@ -1,0 +1,191 @@
+@page "/features/appointment-booking"
+@model Ozikol.Central.Pages.Features.AppointmentBookingModel
+@{
+    ViewData["Title"] = "Appointment Booking & Calendar - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#workforce-scheduling">Workforce, Rota & Scheduling</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Appointment Booking & Calendar</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></div>
+<div class="oz-feat-suite-pill">
+                    Workforce, Rota & Scheduling
+                </div>
+                <h1 class="oz-feat-title">
+                    Appointment Booking & Calendar
+                </h1>
+                <p class="oz-feat-lead">
+                    Automated 1-on-1 and group appointment scheduling with Google Meet, Zoom, and paid bookings.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Eliminate the back-and-forth email scheduling. Allow clients, members, or team partners to book appointments directly based on real-time calendar availability. Includes automated Google Meet, Zoom, and Microsoft Teams video link generation, paid consultation checkouts, and automated email/SMS reminders.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Self-Service Booking Pages</h3>
+                        <p>Share personalized booking links or embed booking widgets with customized time slot duration.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Google Meet & Zoom Integration</h3>
+                        <p>Automatically generate and attach unique video conference links to calendar invitations upon confirmation.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Paid Consultation Checkouts</h3>
+                        <p>Collect upfront session fees or deposits via credit card, Stripe, or local gateways before booking confirmation.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Buffer Times & Daily Limits</h3>
+                        <p>Configure automatic 15-minute buffers between calls, max appointments per day, and minimum notice rules.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete control, configuration, audit reporting, and supervisory approval queues.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Manage team calendar availability
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Configure appointment types & pricing
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> View master booking roster
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Sync with Google/Outlook calendars
+                            </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Streamlined interfaces optimized for rapid collaboration and daily task execution.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Share personalized booking link
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Set custom working hours
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Accept/reschedule bookings
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> View upcoming confirmed calls
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            1
+                        </div>
+                        <h3 class="oz-feat-step-title">Set Availability</h3>
+                        <p class="oz-feat-step-desc">Connect your Google/Outlook calendar, define appointment durations, and set buffer rules.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            2
+                        </div>
+                        <h3 class="oz-feat-step-title">Client Books</h3>
+                        <p class="oz-feat-step-desc">Client picks an available time slot, answers custom questions, and pays if required.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            3
+                        </div>
+                        <h3 class="oz-feat-step-title">Meet & Follow Up</h3>
+                        <p class="oz-feat-step-desc">Both parties receive calendar invites with video links and automated SMS/email reminders.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>50</h2>
+            <p>36</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
+                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+

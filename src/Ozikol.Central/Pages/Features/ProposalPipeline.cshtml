@@ -1,0 +1,191 @@
+@page "/features/proposal-pipeline"
+@model Ozikol.Central.Pages.Features.ProposalPipelineModel
+@{
+    ViewData["Title"] = "Proposal Pipeline & Contracts - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#finance-revenue">Finance & Commercial Revenue</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Proposal Pipeline & Contracts</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+<div class="oz-feat-suite-pill">
+                    Finance & Commercial Revenue
+                </div>
+                <h1 class="oz-feat-title">
+                    Proposal Pipeline & Contracts
+                </h1>
+                <p class="oz-feat-lead">
+                    Commercial and grant proposal tracking across review stages.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Close more deals and win more funding. Manage commercial sales opportunities, partnership pitches, and grant proposals on an interactive Kanban board with deal values, win probability, and contract archives.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Visual Deal Kanban</h3>
+                        <p>Track proposals across stages: Lead, Draft, Internal Review, Submitted, Won, and Lost.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Win/Loss Analytics</h3>
+                        <p>Analyze win rates, average deal size, sales cycle duration, and lost-reason trends.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Multi-Writer Collaboration</h3>
+                        <p>Assign proposal sections to technical experts and track review completion.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Contract & Document Archive</h3>
+                        <p>Store final signed agreements, terms, and renewal milestones in one central place.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete control, configuration, audit reporting, and supervisory approval queues.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Pipeline stage customization
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Sales forecasting metrics
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Assign proposal writers
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Contract repository
+                            </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Streamlined interfaces optimized for rapid collaboration and daily task execution.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> View assigned proposal sections
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Upload proposal drafts
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Log client feedback
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Track deal milestones
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            1
+                        </div>
+                        <h3 class="oz-feat-step-title">Log Opportunity</h3>
+                        <p class="oz-feat-step-desc">Create a proposal card with estimated value and submission deadline.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            2
+                        </div>
+                        <h3 class="oz-feat-step-title">Draft & Review</h3>
+                        <p class="oz-feat-step-desc">Collaborate on proposal content and obtain internal sign-off.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            3
+                        </div>
+                        <h3 class="oz-feat-step-title">Win & Archive</h3>
+                        <p class="oz-feat-step-desc">Record final decision and hand off signed contracts for execution.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>50</h2>
+            <p>36</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
+                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+

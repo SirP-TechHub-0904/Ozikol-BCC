@@ -2,6 +2,8 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;

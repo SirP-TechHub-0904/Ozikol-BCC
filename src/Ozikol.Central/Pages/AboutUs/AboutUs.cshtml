@@ -1,0 +1,123 @@
+@page "/about-us"
+@model Ozikol.Central.Pages.AboutUsModel
+@{
+    ViewData["Title"] = "About Us - Our Story, Mission & Vision - Ozikol";
+}
+
+<div class="about-page">
+    <!-- Hero Banner -->
+    <section class="oz-about-banner">
+        <div class="oz-hub-banner-wrap">
+            <div class="oz-hub-badge">
+                <span class="oz-hub-badge-dot"></span>
+                We Are Ozikol
+            </div>
+            <h1 class="oz-hub-banner-title">
+                Unifying How Modern Organizations <span>Operate, Collaborate &amp; Scale</span>
+            </h1>
+            <p class="oz-hub-banner-desc">
+                From workforce shift rotas and demographic census registries to verifiable digital certification, mass messaging, and AI workflows — Ozikol delivers an all-in-one modular cloud ecosystem.
+            </p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton"  />
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Platform Metrics -->
+    <section class="oz-about-metrics-bar">
+        <div class="container">
+            <div class="oz-about-metrics-grid">
+                <div>
+                    <div class="oz-about-metric-num oz-about-metric-num--primary">37</div>
+                    <div class="oz-about-metric-label">Modular Capabilities</div>
+                </div>
+                <div>
+                    <div class="oz-about-metric-num">9</div>
+                    <div class="oz-about-metric-label">Enterprise Suites</div>
+                </div>
+                <div>
+                    <div class="oz-about-metric-num oz-about-metric-num--primary">1-Click</div>
+                    <div class="oz-about-metric-label">UI Template Installs</div>
+                </div>
+                <div>
+                    <div class="oz-about-metric-num">99.9%</div>
+                    <div class="oz-about-metric-label">Cloud Availability</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container oz-about-mission-section">
+        <!-- Mission Section -->
+        <section class="oz-about-mission-section">
+            <div class="oz-about-mission-grid">
+                <div class="oz-about-mission-left">
+                    <div class="oz-feat-tagline">Our Purpose</div>
+                    <h2>Why We Built Ozikol</h2>
+                    <p>
+                        Modern businesses and institutions are tired of paying for 10+ disjointed SaaS subscriptions that do not talk to each other. Managing staff rotas in one tool, sending announcements in another, running events elsewhere, and manually verifying credentials leads to fragmented data and lost time.
+                    </p>
+                    <p>
+                        Ozikol solves this by providing a unified single pane of glass. You activate only the modules your organization needs today, scale seamlessly as you grow, and keep total ownership of your data.
+                    </p>
+                </div>
+                <div class="oz-about-box">
+                    <h3>The Ozikol Advantage</h3>
+                    <ul>
+                        <li>
+                            <span class="oz-about-box-check">&#10003;</span>
+                            <span><strong>Zero Vendor Bloat:</strong> Enable or disable any of the 37 features on demand.</span>
+                        </li>
+                        <li>
+                            <span class="oz-about-box-check">&#10003;</span>
+                            <span><strong>UI Marketplace:</strong> 1-click install responsive page blueprints and sections.</span>
+                        </li>
+                        <li>
+                            <span class="oz-about-box-check">&#10003;</span>
+                            <span><strong>AI-Assisted Workflows:</strong> Bring Your Own Key (BYOK) with strict data privacy.</span>
+                        </li>
+                        <li>
+                            <span class="oz-about-box-check">&#10003;</span>
+                            <span><strong>Your Data, Your Ownership:</strong> 1-click data export anytime in standard formats.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Discover More Links -->
+        <section class="oz-about-cards-section">
+            <div class="oz-feat-section-header">
+                <h2>Explore More About Ozikol</h2>
+                <p class="oz-feat-card-desc">Discover our leadership, culture, global hubs, and security standards.</p>
+            </div>
+            <div class="oz-about-cards-grid">
+                <a href="/about-us/leadership" class="oz-about-sub-card">
+                    <div class="oz-about-sub-title">Leadership &amp; Team &rarr;</div>
+                    <div class="oz-about-sub-desc">Meet the executives and innovators guiding the Ozikol platform.</div>
+                </a>
+                <a href="/about-us/culture" class="oz-about-sub-card">
+                    <div class="oz-about-sub-title">Core Values &amp; Culture &rarr;</div>
+                    <div class="oz-about-sub-desc">The principles and ethos behind 'The Ozikol Way'.</div>
+                </a>
+                <a href="/about-us/security" class="oz-about-sub-card">
+                    <div class="oz-about-sub-title">Security &amp; Peace of Mind &rarr;</div>
+                    <div class="oz-about-sub-desc">2FA, role permissions, daily backups, and privacy standards.</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>Deploy Ozikol for Your Organization</h2>
+            <p>Experience the power of a modular platform tailored precisely to your operational needs.</p>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                <partial name="_ExploreFeaturesButton"  />
+            </div>
+        </section>
+    </main>
+</div>

@@ -1,0 +1,191 @@
+@page "/features/learning-management"
+@model Ozikol.Central.Pages.Features.LearningManagementModel
+@{
+    ViewData["Title"] = "Learning Management System (LMS) - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#compliance-certification">Compliance, Learning & Certification</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Learning Management System (LMS)</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></div>
+<div class="oz-feat-suite-pill">
+                    Compliance, Learning & Certification
+                </div>
+                <h1 class="oz-feat-title">
+                    Learning Management System (LMS)
+                </h1>
+                <p class="oz-feat-lead">
+                    Multimedia video courses, quizzes, and learner tracking.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        
+        <!-- Overview & Context -->
+        <section class="oz-feat-overview-card">
+            <h2>Feature Overview</h2>
+            <p>
+                Upskill your workforce and educate your members. Create multimedia courses, upload video lessons, set interactive compliance quizzes, track learner progress, and issue verified completion certificates.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Built for Performance</div>
+                <h2>Core Capabilities</h2>
+                <p class="oz-feat-card-desc">Everything you need to operate efficiently without complex third-party bolt-ons.</p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Course & Lesson Builder</h3>
+                        <p>Create modular training curriculums with video streams, PDFs, text, and external links.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Interactive Quizzes & Tests</h3>
+                        <p>Multiple-choice, true/false, and open-ended quizzes with customizable passing scores.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Learner Progress Tracking</h3>
+                        <p>Track individual completion percentage, quiz scores, and time spent on lessons.</p>
+                    </div>
+                    <div class="oz-feat-card">
+                        <div class="oz-feat-card-icon">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <h3>Automated Course Certificates</h3>
+                        <p>Automatically award a verified digital certificate upon achieving passing grades.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Dual View: Console vs Workspace -->
+        <section class="oz-feat-dual-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Tailored User Experiences</div>
+                <h2>Console & Workspace Views</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-dual-grid dual-view-grid">
+                <div class="oz-feat-console-card">
+                    <div class="oz-feat-suite-pill">
+                        Console View (Admins & Managers)
+                    </div>
+                    <h3 class="oz-feat-console-title">Administrative Oversight</h3>
+                    <p class="oz-feat-console-desc">Complete control, configuration, audit reporting, and supervisory approval queues.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Build courses & quizzes
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Enroll learner cohorts
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Track completion compliance
+                            </li>
+                            <li class="oz-feat-list-item-dark">
+                                <span class="oz-feat-check">&#10003;</span> Manage course library
+                            </li>
+                    </ul>
+                </div>
+                <div class="oz-feat-workspace-card">
+                    <div class="oz-feat-suite-pill">
+                        Workspace View (Employees & Members)
+                    </div>
+                    <h3 class="oz-feat-workspace-title">User Self-Service</h3>
+                    <p class="oz-feat-workspace-desc">Streamlined interfaces optimized for rapid collaboration and daily task execution.</p>
+                    <ul class="oz-feat-list">
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Browse course catalog
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Watch video lessons
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Complete interactive quizzes
+                            </li>
+                            <li class="oz-feat-list-item-light">
+                                <span class="oz-feat-check">&#10003;</span> Download earned certificates
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3-Step Workflow -->
+        <section class="oz-feat-steps-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Process Flow</div>
+                <h2>How It Works</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            1
+                        </div>
+                        <h3 class="oz-feat-step-title">Create Curriculum</h3>
+                        <p class="oz-feat-step-desc">Upload video lessons, attach reading materials, and create quizzes.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            2
+                        </div>
+                        <h3 class="oz-feat-step-title">Enroll Learners</h3>
+                        <p class="oz-feat-step-desc">Assign mandatory compliance training or open courses for self-enrollment.</p>
+                    </div>
+                    <div class="oz-feat-step-card">
+                        <div class="oz-feat-step-num">
+                            3
+                        </div>
+                        <h3 class="oz-feat-step-title">Certify Completion</h3>
+                        <p class="oz-feat-step-desc">Learners pass quizzes and earn verifiable completion credentials.</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <h2>50</h2>
+            <p>36</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Sales</a>
+                <a href="/features" class="btn btn-secondary--alt">View All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+

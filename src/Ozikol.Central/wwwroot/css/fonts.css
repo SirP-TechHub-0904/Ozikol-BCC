@@ -1,0 +1,70 @@
+/* ==========================================================================
+   UNIFORM GLOBAL TYPOGRAPHY SYSTEM - OZIKOL BCP
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --font-family-sans: 'Inter', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-family-heading: var(--font-family-sans);
+    --font-family-body: var(--font-family-sans);
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* Enforce uniform font across all HTML elements */
+*, *::before, *::after {
+    font-family: var(--font-family-sans);
+}
+
+html, body {
+    font-family: var(--font-family-sans) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-heading) !important;
+    letter-spacing: -0.02em;
+}
+
+p, a, span, button, input, select, textarea, label, table, th, td, li, article, section, div {
+    font-family: var(--font-family-body) !important;
+}
+
+code, kbd, samp, pre {
+    font-family: var(--font-family-mono) !important;
+}
+
+/* Preserve dedicated Icon fonts */
+.material-icons, [class*="material-icons"] {
+    font-family: 'Material Icons' !important;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+.icon, [class^="icon-"], [class*=" icon-"] {
+    font-family: 'icomoon' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.swiper-button-prev:after, .swiper-button-next:after {
+    font-family: swiper-icons !important;
+}

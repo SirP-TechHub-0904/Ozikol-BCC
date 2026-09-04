@@ -1,70 +1,36 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.Persistence.EF.SQL;
+using Microsoft.Extensions.DependencyInjection;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol.MasterPersistence.EF.MasterSQL.Seeding;
 
-namespace Ozikol.Central.Services;
-
-public static class CentralIdentityDataSeeder
+namespace Ozikol.Central.Services
 {
-    public static async Task SeedCentralRolesAndSuperAdminAsync(IServiceProvider serviceProvider)
+    public static class CentralIdentityDataSeeder
     {
-        using var scope = serviceProvider.CreateScope();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<CentralRole>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<CentralUser>>();
-        var dbContext = scope.ServiceProvider.GetRequiredService<MasterCatalogDbContext>();
-
-        // Ensure Master DB is reachable before seeding
-        try
+        public static async Task SeedCentralRolesAndSuperAdminAsync(IServiceProvider serviceProvider)
         {
-            if (!await dbContext.Database.CanConnectAsync())
+            using var scope = serviceProvider.CreateScope();
+            var roleManager = scope.ServiceProvider.GetService<RoleManager<CentralRole>>();
+            var userManager = scope.ServiceProvider.GetService<UserManager<CentralUser>>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<MasterCatalogDbContext>();
+
+            try
             {
-                return;
+                if (!await dbContext.Database.CanConnectAsync())
+                {
+                    return;
+                }
+
+                // Only seed Central Operator Roles and Default SuperAdmin
+                await MasterCatalogDataSeeder.SeedRolesAndSuperAdminAsync(dbContext, roleManager, userManager);
             }
-        }
-        catch
-        {
-            return;
-        }
-
-        // 1. Seed 4-Tier Roles
-        var roles = new[]
-        {
-            new CentralRole("SuperAdmin", "Full system governance, database fleet migrations, operator access"),
-            new CentralRole("Admin", "Tenant workspace governance, subscription status, support"),
-            new CentralRole("TemplateManager", "Marketplace templates, layout blueprints, review moderations"),
-            new CentralRole("ReferralManager", "Affiliate partner network, commission tiers, payout tracking")
-        };
-
-        foreach (var role in roles)
-        {
-            if (!await roleManager.RoleExistsAsync(role.Name!))
+            catch
             {
-                await roleManager.CreateAsync(role);
-            }
-        }
-
-        // 2. Seed Default SuperAdmin Operator
-        const string superAdminEmail = "superadmin@ozikol.cloud";
-        var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
-        if (existingUser == null)
-        {
-            var superAdmin = new CentralUser
-            {
-                UserName = superAdminEmail,
-                Email = superAdminEmail,
-                EmailConfirmed = true,
-                FirstName = "Ozikol",
-                LastName = "SuperAdmin",
-                Department = "Global DevOps & Architecture",
-                IsActive = true,
-                CreatedUtc = DateTime.UtcNow
-            };
-
-            var createResult = await userManager.CreateAsync(superAdmin, "SuperAdmin@Ozikol2026!");
-            if (createResult.Succeeded)
-            {
-                await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                // Silently bypass if DB is not yet created during design-time
             }
         }
     }

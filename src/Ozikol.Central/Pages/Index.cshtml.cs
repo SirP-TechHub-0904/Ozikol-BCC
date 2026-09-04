@@ -1,36 +1,19 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using Ozikol_BCC.Persistence.EF.SQL;
 
-namespace Ozikol.Central.Pages;
-
-public class IndexModel : PageModel
+namespace Ozikol.Central.Pages
 {
-    private readonly MasterCatalogDbContext _masterCatalogDbContext;
-
-    public int TotalActiveTenants { get; set; }
-    public int TotalMarketplaceTemplates { get; set; }
-
-    public IndexModel(MasterCatalogDbContext masterCatalogDbContext)
+    public class IndexModel : PageModel
     {
-        _masterCatalogDbContext = masterCatalogDbContext;
-    }
+        private readonly ILogger<IndexModel> _logger;
 
-    public async Task OnGetAsync()
-    {
-        try
+        public IndexModel(ILogger<IndexModel> logger)
         {
-            if (await _masterCatalogDbContext.Database.CanConnectAsync())
-            {
-                TotalActiveTenants = await _masterCatalogDbContext.MasterTenantCatalogs.CountAsync(t => t.IsActive);
-                TotalMarketplaceTemplates = await _masterCatalogDbContext.MasterMarketplaceTemplates.CountAsync(t => t.IsActive);
-            }
+            _logger = logger;
         }
-        catch
+
+        public void OnGet()
         {
-            // Graceful fallback for marketing display
-            TotalActiveTenants = 0;
-            TotalMarketplaceTemplates = 0;
         }
     }
 }

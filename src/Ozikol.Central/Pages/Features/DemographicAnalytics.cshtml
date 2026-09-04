@@ -1,0 +1,124 @@
+@page "/features/demographic-analytics"
+@model Ozikol.Central.Pages.Features.DemographicAnalyticsModel
+@{
+    ViewData["Title"] = "Demographic Analytics & Population Reports - Ozikol BCP Feature";
+    ViewData["MetaDescription"] = "Transform raw census records into interactive population pyramids, dependency ratios, socioeconomic heatmaps, and downloadable statistical census gazettes.";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb & Back Link -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#demographics-census">Demographics & Civic Census</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Demographic Analytics & Reports</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-icon-badge">
+                    <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <div class="oz-feat-suite-pill">
+                    Suite 09 &bull; Demographics & Civic Census
+                </div>
+                <h1 class="oz-feat-title">
+                    Demographic Analytics & Population Reports
+                </h1>
+                <p class="oz-feat-lead">
+                    Turn raw census surveys into dynamic demographic intelligence. Visualize population pyramids, dependency ratios, socioeconomic brackets, and generate official 1-click statistical gazettes.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
+                    <a href="#capabilities" class="btn btn-secondary--alt">Explore Capabilities</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Body -->
+    <main class="oz-feat-body">
+        <section class="oz-feat-overview-card">
+            <h2>Analytics Overview</h2>
+            <p>
+                A census is only as good as the insights it delivers. Ozikol's Demographic Analytics engine aggregates thousands of household data points into live, interactive dashboards. Executive committees, town planners, and association trustees gain crystal-clear clarity into population growth trends, age distributions, workforce skills, and civic needs.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-capabilities-section">
+            <div class="oz-feat-section-header">
+                <div class="oz-feat-tagline">Actionable Intelligence</div>
+                <h2>Key Analytics Capabilities</h2>
+                <p class="oz-feat-card-desc"></p>
+            </div>
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Interactive Population Pyramids</h3>
+                    <p>Visualize gender balance and age brackets from toddlers to octogenarians with dynamic population pyramid graphs.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <h3>Dependency Ratio Calculation</h3>
+                    <p>Automatically calculate youth and elderly dependency ratios to plan social infrastructure, youth programs, and community care.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Workforce & Skill Inventory</h3>
+                    <p>Analyze employment rates, professions, and specialized vocational skills across your community for local job initiatives.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <h3>Geographic Density Heatmaps</h3>
+                    <p>Map population density across neighborhoods, identifying congested residential zones, utility demands, and under-served clusters.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <h3>1-Click Official Census Gazette</h3>
+                    <p>Generate beautifully formatted, publication-grade PDF census reports with executive summaries, charts, and official certifications.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Inter-Census Growth Trends</h3>
+                    <p>Compare past census years to current numbers to measure annual growth rates, inward migration, and resident retention over time.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="oz-feat-cta-box">
+            <h2>Get real-time demographic intelligence today</h2>
+            <p>Discover how Ozikol transforms community data into high-impact visual intelligence.</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/get-started" class="btn btn-primary">Start Free Trial</a>
+                <a href="/support-hub/contact-sales" class="btn btn-secondary--alt">Book a Live Demo</a>
+            </div>
+        </section>
+    </main>
+</div>

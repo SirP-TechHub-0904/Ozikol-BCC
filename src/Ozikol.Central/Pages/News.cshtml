@@ -1,0 +1,86 @@
+@page "/news"
+@model Ozikol.Central.Pages.NewsModel
+@{
+    ViewData["Title"] = "Company News & Product Releases - Ozikol";
+}
+
+<div class="news-page">
+    <!-- Hero Banner -->
+    <section class="ozikol-hero-banner branded-banner branded-banner--evo">
+        <div class="ozikol-hero-container">
+            <div class="ozikol-hero-badge">
+                <span class="ozikol-hero-dot"></span>
+                Ozikol Newsroom
+            </div>
+            <h1 class="ozikol-hero-title">
+                Company News & <span style="color: var(--ozikol-primary);">Platform Releases</span>
+            </h1>
+            <p class="ozikol-hero-desc">
+                Stay informed on new feature releases, UI template updates, partner announcements, and organizational insights.
+            </p>
+            <div class="ozikol-hero-actions">
+                <a href="#articles" class="btn btn-primary">Read Latest Stories</a>
+                <a href="/about-us" class="btn btn-secondary--alt">About Ozikol</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- News Grid -->
+    <main id="articles" class="container" style="max-width: 1100px; margin: 50px auto; padding: 0 20px;">
+        <div class="ozikol-grid-3">
+            <!-- Story 1 -->
+            <article class="news-article-card">
+                <div class="news-card-thumb" style="background: #0f172a;">
+                    Ozikol BCP 2.0 Launch
+                </div>
+                <div class="news-card-body">
+                    <span class="news-card-tag">Product Release</span>
+                    <h3 class="news-card-title">Introducing 33 Modular Capabilities Across 8 Cloud Suites</h3>
+                    <p class="news-card-excerpt">
+                        A major milestone unifying workforce rotas, verifiable certificates, bio links, mass communications, and AI Smart Assist into one platform.
+                    </p>
+                    <div class="news-card-date">September 2026</div>
+                </div>
+            </article>
+
+            <!-- Story 2 -->
+            <article class="news-article-card">
+                <div class="news-card-thumb" style="background: #1e1b4b;">
+                    UI Marketplace Ecosystem
+                </div>
+                <div class="news-card-body">
+                    <span class="news-card-tag" style="color: #6366f1;">Ecosystem</span>
+                    <h3 class="news-card-title">Ozikol Launches Pre-Built Page Template Marketplace</h3>
+                    <p class="news-card-excerpt">
+                        Organizations can now install responsive glassmorphism navbars, split hero showcases, and pricing matrix components with 1 click.
+                    </p>
+                    <div class="news-card-date">September 2026</div>
+                </div>
+            </article>
+
+            <!-- Story 3 -->
+            <article class="news-article-card">
+                <div class="news-card-thumb" style="background: #064e3b;">
+                    AI Privacy & BYOK
+                </div>
+                <div class="news-card-body">
+                    <span class="news-card-tag" style="color: #059669;">Security Standard</span>
+                    <h3 class="news-card-title">Responsible AI: Direct API Keys & Zero Model Training</h3>
+                    <p class="news-card-excerpt">
+                        Announcing BYOK architecture ensuring complete enterprise data privacy across automated AI content and operations tools.
+                    </p>
+                    <div class="news-card-date">August 2026</div>
+                </div>
+            </article>
+        </div>
+
+        <section class="ozikol-bottom-cta">
+            <h2>Stay in the loop with Ozikol</h2>
+            <p>Subscribe to receive major product releases and engineering updates directly to your inbox.</p>
+            <div class="ozikol-hero-actions">
+                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Press & Media</a>
+                <a href="/about-us" class="btn btn-secondary--alt">About Us</a>
+            </div>
+        </section>
+    </main>
+</div>

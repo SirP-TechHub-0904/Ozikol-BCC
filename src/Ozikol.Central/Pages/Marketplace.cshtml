@@ -1,71 +1,698 @@
-@page
+@page "/marketplace"
 @model Ozikol.Central.Pages.MarketplaceModel
 @{
-    ViewData["Title"] = "Template & Layout Marketplace - Ozikol BCC Cloud";
+    ViewData["Title"] = "UI Marketplace - Blueprints & Pre-Built Page Sections";
 }
 
-<div class="marketing-page">
-    <section class="page-hero-section">
-        <div class="marketing-container">
-            <div class="hero-badge" style="margin: 0 auto 12px auto;">
-                <span class="badge-dot"></span>
-                <span>CENTRAL TEMPLATE MARKETPLACE</span>
+<div class="marketplace-page">
+    <!-- Hero Banner -->
+    <section class="branded-banner branded-banner--evo" style="background: linear-gradient(135deg, #090d16 0%, #150f24 50%, #1f0817 100%); color: #ffffff; padding: 75px 0 55px 0; text-align: center; position: relative; overflow: hidden;">
+        <div class="container" style="position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 0 20px;">
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(229, 23, 63, 0.15); border: 1px solid rgba(229, 23, 63, 0.4); border-radius: 9999px; padding: 6px 16px; margin-bottom: 20px; font-size: 13.5px; font-weight: 700; color: #ff5277; text-transform: uppercase; letter-spacing: 0.05em;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #e5173f; border-radius: 50%;"></span>
+                Ozikol Cloud UI Marketplace
             </div>
-            <h1 class="page-hero-title">Custom Website & Dashboard Layout Blueprints</h1>
-            <p class="page-hero-sub">
-                Browse pre-built executive dashboards, digital storefronts, and service CMS templates. Install blueprints directly into your tenant workspace with a single click.
+            <h1 style="font-size: 46px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; letter-spacing: -0.03em;">
+                Pre-Built UI Components & <span style="color: #e5173f;">Page Templates</span>
+            </h1>
+            <p style="font-size: 18px; line-height: 1.6; color: #cbd5e1; max-width: 740px; margin: 0 auto 30px auto;">
+                Instant-install layout blueprints, sticky navigation bars, responsive hero sections, pricing tables, and multi-column footers ready for your workspace.
             </p>
+            <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <a href="#marketplace-grid" class="btn btn-primary" style="padding: 13px 28px; font-size: 15px;">Browse 8 Templates</a>
+                <a href="#how-it-works" class="btn btn-secondary--alt" style="padding: 13px 28px; font-size: 15px; border: 1px solid rgba(255,255,255,0.3); color: #fff;">How It Works</a>
+            </div>
         </div>
     </section>
 
-    <section class="section-marketing">
-        <div class="marketing-container">
-            <div class="marketplace-grid">
-                @foreach (var template in Model.Templates)
-                {
-                    <div class="marketplace-card">
-                        <div class="template-preview-banner">
-                            <div class="template-badge-tag">@template.Tag</div>
-                            @if (!string.IsNullOrEmpty(template.Badge))
-                            {
-                                <div class="template-version font-mono">@template.Badge</div>
-                            }
-                            <div class="template-code-badge font-mono">@template.VariantCode</div>
-                        </div>
+    <!-- How the UI Marketplace Works -->
+    <section id="how-it-works" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 48px 0;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div style="text-align: center; margin-bottom: 36px;">
+                <div style="font-size: 12px; font-weight: 700; color: #e5173f; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Seamless Integration</div>
+                <h2 style="font-size: 28px; font-weight: 800; color: #0f172a; margin: 0;">How the UI Marketplace Works</h2>
+            </div>
+            <div class="how-it-works-grid">
+                <div class="step-card">
+                    <div class="step-badge">01</div>
+                    <h3>Browse & Preview</h3>
+                    <p>Filter through 7 UI categories including navigation bars, split heroes, bento grids, and responsive footers.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-badge">02</div>
+                    <h3>1-Click Installation</h3>
+                    <p>Click the <strong>Install Template</strong> button on any blueprint to automatically import the HTML/CSS structure into your workspace.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-badge">03</div>
+                    <h3>Customize & Launch</h3>
+                    <p>Adjust colors, fonts, and content copy to match your organization's brand identity, then publish live in seconds.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-                        <div class="template-body">
-                            <div class="template-header-row">
-                                <h3 class="template-title">@template.Name</h3>
-                                <span class="template-price-pill price-free">
-                                    Included in Plan
-                                </span>
-                            </div>
+    <!-- Category Filter Bar -->
+    <nav style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 70px; z-index: 30; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+        <div class="container" style="max-width: 1240px; margin: 0 auto; padding: 14px 20px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
+            <div style="display: flex; gap: 8px; align-items: center;" id="categoryTabs">
+                <button type="button" class="cat-filter-btn active" data-filter="all">All Templates (8)</button>
+                <button type="button" class="cat-filter-btn" data-filter="menu">Menu / Nav</button>
+                <button type="button" class="cat-filter-btn" data-filter="hero">Hero / Sliders</button>
+                <button type="button" class="cat-filter-btn" data-filter="bodysections">Body Sections</button>
+                <button type="button" class="cat-filter-btn" data-filter="marquee">Marquee & Tickers</button>
+                <button type="button" class="cat-filter-btn" data-filter="contactus">Contact & Booking</button>
+                <button type="button" class="cat-filter-btn" data-filter="footer">Footers</button>
+            </div>
+        </div>
+    </nav>
 
-                            <p class="template-desc">@template.Description</p>
-
-                            <div class="template-meta-row">
-                                <span class="template-author">@template.PreviewTitle</span>
-                                <span class="template-category"><code>@template.CategoryKey</code></span>
-                            </div>
-
-                            <div class="template-card-footer">
-                                <a asp-page="/Signup" class="btn-template-install">
-                                    <span>Launch with this Template</span>
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                </a>
-                            </div>
-                        </div>
+    <!-- Template Grid Section -->
+    <main id="marketplace-grid" class="container" style="max-width: 1240px; margin: 40px auto; padding: 0 20px;">
+        <div class="marketplace-grid-layout">
+            <article class="template-card" data-category="menu">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80" alt="Apex Glassmorphism Sticky Navbar" loading="lazy" />
+                    <span class="template-card__badge">Popular</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Menu / Navigation</div>
+                    <h3 class="template-card__title">Apex Glassmorphism Sticky Navbar</h3>
+                    <p class="template-card__desc">Translucent frosted glass sticky navigation with company branding, 5 primary links, user profile badge, and call-to-action button.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Backdrop Blur</span><span class="tpl-tag">Sticky Header</span><span class="tpl-tag">Responsive Drawer</span>
                     </div>
-                }
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Apex Glassmorphism Sticky Navbar">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Apex Glassmorphism Sticky Navbar" 
+                                data-category="Menu / Navigation" 
+                                data-desc="Translucent frosted glass sticky navigation with company branding, 5 primary links, user profile badge, and call-to-action button." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; min-height: 420px; padding: 0; color: #0f172a;&quot;>             <div style=&quot;position: sticky; top: 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.85); border-bottom: 1px solid #e2e8f0; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);&quot;>                 <div style=&quot;font-weight: 800; font-size: 20px; color: #0f172a; display: flex; align-items: center; gap: 8px;&quot;>                     <span style=&quot;display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e5173f;&quot;></span>                     ApexCloud                 </div>                 <div style=&quot;display: flex; gap: 22px; font-size: 14px; font-weight: 600;&quot;>                     <a href=&quot;#&quot; style=&quot;color: #e5173f; text-decoration: none;&quot;>Features</a>                     <a href=&quot;#&quot; style=&quot;color: #475569; text-decoration: none;&quot;>Solutions</a>                     <a href=&quot;#&quot; style=&quot;color: #475569; text-decoration: none;&quot;>Pricing</a>                     <a href=&quot;#&quot; style=&quot;color: #475569; text-decoration: none;&quot;>Docs</a>                 </div>                 <div style=&quot;display: flex; gap: 10px;&quot;>                     <button style=&quot;background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;&quot;>Sign In</button>                     <button style=&quot;background: #e5173f; color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;&quot;>Get Started &rarr;</button>                 </div>             </div>             <div style=&quot;padding: 70px 24px; text-align: center;&quot;>                 <h1 style=&quot;font-size: 34px; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.02em;&quot;>Translucent Sticky Navigation</h1>                 <p style=&quot;color: #64748b; font-size: 16px; max-width: 520px; margin: 0 auto 24px auto;&quot;>Scrolls with page content and renders a high-clarity frosted glass blur over underlying elements.</p>                 <button style=&quot;background: #0f172a; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 14px;&quot;>Explore Interactive Showcase</button>             </div>         </div>         "
+                                data-html-code="<header class=&quot;apex-glass-nav&quot;>&#10;  <div class=&quot;container nav-flex&quot;>&#10;    <a href=&quot;/&quot; class=&quot;nav-brand&quot;>ApexCloud</a>&#10;    <nav class=&quot;nav-links&quot;>&#10;      <a href=&quot;#features&quot; class=&quot;active&quot;>Features</a>&#10;      <a href=&quot;#solutions&quot;>Solutions</a>&#10;      <a href=&quot;#pricing&quot;>Pricing</a>&#10;      <a href=&quot;#docs&quot;>Docs</a>&#10;    </nav>&#10;    <div class=&quot;nav-actions&quot;>&#10;      <a href=&quot;/login&quot; class=&quot;btn-login&quot;>Sign In</a>&#10;      <a href=&quot;/signup&quot; class=&quot;btn-primary&quot;>Get Started &rarr;</a>&#10;    </div>&#10;  </div>&#10;</header>"
+                                data-css-code=".apex-glass-nav {&#10;  position: sticky;&#10;  top: 0;&#10;  z-index: 1000;&#10;  backdrop-filter: blur(16px);&#10;  -webkit-backdrop-filter: blur(16px);&#10;  background: rgba(255, 255, 255, 0.85);&#10;  border-bottom: 1px solid #e2e8f0;&#10;  padding: 16px 0;&#10;}&#10;.nav-flex {&#10;  display: flex;&#10;  align-items: center;&#10;  justify-content: space-between;&#10;}&#10;.nav-links a {&#10;  color: #475569;&#10;  margin: 0 14px;&#10;  text-decoration: none;&#10;  font-weight: 600;&#10;  transition: color 0.2s;&#10;}&#10;.nav-links a.active, .nav-links a:hover {&#10;  color: #e5173f;&#10;}"
+                                data-js-code="document.addEventListener('DOMContentLoaded', () => {&#10;  const header = document.querySelector('.apex-glass-nav');&#10;  window.addEventListener('scroll', () => {&#10;    if (window.scrollY > 20) {&#10;      header.classList.add('is-scrolled');&#10;    } else {&#10;      header.classList.remove('is-scrolled');&#10;    }&#10;  });&#10;});">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="menu">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80" alt="Nexus Enterprise Mega-Menu" loading="lazy" />
+                    <span class="template-card__badge">Enterprise</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Menu / Navigation</div>
+                    <h3 class="template-card__title">Nexus Enterprise Mega-Menu</h3>
+                    <p class="template-card__desc">Multi-column corporate navigation system with featured product highlight cards, category groupings, and direct support status badge.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Mega-Menu</span><span class="tpl-tag">Feature Cards</span><span class="tpl-tag">Multi-Column</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Nexus Enterprise Mega-Menu">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Nexus Enterprise Mega-Menu" 
+                                data-category="Menu / Navigation" 
+                                data-desc="Multi-column corporate navigation system with featured product highlight cards, category groupings, and direct support status badge." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; min-height: 420px; padding: 0; color: #0f172a;&quot;>             <div style=&quot;border-bottom: 1px solid #f1f5f9; padding: 8px 28px; display: flex; justify-content: space-between; font-size: 12px; color: #64748b; background: #f8fafc;&quot;>                 <span>🟢 All Systems Operational • 99.99% Guaranteed SLA</span>                 <span>Global Support: 24/7/365</span>             </div>             <div style=&quot;padding: 18px 28px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; background: #ffffff;&quot;>                 <div style=&quot;font-size: 22px; font-weight: 800; color: #0f172a;&quot;>Nexus<span style=&quot;color: #e5173f;&quot;>Enterprise</span></div>                 <div style=&quot;display: flex; gap: 24px; font-size: 14.5px; font-weight: 600;&quot;>                     <span style=&quot;color: #e5173f; cursor: pointer;&quot;>Platform Suites ▾</span>                     <span style=&quot;color: #334155; cursor: pointer;&quot;>Industries ▾</span>                     <span style=&quot;color: #334155; cursor: pointer;&quot;>Security & Compliance</span>                 </div>                 <button style=&quot;background: #e5173f; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer;&quot;>Book Enterprise Demo</button>             </div>             <div style=&quot;background: #f8fafc; padding: 28px; border-bottom: 2px solid #e5173f;&quot;>                 <div style=&quot;display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 850px; margin: 0 auto;&quot;>                     <div style=&quot;background: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);&quot;>                         <div style=&quot;font-weight: 700; font-size: 14.5px; color: #e5173f; margin-bottom: 4px;&quot;>Workforce & Shifts</div>                         <div style=&quot;font-size: 12.5px; color: #64748b;&quot;>Shift rotas, swaps & digital attendance</div>                     </div>                     <div style=&quot;background: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);&quot;>                         <div style=&quot;font-weight: 700; font-size: 14.5px; color: #0284c7; margin-bottom: 4px;&quot;>Finance & Invoicing</div>                         <div style=&quot;font-size: 12.5px; color: #64748b;&quot;>Automated dues billing & grant ledgers</div>                     </div>                     <div style=&quot;background: #ffffff; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);&quot;>                         <div style=&quot;font-weight: 700; font-size: 14.5px; color: #16a34a; margin-bottom: 4px;&quot;>Compliance & LMS</div>                         <div style=&quot;font-size: 12.5px; color: #64748b;&quot;>Verifiable certs & document vault</div>                     </div>                 </div>             </div>         </div>         "
+                                data-html-code="<div class=&quot;nexus-mega-container&quot;>&#10;  <div class=&quot;top-status-bar&quot;>&#10;    <span>🟢 99.99% Uptime</span>&#10;    <span>Support: 24/7 Global</span>&#10;  </div>&#10;  <nav class=&quot;mega-main-bar&quot;>&#10;    <div class=&quot;brand&quot;>Nexus<span>Enterprise</span></div>&#10;    <div class=&quot;dropdown-trigger&quot;>Platform Suites ▾</div>&#10;    <button class=&quot;btn-demo&quot;>Book Demo</button>&#10;  </nav>&#10;  <div class=&quot;mega-dropdown-grid&quot;>&#10;    <div class=&quot;suite-card&quot;>Workforce & Shifts</div>&#10;    <div class=&quot;suite-card&quot;>Finance & Invoicing</div>&#10;    <div class=&quot;suite-card&quot;>Compliance & LMS</div>&#10;  </div>&#10;</div>"
+                                data-css-code=".nexus-mega-container { background: #ffffff; border-bottom: 2px solid #e5173f; }&#10;.top-status-bar { display: flex; justify-content: space-between; font-size: 12px; background: #f8fafc; padding: 8px 24px; }&#10;.mega-dropdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 24px; background: #f8fafc; }&#10;.suite-card { background: #ffffff; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; }"
+                                data-js-code="document.querySelectorAll('.dropdown-trigger').forEach(el => {&#10;  el.addEventListener('mouseenter', () => {&#10;    document.querySelector('.mega-dropdown-grid').classList.add('is-visible');&#10;  });&#10;});">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="hero">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" alt="Titan Split-Screen Product Showcase" loading="lazy" />
+                    <span class="template-card__badge">High Converting</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Hero / Slider</div>
+                    <h3 class="template-card__title">Titan Split-Screen Product Showcase</h3>
+                    <p class="template-card__desc">High-impact split layout with bold headline, social proof star rating, primary CTA button, and interactive mockup container.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Split Grid</span><span class="tpl-tag">Social Proof</span><span class="tpl-tag">CTA Buttons</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Titan Split-Screen Product Showcase">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Titan Split-Screen Product Showcase" 
+                                data-category="Hero / Slider" 
+                                data-desc="High-impact split layout with bold headline, social proof star rating, primary CTA button, and interactive mockup container." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; color: #0f172a; padding: 60px 30px; border-radius: 12px;&quot;>             <div style=&quot;display: grid; grid-template-columns: 1.2fr 1fr; gap: 36px; align-items: center; max-width: 1000px; margin: 0 auto;&quot;>                 <div>                     <div style=&quot;display: inline-block; background: rgba(229, 23, 63, 0.1); color: #e5173f; padding: 4px 14px; border-radius: 9999px; font-size: 12.5px; font-weight: 700; margin-bottom: 14px;&quot;>Next-Gen Cloud Platform</div>                     <h1 style=&quot;font-size: 36px; font-weight: 800; line-height: 1.15; color: #0f172a; margin-bottom: 16px; letter-spacing: -0.03em;&quot;>Modernize your entire business stack in minutes.</h1>                     <p style=&quot;color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 28px;&quot;>Eliminate fragmented SaaS tools with 33 modular applications built on one scalable architecture.</p>                     <div style=&quot;display: flex; gap: 12px;&quot;>                         <button style=&quot;background: #e5173f; color: #fff; border: none; padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer;&quot;>Start 14-Day Trial &rarr;</button>                         <button style=&quot;background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; padding: 13px 22px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;&quot;>View Live Demo</button>                     </div>                 </div>                 <div style=&quot;background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.06);&quot;>                     <div style=&quot;display: flex; gap: 6px; margin-bottom: 16px;&quot;>                         <span style=&quot;width: 10px; height: 10px; border-radius: 50%; background: #ef4444;&quot;></span>                         <span style=&quot;width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;&quot;></span>                         <span style=&quot;width: 10px; height: 10px; border-radius: 50%; background: #10b981;&quot;></span>                     </div>                     <div style=&quot;background: #ffffff; border: 1px solid #e2e8f0; height: 160px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 14px; font-weight: 600;&quot;>[ Interactive Dashboard Preview Canvas ]</div>                 </div>             </div>         </div>         "
+                                data-html-code="<section class=&quot;titan-hero&quot;>&#10;  <div class=&quot;hero-grid&quot;>&#10;    <div class=&quot;hero-content&quot;>&#10;      <span class=&quot;badge&quot;>Next-Gen Cloud</span>&#10;      <h1>Modernize your business stack in minutes.</h1>&#10;      <p>Eliminate fragmented SaaS tools with 33 modular apps.</p>&#10;      <a href=&quot;/signup&quot; class=&quot;btn-primary&quot;>Start Trial &rarr;</a>&#10;    </div>&#10;    <div class=&quot;hero-preview&quot;>&#10;      <div class=&quot;window-controls&quot;><span></span><span></span><span></span></div>&#10;      <div class=&quot;dashboard-mockup&quot;></div>&#10;    </div>&#10;  </div>&#10;</section>"
+                                data-css-code=".titan-hero { padding: 60px 0; background: #ffffff; }&#10;.hero-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 36px; align-items: center; }&#10;.badge { background: rgba(229, 23, 63, 0.1); color: #e5173f; padding: 4px 12px; border-radius: 9999px; }&#10;.hero-preview { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; }"
+                                data-js-code="// Smooth scroll on hero CTA&#10;document.querySelector('.titan-hero .btn-primary').addEventListener('click', (e) => {&#10;  console.log('Hero trial triggered');&#10;});">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="bodysections">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=600&q=80" alt="Prism 3-Tier SaaS Pricing Matrix" loading="lazy" />
+                    <span class="template-card__badge">Featured</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Body Sections</div>
+                    <h3 class="template-card__title">Prism 3-Tier SaaS Pricing Matrix</h3>
+                    <p class="template-card__desc">Interactive monthly/annual billing toggle with feature checklist matrix, highlighted popular tier card, and enterprise quote prompt.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Pricing Table</span><span class="tpl-tag">Billing Toggle</span><span class="tpl-tag">Feature Matrix</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Prism 3-Tier SaaS Pricing Matrix">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Prism 3-Tier SaaS Pricing Matrix" 
+                                data-category="Body Sections" 
+                                data-desc="Interactive monthly/annual billing toggle with feature checklist matrix, highlighted popular tier card, and enterprise quote prompt." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; padding: 40px 20px; color: #0f172a;&quot;>             <div style=&quot;text-align: center; margin-bottom: 30px;&quot;>                 <h2 style=&quot;font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 8px;&quot;>Predictable, Transparent Pricing</h2>                 <p style=&quot;color: #64748b; font-size: 15px;&quot;>Choose the tier that scales with your team.</p>             </div>             <div style=&quot;display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin: 0 auto;&quot;>                 <div style=&quot;border: 1px solid #e2e8f0; border-radius: 12px; padding: 26px; background: #ffffff;&quot;>                     <div style=&quot;font-weight: 700; font-size: 17px; color: #0f172a;&quot;>Starter</div>                     <div style=&quot;font-size: 28px; font-weight: 800; color: #0f172a; margin: 10px 0;&quot;>$29<span style=&quot;font-size: 14px; color: #64748b; font-weight: 400;&quot;>/mo</span></div>                     <ul style=&quot;font-size: 13.5px; color: #475569; padding-left: 16px; margin-bottom: 20px; line-height: 1.8;&quot;>                         <li>Up to 50 Members</li>                         <li>Rota & Shift Planner</li>                         <li>Email Support</li>                     </ul>                     <button style=&quot;width: 100%; padding: 10px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 700; border-radius: 8px; cursor: pointer;&quot;>Select Starter</button>                 </div>                 <div style=&quot;border: 2px solid #e5173f; border-radius: 12px; padding: 26px; background: #ffffff; position: relative; box-shadow: 0 12px 30px rgba(229,23,63,0.12);&quot;>                     <span style=&quot;position: absolute; top: -11px; right: 16px; background: #e5173f; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 9999px;&quot;>MOST POPULAR</span>                     <div style=&quot;font-weight: 700; font-size: 17px; color: #e5173f;&quot;>Professional</div>                     <div style=&quot;font-size: 28px; font-weight: 800; color: #0f172a; margin: 10px 0;&quot;>$79<span style=&quot;font-size: 14px; color: #64748b; font-weight: 400;&quot;>/mo</span></div>                     <ul style=&quot;font-size: 13.5px; color: #475569; padding-left: 16px; margin-bottom: 20px; line-height: 1.8;&quot;>                         <li>Unlimited Members</li>                         <li>All 33 BCP Modules</li>                         <li>Verifiable Certificates</li>                         <li>Priority SLA Support</li>                     </ul>                     <button style=&quot;width: 100%; padding: 10px; border: none; background: #e5173f; color: #fff; font-weight: 700; border-radius: 8px; cursor: pointer;&quot;>Start Pro Trial</button>                 </div>                 <div style=&quot;border: 1px solid #e2e8f0; border-radius: 12px; padding: 26px; background: #ffffff;&quot;>                     <div style=&quot;font-weight: 700; font-size: 17px; color: #0f172a;&quot;>Enterprise</div>                     <div style=&quot;font-size: 28px; font-weight: 800; color: #0f172a; margin: 10px 0;&quot;>Custom</div>                     <ul style=&quot;font-size: 13.5px; color: #475569; padding-left: 16px; margin-bottom: 20px; line-height: 1.8;&quot;>                         <li>Dedicated SQL Instance</li>                         <li>Custom Domain Mapping</li>                         <li>24/7 Phone Support</li>                     </ul>                     <button style=&quot;width: 100%; padding: 10px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 700; border-radius: 8px; cursor: pointer;&quot;>Contact Sales</button>                 </div>             </div>         </div>         "
+                                data-html-code="<div class=&quot;pricing-matrix&quot;>&#10;  <div class=&quot;pricing-card&quot;>&#10;    <h3>Starter</h3>&#10;    <div class=&quot;price&quot;>$29<span>/mo</span></div>&#10;    <button class=&quot;btn-tier&quot;>Select Starter</button>&#10;  </div>&#10;  <div class=&quot;pricing-card featured&quot;>&#10;    <span class=&quot;badge&quot;>MOST POPULAR</span>&#10;    <h3>Professional</h3>&#10;    <div class=&quot;price&quot;>$79<span>/mo</span></div>&#10;    <button class=&quot;btn-tier-primary&quot;>Start Pro Trial</button>&#10;  </div>&#10;  <div class=&quot;pricing-card&quot;>&#10;    <h3>Enterprise</h3>&#10;    <div class=&quot;price&quot;>Custom</div>&#10;    <button class=&quot;btn-tier&quot;>Contact Sales</button>&#10;  </div>&#10;</div>"
+                                data-css-code=".pricing-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }&#10;.pricing-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 26px; }&#10;.pricing-card.featured { border: 2px solid #e5173f; box-shadow: 0 12px 30px rgba(229,23,63,0.12); }&#10;.price { font-size: 28px; font-weight: 800; margin: 10px 0; }"
+                                data-js-code="// Monthly/Annual Billing Toggle&#10;function toggleBilling(isAnnual) {&#10;  const proPrice = document.querySelector('.featured .price');&#10;  proPrice.innerHTML = isAnnual ? '$69<span>/mo</span>' : '$79<span>/mo</span>';&#10;}">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="bodysections">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80" alt="Clarion Expandable FAQ Accordion" loading="lazy" />
+                    <span class="template-card__badge">Essential</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Body Sections</div>
+                    <h3 class="template-card__title">Clarion Expandable FAQ Accordion</h3>
+                    <p class="template-card__desc">Smooth animated accordion container with category filter tabs and integrated support card.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Accordion</span><span class="tpl-tag">Smooth Animation</span><span class="tpl-tag">Support Card</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Clarion Expandable FAQ Accordion">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Clarion Expandable FAQ Accordion" 
+                                data-category="Body Sections" 
+                                data-desc="Smooth animated accordion container with category filter tabs and integrated support card." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; padding: 40px 20px; color: #0f172a;&quot;>             <div style=&quot;text-align: center; margin-bottom: 26px;&quot;>                 <h2 style=&quot;font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px;&quot;>Frequently Asked Questions</h2>                 <p style=&quot;color: #64748b; font-size: 14.5px;&quot;>Everything you need to know about onboarding and features.</p>             </div>             <div style=&quot;max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;&quot;>                 <div style=&quot;background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px;&quot;>                     <div style=&quot;font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; cursor: pointer; color: #0f172a;&quot;>                         <span>How fast can our team onboard?</span>                         <span style=&quot;color: #e5173f; font-weight: 800;&quot;>−</span>                     </div>                     <div style=&quot;font-size: 13.5px; color: #64748b; margin-top: 8px; line-height: 1.6;&quot;>You can invite members in under 60 seconds and enable modular suites on demand with zero downtime.</div>                 </div>                 <div style=&quot;background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px;&quot;>                     <div style=&quot;font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; cursor: pointer; color: #0f172a;&quot;>                         <span>Is our organizational data encrypted?</span>                         <span style=&quot;color: #64748b; font-weight: 800;&quot;>+</span>                     </div>                 </div>                 <div style=&quot;background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px;&quot;>                     <div style=&quot;font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; cursor: pointer; color: #0f172a;&quot;>                         <span>Can we issue verifiable digital certificates?</span>                         <span style=&quot;color: #64748b; font-weight: 800;&quot;>+</span>                     </div>                 </div>             </div>         </div>         "
+                                data-html-code="<div class=&quot;faq-accordion&quot;>&#10;  <div class=&quot;faq-item open&quot;>&#10;    <div class=&quot;faq-question&quot;>How fast can our team onboard? <span>−</span></div>&#10;    <div class=&quot;faq-answer&quot;>You can invite members in under 60 seconds.</div>&#10;  </div>&#10;  <div class=&quot;faq-item&quot;>&#10;    <div class=&quot;faq-question&quot;>Is our organizational data encrypted? <span>+</span></div>&#10;  </div>&#10;</div>"
+                                data-css-code=".faq-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 12px; }&#10;.faq-question { font-weight: 700; display: flex; justify-content: space-between; cursor: pointer; }&#10;.faq-answer { font-size: 14px; color: #64748b; margin-top: 8px; }"
+                                data-js-code="document.querySelectorAll('.faq-question').forEach(q => {&#10;  q.addEventListener('click', () => {&#10;    q.parentElement.classList.toggle('open');&#10;  });&#10;});">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="marquee">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80" alt="Streamline Infinite Logo Marquee" loading="lazy" />
+                    <span class="template-card__badge">Popular</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Marquee & Tickers</div>
+                    <h3 class="template-card__title">Streamline Infinite Logo Marquee</h3>
+                    <p class="template-card__desc">Silky-smooth continuous CSS animation ribbon showcasing 12+ partner brand logos in monochrome and color on hover.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">CSS Animation</span><span class="tpl-tag">Monochrome Hover</span><span class="tpl-tag">Infinite Loop</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Streamline Infinite Logo Marquee">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Streamline Infinite Logo Marquee" 
+                                data-category="Marquee & Tickers" 
+                                data-desc="Silky-smooth continuous CSS animation ribbon showcasing 12+ partner brand logos in monochrome and color on hover." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; padding: 40px 20px; color: #0f172a; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px;&quot;>             <div style=&quot;text-align: center; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 24px;&quot;>TRUSTED BY 2,500+ ENTERPRISE ORGANIZATIONS</div>             <div style=&quot;display: flex; gap: 30px; justify-content: space-around; font-weight: 800; font-size: 19px; color: #334155; letter-spacing: 0.04em;&quot;>                 <span style=&quot;color: #0f172a;&quot;>ACME Corp</span>                 <span style=&quot;color: #e5173f;&quot;>GLOBALTECH</span>                 <span style=&quot;color: #0284c7;&quot;>NEXUS AI</span>                 <span style=&quot;color: #16a34a;&quot;>VORTEX</span>                 <span style=&quot;color: #9333ea;&quot;>TITAN CLOUD</span>             </div>         </div>         "
+                                data-html-code="<div class=&quot;logo-marquee-wrapper&quot;>&#10;  <div class=&quot;marquee-track&quot;>&#10;    <span>ACME Corp</span>&#10;    <span>GLOBALTECH</span>&#10;    <span>NEXUS AI</span>&#10;    <span>VORTEX</span>&#10;  </div>&#10;</div>"
+                                data-css-code=".logo-marquee-wrapper { overflow: hidden; white-space: nowrap; padding: 30px 0; }&#10;.marquee-track { display: inline-flex; gap: 40px; animation: scrollMarquee 20s linear infinite; }&#10;@@keyframes scrollMarquee {&#10;  0% { transform: translateX(0); }&#10;  100% { transform: translateX(-50%); }&#10;}"
+                                data-js-code="// Pause animation on user hover&#10;const track = document.querySelector('.marquee-track');&#10;track.addEventListener('mouseenter', () => track.style.animationPlayState = 'paused');&#10;track.addEventListener('mouseleave', () => track.style.animationPlayState = 'running');">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="contactus">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&w=600&q=80" alt="Connect Split Inquiry Form & Map" loading="lazy" />
+                    <span class="template-card__badge">Conversion</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Contact Us & Lead Capture</div>
+                    <h3 class="template-card__title">Connect Split Inquiry Form & Map</h3>
+                    <p class="template-card__desc">Dual-column layout with validated contact form, interactive Google Maps container, office hours, and phone directory.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">Contact Form</span><span class="tpl-tag">Interactive Map</span><span class="tpl-tag">Lead Capture</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Connect Split Inquiry Form & Map">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Connect Split Inquiry Form & Map" 
+                                data-category="Contact Us & Lead Capture" 
+                                data-desc="Dual-column layout with validated contact form, interactive Google Maps container, office hours, and phone directory." 
+                                data-preview-html="         <div style=&quot;background: #ffffff; padding: 40px 20px; color: #0f172a;&quot;>             <div style=&quot;display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; max-width: 800px; margin: 0 auto;&quot;>                 <div>                     <h3 style=&quot;font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px;&quot;>Send an Inquiry</h3>                     <p style=&quot;color: #64748b; font-size: 14px; margin-bottom: 18px;&quot;>Our solutions team responds within 2 business hours.</p>                     <div style=&quot;display: flex; flex-direction: column; gap: 12px;&quot;>                         <input placeholder=&quot;Your Full Name&quot; style=&quot;padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px;&quot; />                         <input placeholder=&quot;Work Email Address&quot; style=&quot;padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px;&quot; />                         <button style=&quot;background: #e5173f; color: #fff; border: none; padding: 11px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer;&quot;>Submit Request &rarr;</button>                     </div>                 </div>                 <div style=&quot;background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: center; font-size: 13.5px; color: #475569;&quot;>                     <div style=&quot;font-weight: 700; color: #0f172a; font-size: 15px; margin-bottom: 8px;&quot;>Global Headquarters</div>                     <div>100 Technology Square, Suite 400<br/>London, United Kingdom</div>                     <div style=&quot;margin-top: 18px; font-weight: 700; color: #0f172a; font-size: 15px;&quot;>Direct Line</div>                     <div>+44 (0) 20 7946 0912</div>                 </div>             </div>         </div>         "
+                                data-html-code="<form class=&quot;contact-split-form&quot;>&#10;  <h3>Send an Inquiry</h3>&#10;  <input type=&quot;text&quot; placeholder=&quot;Full Name&quot; required />&#10;  <input type=&quot;email&quot; placeholder=&quot;Work Email&quot; required />&#10;  <button type=&quot;submit&quot; class=&quot;btn-submit&quot;>Submit Request</button>&#10;</form>"
+                                data-css-code=".contact-split-form { display: flex; flex-direction: column; gap: 12px; }&#10;.contact-split-form input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }&#10;.btn-submit { background: #e5173f; color: #fff; border: none; padding: 11px; border-radius: 8px; font-weight: 700; }"
+                                data-js-code="document.querySelector('.contact-split-form').addEventListener('submit', (e) => {&#10;  e.preventDefault();&#10;  alert('Thank you! Inquiry received.');&#10;});">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+            <article class="template-card" data-category="footer">
+                <div class="template-card__media">
+                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80" alt="Atlas 5-Column Corporate Footer" loading="lazy" />
+                    <span class="template-card__badge">Enterprise</span>
+                </div>
+                <div class="template-card__body">
+                    <div class="template-card__category">Footers</div>
+                    <h3 class="template-card__title">Atlas 5-Column Corporate Footer</h3>
+                    <p class="template-card__desc">Comprehensive enterprise footer with 5 categorized link columns, newsletter subscriber box, and social media handles.</p>
+                    <div class="template-card__tags">
+                        <span class="tpl-tag">5-Column Sitemap</span><span class="tpl-tag">Newsletter Box</span><span class="tpl-tag">Social Handles</span>
+                    </div>
+                    <div class="template-card__actions">
+                        <button type="button" class="btn-install js-installBtn" data-template-name="Atlas 5-Column Corporate Footer">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Install Template</span>
+                        </button>
+                        <button type="button" class="btn-preview js-openPreviewModal" 
+                                data-template-name="Atlas 5-Column Corporate Footer" 
+                                data-category="Footers" 
+                                data-desc="Comprehensive enterprise footer with 5 categorized link columns, newsletter subscriber box, and social media handles." 
+                                data-preview-html="         <div style=&quot;background: #f8fafc; color: #334155; padding: 44px 28px; font-size: 13.5px; border-top: 1px solid #e2e8f0; border-radius: 12px;&quot;>             <div style=&quot;display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 28px; max-width: 900px; margin: 0 auto; border-bottom: 1px solid #e2e8f0; padding-bottom: 28px;&quot;>                 <div>                     <div style=&quot;font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 8px;&quot;>Ozikol Cloud.</div>                     <p style=&quot;color: #64748b; font-size: 13px; line-height: 1.55;&quot;>Empowering modern organizations with all-in-one business cloud software suites.</p>                 </div>                 <div>                     <div style=&quot;font-weight: 700; color: #0f172a; margin-bottom: 10px;&quot;>Suites</div>                     <div style=&quot;display: flex; flex-direction: column; gap: 6px; color: #64748b;&quot;>                         <span>Workforce</span>                         <span>Reports</span>                         <span>Events</span>                     </div>                 </div>                 <div>                     <div style=&quot;font-weight: 700; color: #0f172a; margin-bottom: 10px;&quot;>Company</div>                     <div style=&quot;display: flex; flex-direction: column; gap: 6px; color: #64748b;&quot;>                         <span>About Us</span>                         <span>Careers</span>                         <span>Contact</span>                     </div>                 </div>                 <div>                     <div style=&quot;font-weight: 700; color: #0f172a; margin-bottom: 10px;&quot;>Legal</div>                     <div style=&quot;display: flex; flex-direction: column; gap: 6px; color: #64748b;&quot;>                         <span>Privacy Policy</span>                         <span>Terms of Service</span>                         <span>Security</span>                     </div>                 </div>             </div>             <div style=&quot;text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;&quot;>© 2026 Ozikol Technologies Ltd. All rights reserved.</div>         </div>         "
+                                data-html-code="<footer class=&quot;atlas-footer&quot;>&#10;  <div class=&quot;footer-columns&quot;>&#10;    <div class=&quot;col-brand&quot;>Ozikol Cloud</div>&#10;    <div class=&quot;col-links&quot;><h4>Suites</h4><a href=&quot;#&quot;>Workforce</a></div>&#10;    <div class=&quot;col-links&quot;><h4>Company</h4><a href=&quot;#&quot;>About Us</a></div>&#10;    <div class=&quot;col-links&quot;><h4>Legal</h4><a href=&quot;#&quot;>Privacy</a></div>&#10;  </div>&#10;  <div class=&quot;footer-bottom&quot;>© 2026 Ozikol Technologies Ltd.</div>&#10;</footer>"
+                                data-css-code=".atlas-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 40px 0; }&#10;.footer-columns { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 24px; }&#10;.col-links h4 { font-weight: 700; margin-bottom: 10px; }"
+                                data-js-code="// Dynamic copyright year&#10;document.querySelector('.footer-bottom').innerText = `© ${new Date().getFullYear()} Ozikol Technologies Ltd.`;">
+                            Live Preview & Code
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Creator & Publishing Banner -->
+        <section style="background: #0f172a; color: #fff; border-radius: 16px; padding: 50px 36px; margin: 60px 0 20px 0; text-align: center; border: 1px solid #1e293b;">
+            <div style="display: inline-block; font-size: 12px; font-weight: 700; color: #ff5277; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(229, 23, 63, 0.2); padding: 4px 12px; border-radius: 6px; margin-bottom: 12px;">Marketplace Ecosystem</div>
+            <h2 style="font-size: 30px; font-weight: 800; margin-bottom: 14px;">Build & Publish UI Blueprints</h2>
+            <p style="color: #94a3b8; font-size: 16px; max-width: 580px; margin: 0 auto 24px auto;">Are you a designer or engineer? Create and distribute custom website components to thousands of organizations on the Ozikol Cloud.</p>
+            <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <a href="/support-hub/contact-sales" class="btn btn-primary" style="padding: 12px 28px;">Become a Creator</a>
+                <a href="/features" class="btn btn-secondary--alt" style="padding: 12px 28px; border: 1px solid #444; color: #fff;">Explore Platform Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- =========================================================================
+     BRIGHT, CLEAN LIVE PREVIEW & CODE INSPECTOR MODAL SYSTEM
+     ========================================================================= -->
+<div id="previewModal" class="preview-modal-overlay" style="display: none;">
+    <div class="preview-modal-container">
+        <!-- Modal Top Bar -->
+        <div class="preview-modal-header">
+            <div class="preview-header-left">
+                <span id="modalCategoryBadge" class="modal-category-badge">Category</span>
+                <h3 id="modalTemplateTitle" class="modal-template-title">Template Title</h3>
+            </div>
+            
+            <!-- Code vs Preview Tabs & Device Switcher -->
+            <div class="preview-center-controls">
+                <!-- Mode Tabs -->
+                <div class="mode-tabs-group">
+                    <button type="button" class="mode-tab-btn active" data-mode="preview">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>Preview</span>
+                    </button>
+                    <button type="button" class="mode-tab-btn" data-mode="html">
+                        <span>HTML</span>
+                    </button>
+                    <button type="button" class="mode-tab-btn" data-mode="css">
+                        <span>CSS</span>
+                    </button>
+                    <button type="button" class="mode-tab-btn" data-mode="js">
+                        <span>JS</span>
+                    </button>
+                </div>
+
+                <!-- Viewport Switcher (Visible in Preview mode) -->
+                <div id="viewportControls" class="preview-viewport-controls">
+                    <button type="button" class="viewport-btn active" data-width="100%">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        <span>Desktop</span>
+                    </button>
+                    <button type="button" class="viewport-btn" data-width="768px">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        <span>Tablet</span>
+                    </button>
+                    <button type="button" class="viewport-btn" data-width="375px">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        <span>Mobile</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="bottom-cta-card" style="margin-top: 48px;">
-                <h2 class="bottom-cta-title">Want to Publish Templates to the Central Marketplace?</h2>
-                <p class="bottom-cta-sub">Join our Template Creator Network and earn revenue when tenants install your layouts.</p>
-                <a asp-page="/Affiliate" class="btn-hero-secondary" style="margin-top: 16px;">
-                    <span>Join Template & Affiliate Program</span>
-                </a>
+            <!-- Modal Action Buttons -->
+            <div class="preview-header-right">
+                <button type="button" id="copyCodeBtn" class="btn-copy-code" style="display: none;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    <span>Copy Code</span>
+                </button>
+                <button type="button" id="modalInstallBtn" class="btn-modal-install">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Install Template</span>
+                </button>
+                <button type="button" id="closeModalBtn" class="btn-modal-close" aria-label="Close Preview">&times;</button>
             </div>
         </div>
-    </section>
+
+        <!-- Modal Body Container -->
+        <div class="preview-modal-body">
+            <!-- Visual Interactive Sandbox Pane -->
+            <div id="previewPane" class="tab-pane active" style="width: 100%;">
+                <div id="previewSandboxFrame" class="preview-sandbox-frame">
+                    <div id="sandboxRenderArea" class="sandbox-render-area">
+                        <!-- Live Component Mockup -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Inspector Pane -->
+            <div id="codePane" class="tab-pane" style="display: none; width: 100%;">
+                <div class="code-viewer-container">
+                    <pre><code id="codeContent" class="code-block"></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer Summary -->
+        <div class="preview-modal-footer">
+            <p id="modalTemplateDesc">Template description and configuration details.</p>
+            <span class="preview-shortcut-hint">Press <kbd>ESC</kbd> to exit preview</span>
+        </div>
+    </div>
 </div>
+
+<!-- Install Toast / Feedback -->
+<div id="installToast" style="display: none; position: fixed; bottom: 30px; right: 30px; background: #0f172a; color: #ffffff; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 20000; border: 1px solid #334155; align-items: center; gap: 12px; animation: slideUp 0.3s ease;">
+    <div style="width: 28px; height: 28px; border-radius: 50%; background: #22c55e; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">&#10003;</div>
+    <div>
+        <div id="toastTitle" style="font-weight: 700; font-size: 14px;">Template Installed</div>
+        <div id="toastDesc" style="font-size: 12.5px; color: #94a3b8;">Blueprint imported successfully to your workspace.</div>
+    </div>
+</div>
+
+<style>
+.marketplace-page { color: #1e293b; }
+.how-it-works-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.step-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px 24px; position: relative; }
+.step-badge { display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: #e5173f; color: #fff; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; margin-bottom: 14px; }
+.step-card h3 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0; }
+.step-card p { font-size: 14px; line-height: 1.55; color: #64748b; margin: 0; }
+
+.cat-filter-btn { padding: 7px 16px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; font-size: 13.5px; font-weight: 600; border-radius: 9999px; cursor: pointer; transition: all 0.2s ease; outline: none; }
+.cat-filter-btn:hover { border-color: #e5173f; color: #e5173f; }
+.cat-filter-btn.active { background: #e5173f; border-color: #e5173f; color: #ffffff; }
+
+.marketplace-grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
+.template-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.25s ease, box-shadow 0.25s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.template-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,0.08); border-color: #cbd5e1; }
+.template-card__media { position: relative; height: 190px; overflow: hidden; background: #0f172a; }
+.template-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; opacity: 0.9; }
+.template-card:hover .template-card__media img { transform: scale(1.05); opacity: 1; }
+.template-card__badge { position: absolute; top: 12px; right: 12px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); color: #f8fafc; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.template-card__body { padding: 22px; display: flex; flex-direction: column; flex-grow: 1; }
+.template-card__category { font-size: 12px; font-weight: 700; color: #e5173f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.template-card__title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0; line-height: 1.3; }
+.template-card__desc { font-size: 13.5px; line-height: 1.55; color: #64748b; margin: 0 0 16px 0; flex-grow: 1; }
+.template-card__tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.tpl-tag { font-size: 11.5px; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+
+.template-card__actions { display: flex; gap: 10px; align-items: center; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+.btn-install { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #e5173f; color: #ffffff; border: none; padding: 9px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background 0.2s ease; }
+.btn-install:hover { background: #c91538; }
+.btn-install.installed { background: #16a34a !important; }
+.btn-preview { padding: 9px 14px; background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.btn-preview:hover { background: #e2e8f0; color: #0f172a; }
+
+/* =========================================================================
+   BRIGHT, CLEAN LIVE PREVIEW MODAL STYLING
+   ========================================================================= */
+.preview-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.preview-modal-container { background: #ffffff; width: 100%; max-width: 1240px; height: 92vh; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 25px 60px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; }
+.preview-modal-header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.preview-header-left { display: flex; align-items: center; gap: 12px; }
+.modal-category-badge { font-size: 11.5px; font-weight: 700; color: #e5173f; text-transform: uppercase; background: rgba(229, 23, 63, 0.08); padding: 4px 10px; border-radius: 6px; letter-spacing: 0.05em; }
+.modal-template-title { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0; }
+
+.preview-center-controls { display: flex; align-items: center; gap: 14px; }
+.mode-tabs-group { display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; gap: 2px; border: 1px solid #e2e8f0; }
+.mode-tab-btn { background: transparent; border: none; color: #64748b; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
+.mode-tab-btn:hover { color: #0f172a; }
+.mode-tab-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+.preview-viewport-controls { display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; gap: 2px; border: 1px solid #e2e8f0; }
+.viewport-btn { background: transparent; border: none; color: #64748b; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
+.viewport-btn:hover { color: #0f172a; }
+.viewport-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+.preview-header-right { display: flex; align-items: center; gap: 12px; }
+.btn-copy-code { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-copy-code:hover { background: #e2e8f0; color: #0f172a; }
+.btn-modal-install { display: inline-flex; align-items: center; gap: 6px; background: #e5173f; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+.btn-modal-install:hover { background: #c91538; }
+.btn-modal-install.installed { background: #16a34a !important; }
+.btn-modal-close { background: transparent; border: none; color: #64748b; font-size: 28px; line-height: 1; cursor: pointer; padding: 0 4px; transition: color 0.2s; }
+.btn-modal-close:hover { color: #0f172a; }
+
+.preview-modal-body { flex: 1; background: #f8fafc; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px; position: relative; }
+.preview-sandbox-frame { width: 100%; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+.sandbox-render-area { width: 100%; min-height: 380px; background: #ffffff; }
+
+.code-viewer-container { width: 100%; background: #0f172a; color: #f8fafc; border-radius: 12px; padding: 24px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #1e293b; min-height: 380px; }
+.code-block { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; }
+
+.preview-modal-footer { background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; color: #64748b; }
+.preview-modal-footer p { margin: 0; }
+.preview-shortcut-hint { font-size: 12px; color: #94a3b8; }
+.preview-shortcut-hint kbd { background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid #cbd5e1; }
+
+@@media (max-width: 860px) {
+    .preview-center-controls { flex-direction: column; gap: 6px; }
+    .preview-viewport-controls { display: none; }
+    .preview-modal-container { height: 96vh; border-radius: 10px; }
+    .how-it-works-grid { grid-template-columns: 1fr; }
+    .marketplace-grid-layout { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Category Tabs Filtering
+    const tabs = document.querySelectorAll("#categoryTabs .cat-filter-btn");
+    const cards = document.querySelectorAll(".template-card");
+
+    tabs.forEach(tab => {
+        tab.addEventListener("click", function () {
+            tabs.forEach(t => t.classList.remove("active"));
+            this.classList.add("active");
+
+            const filter = this.getAttribute("data-filter");
+            cards.forEach(card => {
+                if (filter === "all" || card.getAttribute("data-category") === filter) {
+                    card.style.display = "flex";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    });
+
+    // Live Preview & Code Inspector Elements
+    const modal = document.getElementById("previewModal");
+    const modalTitle = document.getElementById("modalTemplateTitle");
+    const modalCategory = document.getElementById("modalCategoryBadge");
+    const modalDesc = document.getElementById("modalTemplateDesc");
+    const sandboxArea = document.getElementById("sandboxRenderArea");
+    const sandboxFrame = document.getElementById("previewSandboxFrame");
+    const closeBtn = document.getElementById("closeModalBtn");
+    const modalInstallBtn = document.getElementById("modalInstallBtn");
+    const copyCodeBtn = document.getElementById("copyCodeBtn");
+    const viewportBtns = document.querySelectorAll(".viewport-btn");
+    const viewportControls = document.getElementById("viewportControls");
+    const modeTabs = document.querySelectorAll(".mode-tab-btn");
+    const previewPane = document.getElementById("previewPane");
+    const codePane = document.getElementById("codePane");
+    const codeContent = document.getElementById("codeContent");
+
+    let currentTemplateName = "";
+    let currentPayloads = {
+        html: "",
+        css: "",
+        js: ""
+    };
+    let currentMode = "preview";
+
+    // Open Modal
+    document.querySelectorAll(".js-openPreviewModal").forEach(btn => {
+        btn.addEventListener("click", function () {
+            currentTemplateName = this.getAttribute("data-template-name");
+            const category = this.getAttribute("data-category");
+            const desc = this.getAttribute("data-desc");
+            const rawPreview = this.getAttribute("data-preview-html");
+            
+            currentPayloads.html = this.getAttribute("data-html-code") || "";
+            currentPayloads.css = this.getAttribute("data-css-code") || "";
+            currentPayloads.js = this.getAttribute("data-js-code") || "";
+
+            modalTitle.textContent = currentTemplateName;
+            modalCategory.textContent = category;
+            modalDesc.textContent = desc;
+            sandboxArea.innerHTML = rawPreview;
+
+            // Reset tabs to Preview mode
+            switchMode("preview");
+
+            // Reset install button state
+            modalInstallBtn.classList.remove("installed");
+            modalInstallBtn.innerHTML = `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> <span>Install Template</span>`;
+
+            modal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+        });
+    });
+
+    // Mode Switching (Preview / HTML / CSS / JS)
+    function switchMode(mode) {
+        currentMode = mode;
+        modeTabs.forEach(tab => {
+            if (tab.getAttribute("data-mode") === mode) {
+                tab.classList.add("active");
+            } else {
+                tab.classList.remove("active");
+            }
+        });
+
+        if (mode === "preview") {
+            previewPane.style.display = "block";
+            codePane.style.display = "none";
+            viewportControls.style.display = "flex";
+            copyCodeBtn.style.display = "none";
+        } else {
+            previewPane.style.display = "none";
+            codePane.style.display = "block";
+            viewportControls.style.display = "none";
+            copyCodeBtn.style.display = "inline-flex";
+
+            if (mode === "html") {
+                codeContent.textContent = currentPayloads.html;
+            } else if (mode === "css") {
+                codeContent.textContent = currentPayloads.css;
+            } else if (mode === "js") {
+                codeContent.textContent = currentPayloads.js;
+            }
+        }
+    }
+
+    modeTabs.forEach(tab => {
+        tab.addEventListener("click", function () {
+            const mode = this.getAttribute("data-mode");
+            switchMode(mode);
+        });
+    });
+
+    // Copy Code Action
+    copyCodeBtn.addEventListener("click", function () {
+        const textToCopy = codeContent.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            this.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> <span>Copied!</span>`;
+            setTimeout(() => {
+                this.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> <span>Copy Code</span>`;
+            }, 2000);
+        });
+    });
+
+    // Close Modal
+    function closeModal() {
+        modal.style.display = "none";
+        sandboxArea.innerHTML = "";
+        document.body.style.overflow = "auto";
+    }
+
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal.style.display === "flex") {
+            closeModal();
+        }
+    });
+
+    // Viewport Width Switcher
+    viewportBtns.forEach(vBtn => {
+        vBtn.addEventListener("click", function () {
+            viewportBtns.forEach(b => b.classList.remove("active"));
+            this.classList.add("active");
+            const targetWidth = this.getAttribute("data-width");
+            sandboxFrame.style.width = targetWidth;
+        });
+    });
+
+    // Install Action inside Modal & Grid
+    const toast = document.getElementById("installToast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastDesc = document.getElementById("toastDesc");
+    let toastTimeout;
+
+    function triggerInstall(name, btnElement) {
+        if (btnElement) {
+            btnElement.classList.add("installed");
+            btnElement.innerHTML = `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Installed`;
+        }
+
+        toastTitle.textContent = name + " Installed";
+        toastDesc.textContent = "Blueprint imported to your workspace catalog.";
+        toast.style.display = "flex";
+
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.style.display = "none";
+        }, 3500);
+    }
+
+    modalInstallBtn.addEventListener("click", function () {
+        triggerInstall(currentTemplateName, this);
+    });
+
+    document.querySelectorAll(".js-installBtn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const tplName = this.getAttribute("data-template-name");
+            triggerInstall(tplName, this);
+        });
+    });
+});
+</script>

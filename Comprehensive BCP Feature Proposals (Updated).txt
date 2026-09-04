@@ -1,1002 +1,902 @@
-# Comprehensive BCP Feature Proposals
+# Comprehensive BCP Feature Proposals (Updated)
 
-BCP means **Ozikol Business Command Platform**.
-
-This document reorganizes the platform features into implementation groups. Every major feature should become a dedicated ASP.NET Core Area or a clearly isolated feature module.
-
-Each feature follows the same surface pattern:
-
-```text
-Console   = organizational control, staff operations, configuration, reporting, approvals
-Workspace = personal user activity, self-service, submissions, personal records
-Common    = shared partials, widgets, exports, short links, public screens, reusable routes
-```
-
-Very important rule:
-
-```text
-Every feature must have its own Console Dashboard.
-```
-
-The platform itself also has a main Console dashboard:
-
-```text
-/Bcp/Console/Dashboard
-```
-
-This main Console dashboard is the first management screen. It oversees billing, active and inactive features, feature setup status, health checks, security, recent visits, reports, recommendations, announcements, and quick actions. The template reference is:
-
-```text
-Materialdesignui/console-dashboard.html
-```
+This document contains the functional business features for the Business Cloud Platform (BCP). It outlines the module taxonomy, core capabilities, console/workspace views, common routes, and build recommendations.
 
 ---
 
-## Route Convention
+## Group 1: People, Community & Collaboration
 
-Recommended route pattern:
+These features support member communities, internal groups, alumni networks, messaging, and secure reporting.
 
-```text
-/Bcp/Console/Dashboard
-/Bcp/Workspace/Dashboard
-
-/Bcp{Feature}/Console/Dashboard
-/Bcp{Feature}/Workspace/Dashboard
-/Bcp{Feature}/Common/{Resource}
-```
-
-Examples:
-
-```text
-/BcpTicketing/Console/Dashboard
-/BcpTicketing/Workspace/MyTickets
-/BcpTicketing/Common/Receipt
-
-/BcpVoting/Console/Dashboard
-/BcpVoting/Workspace/Vote
-/BcpVoting/Common/PublicResult
-```
-
-Some features may also expose short public routes:
-
-```text
-/pay/{code}
-/f/{code}
-/e/{code}
-/kb/{module}
-```
-
-These public routes should still resolve back to BCP feature services internally.
-
----
-
-## Group 1: Platform Core & Governance
-
-These features form the operating foundation of BCP. They should be built before most business modules.
-
-### 1. Platform Console
+### 1. Community Messenger & Team Chat
 
 **Core**
-The central command dashboard for the tenant. It gives leadership one place to monitor the entire BCP installation.
+Provides platform-wide instant messaging including 1-on-1 direct messaging, departmental/committee group channels, topic spaces, rich media sharing, @mentions, presence status, and real-time push notifications.
 
 **Console**
-The first management screen after entering BCP Console mode. It shows active features, inactive features, setup-required features, locked features, current billing, usage, system health, security alerts, recent visits, reports, announcements, and recommendations.
+Community and IT administrators manage chat spaces, set content moderation filters, manage channel permissions, archive channels, and review audit trails.
 
 **Workspace**
-The personal BCP landing page for a logged-in user. It should summarize personal activities across enabled features: tickets, dues, votes, reports, applications, notifications, and recent activity.
+Members and staff initiate private 1-to-1 chats, join public/private group channels, share documents and images, react with emojis, and access the floating quick-chat drawer from anywhere on the platform.
 
 **Common**
-Shared navigation, topbar, feature cards, status pills, dashboard widgets, notification widgets, route helpers, and feature catalog UI.
+Full-screen messenger view, floating quick-chat popover widget, channel roster partial, direct message thread, message attachment gallery, online status badge.
 
 **Dashboard**
 Required:
-
 ```text
-/Bcp/Console/Dashboard
-/Bcp/Workspace/Dashboard
+/BcpChat/Console/Dashboard
+/BcpChat/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/Bcp/Common/FeatureDirectory
-/Bcp/Common/Notifications
-/Bcp/Common/Search
+/BcpChat/Common/Thread/{id}
+/BcpChat/Common/ChannelRoster
+/BcpChat/Common/QuickChatDrawer
 ```
 
-### 2. Feature Management & Billing
+### 2. Committees & Sub-Groups
 
 **Core**
-Controls which BCP features are available, active, inactive, suspended, locked, or pending setup for a tenant.
+Manages committees, boards, task forces, working groups, leadership rosters, meeting schedules, minutes, and resolutions.
 
 **Console**
-Tenant owners can activate features, review subscription cost, view invoices, check usage, suspend optional modules, and open setup checklists.
+Community officers configure committees, assign chairs and members, schedule meetings, upload minutes, track resolutions, and monitor committee activity.
 
 **Workspace**
-Normal users do not manage billing, but they may see feature availability messages when a feature is unavailable.
+Members view their assigned committees, access upcoming meeting details, download agenda/minutes, and participate in discussions.
 
 **Common**
-Feature status badges, billing widgets, invoice partials, activation prompts, setup checklist partials, usage charts, and subscription notices.
+Committee cards, member roster partials, meeting calendar widgets, minute download links, resolution badges.
 
 **Dashboard**
 Required:
-
 ```text
-/BcpManagement/Console/Dashboard
+/BcpCommittees/Console/Dashboard
+/BcpCommittees/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpManagement/Common/SuspendedFeature
-/BcpManagement/Common/Invoice
-/BcpManagement/Common/FeatureStatus
+/BcpCommittees/Common/CommitteeRoster/{code}
+/BcpCommittees/Common/MeetingMinutes/{code}
 ```
 
-### 3. BCP Identity & Authentication
+### 3. Alumni Networking Directory
 
 **Core**
-Provides full authentication and account security for BCP. This includes login, logout, registration rules, email confirmation, password reset, password change, two-factor flows, recovery codes, session tracking, trusted devices, lockout, and invitation acceptance.
-
-Because this platform is multi-tenant with separate databases, there should be no `TenantSelect` page inside this area. Tenant/database resolution should happen before or during the authentication pipeline through host, configuration, or deployment context.
+Maintains an alumni and past-member registry with graduation years, chapters, career history, networking preferences, and verification status.
 
 **Console**
-Security administrators manage identity policy, invitations, login audit, locked accounts, active sessions, password rules, MFA policy, trusted device policy, and authentication risk events.
+Alumni administrators verify alumni profiles, manage chapters, post alumni bulletins, approve networking directories, and export reports.
 
 **Workspace**
-Logged-in users manage their own profile security: password, MFA, recovery codes, sessions, trusted devices, login history, email confirmation, and personal security alerts.
-
-**Authenticate**
-Unauthenticated users can access only login and recovery flows: login, optional registration, forgot password, reset password, confirm email, resend confirmation, two-factor login, recovery-code login, invite acceptance, access denied, lockout, and session expired.
+Alumni update their profiles, search for peers by industry, location, or graduation year, and connect with other members.
 
 **Common**
-Shared identity UI and helpers: auth status, account menu, security badges, password strength, access-denied panel, lockout panel, session-expired panel, and security notification partials.
+Alumni directory cards, search filters, profile modal partials, chapter badges, export templates.
 
 **Dashboard**
 Required:
-
-```text
-/BcpIdentity/Console/Dashboard
-/BcpIdentity/Workspace/Dashboard
-```
-
-**Authenticate Routes**
-
-```text
-/BcpIdentity/Authenticate/Login
-/BcpIdentity/Authenticate/Register
-/BcpIdentity/Authenticate/ForgotPassword
-/BcpIdentity/Authenticate/ResetPassword
-/BcpIdentity/Authenticate/ConfirmEmail
-/BcpIdentity/Authenticate/ResendEmailConfirmation
-/BcpIdentity/Authenticate/TwoFactorLogin
-/BcpIdentity/Authenticate/RecoveryCodeLogin
-/BcpIdentity/Authenticate/InviteAccept
-/BcpIdentity/Authenticate/VerifyInvite
-/BcpIdentity/Authenticate/AccessDenied
-/BcpIdentity/Authenticate/LockedOut
-/BcpIdentity/Authenticate/SessionExpired
-```
-
-**Console Routes**
-
-```text
-/BcpIdentity/Console/Users
-/BcpIdentity/Console/Roles
-/BcpIdentity/Console/Permissions
-/BcpIdentity/Console/Invitations
-/BcpIdentity/Console/LoginAudit
-/BcpIdentity/Console/PasswordPolicy
-/BcpIdentity/Console/MfaPolicy
-/BcpIdentity/Console/Sessions
-/BcpIdentity/Console/LockedAccounts
-```
-
-**Workspace Routes**
-
-```text
-/BcpIdentity/Workspace/Profile
-/BcpIdentity/Workspace/Security
-/BcpIdentity/Workspace/ChangePassword
-/BcpIdentity/Workspace/TwoFactor
-/BcpIdentity/Workspace/RecoveryCodes
-/BcpIdentity/Workspace/ActiveSessions
-/BcpIdentity/Workspace/TrustedDevices
-/BcpIdentity/Workspace/SecurityLog
-```
-
-**Common Routes**
-
-```text
-/BcpIdentity/Common/AuthStatus
-/BcpIdentity/Common/AccountMenu
-/BcpIdentity/Common/SecurityBadge
-/BcpIdentity/Common/AccessDenied
-/BcpIdentity/Common/LockedOut
-/BcpIdentity/Common/SessionExpired
-```
-
-### 4. User Management & Performance
-
-**Core**
-Manages people, profiles, user categories, roles, feature permissions, attendance, KPI indicators, and performance scoring.
-
-**Console**
-Staff administrators manage users, assign categories, assign BCP feature roles, create KPI indicators, score staff, review leaderboards, view activity logs, and suspend or reactivate users.
-
-**Workspace**
-Users manage their profile, view their category, view their performance summary if allowed, see assigned responsibilities, and review personal activity history.
-
-**Common**
-User cards, profile summary partials, role badges, KPI score tables, permission matrix partials, activity log widgets, import/export templates.
-
-**Dashboard**
-Required:
-
-```text
-/BcpUserManagement/Console/Dashboard
-/BcpUserManagement/Workspace/Dashboard
-```
-
-**Common Routes**
-
-```text
-/BcpUserManagement/Common/ProfileCard
-/BcpUserManagement/Common/RoleMatrix
-/BcpUserManagement/Common/KpiExport
-```
-
-### 5. Security, Roles & Audit
-
-**Core**
-Protects BCP using layered roles, server-side authorization, audit logs, login tracking, and sensitive action review.
-
-**Console**
-Tenant owners review role assignments, failed access attempts, audit events, sensitive changes, security recommendations, and permission gaps.
-
-**Workspace**
-Users review their active sessions, password status, login history, personal security notifications, and account recovery options.
-
-**Common**
-Audit log widgets, role badges, permission helper partials, security alert banners, and sensitive-action confirmation partials.
-
-**Dashboard**
-Required:
-
-```text
-/BcpSecurity/Console/Dashboard
-/BcpSecurity/Workspace/Dashboard
-```
-
-**Common Routes**
-
-```text
-/BcpSecurity/Common/AuditTrail
-/BcpSecurity/Common/AccessDenied
-```
-
----
-
-## Group 2: People, Community & Collaboration
-
-These features organize people into groups, communities, relationships, and internal networks.
-
-### 6. Committees & Sub-Groups
-
-**Core**
-Creates private spaces for committees, departments, teams, and sub-groups.
-
-**Console**
-Managers create groups, assign members, appoint group leads, review group files, moderate posts, and control visibility.
-
-**Workspace**
-Members enter their group spaces, read posts, share files, comment, join discussions, and view assigned group tasks.
-
-**Common**
-Group cards, member lists, post partials, file cards, group visibility badges, shared document previews.
-
-**Dashboard**
-Required:
-
-```text
-/BcpGroups/Console/Dashboard
-/BcpGroups/Workspace/Dashboard
-```
-
-**Common Routes**
-
-```text
-/BcpGroups/Common/FilePreview
-/BcpGroups/Common/MemberCard
-```
-
-### 7. Alumni Networking Directory
-
-**Core**
-Connects past members, alumni, mentors, and business/community opportunities.
-
-**Console**
-Admins approve alumni profiles, moderate posts, manage mentorship categories, review reported content, and publish alumni opportunities.
-
-**Workspace**
-Alumni create profiles, search other alumni, request mentorship, post opportunities, and manage their own visibility.
-
-**Common**
-Alumni profile cards, opportunity cards, mentorship badges, search filters, public directory partials.
-
-**Dashboard**
-Required:
-
 ```text
 /BcpAlumni/Console/Dashboard
 /BcpAlumni/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpAlumni/Common/PublicDirectory
-/BcpAlumni/Common/Profile
+/BcpAlumni/Common/Profile/{code}
+/BcpAlumni/Common/ChapterDirectory
 ```
 
-### 8. Anonymous Whistleblowing & Feedback
+### 4. Anonymous Whistleblowing & Feedback
 
 **Core**
-Allows sensitive complaints, anonymous reports, suggestions, and confidential feedback.
+Provides an encrypted, anonymous submission channel for compliance complaints, ethical concerns, safety issues, or suggestions, with secure two-way anonymous messaging.
 
 **Console**
-Authorized reviewers triage submissions, assign cases, update status, add confidential notes, and track resolution without exposing reporter identity.
+Compliance or ethics officers receive reports, assign investigators, reply anonymously to whistleblowers, track resolution stages, and generate audit logs.
 
-**Workspace**
-Users submit anonymous or named feedback, optionally track a case through a secure code, and receive status updates where appropriate.
+**Workspace / Public**
+Employees or external stakeholders submit encrypted reports, receive an anonymous tracking key, check investigation progress, and reply without revealing identity.
 
 **Common**
-Secure submission form, case status widget, severity badges, anonymous receipt page, evidence upload partials.
+Anonymous submission forms, tracking key lookup, secure chat thread partials, status progress timeline.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpFeedback/Console/Dashboard
 /BcpFeedback/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpFeedback/Common/Submit
-/BcpFeedback/Common/Track/{code}
+/feedback
+/BcpFeedback/Common/Track/{key}
+/BcpFeedback/Common/SecureThread
 ```
 
 ---
 
-## Group 3: Reports, Forms & Knowledge
+## Group 2: Workforce, Rota & Shift Scheduling
 
-These features collect information, structure submissions, explain the system, and produce insight.
+These features manage staffing schedules, shift planning, team availability, swaps, attendance, and timesheets.
 
-### 9. Dynamic Interval Reporting
+### 5. Staff Rota & Shift Scheduling
 
 **Core**
-Allows admins to create recurring report schemas with submission intervals, deadlines, participants, and lateness tracking.
+Manages departmental shift planning, weekly and monthly rota grids, shift templates, required skill coverage, automated publishing, and real-time roster notifications.
 
 **Console**
-Managers create report categories, define submission windows, assign participants, review submissions, flag missed reports, export summaries, and monitor compliance.
+Shift planners and line managers create rota schedules, assign staff based on skills and contracted hours, monitor coverage gaps, publish rotas, broadcast open shifts, and control overtime costs.
 
 **Workspace**
-Users submit assigned reports, view pending reports, see deadlines, review previous submissions, and receive lateness warnings.
+Staff view upcoming personal rosters, subscribe to calendar feeds (iCal), claim available open shifts, receive schedule shift updates, and view team colleagues on duty.
 
 **Common**
-Report cards, deadline badges, submission forms, export partials, lateness widgets, status timeline partials.
+Interactive rota calendar grid, shift badge component, shift detail modal, open shift claim card, department filter partials.
 
 **Dashboard**
 Required:
-
 ```text
-/BcpReports/Console/Dashboard
-/BcpReports/Workspace/Dashboard
+/BcpRota/Console/Dashboard
+/BcpRota/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpReports/Common/SubmissionReceipt
-/BcpReports/Common/Export
+/BcpRota/Common/RotaCalendar
+/BcpRota/Common/ShiftModal/{code}
+/BcpRota/Common/ClaimShift/{code}
 ```
 
-### 10. Custom Form Builder & Surveys
+### 6. Shift Swaps, Availability & Leave
 
 **Core**
-Creates dynamic forms, questionnaires, surveys, data collection pages, and internal feedback forms.
+Facilitates peer-to-peer shift swaps, recurring staff availability windows, leave requests (vacation, sick, emergency), and supervisory approval workflows.
 
 **Console**
-Admins build forms, configure fields, publish forms, set access rules, review responses, and manage form lifecycle.
+Managers review and approve/decline shift trade requests, view leave conflict calendars against minimum staffing rules, and audit swap logs.
 
 **Workspace**
-Users complete assigned forms, view submitted responses if allowed, and continue saved drafts where enabled.
+Employees declare availability/unavailability, initiate shift trade requests with qualified peers, track swap approvals, and request time-off.
 
 **Common**
-Form renderer, field partials, validation helpers, response receipt, public short-code form route.
+Swap request cards, availability matrix, time-off conflict timeline, approval action buttons, notification badges.
 
 **Dashboard**
 Required:
+```text
+/BcpShifts/Console/Dashboard
+/BcpShifts/Workspace/Dashboard
+```
 
+**Common Routes**
+```text
+/BcpShifts/Common/SwapRequest/{code}
+/BcpShifts/Common/AvailabilityMatrix
+/BcpShifts/Common/TimeOffCalendar
+```
+
+### 7. Attendance & Time Tracking
+
+**Core**
+Handles digital clock-in/clock-out (with geo-fencing, IP restriction, or kiosk PIN), break tracking, automated timesheet generation, attendance exceptions, and payroll data export.
+
+**Console**
+Supervisors monitor live on-site attendance, rectify missed punches, review overtime calculations, approve finalized timesheets, and export CSV/payroll integration files.
+
+**Workspace**
+Employees clock in and out from mobile or desktop, log rest breaks, review accumulated work hours, and submit weekly timesheets for approval.
+
+**Common**
+Digital punch clock widget, timesheet review table, GPS map location preview, attendance exception tags, timesheet export modal.
+
+**Dashboard**
+Required:
+```text
+/BcpAttendance/Console/Dashboard
+/BcpAttendance/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/BcpAttendance/Common/PunchClock
+/BcpAttendance/Common/TimesheetExport
+/BcpAttendance/Common/LiveAttendanceMap
+```
+
+---
+
+## Group 3: Reports, Forms & Analytics
+
+These features handle dynamic business reporting, custom data collection, and visual survey analytics.
+
+### 8. Dynamic Interval Reporting
+
+**Core**
+Automates interval-based reports (weekly, monthly, quarterly) across operations, revenue, task completion, and departmental KPIs.
+
+**Console**
+Operations leads design report templates, schedule automated report generation, review submissions, and export aggregate PDFs or Excel sheets.
+
+**Workspace**
+Department heads submit interval updates, fill required metrics, view historical performance, and review approved reports.
+
+**Common**
+Report builder widgets, interval submission tables, metric summaries, export partials, approval workflows.
+
+**Dashboard**
+Required:
+```text
+/BcpReporting/Console/Dashboard
+/BcpReporting/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/BcpReporting/Common/Report/{code}
+/BcpReporting/Common/Export/{code}
+```
+
+### 9. Custom Form Builder & Surveys
+
+**Core**
+Allows tenants to build custom forms and surveys with diverse field types, conditional logic, validation rules, public/private links, and submission storage.
+
+**Console**
+Form designers create forms, configure response routing, set open/close deadlines, embed forms, and export submission spreadsheets.
+
+**Workspace**
+Users view assigned internal forms, save drafts, submit responses, and review submitted forms.
+
+**Common**
+Public form renderer, submission success page, embeddable form widget, field validation partials.
+
+**Dashboard**
+Required:
 ```text
 /BcpForms/Console/Dashboard
 /BcpForms/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /f/{code}
-/BcpForms/Common/Render/{code}
-/BcpForms/Common/Receipt
+/BcpForms/Common/FormRenderer/{code}
+/BcpForms/Common/SubmissionReceipt/{code}
 ```
 
-### 11. Survey Analytics & Graphical Reporting
+### 10. Survey Analytics & Insights
 
 **Core**
-Turns form and survey responses into charts, summaries, comparisons, and downloadable reports.
+Processes raw survey and form submissions into graphical dashboards, charts, cross-tabulations, sentiment summaries, and exportable analytics decks.
 
 **Console**
-Admins view response charts, segment answers, compare periods, export reports, and share dashboards with authorized staff.
+Data analysts view response rates, filter survey cohorts, generate bar/pie/trend charts, run sentiment analysis, and export slide-ready reports.
 
 **Workspace**
-Users may view public survey summaries or personal response summaries when enabled.
+Users view published survey findings or team-level aggregate insights if granted access.
 
 **Common**
-Chart widgets, summary cards, export components, filter partials, visual report partials.
+Chart widgets, response rate meters, cohort filter bars, presentation export views.
 
 **Dashboard**
 Required:
-
 ```text
-/BcpSurveyAnalytics/Console/Dashboard
-/BcpSurveyAnalytics/Workspace/Dashboard
+/BcpAnalytics/Console/Dashboard
+/BcpAnalytics/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpSurveyAnalytics/Common/PublicSummary/{code}
-/BcpSurveyAnalytics/Common/Export
-```
-
-### 12. Interactive User Manual & Knowledge Base
-
-**Core**
-Documents every BCP feature, role, page, action, and button-level guidance.
-
-**Console**
-Admins write manuals, link help topics to features, publish role-specific instructions, and review missing documentation.
-
-**Workspace**
-Users browse help articles, learn what they are allowed to do, and open contextual help from any feature.
-
-**Common**
-Contextual help partials, manual cards, article renderer, feature help links, role-specific instruction blocks.
-
-**Dashboard**
-Required:
-
-```text
-/BcpManuals/Console/Dashboard
-/BcpManuals/Workspace/Dashboard
-```
-
-**Common Routes**
-
-```text
-/kb
-/kb/{module}
-/BcpManuals/Common/ContextualHelp
+/BcpAnalytics/Common/SurveyInsights/{code}
+/BcpAnalytics/Common/ChartExport/{code}
 ```
 
 ---
 
-## Group 4: Financials, Billing & Revenue
+## Group 4: Events & Training Management
 
-These features handle money, dues, donations, tickets, funding, and financial tracking.
+These features manage conferences, training seminars, speaker lineups, ticket sales, attendance tracking, and certificate issuance.
 
-### 13. Financials & Dues Management
+### 11. Event Ticketing & Check-In
 
 **Core**
-Tracks dues, donations, recurring payments, categories, defaulters, reminders, and payment confirmations.
+Handles event ticketing, seat tiers, early-bird pricing, QR code digital tickets, registration limits, and on-site door check-in scanning.
 
 **Console**
-Finance operators create payment categories, review transactions, monitor defaulters, send reminders, reconcile payments, and export ledgers.
+Event managers create events, define ticket tiers, track ticket sales in real time, view attendee lists, and monitor gate check-in statistics.
 
-**Workspace**
-Users pay dues, view receipts, see outstanding balances, review personal payment history, and download receipts.
+**Workspace / Public**
+Attendees browse events, purchase tickets, receive digital QR tickets via email/wallet, and manage RSVP status.
 
 **Common**
-Checkout helpers, receipt partials, ledger exports, payment status badges, webhook handling, reminder templates.
+Public event landing page, ticket purchase flow, QR ticket pass, gate scanner camera partial.
 
 **Dashboard**
 Required:
-
-```text
-/BcpFinances/Console/Dashboard
-/BcpFinances/Workspace/Dashboard
-```
-
-**Common Routes**
-
-```text
-/pay/{code}
-/BcpFinances/Common/Receipt
-/BcpFinances/Common/PaymentReturn
-```
-
-### 14. Event & Concert Ticketing
-
-**Core**
-Manages events, ticket types, free and paid tickets, RSVP limits, QR/barcode validation, and attendance.
-
-**Console**
-Operators create events, configure ticket types, review sales, scan tickets, manage capacity, issue refunds where allowed, and export attendance.
-
-**Workspace**
-Users discover events, buy or reserve tickets, view their tickets, download receipts, and present QR codes.
-
-**Common**
-Ticket cards, QR generator, scanner partial, receipt page, event public page, ticket validation result.
-
-**Dashboard**
-Required:
-
 ```text
 /BcpTicketing/Console/Dashboard
 /BcpTicketing/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpTicketing/Common/Event/{code}
+/events/{code}
 /BcpTicketing/Common/Ticket/{code}
-/BcpTicketing/Common/Validate/{code}
+/BcpTicketing/Common/Scanner
 ```
 
-### 15. Proposal Pipeline
+### 12. Speaker & Session Management
 
 **Core**
-Manages internal ideas, pitches, budgets, review stages, approvals, and linked funding opportunities.
+Manages event schedules, keynote speakers, trainers, breakout tracks, bio profiles, workshop capacities, and attendee registration per session.
 
 **Console**
-Managers define proposal phases, review submissions, approve or reject proposals, request revisions, and link approved proposals to grants or projects.
+Event coordinators build the agenda, assign speakers/trainers to stages, set capacity limits per session, and publish session timetables.
 
-**Workspace**
-Staff submit proposals, upload documents, track status, respond to review comments, and revise drafts.
+**Workspace / Public**
+Attendees view speaker bios, build personal event itineraries, register for breakout workshops, and download presentation materials.
 
 **Common**
-Proposal cards, approval timeline, file preview, budget summary, status badges, phase widgets.
+Speaker card roster, interactive session timetable, workshop booking drawer, presentation download links.
 
 **Dashboard**
 Required:
+```text
+/BcpSessions/Console/Dashboard
+/BcpSessions/Workspace/Dashboard
+```
 
+**Common Routes**
+```text
+/BcpSessions/Common/Agenda/{eventCode}
+/BcpSessions/Common/SpeakerProfile/{code}
+```
+
+### 13. Attendee & Registration Management
+
+**Core**
+Manages event attendee rosters, pre-registrations, RSVP confirmations, check-in statuses, guest badge printing, and event communication.
+
+**Console**
+Event managers view real-time attendee lists, manage VIP guest lists, check in attendees manually or via scan, issue badge reprints, and broadcast event updates.
+
+**Workspace / Public**
+Attendees view their event tickets, confirm dietary/seating preferences, download registration passes, and connect with other attendees.
+
+**Common**
+Attendee directory table, registration pass modal, check-in status badge, badge printing template.
+
+**Dashboard**
+Required:
+```text
+/BcpAttendees/Console/Dashboard
+/BcpAttendees/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/BcpAttendees/Common/Pass/{ticketCode}
+/BcpAttendees/Common/BadgePrint/{code}
+```
+
+---
+
+## Group 5: Finance & Commercial Revenue
+
+These features manage membership dues, e-commerce stores, proposals, and grant finances.
+
+### 14. Invoicing & Dues Billing
+
+**Core**
+Manages membership dues, recurring subscription fees, invoice generation, payment gateway integration (Stripe, Paystack, PayPal), and automated reconciliation.
+
+**Console**
+Finance officers create dues schedules, track collections, issue payment reminders, process offline payments, and generate revenue statements.
+
+**Workspace / Public**
+Members view outstanding dues, make card/bank payments, download tax receipts, and view payment history.
+
+**Common**
+Invoice templates, payment checkout modal, payment receipt renderer, currency formatting widgets.
+
+**Dashboard**
+Required:
+```text
+/BcpFinance/Console/Dashboard
+/BcpFinance/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/pay/{invoiceCode}
+/BcpFinance/Common/Receipt/{code}
+/BcpFinance/Common/Checkout/{invoiceCode}
+```
+
+### 15. Store & E-Commerce
+
+**Core**
+Provides a digital store for physical goods, branded merchandise, digital downloads, course materials, inventory tracking, shopping cart, and order fulfillment.
+
+**Console**
+Store managers configure product catalogs, manage stock levels, set variant pricing, review orders, print shipping labels, and track sales revenue.
+
+**Workspace / Public**
+Customers and members browse the catalog, add products to cart, apply member discounts, checkout securely, and track order delivery.
+
+**Common**
+Product grid cards, shopping cart slideout drawer, checkout flow, order confirmation receipt, stock status badges.
+
+**Dashboard**
+Required:
+```text
+/BcpStore/Console/Dashboard
+/BcpStore/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/store
+/BcpStore/Common/Cart
+/BcpStore/Common/OrderReceipt/{orderNumber}
+```
+
+### 16. Proposal Pipeline & Contracts
+
+**Core**
+Tracks commercial, grant, or partnership proposals across pipeline stages (Draft, Review, Submitted, Won, Lost), assignees, and contract values.
+
+**Console**
+Business development managers manage proposal pipelines, assign writers, track deadlines, monitor win rates, and archive contracts.
+
+**Workspace**
+Proposal writers update drafts, submit sections for peer review, log funder feedback, and track submission dates.
+
+**Common**
+Pipeline kanban board, deal value summary widget, proposal stage badges, document attachment previews.
+
+**Dashboard**
+Required:
 ```text
 /BcpProposals/Console/Dashboard
 /BcpProposals/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpProposals/Common/FilePreview
-/BcpProposals/Common/StatusTimeline
+/BcpProposals/Common/ProposalCard/{code}
+/BcpProposals/Common/PipelineKanban
 ```
 
-### 16. Grant Ledger & Funding Tracking
+### 17. Grant Ledger & Funding Tracking
 
 **Core**
-Tracks donors, grants, disbursements, milestones, reporting deadlines, and funding compliance.
+Tracks incoming grant awards, disbursement schedules, allowable cost categories, expenditure ledgers, and compliance reporting timelines.
 
 **Console**
-Grant managers create donors, register awards, track milestones, monitor deadlines, link grants to proposals, and export donor reports.
+Grant managers register grant awards, track financial drawdowns, align expenses to donor budget lines, and generate donor financial reports.
 
 **Workspace**
-Assigned staff view grant responsibilities, submit milestone updates, upload documents, and track deadlines.
+Project leads log eligible grant expenses, upload receipts, and monitor budget utilization against milestones.
 
 **Common**
-Grant cards, donor cards, milestone timeline, deadline widgets, compliance export partials.
+Grant ledger summary, budget burn-rate meter, drawdown timeline, expense categorization partials.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpGrants/Console/Dashboard
 /BcpGrants/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpGrants/Common/MilestoneTimeline
-/BcpGrants/Common/DonorReport
+/BcpGrants/Common/Ledger/{code}
+/BcpGrants/Common/ComplianceReport/{code}
 ```
 
 ---
 
-## Group 5: Operations, Workflows & Assets
+## Group 6: Operations & Workflows
 
-These features manage daily operations, projects, recruitment, equipment, and assets.
+These features manage recruiting, voting, fleet, corporate assets, and projects.
 
-### 17. Recruitment & Applicant Tracking
+### 18. Recruitment & Applicant Tracking
 
 **Core**
-Manages job postings, applicants, documents, interview scheduling, scoring, and hiring status.
+Publishes job vacancies, accepts applications, parses resumes, tracks candidates across hiring pipelines, and coordinates interviews.
 
 **Console**
-HR teams create jobs, review applicants, schedule interviews, score candidates, update application statuses, and export hiring reports.
+HR recruiters post jobs, screen candidate applications, rate applicants, schedule interviews, and issue offer letters.
 
-**Workspace**
-Applicants or internal users apply for jobs, upload documents, view application status, and receive interview details.
+**Workspace / Public**
+Hiring managers evaluate assigned candidates and leave scorecard reviews; applicants submit resumes and track application status.
 
 **Common**
-Applicant portal auth, application forms, document upload partials, interview cards, public job posting pages.
+Public careers portal, applicant scorecard partial, interview calendar widget, resume viewer.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpRecruitment/Console/Dashboard
 /BcpRecruitment/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpRecruitment/Common/Jobs
-/BcpRecruitment/Common/Apply/{jobCode}
-/BcpRecruitment/Common/ApplicationStatus
+/careers/{jobCode}
+/BcpRecruitment/Common/Applicant/{code}
+/BcpRecruitment/Common/Scorecard
 ```
 
-### 18. Elections & E-Voting
+### 19. Elections & E-Voting
 
 **Core**
-Runs secure elections, vote categories, candidates, voter accreditation, vote casting, and result tabulation.
+Provides cryptographic, tamper-evident digital voting for executive elections, board seats, and organizational referendums.
 
 **Console**
-Election managers create elections, configure categories, add candidates, accredit voters, monitor turnout, close voting, and publish results.
+Election officers configure ballots, accredit eligible voters, define voting windows, audit participation, and publish certified results.
 
-**Workspace**
-Eligible users vote, view election status, confirm their vote has been recorded, and see published results.
+**Workspace / Public**
+Accredited voters review candidate manifestos, cast secure ballots, and obtain a cryptographic vote receipt.
 
 **Common**
-Public election entry route, ballot renderer, result widgets, accreditation status, vote receipt, candidate cards.
+Public election landing page, ballot renderer, live results widget, accreditation verification, vote receipt.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpVoting/Console/Dashboard
 /BcpVoting/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /e/{code}
 /BcpVoting/Common/Ballot/{code}
 /BcpVoting/Common/Results/{code}
 ```
 
-### 19. Fleet & Equipment Lifecycle Management
+### 20. Fleet & Equipment Lifecycle Management
 
 **Core**
-Tracks equipment, vehicles, gadgets, categories, assignments, maintenance, depreciation, and lifecycle status.
+Tracks machinery, vehicles, tools, IT gadgets, assignment logs, maintenance schedules, and asset depreciation.
 
 **Console**
-Operations teams register equipment, assign items, log maintenance, review status, calculate depreciation, and export equipment reports.
+Operations teams register items, assign equipment, schedule preventive maintenance, track depreciation, and manage inventory handovers.
 
 **Workspace**
-Users view assigned equipment, request maintenance, report issues, and acknowledge handover or return.
+Employees view assigned equipment, log maintenance issues, acknowledge custody, and report damage or returns.
 
 **Common**
-Asset cards, maintenance timeline, QR/barcode label partials, assignment forms, lifecycle status badges.
+Asset QR tags, maintenance history timeline, equipment checkout modal, status badges.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpEquipment/Console/Dashboard
 /BcpEquipment/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpEquipment/Common/AssetTag/{code}
 /BcpEquipment/Common/MaintenanceTimeline
 ```
 
-### 20. Company Asset Management
+### 21. Company Asset Management
 
 **Core**
-Tracks high-value corporate assets such as real estate, intellectual property, fixed assets, contracts, and valuations.
+Tracks high-value capital assets including real estate, intellectual property, corporate vehicles, valuation records, and contracts.
 
 **Console**
-Finance or asset officers register assets, update valuation, attach documents, track ownership, and produce balance-sheet reports.
+Asset officers register capital items, track depreciation and fair market valuations, attach deeds/contracts, and produce balance sheet reports.
 
 **Workspace**
-Users may view assets assigned to them or submit asset-related requests if enabled.
+Staff view custodial assets or submit asset relocation requests.
 
 **Common**
-Asset ledger partials, valuation history, document previews, ownership badges, export templates.
+Asset ledger table, valuation trend chart, document previewer, ownership certificate template.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpAssets/Console/Dashboard
 /BcpAssets/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpAssets/Common/LedgerExport
 /BcpAssets/Common/DocumentPreview
 ```
 
-### 21. Project & Task Tracking
+### 22. Project & Task Tracking
 
 **Core**
-Manages projects, sprints, tasks, assignees, priorities, statuses, and completion dashboards.
+Manages project milestones, sprint cycles, task delegation, priority queues, and team workload analytics.
 
 **Console**
-Project leads create projects, plan sprints, assign tasks, review workload, monitor progress, and export status reports.
+Project managers define milestones, assign tasks, review sprint velocity, monitor deadlines, and export progress summaries.
 
 **Workspace**
-Users view assigned tasks, update progress, comment, attach files, and track personal workload.
+Team members view assigned tasks, update task stages, log comments, attach work deliverables, and track personal to-do lists.
 
 **Common**
-Task cards, kanban partials, sprint widgets, project status badges, workload charts.
+Task Kanban board, sprint progress burndown widget, task detail modal, workload distribution charts.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpProjects/Console/Dashboard
 /BcpProjects/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
-/BcpProjects/Common/TaskCard
+/BcpProjects/Common/TaskCard/{code}
 /BcpProjects/Common/Kanban
 ```
 
 ---
 
-## Group 6: Communication, AI & Support
+## Group 7: Communication, AI & Support
 
-These features help the organization communicate, automate, and support users.
+These features manage AI acceleration, multi-channel messaging, helpdesk support, and social media presence.
 
-### 22. Bring-Your-Own-Key Artificial Intelligence
+### 23. Bring-Your-Own-Key Artificial Intelligence
 
 **Core**
-Allows tenants to connect their own Gemini, OpenAI, or Anthropic API keys and use AI assistance inside BCP.
+Allows tenants to connect their own OpenAI, Gemini, or Anthropic API keys for intelligent content drafting, document summarization, and workflow automation.
 
 **Console**
-Tenant owners configure providers, store keys, test connectivity, define AI usage rules, monitor usage, and disable providers.
+Administrators configure provider keys, set token rate limits, test model latency, establish safety guardrails, and audit AI consumption.
 
 **Workspace**
-Users use AI assistance where permitted, such as drafting newsletters, summarizing reports, rewriting proposals, or generating announcements.
+Users invoke AI assistants for drafting newsletter content, summarizing long reports, translating text, and writing announcements.
 
 **Common**
-AI prompt panel, provider status widget, usage meter, content generation partials, AI safety notices.
+AI prompt sidebar, model token meter, generated content previewer, prompt history log.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpSmartAssist/Console/Dashboard
 /BcpSmartAssist/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpSmartAssist/Common/Prompt
 /BcpSmartAssist/Common/ProviderStatus
 ```
 
-### 23. Mass Communication
+### 24. Mass Communication
 
 **Core**
-Handles newsletters, SMS campaigns, contacts, recipient lists, sender IDs, delivery logs, wallets, and campaign analytics.
+Delivers broadcast email newsletters, SMS alerts, subscriber list segmentation, SMS wallet funding, and delivery engagement logs.
 
 **Console**
-Communication managers create campaigns, segment audiences, schedule broadcasts, fund wallets, review delivery status, and track open rates.
+Marketing and communication leads compose email/SMS broadcasts, manage opt-in recipient segments, schedule sends, and monitor open/click rates.
 
-**Workspace**
-Users manage communication preferences, unsubscribe where allowed, view messages, and update contact details.
+**Workspace / Public**
+Users manage communication preferences, unsubscribe, and view past broadcasts.
 
 **Common**
-Campaign cards, recipient list partials, wallet funding pages, unsubscribe route, delivery badges, newsletter preview.
+Broadcast composer modal, recipient segmentation selector, wallet balance card, unsubscribe landing page.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpMassComm/Console/Dashboard
 /BcpMassComm/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /unsubscribe
 /BcpMassComm/Common/Preview
 /BcpMassComm/Common/WalletReceipt
 ```
 
-### 24. Helpdesk & Ticketing System
+### 25. Helpdesk & Ticketing System
 
 **Core**
-Manages user support requests, internal tickets, issue categories, staff assignment, SLA tracking, and resolution history.
+Manages internal IT/HR and customer support tickets, SLA deadlines, ticket categories, routing queues, and resolution histories.
 
 **Console**
-Support teams triage requests, assign agents, update ticket status, monitor response time, and review unresolved issues.
+Support agents triage tickets, set priorities, respond with canned solutions, escalate tickets, and track SLA compliance.
 
 **Workspace**
-Users submit support requests, attach screenshots/documents, reply to support, and track ticket status.
+Employees and customers log support tickets, attach error logs/screenshots, reply to agent messages, and monitor ticket status.
 
 **Common**
-Ticket cards, status timeline, attachment previews, SLA badges, notification partials.
+Ticket conversation timeline, SLA countdown badge, attachment gallery, ticket rating modal.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpHelpdesk/Console/Dashboard
 /BcpHelpdesk/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpHelpdesk/Common/Ticket/{code}
 /BcpHelpdesk/Common/AttachmentPreview
 ```
 
----
-
-## Group 7: Compliance, Learning & Access Control
-
-These features support compliance, official records, learning, certification, and physical visitor control.
-
-### 25. Document Management System
+### 26. Live Chat & Real-Time Messaging
 
 **Core**
-Provides a secure vault for official policies, minutes, board documents, files, approvals, versioning, and access logs.
+Provides real-time conversational messaging for website visitor lead capture, customer support chat widgets, agent routing, and public inquiries.
 
 **Console**
-Document controllers upload files, define access, review versions, approve documents, audit downloads, and archive outdated files.
+Support and sales teams manage live chat queues, assign incoming conversations, set automated canned responses, monitor agent response times, and review chat transcripts.
 
 **Workspace**
-Users view documents they are allowed to access, acknowledge policies, download files, and search the document library.
+Agents respond to live customer inquiries, transfer chats, and log customer lead information.
 
 **Common**
-Document cards, file preview, version timeline, access badges, approval widgets, download logs.
+Embeddable visitor live chat widget, agent inbox console, typing indicator, file attachment previewer, chat transcript export.
 
 **Dashboard**
 Required:
+```text
+/BcpLiveChat/Console/Dashboard
+/BcpLiveChat/Workspace/Dashboard
+```
 
+**Common Routes**
+```text
+/BcpLiveChat/Common/ChatWidget
+/BcpLiveChat/Common/Transcript/{code}
+```
+
+### 27. Social Media Manager
+
+**Core**
+Connects and manages corporate social media profiles (LinkedIn, X/Twitter, Facebook, Instagram, YouTube), schedules multi-channel publications, maintains a unified editorial content calendar, handles approval workflows, and tracks audience engagement analytics.
+
+**Console**
+Marketing and PR officers link social accounts, compose & schedule posts, establish editorial approval rules, monitor brand mentions/replies, track engagement rates & follower growth, and generate social performance reports.
+
+**Workspace**
+Content creators and team members draft post submissions, upload creative assets (images/videos), collaborate on copy, view the publishing calendar, and monitor publication status.
+
+**Common**
+Post composer modal, multi-platform preview widget, visual editorial calendar, social account badges, media asset selector, engagement metrics cards.
+
+**Dashboard**
+Required:
+```text
+/BcpSocialMedia/Console/Dashboard
+/BcpSocialMedia/Workspace/Dashboard
+```
+
+**Common Routes**
+```text
+/BcpSocialMedia/Common/PostPreview/{code}
+/BcpSocialMedia/Common/EditorialCalendar
+/BcpSocialMedia/Common/ConnectAccount
+```
+
+---
+
+## Group 8: Compliance, Learning & Certification
+
+These features support document integrity, staff training, verifiable credentials, and physical visitor access control.
+
+### 28. Document Management System
+
+**Core**
+Provides a secure corporate vault for official policies, board minutes, contracts, version control, role-based access permissions, and download audit trails.
+
+**Console**
+Document controllers upload files, enforce mandatory policy acknowledgment, manage version histories, and monitor access logs.
+
+**Workspace**
+Staff search the document library, acknowledge mandatory policies, download authorized files, and view revision histories.
+
+**Common**
+Document library browser, file previewer, version comparison widget, policy sign-off button.
+
+**Dashboard**
+Required:
 ```text
 /BcpDocuments/Console/Dashboard
 /BcpDocuments/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpDocuments/Common/Preview/{code}
 /BcpDocuments/Common/Download/{code}
 ```
 
-### 26. Learning Management System
+### 29. Learning Management System (LMS)
 
 **Core**
-Hosts courses, training videos, tests, compliance lessons, progress tracking, and certificates.
+Hosts multimedia training courses, video lessons, compliance quizzes, learner completion tracking, and digital course certificates.
 
 **Console**
-Training managers create courses, upload lessons, set tests, assign learners, review progress, and issue certificates.
+Training managers create course modules, upload lesson materials, set passing grades, assign employee cohorts, and track completion rates.
 
 **Workspace**
-Users take courses, watch lessons, complete tests, track progress, and download certificates.
+Learners take courses, watch video lessons, take tests, track progress, and download earned course certificates.
 
 **Common**
-Course cards, lesson player, quiz renderer, certificate template, progress widgets.
+Course catalog cards, lesson video player, quiz renderer, course progress tracker.
 
 **Dashboard**
 Required:
-
 ```text
 /BcpLearning/Console/Dashboard
 /BcpLearning/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpLearning/Common/Course/{code}
-/BcpLearning/Common/Certificate/{code}
+/BcpLearning/Common/Lesson/{code}
 ```
 
-### 27. Visitor & Gate Management
+### 30. Certificate Designer & Digital Verification
 
 **Core**
-Digitizes front-desk and gate visitor registration, guest photos, host notification, badge printing, and visitor history.
+Enables organizations to design professional digital certificates, issue verifiable credentials with unique cryptographic verification links/QR codes, and provide a public verification portal.
 
 **Console**
-Security staff register guests, capture photos, notify hosts, print visitor badges, monitor current visitors, and export logs.
+Credential officers design drag-and-drop certificate templates (fonts, badges, borders, signatures), link issuance triggers (from LMS courses or Event attendance), manage issued certificates, and revoke credentials if needed.
 
-**Workspace**
-Staff view expected visitors, approve visits, receive arrival notifications, and review visitor history linked to them.
+**Workspace / Public**
+Recipients receive digitally signed certificates, download high-res PDFs, share credentials directly to LinkedIn, and allow employers/public to verify legitimacy online.
 
 **Common**
-Visitor badge, check-in form, photo capture partial, host notification template, gate display view.
+Visual certificate designer canvas, public certificate verification page (`/verify/{certId}`), cryptographic QR code badge, LinkedIn credential share button.
 
 **Dashboard**
 Required:
+```text
+/BcpCertificates/Console/Dashboard
+/BcpCertificates/Workspace/Dashboard
+```
 
+**Common Routes**
+```text
+/verify/{credentialId}
+/BcpCertificates/Common/Designer
+/BcpCertificates/Common/Download/{credentialId}
+```
+
+### 31. Visitor & Gate Management
+
+**Core**
+Digitizes visitor registration at security gates and front desks, captures guest photos, notifies hosts, prints badges, and logs visitor history.
+
+**Console**
+Receptionists and security officers register visitors, print visitor passes, notify hosts, track on-site guests, and export entry/exit logs.
+
+**Workspace**
+Employees pre-register expected visitors, approve guest visits, and receive real-time host arrival alerts.
+
+**Common**
+Visitor badge printable, quick check-in kiosk form, visitor photo capture partial, host arrival notification template.
+
+**Dashboard**
+Required:
 ```text
 /BcpVisitors/Console/Dashboard
 /BcpVisitors/Workspace/Dashboard
 ```
 
 **Common Routes**
-
 ```text
 /BcpVisitors/Common/CheckIn
 /BcpVisitors/Common/Badge/{code}
 ```
-
----
-
-## Build Priority
-
-Recommended implementation order:
-
-1. Platform Console
-2. Feature Management & Billing
-3. BCP Identity & Authentication
-4. User Management & Performance
-5. Security, Roles & Audit
-6. Dynamic Reports
-7. Forms & Surveys
-8. Finance & Dues
-9. Ticketing
-10. Voting
-11. Mass Communication
-12. Projects & Tasks
-13. Remaining features by tenant demand
-
----
-
-## Standard Feature Folder Pattern
-
-Every feature should follow this folder shape:
-
-```text
-Areas/
-  BcpFeatureName/
-    Pages/
-      Console/
-        Dashboard.cshtml
-        Dashboard.cshtml.cs
-      Workspace/
-        Dashboard.cshtml
-        Dashboard.cshtml.cs
-      Common/
-        Partials/
-        Exports/
-        Receipts/
-        Public/
-```
-
-The Console dashboard is mandatory for every feature. Workspace dashboards are also recommended for every feature, but may be lightweight when the feature is mostly operational.

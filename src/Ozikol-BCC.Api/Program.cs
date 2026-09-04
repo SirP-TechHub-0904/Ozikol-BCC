@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Hubs;
@@ -37,7 +39,9 @@ namespace Ozikol_BCC.Api
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 
-                ?? "Server=JSS\\SQLEXPRESS;Database=Ozikol_MasterCatalogDb;Integrated Security=true;TrustServerCertificate=True;";
+                ?? throw new InvalidOperationException(
+                    "CRITICAL CONFIGURATION ERROR: Master database connection string is not configured. " +
+                    "Please specify 'TenantConfiguration:ConnectionString' or 'ConnectionStrings:DefaultConnection' in your .env file, appsettings.json, or environment variables.");
 
             builder.Services.AddDbContext<MasterCatalogDbContext>(options =>
                 options.UseSqlServer(masterConnectionString));

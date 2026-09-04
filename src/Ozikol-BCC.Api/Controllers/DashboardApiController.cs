@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 

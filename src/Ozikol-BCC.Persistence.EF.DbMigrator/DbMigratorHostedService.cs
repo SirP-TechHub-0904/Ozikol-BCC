@@ -1,3 +1,5 @@
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;

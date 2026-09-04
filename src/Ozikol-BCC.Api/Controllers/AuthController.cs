@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Ozikol_BCC.Api.Models;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
