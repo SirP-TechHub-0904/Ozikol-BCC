@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 using Ozikol.Central.Services;
+using Ozikol.Central.Services.Legal;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
@@ -118,6 +119,7 @@ builder.Services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 builder.Services.AddScoped<ICentralEmailService, CentralEmailService>();
 builder.Services.AddScoped<ICentralTwoFactorService, CentralTwoFactorService>();
 builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
+builder.Services.AddScoped<ILegalService, LegalService>();
 builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 

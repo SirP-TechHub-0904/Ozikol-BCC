@@ -29,6 +29,7 @@ namespace Ozikol.Central.Services
                 await MasterCatalogDataSeeder.SeedRolesAndSuperAdminAsync(dbContext, roleManager, userManager);
                 await MasterCatalogDataSeeder.SeedCurrenciesAsync(dbContext);
                 await MasterCatalogDataSeeder.SeedPlatformSettingsAsync(dbContext);
+                await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(dbContext);
             }
             catch
             {
