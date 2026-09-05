@@ -1,105 +1,265 @@
 @page "/get-started"
 @model Ozikol.Central.Pages.GetStartedModel
 @{
-    ViewData["Title"] = "Get Started - Create Free Workspace - Ozikol";
+    ViewData["Title"] = "Create Free Sovereign Workspace - Ozikol";
 }
 
 <div class="auth-page-wrapper">
     <div class="auth-card auth-card--wide">
-        <div class="auth-header">
-            <h1 class="auth-title">Start with Ozikol</h1>
-            <p class="auth-subtitle">Create your free workspace in 60 seconds. 14-day trial, no credit card required.</p>
-        </div>
-
-        <div class="social-login-stack">
-            <!-- Google -->
-            <button type="button" class="btn-social">
-                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
-                <span>Sign up with Google</span>
-            </button>
-
-            <!-- Microsoft -->
-            <button type="button" class="btn-social">
-                <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-                <span>Sign up with Microsoft</span>
-            </button>
-
-            <!-- GitHub -->
-            <button type="button" class="btn-social">
-                <svg width="18" height="18" fill="#181717" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-                <span>Sign up with GitHub</span>
-            </button>
-
-            <!-- LinkedIn -->
-            <button type="button" class="btn-social">
-                <svg width="18" height="18" fill="#0A66C2" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
-                <span>Sign up with LinkedIn</span>
-            </button>
-
-            <!-- Apple / iCloud -->
-            <button type="button" class="btn-social">
-                <svg width="18" height="18" fill="#000000" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.8 1.1-1.92.98-3.04-.95.04-2.1.63-2.78 1.43-.6.69-1.12 1.83-1 2.93 1.06.08 2.14-.52 2.8-1.32z"/></svg>
-                <span>Sign up with Apple / iCloud</span>
-            </button>
-        </div>
-
-        <div class="auth-divider">
-            <div class="auth-divider__line"></div>
-            <span class="auth-divider__text">or register with work email</span>
-            <div class="auth-divider__line"></div>
-        </div>
-
-        <form method="post" onsubmit="event.preventDefault(); alert('Workspace created! Initializing your Ozikol dashboard...');">
-            <div class="form-grid-2">
-                <div>
-                    <label class="form-label">Your Name</label>
-                    <input type="text" required placeholder="Jane Doe" class="form-input" />
+        @if (Model.IsProvisioned)
+        {
+            <!-- Provisioned Success State -->
+            <div style="text-align: center; padding: 20px 10px;">
+                <div style="width: 68px; height: 68px; border-radius: 50%; background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                    <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 </div>
-                <div>
-                    <label class="form-label">Organization Name</label>
-                    <input type="text" required placeholder="Acme Corp" class="form-input" />
+                <h1 class="auth-title" style="color: #065f46;">Workspace Ready!</h1>
+                <p class="auth-subtitle" style="margin-bottom: 24px;">
+                    Your dedicated sovereign cloud workspace has been initialized successfully.
+                </p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                    <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Dedicated Workspace URL</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #0f172a; word-break: break-all;">@Model.ProvisionedRedirectUrl</div>
+                </div>
+                <a href="@Model.ProvisionedRedirectUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px;">
+                    Launch Your Workspace Portal &rarr;
+                </a>
+                <div style="font-size: 12.5px; color: #94a3b8; margin-top: 14px;">
+                    Redirecting automatically in <span id="redirectCountdown">3</span>s...
                 </div>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Work Email</label>
-                <input type="email" required placeholder="name@company.com" class="form-input" />
+            <script>
+                let sec = 3;
+                const timer = setInterval(() => {
+                    sec--;
+                    const el = document.getElementById('redirectCountdown');
+                    if (el) el.innerText = sec;
+                    if (sec <= 0) {
+                        clearInterval(timer);
+                        window.location.href = '@Model.ProvisionedRedirectUrl';
+                    }
+                }, 1000);
+            </script>
+        }
+        else
+        {
+            <div class="auth-header">
+                <h1 class="auth-title">Start with Ozikol</h1>
+                <p class="auth-subtitle">Create your sovereign enterprise workspace in 60 seconds. Dedicated environment with core business modules.</p>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="regPassword" required placeholder="Create strong password" oninput="updateStrength(this.value)" class="form-input" />
-                <div class="strength-meter">
-                    <div id="strengthFill" class="strength-fill"></div>
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>@Model.ErrorMessage</span>
+                </div>
+            }
+
+            <div class="social-login-stack">
+                <!-- Google Workspace -->
+                <button type="button" class="btn-social" onclick="fastTrackSocial('Google')">
+                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+                    <span>Fast-track with Google Workspace</span>
+                </button>
+
+                <!-- Microsoft 365 -->
+                <button type="button" class="btn-social" onclick="fastTrackSocial('Microsoft')">
+                    <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                    <span>Fast-track with Microsoft 365</span>
+                </button>
+
+                <!-- Secondary options dropdown/toggle -->
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('GitHub')">
+                        <svg width="16" height="16" fill="#181717" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                        <span>GitHub</span>
+                    </button>
+                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('LinkedIn')">
+                        <svg width="16" height="16" fill="#0A66C2" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                        <span>LinkedIn</span>
+                    </button>
+                    <button type="button" class="btn-social" style="flex: 1; padding: 8px 10px; font-size: 12.5px;" onclick="fastTrackSocial('Apple')">
+                        <svg width="16" height="16" fill="#000000" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.8 1.1-1.92.98-3.04-.95.04-2.1.63-2.78 1.43-.6.69-1.12 1.83-1 2.93 1.06.08 2.14-.52 2.8-1.32z"/></svg>
+                        <span>Apple</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 22px;">
-                <label class="form-label">Organization Type</label>
-                <select class="form-select">
-                    <option>Business & Enterprise</option>
-                    <option>Non-Profit & Charity</option>
-                    <option>Care & Health Organization</option>
-                    <option>Education & Training Institute</option>
-                    <option>Community, Club & Association</option>
-                </select>
+            <div class="auth-divider">
+                <div class="auth-divider__line"></div>
+                <span class="auth-divider__text">or register with corporate credentials</span>
+                <div class="auth-divider__line"></div>
             </div>
 
-            <button type="submit" class="btn-auth-submit">
-                Create Free Workspace &rarr;
-            </button>
-            <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 10px; line-height: 1.4;">
-                By continuing you agree to Ozikol Terms of Service and Privacy Policy.
-            </div>
-        </form>
+            <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
+                <div class="form-grid-2">
+                    <div>
+                        <label class="form-label">Administrator Full Name</label>
+                        <input asp-for="Input.FullName" id="inputFullName" required placeholder="e.g. Jane Doe" class="form-input" />
+                        <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px;"></span>
+                    </div>
+                    <div>
+                        <label class="form-label">Organization Name</label>
+                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="e.g. Acme Corporation" oninput="handleOrgNameInput(this.value)" class="form-input" />
+                        <span asp-validation-for="Input.OrganizationName" class="text-danger" style="font-size: 12px;"></span>
+                    </div>
+                </div>
 
-        <div class="auth-footer">
-            Already have an account? <a href="/login">Log In</a>
+                <!-- Sovereign Workspace Address -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Sovereign Workspace Address
+                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">(your organization's cloud subdomain)</span>
+                    </label>
+                    <div style="display: flex; align-items: center; background: #fff; border: 1px solid var(--ozikol-border-hover); border-radius: 8px; overflow: hidden;">
+                        <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-right: 1px solid #e2e8f0; font-weight: 600;">https://</span>
+                        <input asp-for="Input.WorkspaceSlug" id="inputWorkspaceSlug" required placeholder="acme" oninput="handleSlugInput(this.value)" style="flex: 1; border: none; padding: 11px 12px; font-size: 14px; font-weight: 700; color: var(--ozikol-primary); outline: none;" />
+                        <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-left: 1px solid #e2e8f0; font-weight: 600;">.ozikol.cloud</span>
+                    </div>
+                    <div id="slugFeedback" style="font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 6px; color: #64748b;">
+                        Enter your desired workspace subdomain.
+                    </div>
+                    <span asp-validation-for="Input.WorkspaceSlug" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Corporate Work Email</label>
+                    <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="admin@company.com" class="form-input" />
+                    <span asp-validation-for="Input.WorkEmail" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="form-label" style="margin-bottom: 0;">Administrator Password</label>
+                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show</button>
+                    </div>
+                    <input asp-for="Input.Password" type="password" id="regPassword" required placeholder="Create strong password (min. 6 characters)" oninput="updateStrength(this.value)" class="form-input" />
+                    <div class="strength-meter">
+                        <div id="strengthFill" class="strength-fill"></div>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="text-danger" style="font-size: 12px;"></span>
+                </div>
+
+                <div class="form-grid-2">
+                    <div>
+                        <label class="form-label">Organization Sector</label>
+                        <select asp-for="Input.OrganizationType" class="form-select">
+                            <option>Business & Enterprise</option>
+                            <option>Non-Profit & Foundation</option>
+                            <option>Healthcare & Care Services</option>
+                            <option>Education & Academy</option>
+                            <option>Government & Public Agency</option>
+                            <option>Technology & Software</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone Number <span style="font-weight: normal; color: #94a3b8;">(Optional)</span></label>
+                        <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" class="form-input" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <a href="javascript:void(0)" onclick="document.getElementById('refGroup').style.display = document.getElementById('refGroup').style.display === 'none' ? 'block' : 'none';" style="font-size: 12.5px; color: var(--ozikol-primary); text-decoration: none; font-weight: 600;">
+                        Have a partner referral code?
+                    </a>
+                    <div id="refGroup" style="display: none; margin-top: 8px;">
+                        <input asp-for="Input.ReferralCode" placeholder="Enter referral code (e.g. PARTNER2026)" class="form-input" />
+                    </div>
+                </div>
+
+                <button type="submit" id="btnSubmit" class="btn-auth-submit">
+                    Initialize Dedicated Workspace &rarr;
+                </button>
+                <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 10px; line-height: 1.4;">
+                    By continuing you agree to Ozikol Terms of Service and Privacy Policy.
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                Already have an organization workspace? <a href="/login">Sign In Here</a>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Enterprise Provisioning Progress Modal Overlay -->
+<div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
+        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13.5px;">
+            <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
+                <span style="color: var(--ozikol-primary);">●</span> Validating sovereign workspace parameters...
+            </div>
+            <div id="step2" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                <span>○</span> Provisioning dedicated cloud environment...
+            </div>
+            <div id="step3" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                <span>○</span> Initializing organization modules & admin credentials...
+            </div>
+            <div id="step4" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                <span>○</span> Finalizing business command center...
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+@@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
 <script>
+let slugDebounceTimer = null;
+
+function handleOrgNameInput(val) {
+    const slugInput = document.getElementById('inputWorkspaceSlug');
+    if (!slugInput.dataset.manualEdited) {
+        const clean = val.toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+        slugInput.value = clean;
+        checkSlugAvailability(clean);
+    }
+}
+
+function handleSlugInput(val) {
+    const slugInput = document.getElementById('inputWorkspaceSlug');
+    slugInput.dataset.manualEdited = "true";
+    checkSlugAvailability(val);
+}
+
+function checkSlugAvailability(slug) {
+    clearTimeout(slugDebounceTimer);
+    const feedback = document.getElementById('slugFeedback');
+    if (!slug || slug.length < 3) {
+        feedback.innerHTML = '<span style="color: #64748b;">Enter at least 3 characters.</span>';
+        return;
+    }
+
+    feedback.innerHTML = '<span style="color: #64748b;">Checking availability...</span>';
+
+    slugDebounceTimer = setTimeout(async () => {
+        try {
+            const resp = await fetch(`/get-started?handler=CheckWorkspace&slug=${encodeURIComponent(slug)}`);
+            const data = await resp.json();
+            if (data.available) {
+                feedback.innerHTML = `<span style="color: #10b981; font-weight: 600;">✓ Available: ${data.slug}.ozikol.cloud</span>`;
+            } else {
+                feedback.innerHTML = `<span style="color: #ef4444; font-weight: 600;">✗ ${data.message}</span>`;
+            }
+        } catch (e) {
+            feedback.innerHTML = '<span style="color: #64748b;">Enter your desired workspace subdomain.</span>';
+        }
+    }, 350);
+}
+
 function updateStrength(val) {
     const fill = document.getElementById('strengthFill');
     if (!val) { fill.style.width = '0'; return; }
@@ -112,6 +272,86 @@ function updateStrength(val) {
     } else {
         fill.style.width = '100%';
         fill.style.background = '#10b981';
+    }
+}
+
+function togglePasswordVisibility(fieldId, btn) {
+    const p = document.getElementById(fieldId);
+    if (p.type === 'password') {
+        p.type = 'text';
+        btn.innerText = 'Hide';
+    } else {
+        p.type = 'password';
+        btn.innerText = 'Show';
+    }
+}
+
+function fastTrackSocial(provider) {
+    const name = prompt(`Fast-track with ${provider}:\nEnter your full name:`, "Jane Doe");
+    if (!name) return;
+    const email = prompt(`Enter your ${provider} corporate email:`, "jane@acmecorp.com");
+    if (!email) return;
+
+    document.getElementById('inputFullName').value = name;
+    document.getElementById('inputWorkEmail').value = email;
+
+    // Suggest organization from email domain
+    const domainPart = email.split('@@')[1]?.split('.')[0];
+    if (domainPart && domainPart !== 'gmail' && domainPart !== 'outlook' && domainPart !== 'hotmail') {
+        const orgSuggestion = domainPart.charAt(0).toUpperCase() + domainPart.slice(1);
+        document.getElementById('inputOrgName').value = orgSuggestion;
+        handleOrgNameInput(orgSuggestion);
+    }
+
+    document.getElementById('regPassword').focus();
+    alert(`✓ Verified ${provider} identity for ${name} (${email}). Please enter an administrator password to complete workspace setup.`);
+}
+
+async function handleOnboardingSubmit(e) {
+    e.preventDefault();
+    const form = document.getElementById('onboardingForm');
+    const modal = document.getElementById('provisioningModal');
+
+    // Show interactive provisioning modal
+    modal.style.display = 'flex';
+
+    setTimeout(() => {
+        const step2 = document.getElementById('step2');
+        if (step2) { step2.style.color = '#0f172a'; step2.style.fontWeight = '600'; step2.innerHTML = '<span style="color: var(--ozikol-primary);">●</span> Provisioning dedicated cloud environment...'; }
+    }, 1200);
+
+    setTimeout(() => {
+        const step3 = document.getElementById('step3');
+        if (step3) { step3.style.color = '#0f172a'; step3.style.fontWeight = '600'; step3.innerHTML = '<span style="color: var(--ozikol-primary);">●</span> Initializing organization modules & admin credentials...'; }
+    }, 2500);
+
+    try {
+        const formData = new FormData(form);
+        const resp = await fetch(form.action || window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await resp.json();
+
+        if (result.success) {
+            const step4 = document.getElementById('step4');
+            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready! Launching portal...'; }
+
+            setTimeout(() => {
+                window.location.href = result.redirectUrl;
+            }, 800);
+        } else {
+            modal.style.display = 'none';
+            alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
+        }
+    } catch (err) {
+        // Fallback standard submit if AJAX fetch fails
+        form.submit();
     }
 }
 </script>

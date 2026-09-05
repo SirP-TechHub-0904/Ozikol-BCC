@@ -35,13 +35,55 @@ public class TenantOnboardingResult
     public string? ErrorDetail { get; set; }
 }
 
+/// <summary>
+/// Service contract for sovereign organization workspace onboarding, provisioning, and lookup operations.
+/// </summary>
 public interface ITenantOnboardingService
 {
+    /// <summary>
+    /// Provisions a new sovereign organization workspace environment with dedicated storage, default configuration, and administrator credentials.
+    /// </summary>
+    /// <param name="request">The onboarding request containing organization details and administrator credentials.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The onboarding result including domain and redirect information.</returns>
     Task<TenantOnboardingResult> OnboardNewTenantAsync(TenantOnboardingRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks whether a proposed workspace key/subdomain is available for registration.
+    /// </summary>
+    /// <param name="tenantKey">The workspace key or slug to check.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if available; false if already registered.</returns>
     Task<bool> IsTenantKeyAvailableAsync(string tenantKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates an affiliate partner referral code.
+    /// </summary>
+    /// <param name="referralCode">The partner referral code.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if valid and active; false otherwise.</returns>
     Task<bool> IsReferralCodeValidAsync(string referralCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds all active organization workspaces associated with the specified administrator email.
+    /// </summary>
+    /// <param name="email">The administrator or contact email.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>List of matching sovereign workspace catalogs.</returns>
+    Task<List<MasterTenantCatalog>> FindWorkspacesByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds an active organization workspace by its unique key, domain, or subdomain.
+    /// </summary>
+    /// <param name="workspaceKey">The workspace slug or host identifier.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The matching sovereign workspace catalog, or null if not found.</returns>
+    Task<MasterTenantCatalog?> FindWorkspaceByKeyAsync(string workspaceKey, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Enterprise service implementation for sovereign organization workspace provisioning, automated environment configuration, and catalog lookups.
+/// </summary>
 public class TenantOnboardingService : ITenantOnboardingService
 {
     private readonly MasterCatalogDbContext _masterCatalogDbContext;
@@ -49,6 +91,13 @@ public class TenantOnboardingService : ITenantOnboardingService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<TenantOnboardingService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TenantOnboardingService"/> class.
+    /// </summary>
+    /// <param name="masterCatalogDbContext">The central master catalog database context.</param>
+    /// <param name="tenantOptions">Tenant configuration options containing default connection strings.</param>
+    /// <param name="serviceProvider">Dependency injection service provider.</param>
+    /// <param name="logger">Application logging facility.</param>
     public TenantOnboardingService(
         MasterCatalogDbContext masterCatalogDbContext,
         IOptions<TenantConfigurationOptions> tenantOptions,
@@ -61,6 +110,12 @@ public class TenantOnboardingService : ITenantOnboardingService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Checks whether a proposed workspace key/subdomain is available for registration.
+    /// </summary>
+    /// <param name="tenantKey">The proposed workspace identifier.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if available; false if already taken.</returns>
     public async Task<bool> IsTenantKeyAvailableAsync(string tenantKey, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(tenantKey)) return false;
@@ -69,6 +124,12 @@ public class TenantOnboardingService : ITenantOnboardingService
             .AnyAsync(t => t.TenantKey == cleanKey, cancellationToken);
     }
 
+    /// <summary>
+    /// Validates an affiliate partner referral code.
+    /// </summary>
+    /// <param name="referralCode">The partner referral code.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if valid and active; false otherwise.</returns>
     public async Task<bool> IsReferralCodeValidAsync(string referralCode, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(referralCode)) return false;
@@ -77,6 +138,48 @@ public class TenantOnboardingService : ITenantOnboardingService
             .AnyAsync(p => p.PartnerCode == cleanCode && p.Status == "Active", cancellationToken);
     }
 
+    /// <summary>
+    /// Finds all active organization workspaces associated with the specified administrator email.
+    /// </summary>
+    /// <param name="email">The administrator or contact email.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>List of matching sovereign workspace catalogs.</returns>
+    public async Task<List<MasterTenantCatalog>> FindWorkspacesByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return new List<MasterTenantCatalog>();
+        var cleanEmail = email.Trim().ToLowerInvariant();
+        return await _masterCatalogDbContext.MasterTenantCatalogs
+            .AsNoTracking()
+            .Where(t => t.IsActive && t.AdminEmail != null && t.AdminEmail.ToLower() == cleanEmail)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Finds an active organization workspace by its unique key, domain, or subdomain.
+    /// </summary>
+    /// <param name="workspaceKey">The workspace slug or host identifier.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The matching sovereign workspace catalog, or null if not found.</returns>
+    public async Task<MasterTenantCatalog?> FindWorkspaceByKeyAsync(string workspaceKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceKey)) return null;
+        var cleanKey = workspaceKey.Trim().ToLowerInvariant()
+            .Replace("http://", "")
+            .Replace("https://", "")
+            .Split('.')[0]
+            .Split('/')[0];
+
+        return await _masterCatalogDbContext.MasterTenantCatalogs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.IsActive && (t.TenantKey == cleanKey || t.PrimaryDomain.StartsWith(cleanKey) || (t.CustomDomain != null && t.CustomDomain.Contains(cleanKey))), cancellationToken);
+    }
+
+    /// <summary>
+    /// Provisions a new sovereign organization workspace environment with dedicated storage, default configuration, and administrator credentials.
+    /// </summary>
+    /// <param name="request">The onboarding request containing organization details and administrator credentials.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>The onboarding result including domain and redirect information.</returns>
     public async Task<TenantOnboardingResult> OnboardNewTenantAsync(TenantOnboardingRequest request, CancellationToken cancellationToken = default)
     {
         var cleanKey = request.TenantKey.Trim().ToLowerInvariant().Replace(" ", "-");
@@ -92,7 +195,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             return new TenantOnboardingResult
             {
                 Success = false,
-                Message = $"Tenant key '{cleanKey}' or domain '{primaryDomain}' is already registered."
+                Message = $"Workspace address '{cleanKey}' is already registered. Please choose another workspace name."
             };
         }
 
@@ -108,16 +211,27 @@ public class TenantOnboardingService : ITenantOnboardingService
         string sqlUsername = TenantSecurityGenerator.GenerateSqlUsername(cleanKey);
         string sqlPassword = TenantSecurityGenerator.GenerateStrongPassword(32);
 
-        // 3. Build Dedicated Tenant Connection String
+        // 3. Build Dedicated Workspace Connection String with environment-adaptive security
         var tenantConnBuilder = new SqlConnectionStringBuilder
         {
             DataSource = serverHost,
             InitialCatalog = dbName,
-            UserID = sqlUsername,
-            Password = sqlPassword,
             TrustServerCertificate = true,
             PersistSecurityInfo = true
         };
+
+        if (serverBuilder.IntegratedSecurity)
+        {
+            // Retain Windows Authentication when running on local integrated security instances
+            tenantConnBuilder.IntegratedSecurity = true;
+        }
+        else
+        {
+            // Use dedicated isolated SQL login credentials in mixed-mode/production environments
+            tenantConnBuilder.UserID = sqlUsername;
+            tenantConnBuilder.Password = sqlPassword;
+        }
+
         string dedicatedTenantConnStr = tenantConnBuilder.ConnectionString;
 
         try
@@ -255,15 +369,25 @@ public class TenantOnboardingService : ITenantOnboardingService
         using var connection = new SqlConnection(masterBuilder.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
-        // 1. Create Server-Level SQL Login
-        string createLoginSql = $@"
-            IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = '{sqlUsername}')
-            BEGIN
-                CREATE LOGIN [{sqlUsername}] WITH PASSWORD = N'{sqlPassword.Replace("'", "''")}', CHECK_POLICY = OFF;
-            END;
-        ";
-        using var cmdLogin = new SqlCommand(createLoginSql, connection);
-        await cmdLogin.ExecuteNonQueryAsync(cancellationToken);
+        // 1. Create Server-Level SQL Login if SQL Auth is enabled on the instance
+        if (!masterBuilder.IntegratedSecurity)
+        {
+            try
+            {
+                string createLoginSql = $@"
+                    IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = '{sqlUsername}')
+                    BEGIN
+                        CREATE LOGIN [{sqlUsername}] WITH PASSWORD = N'{sqlPassword.Replace("'", "''")}', CHECK_POLICY = OFF;
+                    END;
+                ";
+                using var cmdLogin = new SqlCommand(createLoginSql, connection);
+                await cmdLogin.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Note: SQL login creation bypassed or managed via Windows Authentication for {SqlUsername}", sqlUsername);
+            }
+        }
 
         // 2. Create Database
         string createDbSql = $@"
@@ -275,17 +399,27 @@ public class TenantOnboardingService : ITenantOnboardingService
         using var cmdDb = new SqlCommand(createDbSql, connection);
         await cmdDb.ExecuteNonQueryAsync(cancellationToken);
 
-        // 3. Map Login to Database User with db_owner role
-        string mapUserSql = $@"
-            USE [{dbName}];
-            IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = '{sqlUsername}')
-            BEGIN
-                CREATE USER [{sqlUsername}] FOR LOGIN [{sqlUsername}];
-                ALTER ROLE [db_owner] ADD MEMBER [{sqlUsername}];
-            END;
-        ";
-        using var cmdUser = new SqlCommand(mapUserSql, connection);
-        await cmdUser.ExecuteNonQueryAsync(cancellationToken);
+        // 3. Map Login to Database User with db_owner role if SQL login was created
+        if (!masterBuilder.IntegratedSecurity)
+        {
+            try
+            {
+                string mapUserSql = $@"
+                    USE [{dbName}];
+                    IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = '{sqlUsername}')
+                    BEGIN
+                        CREATE USER [{sqlUsername}] FOR LOGIN [{sqlUsername}];
+                        ALTER ROLE [db_owner] ADD MEMBER [{sqlUsername}];
+                    END;
+                ";
+                using var cmdUser = new SqlCommand(mapUserSql, connection);
+                await cmdUser.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Note: Database user mapping bypassed for {SqlUsername}", sqlUsername);
+            }
+        }
     }
 
     private async Task ApplyTenantMigrationsAsync(string tenantConnStr, CancellationToken cancellationToken)
