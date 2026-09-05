@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Ozikol.Central.Models.News;
-using Ozikol.Central.Pages.Features;
 using Ozikol.Central.Services;
 
 namespace Ozikol.Central.Pages;
@@ -14,7 +15,7 @@ namespace Ozikol.Central.Pages;
 /// Page model handling the dynamic Central newsroom, category filtering, keyword search,
 /// and reCAPTCHA-protected press and newsletter subscriptions.
 /// </summary>
-public class NewsModel : FeatureDetailPageModel
+public class NewsModel : PageModel
 {
     private readonly INewsService _newsService;
     private readonly IRecaptchaService _recaptchaService;
@@ -35,6 +36,11 @@ public class NewsModel : FeatureDetailPageModel
         _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
+
+    /// <summary>
+    /// Gets the active 2-letter ISO language code for localized URL routing.
+    /// </summary>
+    public string CurrentCulture { get; private set; } = "en";
 
     /// <summary>
     /// Gets or sets the active category filter key from query string.
@@ -85,6 +91,7 @@ public class NewsModel : FeatureDetailPageModel
     /// </summary>
     public async Task OnGetAsync()
     {
+        ResolveCulture();
         Categories = await _newsService.GetCategoriesAsync();
         Articles = await _newsService.GetArticlesAsync(Category, Query);
         FeaturedArticle = await _newsService.GetFeaturedArticleAsync();
@@ -96,6 +103,7 @@ public class NewsModel : FeatureDetailPageModel
     /// <returns>Redirect back to news page with status message.</returns>
     public async Task<IActionResult> OnPostSubscribeAsync()
     {
+        ResolveCulture();
         Categories = await _newsService.GetCategoriesAsync();
         Articles = await _newsService.GetArticlesAsync(Category, Query);
         FeaturedArticle = await _newsService.GetFeaturedArticleAsync();
@@ -117,6 +125,15 @@ public class NewsModel : FeatureDetailPageModel
 
         StatusMessage = "Thank you for subscribing to the Ozikol Newsroom. You will receive updates directly to your inbox.";
         return RedirectToPage(new { culture = CurrentCulture, Category, Query });
+    }
+
+    /// <summary>
+    /// Resolves the current UI culture code for language-aware link routing.
+    /// </summary>
+    private void ResolveCulture()
+    {
+        var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+        CurrentCulture = culture is "en" or "fr" or "es" or "de" ? culture : "en";
     }
 
     /// <summary>

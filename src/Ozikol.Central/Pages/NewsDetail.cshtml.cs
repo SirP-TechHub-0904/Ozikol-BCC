@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Ozikol.Central.Models.News;
-using Ozikol.Central.Pages.Features;
 using Ozikol.Central.Services;
 
 namespace Ozikol.Central.Pages;
@@ -12,7 +13,7 @@ namespace Ozikol.Central.Pages;
 /// <summary>
 /// Page model handling dynamic news article readers, social metadata, and related stories.
 /// </summary>
-public class NewsDetailModel : FeatureDetailPageModel
+public class NewsDetailModel : PageModel
 {
     private readonly INewsService _newsService;
     private readonly IStringLocalizer<SharedResource> _localizer;
@@ -27,6 +28,11 @@ public class NewsDetailModel : FeatureDetailPageModel
         _newsService = newsService ?? throw new ArgumentNullException(nameof(newsService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
+
+    /// <summary>
+    /// Gets the active 2-letter ISO language code for localized URL routing.
+    /// </summary>
+    public string CurrentCulture { get; private set; } = "en";
 
     /// <summary>
     /// Gets the resolved news article.
@@ -45,6 +51,8 @@ public class NewsDetailModel : FeatureDetailPageModel
     /// <returns>Page result or NotFound if article does not exist.</returns>
     public async Task<IActionResult> OnGetAsync(string slug)
     {
+        ResolveCulture();
+
         if (string.IsNullOrWhiteSpace(slug))
         {
             return RedirectToPage("/News", new { culture = CurrentCulture });
@@ -59,5 +67,14 @@ public class NewsDetailModel : FeatureDetailPageModel
         Article = article;
         RelatedArticles = await _newsService.GetRelatedArticlesAsync(article.CategoryKey, article.Slug);
         return Page();
+    }
+
+    /// <summary>
+    /// Resolves the current UI culture code for language-aware link routing.
+    /// </summary>
+    private void ResolveCulture()
+    {
+        var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+        CurrentCulture = culture is "en" or "fr" or "es" or "de" ? culture : "en";
     }
 }
