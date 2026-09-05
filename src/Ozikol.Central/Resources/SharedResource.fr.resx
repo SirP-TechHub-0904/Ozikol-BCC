@@ -3358,4 +3358,122 @@
   <data name="Category_SecurityCompliance" xml:space="preserve">
     <value>Sécurité &amp; Conformité</value>
   </data>
+
+  <data name="Website_Meta_Title" xml:space="preserve">
+    <value>Site Web dédié et portail Web personnalisé - Ozikol</value>
+  </data>
+  <data name="Website_Meta_Description" xml:space="preserve">
+    <value>Déployez le portail Web public personnalisé de votre organisation avec domaine propre, SSL, libre-service pour les membres et synchronisation MIS transparente.</value>
+  </data>
+  <data name="Website_Breadcrumb_Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Website_Breadcrumb_Platform" xml:space="preserve">
+    <value>Plateforme</value>
+  </data>
+  <data name="Website_Breadcrumb_Current" xml:space="preserve">
+    <value>Site Web dédié et portail Web</value>
+  </data>
+  <data name="Website_Breadcrumb_Back" xml:space="preserve">
+    <value>Retour au portail</value>
+  </data>
+  <data name="Website_Hero_Badge" xml:space="preserve">
+    <value>Vitrine numérique • Expérience Web</value>
+  </data>
+  <data name="Website_Hero_Title" xml:space="preserve">
+    <value>Votre propre site Web d'organisation dédié et personnalisé</value>
+  </data>
+  <data name="Website_Hero_Lead" xml:space="preserve">
+    <value>Lancez une présence Web institutionnelle entièrement personnalisée sous votre propre domaine (ex. portal.votreorg.com). Conçu comme la vitrine publique pour vos membres, résidents et visiteurs avec SSL automatique, synchronisation MIS instantanée et activation de modules à la demande.</value>
+  </data>
+  <data name="Website_Btn_GetStarted" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Website_Hero_Btn_Marketplace" xml:space="preserve">
+    <value>Parcourir les thèmes et la boutique</value>
+  </data>
+  <data name="Website_Hero_Btn_Demo" xml:space="preserve">
+    <value>Demander une démo</value>
+  </data>
+  <data name="Website_Cap_Tagline" xml:space="preserve">
+    <value>Ce que fait le site Web</value>
+  </data>
+  <data name="Website_Cap_Heading" xml:space="preserve">
+    <value>Conçu pour les entreprises, ministères, églises et communautés</value>
+  </data>
+  <data name="Website_Cap_Desc" xml:space="preserve">
+    <value>Une liberté totale pour offrir une expérience numérique sur mesure aux entreprises, ministères, églises, associations et communautés, tout en automatisant la synchronisation avec votre gestion interne.</value>
+  </data>
+  <data name="Website_Card_CustomDomain_Title" xml:space="preserve">
+    <value>Domaine personnalisé et identité de marque</value>
+  </data>
+  <data name="Website_Card_CustomDomain_Desc" xml:space="preserve">
+    <value>Associez votre propre nom de domaine ou utilisez votre sous-domaine dédié. Intégration de votre logo, palette de couleurs personnalisée et émission automatique de certificats SSL.</value>
+  </data>
+  <data name="Website_Card_SelfService_Title" xml:space="preserve">
+    <value>Portails libre-service et paiements en ligne</value>
+  </data>
+  <data name="Website_Card_SelfService_Desc" xml:space="preserve">
+    <value>Membres, fidèles et clients peuvent se connecter en toute sécurité pour mettre à jour leurs profils, enregistrer des visiteurs, télécharger leur pass numérique, s'inscrire aux événements et régler cotisations ou dons en ligne.</value>
+  </data>
+  <data name="Website_Card_Modules_Title" xml:space="preserve">
+    <value>Activez les modules à la demande</value>
+  </data>
+  <data name="Website_Card_Modules_Desc" xml:space="preserve">
+    <value>Besoin d'une billetterie d'événements, d'un annuaire d'équipe ou d'un portail de réservation d'équipements ? Activez ou désactivez les modules en un clic depuis votre tableau de bord.</value>
+  </data>
+  <data name="Website_Card_Mobile_Title" xml:space="preserve">
+    <value>Adaptatif et optimisé pour mobile</value>
+  </data>
+  <data name="Website_Card_Mobile_Desc" xml:space="preserve">
+    <value>Conçu pour un affichage éclatant sur tous les écrans : ordinateurs, tablettes et smartphones avec mise en cache CDN ultra-rapide et temps de chargement instantanés.</value>
+  </data>
+  <data name="Website_Card_Sync_Title" xml:space="preserve">
+    <value>Synchronisation en temps réel avec la console MIS</value>
+  </data>
+  <data name="Website_Card_Sync_Desc" xml:space="preserve">
+    <value>Aucune double saisie ni mise à jour manuelle. Toute modification effectuée par les administrateurs dans le système MIS se répercute instantanément sur le site public.</value>
+  </data>
+  <data name="Website_Card_Security_Title" xml:space="preserve">
+    <value>Sécurité d'entreprise et isolation</value>
+  </data>
+  <data name="Website_Card_Security_Desc" xml:space="preserve">
+    <value>Sécurisé avec des stratégies CSP, une protection anti-DDoS automatisée, des jetons CSRF sur tous les formulaires publics et une connectivité de base de données isolée.</value>
+  </data>
+  <data name="Website_Deploy_Heading" xml:space="preserve">
+    <value>Prêt à déployer la présence Web de votre organisation ?</value>
+  </data>
+  <data name="Website_Deploy_Sub" xml:space="preserve">
+    <value>Sélectionnez votre option de déploiement préférée, configurez votre domaine personnalisé et lancez-vous en quelques minutes.</value>
+  </data>
+  <data name="Website_Deploy_Instant_Title" xml:space="preserve">
+    <value>Déploiement Web instantané</value>
+  </data>
+  <data name="Website_Deploy_Instant_Badge" xml:space="preserve">
+    <value>Configuration automatisée • Espace dédié</value>
+  </data>
+  <data name="Website_Deploy_Instant_Desc" xml:space="preserve">
+    <value>Activez votre sous-domaine d'organisation ou votre domaine personnalisé avec SSL clé en main et modèles prêts à l'emploi.</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Title" xml:space="preserve">
+    <value>Boutique de thèmes et interfaces</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Badge" xml:space="preserve">
+    <value>Designs vérifiés • Prêts à déployer</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Desc" xml:space="preserve">
+    <value>Parcourez notre collection de thèmes communautaires certifiés, de modèles réactifs et de mises en page sur mesure.</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Btn" xml:space="preserve">
+    <value>Explorer la boutique</value>
+  </data>
+  <data name="Website_CTA_Heading" xml:space="preserve">
+    <value>Découvrez la puissance unifiée d'Ozikol</value>
+  </data>
+  <data name="Website_CTA_Desc" xml:space="preserve">
+    <value>Connectez votre site Web directement à votre MIS, vos équipes mobiles et votre back-office sur ordinateur.</value>
+  </data>
+  <data name="Website_CTA_Btn_Features" xml:space="preserve">
+    <value>Explorer les 37 modules</value>
+  </data>
 </root>
