@@ -3373,4 +3373,122 @@
   <data name="Category_SecurityCompliance" xml:space="preserve">
     <value>Sicherheit &amp; Compliance</value>
   </data>
+
+  <data name="Website_Meta_Title" xml:space="preserve">
+    <value>Dedizierte Website &amp; individuelles Webportal - Ozikol</value>
+  </data>
+  <data name="Website_Meta_Description" xml:space="preserve">
+    <value>Stellen Sie das maßgeschneiderte öffentliche Webportal Ihrer Organisation mit eigener Domain, SSL, Mitglieder-Self-Service und nahtloser MIS-Synchronisierung bereit.</value>
+  </data>
+  <data name="Website_Breadcrumb_Home" xml:space="preserve">
+    <value>Startseite</value>
+  </data>
+  <data name="Website_Breadcrumb_Platform" xml:space="preserve">
+    <value>Plattform</value>
+  </data>
+  <data name="Website_Breadcrumb_Current" xml:space="preserve">
+    <value>Dedizierte Website &amp; Webportal</value>
+  </data>
+  <data name="Website_Breadcrumb_Back" xml:space="preserve">
+    <value>Zurück zum Portal</value>
+  </data>
+  <data name="Website_Hero_Badge" xml:space="preserve">
+    <value>Digitales Aushängeschild • Weberlebnis</value>
+  </data>
+  <data name="Website_Hero_Title" xml:space="preserve">
+    <value>Ihre eigene dedizierte, markenspezifische Organisations-Website</value>
+  </data>
+  <data name="Website_Hero_Lead" xml:space="preserve">
+    <value>Starten Sie eine vollständig angepasste, institutionelle Webpräsenz unter Ihrer eigenen Domain (z. B. portal.ihreorg.com). Konzipiert als digitales Aushängeschild für Mitglieder, Bewohner und Besucher mit automatischem SSL, sofortiger MIS-Synchronisierung und bedarfsgesteuerter Modulaktivierung.</value>
+  </data>
+  <data name="Website_Btn_GetStarted" xml:space="preserve">
+    <value>Loslegen</value>
+  </data>
+  <data name="Website_Hero_Btn_Marketplace" xml:space="preserve">
+    <value>Designs &amp; Marktplatz durchsuchen</value>
+  </data>
+  <data name="Website_Hero_Btn_Demo" xml:space="preserve">
+    <value>Demo anfordern</value>
+  </data>
+  <data name="Website_Cap_Tagline" xml:space="preserve">
+    <value>Was die Website leistet</value>
+  </data>
+  <data name="Website_Cap_Heading" xml:space="preserve">
+    <value>Entwickelt für Unternehmen, Ministerien, Kirchen &amp; Gemeinschaften</value>
+  </data>
+  <data name="Website_Cap_Desc" xml:space="preserve">
+    <value>Vollkommene Freiheit bei der Bereitstellung eines maßgeschneiderten digitalen Erlebnisses für Unternehmen, Ministerien, Kirchen, Non-Profit-Organisationen und Gemeinschaften bei automatischer Backoffice-Synchronisierung.</value>
+  </data>
+  <data name="Website_Card_CustomDomain_Title" xml:space="preserve">
+    <value>Eigene Domain &amp; Markenidentität</value>
+  </data>
+  <data name="Website_Card_CustomDomain_Desc" xml:space="preserve">
+    <value>Binden Sie Ihre eigene Domain ein oder nutzen Sie Ihre dedizierte Subdomain. Individuelle Logo-Integration, Farbanpassung und automatische SSL-Zertifikatsausstellung.</value>
+  </data>
+  <data name="Website_Card_SelfService_Title" xml:space="preserve">
+    <value>Self-Service-Portale &amp; Online-Zahlungen</value>
+  </data>
+  <data name="Website_Card_SelfService_Desc" xml:space="preserve">
+    <value>Mitglieder, Gemeindemitglieder und Kunden können sich sicher anmelden, um Profile zu aktualisieren, Besucher anzumelden, digitale Ausweise herunterzuladen, sich für Veranstaltungen anzumelden und Beiträge online zu zahlen.</value>
+  </data>
+  <data name="Website_Card_Modules_Title" xml:space="preserve">
+    <value>Module nach Bedarf aktivieren</value>
+  </data>
+  <data name="Website_Card_Modules_Desc" xml:space="preserve">
+    <value>Benötigen Sie einen Veranstaltungskalender, eine Mitarbeiterübersicht oder ein Buchungsportal für Einrichtungen? Schalten Sie Module mit einem Klick im Administrations-Dashboard ein oder aus.</value>
+  </data>
+  <data name="Website_Card_Mobile_Title" xml:space="preserve">
+    <value>Responsiv &amp; mobiloptimiert</value>
+  </data>
+  <data name="Website_Card_Mobile_Desc" xml:space="preserve">
+    <value>Optimiert für eine brillante Darstellung auf allen Bildschirmen: Desktop-Monitoren, Tablets und Smartphones mit schnellem CDN-Caching und Ladezeiten unter einer Sekunde.</value>
+  </data>
+  <data name="Website_Card_Sync_Title" xml:space="preserve">
+    <value>Echtzeit-Synchronisierung mit der MIS-Konsole</value>
+  </data>
+  <data name="Website_Card_Sync_Desc" xml:space="preserve">
+    <value>Keine manuelle Doppeleingabe erforderlich. Alle von Administratoren im MIS-System vorgenommenen Änderungen spiegeln sich sofort auf der öffentlichen Website wider.</value>
+  </data>
+  <data name="Website_Card_Security_Title" xml:space="preserve">
+    <value>Unternehmenssicherheit &amp; Isolation</value>
+  </data>
+  <data name="Website_Card_Security_Desc" xml:space="preserve">
+    <value>Abgesichert durch Content Security Policies (CSP), automatisierten DDoS-Schutz, CSRF-Tokens für alle öffentlichen Formulare und isolierte Datenbankverbindungen.</value>
+  </data>
+  <data name="Website_Deploy_Heading" xml:space="preserve">
+    <value>Bereit, die Webpräsenz Ihrer Organisation bereitzustellen?</value>
+  </data>
+  <data name="Website_Deploy_Sub" xml:space="preserve">
+    <value>Wählen Sie Ihre bevorzugte Bereitstellungsoption, konfigurieren Sie Ihre Domain und starten Sie in wenigen Minuten.</value>
+  </data>
+  <data name="Website_Deploy_Instant_Title" xml:space="preserve">
+    <value>Sofortige Web-Bereitstellung</value>
+  </data>
+  <data name="Website_Deploy_Instant_Badge" xml:space="preserve">
+    <value>Automatisierte Einrichtung • Dedizierter Bereich</value>
+  </data>
+  <data name="Website_Deploy_Instant_Desc" xml:space="preserve">
+    <value>Stellen Sie Ihre dedizierte Subdomain oder eigene Domain mit schlüsselfertigem SSL und Vorlagen bereit.</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Title" xml:space="preserve">
+    <value>Design- &amp; UI-Marktplatz</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Badge" xml:space="preserve">
+    <value>Geprüfte Designs • Bereit zum Einsatz</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Desc" xml:space="preserve">
+    <value>Entdecken Sie unsere kuratierte Sammlung geprüfter Vorlagen, responsiver Themes und maßgeschneiderter Layouts.</value>
+  </data>
+  <data name="Website_Deploy_Marketplace_Btn" xml:space="preserve">
+    <value>Marktplatz erkunden</value>
+  </data>
+  <data name="Website_CTA_Heading" xml:space="preserve">
+    <value>Erleben Sie die ganzheitliche Leistungsfähigkeit von Ozikol</value>
+  </data>
+  <data name="Website_CTA_Desc" xml:space="preserve">
+    <value>Verbinden Sie Ihre Website direkt mit Ihrem MIS, Ihren mobilen Mitarbeitern und dem Desktop-Backoffice.</value>
+  </data>
+  <data name="Website_CTA_Btn_Features" xml:space="preserve">
+    <value>Alle 37 Module entdecken</value>
+  </data>
 </root>
