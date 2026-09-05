@@ -6,7 +6,7 @@ namespace Ozikol.Central.Services;
 
 public interface ICentralEmailService
 {
-    Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string provider = "Postmark", CancellationToken cancellationToken = default);
+    Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default);
     Task<bool> SendTwoFactorCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default);
     Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default);
     Task SendSupportInquiryDualAsync(MasterSupportInquiry inquiry, CancellationToken cancellationToken = default);
@@ -34,7 +34,7 @@ public class CentralEmailService : ICentralEmailService
         _configuration = configuration;
     }
 
-    public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string provider = "Postmark", CancellationToken cancellationToken = default)
+    public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default)
     {
         var log = new MasterEmailLog
         {
@@ -43,33 +43,21 @@ public class CentralEmailService : ICentralEmailService
             BodyHtml = htmlBody,
             Provider = provider,
             SentAtUtc = DateTime.UtcNow,
-            Status = "Sent"
+            Status = "NotSent"
         };
 
         try
         {
-            // Transactional email dispatch simulation / Postmark integration
-            _logger.LogInformation("📧 [CentralEmailService] Sending '{Subject}' to [{Recipient}] via {Provider}", subject, toEmail, provider);
+            _logger.LogInformation("📧 [CentralEmailService] Queued email '{Subject}' to [{Recipient}] with status 'NotSent'", subject, toEmail);
             
-            // Record audit log in Master DB
+            // Record in Master DB pool with Status 'NotSent'
             _masterCatalogDbContext.MasterEmailLogs.Add(log);
             await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deliver email to {Recipient}", toEmail);
-            log.Status = "Failed";
-            log.ErrorMessage = ex.Message;
-            try
-            {
-                _masterCatalogDbContext.MasterEmailLogs.Add(log);
-                await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch
-            {
-                // Suppress log failure
-            }
+            _logger.LogError(ex, "Failed to record email to pool for {Recipient}", toEmail);
             return false;
         }
     }
@@ -91,7 +79,7 @@ public class CentralEmailService : ICentralEmailService
             </div>
         ";
 
-        return await SendEmailAsync(toEmail, subject, body, "Postmark", cancellationToken);
+        return await SendEmailAsync(toEmail, subject, body, null, cancellationToken);
     }
 
     /// <summary>
@@ -142,7 +130,7 @@ public class CentralEmailService : ICentralEmailService
             </div>
         ";
 
-        return await SendEmailAsync(toEmail, subject, body, "Postmark", cancellationToken);
+        return await SendEmailAsync(toEmail, subject, body, null, cancellationToken);
     }
 
     /// <summary>
@@ -176,7 +164,7 @@ public class CentralEmailService : ICentralEmailService
                 <p style='color: #94a3b8; font-size: 12px; margin: 0; text-align: center;'>Keep ticket code #{inquiry.ReferenceNumber} handy for any future inquiries.</p>
             </div>
         ";
-        await SendEmailAsync(inquiry.Email, clientSubject, clientBody, "Postmark", cancellationToken);
+        await SendEmailAsync(inquiry.Email, clientSubject, clientBody, null, cancellationToken);
 
         // 2. Administrator Notification Pool
         var settings = await GetPlatformSettingAsync(cancellationToken);
@@ -226,7 +214,7 @@ public class CentralEmailService : ICentralEmailService
                     </div>
                 </div>
             ";
-            await SendEmailAsync(inquiry.Email, subject, body, "Postmark", cancellationToken);
+            await SendEmailAsync(inquiry.Email, subject, body, null, cancellationToken);
         }
         else
         {
@@ -271,7 +259,7 @@ public class CentralEmailService : ICentralEmailService
                 <p style='color: #475569; font-size: 14px;'>Our Strategic Partnerships team is reviewing your profile and will be in touch shortly.</p>
             </div>
         ";
-        await SendEmailAsync(partner.Email, partnerSubject, partnerBody, "Postmark", cancellationToken);
+        await SendEmailAsync(partner.Email, partnerSubject, partnerBody, null, cancellationToken);
 
         // 2. Partner Admin Notification Pool
         var settings = await GetPlatformSettingAsync(cancellationToken);
@@ -314,7 +302,7 @@ public class CentralEmailService : ICentralEmailService
                 <p style='color: #475569; font-size: 14px;'>Our Marketplace Design Curation Committee is reviewing your submission.</p>
             </div>
         ";
-        await SendEmailAsync(application.Email, creatorSubject, creatorBody, "Postmark", cancellationToken);
+        await SendEmailAsync(application.Email, creatorSubject, creatorBody, null, cancellationToken);
 
         // 2. Creator Admin Notification Pool
         var settings = await GetPlatformSettingAsync(cancellationToken);
@@ -357,7 +345,7 @@ public class CentralEmailService : ICentralEmailService
                 <p style='color: #475569; font-size: 14px;'>Our Talent Acquisition team will carefully review your qualifications and reach out regarding next steps.</p>
             </div>
         ";
-        await SendEmailAsync(application.Email, candidateSubject, candidateBody, "Postmark", cancellationToken);
+        await SendEmailAsync(application.Email, candidateSubject, candidateBody, null, cancellationToken);
 
         // 2. Careers Admin Notification Pool
         var settings = await GetPlatformSettingAsync(cancellationToken);
@@ -408,7 +396,7 @@ public class CentralEmailService : ICentralEmailService
                 </p>
             </div>
         ";
-        await SendEmailAsync(candidateEmail, voucherSubject, voucherBody, "Postmark", cancellationToken);
+        await SendEmailAsync(candidateEmail, voucherSubject, voucherBody, null, cancellationToken);
 
         // 2. Academy Admin Notification Pool
         var settings = await GetPlatformSettingAsync(cancellationToken);
@@ -444,7 +432,7 @@ public class CentralEmailService : ICentralEmailService
                 <p style='color: #475569; font-size: 14px;'>You will receive bi-weekly architectural dispatches, enterprise case studies, and platform updates directly to <strong>{email}</strong>.</p>
             </div>
         ";
-        await SendEmailAsync(email, subject, body, "Postmark", cancellationToken);
+        await SendEmailAsync(email, subject, body, null, cancellationToken);
     }
 
     private async Task<MasterPlatformSetting> GetPlatformSettingAsync(CancellationToken cancellationToken)
@@ -507,7 +495,7 @@ public class CentralEmailService : ICentralEmailService
     {
         foreach (var email in adminEmails)
         {
-            await SendEmailAsync(email, subject, body, "Postmark", cancellationToken);
+            await SendEmailAsync(email, subject, body, null, cancellationToken);
         }
     }
 }
