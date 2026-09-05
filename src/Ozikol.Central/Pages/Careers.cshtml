@@ -1,8 +1,8 @@
 @page "/careers"
 @model Ozikol.Central.Pages.CareersModel
 @{
-    ViewData["Title"] = "Careers at Ozikol | Love Work. Love Life. Be You.";
-    ViewData["MetaDescription"] = "Join Ozikol's mission to revolutionize enterprise business management software. Explore open roles across engineering, customer care, regional leadership, and partnerships.";
+    ViewData["Title"] = SharedLocalizer["Careers_Page_Title"];
+    ViewData["MetaDescription"] = SharedLocalizer["Careers_Meta_Desc"];
 }
 
 <!-- Preserved Signature Hero Banner with Collaborative Team Photography -->
@@ -12,26 +12,26 @@
             <div class="main-banner__text-block container">
                 <div class="oz-corp-badge">
                     <span class="oz-corp-badge-dot"></span>
-                    <span>Join Our Global Team</span>
+                    <span>@SharedLocalizer["Careers_Hero_Badge"]</span>
                 </div>
                 <h1 class="main-banner__title">
-                    <div><span class="text-highlight">Love Work. Love Life. Be You.</span></div>
+                    <div><span class="text-highlight">@SharedLocalizer["Careers_Hero_Title"]</span></div>
                 </h1>
                 <div class="main-banner__text rte">
                     <p>
-                        It’s that simple. It’s the Ozikol Way. It’s what makes us unique. It’s what we want you to experience as you accelerate your career and fuel your passion for work while building the next generation of business management intelligence. Our mission gives customers and our people the freedom to do more.
+                        @SharedLocalizer["Careers_Hero_Desc"]
                     </p>
                 </div>
                 <div class="main-banner__ctas">
-                    <a href="#openings" class="btn btn-primary">View Open Roles</a>
-                    <a href="#culture" class="btn btn-secondary">Life at Ozikol</a>
+                    <a href="#openings" class="btn btn-primary">@SharedLocalizer["Careers_Hero_BtnRoles"]</a>
+                    <a href="#culture" class="btn btn-secondary">@SharedLocalizer["Careers_Hero_BtnCulture"]</a>
                 </div>
             </div>
 
             <div class="main-banner__media-block">
                 <div class="oz-careers-hero-media">
                     <img src="/images/careers-hero.jpg"
-                         alt="Life at Ozikol - Collaborative Global Tech Culture"
+                         alt="@SharedLocalizer["Careers_Hero_ImgAlt"]"
                          width="580"
                          height="420"
                          class="oz-careers-hero-img" />
@@ -49,25 +49,25 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                Open Roles (@Model.Openings.Count)
+                @SharedLocalizer["Careers_Nav_OpenRoles"] (@Model.Openings.Count)
             </a>
             <a href="#culture" class="oz-careers-nav-link">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                Culture &amp; Life
+                @SharedLocalizer["Careers_Nav_Culture"]
             </a>
             <a href="#values" class="oz-careers-nav-link">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                Our Values
+                @SharedLocalizer["Careers_Nav_Values"]
             </a>
             <a href="#benefits" class="oz-careers-nav-link">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Global Benefits
+                @SharedLocalizer["Careers_Nav_Benefits"]
             </a>
         </div>
     </div>
@@ -77,10 +77,10 @@
 <section class="oz-corp-section" id="openings">
     <div class="oz-corp-container">
         <div class="oz-corp-section-header">
-            <span class="oz-corp-section-tag">Current Opportunities</span>
-            <h2 class="oz-corp-section-title">Explore Open Positions at Ozikol</h2>
+            <span class="oz-corp-section-tag">@SharedLocalizer["Careers_Openings_Tag"]</span>
+            <h2 class="oz-corp-section-title">@SharedLocalizer["Careers_Openings_Title"]</h2>
             <p class="oz-corp-section-desc">
-                Find your calling in a team that values your voice, accelerates your growth, and respects your life outside work.
+                @SharedLocalizer["Careers_Openings_Desc"]
             </p>
         </div>
 
@@ -95,7 +95,7 @@
                     <input type="text"
                            name="query"
                            value="@Model.Query"
-                           placeholder="Search roles by title, skill, or keyword (e.g. 'Admin', 'Customer Care', 'French')..."
+                           placeholder="@SharedLocalizer["Careers_Filter_SearchPlaceholder"]"
                            class="oz-filter-search-input" />
                 </div>
 
@@ -103,15 +103,15 @@
                 <div class="oz-jobs-filter-groups">
                     <!-- Department Filter Pills -->
                     <div class="oz-filter-group">
-                        <span class="oz-filter-group-title">Department:</span>
+                        <span class="oz-filter-group-title">@SharedLocalizer["Careers_Filter_DeptTitle"]</span>
                         <div class="oz-filter-pills">
-                            <a href="@Url.Page("/Careers", new { department = (string?)null, language = Model.Language, query = Model.Query })#openings"
+                            <a href="/@Model.CurrentCulture/careers?@(string.IsNullOrEmpty(Model.Language) ? "" : $"language={Uri.EscapeDataString(Model.Language)}&")@(string.IsNullOrEmpty(Model.Query) ? "" : $"query={Uri.EscapeDataString(Model.Query)}")#openings"
                                class="oz-filter-pill @(string.IsNullOrEmpty(Model.Department) ? "is-active" : "")">
-                                All Departments
+                                @SharedLocalizer["Careers_Filter_AllDepts"]
                             </a>
                             @foreach (var dept in Model.Departments)
                             {
-                                <a href="@Url.Page("/Careers", new { department = dept, language = Model.Language, query = Model.Query })#openings"
+                                <a href="/@Model.CurrentCulture/careers?department=@Uri.EscapeDataString(dept)&@(string.IsNullOrEmpty(Model.Language) ? "" : $"language={Uri.EscapeDataString(Model.Language)}&")@(string.IsNullOrEmpty(Model.Query) ? "" : $"query={Uri.EscapeDataString(Model.Query)}")#openings"
                                    class="oz-filter-pill @(Model.Department == dept ? "is-active" : "")">
                                     @dept
                                 </a>
@@ -121,23 +121,23 @@
 
                     <!-- Language Filter Pills -->
                     <div class="oz-filter-group">
-                        <span class="oz-filter-group-title">Language Requirements:</span>
+                        <span class="oz-filter-group-title">@SharedLocalizer["Careers_Filter_LangTitle"]</span>
                         <div class="oz-filter-pills">
-                            <a href="@Url.Page("/Careers", new { department = Model.Department, language = (string?)null, query = Model.Query })#openings"
+                            <a href="/@Model.CurrentCulture/careers?@(string.IsNullOrEmpty(Model.Department) ? "" : $"department={Uri.EscapeDataString(Model.Department)}&")@(string.IsNullOrEmpty(Model.Query) ? "" : $"query={Uri.EscapeDataString(Model.Query)}")#openings"
                                class="oz-filter-pill @(string.IsNullOrEmpty(Model.Language) ? "is-active" : "")">
-                                All Languages
+                                @SharedLocalizer["Careers_Filter_AllLangs"]
                             </a>
-                            <a href="@Url.Page("/Careers", new { department = Model.Department, language = "English", query = Model.Query })#openings"
+                            <a href="/@Model.CurrentCulture/careers?@(string.IsNullOrEmpty(Model.Department) ? "" : $"department={Uri.EscapeDataString(Model.Department)}&")language=English@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Uri.EscapeDataString(Model.Query)}")#openings"
                                class="oz-filter-pill @(Model.Language == "English" ? "is-active" : "")">
-                                English
+                                @SharedLocalizer["Careers_Filter_LangEn"]
                             </a>
-                            <a href="@Url.Page("/Careers", new { department = Model.Department, language = "French", query = Model.Query })#openings"
-                               class="oz-filter-pill @(Model.Language == "French" ? "is-active" : "")">
-                                French (Bilingual)
+                            <a href="/@Model.CurrentCulture/careers?@(string.IsNullOrEmpty(Model.Department) ? "" : $"department={Uri.EscapeDataString(Model.Department)}&")language=French@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Uri.EscapeDataString(Model.Query)}")#openings"
+                                class="oz-filter-pill @(Model.Language == "French" ? "is-active" : "")">
+                                @SharedLocalizer["Careers_Filter_LangFr"]
                             </a>
-                            <a href="@Url.Page("/Careers", new { department = Model.Department, language = "Italian", query = Model.Query })#openings"
+                            <a href="/@Model.CurrentCulture/careers?@(string.IsNullOrEmpty(Model.Department) ? "" : $"department={Uri.EscapeDataString(Model.Department)}&")language=Italian@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Uri.EscapeDataString(Model.Query)}")#openings"
                                class="oz-filter-pill @(Model.Language == "Italian" ? "is-active" : "")">
-                                Italian (Bilingual)
+                                @SharedLocalizer["Careers_Filter_LangIt"]
                             </a>
                         </div>
                     </div>
@@ -147,10 +147,10 @@
                 {
                     <div class="pt-3 border-top d-flex align-items-center justify-content-between">
                         <span class="oz-filter-group-title" style="text-transform: none; font-size: 13.5px;">
-                            Showing filtered results (<strong>@Model.Openings.Count</strong> positions found)
+                            @SharedLocalizer["Careers_Filter_ResultsPrefix"]<strong>@Model.Openings.Count</strong> @SharedLocalizer["Careers_Filter_ResultsSuffix"]
                         </span>
-                        <a href="@Url.Page("/Careers")#openings" class="oz-filter-pill" style="color: #e5173f; font-weight: 700;">
-                            Reset all filters
+                        <a href="/@Model.CurrentCulture/careers#openings" class="oz-filter-pill" style="color: #e5173f; font-weight: 700;">
+                            @SharedLocalizer["Careers_Filter_Reset"]
                         </a>
                     </div>
                 }
@@ -190,8 +190,8 @@
 
                         <div class="oz-job-card-footer">
                             <span class="oz-job-type-pill">@job.EmploymentType</span>
-                            <a href="/careers/@job.Slug" class="oz-job-card-btn">
-                                View Role &amp; Apply
+                            <a href="/@Model.CurrentCulture/careers/@job.Slug" class="oz-job-card-btn">
+                                @Html.Raw(SharedLocalizer["Careers_Job_ViewRole"].Value)
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                                 </svg>
@@ -209,11 +209,11 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h3 class="oz-jobs-empty-title">No matching positions found</h3>
+                <h3 class="oz-jobs-empty-title">@SharedLocalizer["Careers_Job_EmptyTitle"]</h3>
                 <p class="oz-jobs-empty-desc">
-                    We couldn't find any openings matching your filter criteria. Try resetting your search filters or check back soon as new positions open regularly.
+                    @SharedLocalizer["Careers_Job_EmptyDesc"]
                 </p>
-                <a href="@Url.Page("/Careers")#openings" class="oz-features-btn-outline">View All Open Positions</a>
+                <a href="/@Model.CurrentCulture/careers#openings" class="oz-features-btn-outline">@SharedLocalizer["Careers_Job_EmptyBtn"]</a>
             </div>
         }
     </div>
@@ -225,13 +225,13 @@
         <div class="oz-culture-grid">
             <!-- Left: Culture Story & Values Checklist -->
             <div>
-                <span class="oz-corp-section-tag">Life at Ozikol</span>
-                <h2 class="oz-corp-section-title">People are at the heart of everything we build</h2>
+                <span class="oz-corp-section-tag">@SharedLocalizer["Careers_Culture_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["Careers_Culture_Title"]</h2>
                 <p class="oz-corp-lead" style="margin: 0 0 16px 0; text-align: left; font-weight: 600; color: #0f172a;">
-                    Our team members are game-changers, life-lovers, culture-builders, and free-thinkers.
+                    @SharedLocalizer["Careers_Culture_Lead"]
                 </p>
                 <p class="oz-corp-section-desc" style="text-align: left; margin: 0 0 24px 0;">
-                    We strive to create an environment where everyone feels valued, respected, and empowered to contribute their best. Whether you are leading regional strategy or providing frontline support to enterprise clients across Europe, you are an essential pillar of the Ozikol story.
+                    @SharedLocalizer["Careers_Culture_Desc"]
                 </p>
 
                 <div class="oz-culture-checklist">
@@ -242,8 +242,8 @@
                             </svg>
                         </div>
                         <div>
-                            <strong style="color: #0f172a;">Curiosity &amp; Innovation:</strong>
-                            <span style="color: #64748b;"> We encourage bold experimentation and novel ideas that elevate our software and team.</span>
+                            <strong style="color: #0f172a;">@Html.Raw(SharedLocalizer["Careers_Culture_Point1_Title"].Value)</strong>
+                            <span style="color: #64748b;"> @SharedLocalizer["Careers_Culture_Point1_Desc"]</span>
                         </div>
                     </div>
                     <div class="oz-culture-check-item">
@@ -253,8 +253,8 @@
                             </svg>
                         </div>
                         <div>
-                            <strong style="color: #0f172a;">Collective Celebration:</strong>
-                            <span style="color: #64748b;"> We win together as one united global squad and celebrate personal and team milestones.</span>
+                            <strong style="color: #0f172a;">@Html.Raw(SharedLocalizer["Careers_Culture_Point2_Title"].Value)</strong>
+                            <span style="color: #64748b;"> @SharedLocalizer["Careers_Culture_Point2_Desc"]</span>
                         </div>
                     </div>
                     <div class="oz-culture-check-item">
@@ -264,15 +264,15 @@
                             </svg>
                         </div>
                         <div>
-                            <strong style="color: #0f172a;">Serious Fun:</strong>
-                            <span style="color: #64748b;"> Enterprise software is serious business, but our daily culture is relaxed, collaborative, and joyful.</span>
+                            <strong style="color: #0f172a;">@Html.Raw(SharedLocalizer["Careers_Culture_Point3_Title"].Value)</strong>
+                            <span style="color: #64748b;"> @SharedLocalizer["Careers_Culture_Point3_Desc"]</span>
                         </div>
                     </div>
                 </div>
 
                 <div style="margin-top: 32px;">
                     <a href="#openings" class="oz-btn-primary-hero">
-                        Find Your Role Today
+                        @SharedLocalizer["Careers_Culture_Cta"]
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
@@ -282,30 +282,30 @@
 
             <!-- Right: What Our Employees Say Card -->
             <div class="oz-culture-testimonials">
-                <h4>What Our Employees Say</h4>
+                <h4>@SharedLocalizer["Careers_Culture_TestimonialsTitle"]</h4>
                 
                 <div class="oz-culture-quote-block">
                     <p class="oz-culture-quote-text">
-                        &ldquo;Working at Ozikol has given me the autonomy to innovate and lead. The team genuinely cares about your wellbeing, and the global flexibility is unmatched.&rdquo;
+                        &ldquo;@SharedLocalizer["Careers_Culture_Testimonial1_Quote"]&rdquo;
                     </p>
-                    <div class="oz-culture-quote-author">Regional Operations Lead</div>
-                    <div class="oz-culture-quote-role">Ozikol EMEA &bull; London</div>
+                    <div class="oz-culture-quote-author">@SharedLocalizer["Careers_Culture_Testimonial1_Role"]</div>
+                    <div class="oz-culture-quote-role">@SharedLocalizer["Careers_Culture_Testimonial1_Location"]</div>
                 </div>
 
                 <div class="oz-culture-quote-block">
                     <p class="oz-culture-quote-text">
-                        &ldquo;Providing support in French and Italian while collaborating with our global engineering team makes every single day rewarding, diverse, and fast-paced.&rdquo;
+                        &ldquo;@SharedLocalizer["Careers_Culture_Testimonial2_Quote"]&rdquo;
                     </p>
-                    <div class="oz-culture-quote-author">Customer Success Specialist</div>
-                    <div class="oz-culture-quote-role">Multilingual Support Hub &bull; Paris</div>
+                    <div class="oz-culture-quote-author">@SharedLocalizer["Careers_Culture_Testimonial2_Role"]</div>
+                    <div class="oz-culture-quote-role">@SharedLocalizer["Careers_Culture_Testimonial2_Location"]</div>
                 </div>
 
                 <div class="oz-culture-quote-block">
                     <p class="oz-culture-quote-text">
-                        &ldquo;From day one, you feel like your input genuinely moves the needle. Great tooling, smart colleagues, and real work-life balance.&rdquo;
+                        &ldquo;@SharedLocalizer["Careers_Culture_Testimonial3_Quote"]&rdquo;
                     </p>
-                    <div class="oz-culture-quote-author">Senior Cloud Security Engineer</div>
-                    <div class="oz-culture-quote-role">Infrastructure Team &bull; Remote</div>
+                    <div class="oz-culture-quote-author">@SharedLocalizer["Careers_Culture_Testimonial3_Role"]</div>
+                    <div class="oz-culture-quote-role">@SharedLocalizer["Careers_Culture_Testimonial3_Location"]</div>
                 </div>
             </div>
         </div>
@@ -316,10 +316,10 @@
 <section class="oz-corp-section" id="values">
     <div class="oz-corp-container">
         <div class="oz-corp-section-header">
-            <span class="oz-corp-section-tag">Our Guiding Compass</span>
-            <h2 class="oz-corp-section-title">Our Values: The Ozikol Way</h2>
+            <span class="oz-corp-section-tag">@SharedLocalizer["Careers_Values_Tag"]</span>
+            <h2 class="oz-corp-section-title">@SharedLocalizer["Careers_Values_Title"]</h2>
             <p class="oz-corp-section-desc">
-                Our values define how we support each other, serve our customers, and build durable software that empowers businesses worldwide.
+                @SharedLocalizer["Careers_Values_Desc"]
             </p>
         </div>
 
@@ -330,9 +330,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Winning With Customers</h3>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Value1_Title"]</h3>
                 <p class="oz-value-card-desc">
-                    We are a team that gets it right. We make complex business management simple, transparent, and dependable. We are obsessed with making our customers’ lives better every single day.
+                    @SharedLocalizer["Careers_Value1_Desc"]
                 </p>
             </div>
 
@@ -342,9 +342,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Making Ozikol Better Daily</h3>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Value2_Title"]</h3>
                 <p class="oz-value-card-desc">
-                    We always make things happen. We stay endlessly curious. We believe learn-it-alls beat know-it-alls every single time, and we have serious fun while continuously learning.
+                    @SharedLocalizer["Careers_Value2_Desc"]
                 </p>
             </div>
 
@@ -354,9 +354,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Helping Everyone Thrive</h3>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Value3_Title"]</h3>
                 <p class="oz-value-card-desc">
-                    Everyone belongs here &mdash; no exceptions. Your wellbeing and balance matter. We look after one another, our communities, and our planet. When everyone thrives, we all do.
+                    @SharedLocalizer["Careers_Value3_Desc"]
                 </p>
             </div>
         </div>
@@ -367,10 +367,10 @@
 <section class="oz-corp-section" style="background: #f8fafc; border-top: 1px solid #e2e8f0;" id="benefits">
     <div class="oz-corp-container">
         <div class="oz-corp-section-header">
-            <span class="oz-corp-section-tag">Total Rewards &amp; Wellbeing</span>
-            <h2 class="oz-corp-section-title">Designed to Help You Thrive</h2>
+            <span class="oz-corp-section-tag">@Html.Raw(SharedLocalizer["Careers_Benefits_Tag"].Value)</span>
+            <h2 class="oz-corp-section-title">@SharedLocalizer["Careers_Benefits_Title"]</h2>
             <p class="oz-corp-section-desc">
-                We believe in providing industry-leading benefits that empower your work, support your family, and secure your future.
+                @SharedLocalizer["Careers_Benefits_Desc"]
             </p>
         </div>
 
@@ -381,8 +381,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Competitive Compensation</h3>
-                <p class="oz-value-card-desc">Market-benchmarked base salaries, annual merit reviews, and performance bonuses that reward direct impact.</p>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Benefit1_Title"]</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit1_Desc"]</p>
             </div>
 
             <div class="oz-value-card">
@@ -391,8 +391,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Remote &amp; Hybrid Freedom</h3>
-                <p class="oz-value-card-desc">Flexible working models allowing you to work from home, regional hubs, or across borders with work-from-anywhere allowances.</p>
+                <h3 class="oz-value-card-title">@Html.Raw(SharedLocalizer["Careers_Benefit2_Title"].Value)</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit2_Desc"]</p>
             </div>
 
             <div class="oz-value-card">
@@ -401,8 +401,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Health &amp; Wellness</h3>
-                <p class="oz-value-card-desc">Comprehensive private medical, dental, and vision insurance coverage plus confidential mental health counseling.</p>
+                <h3 class="oz-value-card-title">@Html.Raw(SharedLocalizer["Careers_Benefit3_Title"].Value)</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit3_Desc"]</p>
             </div>
 
             <div class="oz-value-card">
@@ -411,8 +411,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Learning &amp; Growth Budget</h3>
-                <p class="oz-value-card-desc">Annual personal training budget, professional certifications, language lessons, and unlimited access to learning platforms.</p>
+                <h3 class="oz-value-card-title">@Html.Raw(SharedLocalizer["Careers_Benefit4_Title"].Value)</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit4_Desc"]</p>
             </div>
 
             <div class="oz-value-card">
@@ -421,8 +421,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Generous Paid Leave</h3>
-                <p class="oz-value-card-desc">28+ days of paid annual vacation plus regional public holidays, volunteer charity days, and parental leave packages.</p>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Benefit5_Title"]</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit5_Desc"]</p>
             </div>
 
             <div class="oz-value-card">
@@ -431,8 +431,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <h3 class="oz-value-card-title">Home Office Stipend</h3>
-                <p class="oz-value-card-desc">Top-tier laptop equipment (MacBook Pro or Dell XPS), 4K monitors, and ergonomic home workstation reimbursement.</p>
+                <h3 class="oz-value-card-title">@SharedLocalizer["Careers_Benefit6_Title"]</h3>
+                <p class="oz-value-card-desc">@SharedLocalizer["Careers_Benefit6_Desc"]</p>
             </div>
         </div>
     </div>
@@ -444,20 +444,20 @@
         <div class="oz-feat-cta-inner">
             <div class="oz-feat-cta-badge">
                 <span class="oz-feat-cta-badge-dot"></span>
-                <span>Join Our Talent Community</span>
+                <span>@SharedLocalizer["Careers_Talent_Badge"]</span>
             </div>
-            <h2>Don't See Your Exact Role?</h2>
+            <h2>@SharedLocalizer["Careers_Talent_Title"]</h2>
             <p>
-                We are constantly growing and actively looking for exceptional talent across engineering, product design, marketing, and multilingual customer support.
+                @SharedLocalizer["Careers_Talent_Desc"]
             </p>
             <div class="oz-feat-cta-actions">
                 <a href="#openings" class="oz-btn-primary-hero">
-                    Explore Openings
+                    @SharedLocalizer["Careers_Talent_BtnExplore"]
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                 </a>
-                <a href="/contact-us" class="oz-btn-outline-hero">Contact Recruitment Team</a>
+                <a href="/@Model.CurrentCulture/contact-us" class="oz-btn-outline-hero">@SharedLocalizer["Careers_Talent_BtnContact"]</a>
             </div>
         </div>
     </div>

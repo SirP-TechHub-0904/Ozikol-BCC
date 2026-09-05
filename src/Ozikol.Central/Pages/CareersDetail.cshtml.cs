@@ -117,54 +117,54 @@ public class CareersDetailModel : PageModel
 
         if (!isCaptchaValid)
         {
-            ModelState.AddModelError(string.Empty, "Security verification failed. Please complete the reCAPTCHA challenge and try again.");
+            ModelState.AddModelError(string.Empty, _localizer["Careers_Error_Captcha"]);
             return Page();
         }
 
         // 2. Validate Terms agreement
         if (!Input.AgreeTerms)
         {
-            ModelState.AddModelError("Input.AgreeTerms", "You must agree to the recruitment privacy policy to submit your application.");
+            ModelState.AddModelError("Input.AgreeTerms", _localizer["Careers_Error_AgreeTerms"]);
             return Page();
         }
 
         // 3. Validate CV attachment
         if (Input.CvFile == null || Input.CvFile.Length == 0)
         {
-            ModelState.AddModelError("Input.CvFile", "Please attach your CV or Resume document.");
+            ModelState.AddModelError("Input.CvFile", _localizer["Careers_Error_CvMissing"]);
             return Page();
         }
 
         var cvExt = Path.GetExtension(Input.CvFile.FileName).ToLowerInvariant();
         if (cvExt is not (".pdf" or ".docx" or ".doc"))
         {
-            ModelState.AddModelError("Input.CvFile", "Accepted CV formats are PDF, DOCX, and DOC.");
+            ModelState.AddModelError("Input.CvFile", _localizer["Careers_Error_CvFormat"]);
             return Page();
         }
 
         if (Input.CvFile.Length > 10 * 1024 * 1024)
         {
-            ModelState.AddModelError("Input.CvFile", "The CV file size exceeds the 10MB limit.");
+            ModelState.AddModelError("Input.CvFile", _localizer["Careers_Error_CvSize"]);
             return Page();
         }
 
         // 4. Validate Passport attachment
         if (Input.PassportFile == null || Input.PassportFile.Length == 0)
         {
-            ModelState.AddModelError("Input.PassportFile", "Please attach a clear photo of your passport or government photo identification.");
+            ModelState.AddModelError("Input.PassportFile", _localizer["Careers_Error_PassportMissing"]);
             return Page();
         }
 
         var passportExt = Path.GetExtension(Input.PassportFile.FileName).ToLowerInvariant();
         if (passportExt is not (".pdf" or ".jpg" or ".jpeg" or ".png"))
         {
-            ModelState.AddModelError("Input.PassportFile", "Accepted Passport / ID formats are JPG, JPEG, PNG, and PDF.");
+            ModelState.AddModelError("Input.PassportFile", _localizer["Careers_Error_PassportFormat"]);
             return Page();
         }
 
         if (Input.PassportFile.Length > 10 * 1024 * 1024)
         {
-            ModelState.AddModelError("Input.PassportFile", "The Passport file size exceeds the 10MB limit.");
+            ModelState.AddModelError("Input.PassportFile", _localizer["Careers_Error_PassportSize"]);
             return Page();
         }
 
