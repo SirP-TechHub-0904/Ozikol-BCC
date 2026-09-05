@@ -1,85 +1,195 @@
 @page "/news"
 @model Ozikol.Central.Pages.NewsModel
 @{
-    ViewData["Title"] = "Company News & Product Releases - Ozikol";
+    ViewData["Title"] = SharedLocalizer["News_Page_Title"];
 }
 
-<div class="news-page">
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}
+
+<div class="oz-corp-page">
     <!-- Hero Banner -->
-    <section class="ozikol-hero-banner branded-banner branded-banner--evo">
-        <div class="ozikol-hero-container">
-            <div class="ozikol-hero-badge">
-                <span class="ozikol-hero-dot"></span>
-                Ozikol Newsroom
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["News_Hero_Badge"]
             </div>
-            <h1 class="ozikol-hero-title">
-                Company News & <span style="color: var(--ozikol-primary);">Platform Releases</span>
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["News_Hero_Title"].Value)
             </h1>
-            <p class="ozikol-hero-desc">
-                Stay informed on new feature releases, UI template updates, partner announcements, and organizational insights.
+            <p class="oz-corp-lead">
+                @SharedLocalizer["News_Hero_Lead"]
             </p>
-            <div class="ozikol-hero-actions">
-                <a href="#articles" class="btn btn-primary">Read Latest Stories</a>
-                <a href="/about-us" class="btn btn-secondary--alt">About Ozikol</a>
+            <div class="oz-feat-actions oz-feat-actions--center">
+                <a href="#articles" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["News_Hero_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/about-us" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["News_Hero_BtnSecondary"]</span>
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- News Grid -->
-    <main id="articles" class="container" style="max-width: 1100px; margin: 50px auto; padding: 0 20px;">
-        <div class="ozikol-grid-3">
-            <!-- Story 1 -->
-            <article class="news-article-card">
-                <div class="news-card-thumb" style="background: #0f172a;">
-                    Ozikol BCP 2.0 Launch
-                </div>
-                <div class="news-card-body">
-                    <span class="news-card-tag">Product Release</span>
-                    <h3 class="news-card-title">Introducing 33 Modular Capabilities Across 8 Cloud Suites</h3>
-                    <p class="news-card-excerpt">
-                        A major milestone unifying workforce rotas, verifiable certificates, bio links, mass communications, and AI Smart Assist into one platform.
-                    </p>
-                    <div class="news-card-date">September 2026</div>
-                </div>
-            </article>
+    <!-- Main Content Area -->
+    <main id="articles" class="oz-corp-container oz-corp-section">
+        <!-- Status Notification -->
+        @if (!string.IsNullOrEmpty(Model.StatusMessage))
+        {
+            <div class="oz-corp-alert oz-corp-alert--success">
+                <span>@Model.StatusMessage</span>
+            </div>
+        }
 
-            <!-- Story 2 -->
-            <article class="news-article-card">
-                <div class="news-card-thumb" style="background: #1e1b4b;">
-                    UI Marketplace Ecosystem
+        <!-- Filter Controls: Search & Category Tabs -->
+        <div class="oz-news-controls">
+            <!-- Search Bar -->
+            <form method="get" class="oz-news-search-form">
+                @if (!string.IsNullOrEmpty(Model.Category))
+                {
+                    <input type="hidden" name="category" value="@Model.Category" />
+                }
+                <div class="oz-news-search-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="oz-news-search-icon" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" name="query" value="@Model.Query" placeholder="@SharedLocalizer["News_Search_Placeholder"]" class="oz-news-search-input" />
+                    @if (!string.IsNullOrEmpty(Model.Query))
+                    {
+                        <a href="/@Model.CurrentCulture/news@(string.IsNullOrEmpty(Model.Category) ? "" : "?category=" + Model.Category)" class="oz-news-search-clear" title="Clear search">&times;</a>
+                    }
                 </div>
-                <div class="news-card-body">
-                    <span class="news-card-tag" style="color: #6366f1;">Ecosystem</span>
-                    <h3 class="news-card-title">Ozikol Launches Pre-Built Page Template Marketplace</h3>
-                    <p class="news-card-excerpt">
-                        Organizations can now install responsive glassmorphism navbars, split hero showcases, and pricing matrix components with 1 click.
-                    </p>
-                    <div class="news-card-date">September 2026</div>
-                </div>
-            </article>
+            </form>
 
-            <!-- Story 3 -->
-            <article class="news-article-card">
-                <div class="news-card-thumb" style="background: #064e3b;">
-                    AI Privacy & BYOK
-                </div>
-                <div class="news-card-body">
-                    <span class="news-card-tag" style="color: #059669;">Security Standard</span>
-                    <h3 class="news-card-title">Responsible AI: Direct API Keys & Zero Model Training</h3>
-                    <p class="news-card-excerpt">
-                        Announcing BYOK architecture ensuring complete enterprise data privacy across automated AI content and operations tools.
-                    </p>
-                    <div class="news-card-date">August 2026</div>
-                </div>
-            </article>
+            <!-- Dynamic Category Pills -->
+            <div class="oz-news-category-tabs">
+                <a href="/@Model.CurrentCulture/news@(string.IsNullOrEmpty(Model.Query) ? "" : "?query=" + Model.Query)" class="oz-news-tab @(string.IsNullOrEmpty(Model.Category) ? "oz-news-tab--active" : "")">
+                    @SharedLocalizer["News_Filter_All"]
+                </a>
+                @foreach (var cat in Model.Categories)
+                {
+                    var isActive = string.Equals(Model.Category, cat.Key, StringComparison.OrdinalIgnoreCase);
+                    var linkUrl = $"/{Model.CurrentCulture}/news?category={cat.Key}" + (string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Model.Query}");
+                    <a href="@linkUrl" class="oz-news-tab @(isActive ? "oz-news-tab--active" : "")">
+                        @cat.Name
+                    </a>
+                }
+            </div>
         </div>
 
-        <section class="ozikol-bottom-cta">
-            <h2>Stay in the loop with Ozikol</h2>
-            <p>Subscribe to receive major product releases and engineering updates directly to your inbox.</p>
-            <div class="ozikol-hero-actions">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Contact Press & Media</a>
-                <a href="/about-us" class="btn btn-secondary--alt">About Us</a>
+        <!-- Featured Headline Showcase (Only when unfiltered or when featured matches) -->
+        @if (string.IsNullOrEmpty(Model.Category) && string.IsNullOrEmpty(Model.Query) && Model.FeaturedArticle != null)
+        {
+            <article class="oz-news-featured-card">
+                <div class="oz-news-featured-banner @Model.FeaturedArticle.CoverGradientClass">
+                    <span class="oz-news-featured-label">@SharedLocalizer["News_Featured_Badge"]</span>
+                </div>
+                <div class="oz-news-featured-content">
+                    <div class="oz-news-card-meta">
+                        <span class="oz-corp-badge-pill">@Model.FeaturedArticle.CategoryName</span>
+                        <span class="oz-news-meta-bullet">&bull;</span>
+                        <span class="oz-news-meta-date">@Model.FeaturedArticle.PublishedAtUtc.ToString("MMMM yyyy")</span>
+                        <span class="oz-news-meta-bullet">&bull;</span>
+                        <span class="oz-news-meta-read">@Model.FeaturedArticle.ReadTimeText</span>
+                    </div>
+                    <h2 class="oz-news-featured-title">
+                        <a href="/@Model.CurrentCulture/news/@Model.FeaturedArticle.Slug">@Model.FeaturedArticle.Title</a>
+                    </h2>
+                    <p class="oz-news-featured-excerpt">@Model.FeaturedArticle.Excerpt</p>
+                    <div class="oz-news-featured-footer">
+                        <div class="oz-news-author-info">
+                            <span class="oz-news-author-name">@Model.FeaturedArticle.AuthorName</span>
+                            <span class="oz-news-author-role">@Model.FeaturedArticle.AuthorRole</span>
+                        </div>
+                        <a href="/@Model.CurrentCulture/news/@Model.FeaturedArticle.Slug" class="oz-news-read-btn">
+                            <span>@SharedLocalizer["News_Btn_ReadArticle"]</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        }
+
+        <!-- Articles Grid -->
+        @if (Model.Articles.Count == 0)
+        {
+            <div class="oz-news-empty-state">
+                <div class="oz-corp-card-icon oz-icon-blue oz-news-empty-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <h3>@SharedLocalizer["News_Empty_Title"]</h3>
+                <p>@SharedLocalizer["News_Empty_Desc"]</p>
+                <a href="/@Model.CurrentCulture/news" class="oz-btn-outline-hero">@SharedLocalizer["News_Btn_ResetFilters"]</a>
+            </div>
+        }
+        else
+        {
+            <div class="oz-corp-grid-3">
+                @foreach (var article in Model.Articles)
+                {
+                    <article class="oz-corp-card oz-news-card">
+                        <div class="oz-news-card-cover @article.CoverGradientClass">
+                            <span class="oz-corp-badge-pill">@article.CategoryName</span>
+                        </div>
+                        <div class="oz-news-card-meta">
+                            <span class="oz-news-meta-date">@article.PublishedAtUtc.ToString("MMMM yyyy")</span>
+                            <span class="oz-news-meta-bullet">&bull;</span>
+                            <span class="oz-news-meta-read">@article.ReadTimeText</span>
+                        </div>
+                        <h3 class="oz-corp-card-title oz-news-card-title">
+                            <a href="/@Model.CurrentCulture/news/@article.Slug">@article.Title</a>
+                        </h3>
+                        <p class="oz-corp-card-desc oz-news-card-excerpt">@article.Excerpt</p>
+                        <div class="oz-corp-card-footer oz-news-card-footer">
+                            <span class="oz-news-author-name">@article.AuthorName</span>
+                            <a href="/@Model.CurrentCulture/news/@article.Slug" class="oz-news-link-action">
+                                <span>@SharedLocalizer["News_Btn_ReadArticle"]</span>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+
+        <!-- Newsletter & Media Desk with reCAPTCHA -->
+        <section class="oz-news-newsletter-card">
+            <div class="oz-news-newsletter-inner">
+                <div class="oz-news-newsletter-text">
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["News_Sub_Badge"]</span>
+                    <h3 class="oz-news-newsletter-title">@SharedLocalizer["News_Sub_Title"]</h3>
+                    <p class="oz-news-newsletter-desc">@SharedLocalizer["News_Sub_Desc"]</p>
+                </div>
+                <form method="post" asp-page-handler="Subscribe" class="oz-news-newsletter-form">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="oz-form-validation-error"></div>
+                    
+                    <div class="oz-news-form-row">
+                        <input asp-for="Newsletter.Email" placeholder="@SharedLocalizer["News_Sub_EmailPlaceholder"]" class="oz-news-input" />
+                        <button type="submit" class="oz-btn-primary-hero oz-news-sub-btn">
+                            <span>@SharedLocalizer["News_Sub_BtnText"]</span>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Newsletter.Email" class="oz-field-error"></span>
+
+                    <!-- Google reCAPTCHA Verification Widget -->
+                    <div class="oz-recaptcha-wrap">
+                        <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                    </div>
+                </form>
             </div>
         </section>
     </main>
