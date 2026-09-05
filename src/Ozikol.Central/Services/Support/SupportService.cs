@@ -203,27 +203,75 @@ namespace Ozikol.Central.Services.Support
         }
 
         /// <inheritdoc />
+        public async Task<IReadOnlyList<MasterSupportFaq>> GetFaqsAsync(string culture, string? category = null, string? suiteCode = null)
+        {
+            await EnsureSeedDataAsync();
+
+            var normalizedCulture = (culture ?? "en").ToLowerInvariant();
+            var query = _context.MasterSupportFaqs
+                .AsNoTracking()
+                .Where(f => f.IsPublished);
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                query = query.Where(f => f.Category == category);
+            }
+
+            if (!string.IsNullOrWhiteSpace(suiteCode))
+            {
+                query = query.Where(f => f.SuiteCode == suiteCode);
+            }
+
+            // Retrieve items matching active language first, with fallback to universal (*) or English (en)
+            var allMatching = await query
+                .Where(f => f.Culture == normalizedCulture || f.Culture == "*" || f.Culture == "en")
+                .OrderBy(f => f.SortOrder)
+                .ThenBy(f => f.CreatedUtc)
+                .ToListAsync();
+
+            // If the user requested a non-English culture and translations exist, prioritize those
+            if (normalizedCulture != "en")
+            {
+                var localized = allMatching.Where(f => f.Culture == normalizedCulture || f.Culture == "*").ToList();
+                if (localized.Any())
+                {
+                    return localized;
+                }
+            }
+
+            return allMatching.Where(f => f.Culture == "en" || f.Culture == "*").ToList();
+        }
+
+        /// <inheritdoc />
         public async Task EnsureSeedDataAsync()
         {
             try
             {
-                // Check if articles already exist
-                if (await _context.MasterHelpdeskArticles.AnyAsync())
+                // 1. Seed FAQs if missing
+                if (!await _context.MasterSupportFaqs.AnyAsync())
                 {
-                    return;
+                    _logger.LogInformation("Seeding initial support FAQs across multiple languages...");
+                    var seedFaqs = GetSeedFaqs();
+                    await _context.MasterSupportFaqs.AddRangeAsync(seedFaqs);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Successfully seeded {FaqCount} support FAQs.", seedFaqs.Count);
                 }
 
-                _logger.LogInformation("Seeding initial support articles and video tutorials across all 9 suites...");
+                // 2. Seed articles and videos if missing
+                if (!await _context.MasterHelpdeskArticles.AnyAsync())
+                {
+                    _logger.LogInformation("Seeding initial support articles and video tutorials across all 9 suites...");
 
-                var seedArticles = GetSeedArticles();
-                var seedVideos = GetSeedVideos();
+                    var seedArticles = GetSeedArticles();
+                    var seedVideos = GetSeedVideos();
 
-                await _context.MasterHelpdeskArticles.AddRangeAsync(seedArticles);
-                await _context.MasterVideoGuides.AddRangeAsync(seedVideos);
-                await _context.SaveChangesAsync();
+                    await _context.MasterHelpdeskArticles.AddRangeAsync(seedArticles);
+                    await _context.MasterVideoGuides.AddRangeAsync(seedVideos);
+                    await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Successfully seeded {ArticleCount} helpdesk articles and {VideoCount} video guides.",
-                    seedArticles.Count, seedVideos.Count);
+                    _logger.LogInformation("Successfully seeded {ArticleCount} helpdesk articles and {VideoCount} video guides.",
+                        seedArticles.Count, seedVideos.Count);
+                }
             }
             catch (Exception ex)
             {
@@ -785,6 +833,224 @@ namespace Ozikol.Central.Services.Support
                     Culture = "es",
                     SortOrder = 1,
                     IsPublished = true
+                }
+            };
+        }
+
+        /// <summary>
+        /// Generates the initial seed frequently asked support questions across supported enterprise languages.
+        /// </summary>
+        /// <returns>A list of master support FAQ items.</returns>
+        private static List<MasterSupportFaq> GetSeedFaqs()
+        {
+            return new List<MasterSupportFaq>
+            {
+                // ==============================
+                // English FAQs
+                // ==============================
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "How quickly will an engineer respond to my support ticket?",
+                    Answer = "Standard support inquiries are addressed within 2 to 4 business hours. Critical production incidents submitted by enterprise tenants with an active SLA are prioritized with an initial engineer response under 15 minutes.",
+                    Category = "Support",
+                    Culture = "en",
+                    SortOrder = 1,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Where can existing tenants access their live administrative portal?",
+                    Answer = "Each enterprise tenant operates on their dedicated vanity or custom domain (e.g. yourorg.ozikol.cloud or custom CNAME). You can log in directly using your corporate credentials and tenant identifier.",
+                    Category = "Platform",
+                    Culture = "en",
+                    SortOrder = 2,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Can we request a customized walkthrough or staff training session?",
+                    Answer = "Yes. Our customer success and solutions engineering teams provide scheduled live workshops, administrator onboarding, and departmental staff training sessions upon request.",
+                    Category = "General",
+                    Culture = "en",
+                    SortOrder = 3,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Are all YouTube video tutorials available with multilingual subtitles?",
+                    Answer = "Yes. All official Ozikol video tutorials on YouTube include AI-generated, human-verified closed captions in English, French, Spanish, German, and Arabic.",
+                    Category = "General",
+                    Culture = "en",
+                    SortOrder = 4,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+
+                // ==============================
+                // French FAQs
+                // ==============================
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "En combien de temps un ingénieur répondra-t-il à mon ticket de support ?",
+                    Answer = "Les demandes standard sont traitées sous 2 à 4 heures ouvrables. Les incidents critiques de production soumis par les locataires disposant d'un SLA actif reçoivent une première réponse en moins de 15 minutes.",
+                    Category = "Support",
+                    Culture = "fr",
+                    SortOrder = 1,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Où les locataires existants peuvent-ils accéder à leur portail administratif en direct ?",
+                    Answer = "Chaque locataire d'entreprise dispose de son sous-domaine dédié (ex. votreorganisation.ozikol.cloud ou CNAME personnalisé). Connectez-vous directement à l'aide de vos identifiants d'entreprise.",
+                    Category = "Platform",
+                    Culture = "fr",
+                    SortOrder = 2,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Pouvons-nous demander une démonstration personnalisée ou une session de formation pour notre personnel ?",
+                    Answer = "Oui. Nos équipes de réussite client et d'ingénierie des solutions proposent sur demande des ateliers en direct, l'intégration des administrateurs et des formations pour votre personnel.",
+                    Category = "General",
+                    Culture = "fr",
+                    SortOrder = 3,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Tous les didacticiels vidéo YouTube sont-ils disponibles avec des sous-titres multilingues ?",
+                    Answer = "Oui. Tous les didacticiels vidéo officiels Ozikol sur YouTube disposent de sous-titres dans les principales langues prises en charge (français, anglais, espagnol et allemand).",
+                    Category = "General",
+                    Culture = "fr",
+                    SortOrder = 4,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+
+                // ==============================
+                // Spanish FAQs
+                // ==============================
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "¿Con qué rapidez responderá un ingeniero a mi ticket de soporte?",
+                    Answer = "Las consultas estándar de soporte se atienden en un plazo de 2 a 4 horas laborables. Los incidentes críticos de producción presentados por inquilinos empresariales con un SLA activo tienen una respuesta inicial en menos de 15 minutos.",
+                    Category = "Support",
+                    Culture = "es",
+                    SortOrder = 1,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "¿Dónde pueden acceder los inquilinos existentes a su portal administrativo en vivo?",
+                    Answer = "Cada inquilino empresarial opera en su subdominio dedicado (ej. suempresa.ozikol.cloud o CNAME personalizado). Inicie sesión directamente utilizando sus credenciales corporativas.",
+                    Category = "Platform",
+                    Culture = "es",
+                    SortOrder = 2,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "¿Podemos solicitar una demostración personalizada o una sesión de capacitación para el personal?",
+                    Answer = "¡Sí! Nuestros equipos de éxito del cliente e ingeniería de soluciones ofrecen talleres interactivos programados, incorporación de administradores y sesiones de formación para equipos.",
+                    Category = "General",
+                    Culture = "es",
+                    SortOrder = 3,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "¿Todos los tutoriales en video de YouTube están disponibles con subtítulos multilingües?",
+                    Answer = "Sí. Todos los videos de tutoriales oficiales de Ozikol en YouTube incluyen subtítulos en inglés, francés, español y alemán.",
+                    Category = "General",
+                    Culture = "es",
+                    SortOrder = 4,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+
+                // ==============================
+                // German FAQs
+                // ==============================
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Wie schnell antwortet ein Techniker auf mein Support-Ticket?",
+                    Answer = "Standard-Supportanfragen werden innerhalb von 2 bis 4 Geschäftsstunden bearbeitet. Kritische Produktionsvorfälle von Mandanten mit aktivem SLA erhalten eine Erstantwort in unter 15 Minuten.",
+                    Category = "Support",
+                    Culture = "de",
+                    SortOrder = 1,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Wo können bestehende Mandanten auf ihr Live-Verwaltungsportal zugreifen?",
+                    Answer = "Jeder Unternehmensmandant arbeitet auf seiner dedizierten Subdomain (z. B. ihrunternehmen.ozikol.cloud oder benutzerdefiniertes CNAME). Melden Sie sich direkt mit Ihren Anmeldedaten an.",
+                    Category = "Platform",
+                    Culture = "de",
+                    SortOrder = 2,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Können wir eine individuelle Demonstration oder Mitarbeiterschulung anfordern?",
+                    Answer = "Ja! Unsere Teams für Customer Success und Solutions Engineering bieten auf Anfrage geplante Live-Workshops, Administrator-Onboarding und Schulungen an.",
+                    Category = "General",
+                    Culture = "de",
+                    SortOrder = 3,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Question = "Sind alle YouTube-Video-Tutorials mit mehrsprachigen Untertiteln verfügbar?",
+                    Answer = "Ja. Alle offiziellen Ozikol-Tutorial-Videos auf YouTube enthalten mehrsprachige Untertitel auf Englisch, Französisch, Spanisch und Deutsch.",
+                    Category = "General",
+                    Culture = "de",
+                    SortOrder = 4,
+                    IsPublished = true,
+                    CreatedUtc = DateTime.UtcNow,
+                    UpdatedUtc = DateTime.UtcNow
                 }
             };
         }

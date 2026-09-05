@@ -54,6 +54,11 @@ namespace Ozikol.Central.Pages.Support
         public IReadOnlyList<SuiteSupportViewModel> Suites { get; private set; } = new List<SuiteSupportViewModel>();
 
         /// <summary>
+        /// Gets the dynamic support frequently asked questions loaded from the master database.
+        /// </summary>
+        public IReadOnlyList<MasterSupportFaq> Faqs { get; private set; } = new List<MasterSupportFaq>();
+
+        /// <summary>
         /// Gets a value indicating whether an inquiry was submitted successfully.
         /// </summary>
         public bool IsSubmitted { get; set; }
@@ -87,6 +92,7 @@ namespace Ozikol.Central.Pages.Support
             }
 
             Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+            Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
         }
 
         /// <summary>
@@ -108,6 +114,7 @@ namespace Ozikol.Central.Pages.Support
             if (!ModelState.IsValid)
             {
                 Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+                Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
                 return Page();
             }
 
@@ -141,6 +148,7 @@ namespace Ozikol.Central.Pages.Support
             }
 
             Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+            Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
             return Page();
         }
 
