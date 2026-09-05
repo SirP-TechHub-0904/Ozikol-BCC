@@ -32,6 +32,8 @@ builder.Configuration.AddEnvironmentVariables();
 // 2. Configure Native ASP.NET Core Multi-Language Localization Engine
 builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IRecaptchaService, GoogleRecaptchaService>();
+builder.Services.AddSingleton<INewsService, NewsService>();
 
 builder.Services.AddRazorPages(options =>
 {

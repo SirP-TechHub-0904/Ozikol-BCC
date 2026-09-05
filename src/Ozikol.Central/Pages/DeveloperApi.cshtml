@@ -1,84 +1,213 @@
 @page "/developer-api"
 @model Ozikol.Central.Pages.DeveloperApiModel
 @{
-    ViewData["Title"] = "Developer REST API & Real-Time Webhooks - Ozikol";
-    ViewData["MetaDescription"] = "Comprehensive REST API documentation, webhook subscriptions, API key security, and SDK snippets in cURL, .NET 9, Node.js, and Python.";
+    ViewData["Title"] = SharedLocalizer["DevApi_Page_Title"];
 }
 
-<div class="oz-feat-page">
+<div class="oz-corp-page">
     <!-- Breadcrumb Bar -->
     <div class="oz-breadcrumb-bar">
-        <div class="container">
+        <div class="oz-corp-container">
             <div class="oz-breadcrumb-wrap">
                 <div class="oz-breadcrumb-links">
-                    <a href="/">Home</a>
+                    <a href="/@Model.CurrentCulture">@SharedLocalizer["Breadcrumb_Home"]</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <span>Developer REST API & Real-Time Webhooks</span>
+                    <span>@SharedLocalizer["DevApi_Breadcrumb_Title"]</span>
                 </div>
-                <partial name="_BackToFeaturesLink" />
+                <a href="/@Model.CurrentCulture/features" class="oz-breadcrumb-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span>@SharedLocalizer["DevApi_Btn_BackToFeatures"]</span>
+                </a>
             </div>
         </div>
     </div>
 
     <!-- Hero Banner -->
-    <section class="oz-feat-hero">
-        <div class="container">
-            <div class="oz-feat-badge-wrap">
-                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                </div>
-                <span class="oz-feat-pill">Developer Hub • REST &amp; Webhooks</span>
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                @SharedLocalizer["DevApi_Hero_Badge"]
             </div>
-            <h1 class="oz-feat-title">Developer API &amp; Real-Time Webhooks</h1>
-            <p class="oz-feat-lead">Integrate Ozikol directly into your software architecture. Automate shift creation, sync invoices, capture census field data, and stream real-time webhook events.</p>
-            <div class="oz-feat-actions">
-                <a href="/client-login" class="btn btn-primary">Generate API Keys</a>
-                <a href="/support-hub" class="btn btn-secondary--alt">Read API Reference</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- API Features Grid -->
-    <section class="container oz-feat-capabilities-section">
-        <div class="oz-feat-section-header">
-            <div class="oz-feat-tagline">Extensible Architecture</div>
-            <h2>Built by Developers, for Developers</h2>
-            <p class="oz-feat-card-desc">RESTful JSON endpoints, predictable pagination, and cryptographic HMAC webhook signatures.</p>
-        </div>
-        <div class="oz-feat-grid">
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">Real-Time Webhook Subscriptions</h3>
-                <p class="oz-feat-card-desc">Subscribe to live events such as <code>rota.shift.claimed</code>, <code>invoice.payment.succeeded</code>, and <code>census.household.verified</code>.</p>
-            </div>
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">Granular Scoped API Tokens</h3>
-                <p class="oz-feat-card-desc">Issue read-only or read-write tokens restricted to specific modules (e.g. Rota-only, Census-only, or Invoicing-only).</p>
-            </div>
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">Comprehensive SDKs</h3>
-                <p class="oz-feat-card-desc">Official client libraries for .NET 9 (C#), TypeScript / Node.js, Python, and Go with typed data models and retry logic.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Bottom CTA Banner -->
-    <section class="oz-feat-cta-banner">
-        <div class="container">
-            <h2>Experience the Power of Ozikol</h2>
-            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
+            <h1 class="oz-corp-title">
+                @Html.Raw(SharedLocalizer["DevApi_Hero_Title"].Value)
+            </h1>
+            <p class="oz-corp-lead">
+                @SharedLocalizer["DevApi_Hero_Lead"]
+            </p>
             <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/support-hub/contact-sales" class="btn btn-primary">Book a Platform Demo</a>
-                <partial name="_ExploreFeaturesButton" />
+                <a href="/@Model.CurrentCulture/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["DevApi_Hero_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="#scenarios" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["DevApi_Hero_BtnSecondary"]</span>
+                </a>
             </div>
         </div>
     </section>
+
+    <!-- Main Content Area -->
+    <main class="oz-corp-container oz-corp-section">
+        <!-- Section 1: Why Enable MIS API (The User's Real-World Scenarios) -->
+        <section id="scenarios" class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["DevApi_Scenarios_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["DevApi_Scenarios_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["DevApi_Scenarios_Desc"]</p>
+            </div>
+            <div class="oz-corp-grid-2">
+                <!-- Scenario 1: Census & Demographics -->
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-blue" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["DevApi_Scen1_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Scen1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Scen1_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <code>GET /api/v1/mis/census</code>
+                        <span>@SharedLocalizer["DevApi_Scope_ReadOnly"]</span>
+                    </div>
+                </div>
+
+                <!-- Scenario 2: Ticketing & Issues -->
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-crimson" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["DevApi_Scen2_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Scen2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Scen2_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <code>GET /api/v1/mis/tickets</code>
+                        <span>@SharedLocalizer["DevApi_Scope_ReadWrite"]</span>
+                    </div>
+                </div>
+
+                <!-- Scenario 3: Revenue & Financial Auditing -->
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-emerald" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["DevApi_Scen3_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Scen3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Scen3_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <code>GET /api/v1/mis/revenue</code>
+                        <span>@SharedLocalizer["DevApi_Scope_AuditOnly"]</span>
+                    </div>
+                </div>
+
+                <!-- Scenario 4: External Regulatory & Compliance -->
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-amber" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </div>
+                    <span class="oz-corp-badge-pill">@SharedLocalizer["DevApi_Scen4_Badge"]</span>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Scen4_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Scen4_Desc"]</p>
+                    <div class="oz-corp-card-footer">
+                        <code>GET /api/v1/mis/compliance</code>
+                        <span>@SharedLocalizer["DevApi_Scope_Verified"]</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Scoped Security Architecture -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["DevApi_Security_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["DevApi_Security_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["DevApi_Security_Desc"]</p>
+            </div>
+            <div class="oz-corp-grid-3">
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-indigo" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Sec1_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Sec1_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-teal" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                    </div>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Sec2_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Sec2_Desc"]</p>
+                </div>
+                <div class="oz-corp-card">
+                    <div class="oz-corp-card-icon oz-icon-crimson" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <h3 class="oz-corp-card-title">@SharedLocalizer["DevApi_Sec3_Title"]</h3>
+                    <p class="oz-corp-card-desc">@SharedLocalizer["DevApi_Sec3_Desc"]</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Interactive Code Snippet Preview -->
+        <section class="oz-corp-section">
+            <div class="oz-corp-section-header">
+                <span class="oz-corp-section-tag">@SharedLocalizer["DevApi_Code_Tag"]</span>
+                <h2 class="oz-corp-section-title">@SharedLocalizer["DevApi_Code_Title"]</h2>
+                <p class="oz-corp-section-desc">@SharedLocalizer["DevApi_Code_Desc"]</p>
+            </div>
+            
+            <div class="oz-code-preview-card">
+                <div class="oz-code-preview-header">
+                    <div class="oz-code-preview-dots">
+                        <span class="oz-dot-red"></span>
+                        <span class="oz-dot-yellow"></span>
+                        <span class="oz-dot-green"></span>
+                    </div>
+                    <div class="oz-code-preview-title">GET /api/v1/mis/census?status=verified</div>
+                    <div class="oz-code-preview-lang">JSON Response</div>
+                </div>
+                <pre class="oz-code-block"><code>{
+  "status": "success",
+  "data": {
+    "organization": "Civic Health and Demographics Alliance",
+    "scope": "census:read",
+    "timestamp": "2026-09-05T08:00:00Z",
+    "records": [
+      {
+        "householdId": "HSD-882194",
+        "district": "Metropolitan Central",
+        "membersCount": 4,
+        "verificationStatus": "Verified",
+        "surveyBatch": "Q3-Demographics"
+      }
+    ]
+  }
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- Bottom CTA -->
+        <section class="oz-feat-cta-banner">
+            <div class="oz-feat-cta-badge">
+                <span class="oz-feat-cta-badge-dot"></span>
+                @SharedLocalizer["DevApi_Cta_Badge"]
+            </div>
+            <h2>@SharedLocalizer["DevApi_Cta_Title"]</h2>
+            <p>@SharedLocalizer["DevApi_Cta_Desc"]</p>
+            <div class="oz-feat-cta-actions">
+                <a href="/@Model.CurrentCulture/support-hub/contact-sales" class="oz-btn-primary-hero">
+                    <span>@SharedLocalizer["DevApi_Cta_BtnPrimary"]</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="/@Model.CurrentCulture/features" class="oz-btn-outline-hero">
+                    <span>@SharedLocalizer["DevApi_Cta_BtnSecondary"]</span>
+                </a>
+            </div>
+        </section>
+    </main>
 </div>
