@@ -5896,13 +5896,13 @@ body.oz-modal-open {
     gap: 24px;
 }
 
-@@media (max-width: 960px) {
+@media (max-width: 960px) {
     .oz-compliance-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@@media (max-width: 560px) {
+@media (max-width: 560px) {
     .oz-compliance-grid {
         grid-template-columns: 1fr;
     }
@@ -6180,4 +6180,718 @@ body.oz-modal-open {
         grid-template-columns: 1fr;
         gap: 6px;
     }
+}
+
+/* ==========================================================================
+   OZIKOL PROFESSIONAL CERTIFICATION PROGRAM STYLES
+   ========================================================================== */
+
+/* Badge Colors */
+.oz-badge-tag--blue {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+}
+
+.oz-badge-tag--emerald {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.oz-badge-tag--amber {
+    background: rgba(245, 158, 11, 0.14);
+    color: #d97706;
+}
+
+.oz-badge-tag--purple {
+    background: rgba(168, 85, 247, 0.14);
+    color: #9333ea;
+}
+
+.oz-badge-tag--indigo {
+    background: rgba(99, 102, 241, 0.14);
+    color: #4f46e5;
+}
+
+.oz-badge-tag--green {
+    background: rgba(34, 197, 94, 0.14);
+    color: #16a34a;
+}
+
+/* Cert Hero Actions */
+.oz-cert-hero__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 28px 0 40px 0;
+}
+
+.oz-cert-hero__actions .oz-btn-primary {
+    background: #e11d48;
+    color: #ffffff;
+    padding: 13px 28px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+}
+
+.oz-cert-hero__actions .oz-btn-primary:hover {
+    background: #be123c;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(225, 29, 72, 0.45);
+}
+
+.oz-cert-hero__actions .oz-btn-secondary {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    padding: 13px 26px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+}
+
+.oz-cert-hero__actions .oz-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.oz-cert-hero__actions .oz-btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #cbd5e1;
+    padding: 13px 24px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.oz-cert-hero__actions .oz-btn-ghost:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Certifications Track Grid */
+.oz-cert-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+@media (max-width: 768px) {
+    .oz-cert-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-cert-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+}
+
+.oz-cert-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 4px;
+    border-radius: 0 0 6px 6px;
+}
+
+.oz-cert-card--blue::before { background: #3b82f6; }
+.oz-cert-card--emerald::before { background: #10b981; }
+.oz-cert-card--amber::before { background: #f59e0b; }
+.oz-cert-card--purple::before { background: #a855f7; }
+.oz-cert-card--red::before { background: #e11d48; }
+.oz-cert-card--indigo::before { background: #6366f1; }
+
+.oz-cert-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.03);
+    border-color: #cbd5e1;
+}
+
+.oz-cert-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.oz-cert-card__code {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 5px 12px;
+    border-radius: 8px;
+}
+
+.oz-cert-card__title {
+    font-size: 21px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
+    margin: 0 0 10px 0;
+}
+
+.oz-cert-card__audience {
+    font-size: 13.5px;
+    color: #475569;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+
+.oz-cert-card__audience strong {
+    color: #0f172a;
+}
+
+.oz-cert-card__summary {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+    flex-grow: 1;
+}
+
+.oz-cert-card__suites {
+    margin-bottom: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.oz-cert-suites-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.oz-cert-suites-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.oz-suite-chip {
+    font-size: 11px;
+    font-weight: 700;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.oz-cert-card__skills {
+    margin-bottom: 24px;
+}
+
+.oz-cert-skills-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.oz-cert-skills-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oz-cert-skills-list li {
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.45;
+    position: relative;
+    padding-left: 18px;
+}
+
+.oz-cert-skills-list li::before {
+    content: '•';
+    position: absolute;
+    left: 4px;
+    color: #e11d48;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.oz-cert-card__footer {
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.oz-cert-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.oz-cert-card .oz-btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 700;
+    border: none;
+    background: #0f172a;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.oz-cert-card .oz-btn-primary:hover {
+    background: #e11d48;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+}
+
+/* Practice Readiness Quiz */
+.oz-quiz-section {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 80px 0;
+}
+
+.oz-quiz-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 48px;
+    max-width: 860px;
+    margin: 0 auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 640px) {
+    .oz-quiz-box {
+        padding: 28px 20px;
+    }
+}
+
+.oz-quiz-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.oz-quiz-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 14px 0 10px 0;
+    line-height: 1.3;
+}
+
+.oz-quiz-sub {
+    font-size: 15px;
+    color: #64748b;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.oz-quiz-question-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.oz-quiz-q-num {
+    font-size: 12px;
+    font-weight: 800;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+
+.oz-quiz-q-text {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.5;
+    margin: 0 0 18px 0;
+}
+
+.oz-quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.oz-quiz-option-label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 18px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.oz-quiz-option-label:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+}
+
+.oz-quiz-option-label:has(input:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #2563eb;
+}
+
+.oz-quiz-radio {
+    accent-color: #2563eb;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.oz-quiz-option-text {
+    font-size: 14.5px;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.oz-quiz-explanation {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.55;
+}
+
+.oz-quiz-explanation.is-correct {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.oz-quiz-explanation.is-wrong {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.oz-quiz-action {
+    text-align: center;
+    margin-top: 32px;
+}
+
+#submitQuizBtn {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 15px 36px;
+    border-radius: 9999px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+#submitQuizBtn:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+}
+
+.oz-quiz-results {
+    text-align: center;
+    padding: 40px 24px;
+    background: #f8fafc;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    margin-top: 24px;
+}
+
+.oz-quiz-score-badge {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 800;
+    margin: 0 auto 20px auto;
+}
+
+.oz-quiz-score-badge.is-pass {
+    background: #d1fae5;
+    color: #065f46;
+    border: 4px solid #10b981;
+}
+
+.oz-quiz-score-badge.is-fail {
+    background: #fef3c7;
+    color: #92400e;
+    border: 4px solid #f59e0b;
+}
+
+.oz-quiz-result-heading {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.oz-quiz-result-sub {
+    font-size: 15px;
+    color: #475569;
+    max-width: 520px;
+    margin: 0 auto 24px auto;
+    line-height: 1.55;
+}
+
+#retryQuizBtn {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #0f172a;
+    padding: 12px 28px;
+    border-radius: 9999px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+#retryQuizBtn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* Credential Verification Section */
+.oz-verify-section {
+    padding: 80px 0;
+}
+
+.oz-verify-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 48px;
+    max-width: 860px;
+    margin: 0 auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 640px) {
+    .oz-verify-card {
+        padding: 28px 20px;
+    }
+}
+
+.oz-verify-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.oz-verify-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 14px 0 10px 0;
+}
+
+.oz-verify-sub {
+    font-size: 15px;
+    color: #64748b;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.oz-verify-form {
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+.oz-verify-input-wrap {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+    .oz-verify-input-wrap {
+        flex-direction: column;
+    }
+}
+
+.oz-verify-input {
+    flex: 1;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: monospace;
+    letter-spacing: 0.04em;
+}
+
+.oz-verify-input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.oz-verify-btn {
+    background: #059669;
+    color: #ffffff;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.oz-verify-btn:hover {
+    background: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.oz-verify-hint {
+    display: block;
+    font-size: 12.5px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.oz-verify-hint code {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: #0f172a;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.oz-verify-hint code:hover {
+    background: #e2e8f0;
+}
+
+/* Verification Result Box */
+.oz-verify-result {
+    margin-top: 32px;
+}
+
+.oz-verified-cert-box {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 2px solid #10b981;
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.12);
+}
+
+.oz-cert-not-found {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    color: #991b1b;
+}
+
+.oz-cert-not-found h4 {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+
+.oz-cert-not-found p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Exam Booking Modal */
+.oz-modal--exam {
+    max-width: 620px;
+    width: 90%;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.oz-modal-exam-inner {
+    padding: 36px 32px;
+}
+
+.oz-modal-exam-header {
+    margin-bottom: 24px;
+}
+
+.oz-modal-exam-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 10px 0 6px 0;
+}
+
+.oz-modal-exam-sub {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
 }

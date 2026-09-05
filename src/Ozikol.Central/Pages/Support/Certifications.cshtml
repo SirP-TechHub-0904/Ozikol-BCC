@@ -1,0 +1,486 @@
+@page "/support/certifications"
+@model Ozikol.Central.Pages.Support.CertificationsModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = $"{SharedLocalizer["Support_Tab_Certifications"]} | Ozikol Enterprise Cloud Academy";
+    ViewData["MetaDescription"] = "Validate your cloud expertise, master Ozikol's 9 enterprise suites, and earn globally recognized professional certifications.";
+}
+
+<div class="oz-support-page oz-cert-page">
+
+    <!-- Hero Header -->
+    <section class="oz-support-hero oz-cert-hero">
+        <div class="container">
+            <div class="oz-support-hero__badge">
+                <span class="oz-badge-tag oz-badge-tag--amber">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    Ozikol Cloud Academy
+                </span>
+            </div>
+            <h1 class="oz-support-hero__title">Become an Ozikol Certified Professional</h1>
+            <p class="oz-support-hero__sub">
+                Validate your administrative expertise across Ozikol's 9 cloud suites, accelerate your career mobility, and lead digital transformation for organizations worldwide.
+            </p>
+
+            <div class="oz-cert-hero__actions">
+                <a href="#tracks" class="oz-btn-primary">Explore Credentials →</a>
+                <a href="#practice-quiz" class="oz-btn-secondary">Take Practice Quiz</a>
+                <a href="#verify" class="oz-btn-ghost">Verify Certificate</a>
+            </div>
+
+            <!-- 4-Page Navigation Pill Tabs -->
+            <nav class="oz-support-nav-pills" aria-label="Support Navigation">
+                <a href="/@Model.CurrentCulture/support/videos" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    @SharedLocalizer["Support_Tab_Videos"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/knowledge-base" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    @SharedLocalizer["Support_Tab_Articles"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/contact" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    @SharedLocalizer["Support_Tab_Contact"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/certifications" class="oz-support-pill oz-support-pill--active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    @SharedLocalizer["Support_Tab_Certifications"]
+                </a>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Key Metrics Ribbon -->
+    <section class="oz-sla-metrics oz-cert-metrics">
+        <div class="container">
+            <div class="oz-metrics-grid">
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">6 Tracks</div>
+                    <div class="oz-metric-card__label">Professional Credentials</div>
+                    <div class="oz-metric-card__sub">From Foundation to Solutions Architect</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">9 Suites</div>
+                    <div class="oz-metric-card__label">Comprehensive Cloud Curriculum</div>
+                    <div class="oz-metric-card__sub">Covering all 60+ modular features</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">100% Online</div>
+                    <div class="oz-metric-card__label">On-Demand Proctored Exams</div>
+                    <div class="oz-metric-card__sub">Flexible testing in 4 languages</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">Digital Badge</div>
+                    <div class="oz-metric-card__label">Verifiable Credential</div>
+                    <div class="oz-metric-card__sub">LinkedIn & enterprise registry verified</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certification Tracks Matrix -->
+    <section class="oz-support-section" id="tracks">
+        <div class="container">
+            <div class="oz-section-header oz-text-center">
+                <span class="oz-badge-tag oz-badge-tag--red">Credentials & Syllabus</span>
+                <h2 class="oz-section-title">Official Certification Tracks</h2>
+                <p class="oz-section-sub">
+                    Select a learning path aligned with your role. Each credential tests real-world administrative and architecture scenarios.
+                </p>
+            </div>
+
+            <div class="oz-cert-grid">
+                @foreach (var track in Model.Tracks)
+                {
+                    <div class="oz-cert-card oz-cert-card--@track.BadgeColor">
+                        <div class="oz-cert-card__header">
+                            <div class="oz-cert-card__code">@track.Code</div>
+                            <span class="oz-cert-card__level oz-badge-tag oz-badge-tag--@track.BadgeColor">@track.Level</span>
+                        </div>
+
+                        <h3 class="oz-cert-card__title">@track.Title</h3>
+                        <p class="oz-cert-card__audience"><strong>Ideal for:</strong> @track.TargetAudience</p>
+                        <p class="oz-cert-card__summary">@track.Summary</p>
+
+                        <div class="oz-cert-card__suites">
+                            <span class="oz-cert-suites-label">Covered Modules:</span>
+                            <div class="oz-cert-suites-tags">
+                                @foreach (var s in track.CoveredSuites)
+                                {
+                                    <span class="oz-suite-chip">@s.Replace("suite-", "").ToUpperInvariant()</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="oz-cert-card__skills">
+                            <span class="oz-cert-skills-label">Core Competencies:</span>
+                            <ul class="oz-cert-skills-list">
+                                @foreach (var skill in track.SkillsMeasured)
+                                {
+                                    <li>@skill</li>
+                                }
+                            </ul>
+                        </div>
+
+                        <div class="oz-cert-card__footer">
+                            <div class="oz-cert-meta">
+                                <span>⏱ @track.DurationMinutes min</span>
+                                <span>📝 @track.QuestionCount Qs</span>
+                                <span>🎯 @track.PassingScore% Pass</span>
+                            </div>
+                            <button type="button" class="oz-btn-primary js-schedule-exam" data-code="@track.Code" data-title="@track.Title">
+                                Register for Exam →
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Practice Readiness Quiz -->
+    <section class="oz-support-section oz-quiz-section" id="practice-quiz">
+        <div class="container">
+            <div class="oz-quiz-box">
+                <div class="oz-quiz-header">
+                    <span class="oz-badge-tag oz-badge-tag--blue">Readiness Assessment</span>
+                    <h2 class="oz-quiz-title">Test Your Knowledge: Sample Practice Quiz</h2>
+                    <p class="oz-quiz-sub">
+                        Evaluate your core understanding across Ozikol suites with this 5-question readiness test. Receive instant scoring and explanations.
+                    </p>
+                </div>
+
+                <form id="practiceQuizForm" class="oz-quiz-form">
+                    @foreach (var q in Model.PracticeQuestions)
+                    {
+                        <div class="oz-quiz-question-card" data-qid="@q.Id">
+                            <div class="oz-quiz-q-num">Question @q.Id of @Model.PracticeQuestions.Count</div>
+                            <h4 class="oz-quiz-q-text">@q.Question</h4>
+                            <div class="oz-quiz-options">
+                                @for (int i = 0; i < q.Options.Count; i++)
+                                {
+                                    <label class="oz-quiz-option-label">
+                                        <input type="radio" name="q_@q.Id" value="@i" required class="oz-quiz-radio" />
+                                        <span class="oz-quiz-option-text">@q.Options[i]</span>
+                                    </label>
+                                }
+                            </div>
+                            <div class="oz-quiz-explanation js-explanation" style="display: none;"></div>
+                        </div>
+                    }
+
+                    <div class="oz-quiz-action">
+                        <button type="button" id="submitQuizBtn" class="oz-btn-primary">
+                            Submit Assessment for Scoring
+                        </button>
+                    </div>
+                </form>
+
+                <div id="quizResultBox" class="oz-quiz-results" style="display: none;">
+                    <div class="oz-quiz-score-badge" id="quizScoreBadge">0%</div>
+                    <h3 id="quizResultHeading" class="oz-quiz-result-heading">Assessment Scored</h3>
+                    <p id="quizResultSummary" class="oz-quiz-result-sub"></p>
+                    <button type="button" id="retryQuizBtn" class="oz-btn-secondary">Retake Practice Test</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Credential Verification Registry -->
+    <section class="oz-support-section oz-verify-section" id="verify">
+        <div class="container">
+            <div class="oz-verify-card">
+                <div class="oz-verify-header">
+                    <span class="oz-badge-tag oz-badge-tag--green">Official Registry</span>
+                    <h2 class="oz-verify-title">Verify an Ozikol Credential</h2>
+                    <p class="oz-verify-sub">
+                        Employers, clients, and institutions can instantly authenticate certificate numbers issued by the Ozikol Certification Board.
+                    </p>
+                </div>
+
+                <div class="oz-verify-form">
+                    <div class="oz-verify-input-wrap">
+                        <input type="text"
+                               id="certNumberInput"
+                               placeholder="e.g. OZK-CERT-2026-8941"
+                               class="oz-form-input oz-verify-input" />
+                        <button type="button" id="verifyCertBtn" class="oz-btn-primary oz-verify-btn">
+                            Verify Credential
+                        </button>
+                    </div>
+                    <span class="oz-verify-hint">Sample verifiable IDs: <code>OZK-CERT-2026-8941</code>, <code>OZK-CERT-2026-5210</code>, <code>OZK-CERT-2026-3304</code></span>
+                </div>
+
+                <div id="verifyResultContainer" class="oz-verify-result" style="display: none;"></div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Examination Booking Modal -->
+<div class="oz-modal-backdrop" id="examModal" role="dialog" aria-modal="true" aria-hidden="true">
+    @Html.AntiForgeryToken()
+    <div class="oz-modal oz-modal--exam">
+        <button type="button" class="oz-modal-close js-close-exam-modal" aria-label="Close modal">&times;</button>
+        <div class="oz-modal-exam-inner">
+            <div class="oz-modal-exam-header">
+                <span class="oz-badge-tag oz-badge-tag--red" id="modalExamCode">Exam Booking</span>
+                <h3 id="modalExamTitle" class="oz-modal-exam-title">Register for Certification Exam</h3>
+                <p class="oz-modal-exam-sub">Schedule your proctored online exam or request an enterprise multi-seat training package.</p>
+            </div>
+
+            <div id="examBookingSuccess" style="display: none;" class="oz-form-success">
+                <div class="oz-form-success__icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h4 class="oz-form-success__title">Exam Registration Received!</h4>
+                <p class="oz-form-success__desc">Our testing coordinators will send your proctored seat voucher and testing portal credentials within 2 business hours.</p>
+                <button type="button" class="oz-btn-primary js-close-exam-modal">Close Window</button>
+            </div>
+
+            <form id="examBookingForm" class="oz-ticket-form">
+                <div class="oz-form-row">
+                    <div class="oz-form-group">
+                        <label class="oz-form-label">Full Candidate Name *</label>
+                        <input type="text" id="candidateName" class="oz-form-input" required placeholder="e.g. David Sterling" />
+                    </div>
+                    <div class="oz-form-group">
+                        <label class="oz-form-label">Corporate Email Address *</label>
+                        <input type="email" id="candidateEmail" class="oz-form-input" required placeholder="david@company.com" />
+                    </div>
+                </div>
+
+                <div class="oz-form-row">
+                    <div class="oz-form-group">
+                        <label class="oz-form-label">Organization / Tenant *</label>
+                        <input type="text" id="candidateOrg" class="oz-form-input" required placeholder="Company or Community Name" />
+                    </div>
+                    <div class="oz-form-group">
+                        <label class="oz-form-label">Preferred Examination Language</label>
+                        <select id="examLanguage" class="oz-form-select">
+                            <option value="en">English (Official)</option>
+                            <option value="fr">Français</option>
+                            <option value="es">Español</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="oz-form-group">
+                    <label class="oz-form-label">Registration Type</label>
+                    <select id="bookingType" class="oz-form-select">
+                        <option value="Individual">Individual Seat ($150 USD - Includes 1 Retake)</option>
+                        <option value="EnterpriseGroup">Corporate Team Package (5+ Candidates, 20% Discount)</option>
+                        <option value="PartnerVoucher">Authorized Reseller / Creator Partner Voucher</option>
+                    </select>
+                </div>
+
+                <div class="oz-form-action">
+                    <button type="button" id="submitExamBookingBtn" class="oz-btn-submit">
+                        <span class="oz-btn-text">Confirm Exam Seat Reservation</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. Practice Quiz Evaluation
+            const submitQuizBtn = document.getElementById('submitQuizBtn');
+            const retryQuizBtn = document.getElementById('retryQuizBtn');
+            const quizForm = document.getElementById('practiceQuizForm');
+            const resultBox = document.getElementById('quizResultBox');
+
+            if (submitQuizBtn) {
+                submitQuizBtn.addEventListener('click', async function () {
+                    const answers = {};
+                    let answeredCount = 0;
+
+                    document.querySelectorAll('.oz-quiz-question-card').forEach(card => {
+                        const qid = parseInt(card.getAttribute('data-qid'), 10);
+                        const selected = card.querySelector(`input[name="q_${qid}"]:checked`);
+                        if (selected) {
+                            answers[qid] = parseInt(selected.value, 10);
+                            answeredCount++;
+                        }
+                    });
+
+                    if (answeredCount < 5) {
+                        alert('Please answer all 5 assessment questions before submitting.');
+                        return;
+                    }
+
+                    submitQuizBtn.disabled = true;
+                    submitQuizBtn.textContent = 'Calculating Score...';
+
+                    try {
+                        const res = await fetch('?handler=SubmitQuiz', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ answers: answers })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            document.getElementById('quizScoreBadge').textContent = `${data.percentage}%`;
+                            document.getElementById('quizScoreBadge').className = `oz-quiz-score-badge ${data.passed ? 'is-pass' : 'is-fail'}`;
+                            document.getElementById('quizResultHeading').textContent = data.passed
+                                ? '🎉 Congratulations! You Are Ready for Official Certification'
+                                : '📚 Practice Complete: Review Recommended';
+                            document.getElementById('quizResultSummary').textContent =
+                                `You answered ${data.correctCount} of ${data.totalQuestions} questions correctly (${data.percentage}%). Minimum passing score is 70%.`;
+
+                            // Highlight correct vs incorrect options
+                            data.evaluations.forEach(ev => {
+                                const card = document.querySelector(`.oz-quiz-question-card[data-qid="${ev.questionId}"]`);
+                                if (card) {
+                                    const exp = card.querySelector('.js-explanation');
+                                    exp.style.display = 'block';
+                                    exp.className = `oz-quiz-explanation ${ev.isCorrect ? 'is-correct' : 'is-wrong'}`;
+                                    exp.innerHTML = `<strong>${ev.isCorrect ? '✓ Correct!' : '✗ Incorrect.'}</strong> ${ev.explanation}`;
+                                }
+                            });
+
+                            quizForm.style.display = 'none';
+                            resultBox.style.display = 'block';
+                            resultBox.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('An error occurred while evaluating your answers.');
+                    } finally {
+                        submitQuizBtn.disabled = false;
+                        submitQuizBtn.textContent = 'Submit Assessment for Scoring';
+                    }
+                });
+            }
+
+            if (retryQuizBtn) {
+                retryQuizBtn.addEventListener('click', function () {
+                    quizForm.reset();
+                    document.querySelectorAll('.js-explanation').forEach(el => el.style.display = 'none');
+                    quizForm.style.display = 'block';
+                    resultBox.style.display = 'none';
+                    quizForm.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+
+            // 2. Credential Verification Registry Lookup
+            const verifyBtn = document.getElementById('verifyCertBtn');
+            const certInput = document.getElementById('certNumberInput');
+            const verifyContainer = document.getElementById('verifyResultContainer');
+
+            if (verifyBtn && certInput) {
+                verifyBtn.addEventListener('click', async function () {
+                    const certNo = certInput.value.trim();
+                    if (!certNo) {
+                        certInput.focus();
+                        return;
+                    }
+
+                    verifyBtn.disabled = true;
+                    verifyBtn.textContent = 'Verifying...';
+
+                    try {
+                        const res = await fetch(`?handler=VerifyCredential&certificateNumber=${encodeURIComponent(certNo)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            verifyContainer.style.display = 'block';
+
+                            if (data.isVerified) {
+                                verifyContainer.innerHTML = `
+                                    <div class="oz-verified-box is-valid">
+                                        <div class="oz-verified-header">
+                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                            <div>
+                                                <h4 class="oz-verified-title">${data.credentialTitle}</h4>
+                                                <div class="oz-verified-status">Status: <strong>${data.status}</strong></div>
+                                            </div>
+                                        </div>
+                                        <div class="oz-verified-details">
+                                            <div><span>Credential Holder:</span> <strong>${data.holderName}</strong></div>
+                                            <div><span>Certificate ID:</span> <code>${data.certificateNumber}</code></div>
+                                            <div><span>Conferral Date:</span> <strong>${data.issuedDate}</strong></div>
+                                            <div><span>Valid Through:</span> <strong>${data.validThrough}</strong></div>
+                                            <div><span>Issuing Authority:</span> <strong>${data.issuer}</strong></div>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                verifyContainer.innerHTML = `
+                                    <div class="oz-verified-box is-invalid">
+                                        <div class="oz-verified-header">
+                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                            <div>
+                                                <h4 class="oz-verified-title">Credential Not Found</h4>
+                                                <div class="oz-verified-status">Status: <strong>Unverified</strong></div>
+                                            </div>
+                                        </div>
+                                        <p class="oz-verified-msg">${data.message}</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = 'Verify Credential';
+                    }
+                });
+            }
+
+            // 3. Exam Booking Modal
+            const examModal = document.getElementById('examModal');
+            const modalCode = document.getElementById('modalExamCode');
+            const modalTitle = document.getElementById('modalExamTitle');
+            const bookingForm = document.getElementById('examBookingForm');
+            const bookingSuccess = document.getElementById('examBookingSuccess');
+            const submitBookingBtn = document.getElementById('submitExamBookingBtn');
+
+            document.querySelectorAll('.js-schedule-exam').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const code = this.getAttribute('data-code');
+                    const title = this.getAttribute('data-title');
+                    if (modalCode) modalCode.textContent = code;
+                    if (modalTitle) modalTitle.textContent = `Register for ${title}`;
+                    bookingForm.style.display = 'flex';
+                    bookingSuccess.style.display = 'none';
+                    examModal.classList.add('is-open');
+                    examModal.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('oz-modal-open');
+                });
+            });
+
+            document.querySelectorAll('.js-close-exam-modal').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    examModal.classList.remove('is-open');
+                    examModal.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('oz-modal-open');
+                });
+            });
+
+            if (submitBookingBtn) {
+                submitBookingBtn.addEventListener('click', function () {
+                    const name = document.getElementById('candidateName').value.trim();
+                    const email = document.getElementById('candidateEmail').value.trim();
+                    const org = document.getElementById('candidateOrg').value.trim();
+
+                    if (!name || !email || !org) {
+                        alert('Please fill out all required registration fields.');
+                        return;
+                    }
+
+                    bookingForm.style.display = 'none';
+                    bookingSuccess.style.display = 'block';
+                });
+            }
+        });
+    </script>
+}
