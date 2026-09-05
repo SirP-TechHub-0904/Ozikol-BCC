@@ -81,18 +81,51 @@ public class CentralEmailService : ICentralEmailService
         return await SendEmailAsync(toEmail, subject, body, "Postmark", cancellationToken);
     }
 
+    /// <summary>
+    /// Dispatches an official setup confirmation email to the administrator containing dedicated sovereign workspace details.
+    /// </summary>
+    /// <param name="toEmail">The administrator email address.</param>
+    /// <param name="organizationName">The display name of the organization.</param>
+    /// <param name="domainUrl">The primary workspace domain.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if delivered; false otherwise.</returns>
     public async Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default)
     {
-        var subject = $"Welcome to Ozikol Cloud: Workspace for {organizationName} is Live!";
+        var subject = $"Welcome to Ozikol: Sovereign Workspace for {organizationName} is Ready!";
+        var loginUrl = $"http://{domainUrl}/auth/login";
         var body = $@"
-            <div style='font-family: Arial, sans-serif; max-width: 540px; margin: 0 auto; background: #0f172a; color: #ffffff; padding: 28px; border-radius: 12px;'>
-                <h2 style='color: #38bdf8; margin-top: 0;'>Your Workspace is Ready! 🚀</h2>
-                <p style='color: #cbd5e1; font-size: 14px;'>Congratulations! Your dedicated multi-tenant MIS workspace for <strong>{organizationName}</strong> has been provisioned with its isolated SQL database.</p>
-                <div style='background: #1e293b; padding: 18px; border-radius: 8px; margin: 20px 0;'>
-                    <p style='margin: 0; color: #94a3b8; font-size: 13px;'>Executive Dashboard URL:</p>
-                    <p style='margin: 6px 0 0 0;'><a href='http://{domainUrl}' style='color: #38bdf8; font-weight: bold; text-decoration: none; font-size: 16px;'>http://{domainUrl}</a></p>
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h2 style='color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;'>Your Sovereign Workspace is Ready!</h2>
+                    <p style='color: #64748b; font-size: 14px; margin-top: 6px;'>Enterprise Cloud Environment Setup Confirmation</p>
                 </div>
-                <p style='color: #64748b; font-size: 12px;'>Thank you for choosing Ozikol BCC Cloud.</p>
+                <p style='color: #334155; font-size: 15px; line-height: 1.6;'>
+                    Congratulations! Your sovereign cloud environment for <strong>{organizationName}</strong> has been provisioned and initialized with your executive business suite.
+                </p>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 24px 0;'>
+                    <div style='margin-bottom: 14px;'>
+                        <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Dedicated Website URL:</div>
+                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='http://{domainUrl}' style='color: #0284c7; text-decoration: none;'>http://{domainUrl}</a></div>
+                    </div>
+                    <div style='margin-bottom: 14px;'>
+                        <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Administrator Login Portal:</div>
+                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='{loginUrl}' style='color: #0284c7; text-decoration: none;'>{loginUrl}</a></div>
+                    </div>
+                    <div>
+                        <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Administrator Account:</div>
+                        <div style='font-size: 14px; color: #0f172a; margin-top: 2px; font-family: monospace;'>{toEmail}</div>
+                    </div>
+                </div>
+                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 24px; line-height: 1.5;'>
+                    <strong>Important Security Note:</strong> For maximum security and independence, client organizations log in directly through their dedicated website link. Bookmark your portal URL for all future team access.
+                </div>
+                <div style='text-align: center;'>
+                    <a href='{loginUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;'>Launch Command Center &rarr;</a>
+                </div>
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;' />
+                <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
+                    Ozikol Cloud Security &bull; Sovereign Business Operating Systems
+                </p>
             </div>
         ";
 

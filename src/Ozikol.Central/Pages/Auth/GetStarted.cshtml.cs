@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Caching.Memory;
 using Ozikol.Central.Services;
 
 namespace Ozikol.Central.Pages
@@ -81,18 +82,26 @@ namespace Ozikol.Central.Pages
     public class GetStartedModel : PageModel
     {
         private readonly ITenantOnboardingService _onboardingService;
+        private readonly ICentralEmailService _emailService;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
         private readonly ILogger<GetStartedModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GetStartedModel"/> class.
         /// </summary>
         /// <param name="onboardingService">The workspace onboarding service.</param>
+        /// <param name="emailService">Transactional email service for setup confirmation.</param>
+        /// <param name="cache">Memory cache used to store one-time setup summaries.</param>
         /// <param name="logger">Application logger instance.</param>
         public GetStartedModel(
             ITenantOnboardingService onboardingService,
+            ICentralEmailService emailService,
+            Microsoft.Extensions.Caching.Memory.IMemoryCache cache,
             ILogger<GetStartedModel> logger)
         {
             _onboardingService = onboardingService;
+            _emailService = emailService;
+            _cache = cache;
             _logger = logger;
         }
 
@@ -252,23 +261,51 @@ namespace Ozikol.Central.Pages
 
             _logger.LogInformation("Successfully provisioned sovereign workspace [{WorkspaceSlug}]. Target portal: {RedirectUrl}", Input.WorkspaceSlug, result.RedirectUrl);
 
+            // 1. Dispatch confirmation email with setup links
+            try
+            {
+                await _emailService.SendWelcomeWorkspaceEmailAsync(
+                    Input.WorkEmail.Trim().ToLowerInvariant(),
+                    Input.OrganizationName.Trim(),
+                    result.PrimaryDomain);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to dispatch welcome email to {Email}", Input.WorkEmail);
+            }
+
+            // 2. Generate secure one-time token for setup confirmation page
+            var oneTimeToken = Guid.NewGuid().ToString("N");
+            var setupPayload = new Ozikol.Central.Pages.Auth.WorkspaceSetupPayload
+            {
+                OrganizationName = Input.OrganizationName.Trim(),
+                WorkspaceSlug = Input.WorkspaceSlug,
+                WebsiteUrl = $"http://{result.PrimaryDomain}",
+                LoginUrl = result.RedirectUrl,
+                AdminEmail = Input.WorkEmail.Trim().ToLowerInvariant(),
+                ProvisionedUtc = DateTime.UtcNow
+            };
+
+            _cache.Set($"WorkspaceSetup_{oneTimeToken}", setupPayload, TimeSpan.FromMinutes(30));
+            string oneTimeDetailsUrl = $"/workspace-setup-details?token={oneTimeToken}";
+
             IsProvisioned = true;
-            ProvisionedRedirectUrl = result.RedirectUrl;
+            ProvisionedRedirectUrl = oneTimeDetailsUrl;
             SuccessMessage = $"Your sovereign workspace for '{Input.OrganizationName}' is ready!";
 
-            // If AJAX submission, return clean JSON payload
+            // If AJAX submission, return clean JSON payload targeting one-time page
             if (IsAjaxRequest())
             {
                 return new JsonResult(new
                 {
                     success = true,
-                    redirectUrl = result.RedirectUrl,
+                    redirectUrl = oneTimeDetailsUrl,
                     message = SuccessMessage
                 });
             }
 
-            // Standard POST redirect to newly created sovereign workspace
-            return Redirect(result.RedirectUrl);
+            // Standard POST redirect to one-time details page
+            return Redirect(oneTimeDetailsUrl);
         }
 
         private IActionResult ReturnValidationFailure()
