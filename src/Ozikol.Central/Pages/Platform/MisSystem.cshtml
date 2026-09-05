@@ -3,8 +3,8 @@
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Executive MIS System Console - Management Information System - Ozikol";
-    ViewData["MetaDescription"] = "Centralized executive management information system console. Real-time departmental oversight, staff compliance, census analytics, and role-based permissions.";
+    ViewData["Title"] = SharedLocalizer["Mis_Meta_Title"].Value;
+    ViewData["MetaDescription"] = SharedLocalizer["Mis_Meta_Description"].Value;
     var currentCulture = Model.CurrentCulture;
 }
 
@@ -14,15 +14,15 @@
         <div class="container">
             <div class="oz-breadcrumb-wrap">
                 <div class="oz-breadcrumb-links">
-                    <a href="/@currentCulture">Home</a>
+                    <a href="/@currentCulture">@SharedLocalizer["Mis_Breadcrumb_Home"]</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <a href="/platform/website">Platform</a>
+                    <a href="/@currentCulture/platform/website">@SharedLocalizer["Mis_Breadcrumb_Platform"]</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <span>Executive MIS System Console</span>
+                    <span>@SharedLocalizer["Mis_Breadcrumb_Current"]</span>
                 </div>
                 <a href="/@currentCulture" class="oz-breadcrumb-back">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    <span>Back to Portal</span>
+                    <span>@SharedLocalizer["Mis_Breadcrumb_Back"]</span>
                 </a>
             </div>
         </div>
@@ -32,14 +32,14 @@
     <section class="oz-feat-hero">
         <div class="container">
             <div class="oz-feat-badge-wrap">
-                <span class="oz-feat-pill">Command Center • Executive Intelligence</span>
+                <span class="oz-feat-pill">@SharedLocalizer["Mis_Hero_Pill"]</span>
             </div>
-            <h1 class="oz-feat-title">Unified Executive MIS Intelligence Console</h1>
-            <p class="oz-feat-lead">The central nervous system of your organization. Consolidate cross-departmental operations, financial dues ledgers, staff rotas, demographic census tracking, and facility access security into an interactive real-time command console.</p>
+            <h1 class="oz-feat-title">@SharedLocalizer["Mis_Hero_Title"]</h1>
+            <p class="oz-feat-lead">@SharedLocalizer["Mis_Hero_Lead"]</p>
             <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/@currentCulture/get-started" class="btn btn-primary">Get Started</a>
-                <a href="/Auth/Login" class="btn btn-secondary--alt">Launch MIS Console</a>
-                <a href="/@currentCulture/features" class="btn btn-secondary--alt">Explore All Modules</a>
+                <a href="/@currentCulture/get-started" class="btn btn-primary">@SharedLocalizer["Mis_Hero_Btn_GetStarted"]</a>
+                <a href="/Auth/Login" class="btn btn-secondary--alt">@SharedLocalizer["Mis_Hero_Btn_Launch"]</a>
+                <a href="/@currentCulture/features" class="btn btn-secondary--alt">@SharedLocalizer["Mis_Hero_Btn_Modules"]</a>
             </div>
         </div>
     </section>
@@ -47,52 +47,52 @@
     <!-- Core Capabilities Grid -->
     <section class="container oz-feat-capabilities-section" style="padding-top: 60px;">
         <div class="oz-feat-section-header">
-            <div class="oz-feat-tagline">What The MIS Console Does</div>
-            <h2>Total Transparency for Decision Makers &amp; Department Heads</h2>
-            <p class="oz-feat-card-desc">Designed to eliminate departmental silos, streamline administrative reporting, and ensure institutional compliance.</p>
+            <div class="oz-feat-tagline">@SharedLocalizer["Mis_Cap_Tagline"]</div>
+            <h2>@SharedLocalizer["Mis_Cap_Heading"]</h2>
+            <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Cap_Desc"]</p>
         </div>
         <div class="oz-feat-grid">
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--teal">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Cross-Department Telemetry &amp; KPIs</h3>
-                <p class="oz-feat-card-desc">Real-time charts, demographic shifts, member retention rates, and financial inflow trends updated in sub-second intervals across all active modules.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Telemetry_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Telemetry_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Granular Role-Based Permissions (RBAC)</h3>
-                <p class="oz-feat-card-desc">Assign exact capabilities to SuperAdmins, Department Directors, HR Managers, Gate Officers, and Finance Auditors with zero privilege leakage.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Rbac_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Rbac_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--amber">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Immutable Audit Trail Logs</h3>
-                <p class="oz-feat-card-desc">Every administrative action, record edit, export event, and authentication attempt is recorded in an immutable append-only audit trail for regulatory compliance.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Audit_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Audit_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--blue">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Financial Ledgers &amp; Dues Reconciliation</h3>
-                <p class="oz-feat-card-desc">Track member assessments, recurring maintenance dues, online gate ticketing revenue, and outstanding balance aging with automated reminder dispatches.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Ledgers_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Ledgers_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--rose">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Staff Shift Rota &amp; Payroll Alignment</h3>
-                <p class="oz-feat-card-desc">Intelligent roster matrix balancing shift coverage requirements, leave requests, shift swaps, and hourly timesheet calculations ready for payroll export.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Rota_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Rota_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--purple">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Facility Asset &amp; Fleet Management</h3>
-                <p class="oz-feat-card-desc">Track preventive maintenance schedules, machinery runtime, generator fuel logs, service history, and barcode asset tagging across your properties.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Mis_Card_Assets_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Mis_Card_Assets_Desc"]</p>
             </div>
         </div>
     </section>
@@ -100,23 +100,23 @@
     <!-- Cloud Console Access Section -->
     <section class="container">
         <div class="oz-platform-download-box">
-            <h2>Ready to Access Your Executive MIS Workspace?</h2>
-            <p>Access your cloud console from any desktop or tablet browser. Fully encrypted with multi-factor authentication.</p>
+            <h2>@SharedLocalizer["Mis_Access_Heading"]</h2>
+            <p>@SharedLocalizer["Mis_Access_Desc"]</p>
 
             <div class="oz-platform-download-grid" style="max-width: 800px; margin: 32px auto 0 auto;">
                 <div class="oz-platform-download-card">
                     <div class="oz-platform-card-header">
                         <div class="oz-platform-card-icon">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/></svg>
                         </div>
                         <div>
-                            <h4>Authorized Administrator Login</h4>
-                            <span>Direct Sign-In • 2FA Protected</span>
+                            <h4>@SharedLocalizer["Mis_Card_AdminLogin_Title"]</h4>
+                            <span>@SharedLocalizer["Mis_Card_AdminLogin_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">Sign in directly to your master administrator account or dedicated organization subdomain.</p>
+                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Mis_Card_AdminLogin_Desc"]</p>
                     <a href="/Auth/Login" class="oz-platform-btn-download">
-                        <span>Launch Cloud Console</span>
+                        <span>@SharedLocalizer["Mis_Card_AdminLogin_Btn"]</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </a>
                 </div>
@@ -127,23 +127,23 @@
                             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
                         </div>
                         <div>
-                            <h4>Instant Cloud Deployment</h4>
-                            <span>Automated Setup • Dedicated Workspace</span>
+                            <h4>@SharedLocalizer["Mis_Card_Deploy_Title"]</h4>
+                            <span>@SharedLocalizer["Mis_Card_Deploy_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">Provision your dedicated organization MIS environment with turnkey security, roles, and automated workflows.</p>
+                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Mis_Card_Deploy_Desc"]</p>
                     <a href="/@currentCulture/get-started" class="oz-platform-btn-download">
-                        <span>Get Started</span>
+                        <span>@SharedLocalizer["Mis_Card_Deploy_Btn"]</span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </a>
                 </div>
             </div>
 
             <div class="oz-platform-specs">
-                <span>✓ 99.99% Guaranteed Cloud Availability</span>
-                <span>✓ TLS 1.3 &amp; AES-256 Encryption</span>
-                <span>✓ Multi-Zone Automated Backups</span>
-                <span>✓ ISO 27001 &amp; SOC 2 Aligned</span>
+                <span>✓ @SharedLocalizer["Mis_Specs_Availability"]</span>
+                <span>✓ @SharedLocalizer["Mis_Specs_Encryption"]</span>
+                <span>✓ @SharedLocalizer["Mis_Specs_Backups"]</span>
+                <span>✓ @SharedLocalizer["Mis_Specs_Compliance"]</span>
             </div>
         </div>
     </section>
@@ -151,11 +151,11 @@
     <!-- Bottom CTA Banner -->
     <section class="oz-feat-cta-banner">
         <div class="container">
-            <h2>Experience Complete Institutional Oversight</h2>
-            <p>Empower your executive leadership with data-driven clarity across all 9 enterprise suites.</p>
+            <h2>@SharedLocalizer["Mis_CTA_Heading"]</h2>
+            <p>@SharedLocalizer["Mis_CTA_Desc"]</p>
             <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/@currentCulture/pricing" class="btn btn-primary">Go to Pricing</a>
-                <a href="/@currentCulture/get-started" class="btn btn-secondary--alt">Get Started</a>
+                <a href="/@currentCulture/pricing" class="btn btn-primary">@SharedLocalizer["Mis_CTA_Btn_Pricing"]</a>
+                <a href="/@currentCulture/get-started" class="btn btn-secondary--alt">@SharedLocalizer["Mis_CTA_Btn_GetStarted"]</a>
             </div>
         </div>
     </section>

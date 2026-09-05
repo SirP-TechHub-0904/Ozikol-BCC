@@ -3,8 +3,8 @@
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Windows Desktop Application - High-Throughput Workstations - Ozikol";
-    ViewData["MetaDescription"] = "Native Windows desktop client for reception kiosks, gate security desks, and finance workstations. Direct thermal printer integration, multi-monitor, and offline cache.";
+    ViewData["Title"] = SharedLocalizer["Desktop_Meta_Title"].Value;
+    ViewData["MetaDescription"] = SharedLocalizer["Desktop_Meta_Description"].Value;
     var currentCulture = Model.CurrentCulture;
 }
 
@@ -14,15 +14,15 @@
         <div class="container">
             <div class="oz-breadcrumb-wrap">
                 <div class="oz-breadcrumb-links">
-                    <a href="/@currentCulture">Home</a>
+                    <a href="/@currentCulture">@SharedLocalizer["Desktop_Breadcrumb_Home"]</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <a href="/platform/website">Platform</a>
+                    <a href="/@currentCulture/platform/website">@SharedLocalizer["Desktop_Breadcrumb_Platform"]</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <span>Desktop App (Windows 10 &amp; 11)</span>
+                    <span>@SharedLocalizer["Desktop_Breadcrumb_Current"]</span>
                 </div>
                 <a href="/@currentCulture" class="oz-breadcrumb-back">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    <span>Back to Portal</span>
+                    <span>@SharedLocalizer["Desktop_Breadcrumb_Back"]</span>
                 </a>
             </div>
         </div>
@@ -32,70 +32,67 @@
     <section class="oz-feat-hero">
         <div class="container">
             <div class="oz-feat-badge-wrap">
-                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                </div>
-                <span class="oz-feat-pill">Desktop Workstation • Windows 10 &amp; 11</span>
+                <span class="oz-feat-pill">@SharedLocalizer["Desktop_Hero_Pill"]</span>
             </div>
-            <h1 class="oz-feat-title">High-Performance Desktop Client for Workstations</h1>
-            <p class="oz-feat-lead">Engineered exclusively for front-desk receptionists, gate security dispatchers, and finance operators who require hardware peripheral integration, multi-monitor layouts, and keyboard-driven sub-millisecond workflows.</p>
+            <h1 class="oz-feat-title">@SharedLocalizer["Desktop_Hero_Title"]</h1>
+            <p class="oz-feat-lead">@SharedLocalizer["Desktop_Hero_Lead"]</p>
             <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="#downloads" class="btn btn-primary">Download Windows App</a>
-                <a href="#specs" class="btn btn-secondary--alt">System Requirements</a>
-                <a href="/@currentCulture/support/contact?type=Enterprise" class="btn btn-outline-secondary" style="border-radius: 9999px; padding: 10px 22px;">Enterprise Rollout Support</a>
+                <a href="#downloads" class="btn btn-primary">@SharedLocalizer["Desktop_Hero_Btn_Download"]</a>
+                <a href="#specs" class="btn btn-secondary--alt">@SharedLocalizer["Desktop_Hero_Btn_Specs"]</a>
+                <a href="/@currentCulture/support/contact?type=Enterprise" class="btn btn-outline-secondary" style="border-radius: 9999px; padding: 10px 22px;">@SharedLocalizer["Desktop_Hero_Btn_Support"]</a>
             </div>
         </div>
     </section>
 
     <!-- Core Capabilities Grid -->
-    <section class="container oz-feat-capabilities-section">
+    <section class="container oz-feat-capabilities-section" style="padding-top: 60px;">
         <div class="oz-feat-section-header">
-            <div class="oz-feat-tagline">What The Desktop App Does</div>
-            <h2>Built for High-Volume Workstation Environments</h2>
-            <p class="oz-feat-card-desc">Unlike standard web browsers, our native Windows client talks directly to local hardware and runs with zero latency.</p>
+            <div class="oz-feat-tagline">@SharedLocalizer["Desktop_Cap_Tagline"]</div>
+            <h2>@SharedLocalizer["Desktop_Cap_Heading"]</h2>
+            <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Cap_Desc"]</p>
         </div>
         <div class="oz-feat-grid">
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--teal">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Direct USB Thermal Printer Support</h3>
-                <p class="oz-feat-card-desc">Instant raw ESC/POS communication with thermal receipt printers, Zebra barcode label makers, and visitor badge sticker printers without browser print dialog prompts.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_Printers_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_Printers_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Multi-Monitor &amp; Detached Windows</h3>
-                <p class="oz-feat-card-desc">Pop out dedicated live gate queue monitors, attendee check-in screens, and financial ledger entry forms across multiple displays simultaneously.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_MultiMon_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_MultiMon_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--amber">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Local SQLite Offline Transaction Cache</h3>
-                <p class="oz-feat-card-desc">If the facility internet connection drops, the desktop app continues processing vehicle entry records and dues payments into a local encrypted database, syncing automatically upon reconnection.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_Sqlite_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_Sqlite_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--blue">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
-                <h3 class="oz-feat-card-title">USB RFID &amp; Fingerprint Scanners</h3>
-                <p class="oz-feat-card-desc">Plug-and-play driver support for USB RFID proximity card readers, magnetic stripe readers, and biometric fingerprint scanners for physical facility access verification.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_Rfid_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_Rfid_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--rose">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Rapid Keyboard Ergonomics</h3>
-                <p class="oz-feat-card-desc">Full hotkey coverage (e.g. <code>Ctrl+N</code> for new pass, <code>F2</code> for search, <code>Enter</code> to commit) allowing gate guards and operators to complete check-ins in under 3 seconds without touching a mouse.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_Keys_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_Keys_Desc"]</p>
             </div>
             <div class="oz-feat-card">
                 <div class="oz-feat-card-icon oz-feat-card-icon--purple">
                     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                 </div>
-                <h3 class="oz-feat-card-title">Dedicated Windows Kiosk Mode</h3>
-                <p class="oz-feat-card-desc">Lock down public reception kiosks and guard post computers into full-screen single-app mode, preventing operators from accessing the underlying Windows desktop or external websites.</p>
+                <h3 class="oz-feat-card-title">@SharedLocalizer["Desktop_Card_Kiosk_Title"]</h3>
+                <p class="oz-feat-card-desc">@SharedLocalizer["Desktop_Card_Kiosk_Desc"]</p>
             </div>
         </div>
     </section>
@@ -103,8 +100,8 @@
     <!-- Download Section -->
     <section id="downloads" class="container">
         <div class="oz-platform-download-box">
-            <h2>Download Ozikol for Windows 10 &amp; 11</h2>
-            <p>Official 64-bit desktop binaries compiled natively with .NET 9. Choose your deployment package below:</p>
+            <h2>@SharedLocalizer["Desktop_Download_Heading"]</h2>
+            <p>@SharedLocalizer["Desktop_Download_Desc"]</p>
 
             <div class="oz-platform-download-grid" style="max-width: 960px; margin: 36px auto 0 auto;">
                 <!-- Standard Installer Card -->
@@ -114,14 +111,14 @@
                             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
                         </div>
                         <div>
-                            <h4>Windows Installer (.exe)</h4>
-                            <span>Recommended for Single Workstations</span>
+                            <h4>@SharedLocalizer["Desktop_Card_Exe_Title"]</h4>
+                            <span>@SharedLocalizer["Desktop_Card_Exe_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">Standard setup wizard with automatic desktop shortcuts, auto-updater, and printer driver registration.</p>
+                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Desktop_Card_Exe_Desc"]</p>
                     <a href="/@currentCulture/support/contact?type=Enterprise" class="oz-platform-btn-download">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span>Download</span>
+                        <span>@SharedLocalizer["Desktop_Btn_Download"]</span>
                     </a>
                     <span style="font-size: 11px; color: var(--ozikol-text-slate); margin-top: 8px; text-align: center; display: block;">v2.4.0 • 85 MB • SHA-256 Verified</span>
                 </div>
@@ -133,14 +130,14 @@
                             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                         </div>
                         <div>
-                            <h4>Enterprise MSI (.msi)</h4>
-                            <span>For Active Directory &amp; InTune</span>
+                            <h4>@SharedLocalizer["Desktop_Card_Msi_Title"]</h4>
+                            <span>@SharedLocalizer["Desktop_Card_Msi_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">Group Policy / InTune deployment package supporting silent rollout flags (<code>msiexec /i Ozikol.msi /qn</code>).</p>
+                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Desktop_Card_Msi_Desc"]</p>
                     <a href="/@currentCulture/support/contact?type=Enterprise" class="oz-platform-btn-outline">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span>Download</span>
+                        <span>@SharedLocalizer["Desktop_Btn_Download"]</span>
                     </a>
                     <span style="font-size: 11px; color: var(--ozikol-text-slate); margin-top: 8px; text-align: center; display: block;">v2.4.0 • 88 MB • GPO Ready</span>
                 </div>
@@ -152,14 +149,14 @@
                             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
                         </div>
                         <div>
-                            <h4>Portable Standalone (.zip)</h4>
-                            <span>Zero Installation Required</span>
+                            <h4>@SharedLocalizer["Desktop_Card_Zip_Title"]</h4>
+                            <span>@SharedLocalizer["Desktop_Card_Zip_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">Extract and run directly from a USB drive or secure restricted workstation without administrative privileges.</p>
+                    <p style="font-size: 13px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Desktop_Card_Zip_Desc"]</p>
                     <a href="/@currentCulture/support/contact?type=Enterprise" class="oz-platform-btn-outline">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span>Download</span>
+                        <span>@SharedLocalizer["Desktop_Btn_Download"]</span>
                     </a>
                     <span style="font-size: 11px; color: var(--ozikol-text-slate); margin-top: 8px; text-align: center; display: block;">v2.4.0 • 92 MB • Self-Contained</span>
                 </div>
@@ -167,10 +164,10 @@
 
             <!-- Hardware Specifications Card -->
             <div id="specs" class="oz-platform-specs" style="margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--ozikol-border);">
-                <span><strong>OS:</strong> Windows 10 (1809+) or Windows 11 (64-bit)</span>
-                <span><strong>Memory:</strong> 4GB RAM (8GB recommended for multi-monitor)</span>
-                <span><strong>Storage:</strong> 500MB free disk space</span>
-                <span><strong>Runtime:</strong> Self-contained .NET 9 included</span>
+                <span><strong>OS:</strong> @SharedLocalizer["Desktop_Specs_Os"]</span>
+                <span><strong>Memory:</strong> @SharedLocalizer["Desktop_Specs_Ram"]</span>
+                <span><strong>Storage:</strong> @SharedLocalizer["Desktop_Specs_Disk"]</span>
+                <span><strong>Runtime:</strong> @SharedLocalizer["Desktop_Specs_Runtime"]</span>
             </div>
         </div>
     </section>
@@ -178,11 +175,11 @@
     <!-- Bottom CTA Banner -->
     <section class="oz-feat-cta-banner">
         <div class="container">
-            <h2>Accelerate Your Front-Desk &amp; Gate Operations</h2>
-            <p>Deploy high-speed workstation clients with hardware printing and local cache across your organization.</p>
+            <h2>@SharedLocalizer["Desktop_CTA_Heading"]</h2>
+            <p>@SharedLocalizer["Desktop_CTA_Desc"]</p>
             <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/@currentCulture/support/contact?type=Enterprise" class="btn btn-primary">Request Kiosk Hardware Consultation</a>
-                <a href="/platform/mobile-app" class="btn btn-secondary--alt">Explore Mobile Apps</a>
+                <a href="/@currentCulture/support/contact?type=Enterprise" class="btn btn-primary">@SharedLocalizer["Desktop_CTA_Btn_Consult"]</a>
+                <a href="/platform/mobile-app" class="btn btn-secondary--alt">@SharedLocalizer["Desktop_CTA_Btn_Mobile"]</a>
             </div>
         </div>
     </section>
