@@ -1,51 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -875,7 +875,7 @@
     <value>Discover how businesses, charities, and institutions scale their daily operations smoothly with Ozikol.</value>
   </data>
   <data name="Home_Testimonial1_Quote" xml:space="preserve">
-    <value>&quot;Ozikol replaced four separate platforms we were juggling. Our staff rotas, committee meetings, and team chat now run seamlessly in one place.&quot;</value>
+    <value>"Ozikol replaced four separate platforms we were juggling. Our staff rotas, committee meetings, and team chat now run seamlessly in one place."</value>
   </data>
   <data name="Home_Testimonial1_Author" xml:space="preserve">
     <value>Sarah Jenkins</value>
@@ -884,7 +884,7 @@
     <value>Director of Operations, Horizon Care Trust</value>
   </data>
   <data name="Home_Testimonial2_Quote" xml:space="preserve">
-    <value>&quot;The verifiable QR certificate issuance and demographic survey toolkit saved our field workers hundreds of manual hours every single month.&quot;</value>
+    <value>"The verifiable QR certificate issuance and demographic survey toolkit saved our field workers hundreds of manual hours every single month."</value>
   </data>
   <data name="Home_Testimonial2_Author" xml:space="preserve">
     <value>David Adebayo</value>
@@ -893,7 +893,7 @@
     <value>Head of Digital Infrastructure, Civic Forward Alliance</value>
   </data>
   <data name="Home_Testimonial3_Quote" xml:space="preserve">
-    <value>&quot;Having private BYOK AI integrated right into our forms and ticket workflows gives our staff supercharged productivity with total data privacy.&quot;</value>
+    <value>"Having private BYOK AI integrated right into our forms and ticket workflows gives our staff supercharged productivity with total data privacy."</value>
   </data>
   <data name="Home_Testimonial3_Author" xml:space="preserve">
     <value>Marcus Weber</value>
@@ -2691,16 +2691,16 @@
     <value>Solution &amp; Systems Integrators</value>
   </data>
   <data name="Partners_Track1_Desc" xml:space="preserve">
-    <value>Deploy, configure, and migrate enterprise clients to Ozikol Business Cloud. Receive co-selling margins and dedicated sandbox tenants.</value>
+    <value>Deploy, configure, and migrate enterprise clients to Ozikol Business Cloud. Receive direct commissions and dedicated partner support.</value>
   </data>
   <data name="Partners_Track1_F1" xml:space="preserve">
     <value>Dedicated technical partner manager</value>
   </data>
   <data name="Partners_Track1_F2" xml:space="preserve">
-    <value>Co-selling margin and deal registration</value>
+    <value>Direct commission on every closed deal</value>
   </data>
   <data name="Partners_Track1_F3" xml:space="preserve">
-    <value>Free sandbox development environments</value>
+    <value>Testing workspace for client demos</value>
   </data>
   <data name="Partners_Track2_Badge" xml:space="preserve">
     <value>Marketplace Blueprints</value>
@@ -2712,7 +2712,7 @@
     <value>Design and publish responsive page layouts, suite navigation headers, and industry templates directly to the Ozikol UI Marketplace.</value>
   </data>
   <data name="Partners_Track2_F1" xml:space="preserve">
-    <value>Up to 80% recurring creator revenue share</value>
+    <value>Recurring creator revenue share</value>
   </data>
   <data name="Partners_Track2_F2" xml:space="preserve">
     <value>Built-in audience across all Ozikol tenants</value>
@@ -2727,13 +2727,13 @@
     <value>Affiliate &amp; Strategic Advocates</value>
   </data>
   <data name="Partners_Track3_Desc" xml:space="preserve">
-    <value>Recommend Ozikol to businesses and institutions. Earn generous lifetime recurring commissions on every active referred subscription.</value>
+    <value>Recommend Ozikol to businesses and institutions. Earn recurring commissions on every active referred subscription.</value>
   </data>
   <data name="Partners_Track3_F1" xml:space="preserve">
-    <value>25% lifetime recurring commission</value>
+    <value>Recurring referral commission</value>
   </data>
   <data name="Partners_Track3_F2" xml:space="preserve">
-    <value>90-day referral tracking cookie</value>
+    <value>Reliable referral tracking window</value>
   </data>
   <data name="Partners_Track3_F3" xml:space="preserve">
     <value>Real-time earnings analytics portal</value>
@@ -2800,22 +2800,22 @@
     <value>Choose the primary partnership pathway that best aligns with your business model.</value>
   </data>
   <data name="Partner_Form_Track1_Margin" xml:space="preserve">
-    <value>Up to 35% Margin</value>
+    <value>Enterprise Commission</value>
   </data>
   <data name="Partner_Form_Track1_Summary" xml:space="preserve">
     <value>Deploy client projects, register enterprise deals, and access dedicated sandbox developer tenants.</value>
   </data>
   <data name="Partner_Form_Track2_Margin" xml:space="preserve">
-    <value>Up to 80% Revenue Share</value>
+    <value>Creator Revenue Share</value>
   </data>
   <data name="Partner_Form_Track2_Summary" xml:space="preserve">
     <value>Publish layout blueprints, header navbars, and industry suites to the Ozikol UI Marketplace.</value>
   </data>
   <data name="Partner_Form_Track3_Margin" xml:space="preserve">
-    <value>25% Recurring Commission</value>
+    <value>Recurring Commission</value>
   </data>
   <data name="Partner_Form_Track3_Summary" xml:space="preserve">
-    <value>Earn monthly recurring lifetime commissions on every active referred client subscription.</value>
+    <value>Earn recurring commissions on every active referred client subscription.</value>
   </data>
   <data name="Partner_Form_Step2_Title" xml:space="preserve">
     <value>Applicant Profile &amp; Information</value>
@@ -2863,7 +2863,7 @@
     <value>An application with this email address has already been submitted and is currently under review.</value>
   </data>
   <data name="Partner_Guar_1" xml:space="preserve">
-    <value>Fast 24-48h Application Review</value>
+    <value>Fast Application Review</value>
   </data>
   <data name="Partner_Guar_2" xml:space="preserve">
     <value>Zero Upfront Fees or Onboarding Costs</value>
@@ -2884,7 +2884,7 @@
     <value>What Happens Next</value>
   </data>
   <data name="Partner_Success_Step1" xml:space="preserve">
-    <value>Application review by our partner onboarding team within 24 to 48 business hours</value>
+    <value>Prompt review by our partner onboarding team</value>
   </data>
   <data name="Partner_Success_Step2" xml:space="preserve">
     <value>Email invitation with your Partner Portal access and developer sandbox keys</value>

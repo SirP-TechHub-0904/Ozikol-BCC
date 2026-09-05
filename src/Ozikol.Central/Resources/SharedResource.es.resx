@@ -1,51 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-    <xsd:element name="root" msdata:IsDataSet="true">
-      <xsd:complexType>
-        <xsd:choice maxOccurs="unbounded">
-          <xsd:element name="metadata">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" />
-              </xsd:sequence>
-              <xsd:attribute name="name" use="required" type="xsd:string" />
-              <xsd:attribute name="type" type="xsd:string" />
-              <xsd:attribute name="mimetype" type="xsd:string" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="assembly">
-            <xsd:complexType>
-              <xsd:attribute name="alias" type="xsd:string" />
-              <xsd:attribute name="name" type="xsd:string" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="data">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-              <xsd:attribute ref="xml:space" />
-            </xsd:complexType>
-          </xsd:element>
-          <xsd:element name="resheader">
-            <xsd:complexType>
-              <xsd:sequence>
-                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-              </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" use="required" />
-            </xsd:complexType>
-          </xsd:element>
-        </xsd:choice>
-      </xsd:complexType>
-    </xsd:element>
-  </xsd:schema>
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" ns1:Ordinal="1" />
+              <xs:attribute name="type" type="xsd:string" ns1:Ordinal="3" />
+              <xs:attribute name="mimetype" type="xsd:string" ns1:Ordinal="4" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" type="xsd:string" use="required" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -2694,16 +2694,16 @@
     <value>Integradores de soluciones y sistemas</value>
   </data>
   <data name="Partners_Track1_Desc" xml:space="preserve">
-    <value>Implemente, configure y migre clientes empresariales a Ozikol. Obtenga márgenes de venta conjunta y entornos sandbox.</value>
+    <value>Implemente, configure y migre clientes empresariales a Ozikol Business Cloud. Reciba comisiones directas y soporte dedicado.</value>
   </data>
   <data name="Partners_Track1_F1" xml:space="preserve">
     <value>Gestor técnico de socios dedicado</value>
   </data>
   <data name="Partners_Track1_F2" xml:space="preserve">
-    <value>Margen de venta conjunta y registro de proyectos</value>
+    <value>Comisión directa en cada acuerdo cerrado</value>
   </data>
   <data name="Partners_Track1_F3" xml:space="preserve">
-    <value>Entornos sandbox de desarrollo gratuitos</value>
+    <value>Espacio de prueba para demostraciones a clientes</value>
   </data>
   <data name="Partners_Track2_Badge" xml:space="preserve">
     <value>Modelos del marketplace</value>
@@ -2715,7 +2715,7 @@
     <value>Diseñe y publique diseños adaptables, encabezados y plantillas sectoriales en el Marketplace de Ozikol.</value>
   </data>
   <data name="Partners_Track2_F1" xml:space="preserve">
-    <value>Hasta un 80% de participación en ingresos</value>
+    <value>Participación recurrente de ingresos para creadores</value>
   </data>
   <data name="Partners_Track2_F2" xml:space="preserve">
     <value>Audiencia integrada en todos los clientes de Ozikol</value>
@@ -2730,13 +2730,13 @@
     <value>Afiliados y promotores estratégicos</value>
   </data>
   <data name="Partners_Track3_Desc" xml:space="preserve">
-    <value>Recomiende Ozikol a organizaciones y obtenga generosas comisiones mensuales recurrentes de por vida.</value>
+    <value>Recomiende Ozikol a empresas e instituciones. Obtenga comisiones recurrentes por cada suscripción activa recomendada.</value>
   </data>
   <data name="Partners_Track3_F1" xml:space="preserve">
-    <value>25% de comisión recurrente de por vida</value>
+    <value>Comisión de recomendación recurrente</value>
   </data>
   <data name="Partners_Track3_F2" xml:space="preserve">
-    <value>Cookie de seguimiento de 90 días</value>
+    <value>Ventana de seguimiento de recomendaciones confiable</value>
   </data>
   <data name="Partners_Track3_F3" xml:space="preserve">
     <value>Portal de analíticas de ganancias en tiempo real</value>
@@ -2803,22 +2803,22 @@
     <value>Elija la vía de asociación que mejor se alinee con su modelo de negocio.</value>
   </data>
   <data name="Partner_Form_Track1_Margin" xml:space="preserve">
-    <value>Hasta 35% de margen</value>
+    <value>Comisión Empresarial</value>
   </data>
   <data name="Partner_Form_Track1_Summary" xml:space="preserve">
     <value>Implemente proyectos de clientes, registre acuerdos empresariales y acceda a entornos sandbox dedicados.</value>
   </data>
   <data name="Partner_Form_Track2_Margin" xml:space="preserve">
-    <value>Hasta 80% de participación en ingresos</value>
+    <value>Participación de Ingresos</value>
   </data>
   <data name="Partner_Form_Track2_Summary" xml:space="preserve">
     <value>Publique diseños, barras de navegación y suites sectoriales en el Marketplace de Ozikol.</value>
   </data>
   <data name="Partner_Form_Track3_Margin" xml:space="preserve">
-    <value>25% de comisión recurrente</value>
+    <value>Comisión Recurrente</value>
   </data>
   <data name="Partner_Form_Track3_Summary" xml:space="preserve">
-    <value>Gane comisiones mensuales recurrentes de por vida por cada suscripción activa recomendada.</value>
+    <value>Obtenga comisiones recurrentes por cada suscripción de cliente recomendada activa.</value>
   </data>
   <data name="Partner_Form_Step2_Title" xml:space="preserve">
     <value>Perfil e información del solicitante</value>
@@ -2866,7 +2866,7 @@
     <value>Ya se ha enviado una solicitud con este correo electrónico y está actualmente en revisión.</value>
   </data>
   <data name="Partner_Guar_1" xml:space="preserve">
-    <value>Revisión rápida de solicitudes en 24-48h</value>
+    <value>Revisión rápida de solicitudes</value>
   </data>
   <data name="Partner_Guar_2" xml:space="preserve">
     <value>Cero tarifas iniciales o costes de incorporación</value>
@@ -2887,7 +2887,7 @@
     <value>Próximos pasos</value>
   </data>
   <data name="Partner_Success_Step1" xml:space="preserve">
-    <value>Revisión de la solicitud por nuestro equipo en un plazo de 24 a 48 horas hábiles</value>
+    <value>Revisión oportuna por nuestro equipo de integración de socios</value>
   </data>
   <data name="Partner_Success_Step2" xml:space="preserve">
     <value>Invitación por correo electrónico con acceso al Portal de Socios y claves de sandbox</value>
