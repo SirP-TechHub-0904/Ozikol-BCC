@@ -273,59 +273,69 @@
                     var isFirst = true;
                     foreach (var faq in Model.Faqs)
                     {
-                        <details class="oz-faq-item" @(isFirst ? "open" : "")>
-                            <summary class="oz-faq-question">
+                        <div class="oz-faq-item @(isFirst ? "is-open" : "")">
+                            <button type="button" class="oz-faq-question" aria-expanded="@(isFirst ? "true" : "false")">
                                 <span>@faq.Question</span>
-                                <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </summary>
+                                <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
                             <div class="oz-faq-answer">
                                 <p>@faq.Answer</p>
                             </div>
-                        </details>
+                        </div>
                         isFirst = false;
                     }
                 }
                 else
                 {
-                    <details class="oz-faq-item" open>
-                        <summary class="oz-faq-question">
+                    <div class="oz-faq-item is-open">
+                        <button type="button" class="oz-faq-question" aria-expanded="true">
                             <span>@SharedLocalizer["Support_Faq_Q1"]</span>
-                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </summary>
+                            <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
                         <div class="oz-faq-answer">
                             <p>@SharedLocalizer["Support_Faq_A1"]</p>
                         </div>
-                    </details>
+                    </div>
 
-                    <details class="oz-faq-item">
-                        <summary class="oz-faq-question">
+                    <div class="oz-faq-item">
+                        <button type="button" class="oz-faq-question" aria-expanded="false">
                             <span>@SharedLocalizer["Support_Faq_Q2"]</span>
-                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </summary>
+                            <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
                         <div class="oz-faq-answer">
                             <p>@SharedLocalizer["Support_Faq_A2"]</p>
                         </div>
-                    </details>
+                    </div>
 
-                    <details class="oz-faq-item">
-                        <summary class="oz-faq-question">
+                    <div class="oz-faq-item">
+                        <button type="button" class="oz-faq-question" aria-expanded="false">
                             <span>@SharedLocalizer["Support_Faq_Q3"]</span>
-                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </summary>
+                            <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
                         <div class="oz-faq-answer">
                             <p>@SharedLocalizer["Support_Faq_A3"]</p>
                         </div>
-                    </details>
+                    </div>
 
-                    <details class="oz-faq-item">
-                        <summary class="oz-faq-question">
+                    <div class="oz-faq-item">
+                        <button type="button" class="oz-faq-question" aria-expanded="false">
                             <span>@SharedLocalizer["Support_Faq_Q4"]</span>
-                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </summary>
+                            <svg class="oz-faq-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
                         <div class="oz-faq-answer">
                             <p>@SharedLocalizer["Support_Faq_A4"]</p>
                         </div>
-                    </details>
+                    </div>
                 }
             </div>
         </div>
@@ -350,6 +360,38 @@
                         form.scrollIntoView({ behavior: 'smooth' });
                     }
                 });
+            });
+
+            // Interactive FAQ Accordion (Smooth expand & minimize)
+            var faqItems = document.querySelectorAll('.oz-support-faq .oz-faq-item');
+            faqItems.forEach(function (item) {
+                var btn = item.querySelector('.oz-faq-question');
+                if (btn) {
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        var wasOpen = item.classList.contains('is-open');
+
+                        // Close / minimize all other FAQ items
+                        faqItems.forEach(function (other) {
+                            if (other !== item) {
+                                other.classList.remove('is-open');
+                                var otherBtn = other.querySelector('.oz-faq-question');
+                                if (otherBtn) {
+                                    otherBtn.setAttribute('aria-expanded', 'false');
+                                }
+                            }
+                        });
+
+                        // Toggle current item: if open -> minimize, if minimized -> expand
+                        if (wasOpen) {
+                            item.classList.remove('is-open');
+                            btn.setAttribute('aria-expanded', 'false');
+                        } else {
+                            item.classList.add('is-open');
+                            btn.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+                }
             });
         });
     </script>

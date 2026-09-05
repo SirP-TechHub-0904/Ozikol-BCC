@@ -5231,42 +5231,72 @@ select.oz-partner-select {
 .oz-faq-item {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.oz-faq-item.is-open {
+    border-color: #e5173f;
+    box-shadow: 0 8px 24px rgba(229, 23, 63, 0.08);
 }
 
 .oz-faq-question {
+    width: 100%;
+    padding: 20px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 22px;
+    gap: 16px;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    text-align: left;
     font-size: 16px;
     font-weight: 700;
     color: #0f172a;
-    cursor: pointer;
+    transition: color 0.2s ease;
     user-select: none;
-    list-style: none;
 }
 
-.oz-faq-question::-webkit-details-marker {
-    display: none;
+.oz-faq-question:focus,
+.oz-faq-question:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
+.oz-faq-item.is-open .oz-faq-question {
+    color: #e5173f;
+}
+
+.oz-faq-arrow,
 .oz-faq-chevron {
-    color: #94a3b8;
-    transition: transform 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    color: #64748b;
 }
 
-.oz-faq-item[open] .oz-faq-chevron {
+.oz-faq-item.is-open .oz-faq-arrow,
+.oz-faq-item.is-open .oz-faq-chevron {
     transform: rotate(180deg);
+    color: #e5173f;
 }
 
 .oz-faq-answer {
-    padding: 0 22px 20px 22px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s ease;
+    padding: 0 24px;
     font-size: 14.5px;
-    color: #475569;
     line-height: 1.65;
+    color: #475569;
+}
+
+.oz-faq-item.is-open .oz-faq-answer {
+    max-height: 500px;
+    padding-bottom: 24px;
 }
 
 .oz-faq-answer p {
