@@ -40,6 +40,14 @@ builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozik
 
 builder.Services.AddRazorPages(options =>
 {
+    // Register route aliases for Auth pages so that both /auth/... and clean top-level paths work seamlessly with culture prefixes
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
+    options.Conventions.AddPageRoute("/Auth/Login", "login");
+    options.Conventions.AddPageRoute("/Auth/Login", "auth/login");
+    options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
+    options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
+
     // Enable optional /{culture} route prefix constrained strictly to supported language codes
     options.Conventions.AddFolderRouteModelConvention("/", model =>
     {

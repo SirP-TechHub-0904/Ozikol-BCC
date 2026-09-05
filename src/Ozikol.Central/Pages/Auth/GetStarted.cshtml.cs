@@ -287,7 +287,7 @@ namespace Ozikol.Central.Pages
             };
 
             _cache.Set($"WorkspaceSetup_{oneTimeToken}", setupPayload, TimeSpan.FromMinutes(30));
-            string oneTimeDetailsUrl = $"/workspace-setup-details?token={oneTimeToken}";
+            string oneTimeDetailsUrl = $"/auth/workspace-setup-details?token={oneTimeToken}";
 
             IsProvisioned = true;
             ProvisionedRedirectUrl = oneTimeDetailsUrl;

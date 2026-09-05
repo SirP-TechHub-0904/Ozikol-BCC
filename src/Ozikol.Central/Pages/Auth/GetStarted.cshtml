@@ -1,4 +1,4 @@
-@page "/get-started"
+@page "/auth/get-started"
 @model Ozikol.Central.Pages.GetStartedModel
 @{
     ViewData["Title"] = "Create Free Sovereign Workspace - Ozikol";
@@ -177,7 +177,7 @@
             </form>
 
             <div class="auth-footer">
-                Already have an organization workspace? <a href="/login">Sign In Here</a>
+                Already have an organization workspace? <a href="/auth/login">Sign In Here</a>
             </div>
         }
     </div>
@@ -247,7 +247,7 @@ function checkSlugAvailability(slug) {
 
     slugDebounceTimer = setTimeout(async () => {
         try {
-            const resp = await fetch(`/get-started?handler=CheckWorkspace&slug=${encodeURIComponent(slug)}`);
+            const resp = await fetch(`?handler=CheckWorkspace&slug=${encodeURIComponent(slug)}`);
             const data = await resp.json();
             if (data.available) {
                 feedback.innerHTML = `<span style="color: #10b981; font-weight: 600;">✓ Available: ${data.slug}.ozikol.cloud</span>`;
