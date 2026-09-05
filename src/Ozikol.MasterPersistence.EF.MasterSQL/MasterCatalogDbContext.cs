@@ -52,6 +52,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterHelpdeskArticle> MasterHelpdeskArticles { get; set; } = null!;
     public DbSet<MasterVideoGuide> MasterVideoGuides { get; set; } = null!;
     public DbSet<MasterSupportFaq> MasterSupportFaqs { get; set; } = null!;
+    public DbSet<MasterPlatformSetting> MasterPlatformSettings { get; set; } = null!;
+    public DbSet<MasterTicketReply> MasterTicketReplies { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -413,6 +415,25 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Culture);
             entity.HasIndex(e => e.CreatedUtc);
+            entity.HasIndex(e => e.LastActivityUtc);
+            entity.HasMany(e => e.Replies)
+                  .WithOne(r => r.Inquiry)
+                  .HasForeignKey(r => r.MasterSupportInquiryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MasterTicketReply>(entity =>
+        {
+            entity.HasIndex(e => e.MasterSupportInquiryId);
+            entity.HasIndex(e => e.CreatedUtc);
+        });
+
+        modelBuilder.Entity<MasterPlatformSetting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PlatformName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.SupportContactEmail).HasMaxLength(150);
+            entity.Property(e => e.DefaultFromEmail).HasMaxLength(150);
         });
 
         modelBuilder.Entity<MasterHelpdeskArticle>(entity =>

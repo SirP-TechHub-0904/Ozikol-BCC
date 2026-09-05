@@ -113,5 +113,27 @@ namespace Ozikol.MasterDomain.Models
         /// Gets or sets the timestamp when this inquiry was submitted in UTC.
         /// </summary>
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Gets or sets the timestamp of the most recent activity on this ticket (creation or latest reply) in UTC.
+        /// Used for calculating the 24-hour inactivity threshold.
+        /// </summary>
+        public DateTime LastActivityUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Gets or sets the timestamp when this ticket was marked resolved or closed in UTC.
+        /// </summary>
+        public DateTime? ClosedAtUtc { get; set; }
+
+        /// <summary>
+        /// Gets or sets the audit reason if this ticket was closed automatically or by a user/staff member.
+        /// </summary>
+        [MaxLength(250)]
+        public string? AutoClosedReason { get; set; }
+
+        /// <summary>
+        /// Gets or sets the collection of conversation thread replies associated with this inquiry.
+        /// </summary>
+        public virtual System.Collections.Generic.ICollection<MasterTicketReply> Replies { get; set; } = new System.Collections.Generic.List<MasterTicketReply>();
     }
 }

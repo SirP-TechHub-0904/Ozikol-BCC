@@ -203,13 +203,12 @@
                     <div class="oz-verify-input-wrap">
                         <input type="text"
                                id="certNumberInput"
-                               placeholder="e.g. OZK-CERT-2026-8941"
+                               placeholder="e.g. OZK-CERT-XXXX-XXXXX"
                                class="oz-form-input oz-verify-input" />
                         <button type="button" id="verifyCertBtn" class="oz-btn-primary oz-verify-btn">
                             Verify Credential
                         </button>
                     </div>
-                    <span class="oz-verify-hint">Sample verifiable IDs: <code>OZK-CERT-2026-8941</code>, <code>OZK-CERT-2026-5210</code>, <code>OZK-CERT-2026-3304</code></span>
                 </div>
 
                 <div id="verifyResultContainer" class="oz-verify-result" style="display: none;"></div>
@@ -467,18 +466,58 @@
             });
 
             if (submitBookingBtn) {
-                submitBookingBtn.addEventListener('click', function () {
+                submitBookingBtn.addEventListener('click', async function () {
                     const name = document.getElementById('candidateName').value.trim();
                     const email = document.getElementById('candidateEmail').value.trim();
                     const org = document.getElementById('candidateOrg').value.trim();
+                    const lang = document.getElementById('examLanguage').value;
+                    const type = document.getElementById('bookingType').value;
+                    const examTitle = modalTitle ? modalTitle.textContent.replace('Register for ', '') : 'Ozikol Certified Professional Exam';
 
                     if (!name || !email || !org) {
                         alert('Please fill out all required registration fields.');
                         return;
                     }
 
-                    bookingForm.style.display = 'none';
-                    bookingSuccess.style.display = 'block';
+                    submitBookingBtn.disabled = true;
+                    submitBookingBtn.textContent = 'Registering Seat...';
+
+                    try {
+                        const payload = {
+                            CandidateName: name,
+                            CandidateEmail: email,
+                            CandidateOrg: org,
+                            ExamTitle: examTitle,
+                            ExamLanguage: lang,
+                            BookingType: type
+                        };
+
+                        const res = await fetch('?handler=BookExam', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            const descEl = bookingSuccess.querySelector('.oz-form-success__desc');
+                            if (descEl && data.bookingReference) {
+                                descEl.innerHTML = `Your proctored seat voucher <strong>#${data.bookingReference}</strong> has been registered. Confirmation details have been sent to <strong>${email}</strong>.`;
+                            }
+                            bookingForm.style.display = 'none';
+                            bookingSuccess.style.display = 'block';
+                        } else {
+                            alert('An error occurred during booking. Please retry.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Network notice during exam reservation. Please retry.');
+                    } finally {
+                        submitBookingBtn.disabled = false;
+                        submitBookingBtn.textContent = 'Confirm Exam Seat Reservation';
+                    }
                 });
             }
         });

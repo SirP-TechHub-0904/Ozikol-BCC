@@ -18,6 +18,7 @@ namespace Ozikol.Central.Pages.Support
     public class CertificationsModel : PageModel
     {
         private readonly ISupportService _supportService;
+        private readonly Services.ICentralEmailService _emailService;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly ILogger<CertificationsModel> _logger;
 
@@ -25,14 +26,17 @@ namespace Ozikol.Central.Pages.Support
         /// Initializes a new instance of the <see cref="CertificationsModel"/> class.
         /// </summary>
         /// <param name="supportService">Support service instance.</param>
+        /// <param name="emailService">Central email service for dual exam notifications.</param>
         /// <param name="localizer">Shared localizer instance.</param>
         /// <param name="logger">Logger instance.</param>
         public CertificationsModel(
             ISupportService supportService,
+            Services.ICentralEmailService emailService,
             IStringLocalizer<SharedResource> localizer,
             ILogger<CertificationsModel> logger)
         {
             _supportService = supportService ?? throw new ArgumentNullException(nameof(supportService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -146,6 +150,44 @@ namespace Ozikol.Central.Pages.Support
                 passed = passed,
                 badgeAwarded = passed ? "Ready for Official Exam" : "Recommended Study Required",
                 evaluations = evaluations
+            });
+        }
+
+        /// <summary>
+        /// AJAX handler to submit a certification exam booking and dispatch dual confirmation notifications.
+        /// </summary>
+        /// <param name="request">Candidate registration payload.</param>
+        /// <returns>JSON result with assigned booking reference code.</returns>
+        public async Task<IActionResult> OnPostBookExamAsync([FromBody] ExamBookingAjaxRequest request)
+        {
+            if (request == null ||
+                string.IsNullOrWhiteSpace(request.CandidateName) ||
+                string.IsNullOrWhiteSpace(request.CandidateEmail))
+            {
+                return BadRequest(new { success = false, message = "Candidate name and corporate email are required." });
+            }
+
+            var bookingRef = $"EXAM-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
+            var examTitle = !string.IsNullOrWhiteSpace(request.ExamTitle) ? request.ExamTitle.Trim() : "Ozikol Cloud Professional Exam";
+
+            try
+            {
+                await _emailService.SendExamBookingDualAsync(
+                    request.CandidateName.Trim(),
+                    request.CandidateEmail.Trim(),
+                    examTitle,
+                    bookingRef);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to dispatch dual emails for exam booking {Ref}", bookingRef);
+            }
+
+            return new JsonResult(new
+            {
+                success = true,
+                bookingReference = bookingRef,
+                message = "Exam seat reservation confirmed."
             });
         }
 
@@ -494,5 +536,24 @@ namespace Ozikol.Central.Pages.Support
         public DateTime IssuedDate { get; set; }
         /// <summary>Credential renewal deadline date.</summary>
         public DateTime ValidThrough { get; set; }
+    }
+
+    /// <summary>
+    /// Payload model for exam booking AJAX requests.
+    /// </summary>
+    public class ExamBookingAjaxRequest
+    {
+        /// <summary>Candidate full legal name.</summary>
+        public string CandidateName { get; set; } = string.Empty;
+        /// <summary>Candidate corporate email address.</summary>
+        public string CandidateEmail { get; set; } = string.Empty;
+        /// <summary>Candidate organization name.</summary>
+        public string CandidateOrg { get; set; } = string.Empty;
+        /// <summary>Target examination credential title.</summary>
+        public string ExamTitle { get; set; } = string.Empty;
+        /// <summary>Preferred language code.</summary>
+        public string ExamLanguage { get; set; } = "en";
+        /// <summary>Booking registration category.</summary>
+        public string BookingType { get; set; } = "Individual";
     }
 }

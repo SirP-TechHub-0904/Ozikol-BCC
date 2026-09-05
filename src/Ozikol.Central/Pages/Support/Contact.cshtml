@@ -109,9 +109,14 @@
                                 <span class="oz-ref-code">@Model.AssignedReference</span>
                             </p>
                             <p class="oz-form-success__desc">@SharedLocalizer["Support_Success_Desc"]</p>
-                            <a href="/@Model.CurrentCulture/support/contact" class="oz-btn-primary">
-                                @SharedLocalizer["Support_Success_AnotherBtn"]
-                            </a>
+                            <div class="d-flex gap-3 justify-content-center flex-wrap mt-3">
+                                <a href="/support/ticket/@Model.AssignedReference" class="oz-btn-primary" style="text-decoration: none;">
+                                    Track Live Ticket Thread &rarr;
+                                </a>
+                                <a href="/@Model.CurrentCulture/support/contact" class="btn btn-outline-secondary" style="border-radius: 8px;">
+                                    @SharedLocalizer["Support_Success_AnotherBtn"]
+                                </a>
+                            </div>
                         </div>
                     }
                     else

@@ -16,16 +16,22 @@ namespace Ozikol.Central.Services.Support
     public class SupportService : ISupportService
     {
         private readonly MasterCatalogDbContext _context;
+        private readonly ICentralEmailService _emailService;
         private readonly ILogger<SupportService> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SupportService"/> class.
         /// </summary>
         /// <param name="context">The Master Catalog database context.</param>
+        /// <param name="emailService">The central email service for ticket receipts and notifications.</param>
         /// <param name="logger">System logger for support operations.</param>
-        public SupportService(MasterCatalogDbContext context, ILogger<SupportService> logger)
+        public SupportService(
+            MasterCatalogDbContext context,
+            ICentralEmailService emailService,
+            ILogger<SupportService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -179,6 +185,7 @@ namespace Ozikol.Central.Services.Support
 
             inquiry.ReferenceNumber = GenerateTrackingReference();
             inquiry.CreatedUtc = DateTime.UtcNow;
+            inquiry.LastActivityUtc = DateTime.UtcNow;
             inquiry.Status = "New";
 
             _context.MasterSupportInquiries.Add(inquiry);
@@ -188,7 +195,160 @@ namespace Ozikol.Central.Services.Support
                 "Support inquiry {ReferenceNumber} submitted by {Email} for {Organization} (InquiryType: {InquiryType})",
                 inquiry.ReferenceNumber, inquiry.Email, inquiry.Organization, inquiry.InquiryType);
 
+            // Dispatch dual notification emails (client confirmation receipt + administrator alert pool)
+            try
+            {
+                await _emailService.SendSupportInquiryDualAsync(inquiry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to dispatch dual emails for inquiry {ReferenceNumber}", inquiry.ReferenceNumber);
+            }
+
             return inquiry.ReferenceNumber;
+        }
+
+        /// <inheritdoc />
+        public async Task<MasterSupportInquiry?> GetInquiryByReferenceAsync(string referenceNumber, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(referenceNumber))
+            {
+                return null;
+            }
+
+            var cleanRef = referenceNumber.Trim().ToUpperInvariant();
+            return await _context.MasterSupportInquiries
+                .Include(i => i.Replies.OrderBy(r => r.CreatedUtc))
+                .FirstOrDefaultAsync(i => i.ReferenceNumber == cleanRef, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public async Task<MasterTicketReply> AddTicketReplyAsync(
+            Guid inquiryId,
+            string senderName,
+            string senderEmail,
+            string message,
+            bool isStaff,
+            System.Threading.CancellationToken cancellationToken = default)
+        {
+            var inquiry = await _context.MasterSupportInquiries
+                .Include(i => i.Replies)
+                .FirstOrDefaultAsync(i => i.Id == inquiryId, cancellationToken);
+
+            if (inquiry == null)
+            {
+                throw new InvalidOperationException($"Ticket with ID '{inquiryId}' not found.");
+            }
+
+            var reply = new MasterTicketReply
+            {
+                Id = Guid.NewGuid(),
+                MasterSupportInquiryId = inquiryId,
+                SenderName = senderName,
+                SenderEmail = senderEmail,
+                Message = message,
+                IsStaffReply = isStaff,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _context.MasterTicketReplies.Add(reply);
+
+            // Update parent ticket activity timestamp and operational status
+            inquiry.LastActivityUtc = DateTime.UtcNow;
+            if (isStaff)
+            {
+                inquiry.Status = "AwaitingUser";
+            }
+            else
+            {
+                inquiry.Status = inquiry.Status == "Closed" ? "Reopened" : "AwaitingStaff";
+                inquiry.ClosedAtUtc = null;
+                inquiry.AutoClosedReason = null;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Added reply {ReplyId} to ticket {ReferenceNumber} by {SenderEmail} (Staff: {IsStaff})",
+                reply.Id, inquiry.ReferenceNumber, senderEmail, isStaff);
+
+            // Dispatch reciprocal thread notification email
+            try
+            {
+                await _emailService.SendTicketReplyDualAsync(inquiry, reply, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to dispatch ticket reply notification for ticket {ReferenceNumber}", inquiry.ReferenceNumber);
+            }
+
+            return reply;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> CloseTicketAsync(Guid inquiryId, string reason, System.Threading.CancellationToken cancellationToken = default)
+        {
+            var inquiry = await _context.MasterSupportInquiries
+                .FirstOrDefaultAsync(i => i.Id == inquiryId, cancellationToken);
+
+            if (inquiry == null)
+            {
+                return false;
+            }
+
+            inquiry.Status = "Closed";
+            inquiry.ClosedAtUtc = DateTime.UtcNow;
+            inquiry.LastActivityUtc = DateTime.UtcNow;
+            inquiry.AutoClosedReason = reason;
+
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Ticket {ReferenceNumber} closed. Reason: {Reason}", inquiry.ReferenceNumber, reason);
+            return true;
+        }
+
+        /// <inheritdoc />
+        public async Task<int> AutoCloseInactiveTicketsAsync(System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var setting = await _context.MasterPlatformSettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+
+                if (setting == null || !setting.EnableTicketAutoClose)
+                {
+                    return 0;
+                }
+
+                var hours = setting.TicketAutoCloseHours > 0 ? setting.TicketAutoCloseHours : 24;
+                var thresholdUtc = DateTime.UtcNow.AddHours(-hours);
+
+                var eligibleTickets = await _context.MasterSupportInquiries
+                    .Where(i => (i.Status == "AwaitingUser" || i.Status == "Resolved") && i.LastActivityUtc <= thresholdUtc)
+                    .ToListAsync(cancellationToken);
+
+                if (eligibleTickets.Count == 0)
+                {
+                    return 0;
+                }
+
+                var reason = $"Closed automatically after {hours} hours of inactivity.";
+                foreach (var ticket in eligibleTickets)
+                {
+                    ticket.Status = "Closed";
+                    ticket.ClosedAtUtc = DateTime.UtcNow;
+                    ticket.AutoClosedReason = reason;
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Auto-closed {Count} inactive support tickets past {Hours}h threshold", eligibleTickets.Count, hours);
+                return eligibleTickets.Count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to execute AutoCloseInactiveTicketsAsync");
+                return 0;
+            }
         }
 
         /// <inheritdoc />
