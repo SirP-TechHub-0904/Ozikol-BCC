@@ -1,7 +1,8 @@
 @page "/auth/workspace-setup-details"
 @model Ozikol.Central.Pages.Auth.WorkspaceSetupDetailsModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = Model.IsExpired ? "Security Notice - Ozikol" : "Workspace Setup Details - Ozikol";
+    ViewData["Title"] = Model.IsExpired ? SharedLocalizer["Auth_Setup_ExpiredTitle"].Value : SharedLocalizer["Auth_GetStarted_Title"].Value;
 }
 
 <div class="auth-page-wrapper">
@@ -13,13 +14,13 @@
                 <div style="width: 68px; height: 68px; border-radius: 50%; background: #fef2f2; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
                     <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-8a4 4 0 10-8 0v4h8V7z"/></svg>
                 </div>
-                <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin-bottom: 10px;">Setup Summary Expired</h1>
+                <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin-bottom: 10px;">@SharedLocalizer["Auth_Setup_ExpiredTitle"]</h1>
                 <p class="auth-subtitle" style="color: #64748b; line-height: 1.6; margin-bottom: 24px;">
-                    For your security, initial workspace setup details are displayed <strong>only once</strong> upon creation and cannot be re-opened once closed or reloaded.
+                    @SharedLocalizer["Auth_Setup_ExpiredDesc"]
                 </p>
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 28px;">
-                    <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">How to access your workspace:</div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">@SharedLocalizer["Auth_Setup_HowToAccess"]</div>
                     <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.7;">
                         <li>Check the welcome email sent to your administrator address for your dedicated website and sign-in link.</li>
                         <li>Navigate directly to your organization's website (e.g. <code>your-company.ozikol.cloud/auth/login</code>).</li>
@@ -28,7 +29,7 @@
                 </div>
 
                 <a href="/" class="btn-auth-submit" style="display: inline-block; text-decoration: none; width: auto; padding: 12px 32px;">
-                    Return to Homepage &rarr;
+                    @SharedLocalizer["Auth_Setup_ReturnHome"] &rarr;
                 </a>
             </div>
         }
@@ -47,18 +48,18 @@
             <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
                 <div style="display: inline-flex; align-items: center; gap: 6px; background: #ecfdf5; color: #059669; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 8px;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Sovereign Workspace Ready
+                    @SharedLocalizer["Auth_Setup_ReadyBadge"]
                 </div>
                 <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 4px;">@Model.OrganizationName</h1>
-                <p class="auth-subtitle">Your dedicated enterprise cloud environment is initialized and operational.</p>
+                <p class="auth-subtitle">@SharedLocalizer["Auth_Setup_ReadyDesc"]</p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
                 <!-- Link 1: Dedicated Website -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Dedicated Organization Website:</span>
-                        <button type="button" onclick="copyValue('siteVal', this)" style="background: none; border: none; color: var(--ozikol-primary); font-size: 12px; font-weight: 700; cursor: pointer;">Copy</button>
+                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">@SharedLocalizer["Auth_Setup_WebsiteLabel"]</span>
+                        <button type="button" onclick="copyValue('siteVal', this)" style="background: none; border: none; color: var(--ozikol-primary); font-size: 12px; font-weight: 700; cursor: pointer;">@SharedLocalizer["Auth_Setup_Copy"]</button>
                     </div>
                     <div style="font-size: 14.5px; font-weight: 700; color: #0f172a; word-break: break-all;" id="siteVal">@Model.WebsiteUrl</div>
                     <div style="margin-top: 6px;">
@@ -69,8 +70,8 @@
                 <!-- Link 2: Admin Login URL -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Administrator Command Center Login:</span>
-                        <button type="button" onclick="copyValue('loginVal', this)" style="background: none; border: none; color: var(--ozikol-primary); font-size: 12px; font-weight: 700; cursor: pointer;">Copy</button>
+                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">@SharedLocalizer["Auth_Setup_LoginLabel"]</span>
+                        <button type="button" onclick="copyValue('loginVal', this)" style="background: none; border: none; color: var(--ozikol-primary); font-size: 12px; font-weight: 700; cursor: pointer;">@SharedLocalizer["Auth_Setup_Copy"]</button>
                     </div>
                     <div style="font-size: 14.5px; font-weight: 700; color: #0f172a; word-break: break-all;" id="loginVal">@Model.LoginUrl</div>
                     <div style="margin-top: 6px;">
@@ -80,9 +81,9 @@
 
                 <!-- Admin Credentials Info -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
-                    <div style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Administrator Credentials:</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #0f172a;">Username: <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">@Model.AdminEmail</code></div>
-                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Password: [The password specified during setup]</div>
+                    <div style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">@SharedLocalizer["Auth_Setup_CredentialsLabel"]</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #0f172a;">@SharedLocalizer["Auth_Setup_UsernameLabel"] <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">@Model.AdminEmail</code></div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">@SharedLocalizer["Auth_Setup_PasswordNotice"]</div>
                 </div>
             </div>
 
@@ -92,7 +93,7 @@
             </div>
 
             <a href="@Model.LoginUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px; font-size: 15px;">
-                Launch Workspace Command Center &rarr;
+                @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
             </a>
         }
     </div>
