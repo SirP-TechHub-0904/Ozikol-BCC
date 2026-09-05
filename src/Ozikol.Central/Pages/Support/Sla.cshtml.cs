@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 
@@ -105,63 +106,13 @@ namespace Ozikol.Central.Pages.Support
         public IReadOnlyList<SlaTierItem> SlaTiers { get; private set; } = new List<SlaTierItem>();
 
         /// <summary>
-        /// Handles HTTP GET requests to display the real-time SLA and platform status dashboard.
+        /// Handles HTTP GET requests by redirecting to the official Professional Certifications portal.
         /// </summary>
-        public void OnGet()
+        /// <returns>A permanent redirect result to the certifications page.</returns>
+        public IActionResult OnGet()
         {
             ResolveCulture();
-
-            MonitoredServices = new List<ServiceStatusItem>
-            {
-                new() { Name = "Master Authentication & SSO (OAuth2 / SAML)", Group = "Core Services", Status = "Operational", UptimePercentage = 100.0, LatencyMs = 18 },
-                new() { Name = "Tenant Isolation API Gateway", Group = "Core Services", Status = "Operational", UptimePercentage = 99.995, LatencyMs = 24 },
-                new() { Name = "Global Multi-Tenant SQL Databases (Azure / SQL Express)", Group = "Data Layer", Status = "Operational", UptimePercentage = 99.99, LatencyMs = 12 },
-                new() { Name = "Distributed Redis Session & Cache Fabric", Group = "Data Layer", Status = "Operational", UptimePercentage = 100.0, LatencyMs = 4 },
-                new() { Name = "Edge CDN & Static Asset Acceleration (Cloudflare Enterprise)", Group = "Edge & CDN", Status = "Operational", UptimePercentage = 100.0, LatencyMs = 9 },
-                new() { Name = "Real-time WebSocket & Notification Bus", Group = "Real-Time Bus", Status = "Operational", UptimePercentage = 99.98, LatencyMs = 31 },
-                new() { Name = "Enterprise Webhook Dispatcher & Integrations", Group = "Integrations", Status = "Operational", UptimePercentage = 99.99, LatencyMs = 45 },
-                new() { Name = "AI Assistant & Contextual Recommendation Engine", Group = "Intelligence", Status = "Operational", UptimePercentage = 99.97, LatencyMs = 68 }
-            };
-
-            SlaTiers = new List<SlaTierItem>
-            {
-                new()
-                {
-                    Severity = "Sev-1",
-                    Title = "Critical Outage / Catastrophic",
-                    ResponseTime = "< 15 Minutes",
-                    Coverage = "24/7/365 Worldwide",
-                    Description = "Total production system outage, critical security vulnerability, or broad tenant unavailability with severe revenue impact.",
-                    BadgeClass = "oz-badge-tag--red"
-                },
-                new()
-                {
-                    Severity = "Sev-2",
-                    Title = "Major Incident / Significant Impairment",
-                    ResponseTime = "< 1 Hour",
-                    Coverage = "24/7/365 Worldwide",
-                    Description = "Key suite module degraded or high error rates affecting business operations without a viable administrative workaround.",
-                    BadgeClass = "oz-badge-tag--orange"
-                },
-                new()
-                {
-                    Severity = "Sev-3",
-                    Title = "Moderate / Non-Critical Issue",
-                    ResponseTime = "< 4 Hours",
-                    Coverage = "Regional Business Hours (8am - 8pm)",
-                    Description = "Feature malfunction, performance degradation with an available workaround, or non-blocking configuration challenge.",
-                    BadgeClass = "oz-badge-tag--blue"
-                },
-                new()
-                {
-                    Severity = "Sev-4",
-                    Title = "General Inquiry / Service Request",
-                    ResponseTime = "< 8 Hours",
-                    Coverage = "Regional Business Hours (8am - 8pm)",
-                    Description = "Feature recommendations, architectural best-practice consultations, documentation clarifications, or routine tenant queries.",
-                    BadgeClass = "oz-badge-tag--purple"
-                }
-            };
+            return RedirectPermanent($"/{CurrentCulture}/support/certifications");
         }
 
         private void ResolveCulture()

@@ -43,20 +43,24 @@
                 </form>
 
                 <!-- Breadcrumb pills -->
-                <div class="oz-support-pills">
+                <nav class="oz-support-nav-pills" aria-label="Support Navigation">
                     <a href="/@Model.CurrentCulture/support/videos" class="oz-support-pill oz-support-pill--active">
-                        ▶ Video Tutorials
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        @SharedLocalizer["Support_Tab_Videos"]
                     </a>
                     <a href="/@Model.CurrentCulture/support/knowledge-base" class="oz-support-pill">
-                        📖 Knowledge Base
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        @SharedLocalizer["Support_Tab_Articles"]
                     </a>
                     <a href="/@Model.CurrentCulture/support/contact" class="oz-support-pill">
-                        💬 Contact & Helpdesk
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        @SharedLocalizer["Support_Tab_Contact"]
                     </a>
-                    <a href="/@Model.CurrentCulture/support/sla" class="oz-support-pill">
-                        🛡️ SLA & Status
+                    <a href="/@Model.CurrentCulture/support/certifications" class="oz-support-pill">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                        @SharedLocalizer["Support_Tab_Certifications"]
                     </a>
-                </div>
+                </nav>
             </div>
         </div>
     </header>
