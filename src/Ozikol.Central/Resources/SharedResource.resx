@@ -3319,4 +3319,76 @@
     <value>Official credentials and training across Ozikol's 9 enterprise suites.</value>
     <comment>Certification portal localized key</comment>
   </data>
-<data name="Pricing_Enterprise_Badge" xml:space="preserve"><value>ENTERPRISE &amp; LARGE-SCALE INSTITUTIONS</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Title" xml:space="preserve"><value>Need Dedicated Sovereign Infrastructure or Custom Capabilities?</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Desc" xml:space="preserve"><value>For multinational enterprises, sovereign institutions, and federated business groups requiring dedicated compute isolation, tailored compliance vaults, and bespoke SLA guarantees.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve"><value>Dedicated Fleet Isolation</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve"><value>Fully isolated computational fleets, air-gapped data residency options, and single-tenant database ring topologies.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve"><value>99.99% Financially-Backed SLA</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve"><value>Contractually guaranteed mission-critical availability with sub-15-minute escalation protocols and direct credit provisions.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve"><value>24/7 Dedicated Engineering Escort</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve"><value>Named senior infrastructure architects on dedicated Slack/Teams channels with executive sprint prioritization.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve"><value>Tailored Compliance &amp; Security</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve"><value>Enterprise SSO (SAML/Okta/Azure AD), immutable audit trail export, custom encryption keys, and SOC2/ISO aligned controls.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve"><value>Consult Enterprise Architecture</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve"><value>Explore Certifications &amp; Compliance</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Response_Time" xml:space="preserve"><value>Average enterprise consultation response: &lt; 2 business hours</value><comment>Enterprise pricing section key (en)</comment></data></root>
+<data name="Pricing_Enterprise_Badge" xml:space="preserve"><value>ENTERPRISE &amp; LARGE-SCALE INSTITUTIONS</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Title" xml:space="preserve"><value>Need Dedicated Sovereign Infrastructure or Custom Capabilities?</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Desc" xml:space="preserve"><value>For multinational enterprises, sovereign institutions, and federated business groups requiring dedicated compute isolation, tailored compliance vaults, and bespoke SLA guarantees.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve"><value>Dedicated Fleet Isolation</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve"><value>Fully isolated computational fleets, air-gapped data residency options, and single-tenant database ring topologies.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve"><value>99.99% Financially-Backed SLA</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve"><value>Contractually guaranteed mission-critical availability with sub-15-minute escalation protocols and direct credit provisions.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve"><value>24/7 Dedicated Engineering Escort</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve"><value>Named senior infrastructure architects on dedicated Slack/Teams channels with executive sprint prioritization.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve"><value>Tailored Compliance &amp; Security</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve"><value>Enterprise SSO (SAML/Okta/Azure AD), immutable audit trail export, custom encryption keys, and SOC2/ISO aligned controls.</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve"><value>Consult Enterprise Architecture</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve"><value>Explore Certifications &amp; Compliance</value><comment>Enterprise pricing section key (en)</comment></data><data name="Pricing_Enterprise_Response_Time" xml:space="preserve"><value>Average enterprise consultation response: &lt; 2 business hours</value><comment>Enterprise pricing section key (en)</comment></data>  <data name="Legal_Breadcrumb_Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Legal_Breadcrumb_Hub" xml:space="preserve">
+    <value>Legal & Governance</value>
+  </data>
+  <data name="Legal_Breadcrumb_Back" xml:space="preserve">
+    <value>Back to Portal</value>
+  </data>
+  <data name="Legal_Meta_LastUpdated" xml:space="preserve">
+    <value>Last Updated</value>
+  </data>
+  <data name="Legal_Meta_Effective" xml:space="preserve">
+    <value>Effective</value>
+  </data>
+  <data name="Legal_Meta_Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Legal_Meta_Print" xml:space="preserve">
+    <value>Print Policy</value>
+  </data>
+  <data name="Legal_Nav_Title" xml:space="preserve">
+    <value>Legal & Governance Hub</value>
+  </data>
+  <data name="Legal_Nav_PrivacyNotice" xml:space="preserve">
+    <value>Privacy Notice</value>
+  </data>
+  <data name="Legal_Nav_TermsOfUse" xml:space="preserve">
+    <value>Terms of Use</value>
+  </data>
+  <data name="Legal_Nav_Cookies" xml:space="preserve">
+    <value>Cookie Policy</value>
+  </data>
+  <data name="Legal_Nav_PrivacyChoices" xml:space="preserve">
+    <value>Privacy Choices</value>
+  </data>
+  <data name="Legal_Nav_PoliciesReports" xml:space="preserve">
+    <value>Corporate Policies & Reports</value>
+  </data>
+  <data name="Legal_Help_Title" xml:space="preserve">
+    <value>Need Legal Clarification?</value>
+  </data>
+  <data name="Legal_Help_Desc" xml:space="preserve">
+    <value>Our dedicated data sovereignty and regulatory compliance team is available to address enterprise institutional queries.</value>
+  </data>
+  <data name="Legal_Help_Btn" xml:space="preserve">
+    <value>Contact Legal Desk</value>
+  </data>
+  <data name="Legal_Fallback_Notice" xml:space="preserve">
+    <value>This legal document is currently displayed in its reference language (English).</value>
+  </data>
+  <data name="Category_Support" xml:space="preserve">
+    <value>Technical Support</value>
+  </data>
+  <data name="Category_Sales" xml:space="preserve">
+    <value>Enterprise Sales</value>
+  </data>
+  <data name="Category_Billing" xml:space="preserve">
+    <value>Billing & Invoicing</value>
+  </data>
+  <data name="Category_Partnership" xml:space="preserve">
+    <value>Partnership & Affiliates</value>
+  </data>
+  <data name="Category_Enterprise" xml:space="preserve">
+    <value>Enterprise Solutions</value>
+  </data>
+  <data name="Category_General" xml:space="preserve">
+    <value>General Inquiries</value>
+  </data>
+  <data name="Category_SecurityCompliance" xml:space="preserve">
+    <value>Security & Compliance</value>
+  </data>
+</root>

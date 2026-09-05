@@ -3301,4 +3301,76 @@
     <value>Titulaciones oficiales y formación en las 9 suites de Ozikol.</value>
     <comment>Certification portal localized key</comment>
   </data>
-<data name="Pricing_Enterprise_Badge" xml:space="preserve"><value>EMPRESAS Y GRANDES INSTITUCIONES</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Title" xml:space="preserve"><value>¿Necesita infraestructura soberana dedicada o capacidades a medida?</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Desc" xml:space="preserve"><value>Para corporaciones multinacionales, instituciones soberanas y grupos empresariales federados que requieren aislamiento de cómputo dedicado, bóvedas de cumplimiento a medida y garantías SLA personalizadas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve"><value>Aislamiento de flota dedicada</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve"><value>Flotas de cómputo totalmente aisladas, opciones de residencia de datos sin conexión y topologías de base de datos exclusivas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve"><value>SLA del 99,99 % respaldado financieramente</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve"><value>Disponibilidad de misión crítica garantizada contractualmente con protocolos de escalamiento en menos de 15 minutos y créditos directos.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve"><value>Acompañamiento técnico dedicado 24/7</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve"><value>Arquitectos de infraestructura sénior asignados en canales dedicados de Slack/Teams con priorización ejecutiva de sprints.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve"><value>Cumplimiento y seguridad a medida</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve"><value>SSO empresarial (SAML/Okta/Azure AD), exportación de pistas de auditoría inmutables, claves de cifrado personalizadas y controles SOC2/ISO.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve"><value>Consultar arquitectura empresarial</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve"><value>Explorar certificaciones y cumplimiento</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Response_Time" xml:space="preserve"><value>Tiempo medio de respuesta empresarial: &lt; 2 horas laborales</value><comment>Enterprise pricing section key (es)</comment></data></root>
+<data name="Pricing_Enterprise_Badge" xml:space="preserve"><value>EMPRESAS Y GRANDES INSTITUCIONES</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Title" xml:space="preserve"><value>¿Necesita infraestructura soberana dedicada o capacidades a medida?</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Desc" xml:space="preserve"><value>Para corporaciones multinacionales, instituciones soberanas y grupos empresariales federados que requieren aislamiento de cómputo dedicado, bóvedas de cumplimiento a medida y garantías SLA personalizadas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve"><value>Aislamiento de flota dedicada</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve"><value>Flotas de cómputo totalmente aisladas, opciones de residencia de datos sin conexión y topologías de base de datos exclusivas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve"><value>SLA del 99,99 % respaldado financieramente</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve"><value>Disponibilidad de misión crítica garantizada contractualmente con protocolos de escalamiento en menos de 15 minutos y créditos directos.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve"><value>Acompañamiento técnico dedicado 24/7</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve"><value>Arquitectos de infraestructura sénior asignados en canales dedicados de Slack/Teams con priorización ejecutiva de sprints.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve"><value>Cumplimiento y seguridad a medida</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve"><value>SSO empresarial (SAML/Okta/Azure AD), exportación de pistas de auditoría inmutables, claves de cifrado personalizadas y controles SOC2/ISO.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve"><value>Consultar arquitectura empresarial</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve"><value>Explorar certificaciones y cumplimiento</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Response_Time" xml:space="preserve"><value>Tiempo medio de respuesta empresarial: &lt; 2 horas laborales</value><comment>Enterprise pricing section key (es)</comment></data>  <data name="Legal_Breadcrumb_Home" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="Legal_Breadcrumb_Hub" xml:space="preserve">
+    <value>Legal y Gobernanza</value>
+  </data>
+  <data name="Legal_Breadcrumb_Back" xml:space="preserve">
+    <value>Volver al portal</value>
+  </data>
+  <data name="Legal_Meta_LastUpdated" xml:space="preserve">
+    <value>Última actualización</value>
+  </data>
+  <data name="Legal_Meta_Effective" xml:space="preserve">
+    <value>Fecha de vigencia</value>
+  </data>
+  <data name="Legal_Meta_Version" xml:space="preserve">
+    <value>Versión</value>
+  </data>
+  <data name="Legal_Meta_Print" xml:space="preserve">
+    <value>Imprimir política</value>
+  </data>
+  <data name="Legal_Nav_Title" xml:space="preserve">
+    <value>Centro Legal y de Gobernanza</value>
+  </data>
+  <data name="Legal_Nav_PrivacyNotice" xml:space="preserve">
+    <value>Aviso de Privacidad</value>
+  </data>
+  <data name="Legal_Nav_TermsOfUse" xml:space="preserve">
+    <value>Términos de Uso</value>
+  </data>
+  <data name="Legal_Nav_Cookies" xml:space="preserve">
+    <value>Política de Cookies</value>
+  </data>
+  <data name="Legal_Nav_PrivacyChoices" xml:space="preserve">
+    <value>Opciones de Privacidad</value>
+  </data>
+  <data name="Legal_Nav_PoliciesReports" xml:space="preserve">
+    <value>Políticas Corporativas e Informes</value>
+  </data>
+  <data name="Legal_Help_Title" xml:space="preserve">
+    <value>¿Necesita aclaraciones legales?</value>
+  </data>
+  <data name="Legal_Help_Desc" xml:space="preserve">
+    <value>Nuestro equipo dedicado a la soberanía de datos y cumplimiento normativo está disponible para resolver consultas institucionales.</value>
+  </data>
+  <data name="Legal_Help_Btn" xml:space="preserve">
+    <value>Contactar al Departamento Legal</value>
+  </data>
+  <data name="Legal_Fallback_Notice" xml:space="preserve">
+    <value>Este documento legal se muestra actualmente en su idioma de referencia (inglés).</value>
+  </data>
+  <data name="Category_Support" xml:space="preserve">
+    <value>Soporte Técnico</value>
+  </data>
+  <data name="Category_Sales" xml:space="preserve">
+    <value>Ventas Corporativas</value>
+  </data>
+  <data name="Category_Billing" xml:space="preserve">
+    <value>Facturación y Cobranza</value>
+  </data>
+  <data name="Category_Partnership" xml:space="preserve">
+    <value>Alianzas y Afiliados</value>
+  </data>
+  <data name="Category_Enterprise" xml:space="preserve">
+    <value>Soluciones Corporativas</value>
+  </data>
+  <data name="Category_General" xml:space="preserve">
+    <value>Consultas Generales</value>
+  </data>
+  <data name="Category_SecurityCompliance" xml:space="preserve">
+    <value>Seguridad y Cumplimiento</value>
+  </data>
+</root>
