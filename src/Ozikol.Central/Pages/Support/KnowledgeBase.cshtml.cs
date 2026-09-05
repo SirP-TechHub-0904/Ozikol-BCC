@@ -14,6 +14,7 @@ namespace Ozikol.Central.Pages.Support
     /// <summary>
     /// PageModel presenting the dedicated Knowledge Base and Helpdesk documentation library.
     /// </summary>
+    [IgnoreAntiforgeryToken(Order = 1001)]
     public class KnowledgeBaseModel : PageModel
     {
         private readonly ISupportService _supportService;

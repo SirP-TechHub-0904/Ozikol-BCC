@@ -137,10 +137,10 @@
                             <p class="oz-article-card__excerpt">@article.Summary</p>
                             <div class="oz-article-card__footer">
                                 <div class="oz-article-stats">
-                                    <span>👁 @article.ViewCount @SharedLocalizer["Support_Card_Views"]</span>
+                                    <span class="js-view-stat">👁 @article.ViewCount @SharedLocalizer["Support_Card_Views"]</span>
                                     @if (article.HelpfulCount > 0)
                                     {
-                                        <span>• 👍 @article.HelpfulCount</span>
+                                        <span>• <span class="js-helpful-stat" data-count="@article.HelpfulCount">👍 @article.HelpfulCount</span></span>
                                     }
                                 </div>
                                 <button type="button" class="oz-btn-read js-open-article" data-id="@article.Id">
@@ -163,6 +163,7 @@
 
 <!-- Article Reader Modal -->
 <div class="oz-modal-backdrop" id="ozArticleModal" role="dialog" aria-modal="true" aria-hidden="true">
+    @Html.AntiForgeryToken()
     <div class="oz-modal oz-modal--article">
         <button type="button" class="oz-modal-close js-close-modal" aria-label="Close article reader">&times;</button>
         <div class="oz-modal-article-inner">
@@ -229,6 +230,15 @@
                             articleDate.textContent = `Updated: ${data.updated}`;
                             articleViews.textContent = `👁 ${data.viewCount} views`;
                             articleContent.innerHTML = data.contentHtml;
+
+                            // Synchronize view count badge on the card immediately
+                            const card = document.querySelector(`.oz-article-card[data-article-id="${articleId}"]`);
+                            if (card) {
+                                const viewSpan = card.querySelector('.js-view-stat');
+                                if (viewSpan) {
+                                    viewSpan.textContent = `👁 ${data.viewCount} views`;
+                                }
+                            }
                         } else {
                             articleContent.innerHTML = '<p class="text-danger">Unable to load article content.</p>';
                         }
@@ -250,12 +260,34 @@
                     formData.append('helpful', helpful);
 
                     try {
-                        await fetch('?handler=VoteArticle', {
+                        const res = await fetch('?handler=VoteArticle', {
                             method: 'POST',
-                            headers: { 'RequestVerificationToken': token },
+                            headers: token ? { 'RequestVerificationToken': token } : {},
                             body: formData
                         });
-                        document.getElementById('ozArticleFeedbackPanel').innerHTML = '<span class="oz-feedback-thanks">Thank you for your feedback!</span>';
+                        if (res.ok) {
+                            document.getElementById('ozArticleFeedbackPanel').innerHTML = '<span class="oz-feedback-thanks" style="color:#10b981;font-weight:700;">✓ Thank you for your feedback!</span>';
+
+                            // If positive feedback, increment thumbs-up badge on the card
+                            if (helpful) {
+                                const card = document.querySelector(`.oz-article-card[data-article-id="${activeArticleId}"]`);
+                                if (card) {
+                                    const stats = card.querySelector('.oz-article-stats');
+                                    if (stats) {
+                                        let helpfulSpan = stats.querySelector('.js-helpful-stat');
+                                        if (!helpfulSpan) {
+                                            const dot = document.createElement('span');
+                                            dot.innerHTML = ' • <span class="js-helpful-stat" data-count="1">👍 1</span>';
+                                            stats.appendChild(dot);
+                                        } else {
+                                            const current = parseInt(helpfulSpan.getAttribute('data-count') || '0', 10) + 1;
+                                            helpfulSpan.setAttribute('data-count', current);
+                                            helpfulSpan.textContent = `👍 ${current}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } catch (e) {
                         console.error(e);
                     }
