@@ -5630,44 +5630,60 @@ body.oz-modal-open {
     gap: 24px;
 }
 
-@@media (max-width: 900px) {
+@media (max-width: 900px) {
     .oz-metrics-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@@media (max-width: 540px) {
+@media (max-width: 540px) {
     .oz-metrics-grid {
         grid-template-columns: 1fr;
     }
 }
 
+.oz-cert-metrics {
+    margin-top: -36px;
+    position: relative;
+    z-index: 10;
+    margin-bottom: 30px;
+}
+
 .oz-metric-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 26px 20px;
     text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.oz-metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.12);
+    border-color: #cbd5e1;
 }
 
 .oz-metric-card__value {
     font-size: 32px;
     font-weight: 800;
-    color: #ffffff;
-    line-height: 1.1;
+    color: #0f172a;
+    line-height: 1.15;
     margin-bottom: 6px;
 }
 
 .oz-metric-card__label {
-    font-size: 14px;
+    font-size: 14.5px;
     font-weight: 700;
-    color: #e2e8f0;
+    color: #1e293b;
     margin-bottom: 4px;
 }
 
 .oz-metric-card__sub {
-    font-size: 12px;
-    color: #94a3b8;
+    font-size: 12.5px;
+    color: #64748b;
+    line-height: 1.4;
 }
 
 /* Service Status Rows */
