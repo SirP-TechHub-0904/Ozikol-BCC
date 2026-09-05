@@ -1,0 +1,196 @@
+@page "/sitemap"
+@model Ozikol.Central.Pages.SitemapModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
+@{
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    ViewData["Title"] = $"{SharedLocalizer["Sitemap_Hero_Title"]} - Ozikol";
+}
+
+<div class="oz-sitemap-page">
+    <!-- Hero Header -->
+    <header class="oz-sitemap-hero">
+        <div class="container">
+            <div class="oz-sitemap-hero-content">
+                <div class="oz-sitemap-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h6m6 0h6M12 3v6m0 6v6"></path></svg>
+                    <span>@SharedLocalizer["Sitemap_Hero_Badge"]</span>
+                </div>
+                <h1 class="oz-sitemap-title">@SharedLocalizer["Sitemap_Hero_Title"]</h1>
+                <p class="oz-sitemap-desc">@SharedLocalizer["Sitemap_Hero_Desc"]</p>
+
+                <div class="oz-sitemap-actions">
+                    <div class="oz-sitemap-search-wrap">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="sitemapFilter" placeholder="@SharedLocalizer["Sitemap_Search_Placeholder"]" oninput="filterSitemap(this.value)" />
+                    </div>
+                    <a href="/sitemap.xml" target="_blank" class="oz-sitemap-xml-btn">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <span>@SharedLocalizer["Sitemap_Xml_Badge"]</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Directory Grid -->
+    <main class="oz-sitemap-main">
+        <div class="container">
+            <div class="oz-sitemap-grid" id="sitemapGrid">
+                
+                <!-- Section 1: Platform Suite -->
+                <section class="oz-sitemap-col">
+                    <div class="oz-sitemap-col-header">
+                        <span class="oz-sitemap-col-icon platform">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        </span>
+                        <h2>@SharedLocalizer["Sitemap_Sec_Platform"]</h2>
+                    </div>
+                    <ul class="oz-sitemap-list">
+                        <li><a href="/@currentCulture/platform/website">@SharedLocalizer["Nav_Website"]</a></li>
+                        <li><a href="/@currentCulture/platform/mis-system">@SharedLocalizer["Nav_MisSystem"]</a></li>
+                        <li><a href="/@currentCulture/platform/mobile-app">@SharedLocalizer["Nav_MobileApp"]</a></li>
+                        <li><a href="/@currentCulture/platform/desktop-app">@SharedLocalizer["Nav_DesktopApp"]</a></li>
+                    </ul>
+
+                    <div class="oz-sitemap-col-header" style="margin-top: 32px;">
+                        <span class="oz-sitemap-col-icon commercial">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                        </span>
+                        <h2>Commercial & Pricing</h2>
+                    </div>
+                    <ul class="oz-sitemap-list">
+                        <li><a href="/@currentCulture/">@SharedLocalizer["Nav_Home"]</a></li>
+                        <li><a href="/@currentCulture/pricing">@SharedLocalizer["Nav_Pricing"]</a></li>
+                        <li><a href="/@currentCulture/features">@SharedLocalizer["Nav_Features"]</a></li>
+                        <li><a href="/@currentCulture/marketplace">@SharedLocalizer["Nav_Marketplace"]</a></li>
+                        <li><a href="/@currentCulture/marketplace/creator-program">Creator Program</a></li>
+                    </ul>
+                </section>
+
+                <!-- Section 2: Support & Helpdesk -->
+                <section class="oz-sitemap-col">
+                    <div class="oz-sitemap-col-header">
+                        <span class="oz-sitemap-col-icon support">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        </span>
+                        <h2>@SharedLocalizer["Sitemap_Sec_Support"]</h2>
+                    </div>
+                    <ul class="oz-sitemap-list">
+                        <li><a href="/@currentCulture/support/knowledge-base">@SharedLocalizer["Nav_Support_Articles"]</a></li>
+                        <li><a href="/@currentCulture/support/videos">@SharedLocalizer["Nav_Support_Videos"]</a></li>
+                        <li><a href="/@currentCulture/support/contact">@SharedLocalizer["Nav_Support_Contact"]</a></li>
+                        <li><a href="/@currentCulture/support/certifications">@SharedLocalizer["Nav_Support_Certifications"]</a></li>
+                    </ul>
+
+                    <div class="oz-sitemap-col-header" style="margin-top: 32px;">
+                        <span class="oz-sitemap-col-icon legal">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </span>
+                        <h2>@SharedLocalizer["Sitemap_Sec_Legal"]</h2>
+                    </div>
+                    <ul class="oz-sitemap-list">
+                        <li><a href="/@currentCulture/privacy-notice">@SharedLocalizer["Footer_PrivacyNotice"]</a></li>
+                        <li><a href="/@currentCulture/terms-of-use">@SharedLocalizer["Footer_TermsOfUse"]</a></li>
+                        <li><a href="/@currentCulture/cookies">@SharedLocalizer["Footer_CookiePolicy"]</a></li>
+                        <li><a href="/@currentCulture/privacy-choices">@SharedLocalizer["Footer_PrivacyChoices"]</a></li>
+                        <li><a href="/@currentCulture/policies-and-reports">@SharedLocalizer["Footer_PoliciesReports"]</a></li>
+                    </ul>
+                </section>
+
+                <!-- Section 3: Corporate & Ecosystem -->
+                <section class="oz-sitemap-col">
+                    <div class="oz-sitemap-col-header">
+                        <span class="oz-sitemap-col-icon corporate">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </span>
+                        <h2>@SharedLocalizer["Sitemap_Sec_Company"]</h2>
+                    </div>
+                    <ul class="oz-sitemap-list">
+                        <li><a href="/@currentCulture/about-us">@SharedLocalizer["Nav_AboutUs"]</a></li>
+                        <li><a href="/@currentCulture/about-us/leadership">@SharedLocalizer["Nav_Leadership"]</a></li>
+                        <li><a href="/@currentCulture/about-us/culture">@SharedLocalizer["Nav_Culture"]</a></li>
+                        <li><a href="/@currentCulture/about-us/offices">@SharedLocalizer["Nav_Offices"]</a></li>
+                        <li><a href="/@currentCulture/about-us/partners">@SharedLocalizer["Nav_Partners"]</a></li>
+                        <li><a href="/@currentCulture/partners/register">Partner Registration</a></li>
+                        <li><a href="/@currentCulture/careers">@SharedLocalizer["Nav_Careers"]</a></li>
+                        <li><a href="/@currentCulture/news">Newsroom & Press</a></li>
+                        <li><a href="/@currentCulture/developer-api">@SharedLocalizer["Nav_DeveloperApi"]</a></li>
+                        <li><a href="/@currentCulture/auth/login">Console Sign-In</a></li>
+                        <li><a href="/@currentCulture/auth/get-started">Start Sovereign Trial</a></li>
+                    </ul>
+                </section>
+
+                <!-- Section 4: Enterprise Modules & Features (Span 2 or Full Width) -->
+                <section class="oz-sitemap-col oz-sitemap-col--features">
+                    <div class="oz-sitemap-col-header">
+                        <span class="oz-sitemap-col-icon features">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        </span>
+                        <h2>@SharedLocalizer["Sitemap_Sec_Features"] (37 Modules)</h2>
+                    </div>
+                    <div class="oz-sitemap-features-grid">
+                        <ul class="oz-sitemap-list">
+                            <li><a href="/@currentCulture/features/ai-smart-assist">AI Copilot & Workflow Automation</a></li>
+                            <li><a href="/@currentCulture/features/alumni-directory">Alumni Directory</a></li>
+                            <li><a href="/@currentCulture/features/appointment-booking">Appointment Booking</a></li>
+                            <li><a href="/@currentCulture/features/attendance-tracking">Biometric & Attendance Tracking</a></li>
+                            <li><a href="/@currentCulture/features/attendee-management">Badge Printing & Check-In</a></li>
+                            <li><a href="/@currentCulture/features/bio-link-tree">Bio Link Tree & Social Hub</a></li>
+                            <li><a href="/@currentCulture/features/certificate-verification">QR Certificate Verification</a></li>
+                            <li><a href="/@currentCulture/features/committees">Committees & Governance</a></li>
+                            <li><a href="/@currentCulture/features/community-census">Community Census & Household Rosters</a></li>
+                            <li><a href="/@currentCulture/features/community-messenger">Community Messenger</a></li>
+                            <li><a href="/@currentCulture/features/company-assets">Asset Tracking & QR Check-Out</a></li>
+                            <li><a href="/@currentCulture/features/demographic-analytics">Demographic & Population Analytics</a></li>
+                            <li><a href="/@currentCulture/features/document-management">Document Vault & ISO Governance</a></li>
+                        </ul>
+                        <ul class="oz-sitemap-list">
+                            <li><a href="/@currentCulture/features/elections-evoting">E-Voting & General Elections</a></li>
+                            <li><a href="/@currentCulture/features/equipment-fleet">Equipment & Fleet Allocation</a></li>
+                            <li><a href="/@currentCulture/features/event-ticketing">Event Ticketing & Payments</a></li>
+                            <li><a href="/@currentCulture/features/field-surveyor">Offline Field Surveyor Agent</a></li>
+                            <li><a href="/@currentCulture/features/form-builder">Custom Dynamic Form Builder</a></li>
+                            <li><a href="/@currentCulture/features/grant-ledger">Grant & Fund Tracking Ledger</a></li>
+                            <li><a href="/@currentCulture/features/helpdesk-support">Internal Helpdesk & Ticket SLAs</a></li>
+                            <li><a href="/@currentCulture/features/interval-reporting">Interval & Activity Reporting</a></li>
+                            <li><a href="/@currentCulture/features/invoicing-dues">Invoicing & Dues Collection</a></li>
+                            <li><a href="/@currentCulture/features/learning-management">Learning Management & Courses</a></li>
+                            <li><a href="/@currentCulture/features/live-chat">Live Visitor Chat & Helpdesk</a></li>
+                            <li><a href="/@currentCulture/features/mass-communication">Multi-Channel Mass Broadcasts</a></li>
+                        </ul>
+                        <ul class="oz-sitemap-list">
+                            <li><a href="/@currentCulture/features/project-task-tracking">Project & Task Kanban Tracking</a></li>
+                            <li><a href="/@currentCulture/features/proposal-pipeline">Bid & Proposal Pipeline</a></li>
+                            <li><a href="/@currentCulture/features/recruitment-hiring">Job Boards & Candidate Pipeline</a></li>
+                            <li><a href="/@currentCulture/features/resident-id-cards">Smart Resident NFC/RFID ID Cards</a></li>
+                            <li><a href="/@currentCulture/features/shift-swaps-leave">Shift Swaps & Leave Approval</a></li>
+                            <li><a href="/@currentCulture/features/social-media-manager">Social Media Multi-Publishing</a></li>
+                            <li><a href="/@currentCulture/features/speaker-sessions">Speaker Management & Agendas</a></li>
+                            <li><a href="/@currentCulture/features/staff-rota">Staff Rota & Shift Scheduling</a></li>
+                            <li><a href="/@currentCulture/features/store-ecommerce">Store & Merchandise E-Commerce</a></li>
+                            <li><a href="/@currentCulture/features/survey-analytics">Survey Builder & Feedback Analytics</a></li>
+                            <li><a href="/@currentCulture/features/visitor-gate-management">Visitor Gate & Vehicle Passes</a></li>
+                            <li><a href="/@currentCulture/features/whistleblowing-feedback">Whistleblowing & Feedback</a></li>
+                        </ul>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function filterSitemap(query) {
+    const q = (query || '').toLowerCase().trim();
+    const links = document.querySelectorAll('.oz-sitemap-list li');
+    links.forEach(li => {
+        const text = li.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+            li.style.display = '';
+        } else {
+            li.style.display = 'none';
+        }
+    });
+}
+</script>
