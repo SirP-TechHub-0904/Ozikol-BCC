@@ -179,11 +179,11 @@ namespace Ozikol.Central.Pages.Support
                     ValidityYears = 2,
                     BadgeColor = "emerald",
                     Icon = "award",
-                    Summary = "Validates core tenant provisioning, user directories, community boards, and permission hierarchies.",
-                    CoveredSuites = new List<string> { "suite-people", "Core Multi-Tenant Administration" },
+                    Summary = "Validates core organization workspace setup, user directories, community boards, and permission hierarchies.",
+                    CoveredSuites = new List<string> { "suite-people", "Core Enterprise Administration" },
                     SkillsMeasured = new List<string>
                     {
-                        "Tenant onboarding & custom domain mapping",
+                        "Organization workspace onboarding & custom domain mapping",
                         "Member directory & user privacy roles",
                         "Broadcast announcements & messaging channels",
                         "Two-factor authentication & password recovery"
@@ -275,11 +275,11 @@ namespace Ozikol.Central.Pages.Support
                     ValidityYears = 3,
                     BadgeColor = "rose",
                     Icon = "cpu",
-                    Summary = "The pinnacle credential for designing multi-tenant architectures, custom extensions, and sovereign security controls.",
+                    Summary = "The pinnacle credential for enterprise system architecture, custom API extensions, and sovereign security controls.",
                     CoveredSuites = new List<string> { "suite-security", "suite-marketplace", "All 9 Enterprise Suites" },
                     SkillsMeasured = new List<string>
                     {
-                        "Database isolation & tenant cryptographic partitioning",
+                        "Cryptographic data isolation & private workspace partitioning",
                         "REST APIs, webhooks & custom marketplace templates",
                         "Sovereign data residency (GDPR & ISO 27001 enforcement)",
                         "High availability, automated backups & disaster recovery"
@@ -318,16 +318,16 @@ namespace Ozikol.Central.Pages.Support
                 new()
                 {
                     Id = 1,
-                    Question = "When configuring automated member dues billing in 'suite-finance', which mechanism guarantees tenant data isolation?",
+                    Question = "When configuring automated member dues and recurring billing in 'suite-finance', which workflow guarantees ledger accuracy and payment reconciliation integrity?",
                     Options = new List<string>
                     {
-                        "Shared database tables with nullable organization foreign keys",
-                        "Separate tenant database schemas with strict connection routing and cryptographic isolation",
-                        "Client-side JavaScript session storage tokens",
-                        "Public unauthenticated webhooks"
+                        "Manual paper invoice logs without digital verification",
+                        "Automated recurring billing schedules with cryptographic audit trails and real-time gateway reconciliation",
+                        "Unverified client-side session cookies",
+                        "Public unencrypted email notifications"
                     },
                     CorrectOptionIndex = 1,
-                    Explanation = "Ozikol implements strict tenant persistence isolation where each organization's ledger and financial records reside in segregated tenant schemas or isolated database catalogs."
+                    Explanation = "Ozikol ensures that each organization's billing schedules, dues collections, and ledger records are processed through dedicated cryptographic workflows with automated audit reconciliation."
                 },
                 new()
                 {
@@ -383,7 +383,7 @@ namespace Ozikol.Central.Pages.Support
                         "Local workstation storage only"
                     },
                     CorrectOptionIndex = 1,
-                    Explanation = "All Ozikol tenant data centers operate under ISO 27001 certified controls and adhere strictly to GDPR sovereign data storage guidelines."
+                    Explanation = "All Ozikol enterprise data centers operate under ISO 27001 certified controls and adhere strictly to GDPR sovereign data storage guidelines."
                 }
             };
         }

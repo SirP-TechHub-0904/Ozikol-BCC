@@ -227,7 +227,7 @@ public class NewsService : INewsService
             Key = "engineering-security",
             Name = "Engineering & Security",
             Slug = "engineering-security",
-            Description = "Deep-dives into multi-tenant infrastructure, BYOK privacy, and MIS API access.",
+            Description = "Deep-dives into dedicated system architecture, BYOK privacy, and MIS API access.",
             BadgeClass = "oz-badge-emerald",
             SortOrder = 2,
             IsActive = true
@@ -269,7 +269,7 @@ public class NewsService : INewsService
             Excerpt = "A significant architecture milestone unifying staff rotas, verifiable credentials, mobile bio links, mass communications, and private AI Smart Assist into a single platform.",
             ContentHtml = @"
                 <p>Organizations worldwide face software fragmentation, often juggling multiple disconnected vendors for shift scheduling, incident management, public certificate verification, and executive communication. Today, Ozikol marks a transformative milestone by unifying these essential functions into a cohesive, modular operating platform.</p>
-                <h3>Engineered for Multi-Tenant Flexibility</h3>
+                <h3>Engineered for Dedicated Enterprise Flexibility</h3>
                 <p>Each organization operates inside a cryptographically partitioned workspace with independent data persistence, custom branding, and localized multi-language support. From local charity trusts to large regional enterprises, administrators can activate exactly the capabilities their teams require without paying for unnecessary bloat.</p>
                 <h3>Integrated Operations and Zero Fragmentation</h3>
                 <p>With native synchronization between workforce rosters and mass notifications, managers can broadcast shift openings or emergency alerts instantly. By removing silos between field workers, desk staff, and leadership, operational productivity is increased while administrative friction is eliminated.</p>",
@@ -342,7 +342,7 @@ public class NewsService : INewsService
             ContentHtml = @"
                 <p>As modern organizations adopt artificial intelligence to draft shift policies, summarize incident logs, and generate member communications, confidentiality remains the paramount priority. Ozikol has engineered its AI Smart Assist suite from the ground up on strict BYOK (Bring Your Own Key) privacy principles.</p>
                 <h3>Total Data Sovereignty</h3>
-                <p>All AI requests route through direct, stateless customer-owned API keys. Ozikol never stores prompt content on external servers, and tenant data is strictly excluded from public foundation model training. Every transaction is signed and recorded in tenant audit logs, giving compliance officers complete visibility over automated processing.</p>",
+                <p>All AI requests route through direct, stateless customer-owned API keys. Ozikol never stores prompt content on external servers, and customer data is strictly excluded from public foundation model training. Every transaction is signed and recorded in organization audit logs, giving compliance officers complete visibility over automated processing.</p>",
             AuthorName = "Information Security Office",
             AuthorRole = "Trust & Safety Architecture",
             PublishedAtUtc = DateTime.UtcNow.AddDays(-16),
@@ -363,7 +363,7 @@ public class NewsService : INewsService
             Excerpt = "Expanding collaboration channels for IT consultancies, cloud migration specialists, and industry advocates with direct deal commissions and co-selling support.",
             ContentHtml = @"
                 <p>To accelerate digital transformation across international enterprises and civic institutions, Ozikol has formally opened its three-track partnership network. Covering Enterprise Systems Integrators, UI Blueprint Creators, and Affiliate Advocates, the initiative provides comprehensive technical enablement and direct revenue share.</p>
-                <h3>Accelerating Tenant Onboarding</h3>
+                <h3>Accelerating Organization Onboarding</h3>
                 <p>Systems integrators gain access to dedicated partner managers, sandbox testing environments for client demonstrations, and direct deal commissions on enterprise contracts. Strategic advocates can also share personalized referral links with real-time conversion telemetry, helping organizations of every size discover modernized business cloud operations.</p>",
             AuthorName = "Corporate Alliances",
             AuthorRole = "Global Partnerships",

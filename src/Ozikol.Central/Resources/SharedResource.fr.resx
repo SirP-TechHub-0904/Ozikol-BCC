@@ -908,13 +908,13 @@
     <value>Conçu avec une sécurité de niveau bancaire et une souveraineté totale</value>
   </data>
   <data name="Home_Security_Desc" xml:space="preserve">
-    <value>Vos données vous appartiennent. Isolation dédiée par client, IA privée sans entraînement de modèles publics et export immédiat.</value>
+    <value>Vos données vous appartiennent. Architecture système dédiée et privée, IA sans entraînement sur vos données, et export immédiat de vos données.</value>
   </data>
   <data name="Home_Security_Pillar1_Title" xml:space="preserve">
     <value>Isolation stricte des données</value>
   </data>
   <data name="Home_Security_Pillar1_Desc" xml:space="preserve">
-    <value>L'isolation dédiée des données par organisation élimine tout risque de fuite entre locataires.</value>
+    <value>Une architecture système privée dédiée garantit une isolation complète et une confidentialité absolue de vos données.</value>
   </data>
   <data name="Home_Security_Pillar2_Title" xml:space="preserve">
     <value>Zéro rétention de modèles (IA BYOK)</value>
@@ -932,7 +932,7 @@
     <value>Portabilité instantanée en un clic</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
-    <value>Souveraineté absolue de vos données. Exportez votre base complète, vos politiques et documents à tout moment.</value>
+    <value>Souveraineté totale des données clients. Exportez l'ensemble de vos dossiers, politiques et fichiers à tout moment dans des formats ouverts standards.</value>
   </data>
   <data name="Home_Marquee_Badge" xml:space="preserve">
     <value>CONFIANCE MONDIALE</value>
@@ -1130,7 +1130,7 @@
     <value>Que signifie « vous achetez seulement votre domaine » ?</value>
   </data>
   <data name="Pricing_Faq2_A" xml:space="preserve">
-    <value>Vous enregistrez votre nom de domaine personnalisé directement auprès du bureau d'enregistrement de votre choix. Ozikol fournit tout le reste : hébergement cloud, certificats SSL, base de données, POS, inventaire et logiciels.</value>
+    <value>Vous enregistrez votre nom de domaine personnalisé directement auprès du bureau d'enregistrement de votre choix. Ozikol fournit tout le reste : hébergement cloud, chiffrement SSL, stockage sécurisé des données, PDV, gestion des stocks et toutes les fonctionnalités logicielles.</value>
   </data>
   <data name="Pricing_Faq3_Q" xml:space="preserve">
     <value>Puis-je utiliser un nom de domaine que je possède déjà ?</value>
@@ -2259,7 +2259,7 @@
     <value>Souveraineté totale des données</value>
   </data>
   <data name="About_Adv_2_Desc" xml:space="preserve">
-    <value>Isolation complète de la base de données client. Exportez toutes vos données aux formats ouverts à tout moment.</value>
+    <value>Architecture système privée dédiée. Exportez toutes vos données aux formats ouverts standards à tout moment.</value>
   </data>
   <data name="About_Adv_3_Title" xml:space="preserve">
     <value>Modèles de la place de marché UI</value>
@@ -2292,7 +2292,7 @@
     <value>Souveraineté des données</value>
   </data>
   <data name="About_Pillar_Sovereignty_Desc" xml:space="preserve">
-    <value>Limites de données de locataire isolées empêchant la contamination croisée et la dépendance.</value>
+    <value>Limites strictes de protection des données de votre organisation, empêchant tout accès non autorisé et garantissant votre indépendance.</value>
   </data>
   <data name="About_Pillar_Marketplace_Title" xml:space="preserve">
     <value>Place de marché de l'écosystème</value>
@@ -2304,7 +2304,7 @@
     <value>Automatisation IA confidentielle</value>
   </data>
   <data name="About_Pillar_Ai_Desc" xml:space="preserve">
-    <value>Connecteurs LLM privés et macros de requêtes sans aucun entraînement sur vos données.</value>
+    <value>Connecteurs LLM privés et modèles de requêtes sans aucun entraînement sur les données de votre organisation.</value>
   </data>
   <data name="About_Hub_Tag" xml:space="preserve">
     <value>Explorer Ozikol</value>
@@ -2367,7 +2367,7 @@
     <value>La souveraineté client d'abord</value>
   </data>
   <data name="Culture_Val1_Desc" xml:space="preserve">
-    <value>Vos données appartiennent uniquement à votre organisation. Nous offrons des fonctionnalités d'exportation de base de données en 1 clic sans aucun verrouillage propriétaire.</value>
+    <value>Vos données appartiennent uniquement à votre organisation. Nous offrons des fonctions complètes d'export de données en 1 clic sans dépendance fournisseur.</value>
   </data>
   <data name="Culture_Val2_Badge" xml:space="preserve">
     <value>Zéro superflu</value>
@@ -2415,7 +2415,7 @@
     <value>Sécurité dès la conception</value>
   </data>
   <data name="Culture_Std2_Desc" xml:space="preserve">
-    <value>Chaque ingénieur est formé à la sécurité défensive, au moindre privilège et à l'isolation cryptographique des locataires.</value>
+    <value>Chaque ingénieur est formé à la sécurité défensive, au moindre privilège et à l'isolation cryptographique des limites opérationnelles.</value>
   </data>
   <data name="Culture_Std3_Title" xml:space="preserve">
     <value>Support dédié aux clients</value>
@@ -2508,13 +2508,13 @@
     <value>Normes de responsabilité d'entreprise</value>
   </data>
   <data name="Leadership_Gov_Desc" xml:space="preserve">
-    <value>Des processus de gouvernance rigoureux garantissant l'intégrité opérationnelle de chaque environnement locataire.</value>
+    <value>Des processus de gouvernance rigoureux garantissant l'intégrité opérationnelle de chaque système d'organisation client.</value>
   </data>
   <data name="Leadership_Gov1_Title" xml:space="preserve">
-    <value>Isolation stricte des locataires</value>
+    <value>Isolation stricte des données d'organisation</value>
   </data>
   <data name="Leadership_Gov1_Desc" xml:space="preserve">
-    <value>La séparation architecturale du catalogue principal et des bases de données locataires élimine tout risque de fuite de données.</value>
+    <value>La séparation architecturale entre la gouvernance de plateforme et les dossiers dédiés de l'organisation élimine tout risque de fuite de données.</value>
   </data>
   <data name="Leadership_Gov2_Title" xml:space="preserve">
     <value>Conseil produit bimensuel</value>
@@ -2589,7 +2589,7 @@
     <value>Support Client et Technique</value>
   </data>
   <data name="Offices_Hub1_Desc" xml:space="preserve">
-    <value>Assistance pour la configuration des espaces, la gestion de compte, la facturation et le dépannage de la plateforme.</value>
+    <value>Assistance pour la configuration des espaces d'organisation, gestion des comptes, facturation et dépannage.</value>
   </data>
   <data name="Offices_Hub1_Contact" xml:space="preserve">
     <value>support@ozikol.cloud</value>
@@ -2625,7 +2625,7 @@
     <value>Ventes Entreprise et Licences</value>
   </data>
   <data name="Offices_Hub4_Desc" xml:space="preserve">
-    <value>Renseignements sur les déploiements personnalisés, les contrats entreprise sur mesure et l accompagnement dédié.</value>
+    <value>Renseignez-vous sur les déploiements d'entreprise sur mesure, les contrats spécifiques et l'intégration guidée.</value>
   </data>
   <data name="Offices_Hub4_Contact" xml:space="preserve">
     <value>sales@ozikol.cloud</value>
