@@ -78,10 +78,10 @@
                 }
 
                 <!-- Active Policy Directory Cards -->
-                <h3 style="margin-top: 40px;">Published Governance &amp; Compliance Directory</h3>
+                <h3 class="oz-legal-directory-title">Published Governance &amp; Compliance Directory</h3>
                 <p>Explore our active legal agreements and transparency charters:</p>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+                <div class="oz-legal-directory-grid">
                     @foreach (var policy in Model.AllDocuments)
                     {
                         var route = policy.Slug switch
@@ -93,15 +93,15 @@
                             _ => "/policies-and-reports"
                         };
 
-                        <div style="border: 1px solid var(--ozikol-border); border-radius: 12px; padding: 20px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease;">
+                        <div class="oz-legal-directory-card">
                             <div>
-                                <div style="font-size: 11px; font-weight: 800; color: var(--ozikol-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">@policy.Category</div>
-                                <h4 style="font-size: 16px; font-weight: 700; color: var(--ozikol-dark); margin: 0 0 8px 0;">@policy.Title</h4>
-                                <p style="font-size: 13px; color: var(--ozikol-text-secondary); line-height: 1.5; margin: 0 0 16px 0;">@policy.Summary</p>
+                                <div class="oz-legal-directory-category">@policy.Category</div>
+                                <h4 class="oz-legal-directory-heading">@policy.Title</h4>
+                                <p class="oz-legal-directory-desc">@policy.Summary</p>
                             </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 12px; font-size: 12px; color: var(--ozikol-text-slate);">
+                            <div class="oz-legal-directory-footer">
                                 <span>Updated: @policy.LastUpdatedUtc.ToString("MMM d, yyyy")</span>
-                                <a href="@route" style="color: var(--ozikol-primary); font-weight: 700; text-decoration: none;">Read &rarr;</a>
+                                <a href="@route" class="oz-legal-directory-link">Read &rarr;</a>
                             </div>
                         </div>
                     }

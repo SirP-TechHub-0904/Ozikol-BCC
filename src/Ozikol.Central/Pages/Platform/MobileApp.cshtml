@@ -44,7 +44,7 @@
     </section>
 
     <!-- Core Capabilities Grid -->
-    <section class="container oz-feat-capabilities-section" style="padding-top: 60px;">
+    <section class="container oz-feat-capabilities-section">
         <div class="oz-feat-section-header">
             <div class="oz-feat-tagline">@SharedLocalizer["Mobile_Cap_Tagline"]</div>
             <h2>@SharedLocalizer["Mobile_Cap_Heading"]</h2>
@@ -102,11 +102,11 @@
             <h2>@SharedLocalizer["Mobile_Download_Heading"]</h2>
             <p>@SharedLocalizer["Mobile_Download_Desc"]</p>
 
-            <div class="oz-platform-download-grid" style="max-width: 800px; margin: 32px auto 0 auto;">
+            <div class="oz-platform-download-grid oz-platform-download-grid--double">
                 <!-- Apple iOS Card -->
                 <div class="oz-platform-download-card">
                     <div class="oz-platform-card-header">
-                        <div class="oz-platform-card-icon" style="background: rgba(0, 0, 0, 0.06); color: #000000;">
+                        <div class="oz-platform-card-icon oz-platform-card-icon--apple">
                             <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-1.03 1.68-.9 2.69.99.08 2.02-.51 2.59-1.18z"/></svg>
                         </div>
                         <div>
@@ -114,7 +114,7 @@
                             <span>@SharedLocalizer["Mobile_Card_Ios_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Mobile_Card_Ios_Desc"]</p>
+                    <p class="oz-platform-card-desc oz-platform-card-desc--compact">@SharedLocalizer["Mobile_Card_Ios_Desc"]</p>
                     <a href="https://apps.apple.com" target="_blank" rel="noopener" class="oz-platform-btn-download">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.61 1.34-.55.63-1.03 1.68-.9 2.69.99.08 2.02-.51 2.59-1.18z"/></svg>
                         <span>@SharedLocalizer["Mobile_Card_Ios_Btn"]</span>
@@ -124,7 +124,7 @@
                 <!-- Google Android Card -->
                 <div class="oz-platform-download-card">
                     <div class="oz-platform-card-header">
-                        <div class="oz-platform-card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <div class="oz-platform-card-icon oz-platform-card-icon--android">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.411 13.856 8 12 8s-3.5902.411-5.1367.9507L4.841 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.152 5676l1.9972 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/></svg>
                         </div>
                         <div>
@@ -132,7 +132,7 @@
                             <span>@SharedLocalizer["Mobile_Card_Android_Sub"]</span>
                         </div>
                     </div>
-                    <p style="font-size: 13.5px; color: var(--ozikol-text-secondary); margin: 0 0 12px 0;">@SharedLocalizer["Mobile_Card_Android_Desc"]</p>
+                    <p class="oz-platform-card-desc oz-platform-card-desc--compact">@SharedLocalizer["Mobile_Card_Android_Desc"]</p>
                     <a href="https://play.google.com" target="_blank" rel="noopener" class="oz-platform-btn-download">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.793 12 3.61 22.186c-.347-.376-.554-.91-.554-1.554V3.368c0-.644.207-1.178.553-1.554zm11.605 11.605l2.42 2.42-12.87 7.43 10.45-9.85zm0-2.838l-10.45-9.85 12.87 7.43-2.42 2.42zm1.42 1.419l3.58 2.07c1.05.61 1.05 1.6 0 2.21l-3.58 2.07-2.14-2.14 2.14-2.21z"/></svg>
                         <span>@SharedLocalizer["Mobile_Card_Android_Btn"]</span>
@@ -143,7 +143,7 @@
     </section>
 
     <!-- How to Connect Guide -->
-    <section id="connect" class="container" style="padding-bottom: 60px;">
+    <section id="connect" class="container oz-platform-guide-section">
         <div class="oz-feat-section-header">
             <div class="oz-feat-tagline">@SharedLocalizer["Mobile_Steps_Tagline"]</div>
             <h2>@SharedLocalizer["Mobile_Steps_Heading"]</h2>

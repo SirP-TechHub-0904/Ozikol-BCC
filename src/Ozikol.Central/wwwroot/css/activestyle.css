@@ -3719,6 +3719,25 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
 /* --------------------------------------------------------------------------
    Platform Suite Download & Capability Styles
    -------------------------------------------------------------------------- */
+.oz-feat-capabilities-section {
+    padding-top: 60px;
+}
+
+.oz-platform-guide-section {
+    padding-bottom: 60px;
+}
+
+.oz-hero-btn-pill {
+    border-radius: 9999px;
+    padding: 10px 22px;
+    font-family: var(--ozikol-font);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+}
+
 .oz-platform-download-box {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border: 1px solid var(--ozikol-border);
@@ -3729,18 +3748,23 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
 }
 
 .oz-platform-download-box h2 {
+    font-family: var(--ozikol-font);
     font-size: 28px;
     font-weight: 800;
     color: var(--ozikol-dark);
     margin: 0 0 10px 0;
     letter-spacing: -0.02em;
+    line-height: 1.25;
 }
 
 .oz-platform-download-box p {
+    font-family: var(--ozikol-font);
     font-size: 16px;
     color: var(--ozikol-text-secondary);
     max-width: 620px;
     margin: 0 auto;
+    line-height: 1.6;
+    letter-spacing: normal;
 }
 
 .oz-platform-download-grid {
@@ -3749,6 +3773,16 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     gap: 20px;
     margin-top: 32px;
     text-align: left;
+}
+
+.oz-platform-download-grid--single {
+    max-width: 440px;
+    margin: 36px auto 0 auto;
+}
+
+.oz-platform-download-grid--double {
+    max-width: 800px;
+    margin: 32px auto 0 auto;
 }
 
 .oz-platform-download-card {
@@ -3787,16 +3821,60 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     flex-shrink: 0;
 }
 
+.oz-platform-card-icon--purple {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+}
+
+.oz-platform-card-icon--apple {
+    background: rgba(0, 0, 0, 0.06);
+    color: #000000;
+}
+
+.oz-platform-card-icon--android {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.oz-platform-card-icon--windows {
+    background: rgba(0, 120, 212, 0.1);
+    color: #0078d4;
+}
+
 .oz-platform-card-header h4 {
+    font-family: var(--ozikol-font);
     font-size: 16px;
     font-weight: 700;
     color: var(--ozikol-dark);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
     margin: 0;
 }
 
 .oz-platform-card-header span {
+    font-family: var(--ozikol-font);
     font-size: 12.5px;
     color: var(--ozikol-text-slate);
+    letter-spacing: normal;
+    line-height: 1.4;
+}
+
+.oz-platform-card-desc {
+    font-family: var(--ozikol-font);
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ozikol-text-secondary);
+    margin: 0 0 16px 0;
+    letter-spacing: normal;
+}
+
+.oz-platform-card-desc--compact {
+    margin-bottom: 12px;
+}
+
+.oz-platform-card-desc--sm {
+    font-size: 13px;
+    margin-bottom: 16px;
 }
 
 .oz-platform-btn-download {
@@ -3808,8 +3886,11 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     color: #ffffff !important;
     padding: 12px 20px;
     border-radius: 8px;
+    font-family: var(--ozikol-font);
     font-weight: 700;
     font-size: 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
     text-decoration: none;
     width: 100%;
     margin-top: 16px;
@@ -3819,6 +3900,14 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
 .oz-platform-btn-download:hover {
     background: var(--ozikol-primary-hover);
     transform: translateY(-1px);
+}
+
+.oz-platform-btn-download--dark {
+    background: #1e293b;
+}
+
+.oz-platform-btn-download--dark:hover {
+    background: #0f172a;
 }
 
 .oz-platform-btn-outline {
@@ -3831,8 +3920,11 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     border: 1px solid var(--ozikol-border);
     padding: 12px 20px;
     border-radius: 8px;
+    font-family: var(--ozikol-font);
     font-weight: 600;
     font-size: 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
     text-decoration: none;
     width: 100%;
     margin-top: 16px;
@@ -3850,8 +3942,17 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     gap: 24px;
     flex-wrap: wrap;
     margin-top: 24px;
+    font-family: var(--ozikol-font);
     font-size: 13px;
+    letter-spacing: normal;
+    line-height: 1.5;
     color: var(--ozikol-text-slate);
+}
+
+.oz-platform-specs--bordered {
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ozikol-border);
 }
 
 .oz-platform-step-grid {
@@ -3876,6 +3977,7 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     border-radius: 50%;
     background: var(--ozikol-primary-subtle);
     color: var(--ozikol-primary);
+    font-family: var(--ozikol-font);
     font-weight: 800;
     font-size: 15px;
     display: flex;
@@ -3885,17 +3987,195 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
 }
 
 .oz-platform-step-card h4 {
+    font-family: var(--ozikol-font);
     font-size: 17px;
     font-weight: 700;
     color: var(--ozikol-dark);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
     margin: 0 0 8px 0;
 }
 
 .oz-platform-step-card p {
+    font-family: var(--ozikol-font);
     font-size: 14px;
     color: var(--ozikol-text-secondary);
     line-height: 1.55;
+    letter-spacing: normal;
     margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Legal Suite Directory & Consent Components
+   -------------------------------------------------------------------------- */
+.oz-legal-directory-title {
+    margin-top: 40px;
+    font-family: var(--ozikol-font);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ozikol-dark);
+}
+
+.oz-legal-directory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.oz-legal-directory-card {
+    border: 1px solid var(--ozikol-border);
+    border-radius: 12px;
+    padding: 20px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.oz-legal-directory-card:hover {
+    border-color: var(--ozikol-primary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.oz-legal-directory-category {
+    font-family: var(--ozikol-font);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ozikol-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.oz-legal-directory-heading {
+    font-family: var(--ozikol-font);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ozikol-dark);
+    margin: 0 0 8px 0;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+
+.oz-legal-directory-desc {
+    font-family: var(--ozikol-font);
+    font-size: 13px;
+    color: var(--ozikol-text-secondary);
+    line-height: 1.5;
+    letter-spacing: normal;
+    margin: 0 0 16px 0;
+}
+
+.oz-legal-directory-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+    font-size: 12px;
+    color: var(--ozikol-text-slate);
+    font-family: var(--ozikol-font);
+    letter-spacing: normal;
+}
+
+.oz-legal-directory-link {
+    color: var(--ozikol-primary);
+    font-weight: 700;
+    font-family: var(--ozikol-font);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.oz-legal-directory-link:hover {
+    color: var(--ozikol-primary-hover);
+    text-decoration: underline;
+}
+
+.oz-consent-dashboard {
+    background: #f8fafc;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 36px;
+}
+
+.oz-consent-dashboard__title {
+    margin-top: 0;
+    border: none;
+    padding: 0;
+    font-family: var(--ozikol-font);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ozikol-dark);
+}
+
+.oz-consent-dashboard__subtitle {
+    font-family: var(--ozikol-font);
+    font-size: 14px;
+    color: var(--ozikol-text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    letter-spacing: normal;
+}
+
+.oz-consent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.oz-consent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid var(--ozikol-border);
+}
+
+.oz-consent-item__title {
+    display: block;
+    font-size: 14px;
+    font-family: var(--ozikol-font);
+    font-weight: 600;
+    color: var(--ozikol-dark);
+    letter-spacing: -0.01em;
+}
+
+.oz-consent-item__desc {
+    font-size: 12.5px;
+    color: var(--ozikol-text-slate);
+    font-family: var(--ozikol-font);
+    line-height: 1.4;
+    letter-spacing: normal;
+}
+
+.oz-consent-badge-active {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: var(--ozikol-font);
+    font-weight: 600;
+}
+
+.oz-legal-sidebar-btn {
+    background: var(--ozikol-primary, #e5173f) !important;
+    border: none !important;
+    font-weight: 700 !important;
+    font-family: var(--ozikol-font) !important;
+    letter-spacing: -0.01em !important;
+}
+
+.oz-legal-sidebar-btn:hover {
+    background: var(--ozikol-primary-hover, #cc1033) !important;
+}
+
+.oz-bg-section-muted {
+    background: #eeeeee;
 }
 
 @media (max-width: 1024px) {
