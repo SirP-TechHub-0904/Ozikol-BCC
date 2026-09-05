@@ -46,6 +46,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterNewsCategory> MasterNewsCategories { get; set; } = null!;
     public DbSet<MasterNewsArticle> MasterNewsArticles { get; set; } = null!;
     public DbSet<MasterCreatorApplication> MasterCreatorApplications { get; set; } = null!;
+    public DbSet<MasterJobOpening> MasterJobOpenings { get; set; } = null!;
+    public DbSet<MasterJobApplication> MasterJobApplications { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -374,6 +376,29 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedUtc);
+        });
+
+        modelBuilder.Entity<MasterJobOpening>(entity =>
+        {
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.Department);
+            entity.HasIndex(e => e.Location);
+            entity.HasIndex(e => e.LanguageRequirements);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.SortOrder);
+        });
+
+        modelBuilder.Entity<MasterJobApplication>(entity =>
+        {
+            entity.HasIndex(e => e.ApplicationReference).IsUnique();
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.MasterJobOpeningId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.SubmittedUtc);
+            entity.HasOne(e => e.JobOpening)
+                  .WithMany(j => j.Applications)
+                  .HasForeignKey(e => e.MasterJobOpeningId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

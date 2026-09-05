@@ -3571,3 +3571,403 @@ select.oz-partner-select {
     line-height: 1.6;
     color: #e2e8f0;
 }
+
+/* ==========================================================================
+   Ozikol Careers & Job Application Suite (Zero Inline CSS)
+   ========================================================================== */
+.oz-careers-nav-bar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.oz-careers-nav-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.oz-careers-nav-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 18px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.oz-careers-nav-link:hover,
+.oz-careers-nav-link.active {
+    color: #ffffff;
+    background: #e5173f;
+    border-color: #e5173f;
+    box-shadow: 0 4px 12px rgba(229, 23, 63, 0.25);
+}
+
+.oz-jobs-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 40px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.oz-jobs-filter-row {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.oz-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.oz-filter-group-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.oz-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.oz-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.oz-filter-pill:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.oz-filter-pill.is-active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+.oz-filter-search-box {
+    position: relative;
+    width: 100%;
+}
+
+.oz-filter-search-input {
+    width: 100%;
+    padding: 12px 18px 12px 44px;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 14.5px;
+    background: #ffffff;
+    color: #0f172a;
+    box-sizing: border-box;
+}
+
+.oz-filter-search-input:focus {
+    outline: none;
+    border-color: #e5173f;
+    box-shadow: 0 0 0 3px rgba(229, 23, 63, 0.12);
+}
+
+.oz-filter-search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.oz-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .oz-jobs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-job-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+}
+
+.oz-job-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-3px);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+}
+
+.oz-job-card-top {
+    margin-bottom: 20px;
+}
+
+.oz-job-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.oz-job-badge-dept {
+    font-size: 11.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #e5173f;
+    background: rgba(229, 23, 63, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.oz-job-badge-lang {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.oz-job-badge-loc {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #059669;
+    background: rgba(5, 150, 105, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.oz-job-card-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.3;
+    margin: 0 0 10px 0;
+}
+
+.oz-job-card-desc {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.oz-job-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 18px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.oz-job-type-pill {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.oz-job-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e5173f;
+    text-decoration: none;
+    transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.oz-job-card-btn:hover {
+    gap: 12px;
+    color: #be123c;
+}
+
+/* Job Detail Page */
+.oz-job-detail-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 40px;
+    margin-top: 36px;
+}
+
+@media (max-width: 960px) {
+    .oz-job-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-job-content-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.oz-job-content-block {
+    margin-bottom: 36px;
+}
+
+.oz-job-content-block:last-child {
+    margin-bottom: 0;
+}
+
+.oz-job-content-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.oz-job-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oz-job-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14.5px;
+    color: #334155;
+    line-height: 1.6;
+}
+
+.oz-job-check-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(229, 23, 63, 0.1);
+    color: #e5173f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.oz-file-upload-box {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.oz-file-upload-box:hover {
+    border-color: #e5173f;
+    background: rgba(229, 23, 63, 0.02);
+}
+
+.oz-file-upload-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.oz-file-upload-icon {
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.oz-file-upload-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.oz-file-upload-hint {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.oz-hero-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 36px;
+    text-align: center;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08);
+}
+
+.oz-hero-stat-num {
+    font-size: clamp(38px, 5vw, 56px);
+    font-weight: 900;
+    color: #e5173f;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.oz-hero-stat-label {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.oz-hero-stat-sub {
+    font-size: 13.5px;
+    color: #64748b;
+}
