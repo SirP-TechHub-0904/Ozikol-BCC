@@ -33,7 +33,7 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IRecaptchaService, GoogleRecaptchaService>();
-builder.Services.AddSingleton<INewsService, NewsService>();
+builder.Services.AddScoped<INewsService, NewsService>();
 
 builder.Services.AddRazorPages(options =>
 {
