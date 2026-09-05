@@ -220,4 +220,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
 
+// Legacy SLA route redirects to Professional Certifications portal
+app.MapGet("/support/sla", () => Results.Redirect("/en/support/certifications", permanent: true));
+app.MapGet("/{culture}/support/sla", (string culture) => Results.Redirect($"/{culture}/support/certifications", permanent: true));
+
 app.Run();
