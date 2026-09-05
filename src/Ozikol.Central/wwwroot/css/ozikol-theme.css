@@ -2564,6 +2564,18 @@
     justify-content: space-between;
 }
 
+.oz-corp-email-link {
+    color: #e5173f;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.oz-corp-email-link:hover {
+    color: #b91032;
+    text-decoration: underline;
+}
+
 .oz-corp-list {
     list-style: none;
     padding: 0;
