@@ -1,8 +1,8 @@
 @page "/careers/{slug}"
 @model Ozikol.Central.Pages.CareersDetailModel
 @{
-    ViewData["Title"] = $"{Model.Opening?.Title ?? "Career Opportunity"} | Ozikol Careers";
-    ViewData["MetaDescription"] = Model.Opening?.Summary ?? "Explore career opportunities at Ozikol.";
+    ViewData["Title"] = $"{Model.Opening?.Title ?? SharedLocalizer["Careers_Detail_OpportunityFallback"].Value} | Ozikol Careers";
+    ViewData["MetaDescription"] = Model.Opening?.Summary ?? SharedLocalizer["Careers_Detail_MetaFallback"].Value;
 }
 
 @section Scripts {
@@ -27,9 +27,9 @@
         <div class="oz-corp-container">
             <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
                 <div class="d-flex align-items-center gap-2" style="font-size: 13.5px;">
-                    <a href="/" style="text-decoration: none; color: #64748b; font-weight: 500;">Home</a>
+                    <a href="/@Model.CurrentCulture" style="text-decoration: none; color: #64748b; font-weight: 500;">@SharedLocalizer["Careers_Detail_Breadcrumb_Home"]</a>
                     <span style="color: #cbd5e1;">/</span>
-                    <a href="/careers" style="text-decoration: none; color: #64748b; font-weight: 500;">Careers</a>
+                    <a href="/@Model.CurrentCulture/careers" style="text-decoration: none; color: #64748b; font-weight: 500;">@SharedLocalizer["Careers_Detail_Breadcrumb_Careers"]</a>
                     <span style="color: #cbd5e1;">/</span>
                     <span style="color: #0f172a; font-weight: 700;">@Model.Opening.Title</span>
                 </div>
@@ -70,7 +70,7 @@
                 <div class="oz-job-content-card">
                     <!-- About the Role -->
                     <div class="oz-job-content-block">
-                        <h2 class="oz-job-content-title">About the Opportunity</h2>
+                        <h2 class="oz-job-content-title">@SharedLocalizer["Careers_Detail_AboutTitle"]</h2>
                         <div style="color: #475569; font-size: 15px; line-height: 1.75;">
                             @Html.Raw(Model.Opening.DescriptionHtml.Replace("\n", "<br />"))
                         </div>
@@ -78,7 +78,7 @@
 
                     <!-- Key Responsibilities -->
                     <div class="oz-job-content-block">
-                        <h2 class="oz-job-content-title">Key Responsibilities</h2>
+                        <h2 class="oz-job-content-title">@SharedLocalizer["Careers_Detail_ResponsibilitiesTitle"]</h2>
                         <ul class="oz-job-list">
                             @foreach (var resp in Model.Opening.Responsibilities)
                             {
@@ -92,7 +92,7 @@
 
                     <!-- Qualifications -->
                     <div class="oz-job-content-block">
-                        <h2 class="oz-job-content-title">Requirements &amp; Qualifications</h2>
+                        <h2 class="oz-job-content-title">@Html.Raw(SharedLocalizer["Careers_Detail_QualificationsTitle"].Value)</h2>
                         <ul class="oz-job-list">
                             @foreach (var qual in Model.Opening.Qualifications)
                             {
@@ -106,7 +106,7 @@
 
                     <!-- Role Benefits -->
                     <div class="oz-job-content-block mb-0">
-                        <h2 class="oz-job-content-title">What We Offer</h2>
+                        <h2 class="oz-job-content-title">@SharedLocalizer["Careers_Detail_BenefitsTitle"]</h2>
                         <ul class="oz-job-list">
                             @foreach (var ben in Model.Opening.Benefits)
                             {
@@ -130,23 +130,23 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Application Received!</h3>
+                                <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">@SharedLocalizer["Careers_Apply_Success_Title"]</h3>
                                 <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin: 0;">
-                                    Thank you for applying to join Ozikol. Your application, CV, and passport identification have been securely received and assigned to our recruitment committee.
+                                    @SharedLocalizer["Careers_Apply_Success_Desc"]
                                 </p>
                             </div>
 
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 24px; text-align: left;">
-                                <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">Your Tracking Reference:</div>
+                                <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">@SharedLocalizer["Careers_Apply_Success_RefLabel"]</div>
                                 <div style="font-size: 20px; font-weight: 800; color: #e5173f; font-family: monospace;">@Model.AssignedReference</div>
                                 <div style="font-size: 12.5px; color: #64748b; margin-top: 8px; line-height: 1.5;">
-                                    Please keep this code for your records. A member of our recruitment team will reach out via email regarding next steps.
+                                    @SharedLocalizer["Careers_Apply_Success_Note"]
                                 </div>
                             </div>
 
                             <div>
-                                <a href="/careers#openings" class="oz-features-btn-outline" style="width: 100%; box-sizing: border-box; justify-content: center;">
-                                    Browse More Open Roles
+                                <a href="/@Model.CurrentCulture/careers#openings" class="oz-features-btn-outline" style="width: 100%; box-sizing: border-box; justify-content: center;">
+                                    @SharedLocalizer["Careers_Apply_Success_BtnBrowse"]
                                 </a>
                             </div>
                         </div>
@@ -155,14 +155,14 @@
                     {
                         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 36px 30px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05); position: sticky; top: 90px;">
                             <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 24px;">
-                                <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">Apply for this Role</h3>
-                                <p style="font-size: 13.5px; color: #64748b; margin: 0;">Complete the details below and attach your CV &amp; Passport/ID.</p>
+                                <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">@SharedLocalizer["Careers_Apply_Form_Title"]</h3>
+                                <p style="font-size: 13.5px; color: #64748b; margin: 0;">@Html.Raw(SharedLocalizer["Careers_Apply_Form_Desc"].Value)</p>
                             </div>
 
                             @if (!ModelState.IsValid && HttpContext.Request.Method == "POST")
                             {
                                 <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13.5px; color: #991b1b;">
-                                    <div style="font-weight: 700; margin-bottom: 6px;">Please review the following:</div>
+                                    <div style="font-weight: 700; margin-bottom: 6px;">@SharedLocalizer["Careers_Apply_ReviewErrors"]</div>
                                     <ul style="margin: 0; padding-left: 20px;">
                                         @foreach (var modelError in ModelState.Values)
                                         {
@@ -182,11 +182,11 @@
                                 <!-- Full Name -->
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.FullName" class="oz-partner-label">
-                                        Full Legal Name <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_FullName"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.FullName"
                                            class="oz-partner-input"
-                                           placeholder="e.g. John Doe"
+                                           placeholder="@SharedLocalizer["Careers_Apply_FullName_Placeholder"]"
                                            required />
                                     <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
                                 </div>
@@ -194,12 +194,12 @@
                                 <!-- Email Address -->
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.Email" class="oz-partner-label">
-                                        Email Address <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_Email"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.Email"
                                            type="email"
                                            class="oz-partner-input"
-                                           placeholder="name@example.com"
+                                           placeholder="@SharedLocalizer["Careers_Apply_Email_Placeholder"]"
                                            required />
                                     <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
                                 </div>
@@ -207,11 +207,11 @@
                                 <!-- Phone Number -->
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.PhoneNumber" class="oz-partner-label">
-                                        Contact Phone <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_Phone"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.PhoneNumber"
                                            class="oz-partner-input"
-                                           placeholder="+44 20 7946 0991"
+                                           placeholder="@SharedLocalizer["Careers_Apply_Phone_Placeholder"]"
                                            required />
                                     <span asp-validation-for="Input.PhoneNumber" class="oz-partner-field-error"></span>
                                 </div>
@@ -220,21 +220,21 @@
                                 <div class="oz-partner-row">
                                     <div class="oz-partner-field">
                                         <label asp-for="Input.City" class="oz-partner-label">
-                                            City <span class="oz-partner-req">*</span>
+                                            @SharedLocalizer["Careers_Apply_City"] <span class="oz-partner-req">*</span>
                                         </label>
                                         <input asp-for="Input.City"
                                                class="oz-partner-input"
-                                               placeholder="e.g. London"
+                                               placeholder="@SharedLocalizer["Careers_Apply_City_Placeholder"]"
                                                required />
                                         <span asp-validation-for="Input.City" class="oz-partner-field-error"></span>
                                     </div>
                                     <div class="oz-partner-field">
                                         <label asp-for="Input.Country" class="oz-partner-label">
-                                            Country <span class="oz-partner-req">*</span>
+                                            @SharedLocalizer["Careers_Apply_Country"] <span class="oz-partner-req">*</span>
                                         </label>
                                         <input asp-for="Input.Country"
                                                class="oz-partner-input"
-                                               placeholder="e.g. United Kingdom"
+                                               placeholder="@SharedLocalizer["Careers_Apply_Country_Placeholder"]"
                                                required />
                                         <span asp-validation-for="Input.Country" class="oz-partner-field-error"></span>
                                     </div>
@@ -243,23 +243,23 @@
                                 <!-- LinkedIn Profile -->
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.LinkedInOrPortfolioUrl" class="oz-partner-label">
-                                        LinkedIn / Portfolio URL <span style="font-weight: normal; color: #94a3b8;">(Optional)</span>
+                                        @SharedLocalizer["Careers_Apply_LinkedIn"] <span style="font-weight: normal; color: #94a3b8;">@SharedLocalizer["Careers_Apply_Optional"]</span>
                                     </label>
                                     <input asp-for="Input.LinkedInOrPortfolioUrl"
                                            type="url"
                                            class="oz-partner-input"
-                                           placeholder="https://linkedin.com/in/..." />
+                                           placeholder="@SharedLocalizer["Careers_Apply_LinkedIn_Placeholder"]" />
                                 </div>
 
                                 <!-- Cover Letter -->
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.CoverLetter" class="oz-partner-label">
-                                        Brief Introduction / Pitch <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_CoverLetter"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <textarea asp-for="Input.CoverLetter"
                                               rows="4"
                                               class="oz-partner-textarea"
-                                              placeholder="Tell us why you are interested in this role and what unique skills you bring to Ozikol..."
+                                              placeholder="@SharedLocalizer["Careers_Apply_CoverLetter_Placeholder"]"
                                               required></textarea>
                                     <span asp-validation-for="Input.CoverLetter" class="oz-partner-field-error"></span>
                                 </div>
@@ -267,7 +267,7 @@
                                 <!-- CV File Upload -->
                                 <div class="oz-partner-field">
                                     <label class="oz-partner-label">
-                                        Curriculum Vitae / Resume <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_UploadCv"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <div class="oz-file-upload-box">
                                         <input type="file"
@@ -282,9 +282,9 @@
                                             </svg>
                                         </div>
                                         <div class="oz-file-upload-title" id="cvFileNamePreview">
-                                            Click or Drag &amp; Drop your CV here
+                                            @SharedLocalizer["Careers_Apply_UploadCv_Select"]
                                         </div>
-                                        <div class="oz-file-upload-hint">Supported formats: PDF, DOCX, DOC (Max 10MB)</div>
+                                        <div class="oz-file-upload-hint">@SharedLocalizer["Careers_Apply_UploadCv_Format"]</div>
                                     </div>
                                     <span asp-validation-for="Input.CvFile" class="oz-partner-field-error"></span>
                                 </div>
@@ -292,7 +292,7 @@
                                 <!-- Passport File Upload -->
                                 <div class="oz-partner-field">
                                     <label class="oz-partner-label">
-                                        Passport / Government Photo ID <span class="oz-partner-req">*</span>
+                                        @SharedLocalizer["Careers_Apply_UploadPassport"] <span class="oz-partner-req">*</span>
                                     </label>
                                     <div class="oz-file-upload-box">
                                         <input type="file"
@@ -307,9 +307,9 @@
                                             </svg>
                                         </div>
                                         <div class="oz-file-upload-title" id="passportFileNamePreview">
-                                            Upload clear Passport or Photo ID
+                                            @SharedLocalizer["Careers_Apply_UploadPassport_Select"]
                                         </div>
-                                        <div class="oz-file-upload-hint">Supported formats: PDF, JPG, PNG (Max 10MB)</div>
+                                        <div class="oz-file-upload-hint">@SharedLocalizer["Careers_Apply_UploadPassport_Format"]</div>
                                     </div>
                                     <span asp-validation-for="Input.PassportFile" class="oz-partner-field-error"></span>
                                 </div>
@@ -323,7 +323,7 @@
                                                style="margin-top: 3px;"
                                                required />
                                         <span>
-                                            I certify that the information provided is accurate and agree to Ozikol's recruitment privacy policy and data processing terms. <span class="oz-partner-req">*</span>
+                                            @SharedLocalizer["Careers_Apply_Terms"] <span class="oz-partner-req">*</span>
                                         </span>
                                     </label>
                                     <span asp-validation-for="Input.AgreeTerms" class="oz-partner-field-error"></span>
@@ -337,7 +337,7 @@
                                 <!-- Submit Button -->
                                 <div class="oz-partner-submit-wrap" style="margin-top: 16px;">
                                     <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn" style="width: 100%; justify-content: center;">
-                                        <span>Submit Application</span>
+                                        <span>@SharedLocalizer["Careers_Apply_BtnSubmit"]</span>
                                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                         </svg>
@@ -348,7 +348,7 @@
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
-                                    <span>Attachments are encrypted in transit and securely stored.</span>
+                                    <span>@Html.Raw(SharedLocalizer["Careers_Apply_SecurityBadge"].Value)</span>
                                 </div>
                             </form>
                         </div>

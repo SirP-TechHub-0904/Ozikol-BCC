@@ -2901,4 +2901,396 @@
   <data name="Partner_Success_BtnHome" xml:space="preserve">
     <value>Volver al inicio</value>
   </data>
-<data name="Offices_Hub1_Team" xml:space="preserve"><value>Equipo de Soporte</value></data><data name="Offices_Hub2_Team" xml:space="preserve"><value>Equipo de Alianzas</value></data><data name="Offices_Hub3_Team" xml:space="preserve"><value>Confianza y Seguridad</value></data><data name="Offices_Hub4_Team" xml:space="preserve"><value>Equipo de Ventas</value></data><data name="News_Page_Title" xml:space="preserve"><value>Noticias de la Empresa y Lanzamientos | Ozikol</value></data><data name="News_Hero_Badge" xml:space="preserve"><value>Sala de Prensa Ozikol</value></data><data name="News_Hero_Title" xml:space="preserve"><value>Noticias &amp; &lt;span class="text-primary"&gt;Lanzamientos de la Plataforma&lt;/span&gt;</value></data><data name="News_Hero_Lead" xml:space="preserve"><value>Manténgase al día sobre actualizaciones de arquitectura, plantillas de interfaz, anuncios de socios y perspectivas.</value></data><data name="News_Hero_BtnPrimary" xml:space="preserve"><value>Explorar Noticias</value></data><data name="News_Hero_BtnSecondary" xml:space="preserve"><value>Acerca de Ozikol</value></data><data name="News_Search_Placeholder" xml:space="preserve"><value>Buscar noticias o temas...</value></data><data name="News_Filter_All" xml:space="preserve"><value>Todas las Noticias</value></data><data name="News_Featured_Badge" xml:space="preserve"><value>Artículo Destacado</value></data><data name="News_Btn_ReadArticle" xml:space="preserve"><value>Leer Artículo</value></data><data name="News_Empty_Title" xml:space="preserve"><value>No se Encontraron Artículos</value></data><data name="News_Empty_Desc" xml:space="preserve"><value>Ningún artículo coincide con sus filtros activos.</value></data><data name="News_Btn_ResetFilters" xml:space="preserve"><value>Ver Todos los Artículos</value></data><data name="News_Sub_Badge" xml:space="preserve"><value>Oficina de Prensa y Medios</value></data><data name="News_Sub_Title" xml:space="preserve"><value>Manténgase Informado con Ozikol</value></data><data name="News_Sub_Desc" xml:space="preserve"><value>Suscríbase para recibir los lanzamientos y actualizaciones técnicas en su correo electrónico.</value></data><data name="News_Sub_EmailPlaceholder" xml:space="preserve"><value>Ingrese su correo electrónico</value></data><data name="News_Sub_BtnText" xml:space="preserve"><value>Suscribirse a Novedades</value></data><data name="News_Breadcrumb_Newsroom" xml:space="preserve"><value>Sala de Prensa</value></data><data name="News_Btn_BackToNews" xml:space="preserve"><value>Volver a Noticias</value></data><data name="News_Tags_Label" xml:space="preserve"><value>Temas</value></data><data name="News_Btn_ExploreFeatures" xml:space="preserve"><value>Explorar Suites en la Nube</value></data><data name="News_Related_Tag" xml:space="preserve"><value>Sugerencias Editoriales</value></data><data name="News_Related_Title" xml:space="preserve"><value>Noticias y Artículos Relacionados</value></data><data name="Creator_Page_Title" xml:space="preserve"><value>Programa de Creadores | Diseñar y Monetizar Plantillas | Ozikol</value></data><data name="Creator_Breadcrumb_Title" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Btn_BackToMarketplace" xml:space="preserve"><value>Marketplace UI</value></data><data name="Creator_Hero_Badge" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Hero_Title" xml:space="preserve"><value>Cree Plantillas Modulares &amp; &lt;span class="text-primary"&gt;Monetice en el Marketplace&lt;/span&gt;</value></data><data name="Creator_Hero_Lead" xml:space="preserve"><value>Diseñe páginas de inicio responsivas, paneles de operaciones y secciones modulares. Obtenga ingresos recurrentes de miles de organizaciones activas.</value></data><data name="Creator_Hero_BtnPrimary" xml:space="preserve"><value>Postularse como Creador</value></data><data name="Creator_Hero_BtnSecondary" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_Badge" xml:space="preserve"><value>Solicitud Recibida</value></data><data name="Creator_Success_Title" xml:space="preserve"><value>Solicitud de Creador Enviada</value></data><data name="Creator_Success_Desc" xml:space="preserve"><value>Gracias por postularse al Programa de Creadores de Ozikol. Nuestro equipo está revisando su portafolio.</value></data><data name="Creator_Success_RefLabel" xml:space="preserve"><value>Código de Seguimiento de Creador</value></data><data name="Creator_Success_StepsTitle" xml:space="preserve"><value>Cronograma de Integración</value></data><data name="Creator_Success_Step1" xml:space="preserve"><value>Revisión de portafolio y estándares de diseño por nuestro equipo</value></data><data name="Creator_Success_Step2" xml:space="preserve"><value>Invitación al portal de pruebas y claves de desarrollador</value></data><data name="Creator_Success_Step3" xml:space="preserve"><value>Publicación de su primera plantilla en el Marketplace UI</value></data><data name="Creator_Success_BtnMarketplace" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_BtnHome" xml:space="preserve"><value>Volver al Inicio</value></data><data name="Creator_Categories_Tag" xml:space="preserve"><value>Plantillas de Creadores</value></data><data name="Creator_Categories_Title" xml:space="preserve"><value>Lo que Puede Crear y Publicar</value></data><data name="Creator_Categories_Desc" xml:space="preserve"><value>Secciones modulares compatibles con tokens de diseño en todas las suites de trabajo.</value></data><data name="Creator_Cat1_Badge" xml:space="preserve"><value>Encabezados e Inicio</value></data><data name="Creator_Cat1_Title" xml:space="preserve"><value>Encabezados y Menús de Navegación</value></data><data name="Creator_Cat1_Desc" xml:space="preserve"><value>Barras de navegación modernas y secciones de cabecera que se adaptan automáticamente a los colores de la organización.</value></data><data name="Creator_Cat2_Badge" xml:space="preserve"><value>Datos y Operaciones</value></data><data name="Creator_Cat2_Title" xml:space="preserve"><value>Paneles Operativos y Widgets</value></data><data name="Creator_Cat2_Desc" xml:space="preserve"><value>Contadores métricos, cuadrículas de turnos, seguimiento de incidencias y tarjetas interactivas.</value></data><data name="Creator_Cat3_Badge" xml:space="preserve"><value>Plantillas Integrales</value></data><data name="Creator_Cat3_Title" xml:space="preserve"><value>Portales Sectoriales y para ONGs</value></data><data name="Creator_Cat3_Desc" xml:space="preserve"><value>Diseños integrales orientados a entidades asistenciales, instituciones cívicas, centros educativos y consultorías.</value></data><data name="Creator_Benefits_Tag" xml:space="preserve"><value>Ventajas para Creadores</value></data><data name="Creator_Benefits_Title" xml:space="preserve"><value>Por Qué Crear en Ozikol</value></data><data name="Creator_Benefits_Desc" xml:space="preserve"><value>Herramientas completas para desarrolladores, distribución internacional y regalías recurrentes.</value></data><data name="Creator_Ben1_Title" xml:space="preserve"><value>Participación Recurrente de Ingresos</value></data><data name="Creator_Ben1_Desc" xml:space="preserve"><value>Obtenga regalías recurrentes cada vez que una organización instale o renueve su colección de plantillas.</value></data><data name="Creator_Ben2_Title" xml:space="preserve"><value>Insignia de Creador Verificado</value></data><data name="Creator_Ben2_Desc" xml:space="preserve"><value>Destaque su estudio o perfil con una insignia verificada para captar solicitudes de diseño empresarial.</value></data><data name="Creator_Ben3_Title" xml:space="preserve"><value>Tokens de Diseño Preconfigurados</value></data><data name="Creator_Ben3_Desc" xml:space="preserve"><value>Utilice variables CSS nativas para que sus componentes hereden automáticamente el modo oscuro y el estilo de marca del cliente.</value></data><data name="Creator_Steps_Tag" xml:space="preserve"><value>Flujo de Creador</value></data><data name="Creator_Steps_Title" xml:space="preserve"><value>Tres Pasos para Empezar</value></data><data name="Creator_Steps_Desc" xml:space="preserve"><value>Desde su solicitud hasta la publicación en el marketplace con una orientación clara.</value></data><data name="Creator_Step1_Title" xml:space="preserve"><value>Postúlese con su Portafolio</value></data><data name="Creator_Step1_Desc" xml:space="preserve"><value>Comparta su portafolio, trayectoria y propuesta de plantillas.</value></data><data name="Creator_Step2_Title" xml:space="preserve"><value>Acceda al Entorno de Pruebas</value></data><data name="Creator_Step2_Desc" xml:space="preserve"><value>Reciba su espacio de desarrollo, proyecto inicial y librerías de tokens.</value></data><data name="Creator_Step3_Title" xml:space="preserve"><value>Publique y Monetice</value></data><data name="Creator_Step3_Desc" xml:space="preserve"><value>Valide sus plantillas en las pruebas de compatibilidad y empiece a recibir pagos recurrentes.</value></data><data name="Creator_Form_Badge" xml:space="preserve"><value>Postúlese Hoy</value></data><data name="Creator_Form_Title" xml:space="preserve"><value>Formulario de Postulación para Creadores</value></data><data name="Creator_Form_Desc" xml:space="preserve"><value>Complete el siguiente formulario para formar parte de nuestro programa de creadores certificados.</value></data><data name="Creator_Field_FullName" xml:space="preserve"><value>Nombre Legal Completo</value></data><data name="Creator_Field_StudioName" xml:space="preserve"><value>Nombre de la Agencia o Marca</value></data><data name="Creator_Field_Email" xml:space="preserve"><value>Correo Electrónico Corporativo</value></data><data name="Creator_Field_Phone" xml:space="preserve"><value>Número de Teléfono</value></data><data name="Creator_Field_PortfolioUrl" xml:space="preserve"><value>Enlace a Portafolio, GitHub o Figma</value></data><data name="Creator_Field_Specialization" xml:space="preserve"><value>Especialidad Principal en Diseño</value></data><data name="Creator_Field_Pitch" xml:space="preserve"><value>Presentación de su Propuesta</value></data><data name="Creator_Field_PitchPlaceholder" xml:space="preserve"><value>Describa brevemente las plantillas o suites que desea diseñar para Ozikol...</value></data><data name="Creator_Field_AgreeTerms" xml:space="preserve"><value>He leído y acepto los</value></data><data name="Creator_Btn_Submit" xml:space="preserve"><value>Enviar Solicitud de Creador</value></data><data name="Creator_Err_TermsRequired" xml:space="preserve"><value>Debe aceptar los términos del programa de creadores para continuar.</value></data><data name="Creator_Err_EmailExists" xml:space="preserve"><value>Ya existe una solicitud con este correo en proceso de revisión.</value></data><data name="DevApi_Page_Title" xml:space="preserve"><value>API para Desarrolladores MIS y Webhooks | Ozikol</value></data><data name="DevApi_Breadcrumb_Title" xml:space="preserve"><value>API Desarrollador MIS y Webhooks</value></data><data name="DevApi_Btn_BackToFeatures" xml:space="preserve"><value>Explorar Funciones</value></data><data name="DevApi_Hero_Badge" xml:space="preserve"><value>Centro para Desarrolladores • API MIS y Webhooks</value></data><data name="DevApi_Hero_Title" xml:space="preserve"><value>API Desarrollador MIS &amp; &lt;span class="text-primary"&gt;Webhooks en Tiempo Real&lt;/span&gt;</value></data><data name="DevApi_Hero_Lead" xml:space="preserve"><value>Habilite acceso externo seguro a los datos de su organización. Comparta datos demográficos, gestión de incidencias y balances de ingresos con organismos públicos, entidades colaboradoras y auditores sin otorgarles credenciales directas a su panel de administración.</value></data><data name="DevApi_Hero_BtnPrimary" xml:space="preserve"><value>Solicitar Acceso API</value></data><data name="DevApi_Hero_BtnSecondary" xml:space="preserve"><value>Ver Casos de Uso</value></data><data name="DevApi_Scenarios_Tag" xml:space="preserve"><value>Acceso Externo Controlado</value></data><data name="DevApi_Scenarios_Title" xml:space="preserve"><value>Por Qué Habilitar la API MIS</value></data><data name="DevApi_Scenarios_Desc" xml:space="preserve"><value>Proporcione a organismos públicos, auditores y contratistas flujos de datos específicos sin exponer credenciales de acceso internas.</value></data><data name="DevApi_Scen1_Badge" xml:space="preserve"><value>Organismos Públicos</value></data><data name="DevApi_Scen1_Title" xml:space="preserve"><value>Reportes de Censo y Demografía</value></data><data name="DevApi_Scen1_Desc" xml:space="preserve"><value>Transmita datos censales y demográficos verificados a agencias estadísticas sin crear cuentas de empleado a los funcionarios en su sistema interno.</value></data><data name="DevApi_Scope_ReadOnly" xml:space="preserve"><value>Solo Lectura Delimitada</value></data><data name="DevApi_Scen2_Badge" xml:space="preserve"><value>Contratistas y Operaciones</value></data><data name="DevApi_Scen2_Title" xml:space="preserve"><value>Integración y Gestión de Tickets</value></data><data name="DevApi_Scen2_Desc" xml:space="preserve"><value>Permita a empresas de mantenimiento y soporte resolver incidencias sin tener acceso al directorio de empleados de su entidad.</value></data><data name="DevApi_Scope_ReadWrite" xml:space="preserve"><value>Acceso Delimitado a Tickets</value></data><data name="DevApi_Scen3_Badge" xml:space="preserve"><value>Finanzas y Control</value></data><data name="DevApi_Scen3_Title" xml:space="preserve"><value>Auditoría Financiera y de Ingresos</value></data><data name="DevApi_Scen3_Desc" xml:space="preserve"><value>Facilite a auditores e inspectores acceso directo de solo lectura a transacciones y facturas con registro de auditoría completo.</value></data><data name="DevApi_Scope_AuditOnly" xml:space="preserve"><value>Acceso de Auditoría</value></data><data name="DevApi_Scen4_Badge" xml:space="preserve"><value>Organismos Reguladores</value></data><data name="DevApi_Scen4_Title" xml:space="preserve"><value>Acreditación y Verificación de Cumplimiento</value></data><data name="DevApi_Scen4_Desc" xml:space="preserve"><value>Permita a entidades de supervisión certificar el cumplimiento normativo mediante puntos de enlace seguros y cifrados.</value></data><data name="DevApi_Scope_Verified" xml:space="preserve"><value>Comprobación Cifrada</value></data><data name="DevApi_Security_Tag" xml:space="preserve"><value>Seguridad Confianza Cero</value></data><data name="DevApi_Security_Title" xml:space="preserve"><value>Diseñado para Garantizar la Soberanía de sus Datos</value></data><data name="DevApi_Security_Desc" xml:space="preserve"><value>Límites estrictos de permisos, restricción por IP y registro criptográfico de cada petición.</value></data><data name="DevApi_Sec1_Title" xml:space="preserve"><value>Tokens de Acceso Delimitados</value></data><data name="DevApi_Sec1_Desc" xml:space="preserve"><value>Genere claves restringidas a rutas específicas. Las entidades externas nunca pueden acceder a datos ajenos a su autorización.</value></data><data name="DevApi_Sec2_Title" xml:space="preserve"><value>Webhooks en Tiempo Real</value></data><data name="DevApi_Sec2_Desc" xml:space="preserve"><value>Reciba notificaciones firmadas con HMAC al producirse un evento, eliminando consultas repetitivas a sus servidores.</value></data><data name="DevApi_Sec3_Title" xml:space="preserve"><value>Revocación Inmediata y Auditoría</value></data><data name="DevApi_Sec3_Desc" xml:space="preserve"><value>Cada consulta queda registrada con dirección IP y hora. Revoque cualquier clave en un clic sin afectar su operativa diaria.</value></data><data name="DevApi_Code_Tag" xml:space="preserve"><value>Demostración Interactiva</value></data><data name="DevApi_Code_Title" xml:space="preserve"><value>Endpoints RESTful JSON Claros</value></data><data name="DevApi_Code_Desc" xml:space="preserve"><value>Respuestas estructuradas con paginación estándar, marcas temporales UTC y firmas de verificación.</value></data><data name="DevApi_Cta_Badge" xml:space="preserve"><value>Integración Empresarial</value></data><data name="DevApi_Cta_Title" xml:space="preserve"><value>¿Listo para conectar sus colaboradores externos de forma segura?</value></data><data name="DevApi_Cta_Desc" xml:space="preserve"><value>Consulte con nuestro equipo técnico para configurar sus claves API delimitadas y automatizar sus procesos hoy.</value></data><data name="DevApi_Cta_BtnPrimary" xml:space="preserve"><value>Solicitar Demostración API</value></data><data name="DevApi_Cta_BtnSecondary" xml:space="preserve"><value>Explorar la Plataforma</value></data></root>
+<data name="Offices_Hub1_Team" xml:space="preserve"><value>Equipo de Soporte</value></data><data name="Offices_Hub2_Team" xml:space="preserve"><value>Equipo de Alianzas</value></data><data name="Offices_Hub3_Team" xml:space="preserve"><value>Confianza y Seguridad</value></data><data name="Offices_Hub4_Team" xml:space="preserve"><value>Equipo de Ventas</value></data><data name="News_Page_Title" xml:space="preserve"><value>Noticias de la Empresa y Lanzamientos | Ozikol</value></data><data name="News_Hero_Badge" xml:space="preserve"><value>Sala de Prensa Ozikol</value></data><data name="News_Hero_Title" xml:space="preserve"><value>Noticias &amp; &lt;span class="text-primary"&gt;Lanzamientos de la Plataforma&lt;/span&gt;</value></data><data name="News_Hero_Lead" xml:space="preserve"><value>Manténgase al día sobre actualizaciones de arquitectura, plantillas de interfaz, anuncios de socios y perspectivas.</value></data><data name="News_Hero_BtnPrimary" xml:space="preserve"><value>Explorar Noticias</value></data><data name="News_Hero_BtnSecondary" xml:space="preserve"><value>Acerca de Ozikol</value></data><data name="News_Search_Placeholder" xml:space="preserve"><value>Buscar noticias o temas...</value></data><data name="News_Filter_All" xml:space="preserve"><value>Todas las Noticias</value></data><data name="News_Featured_Badge" xml:space="preserve"><value>Artículo Destacado</value></data><data name="News_Btn_ReadArticle" xml:space="preserve"><value>Leer Artículo</value></data><data name="News_Empty_Title" xml:space="preserve"><value>No se Encontraron Artículos</value></data><data name="News_Empty_Desc" xml:space="preserve"><value>Ningún artículo coincide con sus filtros activos.</value></data><data name="News_Btn_ResetFilters" xml:space="preserve"><value>Ver Todos los Artículos</value></data><data name="News_Sub_Badge" xml:space="preserve"><value>Oficina de Prensa y Medios</value></data><data name="News_Sub_Title" xml:space="preserve"><value>Manténgase Informado con Ozikol</value></data><data name="News_Sub_Desc" xml:space="preserve"><value>Suscríbase para recibir los lanzamientos y actualizaciones técnicas en su correo electrónico.</value></data><data name="News_Sub_EmailPlaceholder" xml:space="preserve"><value>Ingrese su correo electrónico</value></data><data name="News_Sub_BtnText" xml:space="preserve"><value>Suscribirse a Novedades</value></data><data name="News_Breadcrumb_Newsroom" xml:space="preserve"><value>Sala de Prensa</value></data><data name="News_Btn_BackToNews" xml:space="preserve"><value>Volver a Noticias</value></data><data name="News_Tags_Label" xml:space="preserve"><value>Temas</value></data><data name="News_Btn_ExploreFeatures" xml:space="preserve"><value>Explorar Suites en la Nube</value></data><data name="News_Related_Tag" xml:space="preserve"><value>Sugerencias Editoriales</value></data><data name="News_Related_Title" xml:space="preserve"><value>Noticias y Artículos Relacionados</value></data><data name="Creator_Page_Title" xml:space="preserve"><value>Programa de Creadores | Diseñar y Monetizar Plantillas | Ozikol</value></data><data name="Creator_Breadcrumb_Title" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Btn_BackToMarketplace" xml:space="preserve"><value>Marketplace UI</value></data><data name="Creator_Hero_Badge" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Hero_Title" xml:space="preserve"><value>Cree Plantillas Modulares &amp; &lt;span class="text-primary"&gt;Monetice en el Marketplace&lt;/span&gt;</value></data><data name="Creator_Hero_Lead" xml:space="preserve"><value>Diseñe páginas de inicio responsivas, paneles de operaciones y secciones modulares. Obtenga ingresos recurrentes de miles de organizaciones activas.</value></data><data name="Creator_Hero_BtnPrimary" xml:space="preserve"><value>Postularse como Creador</value></data><data name="Creator_Hero_BtnSecondary" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_Badge" xml:space="preserve"><value>Solicitud Recibida</value></data><data name="Creator_Success_Title" xml:space="preserve"><value>Solicitud de Creador Enviada</value></data><data name="Creator_Success_Desc" xml:space="preserve"><value>Gracias por postularse al Programa de Creadores de Ozikol. Nuestro equipo está revisando su portafolio.</value></data><data name="Creator_Success_RefLabel" xml:space="preserve"><value>Código de Seguimiento de Creador</value></data><data name="Creator_Success_StepsTitle" xml:space="preserve"><value>Cronograma de Integración</value></data><data name="Creator_Success_Step1" xml:space="preserve"><value>Revisión de portafolio y estándares de diseño por nuestro equipo</value></data><data name="Creator_Success_Step2" xml:space="preserve"><value>Invitación al portal de pruebas y claves de desarrollador</value></data><data name="Creator_Success_Step3" xml:space="preserve"><value>Publicación de su primera plantilla en el Marketplace UI</value></data><data name="Creator_Success_BtnMarketplace" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_BtnHome" xml:space="preserve"><value>Volver al Inicio</value></data><data name="Creator_Categories_Tag" xml:space="preserve"><value>Plantillas de Creadores</value></data><data name="Creator_Categories_Title" xml:space="preserve"><value>Lo que Puede Crear y Publicar</value></data><data name="Creator_Categories_Desc" xml:space="preserve"><value>Secciones modulares compatibles con tokens de diseño en todas las suites de trabajo.</value></data><data name="Creator_Cat1_Badge" xml:space="preserve"><value>Encabezados e Inicio</value></data><data name="Creator_Cat1_Title" xml:space="preserve"><value>Encabezados y Menús de Navegación</value></data><data name="Creator_Cat1_Desc" xml:space="preserve"><value>Barras de navegación modernas y secciones de cabecera que se adaptan automáticamente a los colores de la organización.</value></data><data name="Creator_Cat2_Badge" xml:space="preserve"><value>Datos y Operaciones</value></data><data name="Creator_Cat2_Title" xml:space="preserve"><value>Paneles Operativos y Widgets</value></data><data name="Creator_Cat2_Desc" xml:space="preserve"><value>Contadores métricos, cuadrículas de turnos, seguimiento de incidencias y tarjetas interactivas.</value></data><data name="Creator_Cat3_Badge" xml:space="preserve"><value>Plantillas Integrales</value></data><data name="Creator_Cat3_Title" xml:space="preserve"><value>Portales Sectoriales y para ONGs</value></data><data name="Creator_Cat3_Desc" xml:space="preserve"><value>Diseños integrales orientados a entidades asistenciales, instituciones cívicas, centros educativos y consultorías.</value></data><data name="Creator_Benefits_Tag" xml:space="preserve"><value>Ventajas para Creadores</value></data><data name="Creator_Benefits_Title" xml:space="preserve"><value>Por Qué Crear en Ozikol</value></data><data name="Creator_Benefits_Desc" xml:space="preserve"><value>Herramientas completas para desarrolladores, distribución internacional y regalías recurrentes.</value></data><data name="Creator_Ben1_Title" xml:space="preserve"><value>Participación Recurrente de Ingresos</value></data><data name="Creator_Ben1_Desc" xml:space="preserve"><value>Obtenga regalías recurrentes cada vez que una organización instale o renueve su colección de plantillas.</value></data><data name="Creator_Ben2_Title" xml:space="preserve"><value>Insignia de Creador Verificado</value></data><data name="Creator_Ben2_Desc" xml:space="preserve"><value>Destaque su estudio o perfil con una insignia verificada para captar solicitudes de diseño empresarial.</value></data><data name="Creator_Ben3_Title" xml:space="preserve"><value>Tokens de Diseño Preconfigurados</value></data><data name="Creator_Ben3_Desc" xml:space="preserve"><value>Utilice variables CSS nativas para que sus componentes hereden automáticamente el modo oscuro y el estilo de marca del cliente.</value></data><data name="Creator_Steps_Tag" xml:space="preserve"><value>Flujo de Creador</value></data><data name="Creator_Steps_Title" xml:space="preserve"><value>Tres Pasos para Empezar</value></data><data name="Creator_Steps_Desc" xml:space="preserve"><value>Desde su solicitud hasta la publicación en el marketplace con una orientación clara.</value></data><data name="Creator_Step1_Title" xml:space="preserve"><value>Postúlese con su Portafolio</value></data><data name="Creator_Step1_Desc" xml:space="preserve"><value>Comparta su portafolio, trayectoria y propuesta de plantillas.</value></data><data name="Creator_Step2_Title" xml:space="preserve"><value>Acceda al Entorno de Pruebas</value></data><data name="Creator_Step2_Desc" xml:space="preserve"><value>Reciba su espacio de desarrollo, proyecto inicial y librerías de tokens.</value></data><data name="Creator_Step3_Title" xml:space="preserve"><value>Publique y Monetice</value></data><data name="Creator_Step3_Desc" xml:space="preserve"><value>Valide sus plantillas en las pruebas de compatibilidad y empiece a recibir pagos recurrentes.</value></data><data name="Creator_Form_Badge" xml:space="preserve"><value>Postúlese Hoy</value></data><data name="Creator_Form_Title" xml:space="preserve"><value>Formulario de Postulación para Creadores</value></data><data name="Creator_Form_Desc" xml:space="preserve"><value>Complete el siguiente formulario para formar parte de nuestro programa de creadores certificados.</value></data><data name="Creator_Field_FullName" xml:space="preserve"><value>Nombre Legal Completo</value></data><data name="Creator_Field_StudioName" xml:space="preserve"><value>Nombre de la Agencia o Marca</value></data><data name="Creator_Field_Email" xml:space="preserve"><value>Correo Electrónico Corporativo</value></data><data name="Creator_Field_Phone" xml:space="preserve"><value>Número de Teléfono</value></data><data name="Creator_Field_PortfolioUrl" xml:space="preserve"><value>Enlace a Portafolio, GitHub o Figma</value></data><data name="Creator_Field_Specialization" xml:space="preserve"><value>Especialidad Principal en Diseño</value></data><data name="Creator_Field_Pitch" xml:space="preserve"><value>Presentación de su Propuesta</value></data><data name="Creator_Field_PitchPlaceholder" xml:space="preserve"><value>Describa brevemente las plantillas o suites que desea diseñar para Ozikol...</value></data><data name="Creator_Field_AgreeTerms" xml:space="preserve"><value>He leído y acepto los</value></data><data name="Creator_Btn_Submit" xml:space="preserve"><value>Enviar Solicitud de Creador</value></data><data name="Creator_Err_TermsRequired" xml:space="preserve"><value>Debe aceptar los términos del programa de creadores para continuar.</value></data><data name="Creator_Err_EmailExists" xml:space="preserve"><value>Ya existe una solicitud con este correo en proceso de revisión.</value></data><data name="DevApi_Page_Title" xml:space="preserve"><value>API para Desarrolladores MIS y Webhooks | Ozikol</value></data><data name="DevApi_Breadcrumb_Title" xml:space="preserve"><value>API Desarrollador MIS y Webhooks</value></data><data name="DevApi_Btn_BackToFeatures" xml:space="preserve"><value>Explorar Funciones</value></data><data name="DevApi_Hero_Badge" xml:space="preserve"><value>Centro para Desarrolladores • API MIS y Webhooks</value></data><data name="DevApi_Hero_Title" xml:space="preserve"><value>API Desarrollador MIS &amp; &lt;span class="text-primary"&gt;Webhooks en Tiempo Real&lt;/span&gt;</value></data><data name="DevApi_Hero_Lead" xml:space="preserve"><value>Habilite acceso externo seguro a los datos de su organización. Comparta datos demográficos, gestión de incidencias y balances de ingresos con organismos públicos, entidades colaboradoras y auditores sin otorgarles credenciales directas a su panel de administración.</value></data><data name="DevApi_Hero_BtnPrimary" xml:space="preserve"><value>Solicitar Acceso API</value></data><data name="DevApi_Hero_BtnSecondary" xml:space="preserve"><value>Ver Casos de Uso</value></data><data name="DevApi_Scenarios_Tag" xml:space="preserve"><value>Acceso Externo Controlado</value></data><data name="DevApi_Scenarios_Title" xml:space="preserve"><value>Por Qué Habilitar la API MIS</value></data><data name="DevApi_Scenarios_Desc" xml:space="preserve"><value>Proporcione a organismos públicos, auditores y contratistas flujos de datos específicos sin exponer credenciales de acceso internas.</value></data><data name="DevApi_Scen1_Badge" xml:space="preserve"><value>Organismos Públicos</value></data><data name="DevApi_Scen1_Title" xml:space="preserve"><value>Reportes de Censo y Demografía</value></data><data name="DevApi_Scen1_Desc" xml:space="preserve"><value>Transmita datos censales y demográficos verificados a agencias estadísticas sin crear cuentas de empleado a los funcionarios en su sistema interno.</value></data><data name="DevApi_Scope_ReadOnly" xml:space="preserve"><value>Solo Lectura Delimitada</value></data><data name="DevApi_Scen2_Badge" xml:space="preserve"><value>Contratistas y Operaciones</value></data><data name="DevApi_Scen2_Title" xml:space="preserve"><value>Integración y Gestión de Tickets</value></data><data name="DevApi_Scen2_Desc" xml:space="preserve"><value>Permita a empresas de mantenimiento y soporte resolver incidencias sin tener acceso al directorio de empleados de su entidad.</value></data><data name="DevApi_Scope_ReadWrite" xml:space="preserve"><value>Acceso Delimitado a Tickets</value></data><data name="DevApi_Scen3_Badge" xml:space="preserve"><value>Finanzas y Control</value></data><data name="DevApi_Scen3_Title" xml:space="preserve"><value>Auditoría Financiera y de Ingresos</value></data><data name="DevApi_Scen3_Desc" xml:space="preserve"><value>Facilite a auditores e inspectores acceso directo de solo lectura a transacciones y facturas con registro de auditoría completo.</value></data><data name="DevApi_Scope_AuditOnly" xml:space="preserve"><value>Acceso de Auditoría</value></data><data name="DevApi_Scen4_Badge" xml:space="preserve"><value>Organismos Reguladores</value></data><data name="DevApi_Scen4_Title" xml:space="preserve"><value>Acreditación y Verificación de Cumplimiento</value></data><data name="DevApi_Scen4_Desc" xml:space="preserve"><value>Permita a entidades de supervisión certificar el cumplimiento normativo mediante puntos de enlace seguros y cifrados.</value></data><data name="DevApi_Scope_Verified" xml:space="preserve"><value>Comprobación Cifrada</value></data><data name="DevApi_Security_Tag" xml:space="preserve"><value>Seguridad Confianza Cero</value></data><data name="DevApi_Security_Title" xml:space="preserve"><value>Diseñado para Garantizar la Soberanía de sus Datos</value></data><data name="DevApi_Security_Desc" xml:space="preserve"><value>Límites estrictos de permisos, restricción por IP y registro criptográfico de cada petición.</value></data><data name="DevApi_Sec1_Title" xml:space="preserve"><value>Tokens de Acceso Delimitados</value></data><data name="DevApi_Sec1_Desc" xml:space="preserve"><value>Genere claves restringidas a rutas específicas. Las entidades externas nunca pueden acceder a datos ajenos a su autorización.</value></data><data name="DevApi_Sec2_Title" xml:space="preserve"><value>Webhooks en Tiempo Real</value></data><data name="DevApi_Sec2_Desc" xml:space="preserve"><value>Reciba notificaciones firmadas con HMAC al producirse un evento, eliminando consultas repetitivas a sus servidores.</value></data><data name="DevApi_Sec3_Title" xml:space="preserve"><value>Revocación Inmediata y Auditoría</value></data><data name="DevApi_Sec3_Desc" xml:space="preserve"><value>Cada consulta queda registrada con dirección IP y hora. Revoque cualquier clave en un clic sin afectar su operativa diaria.</value></data><data name="DevApi_Code_Tag" xml:space="preserve"><value>Demostración Interactiva</value></data><data name="DevApi_Code_Title" xml:space="preserve"><value>Endpoints RESTful JSON Claros</value></data><data name="DevApi_Code_Desc" xml:space="preserve"><value>Respuestas estructuradas con paginación estándar, marcas temporales UTC y firmas de verificación.</value></data><data name="DevApi_Cta_Badge" xml:space="preserve"><value>Integración Empresarial</value></data><data name="DevApi_Cta_Title" xml:space="preserve"><value>¿Listo para conectar sus colaboradores externos de forma segura?</value></data><data name="DevApi_Cta_Desc" xml:space="preserve"><value>Consulte con nuestro equipo técnico para configurar sus claves API delimitadas y automatizar sus procesos hoy.</value></data><data name="DevApi_Cta_BtnPrimary" xml:space="preserve"><value>Solicitar Demostración API</value></data><data name="DevApi_Cta_BtnSecondary" xml:space="preserve"><value>Explorar la Plataforma</value></data>
+
+  <data name="Careers_Page_Title" xml:space="preserve">
+    <value>Carreras en Ozikol | Ama tu trabajo. Ama tu vida. Sé tú mismo.</value>
+  </data>
+  <data name="Careers_Meta_Desc" xml:space="preserve">
+    <value>Únase a la misión de Ozikol de revolucionar el software de gestión empresarial. Explore puestos en ingeniería, atención al cliente, liderazgo regional y alianzas.</value>
+  </data>
+  <data name="Careers_Hero_Badge" xml:space="preserve">
+    <value>Únase a nuestro equipo global</value>
+  </data>
+  <data name="Careers_Hero_Title" xml:space="preserve">
+    <value>Ama tu trabajo. Ama tu vida. Sé tú mismo.</value>
+  </data>
+  <data name="Careers_Hero_Desc" xml:space="preserve">
+    <value>Es así de simple. Es el estilo Ozikol. Es lo que nos hace únicos. Es lo que queremos que experimente mientras impulsa su carrera y alimenta su pasión por el trabajo construyendo la próxima generación de inteligencia empresarial. Nuestra misión brinda a clientes y colaboradores la libertad de lograr más.</value>
+  </data>
+  <data name="Careers_Hero_BtnRoles" xml:space="preserve">
+    <value>Ver puestos disponibles</value>
+  </data>
+  <data name="Careers_Hero_BtnCulture" xml:space="preserve">
+    <value>La vida en Ozikol</value>
+  </data>
+  <data name="Careers_Hero_ImgAlt" xml:space="preserve">
+    <value>La vida en Ozikol - Cultura tecnológica colaborativa y global</value>
+  </data>
+  <data name="Careers_Nav_OpenRoles" xml:space="preserve">
+    <value>Puestos disponibles</value>
+  </data>
+  <data name="Careers_Nav_Culture" xml:space="preserve">
+    <value>Cultura y vida</value>
+  </data>
+  <data name="Careers_Nav_Values" xml:space="preserve">
+    <value>Nuestros valores</value>
+  </data>
+  <data name="Careers_Nav_Benefits" xml:space="preserve">
+    <value>Beneficios globales</value>
+  </data>
+  <data name="Careers_Openings_Tag" xml:space="preserve">
+    <value>Oportunidades actuales</value>
+  </data>
+  <data name="Careers_Openings_Title" xml:space="preserve">
+    <value>Explore los puestos abiertos en Ozikol</value>
+  </data>
+  <data name="Careers_Openings_Desc" xml:space="preserve">
+    <value>Encuentre su vocación en un equipo que valora su voz, acelera su desarrollo y respeta su vida fuera del trabajo.</value>
+  </data>
+  <data name="Careers_Filter_SearchPlaceholder" xml:space="preserve">
+    <value>Buscar por título, habilidad o palabra clave (ej: « Admin », « Atención al Cliente », « Francés »)...</value>
+  </data>
+  <data name="Careers_Filter_DeptTitle" xml:space="preserve">
+    <value>Departamento:</value>
+  </data>
+  <data name="Careers_Filter_AllDepts" xml:space="preserve">
+    <value>Todos los departamentos</value>
+  </data>
+  <data name="Careers_Filter_LangTitle" xml:space="preserve">
+    <value>Requisitos lingüísticos:</value>
+  </data>
+  <data name="Careers_Filter_AllLangs" xml:space="preserve">
+    <value>Todos los idiomas</value>
+  </data>
+  <data name="Careers_Filter_LangEn" xml:space="preserve">
+    <value>Inglés</value>
+  </data>
+  <data name="Careers_Filter_LangFr" xml:space="preserve">
+    <value>Francés (Bilingüe)</value>
+  </data>
+  <data name="Careers_Filter_LangIt" xml:space="preserve">
+    <value>Italiano (Bilingüe)</value>
+  </data>
+  <data name="Careers_Filter_ResultsPrefix" xml:space="preserve">
+    <value>Mostrando resultados filtrados (</value>
+  </data>
+  <data name="Careers_Filter_ResultsSuffix" xml:space="preserve">
+    <value>puestos encontrados)</value>
+  </data>
+  <data name="Careers_Filter_Reset" xml:space="preserve">
+    <value>Restablecer todos los filtros</value>
+  </data>
+  <data name="Careers_Job_ViewRole" xml:space="preserve">
+    <value>Ver puesto y postularse</value>
+  </data>
+  <data name="Careers_Job_EmptyTitle" xml:space="preserve">
+    <value>No se encontraron puestos coincidentes</value>
+  </data>
+  <data name="Careers_Job_EmptyDesc" xml:space="preserve">
+    <value>No encontramos puestos que coincidan con sus criterios de búsqueda. Intente restablecer los filtros o vuelva pronto, publicamos nuevas ofertas con frecuencia.</value>
+  </data>
+  <data name="Careers_Job_EmptyBtn" xml:space="preserve">
+    <value>Ver todos los puestos disponibles</value>
+  </data>
+  <data name="Careers_Culture_Tag" xml:space="preserve">
+    <value>La vida en Ozikol</value>
+  </data>
+  <data name="Careers_Culture_Title" xml:space="preserve">
+    <value>Las personas son el corazón de todo lo que construimos</value>
+  </data>
+  <data name="Careers_Culture_Lead" xml:space="preserve">
+    <value>Nuestros miembros transforman las reglas, aman la vida, construyen cultura y son pensadores libres.</value>
+  </data>
+  <data name="Careers_Culture_Desc" xml:space="preserve">
+    <value>Nos esforzamos por crear un entorno donde todos se sientan valorados, respetados y capacitados para dar lo mejor. Ya sea liderando la estrategia regional o brindando soporte directo a clientes corporativos en toda Europa, usted es un pilar esencial de Ozikol.</value>
+  </data>
+  <data name="Careers_Culture_Point1_Title" xml:space="preserve">
+    <value>Curiosidad e innovación:</value>
+  </data>
+  <data name="Careers_Culture_Point1_Desc" xml:space="preserve">
+    <value>Fomentamos la experimentación audaz y las ideas innovadoras que elevan nuestro software y equipo.</value>
+  </data>
+  <data name="Careers_Culture_Point2_Title" xml:space="preserve">
+    <value>Celebración colectiva:</value>
+  </data>
+  <data name="Careers_Culture_Point2_Desc" xml:space="preserve">
+    <value>Ganamos juntos como un equipo global unido y celebramos los logros individuales y grupales.</value>
+  </data>
+  <data name="Careers_Culture_Point3_Title" xml:space="preserve">
+    <value>Diversión con seriedad:</value>
+  </data>
+  <data name="Careers_Culture_Point3_Desc" xml:space="preserve">
+    <value>El software empresarial es un negocio serio, pero nuestra cultura diaria es relajada, colaborativa y alegre.</value>
+  </data>
+  <data name="Careers_Culture_Cta" xml:space="preserve">
+    <value>Encuentre su puesto hoy</value>
+  </data>
+  <data name="Careers_Culture_TestimonialsTitle" xml:space="preserve">
+    <value>Lo que dicen nuestros empleados</value>
+  </data>
+  <data name="Careers_Culture_Testimonial1_Quote" xml:space="preserve">
+    <value>Trabajar en Ozikol me ha brindado la autonomía para innovar y liderar. El equipo se preocupa genuinamente por su bienestar y la flexibilidad global es inigualable.</value>
+  </data>
+  <data name="Careers_Culture_Testimonial1_Role" xml:space="preserve">
+    <value>Líder de operaciones regionales</value>
+  </data>
+  <data name="Careers_Culture_Testimonial1_Location" xml:space="preserve">
+    <value>Ozikol EMEA • Londres</value>
+  </data>
+  <data name="Careers_Culture_Testimonial2_Quote" xml:space="preserve">
+    <value>Brindar soporte en francés e italiano mientras colaboro con el equipo técnico global hace que cada día sea gratificante, diverso y dinámico.</value>
+  </data>
+  <data name="Careers_Culture_Testimonial2_Role" xml:space="preserve">
+    <value>Especialista en éxito del cliente</value>
+  </data>
+  <data name="Careers_Culture_Testimonial2_Location" xml:space="preserve">
+    <value>Centro de soporte multilingüe • París</value>
+  </data>
+  <data name="Careers_Culture_Testimonial3_Quote" xml:space="preserve">
+    <value>Desde el primer día se percibe que cada aporte genera un impacto real. Excelentes herramientas, colegas brillantes y un equilibrio de vida auténtico.</value>
+  </data>
+  <data name="Careers_Culture_Testimonial3_Role" xml:space="preserve">
+    <value>Ingeniero sénior de seguridad en la nube</value>
+  </data>
+  <data name="Careers_Culture_Testimonial3_Location" xml:space="preserve">
+    <value>Equipo de infraestructura • Remoto</value>
+  </data>
+  <data name="Careers_Values_Tag" xml:space="preserve">
+    <value>Nuestra brújula orientadora</value>
+  </data>
+  <data name="Careers_Values_Title" xml:space="preserve">
+    <value>Nuestros valores: el estilo Ozikol</value>
+  </data>
+  <data name="Careers_Values_Desc" xml:space="preserve">
+    <value>Nuestros valores definen cómo nos apoyamos mutuamente, servimos a los clientes y construimos software duradero para empresas en todo el mundo.</value>
+  </data>
+  <data name="Careers_Value1_Title" xml:space="preserve">
+    <value>Ganar junto a los clientes</value>
+  </data>
+  <data name="Careers_Value1_Desc" xml:space="preserve">
+    <value>Somos un equipo que hace las cosas bien. Hacemos que la gestión empresarial compleja sea simple, transparente y confiable. Nos apasiona mejorar la vida de los clientes cada día.</value>
+  </data>
+  <data name="Careers_Value2_Title" xml:space="preserve">
+    <value>Mejorar Ozikol cada día</value>
+  </data>
+  <data name="Careers_Value2_Desc" xml:space="preserve">
+    <value>Siempre hacemos que las cosas sucedan. Nos mantenemos curiosos. Creemos que quienes aprenden superan siempre a quienes creen saberlo todo, aprendiendo con entusiasmo constante.</value>
+  </data>
+  <data name="Careers_Value3_Title" xml:space="preserve">
+    <value>Ayudar a todos a prosperar</value>
+  </data>
+  <data name="Careers_Value3_Desc" xml:space="preserve">
+    <value>Todos pertenecen aquí, sin excepciones. Su bienestar y equilibrio importan. Nos cuidamos mutuamente, a nuestras comunidades y a nuestro planeta. Cuando todos prosperan, todos ganamos.</value>
+  </data>
+  <data name="Careers_Benefits_Tag" xml:space="preserve">
+    <value>Compensación total y bienestar</value>
+  </data>
+  <data name="Careers_Benefits_Title" xml:space="preserve">
+    <value>Diseñado para ayudarle a prosperar</value>
+  </data>
+  <data name="Careers_Benefits_Desc" xml:space="preserve">
+    <value>Creemos en brindar beneficios de primer nivel que potencien su trabajo, respalden a su familia y aseguren su futuro.</value>
+  </data>
+  <data name="Careers_Benefit1_Title" xml:space="preserve">
+    <value>Compensación competitiva</value>
+  </data>
+  <data name="Careers_Benefit1_Desc" xml:space="preserve">
+    <value>Salarios base de referencia, revisiones anuales y bonificaciones por desempeño que premian el impacto directo.</value>
+  </data>
+  <data name="Careers_Benefit2_Title" xml:space="preserve">
+    <value>Libertad de trabajo remoto e híbrido</value>
+  </data>
+  <data name="Careers_Benefit2_Desc" xml:space="preserve">
+    <value>Modelos laborales flexibles que le permiten trabajar desde casa, sedes regionales o en cualquier lugar con subsidios especiales.</value>
+  </data>
+  <data name="Careers_Benefit3_Title" xml:space="preserve">
+    <value>Salud y bienestar</value>
+  </data>
+  <data name="Careers_Benefit3_Desc" xml:space="preserve">
+    <value>Cobertura integral de seguro médico, dental y óptico privado, junto con asesoramiento confidencial de salud mental.</value>
+  </data>
+  <data name="Careers_Benefit4_Title" xml:space="preserve">
+    <value>Presupuesto de aprendizaje y desarrollo</value>
+  </data>
+  <data name="Careers_Benefit4_Desc" xml:space="preserve">
+    <value>Presupuesto anual de capacitación personal, certificaciones, clases de idiomas y acceso ilimitado a plataformas educativas.</value>
+  </data>
+  <data name="Careers_Benefit5_Title" xml:space="preserve">
+    <value>Vacaciones pagadas generosas</value>
+  </data>
+  <data name="Careers_Benefit5_Desc" xml:space="preserve">
+    <value>Más de 28 días de vacaciones pagadas al año, festivos locales, días de voluntariado y planes de permiso parental.</value>
+  </data>
+  <data name="Careers_Benefit6_Title" xml:space="preserve">
+    <value>Subsidio para oficina en casa</value>
+  </data>
+  <data name="Careers_Benefit6_Desc" xml:space="preserve">
+    <value>Equipamiento de alta gama (MacBook Pro o Dell XPS), monitores 4K y reembolso de estación ergonómica.</value>
+  </data>
+  <data name="Careers_Talent_Badge" xml:space="preserve">
+    <value>Únase a nuestra comunidad de talentos</value>
+  </data>
+  <data name="Careers_Talent_Title" xml:space="preserve">
+    <value>¿No encuentra su puesto ideal?</value>
+  </data>
+  <data name="Careers_Talent_Desc" xml:space="preserve">
+    <value>Crecemos de forma continua y buscamos talentos sobresalientes en ingeniería, diseño, marketing y soporte multilingüe.</value>
+  </data>
+  <data name="Careers_Talent_BtnExplore" xml:space="preserve">
+    <value>Explorar vacantes</value>
+  </data>
+  <data name="Careers_Talent_BtnContact" xml:space="preserve">
+    <value>Contactar al equipo de selección</value>
+  </data>
+  <data name="Careers_Detail_Breadcrumb_Home" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="Careers_Detail_Breadcrumb_Careers" xml:space="preserve">
+    <value>Carreras</value>
+  </data>
+  <data name="Careers_Detail_OpportunityFallback" xml:space="preserve">
+    <value>Oportunidad profesional</value>
+  </data>
+  <data name="Careers_Detail_MetaFallback" xml:space="preserve">
+    <value>Explore las oportunidades de carrera en Ozikol.</value>
+  </data>
+  <data name="Careers_Detail_AboutTitle" xml:space="preserve">
+    <value>Acerca de la oportunidad</value>
+  </data>
+  <data name="Careers_Detail_ResponsibilitiesTitle" xml:space="preserve">
+    <value>Responsabilidades clave</value>
+  </data>
+  <data name="Careers_Detail_QualificationsTitle" xml:space="preserve">
+    <value>Requisitos y cualificaciones</value>
+  </data>
+  <data name="Careers_Detail_BenefitsTitle" xml:space="preserve">
+    <value>Lo que ofrecemos</value>
+  </data>
+  <data name="Careers_Apply_Success_Title" xml:space="preserve">
+    <value>¡Candidatura recibida!</value>
+  </data>
+  <data name="Careers_Apply_Success_Desc" xml:space="preserve">
+    <value>Gracias por postularse a Ozikol. Su solicitud, CV y documento de identidad han sido recibidos de forma segura y asignados a nuestro comité de selección.</value>
+  </data>
+  <data name="Careers_Apply_Success_RefLabel" xml:space="preserve">
+    <value>Su código de referencia:</value>
+  </data>
+  <data name="Careers_Apply_Success_Note" xml:space="preserve">
+    <value>Guarde este código para sus registros. Un miembro del equipo de contratación se pondrá en contacto por correo electrónico con los próximos pasos.</value>
+  </data>
+  <data name="Careers_Apply_Success_BtnBrowse" xml:space="preserve">
+    <value>Ver más puestos abiertos</value>
+  </data>
+  <data name="Careers_Apply_Form_Title" xml:space="preserve">
+    <value>Postularse a este puesto</value>
+  </data>
+  <data name="Careers_Apply_Form_Desc" xml:space="preserve">
+    <value>Complete la información a continuación y adjunte su CV y pasaporte/identificación.</value>
+  </data>
+  <data name="Careers_Apply_ReviewErrors" xml:space="preserve">
+    <value>Por favor revise lo siguiente:</value>
+  </data>
+  <data name="Careers_Apply_FullName" xml:space="preserve">
+    <value>Nombre legal completo</value>
+  </data>
+  <data name="Careers_Apply_FullName_Placeholder" xml:space="preserve">
+    <value>ej: Juan Pérez</value>
+  </data>
+  <data name="Careers_Apply_Email" xml:space="preserve">
+    <value>Correo electrónico</value>
+  </data>
+  <data name="Careers_Apply_Email_Placeholder" xml:space="preserve">
+    <value>nombre@ejemplo.es</value>
+  </data>
+  <data name="Careers_Apply_Phone" xml:space="preserve">
+    <value>Teléfono de contacto</value>
+  </data>
+  <data name="Careers_Apply_Phone_Placeholder" xml:space="preserve">
+    <value>+34 91 123 4567</value>
+  </data>
+  <data name="Careers_Apply_City" xml:space="preserve">
+    <value>Ciudad</value>
+  </data>
+  <data name="Careers_Apply_City_Placeholder" xml:space="preserve">
+    <value>ej: Madrid</value>
+  </data>
+  <data name="Careers_Apply_Country" xml:space="preserve">
+    <value>País</value>
+  </data>
+  <data name="Careers_Apply_Country_Placeholder" xml:space="preserve">
+    <value>ej: España</value>
+  </data>
+  <data name="Careers_Apply_LinkedIn" xml:space="preserve">
+    <value>Perfil de LinkedIn o portafolio</value>
+  </data>
+  <data name="Careers_Apply_LinkedIn_Placeholder" xml:space="preserve">
+    <value>https://linkedin.com/in/su-perfil</value>
+  </data>
+  <data name="Careers_Apply_Optional" xml:space="preserve">
+    <value>(Opcional)</value>
+  </data>
+  <data name="Careers_Apply_UploadCv" xml:space="preserve">
+    <value>Subir CV / Currículum</value>
+  </data>
+  <data name="Careers_Apply_UploadCv_Desc" xml:space="preserve">
+    <value>Formato PDF, DOCX o DOC de hasta 10 MB</value>
+  </data>
+  <data name="Careers_Apply_UploadCv_Select" xml:space="preserve">
+    <value>Seleccionar archivo de CV...</value>
+  </data>
+  <data name="Careers_Apply_UploadCv_Format" xml:space="preserve">
+    <value>Máx 10 MB • PDF, DOCX, DOC</value>
+  </data>
+  <data name="Careers_Apply_UploadPassport" xml:space="preserve">
+    <value>Subir pasaporte o documento de identidad</value>
+  </data>
+  <data name="Careers_Apply_UploadPassport_Desc" xml:space="preserve">
+    <value>Copia clara de la página de foto de su pasaporte o DNI (JPG, PNG o PDF)</value>
+  </data>
+  <data name="Careers_Apply_UploadPassport_Select" xml:space="preserve">
+    <value>Seleccionar documento de identidad...</value>
+  </data>
+  <data name="Careers_Apply_UploadPassport_Format" xml:space="preserve">
+    <value>Máx 10 MB • JPG, PNG, PDF</value>
+  </data>
+  <data name="Careers_Apply_CoverLetter" xml:space="preserve">
+    <value>Carta de presentación / Mensaje al equipo de selección</value>
+  </data>
+  <data name="Careers_Apply_CoverLetter_Placeholder" xml:space="preserve">
+    <value>Cuéntenos brevemente su motivación para este puesto, su experiencia relevante y qué le convierte en el candidato ideal para Ozikol...</value>
+  </data>
+  <data name="Careers_Apply_Terms" xml:space="preserve">
+    <value>Certifico que toda la información enviada es verídica y acepto el tratamiento de mi solicitud, CV y documento de identidad según la Política de Privacidad de Selección de Ozikol.</value>
+  </data>
+  <data name="Careers_Apply_BtnSubmit" xml:space="preserve">
+    <value>Enviar candidatura</value>
+  </data>
+  <data name="Careers_Apply_SecurityBadge" xml:space="preserve">
+    <value>Envío cifrado de 256 bits y conforme al RGPD</value>
+  </data>
+  <data name="Careers_Error_Captcha" xml:space="preserve">
+    <value>Falló la verificación de seguridad. Complete el desafío reCAPTCHA e intente nuevamente.</value>
+  </data>
+  <data name="Careers_Error_AgreeTerms" xml:space="preserve">
+    <value>Debe aceptar la política de privacidad de contratación para enviar su solicitud.</value>
+  </data>
+  <data name="Careers_Error_CvMissing" xml:space="preserve">
+    <value>Por favor adjunte su documento de CV o currículum vitae.</value>
+  </data>
+  <data name="Careers_Error_CvFormat" xml:space="preserve">
+    <value>Los formatos de CV aceptados son PDF, DOCX y DOC.</value>
+  </data>
+  <data name="Careers_Error_CvSize" xml:space="preserve">
+    <value>El tamaño del archivo CV supera el límite permitido de 10 MB.</value>
+  </data>
+  <data name="Careers_Error_PassportMissing" xml:space="preserve">
+    <value>Por favor adjunte una copia clara de su pasaporte o documento de identidad oficial con foto.</value>
+  </data>
+  <data name="Careers_Error_PassportFormat" xml:space="preserve">
+    <value>Los formatos de identificación aceptados son JPG, JPEG, PNG y PDF.</value>
+  </data>
+  <data name="Careers_Error_PassportSize" xml:space="preserve">
+    <value>El tamaño del documento de identidad supera el límite permitido de 10 MB.</value>
+  </data>
+</root>
