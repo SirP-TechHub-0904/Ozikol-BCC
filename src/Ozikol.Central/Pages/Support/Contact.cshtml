@@ -261,52 +261,72 @@
         </div>
     </section>
 
-    <!-- Support FAQ Accordion -->
+    <!-- Support FAQ Accordion (Dynamic from Database) -->
     <section class="oz-support-faq">
         <div class="container">
             <div class="oz-faq-header">
                 <h2 class="oz-faq-header__title">@SharedLocalizer["Support_Faq_Heading"]</h2>
             </div>
             <div class="oz-faq-accordion">
-                <details class="oz-faq-item" open>
-                    <summary class="oz-faq-question">
-                        <span>@SharedLocalizer["Support_Faq_Q1"]</span>
-                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>@SharedLocalizer["Support_Faq_A1"]</p>
-                    </div>
-                </details>
+                @if (Model.Faqs != null && Model.Faqs.Any())
+                {
+                    var isFirst = true;
+                    foreach (var faq in Model.Faqs)
+                    {
+                        <details class="oz-faq-item" @(isFirst ? "open" : "")>
+                            <summary class="oz-faq-question">
+                                <span>@faq.Question</span>
+                                <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </summary>
+                            <div class="oz-faq-answer">
+                                <p>@faq.Answer</p>
+                            </div>
+                        </details>
+                        isFirst = false;
+                    }
+                }
+                else
+                {
+                    <details class="oz-faq-item" open>
+                        <summary class="oz-faq-question">
+                            <span>@SharedLocalizer["Support_Faq_Q1"]</span>
+                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </summary>
+                        <div class="oz-faq-answer">
+                            <p>@SharedLocalizer["Support_Faq_A1"]</p>
+                        </div>
+                    </details>
 
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>@SharedLocalizer["Support_Faq_Q2"]</span>
-                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>@SharedLocalizer["Support_Faq_A2"]</p>
-                    </div>
-                </details>
+                    <details class="oz-faq-item">
+                        <summary class="oz-faq-question">
+                            <span>@SharedLocalizer["Support_Faq_Q2"]</span>
+                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </summary>
+                        <div class="oz-faq-answer">
+                            <p>@SharedLocalizer["Support_Faq_A2"]</p>
+                        </div>
+                    </details>
 
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>@SharedLocalizer["Support_Faq_Q3"]</span>
-                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>@SharedLocalizer["Support_Faq_A3"]</p>
-                    </div>
-                </details>
+                    <details class="oz-faq-item">
+                        <summary class="oz-faq-question">
+                            <span>@SharedLocalizer["Support_Faq_Q3"]</span>
+                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </summary>
+                        <div class="oz-faq-answer">
+                            <p>@SharedLocalizer["Support_Faq_A3"]</p>
+                        </div>
+                    </details>
 
-                <details class="oz-faq-item">
-                    <summary class="oz-faq-question">
-                        <span>@SharedLocalizer["Support_Faq_Q4"]</span>
-                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </summary>
-                    <div class="oz-faq-answer">
-                        <p>@SharedLocalizer["Support_Faq_A4"]</p>
-                    </div>
-                </details>
+                    <details class="oz-faq-item">
+                        <summary class="oz-faq-question">
+                            <span>@SharedLocalizer["Support_Faq_Q4"]</span>
+                            <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </summary>
+                        <div class="oz-faq-answer">
+                            <p>@SharedLocalizer["Support_Faq_A4"]</p>
+                        </div>
+                    </details>
+                }
             </div>
         </div>
     </section>

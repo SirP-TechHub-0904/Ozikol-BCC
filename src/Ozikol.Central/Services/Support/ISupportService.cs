@@ -137,8 +137,18 @@ namespace Ozikol.Central.Services.Support
         Task RecordArticleVoteAsync(Guid articleId, bool helpful);
 
         /// <summary>
+        /// Retrieves published support frequently asked questions filtered by culture, category, and suite.
+        /// </summary>
+        /// <param name="culture">The active 2-letter ISO culture code.</param>
+        /// <param name="category">Optional category grouping filter.</param>
+        /// <param name="suiteCode">Optional suite filter.</param>
+        /// <returns>A list of published FAQ entities ordered by SortOrder.</returns>
+        Task<IReadOnlyList<MasterSupportFaq>> GetFaqsAsync(string culture, string? category = null, string? suiteCode = null);
+
+        /// <summary>
         /// Ensures initial demonstration videos and articles exist in the database for all 9 enterprise suites.
         /// </summary>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
         Task EnsureSeedDataAsync();
     }
 }

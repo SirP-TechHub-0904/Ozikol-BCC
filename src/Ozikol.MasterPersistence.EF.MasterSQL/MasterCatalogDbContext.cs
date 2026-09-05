@@ -51,6 +51,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterSupportInquiry> MasterSupportInquiries { get; set; } = null!;
     public DbSet<MasterHelpdeskArticle> MasterHelpdeskArticles { get; set; } = null!;
     public DbSet<MasterVideoGuide> MasterVideoGuides { get; set; } = null!;
+    public DbSet<MasterSupportFaq> MasterSupportFaqs { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -430,6 +431,15 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.SuiteCode);
             entity.HasIndex(e => e.FeatureCode);
             entity.HasIndex(e => e.Culture);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SortOrder);
+        });
+
+        modelBuilder.Entity<MasterSupportFaq>(entity =>
+        {
+            entity.HasIndex(e => e.Culture);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.SuiteCode);
             entity.HasIndex(e => e.IsPublished);
             entity.HasIndex(e => e.SortOrder);
         });
