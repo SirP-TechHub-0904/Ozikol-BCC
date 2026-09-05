@@ -1,7 +1,8 @@
 @page "/auth/login"
 @model Ozikol.Central.Pages.LoginModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Central Platform Console Sign-In - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Auth_Login_Title"];
 }
 
 <div class="auth-page-wrapper">
@@ -9,16 +10,16 @@
         <div class="auth-header">
             <div style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 12px;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-8a4 4 0 10-8 0v4h8V7z"/></svg>
-                Central Console
+                @SharedLocalizer["Auth_Login_Badge"]
             </div>
-            <h1 class="auth-title">Administrator Sign-In</h1>
-            <p class="auth-subtitle">Authorized console access for Ozikol platform operators and administrators.</p>
+            <h1 class="auth-title">@SharedLocalizer["Auth_Login_Heading"]</h1>
+            <p class="auth-subtitle">@SharedLocalizer["Auth_Login_Subtitle"]</p>
         </div>
 
         <!-- Prominent Workspace Access Guidance Notice -->
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 14px 16px; margin-bottom: 22px; font-size: 13px; color: #1e40af; line-height: 1.5;">
-            <strong style="display: block; margin-bottom: 3px; font-size: 13.5px; color: #1e3a8a;">Looking to access your organization workspace?</strong>
-            To log in to your workspace, please navigate directly to your organization's website link (e.g. <code>https://your-company.ozikol.cloud/auth/login</code>). For security and isolation, each business logs in strictly through its dedicated domain. Check your confirmation email for your direct link.
+            <strong style="display: block; margin-bottom: 3px; font-size: 13.5px; color: #1e3a8a;">@SharedLocalizer["Auth_Login_OrgNoticeTitle"]</strong>
+            @string.Format(SharedLocalizer["Auth_Login_OrgNoticeDesc"].Value, "https://your-company.ozikol.cloud/auth/login")
         </div>
 
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -31,32 +32,32 @@
 
         <form method="post">
             <div class="form-group">
-                <label class="form-label">Operator Work Email</label>
+                <label class="form-label">@SharedLocalizer["Auth_Login_EmailLabel"]</label>
                 <input asp-for="Email" type="email" required placeholder="operator@ozikol.cloud" class="form-input" />
                 <span asp-validation-for="Email" class="text-danger" style="font-size: 12px;"></span>
             </div>
 
             <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label class="form-label" style="margin-bottom: 0;">Password</label>
-                    <button type="button" onclick="togglePasswordVisibility('opPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show</button>
+                    <label class="form-label" style="margin-bottom: 0;">@SharedLocalizer["Auth_Login_PasswordLabel"]</label>
+                    <button type="button" onclick="togglePasswordVisibility('opPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">@SharedLocalizer["Auth_Login_ShowPassword"]</button>
                 </div>
-                <input asp-for="Password" type="password" id="opPassword" required placeholder="Enter password" class="form-input" />
+                <input asp-for="Password" type="password" id="opPassword" required placeholder="••••••••" class="form-input" />
                 <span asp-validation-for="Password" class="text-danger" style="font-size: 12px;"></span>
             </div>
 
             <div class="form-checkbox-wrap">
                 <input asp-for="RememberMe" id="rememberMe" type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
-                <label for="rememberMe" class="form-checkbox-label">Keep this console session active for 7 days</label>
+                <label for="rememberMe" class="form-checkbox-label">@SharedLocalizer["Auth_Login_RememberMe"]</label>
             </div>
 
             <button type="submit" class="btn-auth-submit">
-                Sign In to Central Console &rarr;
+                @SharedLocalizer["Auth_Login_SubmitBtn"] &rarr;
             </button>
         </form>
 
         <div class="auth-footer" style="margin-top: 24px;">
-            Need to register an enterprise organization? <a href="/auth/get-started">Create a sovereign workspace</a>
+            @SharedLocalizer["Auth_Login_FooterPrompt"] <a href="/auth/get-started">@SharedLocalizer["Auth_Login_CreateWorkspaceLink"]</a>
         </div>
     </div>
 </div>

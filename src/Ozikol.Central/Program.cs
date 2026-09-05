@@ -223,6 +223,23 @@ app.Use(async (context, next) =>
         return;
     }
 
+    // 11. Canonical 301 Redirects for Legacy / Superseded Routes
+    var subPath = isCulturePrefixed && path.Length > 3 ? path.Substring(3) : path;
+    subPath = subPath.TrimEnd('/');
+    if (subPath.Equals("/platform/ios-app", StringComparison.OrdinalIgnoreCase) ||
+        subPath.Equals("/platform/android-app", StringComparison.OrdinalIgnoreCase))
+    {
+        var culturePrefix = isCulturePrefixed ? path.Substring(0, 3) : "";
+        context.Response.Redirect($"{culturePrefix}/platform/mobile-app", permanent: true);
+        return;
+    }
+    if (subPath.Equals("/legal-hub", StringComparison.OrdinalIgnoreCase))
+    {
+        var culturePrefix = isCulturePrefixed ? path.Substring(0, 3) : "";
+        context.Response.Redirect($"{culturePrefix}/policies-and-reports", permanent: true);
+        return;
+    }
+
     await next();
 });
 

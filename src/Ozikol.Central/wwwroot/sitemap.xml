@@ -21,12 +21,6 @@
     <priority>0.80</priority>
   </url>
 
-  <url>
-    <loc>https://ozikol.cloud/about-us/ai-security</loc>
-    <lastmod>2026-09-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
 
   <url>
     <loc>https://ozikol.cloud/about-us/culture</loc>
@@ -56,26 +50,8 @@
     <priority>0.80</priority>
   </url>
 
-  <url>
-    <loc>https://ozikol.cloud/about-us/privacy</loc>
-    <lastmod>2026-09-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
 
-  <url>
-    <loc>https://ozikol.cloud/about-us/reliability</loc>
-    <lastmod>2026-09-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
 
-  <url>
-    <loc>https://ozikol.cloud/about-us/security</loc>
-    <lastmod>2026-09-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
 
   <url>
     <loc>https://ozikol.cloud/about/giving-back</loc>
@@ -406,12 +382,6 @@
     <priority>0.80</priority>
   </url>
 
-  <url>
-    <loc>https://ozikol.cloud/legal-hub</loc>
-    <lastmod>2026-09-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
 
   <url>
     <loc>https://ozikol.cloud/login</loc>

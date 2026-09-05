@@ -1,7 +1,8 @@
 @page "/auth/get-started"
 @model Ozikol.Central.Pages.GetStartedModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Create Free Sovereign Workspace - Ozikol";
+    ViewData["Title"] = SharedLocalizer["Auth_GetStarted_Title"];
 }
 
 <div class="auth-page-wrapper">
@@ -13,16 +14,16 @@
                 <div style="width: 68px; height: 68px; border-radius: 50%; background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
                     <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 </div>
-                <h1 class="auth-title" style="color: #065f46;">Workspace Ready!</h1>
+                <h1 class="auth-title" style="color: #065f46;">@SharedLocalizer["Auth_Setup_ReadyBadge"]</h1>
                 <p class="auth-subtitle" style="margin-bottom: 24px;">
-                    Your dedicated sovereign cloud workspace has been initialized successfully.
+                    @SharedLocalizer["Auth_Setup_ReadyDesc"]
                 </p>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: left;">
-                    <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Dedicated Workspace URL</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">@SharedLocalizer["Auth_Setup_WebsiteLabel"]</div>
                     <div style="font-size: 15px; font-weight: 700; color: #0f172a; word-break: break-all;">@Model.ProvisionedRedirectUrl</div>
                 </div>
                 <a href="@Model.ProvisionedRedirectUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px;">
-                    Launch Your Workspace Portal &rarr;
+                    @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
                 </a>
                 <div style="font-size: 12.5px; color: #94a3b8; margin-top: 14px;">
                     Redirecting automatically in <span id="redirectCountdown">3</span>s...
@@ -44,8 +45,8 @@
         else
         {
             <div class="auth-header">
-                <h1 class="auth-title">Start with Ozikol</h1>
-                <p class="auth-subtitle">Create your sovereign enterprise workspace in 60 seconds. Dedicated environment with core business modules.</p>
+                <h1 class="auth-title">@SharedLocalizer["Auth_GetStarted_Heading"]</h1>
+                <p class="auth-subtitle">@SharedLocalizer["Auth_GetStarted_Subtitle"]</p>
             </div>
 
             @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -60,13 +61,13 @@
                 <!-- Google Workspace -->
                 <button type="button" class="btn-social" onclick="fastTrackSocial('Google')">
                     <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
-                    <span>Fast-track with Google Workspace</span>
+                    <span>@SharedLocalizer["Auth_GetStarted_GoogleFastTrack"]</span>
                 </button>
 
                 <!-- Microsoft 365 -->
                 <button type="button" class="btn-social" onclick="fastTrackSocial('Microsoft')">
                     <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-                    <span>Fast-track with Microsoft 365</span>
+                    <span>@SharedLocalizer["Auth_GetStarted_MicrosoftFastTrack"]</span>
                 </button>
 
                 <!-- Secondary options dropdown/toggle -->
@@ -88,19 +89,19 @@
 
             <div class="auth-divider">
                 <div class="auth-divider__line"></div>
-                <span class="auth-divider__text">or register with corporate credentials</span>
+                <span class="auth-divider__text">@SharedLocalizer["Auth_GetStarted_OrCorporate"]</span>
                 <div class="auth-divider__line"></div>
             </div>
 
             <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">Administrator Full Name</label>
+                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_FullName"]</label>
                         <input asp-for="Input.FullName" id="inputFullName" required placeholder="e.g. Jane Doe" class="form-input" />
                         <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                     <div>
-                        <label class="form-label">Organization Name</label>
+                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgName"]</label>
                         <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="e.g. Acme Corporation" oninput="handleOrgNameInput(this.value)" class="form-input" />
                         <span asp-validation-for="Input.OrganizationName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
@@ -109,8 +110,8 @@
                 <!-- Sovereign Workspace Address -->
                 <div class="form-group">
                     <label class="form-label">
-                        Sovereign Workspace Address
-                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">(your organization's cloud subdomain)</span>
+                        @SharedLocalizer["Auth_GetStarted_WorkspaceAddress"]
+                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">@SharedLocalizer["Auth_GetStarted_SubdomainHint"]</span>
                     </label>
                     <div style="display: flex; align-items: center; background: #fff; border: 1px solid var(--ozikol-border-hover); border-radius: 8px; overflow: hidden;">
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-right: 1px solid #e2e8f0; font-weight: 600;">https://</span>
@@ -124,17 +125,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Corporate Work Email</label>
+                    <label class="form-label">@SharedLocalizer["Auth_GetStarted_WorkEmail"]</label>
                     <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="admin@company.com" class="form-input" />
                     <span asp-validation-for="Input.WorkEmail" class="text-danger" style="font-size: 12px;"></span>
                 </div>
 
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label class="form-label" style="margin-bottom: 0;">Administrator Password</label>
-                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show</button>
+                        <label class="form-label" style="margin-bottom: 0;">@SharedLocalizer["Auth_GetStarted_Password"]</label>
+                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">@SharedLocalizer["Auth_Login_ShowPassword"]</button>
                     </div>
-                    <input asp-for="Input.Password" type="password" id="regPassword" required placeholder="Create strong password (min. 6 characters)" oninput="updateStrength(this.value)" class="form-input" />
+                    <input asp-for="Input.Password" type="password" id="regPassword" required placeholder="@SharedLocalizer["Auth_GetStarted_PasswordPlaceholder"]" oninput="updateStrength(this.value)" class="form-input" />
                     <div class="strength-meter">
                         <div id="strengthFill" class="strength-fill"></div>
                     </div>
@@ -143,7 +144,7 @@
 
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">Organization Sector</label>
+                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgSector"]</label>
                         <select asp-for="Input.OrganizationType" class="form-select">
                             <option>Business & Enterprise</option>
                             <option>Non-Profit & Foundation</option>
@@ -154,14 +155,14 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Phone Number <span style="font-weight: normal; color: #94a3b8;">(Optional)</span></label>
+                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_Phone"] <span style="font-weight: normal; color: #94a3b8;">(@SharedLocalizer["Auth_GetStarted_Optional"])</span></label>
                         <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" class="form-input" />
                     </div>
                 </div>
 
                 <div style="margin-bottom: 18px;">
                     <a href="javascript:void(0)" onclick="document.getElementById('refGroup').style.display = document.getElementById('refGroup').style.display === 'none' ? 'block' : 'none';" style="font-size: 12.5px; color: var(--ozikol-primary); text-decoration: none; font-weight: 600;">
-                        Have a partner referral code?
+                        @SharedLocalizer["Auth_GetStarted_HaveReferral"]
                     </a>
                     <div id="refGroup" style="display: none; margin-top: 8px;">
                         <input asp-for="Input.ReferralCode" placeholder="Enter referral code (e.g. PARTNER2026)" class="form-input" />
@@ -169,15 +170,15 @@
                 </div>
 
                 <button type="submit" id="btnSubmit" class="btn-auth-submit">
-                    Initialize Dedicated Workspace &rarr;
+                    @SharedLocalizer["Auth_GetStarted_SubmitBtn"] &rarr;
                 </button>
                 <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 10px; line-height: 1.4;">
-                    By continuing you agree to Ozikol Terms of Service and Privacy Policy.
+                    @SharedLocalizer["Auth_GetStarted_TermsNotice"]
                 </div>
             </form>
 
             <div class="auth-footer">
-                Already have an organization workspace? <a href="/auth/login">Sign In Here</a>
+                @SharedLocalizer["Auth_GetStarted_AlreadyHaveAccount"] <a href="/auth/login">@SharedLocalizer["Auth_GetStarted_SignInLink"]</a>
             </div>
         }
     </div>
@@ -187,8 +188,8 @@
 <div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
     <div style="background: #ffffff; border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center;">
         <div style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
-        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
+        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">@SharedLocalizer["Auth_GetStarted_ModalTitle"]</h2>
+        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">@SharedLocalizer["Auth_GetStarted_ModalDesc"]</p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13.5px;">
             <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
