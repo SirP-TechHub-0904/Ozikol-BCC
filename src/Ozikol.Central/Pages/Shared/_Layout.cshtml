@@ -702,7 +702,105 @@
     <a href='/careers' class='mega-menu__link mega-menu__link--bold'>@SharedLocalizer["Nav_Careers"]</a>
 </li>
 <li class="mega-menu__link-wrap">
-    <a href="/@currentCulture/support" class="mega-menu__link mega-menu__link--bold">@SharedLocalizer["Nav_Support"]</a>
+    <button class="mega-menu__link js-megaMenuMidLevelOpen">
+        @SharedLocalizer["Nav_Support"]
+    </button>
+
+    <div class="mega-menu__panel js-megaMenuPanel expanded-panel">
+    <div class="mega-menu__mid-items mega-menu__sidebar container-padding-left--xs js-megaMenuSidebar">
+        <div class="mega-menu__mid-items-scroll">
+            <button class="mega-menu__back js-megaMenuMidLevelBack">
+                <i class="icon icon-arrow-left"></i>
+                @SharedLocalizer["Menu_Back"]
+            </button>
+            <div class="mega-menu__mid-items-group">
+                <div class="mega-menu__nav-title">@SharedLocalizer["Nav_Support"]</div>
+
+                <!-- Support Channels & Knowledge Suites -->
+                <div class="mega-menu__link-wrap">
+                    <button class="mega-menu__link js-megaMenuBottomLevelOpen">
+                        Enterprise Helpdesk
+                    </button>
+                    <div class="mega-menu-sub js-megaMenuSub container-padding-right--lg">
+                        <div class="mega-menu-sub__inner">
+                            <div class="mega-menu-sub__header">
+                                <div class="mega-menu-sub__title">@SharedLocalizer["Nav_Support"] &amp; Success</div>
+                                <div class="mega-menu-sub__description rte">
+                                    <p>Comprehensive video tutorials, searchable technical articles, 24/7 helpdesk escalation, and enterprise SLAs.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mega-menu-sub__content">
+                            <button class="mega-menu-sub__close js-megaMenuClose">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                <span>@SharedLocalizer["Menu_Close"]</span>
+                            </button>
+                            <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
+                                <!-- 1. Video Tutorials -->
+                                <article class="mega-menu-nav-card mega-menu-link js-megaMenuLink">
+                                    <a href="/@currentCulture/support/videos" class="mega-menu-nav-card__link">
+                                        <div class="mega-menu-nav-card__icon oz-icon-red" aria-hidden="true">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        </div>
+                                        <div class="mega-menu-nav-card__body">
+                                            <div class="mega-menu-nav-card__title">@SharedLocalizer["Support_Tab_Videos"]</div>
+                                            <div class="mega-menu-nav-card__description">@SharedLocalizer["Support_Videos_Sub"]</div>
+                                        </div>
+                                    </a>
+                                </article>
+
+                                <!-- 2. Knowledge Base -->
+                                <article class="mega-menu-nav-card mega-menu-link js-megaMenuLink">
+                                    <a href="/@currentCulture/support/knowledge-base" class="mega-menu-nav-card__link">
+                                        <div class="mega-menu-nav-card__icon oz-icon-blue" aria-hidden="true">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                        </div>
+                                        <div class="mega-menu-nav-card__body">
+                                            <div class="mega-menu-nav-card__title">@SharedLocalizer["Support_Tab_Articles"]</div>
+                                            <div class="mega-menu-nav-card__description">@SharedLocalizer["Support_Articles_Sub"]</div>
+                                        </div>
+                                    </a>
+                                </article>
+
+                                <!-- 3. Contact & Helpdesk -->
+                                <article class="mega-menu-nav-card mega-menu-link js-megaMenuLink">
+                                    <a href="/@currentCulture/support/contact" class="mega-menu-nav-card__link">
+                                        <div class="mega-menu-nav-card__icon oz-icon-emerald" aria-hidden="true">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                        </div>
+                                        <div class="mega-menu-nav-card__body">
+                                            <div class="mega-menu-nav-card__title">@SharedLocalizer["Support_Tab_Contact"]</div>
+                                            <div class="mega-menu-nav-card__description">@SharedLocalizer["Support_Form_Sub"]</div>
+                                        </div>
+                                    </a>
+                                </article>
+
+                                <!-- 4. Enterprise SLA & Status -->
+                                <article class="mega-menu-nav-card mega-menu-link js-megaMenuLink">
+                                    <a href="/@currentCulture/support/sla" class="mega-menu-nav-card__link">
+                                        <div class="mega-menu-nav-card__icon oz-icon-amber" aria-hidden="true">
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        </div>
+                                        <div class="mega-menu-nav-card__body">
+                                            <div class="mega-menu-nav-card__title">@SharedLocalizer["Support_Tab_SLA"]</div>
+                                            <div class="mega-menu-nav-card__description">@SharedLocalizer["Support_SLA_Sub"]</div>
+                                        </div>
+                                    </a>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mega-menu__mid-items-group">
+                <div class="mega-menu__nav-title">Overview</div>
+                <div class="mega-menu__link-wrap">
+                    <a href="/@currentCulture/support" class="mega-menu__link mega-menu__link--highlight">Support Center Hub &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </li></ul>
             </nav>
             <div class="hidden--lg mega-menu__burger-wrap js-hamburger">
@@ -833,9 +931,10 @@
                     <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColResources"]</h3>
                     <ul class="oz-ms-col-links">
                         <li><a href="/@currentCulture/support">@SharedLocalizer["Nav_Support"]</a></li>
-                        <li><a href="/@currentCulture/news">@SharedLocalizer["Footer_NewsReleases"]</a></li>
-                        <li><a href="/@currentCulture/support#videos">@SharedLocalizer["Support_Tab_Videos"]</a></li>
-                        <li><a href="/@currentCulture/support#articles">@SharedLocalizer["Support_Tab_Articles"]</a></li>
+                        <li><a href="/@currentCulture/support/videos">@SharedLocalizer["Support_Tab_Videos"]</a></li>
+                        <li><a href="/@currentCulture/support/knowledge-base">@SharedLocalizer["Support_Tab_Articles"]</a></li>
+                        <li><a href="/@currentCulture/support/contact">@SharedLocalizer["Support_Tab_Contact"]</a></li>
+                        <li><a href="/@currentCulture/support/sla">@SharedLocalizer["Support_Tab_SLA"]</a></li>
                     </ul>
                 </div>
 
@@ -873,7 +972,7 @@
                 <!-- Right: Legal Links & Copyright -->
                 <div class="oz-ms-sub-right">
                     <ul class="oz-ms-sub-links">
-                        <li><a href="/@currentCulture/support#contact">@SharedLocalizer["Footer_ContactOzikol"]</a></li>
+                        <li><a href="/@currentCulture/support/contact">@SharedLocalizer["Footer_ContactOzikol"]</a></li>
                         <li><a href="/privacy-notice">@SharedLocalizer["Footer_PrivacyNotice"]</a></li>
                         <li><a href="/terms-of-use">@SharedLocalizer["Footer_TermsOfUse"]</a></li>
                         <li><a href="/cookies">@SharedLocalizer["Footer_CookiePolicy"]</a></li>

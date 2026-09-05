@@ -1,0 +1,266 @@
+@page "/{culture}/support/sla"
+@model Ozikol.Central.Pages.Support.SlaModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = $"{SharedLocalizer["Support_Tab_SLA"]} | Ozikol Enterprise Cloud";
+    ViewData["MetaDescription"] = "Real-time system operational status, 99.99% enterprise service level agreements (SLA), response times, and compliance certifications.";
+}
+
+<div class="oz-support-page">
+
+    <!-- Hero Header with Live Pulse Indicator -->
+    <section class="oz-support-hero">
+        <div class="container">
+            <div class="oz-support-hero__badge">
+                <span class="oz-status-badge oz-status-badge--live">
+                    <span class="oz-status-dot"></span>
+                    @SharedLocalizer["Support_SLA_LiveUptime"]
+                </span>
+            </div>
+            <h1 class="oz-support-hero__title">@SharedLocalizer["Support_Tab_SLA"]</h1>
+            <p class="oz-support-hero__sub">
+                Enterprise-grade reliability guaranteed by legally binding Service Level Agreements with 24/7/365 active monitoring and financial credit backing.
+            </p>
+
+            <!-- 4-Page Navigation Pill Tabs -->
+            <nav class="oz-support-nav-pills" aria-label="Support Navigation">
+                <a href="/@Model.CurrentCulture/support" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Support Hub
+                </a>
+                <a href="/@Model.CurrentCulture/support/videos" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    @SharedLocalizer["Support_Tab_Videos"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/knowledge-base" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    @SharedLocalizer["Support_Tab_Articles"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/contact" class="oz-support-pill">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    @SharedLocalizer["Support_Tab_Contact"]
+                </a>
+                <a href="/@Model.CurrentCulture/support/sla" class="oz-support-pill oz-support-pill--active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    @SharedLocalizer["Support_Tab_SLA"]
+                </a>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Key Metrics Ribbon -->
+    <section class="oz-sla-metrics">
+        <div class="container">
+            <div class="oz-metrics-grid">
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">99.99%</div>
+                    <div class="oz-metric-card__label">Historical Platform Uptime</div>
+                    <div class="oz-metric-card__sub">Across all enterprise clusters</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">&lt; 15 min</div>
+                    <div class="oz-metric-card__label">Sev-1 Critical Response</div>
+                    <div class="oz-metric-card__sub">Contractually guaranteed</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">24/7/365</div>
+                    <div class="oz-metric-card__label">SRE Active Monitoring</div>
+                    <div class="oz-metric-card__sub">Multi-zone failover redundancy</div>
+                </div>
+                <div class="oz-metric-card">
+                    <div class="oz-metric-card__value">100%</div>
+                    <div class="oz-metric-card__label">Data Sovereign Hosting</div>
+                    <div class="oz-metric-card__sub">UK, EU, US, APAC tenant isolation</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Subsystem Health Status -->
+    <section class="oz-support-section">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        Infrastructure Health
+                    </span>
+                    <h2 class="oz-support-section__title">Live Subsystem Operational Status</h2>
+                    <p class="oz-support-section__sub">Monitored continuously via distributed global synthetic probing nodes.</p>
+                </div>
+            </div>
+
+            <div class="oz-service-status-list">
+                @foreach (var svc in Model.MonitoredServices)
+                {
+                    <div class="oz-service-status-row">
+                        <div class="oz-service-status-row__main">
+                            <span class="oz-service-indicator oz-service-indicator--ok"></span>
+                            <div>
+                                <h4 class="oz-service-title">@svc.Name</h4>
+                                <span class="oz-service-group">@svc.Group</span>
+                            </div>
+                        </div>
+                        <div class="oz-service-status-row__metrics">
+                            <span class="oz-latency-chip">@svc.LatencyMs ms latency</span>
+                            <span class="oz-uptime-chip">@svc.UptimePercentage.ToString("F2")% Uptime (90d)</span>
+                            <span class="oz-status-pill oz-status-pill--ok">@svc.Status</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- SLA Severity Tiers & Response Guarantees -->
+    <section class="oz-support-section oz-support-section--alt">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Guaranteed Commitments
+                    </span>
+                    <h2 class="oz-support-section__title">Contractual Incident Response Tiers</h2>
+                    <p class="oz-support-section__sub">Predefined escalation paths and maximum initial response windows enforced by SLA agreement.</p>
+                </div>
+            </div>
+
+            <div class="oz-sla-tiers-grid">
+                @foreach (var tier in Model.SlaTiers)
+                {
+                    <div class="oz-sla-tier-card">
+                        <div class="oz-sla-tier-card__header">
+                            <span class="oz-badge-tag @tier.BadgeClass">@tier.Severity</span>
+                            <span class="oz-sla-tier-card__time">@tier.ResponseTime</span>
+                        </div>
+                        <h3 class="oz-sla-tier-card__title">@tier.Title</h3>
+                        <div class="oz-sla-tier-card__coverage">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            @tier.Coverage
+                        </div>
+                        <p class="oz-sla-tier-card__desc">@tier.Description</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Financial Service Credit Schedule -->
+    <section class="oz-support-section">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Financial Protection
+                    </span>
+                    <h2 class="oz-support-section__title">Service Credit Commitment Schedule</h2>
+                    <p class="oz-support-section__sub">If monthly availability drops below target thresholds, credits are credited directly to your tenant ledger.</p>
+                </div>
+            </div>
+
+            <div class="oz-table-wrap">
+                <table class="oz-sla-table">
+                    <thead>
+                        <tr>
+                            <th>Monthly Availability Target</th>
+                            <th>Contractual Obligation</th>
+                            <th>Credit Applied (% Monthly Invoice)</th>
+                            <th>Claim Window</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>99.90% to 99.99%</strong></td>
+                            <td>Standard Service Target</td>
+                            <td><span class="oz-credit-badge">10% Credit</span></td>
+                            <td>Within 30 calendar days</td>
+                        </tr>
+                        <tr>
+                            <td><strong>99.50% to 99.89%</strong></td>
+                            <td>Degraded Availability</td>
+                            <td><span class="oz-credit-badge oz-credit-badge--orange">25% Credit</span></td>
+                            <td>Within 30 calendar days</td>
+                        </tr>
+                        <tr>
+                            <td><strong>99.00% to 99.49%</strong></td>
+                            <td>Significant Outage</td>
+                            <td><span class="oz-credit-badge oz-credit-badge--red">50% Credit</span></td>
+                            <td>Within 30 calendar days</td>
+                        </tr>
+                        <tr>
+                            <td><strong>&lt; 99.00%</strong></td>
+                            <td>Catastrophic Failure</td>
+                            <td><span class="oz-credit-badge oz-credit-badge--max">100% Credit</span></td>
+                            <td>Automatic Credit Applied</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security & Compliance Assurance -->
+    <section class="oz-support-section oz-support-section--alt">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Security & Governance
+                    </span>
+                    <h2 class="oz-support-section__title">Enterprise Certifications & Compliance</h2>
+                    <p class="oz-support-section__sub">Independently audited controls safeguarding data integrity, confidentiality, and governance.</p>
+                </div>
+            </div>
+
+            <div class="oz-compliance-grid">
+                <div class="oz-compliance-card">
+                    <div class="oz-compliance-card__icon">🛡️</div>
+                    <h4>ISO/IEC 27001:2022</h4>
+                    <p>Information security management systems certified across physical data centers and SaaS application tiers.</p>
+                </div>
+                <div class="oz-compliance-card">
+                    <div class="oz-compliance-card__icon">🔒</div>
+                    <h4>SOC 2 Type II Certified</h4>
+                    <p>Annual third-party audit examining Security, Availability, Confidentiality, and Processing Integrity.</p>
+                </div>
+                <div class="oz-compliance-card">
+                    <div class="oz-compliance-card__icon">🇪🇺</div>
+                    <h4>GDPR & UK DPA 2018</h4>
+                    <p>Full European data sovereignty compliance with Standard Contractual Clauses (SCCs) and automated DSR workflows.</p>
+                </div>
+                <div class="oz-compliance-card">
+                    <div class="oz-compliance-card__icon">🏥</div>
+                    <h4>HIPAA / HITECH Ready</h4>
+                    <p>Business Associate Agreements (BAAs) available for healthcare enterprise tenants with PHI encryption at rest.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Emergency Escalation Callout -->
+    <section class="oz-sla-cta">
+        <div class="container">
+            <div class="oz-sla-cta__card">
+                <div>
+                    <span class="oz-badge-tag oz-badge-tag--red">24/7 Priority Desk</span>
+                    <h2>Need Immediate Technical Escalation?</h2>
+                    <p>Our Tier-3 Site Reliability Engineering command center is available around the clock for catastrophic outages.</p>
+                </div>
+                <div class="oz-sla-cta__actions">
+                    <a href="tel:+442079460991" class="oz-btn-emergency">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        Call Emergency Hotline
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/contact" class="oz-btn-secondary">
+                        Submit Priority Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>

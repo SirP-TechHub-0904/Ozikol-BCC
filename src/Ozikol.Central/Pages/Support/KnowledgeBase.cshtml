@@ -1,0 +1,290 @@
+@page "/support/knowledge-base"
+@model Ozikol.Central.Pages.Support.KnowledgeBaseModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = "Knowledge Base & Helpdesk Documentation | Ozikol Support";
+    ViewData["MetaDescription"] = "Explore in-depth documentation, compliance setup, and troubleshooting procedures for all 9 Ozikol business suites.";
+}
+
+<div class="oz-support-page">
+    <!-- Knowledge Base Hero -->
+    <header class="oz-support-hero">
+        <div class="container">
+            <div class="oz-support-hero__inner">
+                <span class="oz-support-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    @SharedLocalizer["Support_Quick_Articles"]
+                </span>
+                <h1 class="oz-support-hero__title">@SharedLocalizer["Support_Articles_Heading"]</h1>
+                <p class="oz-support-hero__sub">@SharedLocalizer["Support_Articles_Sub"]</p>
+
+                <!-- Search -->
+                <form method="get" class="oz-support-search">
+                    @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+                    {
+                        <input type="hidden" name="suite" value="@Model.ActiveSuiteCode" />
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ActiveFeatureCode))
+                    {
+                        <input type="hidden" name="feature" value="@Model.ActiveFeatureCode" />
+                    }
+                    <div class="oz-support-search__wrap">
+                        <svg class="oz-support-search__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text"
+                               name="q"
+                               value="@Model.SearchQuery"
+                               placeholder="Search guides, setup procedures, API docs, or errors..."
+                               class="oz-support-search__input"
+                               aria-label="Search knowledge base" />
+                        <button type="submit" class="oz-support-search__btn">
+                            @SharedLocalizer["Support_Search_Btn"]
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Breadcrumb pills -->
+                <div class="oz-support-pills">
+                    <a href="/@Model.CurrentCulture/support" class="oz-support-pill">
+                        ← Support Hub
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/videos" class="oz-support-pill">
+                        ▷ Video Tutorials
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/contact" class="oz-support-pill">
+                        💬 Contact & Helpdesk
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/sla" class="oz-support-pill">
+                        🛡️ SLA & Status
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Multi-Suite Navigation Tabs -->
+    <section class="oz-support-suites" id="suites">
+        <div class="container">
+            <div class="oz-support-suites__bar">
+                <span class="oz-support-suites__label">@SharedLocalizer["Support_Suite_Select"]:</span>
+                <div class="oz-support-suites__tabs">
+                    <a href="/@Model.CurrentCulture/support/knowledge-base#suites"
+                       class="oz-support-suite-tab @(string.IsNullOrEmpty(Model.ActiveSuiteCode) ? "is-active" : "")">
+                        @SharedLocalizer["Support_Quick_AllSuites"]
+                    </a>
+                    @foreach (var suite in Model.Suites)
+                    {
+                        var isSuiteActive = Model.ActiveSuiteCode == suite.SuiteCode;
+                        <a href="/@Model.CurrentCulture/support/knowledge-base?suite=@suite.SuiteCode#suites"
+                           class="oz-support-suite-tab @(isSuiteActive ? "is-active" : "")">
+                            @suite.Title
+                            @if (suite.ArticleCount > 0)
+                            {
+                                <span class="oz-support-badge-count">@suite.ArticleCount</span>
+                            }
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Child Feature Selector Pills -->
+            @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+            {
+                var selectedSuite = Model.Suites.FirstOrDefault(s => s.SuiteCode == Model.ActiveSuiteCode);
+                if (selectedSuite != null && selectedSuite.Features.Any())
+                {
+                    <div class="oz-support-features">
+                        <div class="oz-support-features__inner">
+                            <span class="oz-support-features__title">@selectedSuite.Title:</span>
+                            <div class="oz-support-features__chips">
+                                <a href="/@Model.CurrentCulture/support/knowledge-base?suite=@selectedSuite.SuiteCode#suites"
+                                   class="oz-support-chip @(string.IsNullOrEmpty(Model.ActiveFeatureCode) ? "is-active" : "")">
+                                    @SharedLocalizer["Support_Feature_All"]
+                                </a>
+                                @foreach (var feat in selectedSuite.Features)
+                                {
+                                    var isFeatActive = Model.ActiveFeatureCode == feat.FeatureCode;
+                                    <a href="/@Model.CurrentCulture/support/knowledge-base?suite=@selectedSuite.SuiteCode&feature=@feat.FeatureCode#suites"
+                                       class="oz-support-chip @(isFeatActive ? "is-active" : "")">
+                                        @feat.Name
+                                        @if (feat.ArticleCount > 0)
+                                        {
+                                            <span class="oz-chip-tag oz-chip-tag--doc">📄 @feat.ArticleCount</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    <!-- Articles Grid -->
+    <main class="oz-support-section">
+        <div class="container">
+            @if (Model.Articles.Any())
+            {
+                <div class="oz-article-grid">
+                    @foreach (var article in Model.Articles)
+                    {
+                        <article class="oz-article-card" data-article-id="@article.Id">
+                            <div class="oz-article-card__header">
+                                <span class="oz-article-category">@article.Category</span>
+                                <span class="oz-article-readtime">@article.EstimatedReadMinutes @SharedLocalizer["Support_Card_MinRead"]</span>
+                            </div>
+                            <h2 class="oz-article-card__title">@article.Title</h2>
+                            <p class="oz-article-card__excerpt">@article.Summary</p>
+                            <div class="oz-article-card__footer">
+                                <div class="oz-article-stats">
+                                    <span>👁 @article.ViewCount @SharedLocalizer["Support_Card_Views"]</span>
+                                    @if (article.HelpfulCount > 0)
+                                    {
+                                        <span>• 👍 @article.HelpfulCount</span>
+                                    }
+                                </div>
+                                <button type="button" class="oz-btn-read js-open-article" data-id="@article.Id">
+                                    @SharedLocalizer["Support_Card_ReadGuide"] →
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="oz-support-empty">
+                    <p>No knowledge base articles matched your search query. Please select another suite or contact our support engineers.</p>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+<!-- Article Reader Modal -->
+<div class="oz-modal-backdrop" id="ozArticleModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="oz-modal oz-modal--article">
+        <button type="button" class="oz-modal-close js-close-modal" aria-label="Close article reader">&times;</button>
+        <div class="oz-modal-article-inner">
+            <div class="oz-modal-article-header">
+                <div class="oz-modal-breadcrumbs">
+                    <span id="ozArticleCategory" class="oz-badge-tag oz-badge-tag--red">Helpdesk</span>
+                    <span id="ozArticleSuite" class="oz-badge-tag">Suite</span>
+                    <span id="ozArticleReadTime" class="oz-article-readtime">4 min read</span>
+                </div>
+                <h2 id="ozArticleTitle" class="oz-modal-article-title">Loading article...</h2>
+                <div class="oz-modal-article-meta">
+                    <span id="ozArticleDate">Updated recently</span>
+                    <span id="ozArticleViews">👁 0 views</span>
+                </div>
+            </div>
+
+            <div id="ozArticleContent" class="oz-modal-article-body rte">
+                <div class="oz-loading-spinner"></div>
+            </div>
+
+            <div class="oz-modal-article-footer">
+                <div class="oz-feedback-panel" id="ozArticleFeedbackPanel">
+                    <span class="oz-modal-feedback-q">@SharedLocalizer["Support_Modal_WasHelpful"]</span>
+                    <button type="button" class="oz-btn-feedback js-vote-article" data-helpful="true">👍 @SharedLocalizer["Support_Modal_Yes"]</button>
+                    <button type="button" class="oz-btn-feedback js-vote-article" data-helpful="false">👎 @SharedLocalizer["Support_Modal_No"]</button>
+                </div>
+                <a href="/@Model.CurrentCulture/support/contact" class="oz-btn-ask">@SharedLocalizer["Support_Modal_AskQuestion"]</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const articleModal = document.getElementById('ozArticleModal');
+            const articleCategory = document.getElementById('ozArticleCategory');
+            const articleSuite = document.getElementById('ozArticleSuite');
+            const articleReadTime = document.getElementById('ozArticleReadTime');
+            const articleTitle = document.getElementById('ozArticleTitle');
+            const articleDate = document.getElementById('ozArticleDate');
+            const articleViews = document.getElementById('ozArticleViews');
+            const articleContent = document.getElementById('ozArticleContent');
+
+            let activeArticleId = null;
+
+            document.querySelectorAll('.js-open-article, .oz-article-card').forEach(card => {
+                card.addEventListener('click', async function () {
+                    const articleId = this.dataset.articleId || this.dataset.id;
+                    if (!articleId) return;
+
+                    activeArticleId = articleId;
+                    articleContent.innerHTML = '<div class="oz-loading-spinner">Loading guide...</div>';
+                    openModal(articleModal);
+
+                    try {
+                        const res = await fetch(`?handler=ArticleDetails&id=${articleId}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            articleTitle.textContent = data.title;
+                            articleCategory.textContent = data.category;
+                            articleSuite.textContent = (data.suiteCode || 'Platform').replace('suite-', '').toUpperCase();
+                            articleReadTime.textContent = `${data.readMinutes} min read`;
+                            articleDate.textContent = `Updated: ${data.updated}`;
+                            articleViews.textContent = `👁 ${data.viewCount} views`;
+                            articleContent.innerHTML = data.contentHtml;
+                        } else {
+                            articleContent.innerHTML = '<p class="text-danger">Unable to load article content.</p>';
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        articleContent.innerHTML = '<p class="text-danger">An error occurred while loading the article.</p>';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.js-vote-article').forEach(btn => {
+                btn.addEventListener('click', async function () {
+                    if (!activeArticleId) return;
+                    const helpful = this.dataset.helpful === 'true';
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+                    const formData = new FormData();
+                    formData.append('id', activeArticleId);
+                    formData.append('helpful', helpful);
+
+                    try {
+                        await fetch('?handler=VoteArticle', {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': token },
+                            body: formData
+                        });
+                        document.getElementById('ozArticleFeedbackPanel').innerHTML = '<span class="oz-feedback-thanks">Thank you for your feedback!</span>';
+                    } catch (e) {
+                        console.error(e);
+                    }
+                });
+            });
+
+            function openModal(modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('oz-modal-open');
+            }
+
+            function closeModal(modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('oz-modal-open');
+            }
+
+            document.querySelectorAll('.js-close-modal').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(articleModal));
+            });
+
+            articleModal.addEventListener('click', e => {
+                if (e.target === articleModal) closeModal(articleModal);
+            });
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && articleModal.classList.contains('is-open')) closeModal(articleModal);
+            });
+        });
+    </script>
+}
