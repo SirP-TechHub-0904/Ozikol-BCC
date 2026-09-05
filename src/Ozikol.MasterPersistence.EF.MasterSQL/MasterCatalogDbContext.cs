@@ -43,6 +43,9 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterAffiliatePartner> MasterAffiliatePartners { get; set; } = null!;
     public DbSet<MasterAffiliateReferral> MasterAffiliateReferrals { get; set; } = null!;
     public DbSet<MasterCurrencyRate> MasterCurrencyRates { get; set; } = null!;
+    public DbSet<MasterNewsCategory> MasterNewsCategories { get; set; } = null!;
+    public DbSet<MasterNewsArticle> MasterNewsArticles { get; set; } = null!;
+    public DbSet<MasterCreatorApplication> MasterCreatorApplications { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -343,6 +346,34 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.PillLabel).HasMaxLength(30).IsRequired();
             entity.Property(e => e.RateFromUsd).HasPrecision(18, 4);
             entity.Property(e => e.AssociatedCountryCodes).HasMaxLength(250);
+        });
+
+        modelBuilder.Entity<MasterNewsCategory>(entity =>
+        {
+            entity.HasIndex(e => e.Key).IsUnique();
+            entity.HasIndex(e => e.Slug);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        modelBuilder.Entity<MasterNewsArticle>(entity =>
+        {
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.CategoryKey);
+            entity.HasIndex(e => e.IsFeatured);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.PublishedAtUtc);
+            entity.HasOne(e => e.Category)
+                  .WithMany(c => c.Articles)
+                  .HasForeignKey(e => e.MasterNewsCategoryId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<MasterCreatorApplication>(entity =>
+        {
+            entity.HasIndex(e => e.CreatorCode).IsUnique();
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedUtc);
         });
     }
 }

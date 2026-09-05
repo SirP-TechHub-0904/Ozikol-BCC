@@ -101,7 +101,7 @@ public class CreatorProgramModel : FeatureDetailPageModel
 
         // 3. Prevent duplicate active creator applications by email
         var normalizedEmail = Input.Email.Trim().ToLowerInvariant();
-        var existing = await _dbContext.MasterAffiliatePartners
+        var existing = await _dbContext.MasterCreatorApplications
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Email.ToLower() == normalizedEmail && p.Status == "UnderReview");
 
@@ -113,22 +113,32 @@ public class CreatorProgramModel : FeatureDetailPageModel
 
         // 4. Generate unique Creator tracking code
         var candidateCode = $"CR-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
-        while (await _dbContext.MasterAffiliatePartners.AnyAsync(p => p.PartnerCode == candidateCode))
+        while (await _dbContext.MasterCreatorApplications.AnyAsync(p => p.CreatorCode == candidateCode) ||
+               await _dbContext.MasterAffiliatePartners.AnyAsync(p => p.PartnerCode == candidateCode))
         {
             candidateCode = $"CR-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
         }
 
-        // 5. Serialize creator application metadata
-        var metadata = new
+        // 5. Persist dedicated creator application entity
+        var application = new MasterCreatorApplication
         {
-            Track = "Creator",
-            StudioOrBrand = Input.StudioName?.Trim() ?? string.Empty,
-            PortfolioUrl = Input.PortfolioUrl?.Trim() ?? string.Empty,
-            Specialization = Input.Specialization?.Trim() ?? string.Empty,
-            ProposalPitch = Input.ProposalPitch?.Trim() ?? string.Empty,
-            SubmittedAtUtc = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            CreatorCode = candidateCode,
+            FullName = Input.FullName.Trim(),
+            StudioOrBrandName = Input.StudioName?.Trim(),
+            Email = normalizedEmail,
+            PhoneNumber = Input.Phone?.Trim(),
+            PortfolioUrl = Input.PortfolioUrl.Trim(),
+            Specialization = Input.Specialization.Trim(),
+            ProposalPitch = Input.ProposalPitch.Trim(),
+            Status = "UnderReview",
+            TermsAgreed = true,
+            CreatedUtc = DateTime.UtcNow
         };
 
+        _dbContext.MasterCreatorApplications.Add(application);
+
+        // Also register in MasterAffiliatePartners track for cross-portal partner telemetry
         var partner = new MasterAffiliatePartner
         {
             Id = Guid.NewGuid(),
@@ -139,7 +149,12 @@ public class CreatorProgramModel : FeatureDetailPageModel
             WebsiteOrChannel = Input.PortfolioUrl?.Trim(),
             Status = "UnderReview",
             CommissionRatePercentage = 0m,
-            PayoutDetailsJson = JsonSerializer.Serialize(metadata),
+            PayoutDetailsJson = JsonSerializer.Serialize(new
+            {
+                Track = "Creator",
+                StudioOrBrand = Input.StudioName?.Trim() ?? string.Empty,
+                Specialization = Input.Specialization.Trim()
+            }),
             CreatedUtc = DateTime.UtcNow
         };
 
