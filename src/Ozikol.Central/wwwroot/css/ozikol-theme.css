@@ -2791,7 +2791,8 @@
 }
 
 .oz-partner-input,
-.oz-partner-textarea {
+.oz-partner-textarea,
+.oz-partner-select {
     width: 100%;
     padding: 12px 16px;
     font-size: 15px;
@@ -2804,11 +2805,32 @@
     box-sizing: border-box;
 }
 
+select.oz-partner-input,
+select.oz-partner-select {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px 16px;
+    padding-right: 40px;
+}
+
 .oz-partner-input:focus,
-.oz-partner-textarea:focus {
+.oz-partner-textarea:focus,
+.oz-partner-select:focus {
     outline: none;
     border-color: #e5173f;
     box-shadow: 0 0 0 3px rgba(229, 23, 63, 0.12);
+}
+
+.oz-recaptcha-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+    min-height: 78px;
 }
 
 .oz-partner-input--code {
