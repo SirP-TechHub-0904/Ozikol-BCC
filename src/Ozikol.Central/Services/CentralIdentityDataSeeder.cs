@@ -31,9 +31,9 @@ namespace Ozikol.Central.Services
                 await MasterCatalogDataSeeder.SeedPlatformSettingsAsync(dbContext);
                 await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(dbContext);
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently bypass if DB is not yet created during design-time
+                Console.Error.WriteLine($"[CentralIdentityDataSeeder Exception]: {ex.Message}");
             }
         }
     }
