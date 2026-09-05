@@ -22,11 +22,16 @@ public class CentralEmailService : ICentralEmailService
 {
     private readonly MasterCatalogDbContext _masterCatalogDbContext;
     private readonly ILogger<CentralEmailService> _logger;
+    private readonly IConfiguration _configuration;
 
-    public CentralEmailService(MasterCatalogDbContext masterCatalogDbContext, ILogger<CentralEmailService> logger)
+    public CentralEmailService(
+        MasterCatalogDbContext masterCatalogDbContext,
+        ILogger<CentralEmailService> logger,
+        IConfiguration configuration)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string provider = "Postmark", CancellationToken cancellationToken = default)
@@ -148,7 +153,8 @@ public class CentralEmailService : ICentralEmailService
     {
         // 1. Client Confirmation Receipt
         var clientSubject = $"[Support Ticket #{inquiry.ReferenceNumber}] We have received your inquiry: {inquiry.Subject}";
-        var trackingUrl = $"/support/ticket/{inquiry.ReferenceNumber}";
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var trackingUrl = $"{baseUrl.TrimEnd('/')}/support/ticket/{inquiry.ReferenceNumber}";
         var clientBody = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='margin-bottom: 24px;'>
@@ -202,7 +208,8 @@ public class CentralEmailService : ICentralEmailService
     /// </summary>
     public async Task SendTicketReplyDualAsync(MasterSupportInquiry inquiry, MasterTicketReply reply, CancellationToken cancellationToken = default)
     {
-        var trackingUrl = $"/support/ticket/{inquiry.ReferenceNumber}";
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var trackingUrl = $"{baseUrl.TrimEnd('/')}/support/ticket/{inquiry.ReferenceNumber}";
 
         if (reply.IsStaffReply)
         {
