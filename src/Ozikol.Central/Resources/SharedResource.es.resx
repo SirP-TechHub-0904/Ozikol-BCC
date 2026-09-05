@@ -932,7 +932,7 @@
     <value>Portabilidad inmediata en un clic</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
-    <value>Soberanía absoluta de sus datos. Exporte su base de datos, políticas y archivos en cualquier momento.</value>
+    <value>Soberanía absoluta de sus datos. Exporte sus registros, políticas y archivos en cualquier momento en formatos abiertos estándar.</value>
   </data>
   <data name="Home_Marquee_Badge" xml:space="preserve">
     <value>CONFIANZA GLOBAL</value>
@@ -1145,7 +1145,7 @@
     <value>¿A qué se refieren con «usted solo compra su dominio»?</value>
   </data>
   <data name="Pricing_Faq2_A" xml:space="preserve">
-    <value>Usted adquiere su propio nombre de dominio en el registrador de su elección. Ozikol suministra el resto: hosting en la nube, certificados SSL, base de datos, POS y herramientas.</value>
+    <value>Usted adquiere su propio nombre de dominio en el registrador de su elección. Ozikol proporciona todo lo demás: alojamiento en la nube, cifrado SSL, almacenamiento seguro de datos, punto de venta, inventario y todas las herramientas operativas.</value>
   </data>
   <data name="Pricing_Faq3_Q" xml:space="preserve">
     <value>¿Puedo utilizar un dominio que ya poseo?</value>
@@ -1346,7 +1346,7 @@
     <value>Directorio de Miembros</value>
   </data>
   <data name="Feat_Directory_Desc" xml:space="preserve">
-    <value>Base de datos centralizada de perfiles con etiquetas personalizadas, vínculos familiares e historial de actividad.</value>
+    <value>Directorio centralizado de perfiles con etiquetas personalizadas, vínculos familiares e historial de actividad.</value>
   </data>
   <data name="Feat_Directory_Pt1" xml:space="preserve">
     <value>Etiquetado y filtros demográficos personalizados</value>
@@ -2274,7 +2274,7 @@
     <value>Soberanía total de datos</value>
   </data>
   <data name="About_Adv_2_Desc" xml:space="preserve">
-    <value>Aislamiento total de la base de datos del cliente. Exporte todos sus datos en formatos estándar en cualquier momento.</value>
+    <value>Arquitectura de sistema privado dedicado. Exporte todos sus datos en formatos estándar abiertos en cualquier momento.</value>
   </data>
   <data name="About_Adv_3_Title" xml:space="preserve">
     <value>Modelos del mercado de interfaces</value>
@@ -2430,7 +2430,7 @@
     <value>Seguridad por diseño</value>
   </data>
   <data name="Culture_Std2_Desc" xml:space="preserve">
-    <value>Cada ingeniero está capacitado en seguridad defensiva, acceso con privilegios mínimos y aislamiento de inquilinos.</value>
+    <value>Cada ingeniero está capacitado en seguridad defensiva, acceso con privilegios mínimos y aislamiento criptográfico de límites de seguridad.</value>
   </data>
   <data name="Culture_Std3_Title" xml:space="preserve">
     <value>Soporte centrado en el cliente</value>
@@ -2523,13 +2523,13 @@
     <value>Estándares de responsabilidad empresarial</value>
   </data>
   <data name="Leadership_Gov_Desc" xml:space="preserve">
-    <value>Procesos rigurosos de gobernanza que garantizan la integridad operativa de cada entorno de inquilino.</value>
+    <value>Procesos rigurosos de gobernanza que garantizan la integridad operativa de cada sistema empresarial.</value>
   </data>
   <data name="Leadership_Gov1_Title" xml:space="preserve">
-    <value>Aislamiento estricto de inquilinos</value>
+    <value>Aislamiento estricto de datos organizacionales</value>
   </data>
   <data name="Leadership_Gov1_Desc" xml:space="preserve">
-    <value>La separación arquitectónica del catálogo maestro y la base de datos elimina cualquier riesgo de fuga de datos.</value>
+    <value>La separación arquitectónica de la gobernanza de plataforma y los registros dedicados de la organización elimina cualquier posibilidad de filtración de datos.</value>
   </data>
   <data name="Leadership_Gov2_Title" xml:space="preserve">
     <value>Consejo de producto bimensual</value>
@@ -2604,7 +2604,7 @@
     <value>Soporte Técnico y al Cliente</value>
   </data>
   <data name="Offices_Hub1_Desc" xml:space="preserve">
-    <value>Asistencia con la configuración de inquilinos, gestión de cuentas, facturación y resolución de problemas de la plataforma.</value>
+    <value>Asistencia con la configuración del espacio de trabajo organizacional, gestión de cuentas, facturación y soporte técnico.</value>
   </data>
   <data name="Offices_Hub1_Contact" xml:space="preserve">
     <value>support@ozikol.cloud</value>
@@ -2640,7 +2640,7 @@
     <value>Ventas Corporativas y Licencias</value>
   </data>
   <data name="Offices_Hub4_Desc" xml:space="preserve">
-    <value>Consulte sobre implementaciones multiinquilino a medida, acuerdos empresariales personalizados e incorporación guiada.</value>
+    <value>Consulte sobre implementaciones empresariales a medida, acuerdos corporativos e incorporación guiada.</value>
   </data>
   <data name="Offices_Hub4_Contact" xml:space="preserve">
     <value>sales@ozikol.cloud</value>

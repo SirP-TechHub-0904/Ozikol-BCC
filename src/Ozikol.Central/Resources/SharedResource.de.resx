@@ -908,13 +908,13 @@
     <value>Entwickelt mit Sicherheit auf Bankenniveau und voller Datensouveränität</value>
   </data>
   <data name="Home_Security_Desc" xml:space="preserve">
-    <value>Ihre Daten gehören Ihnen. Dedizierte Mandantenisolation, private KI ohne Training öffentlicher Modelle und sofortiger Datenbankexport.</value>
+    <value>Ihre Daten gehören Ihnen. Dedizierte private Systemarchitektur, private KI ohne Training mit Ihren Daten und sofortiger Datenexport.</value>
   </data>
   <data name="Home_Security_Pillar1_Title" xml:space="preserve">
     <value>Strikte Mandantentrennung</value>
   </data>
   <data name="Home_Security_Pillar1_Desc" xml:space="preserve">
-    <value>Dedizierte Mandantendatenbanken verhindern jegliches Risiko von Datenlecks zwischen Organisationen.</value>
+    <value>Dedizierte private Systemarchitektur verhindert jedes Risiko von Datenlecks und garantiert absolute Vertraulichkeit.</value>
   </data>
   <data name="Home_Security_Pillar2_Title" xml:space="preserve">
     <value>Kein Training an Modellen (BYOK KI)</value>
@@ -932,7 +932,7 @@
     <value>Sofortige Datenportabilität mit einem Klick</value>
   </data>
   <data name="Home_Security_Pillar4_Desc" xml:space="preserve">
-    <value>Volle Datensouveränität. Exportieren Sie Ihre gesamte Datenbank, Richtlinien und Dokumente jederzeit.</value>
+    <value>Volle Datensouveränität. Exportieren Sie Ihre gesamten Unternehmensdaten, Richtlinien und Dateien jederzeit in offenen Standardformaten.</value>
   </data>
   <data name="Home_Marquee_Badge" xml:space="preserve">
     <value>GLOBALES VERTRAUEN</value>
@@ -1145,7 +1145,7 @@
     <value>Was bedeutet «Sie kaufen nur Ihre Domain»?</value>
   </data>
   <data name="Pricing_Faq2_A" xml:space="preserve">
-    <value>Sie erwerben Ihren Wunschnamen direkt bei Ihrem bevorzugten Domain-Registrar. Ozikol stellt alles andere: Hosting, SSL, Datenbanken, POS und Warenwirtschaft.</value>
+    <value>Sie erwerben Ihren Wunschnamen direkt bei Ihrem bevorzugten Domain-Registrar. Ozikol stellt alles Weitere bereit: Cloud-Hosting, SSL-Verschlüsselung, sicheren Datenspeicher, Kassen- und Warenwirtschaftssystem sowie alle Funktionsmodule.</value>
   </data>
   <data name="Pricing_Faq3_Q" xml:space="preserve">
     <value>Kann ich eine bereits bestehende Domain verwenden?</value>
@@ -2274,7 +2274,7 @@
     <value>Souveräne Dateneigentümerschaft</value>
   </data>
   <data name="About_Adv_2_Desc" xml:space="preserve">
-    <value>Vollständige Mandantendatenbank-Isolierung. Exportieren Sie alle Daten jederzeit in offenen Standardformaten.</value>
+    <value>Vollständige Isolierung als dediziertes privates System. Exportieren Sie alle Daten jederzeit in offenen Standardformaten.</value>
   </data>
   <data name="About_Adv_3_Title" xml:space="preserve">
     <value>UI-Marketplace-Vorlagen</value>
@@ -2382,7 +2382,7 @@
     <value>Kundensouveränität an erster Stelle</value>
   </data>
   <data name="Culture_Val1_Desc" xml:space="preserve">
-    <value>Ihre Daten gehören ausschließlich Ihrer Organisation. Wir bieten vollständigen 1-Klick-Datenbankexport ohne Lock-in.</value>
+    <value>Ihre Daten gehören ausschließlich Ihrer Organisation. Wir bieten vollständigen 1-Klick-Datenexport ohne Bindung an einen Anbieter.</value>
   </data>
   <data name="Culture_Val2_Badge" xml:space="preserve">
     <value>Kein Ballast</value>
@@ -2496,7 +2496,7 @@
     <value>Kerninfrastruktur &amp; DevOps</value>
   </data>
   <data name="Leadership_Div2_Desc" xml:space="preserve">
-    <value>Verantwortung für Multi-Region-Deployments, Mandanten-Datenbanktrennung, Zero-Downtime-Releases und Latenzminimierung.</value>
+    <value>Verantwortung für Multi-Region-Deployments, private Datenspeichertrennung, Zero-Downtime-Releases und Edge-Beschleunigung.</value>
   </data>
   <data name="Leadership_Div3_Badge" xml:space="preserve">
     <value>Produkt &amp; Ökosystem</value>
@@ -2529,7 +2529,7 @@
     <value>Strikte Mandantentrennung</value>
   </data>
   <data name="Leadership_Gov1_Desc" xml:space="preserve">
-    <value>Architektonische Trennung von Master-Katalog und Mandantendatenbanken schließt Datenlecks zwischen Mandanten vollständig aus.</value>
+    <value>Architektonische Trennung von Plattform-Governance und dedizierten Organisationsdaten schließt Datenlecks vollständig aus.</value>
   </data>
   <data name="Leadership_Gov2_Title" xml:space="preserve">
     <value>Zweiwöchentlicher Produktbeirat</value>
