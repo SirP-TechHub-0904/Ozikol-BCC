@@ -4841,6 +4841,12 @@ select.oz-partner-select {
     align-items: flex-start;
 }
 
+.oz-support-contact__single-layout {
+    max-width: 920px;
+    margin: 0 auto;
+    width: 100%;
+}
+
 @media (max-width: 960px) {
     .oz-support-contact__layout {
         grid-template-columns: 1fr;
@@ -4853,6 +4859,18 @@ select.oz-partner-select {
     border-radius: 20px;
     padding: 36px 32px;
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+}
+
+.oz-form-card--expanded {
+    padding: 44px 48px;
+    border-radius: 24px;
+}
+
+@media (max-width: 768px) {
+    .oz-form-card--expanded {
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
 }
 
 .oz-form-header {
