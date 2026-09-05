@@ -48,6 +48,9 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterCreatorApplication> MasterCreatorApplications { get; set; } = null!;
     public DbSet<MasterJobOpening> MasterJobOpenings { get; set; } = null!;
     public DbSet<MasterJobApplication> MasterJobApplications { get; set; } = null!;
+    public DbSet<MasterSupportInquiry> MasterSupportInquiries { get; set; } = null!;
+    public DbSet<MasterHelpdeskArticle> MasterHelpdeskArticles { get; set; } = null!;
+    public DbSet<MasterVideoGuide> MasterVideoGuides { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -399,6 +402,36 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                   .WithMany(j => j.Applications)
                   .HasForeignKey(e => e.MasterJobOpeningId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<MasterSupportInquiry>(entity =>
+        {
+            entity.HasIndex(e => e.ReferenceNumber).IsUnique();
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.InquiryType);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Culture);
+            entity.HasIndex(e => e.CreatedUtc);
+        });
+
+        modelBuilder.Entity<MasterHelpdeskArticle>(entity =>
+        {
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.SuiteCode);
+            entity.HasIndex(e => e.FeatureCode);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Culture);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SortOrder);
+        });
+
+        modelBuilder.Entity<MasterVideoGuide>(entity =>
+        {
+            entity.HasIndex(e => e.SuiteCode);
+            entity.HasIndex(e => e.FeatureCode);
+            entity.HasIndex(e => e.Culture);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SortOrder);
         });
     }
 }

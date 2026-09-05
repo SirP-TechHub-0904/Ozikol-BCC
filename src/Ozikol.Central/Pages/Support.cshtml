@@ -1,0 +1,807 @@
+@page "/support"
+@model Ozikol.Central.Pages.SupportModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = SharedLocalizer["Support_Page_Title"];
+    ViewData["MetaDescription"] = SharedLocalizer["Support_Meta_Desc"];
+}
+
+<!-- Google reCAPTCHA v2 API -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<div class="oz-support-page">
+
+    <!-- Hero Section with Search & Fast Jump Anchors -->
+    <header class="oz-support-hero">
+        <div class="container">
+            <div class="oz-support-hero__inner">
+                <span class="oz-support-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    @SharedLocalizer["Support_Hero_Badge"]
+                </span>
+                <h1 class="oz-support-hero__title">@SharedLocalizer["Support_Hero_Title"]</h1>
+                <p class="oz-support-hero__sub">@SharedLocalizer["Support_Hero_Sub"]</p>
+
+                <!-- Global Knowledge Base & Video Search Bar -->
+                <form method="get" class="oz-support-search">
+                    @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+                    {
+                        <input type="hidden" name="suite" value="@Model.ActiveSuiteCode" />
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ActiveFeatureCode))
+                    {
+                        <input type="hidden" name="feature" value="@Model.ActiveFeatureCode" />
+                    }
+                    <div class="oz-support-search__wrap">
+                        <svg class="oz-support-search__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text"
+                               name="q"
+                               value="@Model.SearchQuery"
+                               placeholder="@SharedLocalizer["Support_Search_Placeholder"]"
+                               class="oz-support-search__input"
+                               aria-label="Search support articles and videos" />
+                        <button type="submit" class="oz-support-search__btn">
+                            @SharedLocalizer["Support_Search_Btn"]
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Fast Navigation Anchor Pills -->
+                <div class="oz-support-pills">
+                    <a href="#suites" class="oz-support-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        @SharedLocalizer["Support_Quick_AllSuites"]
+                    </a>
+                    <a href="#videos" class="oz-support-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        @SharedLocalizer["Support_Quick_Videos"]
+                    </a>
+                    <a href="#articles" class="oz-support-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        @SharedLocalizer["Support_Quick_Articles"]
+                    </a>
+                    <a href="#contact" class="oz-support-pill oz-support-pill--highlight">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        @SharedLocalizer["Support_Quick_Contact"]
+                    </a>
+                    <a href="#sla" class="oz-support-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        @SharedLocalizer["Support_Quick_SLA"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Multi-Suite & Feature Filtering Navigation -->
+    <section class="oz-support-suites" id="suites">
+        <div class="container">
+            <div class="oz-support-suites__bar">
+                <span class="oz-support-suites__label">@SharedLocalizer["Support_Suite_Select"]:</span>
+                <div class="oz-support-suites__tabs">
+                    <a href="/@Model.CurrentCulture/support#suites"
+                       class="oz-support-suite-tab @(string.IsNullOrEmpty(Model.ActiveSuiteCode) ? "is-active" : "")">
+                        @SharedLocalizer["Support_Quick_AllSuites"]
+                    </a>
+                    @foreach (var suite in Model.Suites)
+                    {
+                        var isSuiteActive = Model.ActiveSuiteCode == suite.SuiteCode;
+                        <a href="/@Model.CurrentCulture/support?suite=@suite.SuiteCode#suites"
+                           class="oz-support-suite-tab @(isSuiteActive ? "is-active" : "")">
+                            @suite.Title
+                            @if (suite.VideoCount + suite.ArticleCount > 0)
+                            {
+                                <span class="oz-support-badge-count">@(suite.VideoCount + suite.ArticleCount)</span>
+                            }
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Child Feature Selector Pills (When a Suite is Selected) -->
+            @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+            {
+                var selectedSuite = Model.Suites.FirstOrDefault(s => s.SuiteCode == Model.ActiveSuiteCode);
+                if (selectedSuite != null && selectedSuite.Features.Any())
+                {
+                    <div class="oz-support-features">
+                        <div class="oz-support-features__inner">
+                            <span class="oz-support-features__title">@selectedSuite.Title:</span>
+                            <div class="oz-support-features__chips">
+                                <a href="/@Model.CurrentCulture/support?suite=@selectedSuite.SuiteCode#suites"
+                                   class="oz-support-chip @(string.IsNullOrEmpty(Model.ActiveFeatureCode) ? "is-active" : "")">
+                                    @SharedLocalizer["Support_Feature_All"]
+                                </a>
+                                @foreach (var feat in selectedSuite.Features)
+                                {
+                                    var isFeatActive = Model.ActiveFeatureCode == feat.FeatureCode;
+                                    <a href="/@Model.CurrentCulture/support?suite=@selectedSuite.SuiteCode&feature=@feat.FeatureCode#suites"
+                                       class="oz-support-chip @(isFeatActive ? "is-active" : "")">
+                                        @feat.Name
+                                        @if (feat.VideoCount > 0)
+                                        {
+                                            <span class="oz-chip-tag oz-chip-tag--video">▶ @feat.VideoCount</span>
+                                        }
+                                        @if (feat.ArticleCount > 0)
+                                        {
+                                            <span class="oz-chip-tag oz-chip-tag--doc">📄 @feat.ArticleCount</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    <!-- YouTube Video Tutorials Grid -->
+    <section class="oz-support-section" id="videos">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        YouTube Tutorials
+                    </span>
+                    <h2 class="oz-support-section__title">@SharedLocalizer["Support_Videos_Heading"]</h2>
+                    <p class="oz-support-section__sub">@SharedLocalizer["Support_Videos_Sub"]</p>
+                </div>
+            </div>
+
+            @if (Model.Videos.Any())
+            {
+                <div class="oz-video-grid">
+                    @foreach (var video in Model.Videos)
+                    {
+                        var thumbUrl = !string.IsNullOrEmpty(video.ThumbnailUrl)
+                            ? video.ThumbnailUrl
+                            : $"https://img.youtube.com/vi/{video.YouTubeVideoId}/hqdefault.jpg";
+                        var minutes = video.DurationSeconds / 60;
+                        var seconds = video.DurationSeconds % 60;
+                        var durationStr = $"{minutes}:{seconds:D2}";
+
+                        <article class="oz-video-card" data-video-id="@video.Id" data-youtube-id="@video.YouTubeVideoId">
+                            <div class="oz-video-card__media">
+                                <img src="@thumbUrl" alt="@video.Title" loading="lazy" class="oz-video-card__thumb" />
+                                <div class="oz-video-card__play">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                </div>
+                                <span class="oz-video-card__duration">@durationStr</span>
+                            </div>
+                            <div class="oz-video-card__body">
+                                <div class="oz-video-card__meta">
+                                    <span class="oz-badge-tag">@video.SuiteCode.Replace("suite-", "").ToUpperInvariant()</span>
+                                    @if (!string.IsNullOrEmpty(video.FeatureCode))
+                                    {
+                                        <span class="oz-badge-tag oz-badge-tag--feat">@video.FeatureCode</span>
+                                    }
+                                </div>
+                                <h3 class="oz-video-card__title">@video.Title</h3>
+                                <p class="oz-video-card__desc">@video.Description</p>
+                                <button type="button" class="oz-btn-watch js-open-video" data-id="@video.Id">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    @SharedLocalizer["Support_Card_WatchVideo"]
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="oz-support-empty">
+                    <p>No video tutorials currently matched this criteria. Browse other suites or submit an inquiry below.</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Helpdesk Knowledge Base Articles Grid -->
+    <section class="oz-support-section oz-support-section--alt" id="articles">
+        <div class="container">
+            <div class="oz-support-section__header">
+                <div>
+                    <span class="oz-section-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        Knowledge Base
+                    </span>
+                    <h2 class="oz-support-section__title">@SharedLocalizer["Support_Articles_Heading"]</h2>
+                    <p class="oz-support-section__sub">@SharedLocalizer["Support_Articles_Sub"]</p>
+                </div>
+            </div>
+
+            @if (Model.Articles.Any())
+            {
+                <div class="oz-article-grid">
+                    @foreach (var article in Model.Articles)
+                    {
+                        <article class="oz-article-card" data-article-id="@article.Id">
+                            <div class="oz-article-card__header">
+                                <span class="oz-article-category">@article.Category</span>
+                                <span class="oz-article-readtime">@article.EstimatedReadMinutes @SharedLocalizer["Support_Card_MinRead"]</span>
+                            </div>
+                            <h3 class="oz-article-card__title">@article.Title</h3>
+                            <p class="oz-article-card__excerpt">@article.Summary</p>
+                            <div class="oz-article-card__footer">
+                                <div class="oz-article-stats">
+                                    <span>👁 @article.ViewCount @SharedLocalizer["Support_Card_Views"]</span>
+                                    @if (article.HelpfulCount > 0)
+                                    {
+                                        <span>• 👍 @article.HelpfulCount</span>
+                                    }
+                                </div>
+                                <button type="button" class="oz-btn-read js-open-article" data-id="@article.Id">
+                                    @SharedLocalizer["Support_Card_ReadGuide"] →
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="oz-support-empty">
+                    <p>No knowledge base articles matched your search query. Please try different keywords or contact support.</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Fast-Track Department Contact Cards -->
+    <section class="oz-support-channels">
+        <div class="container">
+            <div class="oz-channels-grid">
+                <!-- Channel 1: Sales -->
+                <div class="oz-channel-card">
+                    <div class="oz-channel-card__icon oz-channel-card__icon--blue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    </div>
+                    <h3 class="oz-channel-card__title">@SharedLocalizer["Support_Channel_Sales_Title"]</h3>
+                    <p class="oz-channel-card__desc">@SharedLocalizer["Support_Channel_Sales_Desc"]</p>
+                    <a href="#contact" class="oz-channel-card__link js-prefill-inquiry" data-type="Sales">Request Consultation →</a>
+                </div>
+
+                <!-- Channel 2: Tech Desk -->
+                <div class="oz-channel-card">
+                    <div class="oz-channel-card__icon oz-channel-card__icon--red">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3 class="oz-channel-card__title">@SharedLocalizer["Support_Channel_Tech_Title"]</h3>
+                    <p class="oz-channel-card__desc">@SharedLocalizer["Support_Channel_Tech_Desc"]</p>
+                    <a href="#contact" class="oz-channel-card__link js-prefill-inquiry" data-type="Support">Submit Priority Ticket →</a>
+                </div>
+
+                <!-- Channel 3: Partners -->
+                <div class="oz-channel-card">
+                    <div class="oz-channel-card__icon oz-channel-card__icon--purple">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    </div>
+                    <h3 class="oz-channel-card__title">@SharedLocalizer["Support_Channel_Partner_Title"]</h3>
+                    <p class="oz-channel-card__desc">@SharedLocalizer["Support_Channel_Partner_Desc"]</p>
+                    <a href="/@Model.CurrentCulture/marketplace/creator-program" class="oz-channel-card__link">Creator Program →</a>
+                </div>
+
+                <!-- Channel 4: Billing -->
+                <div class="oz-channel-card">
+                    <div class="oz-channel-card__icon oz-channel-card__icon--green">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    </div>
+                    <h3 class="oz-channel-card__title">@SharedLocalizer["Support_Channel_Billing_Title"]</h3>
+                    <p class="oz-channel-card__desc">@SharedLocalizer["Support_Channel_Billing_Desc"]</p>
+                    <a href="#contact" class="oz-channel-card__link js-prefill-inquiry" data-type="Billing">Billing Assistance →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comprehensive Contact Form & Enterprise Support Sidebar -->
+    <section class="oz-support-contact" id="contact">
+        <div class="container">
+            <div class="oz-support-contact__layout">
+
+                <!-- Left Column: Interactive Contact & Ticket Form -->
+                <div class="oz-support-contact__form-col">
+                    <div class="oz-form-card">
+                        @if (Model.IsSubmitted)
+                        {
+                            <div class="oz-form-success">
+                                <div class="oz-form-success__icon">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <h3 class="oz-form-success__title">@SharedLocalizer["Support_Success_Title"]</h3>
+                                <p class="oz-form-success__ref">
+                                    @SharedLocalizer["Support_Success_Reference"]
+                                    <span class="oz-ref-code">@Model.AssignedReference</span>
+                                </p>
+                                <p class="oz-form-success__desc">@SharedLocalizer["Support_Success_Desc"]</p>
+                                <a href="/@Model.CurrentCulture/support#contact" class="oz-btn-primary">
+                                    @SharedLocalizer["Support_Success_AnotherBtn"]
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="oz-form-header">
+                                <span class="oz-badge-tag oz-badge-tag--red">@SharedLocalizer["Support_Contact_Badge"]</span>
+                                <h2 class="oz-form-header__title">@SharedLocalizer["Support_Form_Heading"]</h2>
+                                <p class="oz-form-header__sub">@SharedLocalizer["Support_Form_Sub"]</p>
+                            </div>
+
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div class="oz-form-errors" role="alert">
+                                    <div asp-validation-summary="All" class="text-danger"></div>
+                                </div>
+                            }
+
+                            <form method="post" asp-page-handler="SubmitInquiry" class="oz-ticket-form" id="ozSupportForm">
+                                @Html.AntiForgeryToken()
+
+                                <!-- Classification Selector -->
+                                <div class="oz-form-group">
+                                    <label class="oz-form-label" asp-for="Input.InquiryType">@SharedLocalizer["Support_Form_InquiryType"] *</label>
+                                    <select asp-for="Input.InquiryType" class="oz-form-select" id="inquiryTypeSelect">
+                                        <option value="Support">@SharedLocalizer["Support_Form_Inquiry_Support"]</option>
+                                        <option value="Sales">@SharedLocalizer["Support_Form_Inquiry_Sales"]</option>
+                                        <option value="Billing">@SharedLocalizer["Support_Form_Inquiry_Billing"]</option>
+                                        <option value="Partnership">@SharedLocalizer["Support_Form_Inquiry_Partnership"]</option>
+                                        <option value="General">@SharedLocalizer["Support_Form_Inquiry_General"]</option>
+                                    </select>
+                                    <span asp-validation-for="Input.InquiryType" class="oz-field-error"></span>
+                                </div>
+
+                                <div class="oz-form-row">
+                                    <!-- Full Name -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.FullName">@SharedLocalizer["Support_Form_FullName"] *</label>
+                                        <input asp-for="Input.FullName"
+                                               class="oz-form-input"
+                                               placeholder="@SharedLocalizer["Support_Form_FullName_Placeholder"]"
+                                               required />
+                                        <span asp-validation-for="Input.FullName" class="oz-field-error"></span>
+                                    </div>
+
+                                    <!-- Work Email -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.Email">@SharedLocalizer["Support_Form_Email"] *</label>
+                                        <input asp-for="Input.Email"
+                                               type="email"
+                                               class="oz-form-input"
+                                               placeholder="@SharedLocalizer["Support_Form_Email_Placeholder"]"
+                                               required />
+                                        <span asp-validation-for="Input.Email" class="oz-field-error"></span>
+                                    </div>
+                                </div>
+
+                                <div class="oz-form-row">
+                                    <!-- Phone Number -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.Phone">@SharedLocalizer["Support_Form_Phone"]</label>
+                                        <input asp-for="Input.Phone"
+                                               type="tel"
+                                               class="oz-form-input"
+                                               placeholder="@SharedLocalizer["Support_Form_Phone_Placeholder"]" />
+                                        <span asp-validation-for="Input.Phone" class="oz-field-error"></span>
+                                    </div>
+
+                                    <!-- Organization -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.Organization">@SharedLocalizer["Support_Form_Organization"] *</label>
+                                        <input asp-for="Input.Organization"
+                                               class="oz-form-input"
+                                               placeholder="@SharedLocalizer["Support_Form_Organization_Placeholder"]"
+                                               required />
+                                        <span asp-validation-for="Input.Organization" class="oz-field-error"></span>
+                                    </div>
+                                </div>
+
+                                <div class="oz-form-row">
+                                    <!-- Suite Context (Optional) -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.SuiteCode">@SharedLocalizer["Support_Form_Suite"]</label>
+                                        <select asp-for="Input.SuiteCode" class="oz-form-select" id="suiteSelect">
+                                            <option value="">-- None / General Platform --</option>
+                                            @foreach (var s in Model.Suites)
+                                            {
+                                                <option value="@s.SuiteCode">@s.Title</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <!-- Job Title (Optional) -->
+                                    <div class="oz-form-group">
+                                        <label class="oz-form-label" asp-for="Input.JobTitle">@SharedLocalizer["Support_Form_JobTitle"]</label>
+                                        <input asp-for="Input.JobTitle"
+                                               class="oz-form-input"
+                                               placeholder="@SharedLocalizer["Support_Form_JobTitle_Placeholder"]" />
+                                    </div>
+                                </div>
+
+                                <!-- Subject -->
+                                <div class="oz-form-group">
+                                    <label class="oz-form-label" asp-for="Input.Subject">@SharedLocalizer["Support_Form_Subject"] *</label>
+                                    <input asp-for="Input.Subject"
+                                           class="oz-form-input"
+                                           placeholder="@SharedLocalizer["Support_Form_Subject_Placeholder"]"
+                                           required />
+                                    <span asp-validation-for="Input.Subject" class="oz-field-error"></span>
+                                </div>
+
+                                <!-- Message Details -->
+                                <div class="oz-form-group">
+                                    <label class="oz-form-label" asp-for="Input.Message">@SharedLocalizer["Support_Form_Message"] *</label>
+                                    <textarea asp-for="Input.Message"
+                                              rows="5"
+                                              class="oz-form-textarea"
+                                              placeholder="@SharedLocalizer["Support_Form_Message_Placeholder"]"
+                                              required></textarea>
+                                    <span asp-validation-for="Input.Message" class="oz-field-error"></span>
+                                </div>
+
+                                <!-- Consent Checkbox -->
+                                <div class="oz-form-consent">
+                                    <label class="oz-consent-label">
+                                        <input asp-for="Input.Consent" type="checkbox" required class="oz-consent-checkbox" />
+                                        <span>@SharedLocalizer["Support_Form_Consent"]</span>
+                                    </label>
+                                    <span asp-validation-for="Input.Consent" class="oz-field-error"></span>
+                                </div>
+
+                                <!-- Google reCAPTCHA v2 -->
+                                <div class="oz-form-recaptcha">
+                                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="oz-form-action">
+                                    <button type="submit" class="oz-btn-submit" id="submitBtn">
+                                        <span class="oz-btn-text">@SharedLocalizer["Support_Form_SubmitBtn"]</span>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                    </div>
+                </div>
+
+                <!-- Right Column: Enterprise SLA & Regional Office Hubs -->
+                <div class="oz-support-contact__side-col" id="sla">
+                    <!-- Enterprise SLA Guarantee Box -->
+                    <div class="oz-trust-box">
+                        <div class="oz-trust-box__header">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <h3 class="oz-trust-box__title">@SharedLocalizer["Support_Sidebar_Guarantee_Title"]</h3>
+                        </div>
+                        <ul class="oz-trust-list">
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>@SharedLocalizer["Support_Sidebar_Guarantee_1"]</span>
+                            </li>
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>@SharedLocalizer["Support_Sidebar_Guarantee_2"]</span>
+                            </li>
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>@SharedLocalizer["Support_Sidebar_Guarantee_3"]</span>
+                            </li>
+                            <li>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>@SharedLocalizer["Support_Sidebar_Guarantee_4"]</span>
+                            </li>
+                        </ul>
+
+                        <!-- Emergency SLA Hotline -->
+                        <div class="oz-emergency-banner">
+                            <span class="oz-emergency-tag">CRITICAL ALERT</span>
+                            <h4>@SharedLocalizer["Support_Sidebar_Emergency_Title"]</h4>
+                            <p>@SharedLocalizer["Support_Sidebar_Emergency_Desc"]</p>
+                            <a href="tel:+442079460991" class="oz-emergency-phone">+44 20 7946 0991</a>
+                        </div>
+                    </div>
+
+                    <!-- Global Regional Office Locations -->
+                    <div class="oz-offices-box">
+                        <h3 class="oz-offices-box__title">Global Operational Hubs</h3>
+                        <div class="oz-offices-list">
+                            <!-- London HQ -->
+                            <div class="oz-office-item">
+                                <div class="oz-office-item__city">🇬🇧 @SharedLocalizer["Support_Office_London_City"]</div>
+                                <div class="oz-office-item__addr">@SharedLocalizer["Support_Office_London_Addr"]</div>
+                                <div class="oz-office-item__hours">🕒 @SharedLocalizer["Support_Office_London_Hours"]</div>
+                            </div>
+
+                            <!-- New York -->
+                            <div class="oz-office-item">
+                                <div class="oz-office-item__city">🇺🇸 @SharedLocalizer["Support_Office_NY_City"]</div>
+                                <div class="oz-office-item__addr">@SharedLocalizer["Support_Office_NY_Addr"]</div>
+                                <div class="oz-office-item__hours">🕒 @SharedLocalizer["Support_Office_NY_Hours"]</div>
+                            </div>
+
+                            <!-- Lagos -->
+                            <div class="oz-office-item">
+                                <div class="oz-office-item__city">🇳🇬 @SharedLocalizer["Support_Office_Lagos_City"]</div>
+                                <div class="oz-office-item__addr">@SharedLocalizer["Support_Office_Lagos_Addr"]</div>
+                                <div class="oz-office-item__hours">🕒 @SharedLocalizer["Support_Office_Lagos_Hours"]</div>
+                            </div>
+
+                            <!-- Singapore -->
+                            <div class="oz-office-item">
+                                <div class="oz-office-item__city">🇸🇬 @SharedLocalizer["Support_Office_Singapore_City"]</div>
+                                <div class="oz-office-item__addr">@SharedLocalizer["Support_Office_Singapore_Addr"]</div>
+                                <div class="oz-office-item__hours">🕒 @SharedLocalizer["Support_Office_Singapore_Hours"]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Frequently Asked Support Questions (Accordion) -->
+    <section class="oz-support-faq">
+        <div class="container">
+            <div class="oz-faq-header">
+                <h2 class="oz-faq-header__title">@SharedLocalizer["Support_Faq_Heading"]</h2>
+            </div>
+            <div class="oz-faq-accordion">
+                <details class="oz-faq-item" open>
+                    <summary class="oz-faq-question">
+                        <span>@SharedLocalizer["Support_Faq_Q1"]</span>
+                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Support_Faq_A1"]</p>
+                    </div>
+                </details>
+
+                <details class="oz-faq-item">
+                    <summary class="oz-faq-question">
+                        <span>@SharedLocalizer["Support_Faq_Q2"]</span>
+                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Support_Faq_A2"]</p>
+                    </div>
+                </details>
+
+                <details class="oz-faq-item">
+                    <summary class="oz-faq-question">
+                        <span>@SharedLocalizer["Support_Faq_Q3"]</span>
+                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Support_Faq_A3"]</p>
+                    </div>
+                </details>
+
+                <details class="oz-faq-item">
+                    <summary class="oz-faq-question">
+                        <span>@SharedLocalizer["Support_Faq_Q4"]</span>
+                        <svg class="oz-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </summary>
+                    <div class="oz-faq-answer">
+                        <p>@SharedLocalizer["Support_Faq_A4"]</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Interactive Modal 1: YouTube Video Player Modal -->
+<div class="oz-modal-backdrop" id="ozVideoModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="oz-modal oz-modal--video">
+        <button type="button" class="oz-modal-close js-close-modal" aria-label="Close video player">&times;</button>
+        <div class="oz-modal-video-wrap">
+            <iframe id="ozVideoFrame"
+                    src=""
+                    title="Ozikol Tutorial Video"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+        <div class="oz-modal-video-info">
+            <h3 id="ozVideoModalTitle" class="oz-modal-video-title">Loading tutorial...</h3>
+            <p id="ozVideoModalDesc" class="oz-modal-video-desc"></p>
+            <div class="oz-modal-video-actions">
+                <span class="oz-modal-feedback-q">@SharedLocalizer["Support_Modal_WasHelpful"]</span>
+                <button type="button" class="oz-btn-feedback js-feedback-btn" data-type="video">👍 @SharedLocalizer["Support_Modal_Yes"]</button>
+                <button type="button" class="oz-btn-feedback js-feedback-btn" data-type="video">👎 @SharedLocalizer["Support_Modal_No"]</button>
+                <a href="#contact" class="oz-btn-ask js-close-modal">@SharedLocalizer["Support_Modal_AskQuestion"]</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Modal 2: Knowledge Base Article Reader Modal -->
+<div class="oz-modal-backdrop" id="ozArticleModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="oz-modal oz-modal--article">
+        <button type="button" class="oz-modal-close js-close-modal" aria-label="Close article reader">&times;</button>
+        <div class="oz-modal-article-inner">
+            <div class="oz-modal-article-header">
+                <div class="oz-modal-breadcrumbs">
+                    <span id="ozArticleCategory" class="oz-badge-tag oz-badge-tag--red">Helpdesk</span>
+                    <span id="ozArticleSuite" class="oz-badge-tag">Suite</span>
+                    <span id="ozArticleReadTime" class="oz-article-readtime">4 min read</span>
+                </div>
+                <h2 id="ozArticleTitle" class="oz-modal-article-title">Loading article...</h2>
+                <div class="oz-modal-article-meta">
+                    <span id="ozArticleDate">Updated recently</span>
+                    <span id="ozArticleViews">👁 0 views</span>
+                </div>
+            </div>
+
+            <div id="ozArticleContent" class="oz-modal-article-body rte">
+                <div class="oz-loading-spinner"></div>
+            </div>
+
+            <div class="oz-modal-article-footer">
+                <div class="oz-feedback-panel" id="ozArticleFeedbackPanel">
+                    <span class="oz-modal-feedback-q">@SharedLocalizer["Support_Modal_WasHelpful"]</span>
+                    <button type="button" class="oz-btn-feedback js-vote-article" data-helpful="true">👍 @SharedLocalizer["Support_Modal_Yes"]</button>
+                    <button type="button" class="oz-btn-feedback js-vote-article" data-helpful="false">👎 @SharedLocalizer["Support_Modal_No"]</button>
+                </div>
+                <a href="#contact" class="oz-btn-ask js-close-modal">@SharedLocalizer["Support_Modal_AskQuestion"]</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const videoModal = document.getElementById('ozVideoModal');
+            const articleModal = document.getElementById('ozArticleModal');
+            const videoFrame = document.getElementById('ozVideoFrame');
+            const videoTitle = document.getElementById('ozVideoModalTitle');
+            const videoDesc = document.getElementById('ozVideoModalDesc');
+
+            const articleCategory = document.getElementById('ozArticleCategory');
+            const articleSuite = document.getElementById('ozArticleSuite');
+            const articleReadTime = document.getElementById('ozArticleReadTime');
+            const articleTitle = document.getElementById('ozArticleTitle');
+            const articleDate = document.getElementById('ozArticleDate');
+            const articleViews = document.getElementById('ozArticleViews');
+            const articleContent = document.getElementById('ozArticleContent');
+
+            let activeArticleId = null;
+
+            // Open Video Modal
+            document.querySelectorAll('.js-open-video, .oz-video-card').forEach(card => {
+                card.addEventListener('click', async function (e) {
+                    const videoId = this.dataset.videoId || this.dataset.id;
+                    const ytId = this.dataset.youtubeId;
+
+                    if (videoId) {
+                        try {
+                            const res = await fetch(`?handler=VideoDetails&id=${videoId}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                videoTitle.textContent = data.title;
+                                videoDesc.textContent = data.description;
+                                videoFrame.src = `https://www.youtube-nocookie.com/embed/${data.youtubeId}?autoplay=1`;
+                                openModal(videoModal);
+                                return;
+                            }
+                        } catch (err) {
+                            console.error('Error fetching video details', err);
+                        }
+                    }
+
+                    if (ytId) {
+                        videoFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`;
+                        openModal(videoModal);
+                    }
+                });
+            });
+
+            // Open Article Reader Modal
+            document.querySelectorAll('.js-open-article, .oz-article-card').forEach(card => {
+                card.addEventListener('click', async function (e) {
+                    const articleId = this.dataset.articleId || this.dataset.id;
+                    if (!articleId) return;
+
+                    activeArticleId = articleId;
+                    articleContent.innerHTML = '<div class="oz-loading-spinner">Loading guide...</div>';
+                    openModal(articleModal);
+
+                    try {
+                        const res = await fetch(`?handler=ArticleDetails&id=${articleId}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            articleTitle.textContent = data.title;
+                            articleCategory.textContent = data.category;
+                            articleSuite.textContent = (data.suiteCode || 'Platform').replace('suite-', '').toUpperCase();
+                            articleReadTime.textContent = `${data.readMinutes} min read`;
+                            articleDate.textContent = `Updated: ${data.updated}`;
+                            articleViews.textContent = `👁 ${data.viewCount} views`;
+                            articleContent.innerHTML = data.contentHtml;
+                        } else {
+                            articleContent.innerHTML = '<p class="text-danger">Unable to load article content.</p>';
+                        }
+                    } catch (err) {
+                        console.error('Error fetching article', err);
+                        articleContent.innerHTML = '<p class="text-danger">An error occurred while loading the article.</p>';
+                    }
+                });
+            });
+
+            // Helpful Article Voting
+            document.querySelectorAll('.js-vote-article').forEach(btn => {
+                btn.addEventListener('click', async function () {
+                    if (!activeArticleId) return;
+                    const helpful = this.dataset.helpful === 'true';
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+                    const formData = new FormData();
+                    formData.append('id', activeArticleId);
+                    formData.append('helpful', helpful);
+
+                    try {
+                        await fetch('?handler=VoteArticle', {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': token },
+                            body: formData
+                        });
+                        document.getElementById('ozArticleFeedbackPanel').innerHTML = '<span class="oz-feedback-thanks">Thank you for your feedback!</span>';
+                    } catch (e) {
+                        console.error('Vote failed', e);
+                    }
+                });
+            });
+
+            // Pre-fill Support Form Department
+            document.querySelectorAll('.js-prefill-inquiry').forEach(link => {
+                link.addEventListener('click', function () {
+                    const type = this.dataset.type;
+                    const select = document.getElementById('inquiryTypeSelect');
+                    if (select && type) {
+                        select.value = type;
+                    }
+                });
+            });
+
+            // Generic Modal Open/Close logic
+            function openModal(modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('oz-modal-open');
+            }
+
+            function closeModal(modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('oz-modal-open');
+                if (modal === videoModal) {
+                    videoFrame.src = ''; // Stop video playback
+                }
+            }
+
+            document.querySelectorAll('.js-close-modal').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const m = this.closest('.oz-modal-backdrop');
+                    if (m) closeModal(m);
+                });
+            });
+
+            [videoModal, articleModal].forEach(modal => {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) {
+                        closeModal(modal);
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    if (videoModal.classList.contains('is-open')) closeModal(videoModal);
+                    if (articleModal.classList.contains('is-open')) closeModal(articleModal);
+                }
+            });
+        });
+    </script>
+}

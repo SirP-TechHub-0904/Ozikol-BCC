@@ -141,7 +141,7 @@
   </url>
 
   <url>
-    <loc>https://ozikol.cloud/client-login</loc>
+    <loc>https://ozikol.cloud/auth/login</loc>
     <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
@@ -456,14 +456,14 @@
   </url>
 
   <url>
-    <loc>https://ozikol.cloud/support-hub</loc>
+    <loc>https://ozikol.cloud/support</loc>
     <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
   <url>
-    <loc>https://ozikol.cloud/support-hub/contact-sales</loc>
+    <loc>https://ozikol.cloud/support#contact</loc>
     <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>

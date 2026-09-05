@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /client-login
+Disallow: /auth/login
 
 Sitemap: https://ozikol.cloud/sitemap.xml
