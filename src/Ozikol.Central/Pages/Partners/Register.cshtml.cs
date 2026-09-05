@@ -20,16 +20,22 @@ namespace Ozikol.Central.Pages.Partners;
 public class RegisterModel : FeatureDetailPageModel
 {
     private readonly MasterCatalogDbContext _dbContext;
+    private readonly Services.ICentralEmailService _emailService;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RegisterModel"/> class.
     /// </summary>
     /// <param name="dbContext">Central Master Catalog database context.</param>
+    /// <param name="emailService">Central email service for partner confirmation and alerts.</param>
     /// <param name="localizer">Shared localization provider.</param>
-    public RegisterModel(MasterCatalogDbContext dbContext, IStringLocalizer<SharedResource> localizer)
+    public RegisterModel(
+        MasterCatalogDbContext dbContext,
+        Services.ICentralEmailService emailService,
+        IStringLocalizer<SharedResource> localizer)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
 
@@ -142,6 +148,17 @@ public class RegisterModel : FeatureDetailPageModel
 
         await _dbContext.MasterAffiliatePartners.AddAsync(partner);
         await _dbContext.SaveChangesAsync();
+
+        // Dispatch dual notification emails (partner confirmation receipt + partnership admin alert pool)
+        try
+        {
+            await _emailService.SendPartnerApplicationDualAsync(partner);
+        }
+        catch (Exception ex)
+        {
+            // Suppress background email transmission error so submission remains successful
+            Console.WriteLine($"[RegisterModel]: Notice during partner email dispatch: {ex.Message}");
+        }
 
         IsSubmitted = true;
         AssignedPartnerCode = partnerCode;

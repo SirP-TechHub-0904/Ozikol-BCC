@@ -21,6 +21,7 @@ public class CreatorProgramModel : FeatureDetailPageModel
 {
     private readonly MasterCatalogDbContext _dbContext;
     private readonly IRecaptchaService _recaptchaService;
+    private readonly Services.ICentralEmailService _emailService;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     /// <summary>
@@ -28,14 +29,17 @@ public class CreatorProgramModel : FeatureDetailPageModel
     /// </summary>
     /// <param name="dbContext">Central Master Catalog database context.</param>
     /// <param name="recaptchaService">Google reCAPTCHA verification provider.</param>
+    /// <param name="emailService">Central email service for dual creator notifications.</param>
     /// <param name="localizer">Shared localization provider.</param>
     public CreatorProgramModel(
         MasterCatalogDbContext dbContext,
         IRecaptchaService recaptchaService,
+        Services.ICentralEmailService emailService,
         IStringLocalizer<SharedResource> localizer)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+        _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
 
@@ -160,6 +164,16 @@ public class CreatorProgramModel : FeatureDetailPageModel
 
         _dbContext.MasterAffiliatePartners.Add(partner);
         await _dbContext.SaveChangesAsync();
+
+        // Dispatch dual notification emails (creator confirmation receipt + creator curation alert pool)
+        try
+        {
+            await _emailService.SendCreatorApplicationDualAsync(application);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CreatorProgramModel]: Notice during creator email dispatch: {ex.Message}");
+        }
 
         IsSubmitted = true;
         AssignedCreatorCode = candidateCode;

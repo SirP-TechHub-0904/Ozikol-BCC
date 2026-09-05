@@ -20,18 +20,26 @@ public class CareersService : ICareersService
 {
     private readonly MasterCatalogDbContext _dbContext;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ICentralEmailService _emailService;
+    private readonly ILogger<CareersService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CareersService"/> class.
     /// </summary>
     /// <param name="dbContext">Master Catalog database context.</param>
     /// <param name="fileStorageService">File and document storage provider.</param>
+    /// <param name="emailService">Central email service for dual candidate notifications.</param>
+    /// <param name="logger">System logger instance.</param>
     public CareersService(
         MasterCatalogDbContext dbContext,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        ICentralEmailService emailService,
+        ILogger<CareersService> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
+        _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc />
@@ -138,6 +146,20 @@ public class CareersService : ICareersService
 
         _dbContext.MasterJobApplications.Add(application);
         await _dbContext.SaveChangesAsync();
+
+        // Dispatch dual notification emails (candidate confirmation receipt + talent acquisition admin pool)
+        try
+        {
+            var opening = await _dbContext.MasterJobOpenings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j => j.Id == input.JobOpeningId);
+            var openingTitle = opening?.Title ?? "Open Role";
+            await _emailService.SendJobApplicationDualAsync(application, openingTitle);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to dispatch dual emails for candidate application {Ref}", referenceCode);
+        }
 
         return referenceCode;
     }

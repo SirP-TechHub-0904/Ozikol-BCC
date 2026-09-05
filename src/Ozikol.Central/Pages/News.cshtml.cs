@@ -19,6 +19,7 @@ public class NewsModel : PageModel
 {
     private readonly INewsService _newsService;
     private readonly IRecaptchaService _recaptchaService;
+    private readonly Services.ICentralEmailService _emailService;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     /// <summary>
@@ -26,14 +27,17 @@ public class NewsModel : PageModel
     /// </summary>
     /// <param name="newsService">News content and release provider.</param>
     /// <param name="recaptchaService">Google reCAPTCHA verification provider.</param>
+    /// <param name="emailService">Central email service for subscriber notifications.</param>
     /// <param name="localizer">Shared localization provider.</param>
     public NewsModel(
         INewsService newsService,
         IRecaptchaService recaptchaService,
+        Services.ICentralEmailService emailService,
         IStringLocalizer<SharedResource> localizer)
     {
         _newsService = newsService ?? throw new ArgumentNullException(nameof(newsService));
         _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+        _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
     }
 
@@ -121,6 +125,15 @@ public class NewsModel : PageModel
         if (!ModelState.IsValid)
         {
             return Page();
+        }
+
+        try
+        {
+            await _emailService.SendNewsletterSubscriptionAsync(Newsletter.Email.Trim());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[NewsModel]: Notice during newsletter email dispatch: {ex.Message}");
         }
 
         StatusMessage = "Thank you for subscribing to the Ozikol Newsroom. You will receive updates directly to your inbox.";

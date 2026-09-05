@@ -148,7 +148,44 @@ namespace Ozikol.Central.Services.Support
         /// <summary>
         /// Ensures initial demonstration videos and articles exist in the database for all 9 enterprise suites.
         /// </summary>
-        /// <param name="cancellationToken">Optional cancellation token.</param>
         Task EnsureSeedDataAsync();
+
+        /// <summary>
+        /// Retrieves a support inquiry by its public reference tracking code, including its chronological conversation replies.
+        /// </summary>
+        /// <param name="referenceNumber">The reference code (e.g. OZK-SUP-20260905-XXXX).</param>
+        /// <param name="cancellationToken">Cancellation token for async operations.</param>
+        /// <returns>The inquiry entity with replies populated, or null if not found.</returns>
+        Task<MasterSupportInquiry?> GetInquiryByReferenceAsync(string referenceNumber, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Posts a follow-up reply message to a support ticket thread, updates ticket activity and status,
+        /// and dispatches email notifications to the counterparty.
+        /// </summary>
+        /// <param name="inquiryId">The unique identifier of the ticket.</param>
+        /// <param name="senderName">The display name of the respondent.</param>
+        /// <param name="senderEmail">The email address of the respondent.</param>
+        /// <param name="message">The text content of the reply.</param>
+        /// <param name="isStaff">True if submitted by a support specialist; false if submitted by the customer.</param>
+        /// <param name="cancellationToken">Cancellation token for async operations.</param>
+        /// <returns>The newly created ticket reply record.</returns>
+        Task<MasterTicketReply> AddTicketReplyAsync(Guid inquiryId, string senderName, string senderEmail, string message, bool isStaff, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Marks a support ticket as resolved and closed with an audit explanation.
+        /// </summary>
+        /// <param name="inquiryId">The unique identifier of the ticket.</param>
+        /// <param name="reason">The closure rationale.</param>
+        /// <param name="cancellationToken">Cancellation token for async operations.</param>
+        /// <returns>True if successfully closed; false if the ticket was not found.</returns>
+        Task<bool> CloseTicketAsync(Guid inquiryId, string reason, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Evaluates open tickets against the configured inactivity threshold (default: 24 hours)
+        /// and automatically closes eligible tickets with an audit reason.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token for async operations.</param>
+        /// <returns>The number of tickets automatically closed.</returns>
+        Task<int> AutoCloseInactiveTicketsAsync(System.Threading.CancellationToken cancellationToken = default);
     }
 }
