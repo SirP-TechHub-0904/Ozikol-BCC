@@ -54,6 +54,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterSupportFaq> MasterSupportFaqs { get; set; } = null!;
     public DbSet<MasterPlatformSetting> MasterPlatformSettings { get; set; } = null!;
     public DbSet<MasterTicketReply> MasterTicketReplies { get; set; } = null!;
+    public DbSet<MasterLegalDocument> MasterLegalDocuments { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -464,6 +465,21 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.SuiteCode);
             entity.HasIndex(e => e.IsPublished);
             entity.HasIndex(e => e.SortOrder);
+        });
+
+        modelBuilder.Entity<MasterLegalDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.Slug, e.Culture }).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SortOrder);
+            entity.Property(e => e.Slug).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Category).HasMaxLength(80).IsRequired();
+            entity.Property(e => e.Summary).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Version).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Culture).HasMaxLength(10).IsRequired();
         });
     }
 }

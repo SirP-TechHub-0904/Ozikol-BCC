@@ -1,237 +1,155 @@
 @page "/policies-and-reports"
 @model Ozikol.Central.Pages.PoliciesAndReportsModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Ozikol | Business Management Software";
+    var doc = Model.Document;
+    var title = doc?.Title ?? "Corporate Governance, Policies & Compliance Reports";
+    ViewData["Title"] = $"{title} | Ozikol Cloud";
+    ViewData["MetaDescription"] = doc?.Summary ?? "Public transparency index of Ozikol's corporate governance policies, modern slavery commitments, and accessibility standards.";
+    var currentCulture = Model.CurrentCulture;
 }
 
-<div >
-                <section class="main-banner main-banner--inner"
-                 id="anchor-4cbe8f0c-7ea6-4947-947d-0c7e0ed45188">
-            <div class="main-banner__inner container--lg">
-                <div class="main-banner__text-block container">
-                    
+<div class="oz-legal-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/@currentCulture">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <a href="/policies-and-reports">Legal &amp; Governance</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>@title</span>
+                </div>
+                <a href="/@currentCulture" class="oz-breadcrumb-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span>Back to Portal</span>
+                </a>
+            </div>
+        </div>
+    </div>
 
+    <!-- Legal Header Banner -->
+    <section class="oz-legal-hero">
+        <div class="container">
+            <div class="oz-legal-hero__badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                <span>@(doc?.Category ?? "Corporate Governance & Compliance")</span>
+            </div>
+            <h1 class="oz-legal-hero__title">@title</h1>
+            <p class="oz-legal-hero__desc">@(doc?.Summary ?? "A centralized directory providing public transparency into our corporate standards, ethical supply chains, and compliance reports.")</p>
 
-                    <h1 class="main-banner__title">
-                        <div><span class="text-highlight">Policies and Reports</span></div>
-                    </h1>
-                    <div class="main-banner__text rte">
-                        <p>A centralized page providing access to company policies and compliance reports.</p>
-                    </div>
-                        <div class="main-banner__ctas">
+            <!-- Metadata Timestamp Bar -->
+            <div class="oz-legal-meta-bar">
+                <div class="oz-legal-meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Last Updated: <strong>@(doc?.LastUpdatedUtc.ToString("MMMM d, yyyy") ?? "September 5, 2026")</strong></span>
+                </div>
+                <div class="oz-legal-meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>Effective: <strong>@(doc?.EffectiveDate.ToString("MMMM d, yyyy") ?? "March 19, 2026")</strong></span>
+                </div>
+                <div class="oz-legal-meta-badge">
+                    Version @(doc?.Version ?? "2026.1")
+                </div>
+                <button type="button" class="oz-legal-print-btn" onclick="window.print()" title="Print this governance overview">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    <span>Print</span>
+                </button>
+            </div>
+        </div>
+    </section>
 
+    <!-- Content & Sidebar Layout -->
+    <div class="oz-legal-container">
+        <div class="oz-legal-layout">
+            <!-- Main Legal Body -->
+            <main class="oz-legal-body">
+                @if (doc != null && !string.IsNullOrWhiteSpace(doc.ContentHtml))
+                {
+                    @Html.Raw(doc.ContentHtml)
+                }
 
-<a href='/policies-and-reports' target='' data-gtm_content_event="select_content" data-gtm_content_type="resource_hub" data-gtm_published_date="19/03/2026" data-gtm_content_author="" data-gtm_blog_title="" data-gtm_content_title="policies_and_reports" data-gtm_cta_text="View Policies" class='btn btn-primary'>View Policies</a>                        </div>
+                <!-- Active Policy Directory Cards -->
+                <h3 style="margin-top: 40px;">Published Governance &amp; Compliance Directory</h3>
+                <p>Explore our active legal agreements and transparency charters:</p>
 
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+                    @foreach (var policy in Model.AllDocuments)
+                    {
+                        var route = policy.Slug switch
+                        {
+                            "privacy-notice" => "/privacy-notice",
+                            "terms-of-use" => "/terms-of-use",
+                            "cookies" => "/cookies",
+                            "privacy-choices" => "/privacy-choices",
+                            _ => "/policies-and-reports"
+                        };
+
+                        <div style="border: 1px solid var(--ozikol-border); border-radius: 12px; padding: 20px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease;">
+                            <div>
+                                <div style="font-size: 11px; font-weight: 800; color: var(--ozikol-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">@policy.Category</div>
+                                <h4 style="font-size: 16px; font-weight: 700; color: var(--ozikol-dark); margin: 0 0 8px 0;">@policy.Title</h4>
+                                <p style="font-size: 13px; color: var(--ozikol-text-secondary); line-height: 1.5; margin: 0 0 16px 0;">@policy.Summary</p>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 12px; font-size: 12px; color: var(--ozikol-text-slate);">
+                                <span>Updated: @policy.LastUpdatedUtc.ToString("MMM d, yyyy")</span>
+                                <a href="@route" style="color: var(--ozikol-primary); font-weight: 700; text-decoration: none;">Read &rarr;</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </main>
+
+            <!-- Sticky Sidebar -->
+            <aside class="oz-legal-sidebar">
+                <!-- Quick Navigation Box -->
+                <div class="oz-legal-card">
+                    <h3 class="oz-legal-card__title">Legal &amp; Governance Hub</h3>
+                    <ul class="oz-legal-nav-list">
+                        <li>
+                            <a href="/privacy-notice" class="oz-legal-nav-link">
+                                <span>Privacy Notice</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/terms-of-use" class="oz-legal-nav-link">
+                                <span>Terms of Use</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/cookies" class="oz-legal-nav-link">
+                                <span>Cookie Policy</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/privacy-choices" class="oz-legal-nav-link">
+                                <span>Privacy Choices &amp; Rights</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/policies-and-reports" class="oz-legal-nav-link is-active">
+                                <span>Policies &amp; Compliance Reports</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
 
-            </div>
-        </section>
-
-        </div>
-        <div >
-        
-        <section class="listing chc" data-chid="0dab945f698c4806af1cb3cc0eb155e9"
-        data-cbn="74b91711-8f34-43d2-bec9-e94fc2cb2672" data-ctb="0dab945f-698c-4806-af1c-b3cc0eb155e9" data-cht="hb-ch-item" 
-        data-pagesize="12" id="policies">
-            <div class="listing__grid-block container no-filter container-padding-left--lg container-padding-right--lg">
-                <div class="listing__grid ">
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Accessibility Statement
-                                        </h4>
-                                        <a href='/policies-and-reports' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Ozikol Expenses Policy
-                                        </h4>
-                                        <a href='#' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Acceptable Use Policy - Hosting/Saas
-                                        </h4>
-                                        <a href='https://pages.theaccessgroup.com/Acceptable-use-Policy-Hosting-SaaS.html' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Annual Report and Consolidated Financial Accounts
-                                        </h4>
-                                        <a href='/policies-and-reports' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Brexit Statement
-                                        </h4>
-                                        <a href='/policies-and-reports' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            <p data-pm-slice="1 1 []">Corporate Sustainability Report
-                                        </h4>
-                                        <a href='https://access-creative-services.paperturn-view.com/corporate-sustainability-report?pid=ODk8919381&v=7.1' target='_blank' rel='noopener noreferrer' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Director’s Statement Section 172
-                                        </h4>
-                                        <a href='/policies-and-reports' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Gender Pay Gap Report
-                                        </h4>
-                                        <a href='https://pages.theaccessgroup.com/UK-Gender-Pay-Gap-2025.html?ajs_aid=743bf90e-aaa5-4e7d-b4f8-a0b299198199&_gl=1*1go97e6*_gcl_au*NDI4MTc3OTkzLjE3NjA0NDcyOTI.*_ga*NzQ1NDQ1ODQ4LjE3NTQzNzg2NzQ.*_ga_32SNLM7F0E*czE3NjEzMDUxOTEkbzEzOCRnMSR0MTc2MTMwNjg4MCRqNDEkbDAkaDQyNTIxNTI1' target='_blank' rel='noopener noreferrer' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Modern Slavery Policy Statement
-                                        </h4>
-                                        <a href='https://pages.theaccessgroup.com/Modern-Slavery-Policy-Statement-FY25.html?_gl=1*86re84*_gcl_au*NDI4MTc3OTkzLjE3NjA0NDcyOTI.*_ga*NzQ1NDQ1ODQ4LjE3NTQzNzg2NzQ.*_ga_32SNLM7F0E*czE3NjEzMDUxOTEkbzEzOCRnMSR0MTc2MTMwODMyNiRqNTQkbDAkaDQyNTIxNTI1' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Supplier Code of Conduct
-                                        </h4>
-                                        <a href='https://pages.theaccessgroup.com/Access-Supplier-Code-of-Conduct.html?ajs_aid=743bf90e-aaa5-4e7d-b4f8-a0b299198199&_gl=1*95qf6y*_gcl_au*NDI4MTc3OTkzLjE3NjA0NDcyOTI.*_ga*NzQ1NDQ1ODQ4LjE3NTQzNzg2NzQ.*_ga_32SNLM7F0E*czE3NjEzMDUxOTEkbzEzOCRnMSR0MTc2MTMwODUyMSRqMTkkbDAkaDQyNTIxNTI1' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Standard of Business Conduct
-                                        </h4>
-                                        <a href='https://pages.theaccessgroup.com/Standards-of-Business-Conduct.html?ajs_aid=743bf90e-aaa5-4e7d-b4f8-a0b299198199&_gl=1*3zjw6d*_gcl_au*NDI4MTc3OTkzLjE3NjA0NDcyOTI.*_ga*NzQ1NDQ1ODQ4LjE3NTQzNzg2NzQ.*_ga_32SNLM7F0E*czE3NjEzMDUxOTEkbzEzOCRnMSR0MTc2MTMwODUyNCRqMTYkbDAkaDQyNTIxNTI1' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
-                            <div class="ch-secondary-card"
-                                data-content-type="unknown"
-                                data-content-topic="other" ,
-                                data-content-industry="unknown"
-                                data-categories="other,unkown">
-                                    <picture>
-                                            </picture>
-                                    <div class="ch-secondary-card__content">
-                                        <div class="ch-secondary-card__tags">
-                                        </div>
-                                        <h4 class="ch-secondary-card__heading">
-                                            Our Terms and Conditions&nbsp;
-                                        </h4>
-                                        <a href='/policies-and-reports' target='' class='ch-secondary-card__link link'>Read more</a>
-                                    </div>
-                            </div>
+                <!-- Certifications Hub Link Card -->
+                <div class="oz-legal-contact-card">
+                    <h4>Certifications &amp; ISO Standards</h4>
+                    <p>Access our third-party SOC 2 Type II audit, ISO 27001, and GDPR compliance certifications.</p>
+                    <a href="/@currentCulture/support/certifications" class="btn btn-primary btn-sm w-100" style="background: #e5173f; border: none; font-weight: 700;">
+                        View Certifications
+                    </a>
                 </div>
-            </div>
-        </section>
-
+            </aside>
         </div>
-
-    
+    </div>
+</div>

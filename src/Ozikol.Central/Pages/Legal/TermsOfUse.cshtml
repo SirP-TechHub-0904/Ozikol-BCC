@@ -1,84 +1,131 @@
 @page "/terms-of-use"
 @model Ozikol.Central.Pages.Legal.TermsOfUseModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> SharedLocalizer
 @{
-    ViewData["Title"] = "Terms of Use & Service Agreement - Ozikol";
-    ViewData["MetaDescription"] = "Official terms and conditions governing the use of Ozikol cloud platform, services, APIs, and subscriptions.";
+    var doc = Model.Document;
+    var title = doc?.Title ?? "Terms of Use & Master Subscription Agreement";
+    ViewData["Title"] = $"{title} | Ozikol Cloud";
+    ViewData["MetaDescription"] = doc?.Summary ?? "Official terms and conditions governing enterprise organizations using Ozikol.";
+    var currentCulture = Model.CurrentCulture;
 }
 
-<div class="oz-feat-page">
+<div class="oz-legal-page">
     <!-- Breadcrumb Bar -->
     <div class="oz-breadcrumb-bar">
         <div class="container">
             <div class="oz-breadcrumb-wrap">
                 <div class="oz-breadcrumb-links">
-                    <a href="/">Home</a>
+                    <a href="/@currentCulture">Home</a>
                     <span class="oz-breadcrumb-sep">/</span>
-                    <span>Terms of Use & Service Agreement</span>
+                    <a href="/policies-and-reports">Legal &amp; Governance</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>@title</span>
                 </div>
-                <partial name="_BackToFeaturesLink" />
+                <a href="/@currentCulture" class="oz-breadcrumb-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span>Back to Portal</span>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Hero Banner -->
-    <section class="oz-feat-hero">
+    <!-- Legal Header Banner -->
+    <section class="oz-legal-hero">
         <div class="container">
-            <div class="oz-feat-badge-wrap">
-                <div class="oz-feat-icon-box oz-feat-icon-box--primary">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                </div>
-                <span class="oz-feat-pill">Legal Agreement • Platform Governance</span>
+            <div class="oz-legal-hero__badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>@(doc?.Category ?? "Terms & Service Agreement")</span>
             </div>
-            <h1 class="oz-feat-title">Ozikol Terms of Use</h1>
-            <p class="oz-feat-lead">These terms govern your organization's access to and use of Ozikol's cloud software, mobile applications, APIs, and modular tools.</p>
-            <div class="oz-feat-actions">
-                <a href="/privacy-notice" class="btn btn-secondary--alt">Read Privacy Notice</a>
-                <a href="/legal-hub" class="btn btn-secondary--alt">Visit Legal Hub</a>
+            <h1 class="oz-legal-hero__title">@title</h1>
+            <p class="oz-legal-hero__desc">@(doc?.Summary ?? "Legal commitments, SLA guarantees, data ownership rights, and acceptable use policies.")</p>
+
+            <!-- Metadata Timestamp Bar -->
+            <div class="oz-legal-meta-bar">
+                <div class="oz-legal-meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Last Updated: <strong>@(doc?.LastUpdatedUtc.ToString("MMMM d, yyyy") ?? "September 5, 2026")</strong></span>
+                </div>
+                <div class="oz-legal-meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>Effective: <strong>@(doc?.EffectiveDate.ToString("MMMM d, yyyy") ?? "January 1, 2026")</strong></span>
+                </div>
+                <div class="oz-legal-meta-badge">
+                    Version @(doc?.Version ?? "2026.1")
+                </div>
+                <button type="button" class="oz-legal-print-btn" onclick="window.print()" title="Print this legal agreement">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    <span>Print Agreement</span>
+                </button>
             </div>
         </div>
     </section>
 
-    <!-- Terms Summary Grid -->
-    <section class="container oz-feat-capabilities-section">
-        <div class="oz-feat-section-header">
-            <div class="oz-feat-tagline">Governance Summary</div>
-            <h2>Key Terms at a Glance</h2>
-            <p class="oz-feat-card-desc">Clear, fair, and transparent commitments protecting your organization and data.</p>
-        </div>
-        <div class="oz-feat-grid">
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--teal">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">100% Customer Data Ownership</h3>
-                <p class="oz-feat-card-desc">You retain exclusive ownership of all organizational data, rosters, member records, and files uploaded to the platform.</p>
-            </div>
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--indigo">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">Security &amp; Encryption</h3>
-                <p class="oz-feat-card-desc">All data is encrypted in transit using TLS 1.3 and at rest using AES-256 in certified Tier 4 data centers.</p>
-            </div>
-            <div class="oz-feat-card">
-                <div class="oz-feat-card-icon oz-feat-card-icon--amber">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                </div>
-                <h3 class="oz-feat-card-title">Export &amp; Portability</h3>
-                <p class="oz-feat-card-desc">Export your entire organizational records and data at any time in standard JSON, CSV, or open formats with 1 click.</p>
-            </div>
-        </div>
-    </section>
+    <!-- Content & Sidebar Layout -->
+    <div class="oz-legal-container">
+        <div class="oz-legal-layout">
+            <!-- Main Legal Body -->
+            <main class="oz-legal-body">
+                @if (doc != null && !string.IsNullOrWhiteSpace(doc.ContentHtml))
+                {
+                    @Html.Raw(doc.ContentHtml)
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <p>This legal document is currently undergoing routine compliance review. Please check back shortly or consult our legal desk.</p>
+                    </div>
+                }
+            </main>
 
-    <!-- Bottom CTA Banner -->
-    <section class="oz-feat-cta-banner">
-        <div class="container">
-            <h2>Experience the Power of Ozikol</h2>
-            <p>Deploy custom modules, automate operations, and empower your organization today.</p>
-            <div class="oz-feat-actions oz-feat-actions--center">
-                <a href="/support#contact" class="btn btn-primary">Book a Platform Demo</a>
-                <partial name="_ExploreFeaturesButton" />
-            </div>
+            <!-- Sticky Sidebar -->
+            <aside class="oz-legal-sidebar">
+                <!-- Quick Navigation Box -->
+                <div class="oz-legal-card">
+                    <h3 class="oz-legal-card__title">Legal &amp; Governance Hub</h3>
+                    <ul class="oz-legal-nav-list">
+                        <li>
+                            <a href="/privacy-notice" class="oz-legal-nav-link">
+                                <span>Privacy Notice</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/terms-of-use" class="oz-legal-nav-link is-active">
+                                <span>Terms of Use</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/cookies" class="oz-legal-nav-link">
+                                <span>Cookie Policy</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/privacy-choices" class="oz-legal-nav-link">
+                                <span>Privacy Choices &amp; Rights</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/policies-and-reports" class="oz-legal-nav-link">
+                                <span>Policies &amp; Compliance Reports</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Legal Contact & Inquiries Card -->
+                <div class="oz-legal-contact-card">
+                    <h4>Enterprise Agreements &amp; Custom Terms</h4>
+                    <p>Have custom procurement requirements, master enterprise riders, or bespoke SLA stipulations?</p>
+                    <a href="/@currentCulture/support/contact?type=Enterprise" class="btn btn-primary btn-sm w-100" style="background: #e5173f; border: none; font-weight: 700;">
+                        Consult Enterprise Sales
+                    </a>
+                </div>
+            </aside>
         </div>
-    </section>
+    </div>
 </div>

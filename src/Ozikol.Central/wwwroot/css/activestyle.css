@@ -3366,6 +3366,492 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* --------------------------------------------------------------------------
+   Dynamic Legal & Compliance Documents Layout
+   -------------------------------------------------------------------------- */
+.oz-legal-page {
+    background: #f8fafc;
+    min-height: 80vh;
+    padding-bottom: 80px;
+}
+
+.oz-legal-hero {
+    background: linear-gradient(135deg, #090e17 0%, #172033 100%);
+    color: #ffffff;
+    padding: 56px 0 44px 0;
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.oz-legal-hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(229, 23, 63, 0.15);
+    color: #ff4d6d;
+    border: 1px solid rgba(229, 23, 63, 0.35);
+    padding: 5px 16px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.oz-legal-hero__title {
+    font-size: 36px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.025em;
+    margin: 0 0 12px 0;
+    line-height: 1.2;
+}
+
+.oz-legal-hero__desc {
+    font-size: 16px;
+    color: #94a3b8;
+    max-width: 760px;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.oz-legal-meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px 20px;
+    color: #e2e8f0;
+}
+
+.oz-legal-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+}
+
+.oz-legal-meta-badge {
+    background: rgba(229, 23, 63, 0.2);
+    color: #ff6b81;
+    border: 1px solid rgba(229, 23, 63, 0.4);
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.oz-legal-print-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.oz-legal-print-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.oz-legal-container {
+    max-width: 1240px;
+    margin: 40px auto 0 auto;
+    padding: 0 20px;
+}
+
+.oz-legal-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 36px;
+    align-items: start;
+}
+
+.oz-legal-body {
+    background: #ffffff;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 16px;
+    padding: 44px 48px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ozikol-text-secondary);
+}
+
+.oz-legal-body h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ozikol-dark);
+    margin: 34px 0 14px 0;
+    letter-spacing: -0.015em;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.oz-legal-body h3:first-child {
+    margin-top: 0;
+}
+
+.oz-legal-body p {
+    margin-bottom: 16px;
+}
+
+.oz-legal-body ul, .oz-legal-body ol {
+    margin: 0 0 20px 24px;
+    padding: 0;
+}
+
+.oz-legal-body li {
+    margin-bottom: 8px;
+}
+
+.oz-legal-body strong {
+    color: var(--ozikol-dark);
+}
+
+.oz-legal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.oz-legal-table th {
+    background: #f8fafc;
+    color: var(--ozikol-dark);
+    font-weight: 700;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13.5px;
+    border-bottom: 2px solid var(--ozikol-border);
+}
+
+.oz-legal-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ozikol-border);
+    font-size: 13.5px;
+    color: var(--ozikol-text-secondary);
+}
+
+.oz-legal-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: sticky;
+    top: 90px;
+}
+
+.oz-legal-card {
+    background: #ffffff;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.oz-legal-card__title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ozikol-dark);
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.oz-legal-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oz-legal-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ozikol-text-slate);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.oz-legal-nav-link:hover {
+    background: #f8fafc;
+    color: var(--ozikol-primary);
+}
+
+.oz-legal-nav-link.is-active {
+    background: var(--ozikol-primary-subtle);
+    color: var(--ozikol-primary);
+    font-weight: 700;
+}
+
+.oz-legal-contact-card {
+    background: linear-gradient(135deg, #090e17 0%, #172033 100%);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+}
+
+.oz-legal-contact-card h4 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+}
+
+.oz-legal-contact-card p {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Platform Suite Download & Capability Styles
+   -------------------------------------------------------------------------- */
+.oz-platform-download-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid var(--ozikol-border);
+    border-radius: 20px;
+    padding: 44px 36px;
+    margin: 48px 0;
+    text-align: center;
+}
+
+.oz-platform-download-box h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--ozikol-dark);
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+}
+
+.oz-platform-download-box p {
+    font-size: 16px;
+    color: var(--ozikol-text-secondary);
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+.oz-platform-download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 32px;
+    text-align: left;
+}
+
+.oz-platform-download-card {
+    background: #ffffff;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.oz-platform-download-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--ozikol-primary);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+.oz-platform-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.oz-platform-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--ozikol-primary-subtle);
+    color: var(--ozikol-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.oz-platform-card-header h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ozikol-dark);
+    margin: 0;
+}
+
+.oz-platform-card-header span {
+    font-size: 12.5px;
+    color: var(--ozikol-text-slate);
+}
+
+.oz-platform-btn-download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--ozikol-primary);
+    color: #ffffff !important;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    width: 100%;
+    margin-top: 16px;
+    transition: all 0.2s ease;
+}
+
+.oz-platform-btn-download:hover {
+    background: var(--ozikol-primary-hover);
+    transform: translateY(-1px);
+}
+
+.oz-platform-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--ozikol-dark) !important;
+    border: 1px solid var(--ozikol-border);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    width: 100%;
+    margin-top: 16px;
+    transition: all 0.2s ease;
+}
+
+.oz-platform-btn-outline:hover {
+    background: var(--ozikol-bg-light);
+    border-color: var(--ozikol-dark);
+}
+
+.oz-platform-specs {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--ozikol-text-slate);
+}
+
+.oz-platform-step-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 36px;
+    text-align: left;
+}
+
+.oz-platform-step-card {
+    background: #ffffff;
+    border: 1px solid var(--ozikol-border);
+    border-radius: 14px;
+    padding: 28px 24px;
+    position: relative;
+}
+
+.oz-platform-step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ozikol-primary-subtle);
+    color: var(--ozikol-primary);
+    font-weight: 800;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.oz-platform-step-card h4 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ozikol-dark);
+    margin: 0 0 8px 0;
+}
+
+.oz-platform-step-card p {
+    font-size: 14px;
+    color: var(--ozikol-text-secondary);
+    line-height: 1.55;
+    margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .oz-legal-layout {
+        grid-template-columns: 1fr;
+    }
+    .oz-legal-sidebar {
+        position: static;
+    }
+    .oz-platform-step-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .oz-legal-body {
+        padding: 28px 20px;
+    }
+    .oz-legal-hero__title {
+        font-size: 26px;
+    }
+    .oz-platform-download-box {
+        padding: 32px 18px;
+    }
+}
+
+@media print {
+    header, footer, .oz-legal-hero, .oz-legal-sidebar, .oz-breadcrumb-bar {
+        display: none !important;
+    }
+    .oz-legal-page, .oz-legal-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    .oz-legal-layout {
+        display: block !important;
+    }
+    .oz-legal-body {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+}
+
 
 
 
