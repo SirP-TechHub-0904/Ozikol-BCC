@@ -838,7 +838,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Provider")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -2001,6 +2000,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<string>("SupportAdminEmails")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SupportCategories")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("SupportContactEmail")
                         .HasMaxLength(150)

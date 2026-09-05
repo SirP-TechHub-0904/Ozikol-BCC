@@ -59,6 +59,11 @@ namespace Ozikol.Central.Pages.Support
         public IReadOnlyList<MasterSupportFaq> Faqs { get; private set; } = new List<MasterSupportFaq>();
 
         /// <summary>
+        /// Gets the dynamic list of support inquiry categories configured in MasterPlatformSettings.
+        /// </summary>
+        public IReadOnlyList<string> Categories { get; private set; } = new List<string>();
+
+        /// <summary>
         /// Gets a value indicating whether an inquiry was submitted successfully.
         /// </summary>
         public bool IsSubmitted { get; set; }
@@ -91,6 +96,7 @@ namespace Ozikol.Central.Pages.Support
                 Input.SuiteCode = suite;
             }
 
+            Categories = await _supportService.GetSupportCategoriesAsync();
             Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
             Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
         }
@@ -113,6 +119,7 @@ namespace Ozikol.Central.Pages.Support
 
             if (!ModelState.IsValid)
             {
+                Categories = await _supportService.GetSupportCategoriesAsync();
                 Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
                 Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
                 return Page();
@@ -147,6 +154,7 @@ namespace Ozikol.Central.Pages.Support
                 ModelState.AddModelError(string.Empty, "An unexpected error occurred while transmitting your request. Please retry.");
             }
 
+            Categories = await _supportService.GetSupportCategoriesAsync();
             Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
             Faqs = await _supportService.GetFaqsAsync(CurrentCulture);
             return Page();

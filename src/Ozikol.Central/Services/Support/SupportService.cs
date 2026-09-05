@@ -352,6 +352,28 @@ namespace Ozikol.Central.Services.Support
         }
 
         /// <inheritdoc />
+        public async Task<IReadOnlyList<string>> GetSupportCategoriesAsync(System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var setting = await _context.MasterPlatformSettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+
+                if (setting != null && setting.SupportCategoryList.Count > 0)
+                {
+                    return setting.SupportCategoryList;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query support categories from MasterPlatformSettings; falling back to default categories.");
+            }
+
+            return new List<string> { "Support", "Sales", "Billing", "Partnership", "Enterprise", "General" };
+        }
+
+        /// <inheritdoc />
         public async Task RecordArticleVoteAsync(Guid articleId, bool helpful)
         {
             var article = await _context.MasterHelpdeskArticles.FirstOrDefaultAsync(a => a.Id == articleId);

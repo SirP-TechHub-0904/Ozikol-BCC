@@ -434,6 +434,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.PlatformName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.SupportContactEmail).HasMaxLength(150);
             entity.Property(e => e.DefaultFromEmail).HasMaxLength(150);
+            entity.Property(e => e.SupportCategories).HasMaxLength(1000);
         });
 
         modelBuilder.Entity<MasterHelpdeskArticle>(entity =>
