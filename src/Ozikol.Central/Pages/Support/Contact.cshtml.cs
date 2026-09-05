@@ -1,0 +1,160 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using Ozikol.Central.Services;
+using Ozikol.Central.Services.Support;
+using Ozikol.MasterDomain.Models;
+
+namespace Ozikol.Central.Pages.Support
+{
+    /// <summary>
+    /// PageModel presenting the dedicated enterprise contact and support ticket submission portal.
+    /// </summary>
+    public class ContactModel : PageModel
+    {
+        private readonly ISupportService _supportService;
+        private readonly IRecaptchaService _recaptchaService;
+        private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly ILogger<ContactModel> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContactModel"/> class.
+        /// </summary>
+        public ContactModel(
+            ISupportService supportService,
+            IRecaptchaService recaptchaService,
+            IStringLocalizer<SharedResource> localizer,
+            ILogger<ContactModel> logger)
+        {
+            _supportService = supportService ?? throw new ArgumentNullException(nameof(supportService));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
+            _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <summary>
+        /// Gets the active 2-letter ISO culture code.
+        /// </summary>
+        public string CurrentCulture { get; private set; } = "en";
+
+        /// <summary>
+        /// Gets the public Google reCAPTCHA v2 site key.
+        /// </summary>
+        public string RecaptchaSiteKey => _recaptchaService.SiteKey;
+
+        /// <summary>
+        /// Gets the list of 9 enterprise suites for form categorization.
+        /// </summary>
+        public IReadOnlyList<SuiteSupportViewModel> Suites { get; private set; } = new List<SuiteSupportViewModel>();
+
+        /// <summary>
+        /// Gets a value indicating whether an inquiry was submitted successfully.
+        /// </summary>
+        public bool IsSubmitted { get; set; }
+
+        /// <summary>
+        /// Gets the assigned unique reference tracking number.
+        /// </summary>
+        public string AssignedReference { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the form input model.
+        /// </summary>
+        [BindProperty]
+        public SupportInquiryInput Input { get; set; } = new();
+
+        /// <summary>
+        /// Handles GET requests to display the contact form and office locations.
+        /// </summary>
+        /// <param name="type">Optional pre-selected inquiry type (e.g. Sales, Support).</param>
+        /// <param name="suite">Optional pre-selected suite code.</param>
+        public async Task OnGetAsync(string? type, string? suite)
+        {
+            ResolveCulture();
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                Input.InquiryType = type;
+            }
+            if (!string.IsNullOrWhiteSpace(suite))
+            {
+                Input.SuiteCode = suite;
+            }
+
+            Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+        }
+
+        /// <summary>
+        /// Handles POST requests to validate and persist the submitted ticket.
+        /// </summary>
+        public async Task<IActionResult> OnPostSubmitInquiryAsync()
+        {
+            ResolveCulture();
+
+            var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+
+            if (!isCaptchaValid)
+            {
+                ModelState.AddModelError(string.Empty, _localizer["Careers_Error_Captcha"]);
+            }
+
+            if (!ModelState.IsValid)
+            {
+                Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+                return Page();
+            }
+
+            try
+            {
+                var inquiry = new MasterSupportInquiry
+                {
+                    FullName = Input.FullName.Trim(),
+                    Email = Input.Email.Trim(),
+                    Phone = string.IsNullOrWhiteSpace(Input.Phone) ? null : Input.Phone.Trim(),
+                    Organization = Input.Organization.Trim(),
+                    JobTitle = string.IsNullOrWhiteSpace(Input.JobTitle) ? null : Input.JobTitle.Trim(),
+                    InquiryType = Input.InquiryType,
+                    SuiteCode = string.IsNullOrWhiteSpace(Input.SuiteCode) ? null : Input.SuiteCode.Trim(),
+                    FeatureCode = string.IsNullOrWhiteSpace(Input.FeatureCode) ? null : Input.FeatureCode.Trim(),
+                    Subject = Input.Subject.Trim(),
+                    Message = Input.Message.Trim(),
+                    Culture = CurrentCulture,
+                    IpAddress = clientIp
+                };
+
+                AssignedReference = await _supportService.SubmitInquiryAsync(inquiry);
+                IsSubmitted = true;
+                ModelState.Clear();
+                Input = new SupportInquiryInput();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error transmitting contact inquiry for {Email}", Input.Email);
+                ModelState.AddModelError(string.Empty, "An unexpected error occurred while transmitting your request. Please retry.");
+            }
+
+            Suites = await _supportService.GetSuitesWithHierarchyAsync(CurrentCulture);
+            return Page();
+        }
+
+        private void ResolveCulture()
+        {
+            var routeCulture = RouteData.Values["culture"]?.ToString()?.ToLowerInvariant();
+            if (routeCulture is "en" or "fr" or "es" or "de")
+            {
+                CurrentCulture = routeCulture;
+                return;
+            }
+
+            var current = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+            CurrentCulture = current is "en" or "fr" or "es" or "de" ? current : "en";
+        }
+    }
+}

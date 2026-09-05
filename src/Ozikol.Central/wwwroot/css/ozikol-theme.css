@@ -1917,6 +1917,10 @@
     background: rgba(244, 63, 94, 0.12);
     color: #e11d48;
 }
+.oz-icon-red, .oz-feat-card-icon--red {
+    background: rgba(225, 29, 72, 0.12);
+    color: #e11d48;
+}
 
 .oz-feat-card-title {
     font-size: 18.5px;
@@ -5529,4 +5533,420 @@ body.oz-modal-open {
     color: #64748b;
     font-size: 15px;
     font-weight: 600;
+}
+
+/* SLA Status & Health Dashboard Styles */
+.oz-status-badge--live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #059669;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.oz-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: oz-pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@@keyframes oz-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.oz-sla-metrics {
+    background: #090d16;
+    padding: 36px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oz-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+@@media (max-width: 900px) {
+    .oz-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 540px) {
+    .oz-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-metric-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+}
+
+.oz-metric-card__value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+    margin-bottom: 6px;
+}
+
+.oz-metric-card__label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+}
+
+.oz-metric-card__sub {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Service Status Rows */
+.oz-service-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.oz-service-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px 24px;
+    transition: all 0.2s ease;
+}
+
+.oz-service-status-row:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.oz-service-status-row__main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.oz-service-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.oz-service-indicator--ok {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.oz-service-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+}
+
+.oz-service-group {
+    font-size: 12.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.oz-service-status-row__metrics {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.oz-latency-chip, .oz-uptime-chip {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.oz-status-pill {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.oz-status-pill--ok {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+/* SLA Tiers Grid */
+.oz-sla-tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+@@media (max-width: 1024px) {
+    .oz-sla-tiers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 640px) {
+    .oz-sla-tiers-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-sla-tier-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+}
+
+.oz-sla-tier-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.oz-sla-tier-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.oz-sla-tier-card__time {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.oz-badge-tag--orange {
+    background: rgba(249, 115, 22, 0.12);
+    color: #ea580c;
+}
+
+.oz-sla-tier-card__title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
+    margin: 0 0 12px 0;
+}
+
+.oz-sla-tier-card__coverage {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.oz-sla-tier-card__desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569;
+    margin: 0;
+}
+
+/* Service Credit Table */
+.oz-table-wrap {
+    overflow-x: auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+}
+
+.oz-sla-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    text-align: left;
+}
+
+.oz-sla-table th {
+    background: #f8fafc;
+    padding: 16px 20px;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.oz-sla-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+.oz-sla-table tr:last-child td {
+    border-bottom: none;
+}
+
+.oz-credit-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.oz-credit-badge--orange {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.oz-credit-badge--red {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.oz-credit-badge--max {
+    background: #450a0a;
+    color: #fecaca;
+}
+
+/* Compliance Grid */
+.oz-compliance-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+@@media (max-width: 960px) {
+    .oz-compliance-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 560px) {
+    .oz-compliance-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.oz-compliance-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+}
+
+.oz-compliance-card__icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.oz-compliance-card h4 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+}
+
+.oz-compliance-card p {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Emergency CTA Banner */
+.oz-sla-cta {
+    padding: 60px 0;
+}
+
+.oz-sla-cta__card {
+    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 44px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    color: #ffffff;
+}
+
+@@media (max-width: 860px) {
+    .oz-sla-cta__card {
+        flex-direction: column;
+        text-align: center;
+        padding: 36px 24px;
+    }
+}
+
+.oz-sla-cta__card h2 {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 12px 0 8px 0;
+    color: #ffffff;
+}
+
+.oz-sla-cta__card p {
+    font-size: 15.5px;
+    color: #cbd5e1;
+    margin: 0;
+    max-width: 560px;
+}
+
+.oz-sla-cta__actions {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.oz-btn-emergency {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #e11d48;
+    color: #ffffff;
+    padding: 13px 24px;
+    border-radius: 9999px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.oz-btn-emergency:hover {
+    background: #be123c;
+    color: #ffffff;
 }

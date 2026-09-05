@@ -1,0 +1,262 @@
+@page "/support/videos"
+@model Ozikol.Central.Pages.Support.VideosModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = "Video Tutorials & Visual Walkthroughs | Ozikol Support";
+    ViewData["MetaDescription"] = "Watch step-by-step YouTube tutorials and feature demonstrations across all 9 Ozikol enterprise suites.";
+}
+
+<div class="oz-support-page">
+    <!-- Video Tutorials Header -->
+    <header class="oz-support-hero">
+        <div class="container">
+            <div class="oz-support-hero__inner">
+                <span class="oz-support-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    @SharedLocalizer["Support_Quick_Videos"]
+                </span>
+                <h1 class="oz-support-hero__title">@SharedLocalizer["Support_Videos_Heading"]</h1>
+                <p class="oz-support-hero__sub">@SharedLocalizer["Support_Videos_Sub"]</p>
+
+                <!-- Search -->
+                <form method="get" class="oz-support-search">
+                    @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+                    {
+                        <input type="hidden" name="suite" value="@Model.ActiveSuiteCode" />
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ActiveFeatureCode))
+                    {
+                        <input type="hidden" name="feature" value="@Model.ActiveFeatureCode" />
+                    }
+                    <div class="oz-support-search__wrap">
+                        <svg class="oz-support-search__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text"
+                               name="q"
+                               value="@Model.SearchQuery"
+                               placeholder="Search video tutorials by module or topic..."
+                               class="oz-support-search__input"
+                               aria-label="Search video tutorials" />
+                        <button type="submit" class="oz-support-search__btn">
+                            @SharedLocalizer["Support_Search_Btn"]
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Breadcrumb pills -->
+                <div class="oz-support-pills">
+                    <a href="/@Model.CurrentCulture/support" class="oz-support-pill">
+                        ← Support Hub
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/knowledge-base" class="oz-support-pill">
+                        📖 Knowledge Base
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/contact" class="oz-support-pill">
+                        💬 Contact & Helpdesk
+                    </a>
+                    <a href="/@Model.CurrentCulture/support/sla" class="oz-support-pill">
+                        🛡️ SLA & Status
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Multi-Suite Navigation Tabs -->
+    <section class="oz-support-suites" id="suites">
+        <div class="container">
+            <div class="oz-support-suites__bar">
+                <span class="oz-support-suites__label">@SharedLocalizer["Support_Suite_Select"]:</span>
+                <div class="oz-support-suites__tabs">
+                    <a href="/@Model.CurrentCulture/support/videos#suites"
+                       class="oz-support-suite-tab @(string.IsNullOrEmpty(Model.ActiveSuiteCode) ? "is-active" : "")">
+                        @SharedLocalizer["Support_Quick_AllSuites"]
+                    </a>
+                    @foreach (var suite in Model.Suites)
+                    {
+                        var isSuiteActive = Model.ActiveSuiteCode == suite.SuiteCode;
+                        <a href="/@Model.CurrentCulture/support/videos?suite=@suite.SuiteCode#suites"
+                           class="oz-support-suite-tab @(isSuiteActive ? "is-active" : "")">
+                            @suite.Title
+                            @if (suite.VideoCount > 0)
+                            {
+                                <span class="oz-support-badge-count">@suite.VideoCount</span>
+                            }
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Child Feature Selector Pills -->
+            @if (!string.IsNullOrEmpty(Model.ActiveSuiteCode))
+            {
+                var selectedSuite = Model.Suites.FirstOrDefault(s => s.SuiteCode == Model.ActiveSuiteCode);
+                if (selectedSuite != null && selectedSuite.Features.Any())
+                {
+                    <div class="oz-support-features">
+                        <div class="oz-support-features__inner">
+                            <span class="oz-support-features__title">@selectedSuite.Title:</span>
+                            <div class="oz-support-features__chips">
+                                <a href="/@Model.CurrentCulture/support/videos?suite=@selectedSuite.SuiteCode#suites"
+                                   class="oz-support-chip @(string.IsNullOrEmpty(Model.ActiveFeatureCode) ? "is-active" : "")">
+                                    @SharedLocalizer["Support_Feature_All"]
+                                </a>
+                                @foreach (var feat in selectedSuite.Features)
+                                {
+                                    var isFeatActive = Model.ActiveFeatureCode == feat.FeatureCode;
+                                    <a href="/@Model.CurrentCulture/support/videos?suite=@selectedSuite.SuiteCode&feature=@feat.FeatureCode#suites"
+                                       class="oz-support-chip @(isFeatActive ? "is-active" : "")">
+                                        @feat.Name
+                                        @if (feat.VideoCount > 0)
+                                        {
+                                            <span class="oz-chip-tag oz-chip-tag--video">▶ @feat.VideoCount</span>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    <!-- Videos Grid -->
+    <main class="oz-support-section">
+        <div class="container">
+            @if (Model.Videos.Any())
+            {
+                <div class="oz-video-grid">
+                    @foreach (var video in Model.Videos)
+                    {
+                        var thumbUrl = !string.IsNullOrEmpty(video.ThumbnailUrl)
+                            ? video.ThumbnailUrl
+                            : $"https://img.youtube.com/vi/{video.YouTubeVideoId}/hqdefault.jpg";
+                        var minutes = video.DurationSeconds / 60;
+                        var seconds = video.DurationSeconds % 60;
+                        var durationStr = $"{minutes}:{seconds:D2}";
+
+                        <article class="oz-video-card" data-video-id="@video.Id" data-youtube-id="@video.YouTubeVideoId">
+                            <div class="oz-video-card__media">
+                                <img src="@thumbUrl" alt="@video.Title" loading="lazy" class="oz-video-card__thumb" />
+                                <div class="oz-video-card__play">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                </div>
+                                <span class="oz-video-card__duration">@durationStr</span>
+                            </div>
+                            <div class="oz-video-card__body">
+                                <div class="oz-video-card__meta">
+                                    <span class="oz-badge-tag">@video.SuiteCode.Replace("suite-", "").ToUpperInvariant()</span>
+                                    @if (!string.IsNullOrEmpty(video.FeatureCode))
+                                    {
+                                        <span class="oz-badge-tag oz-badge-tag--feat">@video.FeatureCode</span>
+                                    }
+                                </div>
+                                <h2 class="oz-video-card__title">@video.Title</h2>
+                                <p class="oz-video-card__desc">@video.Description</p>
+                                <button type="button" class="oz-btn-watch js-open-video" data-id="@video.Id">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    @SharedLocalizer["Support_Card_WatchVideo"]
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="oz-support-empty">
+                    <p>No video tutorials matched your search criteria. Browse other suites or submit a question to our helpdesk.</p>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+<!-- YouTube Video Player Modal -->
+<div class="oz-modal-backdrop" id="ozVideoModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="oz-modal oz-modal--video">
+        <button type="button" class="oz-modal-close js-close-modal" aria-label="Close video player">&times;</button>
+        <div class="oz-modal-video-wrap">
+            <iframe id="ozVideoFrame"
+                    src=""
+                    title="Ozikol Tutorial Video"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+        <div class="oz-modal-video-info">
+            <h3 id="ozVideoModalTitle" class="oz-modal-video-title">Loading tutorial...</h3>
+            <p id="ozVideoModalDesc" class="oz-modal-video-desc"></p>
+            <div class="oz-modal-video-actions">
+                <span class="oz-modal-feedback-q">@SharedLocalizer["Support_Modal_WasHelpful"]</span>
+                <button type="button" class="oz-btn-feedback js-feedback-btn">👍 @SharedLocalizer["Support_Modal_Yes"]</button>
+                <button type="button" class="oz-btn-feedback js-feedback-btn">👎 @SharedLocalizer["Support_Modal_No"]</button>
+                <a href="/@Model.CurrentCulture/support/contact" class="oz-btn-ask">@SharedLocalizer["Support_Modal_AskQuestion"]</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const videoModal = document.getElementById('ozVideoModal');
+            const videoFrame = document.getElementById('ozVideoFrame');
+            const videoTitle = document.getElementById('ozVideoModalTitle');
+            const videoDesc = document.getElementById('ozVideoModalDesc');
+
+            document.querySelectorAll('.js-open-video, .oz-video-card').forEach(card => {
+                card.addEventListener('click', async function () {
+                    const videoId = this.dataset.videoId || this.dataset.id;
+                    const ytId = this.dataset.youtubeId;
+
+                    if (videoId) {
+                        try {
+                            const res = await fetch(`?handler=VideoDetails&id=${videoId}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                videoTitle.textContent = data.title;
+                                videoDesc.textContent = data.description;
+                                videoFrame.src = `https://www.youtube-nocookie.com/embed/${data.youtubeId}?autoplay=1`;
+                                openModal(videoModal);
+                                return;
+                            }
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }
+
+                    if (ytId) {
+                        videoFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`;
+                        openModal(videoModal);
+                    }
+                });
+            });
+
+            function openModal(modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('oz-modal-open');
+            }
+
+            function closeModal(modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('oz-modal-open');
+                videoFrame.src = '';
+            }
+
+            document.querySelectorAll('.js-close-modal').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(videoModal));
+            });
+
+            videoModal.addEventListener('click', e => {
+                if (e.target === videoModal) closeModal(videoModal);
+            });
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && videoModal.classList.contains('is-open')) closeModal(videoModal);
+            });
+        });
+    </script>
+}
