@@ -1,3 +1,25 @@
+@{
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+    if (currentCulture != "en" && currentCulture != "fr" && currentCulture != "es" && currentCulture != "de")
+    {
+        currentCulture = "en";
+    }
+
+    var pathValue = Context.Request.Path.Value ?? "/en";
+    var routeRemainder = System.Text.RegularExpressions.Regex.Replace(pathValue, @"^/(en|fr|es|de)(/|$)", "/");
+    if (!routeRemainder.StartsWith("/")) routeRemainder = "/" + routeRemainder;
+    if (routeRemainder == "/") routeRemainder = "";
+
+    string BuildLangUrl(string lang) => $"/{lang}{routeRemainder}{Context.Request.QueryString}";
+
+    var currentFlag = currentCulture switch
+    {
+        "fr" => "🇫🇷 FR",
+        "es" => "🇪🇸 ES",
+        "de" => "🇩🇪 DE",
+        _ => "🇬🇧 EN"
+    };
+}
 <!DOCTYPE html>
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
@@ -680,127 +702,7 @@
     <a href='/careers' class='mega-menu__link mega-menu__link--bold'>@SharedLocalizer["Nav_Careers"]</a>
 </li>
 <li class="mega-menu__link-wrap">
-    <button class="mega-menu__link js-megaMenuMidLevelOpen">
-        @SharedLocalizer["Nav_Customer"]
-    </button>
-
-    <div class="mega-menu__panel js-megaMenuPanel expanded-panel">
-    <div class="mega-menu__mid-items mega-menu__sidebar container-padding-left--xs js-megaMenuSidebar">
-        <div class="mega-menu__mid-items-scroll">
-            <button class="mega-menu__back js-megaMenuMidLevelBack">
-                <i class="icon icon-arrow-left"></i>
-                @SharedLocalizer["Menu_Back"]
-            </button>
-                <div class="mega-menu__mid-items-group">
-                    <div class="mega-menu__nav-title">@SharedLocalizer["Customer_NavTitle"]</div>
-                        
-                                                <!-- Tab 1: Support & Operations -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Customer_SupportOps"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Customer_SupportHeader"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Customer_SupportDesc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>@SharedLocalizer["Menu_Close"]</span>
-                                        </button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/support-hub">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_SupportHubTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_SupportHubDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/status">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_StatusTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_StatusDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/support-hub/contact-sales">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_ContactSalesTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_ContactSalesDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/legal-hub">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_LegalHubTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_LegalHubDesc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-
-                        <!-- Tab 2: Portal & Channels -->
-                        <div class="mega-menu__link-wrap">
-                                <button class="mega-menu__link js-megaMenuBottomLevelOpen ">
-                                    @SharedLocalizer["Customer_PortalChannels"]
-                                </button>
-                                <div class="mega-menu-sub  js-megaMenuSub container-padding-right--lg">
-                                    <div class="mega-menu-sub__inner">
-                                        <div class="mega-menu-sub__header">
-                                            <div class="mega-menu-sub__title">@SharedLocalizer["Customer_PlatformAccessHeader"]</div>
-                                            <div class="mega-menu-sub__description rte">
-                                                <p>@SharedLocalizer["Customer_PlatformAccessDesc"]</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mega-menu-sub__content">
-                                        <button class="mega-menu-sub__close js-megaMenuClose">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="mega-menu-sub__close-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            <span>@SharedLocalizer["Menu_Close"]</span>
-                                        </button>
-                                        <div class="mega-menu__bottom-items mega-menu__bottom-items--2-col">
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/client-login">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_ClientLoginTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_ClientLoginDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/platform/website">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_WebsiteTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_WebsiteDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/platform/mis-system">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_MisTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_MisDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/platform/mobile-app">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_MobileTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_MobileDesc"]</div>
-                                                </a>
-                                            </article>
-                                            <article class="mega-menu-text-link mega-menu-link js-megaMenuLink">
-                                                <a href="/platform/desktop-app">
-                                                    <div class="mega-menu-text-link__title">@SharedLocalizer["Customer_DesktopTitle"]</div>
-                                                    <div class="mega-menu-text-link__description">@SharedLocalizer["Customer_DesktopDesc"]</div>
-                                                </a>
-                                            </article>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                </div>
-        </div>
-    </div>
-</div>    
+    <a href="/@currentCulture/support" class="mega-menu__link mega-menu__link--bold">@SharedLocalizer["Nav_Support"]</a>
 </li></ul>
             </nav>
             <div class="hidden--lg mega-menu__burger-wrap js-hamburger">
@@ -811,28 +713,6 @@
                 </button>
             </div>
                 <div class="mega-menu__secondary-area">
-                    @{
-                        var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
-                        if (currentCulture != "en" && currentCulture != "fr" && currentCulture != "es" && currentCulture != "de")
-                        {
-                            currentCulture = "en";
-                        }
-
-                        var pathValue = Context.Request.Path.Value ?? "/en";
-                        var routeRemainder = System.Text.RegularExpressions.Regex.Replace(pathValue, @"^/(en|fr|es|de)(/|$)", "/");
-                        if (!routeRemainder.StartsWith("/")) routeRemainder = "/" + routeRemainder;
-                        if (routeRemainder == "/") routeRemainder = "";
-
-                        string BuildLangUrl(string lang) => $"/{lang}{routeRemainder}{Context.Request.QueryString}";
-
-                        var currentFlag = currentCulture switch
-                        {
-                            "fr" => "🇫🇷 FR",
-                            "es" => "🇪🇸 ES",
-                            "de" => "🇩🇪 DE",
-                            _ => "🇬🇧 EN"
-                        };
-                    }
                     <div class="oz-lang-switcher" id="ozLangSwitcher">
                         <button type="button" class="oz-lang-btn" aria-expanded="false" aria-label="Select Language">
                             <span class="oz-lang-flag">@currentFlag</span>
@@ -952,10 +832,10 @@
                 <div class="oz-ms-col">
                     <h3 class="oz-ms-col-title">@SharedLocalizer["Footer_ColResources"]</h3>
                     <ul class="oz-ms-col-links">
-                        <li><a href="/support-hub">@SharedLocalizer["Customer_SupportHubTitle"]</a></li>
-                        <li><a href="/news">@SharedLocalizer["Footer_NewsReleases"]</a></li>
-                        <li><a href="/case-studies">@SharedLocalizer["Footer_CaseStudies"]</a></li>
-                        <li><a href="/status">@SharedLocalizer["Customer_StatusTitle"]</a></li>
+                        <li><a href="/@currentCulture/support">@SharedLocalizer["Nav_Support"]</a></li>
+                        <li><a href="/@currentCulture/news">@SharedLocalizer["Footer_NewsReleases"]</a></li>
+                        <li><a href="/@currentCulture/support#videos">@SharedLocalizer["Support_Tab_Videos"]</a></li>
+                        <li><a href="/@currentCulture/support#articles">@SharedLocalizer["Support_Tab_Articles"]</a></li>
                     </ul>
                 </div>
 
@@ -993,7 +873,7 @@
                 <!-- Right: Legal Links & Copyright -->
                 <div class="oz-ms-sub-right">
                     <ul class="oz-ms-sub-links">
-                        <li><a href="/support-hub/contact-sales">@SharedLocalizer["Footer_ContactOzikol"]</a></li>
+                        <li><a href="/@currentCulture/support#contact">@SharedLocalizer["Footer_ContactOzikol"]</a></li>
                         <li><a href="/privacy-notice">@SharedLocalizer["Footer_PrivacyNotice"]</a></li>
                         <li><a href="/terms-of-use">@SharedLocalizer["Footer_TermsOfUse"]</a></li>
                         <li><a href="/cookies">@SharedLocalizer["Footer_CookiePolicy"]</a></li>
