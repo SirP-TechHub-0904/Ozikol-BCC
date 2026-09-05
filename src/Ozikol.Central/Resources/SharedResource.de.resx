@@ -2559,19 +2559,19 @@
     <value>Alle 37 Funktionen entdecken</value>
   </data>
   <data name="Offices_Page_Title" xml:space="preserve">
-    <value>Globale Präsenz &amp; Infrastruktur-Standorte | Ozikol</value>
+    <value>Kontakt- und Anfragewege | Ozikol</value>
   </data>
   <data name="Offices_Hero_Badge" xml:space="preserve">
-    <value>Globale Präsenz &amp; Infrastruktur</value>
+    <value>Direkte Kommunikation</value>
   </data>
   <data name="Offices_Hero_Title" xml:space="preserve">
-    <value>Verbindet Organisationen weltweit <span class="oz-gradient-text">mit latenzarmer Cloud-Edge</span></value>
+    <value>Verbinden Sie sich mit unseren Fachteams<span class="oz-gradient-text">mit latenzarmer Cloud-Edge</span></value>
   </data>
   <data name="Offices_Hero_Lead" xml:space="preserve">
-    <value>Hauptsitz in London mit verteilten Operationszentren, rund um die Uhr verfügbarem Kundensupport und schneller Multi-Region-Infrastruktur.</value>
+    <value>Erreichen Sie unsere spezialisierten Abteilungen direkt für technischen Support, Partnerschaften, Unternehmensanfragen und Sicherheitsmeldungen.</value>
   </data>
   <data name="Offices_Hero_BtnPrimary" xml:space="preserve">
-    <value>Kontakt aufnehmen</value>
+    <value>Anfrage senden</value>
   </data>
   <data name="Offices_Hero_BtnSecondary" xml:space="preserve">
     <value>Über Ozikol</value>
@@ -2589,76 +2589,76 @@
     <value>Aktives Operations-Zentrum</value>
   </data>
   <data name="Offices_Hubs_Tag" xml:space="preserve">
-    <value>Operationszentren</value>
+    <value>Offizielle Kommunikation</value>
   </data>
   <data name="Offices_Hubs_Title" xml:space="preserve">
-    <value>Unsere weltweiten Hubs &amp; Edge-Knoten</value>
+    <value>Dedizierte Anfragewege</value>
   </data>
   <data name="Offices_Hubs_Desc" xml:space="preserve">
-    <value>Strategische Standorte für unterbrechungsfreie Plattformverfügbarkeit und direkten Enterprise-Support.</value>
+    <value>Direkte Kommunikationskanäle für Kundensupport, Partneranfragen, Sicherheitswarnungen und Unternehmenslizenzen.</value>
   </data>
   <data name="Offices_Hub1_Badge" xml:space="preserve">
-    <value>Weltweiter Hauptsitz</value>
+    <value>Allgemeine Anfragen</value>
   </data>
   <data name="Offices_Hub1_Title" xml:space="preserve">
-    <value>London, Vereinigtes Königreich</value>
+    <value>Kunden- und technischer Support</value>
   </data>
   <data name="Offices_Hub1_Desc" xml:space="preserve">
-    <value>Geschäftsleitung, strategische Partnerschaften, Kernprodukt-Architektur und internationale Rechtskonformität.</value>
+    <value>Hilfe bei der Mandanteneinrichtung, Kontoverwaltung, Abrechnung und Fehlerbehebung auf der Plattform.</value>
   </data>
   <data name="Offices_Hub1_Contact" xml:space="preserve">
-    <value>+44 (0) 20 7946 0912</value>
+    <value>support@ozikol.cloud</value>
   </data>
   <data name="Offices_Hub2_Badge" xml:space="preserve">
-    <value>Nordamerika-Hub</value>
+    <value>Wachstum und Allianzen</value>
   </data>
   <data name="Offices_Hub2_Title" xml:space="preserve">
-    <value>New York &amp; Toronto</value>
+    <value>Partner- und Empfehlungsnetzwerk</value>
   </data>
   <data name="Offices_Hub2_Desc" xml:space="preserve">
-    <value>Enterprise-Kundenerfolg, nordamerikanische Lösungsarchitektur und strategische Cloud-Allianzen.</value>
+    <value>Fragen zu Partnerbewerbungen, Empfehlungsprovisionen, Marketplace-Veröffentlichungen und strategischen Allianzen.</value>
   </data>
   <data name="Offices_Hub2_Contact" xml:space="preserve">
-    <value>na-support@ozikol.cloud</value>
+    <value>affiliate@ozikol.cloud</value>
   </data>
   <data name="Offices_Hub3_Badge" xml:space="preserve">
-    <value>24/7 Betrieb</value>
+    <value>Vertrauen und Sicherheit</value>
   </data>
   <data name="Offices_Hub3_Title" xml:space="preserve">
-    <value>EMEA Engineering &amp; Support</value>
+    <value>Sicherheit und verdächtige Aktivitäten</value>
   </data>
   <data name="Offices_Hub3_Desc" xml:space="preserve">
-    <value>Verteilte technische Operationen, Incident-Response-Engineering und mehrsprachige Kundenbetreuung.</value>
+    <value>Melden Sie potenzielle Sicherheitslücken, Phishing-Versuche, unbefugte Zugriffe, verdächtiges Verhalten oder Richtlinienverstöße.</value>
   </data>
   <data name="Offices_Hub3_Contact" xml:space="preserve">
-    <value>emea-support@ozikol.cloud</value>
+    <value>suspicious@ozikol.cloud</value>
   </data>
   <data name="Offices_Hub4_Badge" xml:space="preserve">
-    <value>Asien-Pazifik-Auslieferung</value>
+    <value>Unternehmenslösungen</value>
   </data>
   <data name="Offices_Hub4_Title" xml:space="preserve">
-    <value>APAC-Edge-Netzwerk</value>
+    <value>Vertrieb und Unternehmenslizenzen</value>
   </data>
   <data name="Offices_Hub4_Desc" xml:space="preserve">
-    <value>Regionale latenzarme Inhaltsauslieferung, automatisiertes Währungs-Routing und lokale Zahlungsgateways.</value>
+    <value>Erfahren Sie mehr über maßgeschneiderte Multi-Mandanten-Installationen, individuelle Verträge und begleitete Einführungen.</value>
   </data>
   <data name="Offices_Hub4_Contact" xml:space="preserve">
-    <value>apac-support@ozikol.cloud</value>
+    <value>sales@ozikol.cloud</value>
   </data>
   <data name="Offices_Cta_Badge" xml:space="preserve">
-    <value>Weltweiter Betrieb</value>
+    <value>Engagierte Unterstützung</value>
   </data>
   <data name="Offices_Cta_Title" xml:space="preserve">
     <value>Verbinden Sie sich mit unserem internationalen Team</value>
   </data>
   <data name="Offices_Cta_Desc" xml:space="preserve">
-    <value>Unsere regionalen Ansprechpartner stehen Ihnen rund um die Uhr für Fragen und Demos zur Verfügung.</value>
+    <value>Unsere Fachteams stehen jederzeit bereit, um Ihre Fragen zu beantworten und Plattform-Demonstrationen zu planen.</value>
   </data>
   <data name="Offices_Cta_BtnPrimary" xml:space="preserve">
-    <value>Vertrieb kontaktieren</value>
+    <value>Vertriebsteam kontaktieren</value>
   </data>
   <data name="Offices_Cta_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Plattform-Funktionen entdecken</value>
   </data>
   <data name="Partners_Page_Title" xml:space="preserve">
     <value>Partner- &amp; Affiliate-Netzwerk | Ozikol</value>
@@ -2901,4 +2901,4 @@
   <data name="Partner_Success_BtnHome" xml:space="preserve">
     <value>Zurück zur Startseite</value>
   </data>
-</root>
+<data name="Offices_Hub1_Team" xml:space="preserve"><value>Support-Team</value></data><data name="Offices_Hub2_Team" xml:space="preserve"><value>Allianz-Team</value></data><data name="Offices_Hub3_Team" xml:space="preserve"><value>Sicherheitsteam</value></data><data name="Offices_Hub4_Team" xml:space="preserve"><value>Vertriebsteam</value></data></root>
