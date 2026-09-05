@@ -3305,7 +3305,7 @@
     <value>Startseite</value>
   </data>
   <data name="Legal_Breadcrumb_Hub" xml:space="preserve">
-    <value>Recht & Governance</value>
+    <value>Recht &amp; Governance</value>
   </data>
   <data name="Legal_Breadcrumb_Back" xml:space="preserve">
     <value>Zurück zum Portal</value>
@@ -3323,7 +3323,7 @@
     <value>Richtlinie drucken</value>
   </data>
   <data name="Legal_Nav_Title" xml:space="preserve">
-    <value>Rechts- & Governance-Center</value>
+    <value>Rechts- &amp; Governance-Center</value>
   </data>
   <data name="Legal_Nav_PrivacyNotice" xml:space="preserve">
     <value>Datenschutzerklärung</value>
@@ -3338,7 +3338,7 @@
     <value>Datenschutz-Präferenzen</value>
   </data>
   <data name="Legal_Nav_PoliciesReports" xml:space="preserve">
-    <value>Unternehmensrichtlinien & Berichte</value>
+    <value>Unternehmensrichtlinien &amp; Berichte</value>
   </data>
   <data name="Legal_Help_Title" xml:space="preserve">
     <value>Benötigen Sie rechtliche Klärung?</value>
@@ -3359,10 +3359,10 @@
     <value>Unternehmensvertrieb</value>
   </data>
   <data name="Category_Billing" xml:space="preserve">
-    <value>Abrechnung & Finanzen</value>
+    <value>Abrechnung &amp; Finanzen</value>
   </data>
   <data name="Category_Partnership" xml:space="preserve">
-    <value>Partnerschaften & Partner</value>
+    <value>Partnerschaften &amp; Partner</value>
   </data>
   <data name="Category_Enterprise" xml:space="preserve">
     <value>Unternehmenslösungen</value>
@@ -3371,6 +3371,6 @@
     <value>Allgemeine Anfragen</value>
   </data>
   <data name="Category_SecurityCompliance" xml:space="preserve">
-    <value>Sicherheit & Compliance</value>
+    <value>Sicherheit &amp; Compliance</value>
   </data>
 </root>

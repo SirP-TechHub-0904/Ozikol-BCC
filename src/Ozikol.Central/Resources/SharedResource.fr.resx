@@ -3290,7 +3290,7 @@
     <value>Accueil</value>
   </data>
   <data name="Legal_Breadcrumb_Hub" xml:space="preserve">
-    <value>Légal & Gouvernance</value>
+    <value>Légal &amp; Gouvernance</value>
   </data>
   <data name="Legal_Breadcrumb_Back" xml:space="preserve">
     <value>Retour au portail</value>
@@ -3308,7 +3308,7 @@
     <value>Imprimer la politique</value>
   </data>
   <data name="Legal_Nav_Title" xml:space="preserve">
-    <value>Centre Légal & Gouvernance</value>
+    <value>Centre Légal &amp; Gouvernance</value>
   </data>
   <data name="Legal_Nav_PrivacyNotice" xml:space="preserve">
     <value>Notice de Confidentialité</value>
@@ -3323,7 +3323,7 @@
     <value>Vos Choix de Confidentialité</value>
   </data>
   <data name="Legal_Nav_PoliciesReports" xml:space="preserve">
-    <value>Politiques & Rapports</value>
+    <value>Politiques &amp; Rapports</value>
   </data>
   <data name="Legal_Help_Title" xml:space="preserve">
     <value>Besoin d'éclaircissements légaux ?</value>
@@ -3344,10 +3344,10 @@
     <value>Ventes Entreprise</value>
   </data>
   <data name="Category_Billing" xml:space="preserve">
-    <value>Facturation & Finance</value>
+    <value>Facturation &amp; Finance</value>
   </data>
   <data name="Category_Partnership" xml:space="preserve">
-    <value>Partenariats & Affiliés</value>
+    <value>Partenariats &amp; Affiliés</value>
   </data>
   <data name="Category_Enterprise" xml:space="preserve">
     <value>Solutions Entreprise</value>
@@ -3356,6 +3356,6 @@
     <value>Demandes Générales</value>
   </data>
   <data name="Category_SecurityCompliance" xml:space="preserve">
-    <value>Sécurité & Conformité</value>
+    <value>Sécurité &amp; Conformité</value>
   </data>
 </root>
