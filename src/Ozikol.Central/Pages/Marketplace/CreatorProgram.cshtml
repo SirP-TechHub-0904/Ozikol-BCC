@@ -209,93 +209,112 @@
             </section>
 
             <!-- Section 4: Application Form with reCAPTCHA -->
-            <section id="apply" class="oz-corp-section oz-partner-form-section">
-                <div class="oz-partner-form-card">
-                    <div class="oz-partner-form-header">
-                        <span class="oz-corp-badge-pill">@SharedLocalizer["Creator_Form_Badge"]</span>
-                        <h2>@SharedLocalizer["Creator_Form_Title"]</h2>
-                        <p>@SharedLocalizer["Creator_Form_Desc"]</p>
+            <section id="apply" class="oz-corp-section">
+                <div class="oz-partner-form-wrap">
+                    <div class="oz-partner-form-card">
+                        <div class="oz-corp-section-header oz-text-center">
+                            <span class="oz-corp-badge-pill">@SharedLocalizer["Creator_Form_Badge"]</span>
+                            <h2 class="oz-corp-section-title">@SharedLocalizer["Creator_Form_Title"]</h2>
+                            <p class="oz-corp-section-desc">@SharedLocalizer["Creator_Form_Desc"]</p>
+                        </div>
+
+                        <form method="post">
+                            @Html.AntiForgeryToken()
+                            <div asp-validation-summary="ModelOnly" class="oz-partner-alert-error"></div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.FullName" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_FullName"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="e.g. Elena Rostova" required />
+                                    <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.StudioName" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_StudioName"]
+                                    </label>
+                                    <input asp-for="Input.StudioName" class="oz-partner-input" placeholder="e.g. Apex Interface Lab" />
+                                    <span asp-validation-for="Input.StudioName" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.Email" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_Email"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="elena@apexstudio.design" required />
+                                    <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.Phone" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_Phone"]
+                                    </label>
+                                    <input asp-for="Input.Phone" type="tel" class="oz-partner-input" placeholder="+1 (555) 019-2834" />
+                                    <span asp-validation-for="Input.Phone" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-row">
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.PortfolioUrl" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_PortfolioUrl"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <input asp-for="Input.PortfolioUrl" class="oz-partner-input" placeholder="https://figma.com/@@studio or https://github.com/profile" required />
+                                    <span asp-validation-for="Input.PortfolioUrl" class="oz-partner-field-error"></span>
+                                </div>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.Specialization" class="oz-partner-label">
+                                        @SharedLocalizer["Creator_Field_Specialization"] <span class="oz-partner-req">*</span>
+                                    </label>
+                                    <select asp-for="Input.Specialization" class="oz-partner-input oz-partner-select">
+                                        <option value="Landing Suites &amp; Heros">Landing Suites &amp; Hero Showcases</option>
+                                        <option value="Suite Navigation &amp; Headers">Suite Navigation &amp; Mega Menus</option>
+                                        <option value="Operational Dashboards">Operational Dashboards &amp; Widgets</option>
+                                        <option value="Form Kits &amp; Interactive Inputs">Form Kits &amp; Workflow Surveys</option>
+                                        <option value="Industry Blueprints">Industry &amp; Nonprofit Full Blueprints</option>
+                                    </select>
+                                    <span asp-validation-for="Input.Specialization" class="oz-partner-field-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="oz-partner-field">
+                                <label asp-for="Input.ProposalPitch" class="oz-partner-label">
+                                    @SharedLocalizer["Creator_Field_Pitch"] <span class="oz-partner-req">*</span>
+                                </label>
+                                <textarea asp-for="Input.ProposalPitch" rows="4" class="oz-partner-textarea" placeholder="@SharedLocalizer["Creator_Field_PitchPlaceholder"]" required></textarea>
+                                <span asp-validation-for="Input.ProposalPitch" class="oz-partner-field-error"></span>
+                            </div>
+
+                            <!-- Terms & Conditions Checkbox -->
+                            <div class="oz-partner-field">
+                                <label class="oz-partner-checkbox-label">
+                                    <input asp-for="Input.AgreeTerms" type="checkbox" class="oz-partner-checkbox" required />
+                                    <span>
+                                        @SharedLocalizer["Creator_Field_AgreeTerms"]
+                                        <a href="/@Model.CurrentCulture/legal/terms-conditions" target="_blank" class="oz-link-accent">Creator Program Terms</a>
+                                    </span>
+                                </label>
+                                <span asp-validation-for="Input.AgreeTerms" class="oz-partner-field-error"></span>
+                            </div>
+
+                            <!-- Google reCAPTCHA Verification Widget -->
+                            <div class="oz-recaptcha-wrap">
+                                <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                            </div>
+
+                            <div class="oz-partner-submit-wrap">
+                                <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn">
+                                    <span>@SharedLocalizer["Creator_Btn_Submit"]</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <form method="post" class="oz-partner-form">
-                        @Html.AntiForgeryToken()
-                        <div asp-validation-summary="ModelOnly" class="oz-form-validation-error"></div>
-
-                        <div class="oz-form-grid-2">
-                            <div class="oz-form-group">
-                                <label asp-for="Input.FullName" class="oz-form-label">@SharedLocalizer["Creator_Field_FullName"] *</label>
-                                <input asp-for="Input.FullName" class="oz-form-input" placeholder="e.g. Elena Rostova" />
-                                <span asp-validation-for="Input.FullName" class="oz-field-error"></span>
-                            </div>
-                            <div class="oz-form-group">
-                                <label asp-for="Input.StudioName" class="oz-form-label">@SharedLocalizer["Creator_Field_StudioName"]</label>
-                                <input asp-for="Input.StudioName" class="oz-form-input" placeholder="e.g. Apex Interface Lab" />
-                                <span asp-validation-for="Input.StudioName" class="oz-field-error"></span>
-                            </div>
-                        </div>
-
-                        <div class="oz-form-grid-2">
-                            <div class="oz-form-group">
-                                <label asp-for="Input.Email" class="oz-form-label">@SharedLocalizer["Creator_Field_Email"] *</label>
-                                <input asp-for="Input.Email" type="email" class="oz-form-input" placeholder="elena@apexstudio.design" />
-                                <span asp-validation-for="Input.Email" class="oz-field-error"></span>
-                            </div>
-                            <div class="oz-form-group">
-                                <label asp-for="Input.Phone" class="oz-form-label">@SharedLocalizer["Creator_Field_Phone"]</label>
-                                <input asp-for="Input.Phone" type="tel" class="oz-form-input" placeholder="+1 (555) 019-2834" />
-                                <span asp-validation-for="Input.Phone" class="oz-field-error"></span>
-                            </div>
-                        </div>
-
-                        <div class="oz-form-grid-2">
-                            <div class="oz-form-group">
-                                <label asp-for="Input.PortfolioUrl" class="oz-form-label">@SharedLocalizer["Creator_Field_PortfolioUrl"] *</label>
-                                <input asp-for="Input.PortfolioUrl" class="oz-form-input" placeholder="https://figma.com/@@studio or https://github.com/profile" />
-                                <span asp-validation-for="Input.PortfolioUrl" class="oz-field-error"></span>
-                            </div>
-                            <div class="oz-form-group">
-                                <label asp-for="Input.Specialization" class="oz-form-label">@SharedLocalizer["Creator_Field_Specialization"] *</label>
-                                <select asp-for="Input.Specialization" class="oz-form-input">
-                                    <option value="Landing Suites & Heros">Landing Suites &amp; Hero Showcases</option>
-                                    <option value="Suite Navigation & Headers">Suite Navigation &amp; Mega Menus</option>
-                                    <option value="Operational Dashboards">Operational Dashboards &amp; Widgets</option>
-                                    <option value="Form Kits & Interactive Inputs">Form Kits &amp; Workflow Surveys</option>
-                                    <option value="Industry Blueprints">Industry &amp; Nonprofit Full Blueprints</option>
-                                </select>
-                                <span asp-validation-for="Input.Specialization" class="oz-field-error"></span>
-                            </div>
-                        </div>
-
-                        <div class="oz-form-group">
-                            <label asp-for="Input.ProposalPitch" class="oz-form-label">@SharedLocalizer["Creator_Field_Pitch"] *</label>
-                            <textarea asp-for="Input.ProposalPitch" rows="4" class="oz-form-textarea" placeholder="@SharedLocalizer["Creator_Field_PitchPlaceholder"]"></textarea>
-                            <span asp-validation-for="Input.ProposalPitch" class="oz-field-error"></span>
-                        </div>
-
-                        <!-- Terms & Conditions Checkbox -->
-                        <div class="oz-form-group oz-checkbox-group">
-                            <label class="oz-checkbox-label">
-                                <input asp-for="Input.AgreeTerms" type="checkbox" class="oz-checkbox-input" />
-                                <span>
-                                    @SharedLocalizer["Creator_Field_AgreeTerms"]
-                                    <a href="/@Model.CurrentCulture/legal/terms-conditions" target="_blank" class="oz-link-accent">Creator Program Terms</a>
-                                </span>
-                            </label>
-                            <span asp-validation-for="Input.AgreeTerms" class="oz-field-error"></span>
-                        </div>
-
-                        <!-- Google reCAPTCHA Verification Widget -->
-                        <div class="oz-recaptcha-wrap">
-                            <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
-                        </div>
-
-                        <div class="oz-partner-form-actions">
-                            <button type="submit" class="oz-btn-primary-hero oz-btn-block">
-                                <span>@SharedLocalizer["Creator_Btn_Submit"]</span>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </section>
         }
