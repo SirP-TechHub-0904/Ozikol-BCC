@@ -258,14 +258,14 @@ public class CareersService : ICareersService
                 ExperienceLevel = "Senior",
                 LanguageRequirements = "English (Fluent)",
                 SortOrder = 1,
-                Summary = "Lead regional tenant onboarding, localized regulatory compliance, enterprise trust frameworks, and client operations across Europe and the United Kingdom.",
+                Summary = "Lead regional organization onboarding, localized regulatory compliance, enterprise trust frameworks, and client operations across Europe and the United Kingdom.",
                 DescriptionHtml = @"
-                    <p>As a Regional Administrator for the UK & Europe at Ozikol, you will oversee multi-tenant operational integrity, regulatory compliance, and client onboarding across our European client portfolio. You will act as the key liaison between corporate leadership and regional organizations, ensuring seamless governance, fast incident resolution, and localized platform adoption.</p>
+                    <p>As a Regional Administrator for the UK & Europe at Ozikol, you will oversee enterprise cloud operational integrity, regulatory compliance, and client onboarding across our European client portfolio. You will act as the key liaison between corporate leadership and regional organizations, ensuring seamless governance, fast incident resolution, and localized platform adoption.</p>
                     <h3>The Opportunity</h3>
                     <p>This role offers significant autonomy to build out operational standards for healthcare charities, civic trusts, and international enterprises utilizing our modular business cloud operating platform.</p>",
                 ResponsibilitiesJson = JsonSerializer.Serialize(new[]
                 {
-                    "Oversee multi-tenant administrative provisioning and domain configuration for UK and European enterprise clients.",
+                    "Oversee enterprise workspace administrative provisioning and domain configuration for UK and European enterprise clients.",
                     "Ensure localized compliance with UK GDPR, EU GDPR, and regional statutory data protection frameworks.",
                     "Partner with regional account managers to resolve complex operational escalations and service delivery inquiries.",
                     "Lead regular operational reviews and provide structured feedback to central engineering on localized feature needs.",
@@ -345,7 +345,7 @@ public class CareersService : ICareersService
                 SortOrder = 3,
                 Summary = "Deliver 24/7 proactive technical onboarding, shift management support, and incident assistance to organizational administrators worldwide.",
                 DescriptionHtml = @"
-                    <p>Customer success is the cornerstone of the Ozikol platform. As a Customer Care & Success Specialist for our English and global accounts, you will empower administrators, managers, and staff to maximize the value of their multi-tenant suites.</p>
+                    <p>Customer success is the cornerstone of the Ozikol platform. As a Customer Care & Success Specialist for our English and global accounts, you will empower administrators, managers, and staff to maximize the value of their dedicated organization suites.</p>
                     <h3>The Opportunity</h3>
                     <p>You will handle diverse technical queries covering workforce shift rotas, invoicing, mass messaging, and MIS API configurations, transforming customer challenges into smooth, delightful experiences.</p>",
                 ResponsibilitiesJson = JsonSerializer.Serialize(new[]
@@ -468,9 +468,9 @@ public class CareersService : ICareersService
                 ExperienceLevel = "Senior",
                 LanguageRequirements = "English",
                 SortOrder = 6,
-                Summary = "Architect and maintain multi-tenant cryptographic partitions, automated zero-downtime deployments, and Bring-Your-Own-Key (BYOK) privacy pipelines.",
+                Summary = "Architect and maintain isolated cryptographic partitions, automated zero-downtime deployments, and Bring-Your-Own-Key (BYOK) privacy pipelines.",
                 DescriptionHtml = @"
-                    <p>Ozikol operates on a strict multi-tenant architecture with Bring-Your-Own-Key (BYOK) cryptographic boundaries and localized data partitioning. We are seeking a senior Cloud Infrastructure & BYOK Security Engineer to maintain our zero-trust infrastructure, automated CI/CD pipelines, and high-availability database replication.</p>
+                    <p>Ozikol operates on a strict dedicated fleet isolation architecture with Bring-Your-Own-Key (BYOK) cryptographic boundaries and localized data partitioning. We are seeking a senior Cloud Infrastructure & BYOK Security Engineer to maintain our zero-trust infrastructure, automated CI/CD pipelines, and high-availability database replication.</p>
                     <h3>The Opportunity</h3>
                     <p>You will have complete ownership over cloud reliability, disaster recovery orchestration, and automated vulnerability mitigations across our international data centers.</p>",
                 ResponsibilitiesJson = JsonSerializer.Serialize(new[]
@@ -485,7 +485,7 @@ public class CareersService : ICareersService
                 {
                     "4+ years of professional cloud engineering and infrastructure security experience in high-availability SaaS.",
                     "Strong expertise with container orchestration (Kubernetes, Docker), networking, and cloud security frameworks.",
-                    "Hands-on experience with cryptographic key management, TLS termination, and multi-tenant data partitioning.",
+                    "Hands-on experience with cryptographic key management, TLS termination, and isolated database partitioning.",
                     "Proficiency in infrastructure as code tooling (Terraform, Ansible, or CloudFormation).",
                     "Professional working fluency in English."
                 }),

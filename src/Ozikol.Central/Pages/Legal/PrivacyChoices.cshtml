@@ -67,33 +67,33 @@
             <!-- Main Legal Body -->
             <main class="oz-legal-body">
                 <!-- Interactive Consent Preferences Box -->
-                <div style="background: #f8fafc; border: 1px solid var(--ozikol-border); border-radius: 12px; padding: 24px; margin-bottom: 36px;">
-                    <h3 style="margin-top: 0; border: none; padding: 0;">Consent Management Dashboard</h3>
-                    <p style="font-size: 14px; margin-bottom: 20px;">Review and configure tracking categories for this browser session:</p>
+                <div class="oz-consent-dashboard">
+                    <h3 class="oz-consent-dashboard__title">Consent Management Dashboard</h3>
+                    <p class="oz-consent-dashboard__subtitle">Review and configure tracking categories for this browser session:</p>
 
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--ozikol-border);">
+                    <div class="oz-consent-list">
+                        <div class="oz-consent-item">
                             <div>
-                                <strong style="display: block; font-size: 14px;">Strictly Necessary Cookies</strong>
-                                <span style="font-size: 12.5px; color: var(--ozikol-text-slate);">Required for cryptographic session auth, CSRF security, and tenant routing.</span>
+                                <strong class="oz-consent-item__title">Strictly Necessary Cookies</strong>
+                                <span class="oz-consent-item__desc">Required for cryptographic session auth, CSRF security, and tenant routing.</span>
                             </div>
-                            <span class="badge bg-success" style="padding: 6px 12px; font-size: 12px;">Always Active</span>
+                            <span class="badge bg-success oz-consent-badge-active">Always Active</span>
                         </div>
 
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--ozikol-border);">
+                        <div class="oz-consent-item">
                             <div>
-                                <strong style="display: block; font-size: 14px;">Performance &amp; Health Telemetry</strong>
-                                <span style="font-size: 12.5px; color: var(--ozikol-text-slate);">Anonymized metrics to detect platform errors and monitor 99.99% uptime.</span>
+                                <strong class="oz-consent-item__title">Performance &amp; Health Telemetry</strong>
+                                <span class="oz-consent-item__desc">Anonymized metrics to detect platform errors and monitor 99.99% uptime.</span>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" id="perfConsent" checked>
                             </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--ozikol-border);">
+                        <div class="oz-consent-item">
                             <div>
-                                <strong style="display: block; font-size: 14px;">Functional Preferences</strong>
-                                <span style="font-size: 12.5px; color: var(--ozikol-text-slate);">Remembers language selections and localized currency formatting.</span>
+                                <strong class="oz-consent-item__title">Functional Preferences</strong>
+                                <span class="oz-consent-item__desc">Remembers language selections and localized currency formatting.</span>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" id="funcConsent" checked>
@@ -157,7 +157,7 @@
                 <div class="oz-legal-contact-card">
                     <h4>Submit a Formal Data Request</h4>
                     <p>Want to exercise your Right of Access, Data Portability, or Erasure under GDPR/CCPA?</p>
-                    <a href="/@currentCulture/support/contact?type=General" class="btn btn-primary btn-sm w-100" style="background: #e5173f; border: none; font-weight: 700;">
+                    <a href="/@currentCulture/support/contact?type=General" class="btn btn-primary btn-sm w-100 oz-legal-sidebar-btn">
                         Submit Privacy Request
                     </a>
                 </div>
