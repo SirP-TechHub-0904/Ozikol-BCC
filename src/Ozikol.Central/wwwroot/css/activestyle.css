@@ -3518,8 +3518,48 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     margin-bottom: 8px;
 }
 
+.oz-legal-body h4 {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--ozikol-dark);
+    margin: 24px 0 10px 0;
+}
+
 .oz-legal-body strong {
     color: var(--ozikol-dark);
+}
+
+.oz-legal-body code {
+    background: #f1f5f9;
+    color: var(--ozikol-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.oz-legal-callout {
+    background: #f0fdf4;
+    border-left: 4px solid var(--ozikol-success, #16a34a);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+    font-size: 14.5px;
+    color: var(--ozikol-dark);
+}
+
+.oz-legal-callout p:last-child {
+    margin-bottom: 0;
+}
+
+.oz-legal-callout--info {
+    background: #f0f7ff;
+    border-left-color: var(--ozikol-primary);
+}
+
+.oz-legal-callout--warning {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
 }
 
 .oz-legal-table {
