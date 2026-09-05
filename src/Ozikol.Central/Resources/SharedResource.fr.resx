@@ -3476,4 +3476,416 @@
   <data name="Website_CTA_Btn_Features" xml:space="preserve">
     <value>Explorer les 37 modules</value>
   </data>
+
+  <data name="Mis_Meta_Title" xml:space="preserve">
+    <value>Console exécutive MIS - Système d'information de gestion - Ozikol</value>
+  </data>
+  <data name="Mis_Meta_Description" xml:space="preserve">
+    <value>Console de gestion exécutive centralisée. Supervision départementale en temps réel, conformité du personnel, analyses de recensement et autorisations basées sur les rôles.</value>
+  </data>
+  <data name="Mis_Breadcrumb_Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Mis_Breadcrumb_Platform" xml:space="preserve">
+    <value>Plateforme</value>
+  </data>
+  <data name="Mis_Breadcrumb_Current" xml:space="preserve">
+    <value>Console exécutive MIS</value>
+  </data>
+  <data name="Mis_Breadcrumb_Back" xml:space="preserve">
+    <value>Retour au portail</value>
+  </data>
+  <data name="Mis_Hero_Pill" xml:space="preserve">
+    <value>Centre de commandement • Intelligence exécutive</value>
+  </data>
+  <data name="Mis_Hero_Title" xml:space="preserve">
+    <value>Console unifiée d'intelligence exécutive MIS</value>
+  </data>
+  <data name="Mis_Hero_Lead" xml:space="preserve">
+    <value>Le système nerveux central de votre organisation. Consolidez les opérations interdépartementales, les registres financiers, les plannings d'équipe, le suivi de recensement et la sécurité des accès dans une console de commandement interactive en temps réel.</value>
+  </data>
+  <data name="Mis_Hero_Btn_GetStarted" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Mis_Hero_Btn_Launch" xml:space="preserve">
+    <value>Lancer la console MIS</value>
+  </data>
+  <data name="Mis_Hero_Btn_Modules" xml:space="preserve">
+    <value>Découvrir tous les modules</value>
+  </data>
+  <data name="Mis_Cap_Tagline" xml:space="preserve">
+    <value>Ce que fait la console MIS</value>
+  </data>
+  <data name="Mis_Cap_Heading" xml:space="preserve">
+    <value>Transparence totale pour les décideurs et chefs de département</value>
+  </data>
+  <data name="Mis_Cap_Desc" xml:space="preserve">
+    <value>Conçu pour éliminer les silos départementaux, simplifier les rapports administratifs et garantir la conformité institutionnelle.</value>
+  </data>
+  <data name="Mis_Card_Telemetry_Title" xml:space="preserve">
+    <value>Télémétrie interdépartementale et indicateurs clés</value>
+  </data>
+  <data name="Mis_Card_Telemetry_Desc" xml:space="preserve">
+    <value>Graphiques en temps réel, évolutions démographiques, taux de rétention et flux financiers actualisés à la seconde sur tous les modules actifs.</value>
+  </data>
+  <data name="Mis_Card_Rbac_Title" xml:space="preserve">
+    <value>Gestion granulaire des accès par rôles (RBAC)</value>
+  </data>
+  <data name="Mis_Card_Rbac_Desc" xml:space="preserve">
+    <value>Attribuez des droits précis aux super-administrateurs, directeurs, gestionnaires RH, agents de sécurité et auditeurs sans fuite de privilèges.</value>
+  </data>
+  <data name="Mis_Card_Audit_Title" xml:space="preserve">
+    <value>Journaux d'audit immuables</value>
+  </data>
+  <data name="Mis_Card_Audit_Desc" xml:space="preserve">
+    <value>Chaque action administrative, modification, exportation et tentative de connexion est consignée dans un journal immuable conforme aux normes réglementaires.</value>
+  </data>
+  <data name="Mis_Card_Ledgers_Title" xml:space="preserve">
+    <value>Grands livres financiers et rapprochement des cotisations</value>
+  </data>
+  <data name="Mis_Card_Ledgers_Desc" xml:space="preserve">
+    <value>Suivez les cotisations, charges récurrentes, revenus de billetterie et créances en souffrance avec envoi automatisé de relances.</value>
+  </data>
+  <data name="Mis_Card_Rota_Title" xml:space="preserve">
+    <value>Plannings d'équipes et alignement de paie</value>
+  </data>
+  <data name="Mis_Card_Rota_Desc" xml:space="preserve">
+    <value>Grille de planning intelligente gérant la couverture des postes, congés, échanges d'horaires et feuilles d'heures prêtes pour la paie.</value>
+  </data>
+  <data name="Mis_Card_Assets_Title" xml:space="preserve">
+    <value>Gestion des équipements et de la flotte</value>
+  </data>
+  <data name="Mis_Card_Assets_Desc" xml:space="preserve">
+    <value>Suivez la maintenance préventive, les heures machines, la consommation de carburant, l'historique d'entretien et l'étiquetage par code-barres.</value>
+  </data>
+  <data name="Mis_Access_Heading" xml:space="preserve">
+    <value>Prêt à accéder à votre espace de gestion MIS ?</value>
+  </data>
+  <data name="Mis_Access_Desc" xml:space="preserve">
+    <value>Accédez à votre console cloud depuis tout navigateur d'ordinateur ou de tablette. Chiffrement complet avec authentification multifacteur.</value>
+  </data>
+  <data name="Mis_Card_AdminLogin_Title" xml:space="preserve">
+    <value>Connexion administrateur autorisé</value>
+  </data>
+  <data name="Mis_Card_AdminLogin_Sub" xml:space="preserve">
+    <value>Connexion directe • Protection 2FA</value>
+  </data>
+  <data name="Mis_Card_AdminLogin_Desc" xml:space="preserve">
+    <value>Connectez-vous directement à votre compte administrateur principal ou sous-domaine dédié.</value>
+  </data>
+  <data name="Mis_Card_AdminLogin_Btn" xml:space="preserve">
+    <value>Lancer la console Cloud</value>
+  </data>
+  <data name="Mis_Card_Deploy_Title" xml:space="preserve">
+    <value>Déploiement Cloud instantané</value>
+  </data>
+  <data name="Mis_Card_Deploy_Sub" xml:space="preserve">
+    <value>Configuration automatisée • Espace dédié</value>
+  </data>
+  <data name="Mis_Card_Deploy_Desc" xml:space="preserve">
+    <value>Déployez l'environnement MIS dédié de votre organisation avec sécurité clé en main, rôles et processus automatisés.</value>
+  </data>
+  <data name="Mis_Card_Deploy_Btn" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Mis_Specs_Availability" xml:space="preserve">
+    <value>Disponibilité cloud garantie à 99,99 %</value>
+  </data>
+  <data name="Mis_Specs_Encryption" xml:space="preserve">
+    <value>Chiffrement TLS 1.3 et AES-256</value>
+  </data>
+  <data name="Mis_Specs_Backups" xml:space="preserve">
+    <value>Sauvegardes automatisées multi-zones</value>
+  </data>
+  <data name="Mis_Specs_Compliance" xml:space="preserve">
+    <value>Conforme ISO 27001 et SOC 2</value>
+  </data>
+  <data name="Mis_CTA_Heading" xml:space="preserve">
+    <value>Bénéficiez d'une supervision institutionnelle complète</value>
+  </data>
+  <data name="Mis_CTA_Desc" xml:space="preserve">
+    <value>Donnez à votre direction la clarté nécessaire grâce aux données des 9 suites logicielles.</value>
+  </data>
+  <data name="Mis_CTA_Btn_Pricing" xml:space="preserve">
+    <value>Voir les tarifs</value>
+  </data>
+  <data name="Mis_CTA_Btn_GetStarted" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Mobile_Meta_Title" xml:space="preserve">
+    <value>Applications mobiles pour iOS et Android - Ozikol</value>
+  </data>
+  <data name="Mobile_Meta_Description" xml:space="preserve">
+    <value>Applications mobiles natives pour iPhone, iPad et Android. Synchronisation hors ligne, notifications de planning, pass Apple Wallet et scan QR.</value>
+  </data>
+  <data name="Mobile_Breadcrumb_Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Mobile_Breadcrumb_Platform" xml:space="preserve">
+    <value>Plateforme</value>
+  </data>
+  <data name="Mobile_Breadcrumb_Current" xml:space="preserve">
+    <value>Applications mobiles (iOS et Android)</value>
+  </data>
+  <data name="Mobile_Breadcrumb_Back" xml:space="preserve">
+    <value>Retour au portail</value>
+  </data>
+  <data name="Mobile_Hero_Pill" xml:space="preserve">
+    <value>Canal mobile • iOS et Android</value>
+  </data>
+  <data name="Mobile_Hero_Title" xml:space="preserve">
+    <value>Expérience mobile unifiée pour iOS et Android</value>
+  </data>
+  <data name="Mobile_Hero_Lead" xml:space="preserve">
+    <value>Donnez à vos équipes de terrain, agents de sécurité et membres des applications mobiles natives performantes. Conçues avec synchronisation hors ligne, scan QR ultra-rapide, notifications push et authentification biométrique.</value>
+  </data>
+  <data name="Mobile_Hero_Btn_Download" xml:space="preserve">
+    <value>Télécharger les applications</value>
+  </data>
+  <data name="Mobile_Hero_Btn_Connect" xml:space="preserve">
+    <value>Guide de connexion</value>
+  </data>
+  <data name="Mobile_Cap_Tagline" xml:space="preserve">
+    <value>Ce que font les applications mobiles</value>
+  </data>
+  <data name="Mobile_Cap_Heading" xml:space="preserve">
+    <value>Des opérations mobiles partout, même hors ligne</value>
+  </data>
+  <data name="Mobile_Cap_Desc" xml:space="preserve">
+    <value>Conçues pour résister aux conditions réelles sur le terrain sans perte de données ni lenteurs de synchronisation.</value>
+  </data>
+  <data name="Mobile_Card_Offline_Title" xml:space="preserve">
+    <value>Synchronisation locale hors ligne prioritaire</value>
+  </data>
+  <data name="Mobile_Card_Offline_Desc" xml:space="preserve">
+    <value>Réalisez des recensements, contrôles d'installations ou vérifications d'accès en sous-sol sans réseau. Les données se synchronisent automatiquement dès le retour en ligne.</value>
+  </data>
+  <data name="Mobile_Card_Qr_Title" xml:space="preserve">
+    <value>Numérisation ultra-rapide de pass QR par caméra</value>
+  </data>
+  <data name="Mobile_Card_Qr_Desc" xml:space="preserve">
+    <value>Les agents vérifient les pass visiteurs et cartes de membre numériques en moins de 200 millisecondes avec confirmation sonore.</value>
+  </data>
+  <data name="Mobile_Card_Push_Title" xml:space="preserve">
+    <value>Notifications push et alertes instantanées</value>
+  </data>
+  <data name="Mobile_Card_Push_Desc" xml:space="preserve">
+    <value>Recevez des alertes en direct pour les plannings, diffusions d'urgence, reçus de cotisations et avis de comités.</value>
+  </data>
+  <data name="Mobile_Card_Wallet_Title" xml:space="preserve">
+    <value>Pass Apple Wallet et Google Wallet</value>
+  </data>
+  <data name="Mobile_Card_Wallet_Desc" xml:space="preserve">
+    <value>Les membres peuvent ajouter leur carte d'identité numérique officielle à Apple Wallet ou Google Wallet pour un accès sans contact.</value>
+  </data>
+  <data name="Mobile_Card_Bio_Title" xml:space="preserve">
+    <value>Authentification biométrique</value>
+  </data>
+  <data name="Mobile_Card_Bio_Desc" xml:space="preserve">
+    <value>Connexion fluide et sécurisée via Face ID, Touch ID ou biométrie Android. Les jetons cryptographiques sont protégés par l'enclave sécurisée de l'appareil.</value>
+  </data>
+  <data name="Mobile_Card_Swaps_Title" xml:space="preserve">
+    <value>Échanges de planning en un clic</value>
+  </data>
+  <data name="Mobile_Card_Swaps_Desc" xml:space="preserve">
+    <value>Les collaborateurs peuvent échanger des créneaux entre collègues qualifiés. L'escalade automatique garantit le respect de la législation du travail.</value>
+  </data>
+  <data name="Mobile_Download_Heading" xml:space="preserve">
+    <value>Téléchargez Ozikol pour iOS et Android</value>
+  </data>
+  <data name="Mobile_Download_Desc" xml:space="preserve">
+    <value>Choisissez votre plateforme pour télécharger l'application officielle, compatible smartphones et tablettes.</value>
+  </data>
+  <data name="Mobile_Card_Ios_Title" xml:space="preserve">
+    <value>Client Apple iOS</value>
+  </data>
+  <data name="Mobile_Card_Ios_Sub" xml:space="preserve">
+    <value>Nécessite iOS 15.0 ou ultérieur</value>
+  </data>
+  <data name="Mobile_Card_Ios_Desc" xml:space="preserve">
+    <value>Optimisé pour iPhone et iPad avec Face ID, Apple Wallet et synchronisation en arrière-plan.</value>
+  </data>
+  <data name="Mobile_Card_Ios_Btn" xml:space="preserve">
+    <value>App Store</value>
+  </data>
+  <data name="Mobile_Card_Android_Title" xml:space="preserve">
+    <value>Client Google Android</value>
+  </data>
+  <data name="Mobile_Card_Android_Sub" xml:space="preserve">
+    <value>Nécessite Android 8.0 ou ultérieur</value>
+  </data>
+  <data name="Mobile_Card_Android_Desc" xml:space="preserve">
+    <value>Scan ultra-rapide par caméra, intégration Google Wallet et persistance hors ligne.</value>
+  </data>
+  <data name="Mobile_Card_Android_Btn" xml:space="preserve">
+    <value>Google Play</value>
+  </data>
+  <data name="Mobile_Steps_Tagline" xml:space="preserve">
+    <value>Mise en route</value>
+  </data>
+  <data name="Mobile_Steps_Heading" xml:space="preserve">
+    <value>Comment connecter votre organisation en 3 étapes</value>
+  </data>
+  <data name="Mobile_Steps_Desc" xml:space="preserve">
+    <value>Une fois l'application installée, la connexion à votre instance privée prend moins d'une minute.</value>
+  </data>
+  <data name="Mobile_Step1_Title" xml:space="preserve">
+    <value>Télécharger et ouvrir</value>
+  </data>
+  <data name="Mobile_Step1_Desc" xml:space="preserve">
+    <value>Installez l'application Ozikol depuis l'App Store d'Apple ou Google Play sur votre appareil.</value>
+  </data>
+  <data name="Mobile_Step2_Title" xml:space="preserve">
+    <value>Saisir le domaine de l'espace</value>
+  </data>
+  <data name="Mobile_Step2_Desc" xml:space="preserve">
+    <value>Sur l'écran d'accueil, saisissez le domaine de votre organisation (ex. acme.ozikol.cloud ou domaine personnalisé) pour vous connecter.</value>
+  </data>
+  <data name="Mobile_Step3_Title" xml:space="preserve">
+    <value>S'authentifier et commencer</value>
+  </data>
+  <data name="Mobile_Step3_Desc" xml:space="preserve">
+    <value>Connectez-vous avec vos identifiants de membre ou d'employé, activez Face ID ou les empreintes, et commencez vos activités.</value>
+  </data>
+  <data name="Desktop_Meta_Title" xml:space="preserve">
+    <value>Application de bureau Windows - Postes à haut débit - Ozikol</value>
+  </data>
+  <data name="Desktop_Meta_Description" xml:space="preserve">
+    <value>Client de bureau Windows natif pour bornes d'accueil, postes de sécurité et comptabilité. Impression thermique directe, multi-écrans et cache hors ligne.</value>
+  </data>
+  <data name="Desktop_Breadcrumb_Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Desktop_Breadcrumb_Platform" xml:space="preserve">
+    <value>Plateforme</value>
+  </data>
+  <data name="Desktop_Breadcrumb_Current" xml:space="preserve">
+    <value>Application de bureau (Windows 10 et 11)</value>
+  </data>
+  <data name="Desktop_Breadcrumb_Back" xml:space="preserve">
+    <value>Retour au portail</value>
+  </data>
+  <data name="Desktop_Hero_Pill" xml:space="preserve">
+    <value>Poste de travail Windows • Windows 10 et 11</value>
+  </data>
+  <data name="Desktop_Hero_Title" xml:space="preserve">
+    <value>Client de bureau haute performance pour postes de travail</value>
+  </data>
+  <data name="Desktop_Hero_Lead" xml:space="preserve">
+    <value>Conçu exclusivement pour les réceptionnistes, agents de sécurité aux barrières et opérateurs financiers nécessitant l'intégration de périphériques matériels, l'affichage multi-écrans et des raccourcis clavier instantanés.</value>
+  </data>
+  <data name="Desktop_Hero_Btn_Download" xml:space="preserve">
+    <value>Télécharger pour Windows</value>
+  </data>
+  <data name="Desktop_Hero_Btn_Specs" xml:space="preserve">
+    <value>Configuration requise</value>
+  </data>
+  <data name="Desktop_Hero_Btn_Support" xml:space="preserve">
+    <value>Support de déploiement entreprise</value>
+  </data>
+  <data name="Desktop_Cap_Tagline" xml:space="preserve">
+    <value>Ce que fait l'application de bureau</value>
+  </data>
+  <data name="Desktop_Cap_Heading" xml:space="preserve">
+    <value>Conçu pour les postes de travail à fort volume</value>
+  </data>
+  <data name="Desktop_Cap_Desc" xml:space="preserve">
+    <value>Contrairement aux navigateurs classiques, notre client natif Windows communique directement avec le matériel local sans aucune latence.</value>
+  </data>
+  <data name="Desktop_Card_Printers_Title" xml:space="preserve">
+    <value>Prise en charge directe des imprimantes thermiques USB</value>
+  </data>
+  <data name="Desktop_Card_Printers_Desc" xml:space="preserve">
+    <value>Communication directe en ESC/POS brut avec imprimantes de reçus thermiques, étiqueteuses Zebra et badges visiteurs, sans boîte de dialogue de navigateur.</value>
+  </data>
+  <data name="Desktop_Card_MultiMon_Title" xml:space="preserve">
+    <value>Multi-écrans et fenêtres détachables</value>
+  </data>
+  <data name="Desktop_Card_MultiMon_Desc" xml:space="preserve">
+    <value>Détachez des moniteurs de file d'attente en direct, écrans d'enregistrement et formulaires de saisie comptable sur plusieurs écrans simultanément.</value>
+  </data>
+  <data name="Desktop_Card_Sqlite_Title" xml:space="preserve">
+    <value>Cache local SQLite pour transactions hors ligne</value>
+  </data>
+  <data name="Desktop_Card_Sqlite_Desc" xml:space="preserve">
+    <value>En cas de coupure Internet, l'application continue d'enregistrer passages de véhicules et paiements dans une base chiffrée locale, puis synchronise automatiquement.</value>
+  </data>
+  <data name="Desktop_Card_Rfid_Title" xml:space="preserve">
+    <value>Lecteurs RFID USB et scanners d'empreintes</value>
+  </data>
+  <data name="Desktop_Card_Rfid_Desc" xml:space="preserve">
+    <value>Prise en charge prête à l'emploi de lecteurs de badges RFID, bandes magnétiques et scanners biométriques pour le contrôle physique des accès.</value>
+  </data>
+  <data name="Desktop_Card_Keys_Title" xml:space="preserve">
+    <value>Ergonomie clavier ultra-rapide</value>
+  </data>
+  <data name="Desktop_Card_Keys_Desc" xml:space="preserve">
+    <value>Raccourcis complets (ex. Ctrl+N pour un pass, F2 pour chercher, Entrée pour valider) permettant aux agents d'enregistrer en moins de 3 secondes sans souris.</value>
+  </data>
+  <data name="Desktop_Card_Kiosk_Title" xml:space="preserve">
+    <value>Mode Kiosque Windows dédié</value>
+  </data>
+  <data name="Desktop_Card_Kiosk_Desc" xml:space="preserve">
+    <value>Verrouillez les bornes d'accueil et ordinateurs de garde en mode plein écran mono-application, empêchant l'accès au bureau Windows ou à d'autres sites.</value>
+  </data>
+  <data name="Desktop_Download_Heading" xml:space="preserve">
+    <value>Téléchargez Ozikol pour Windows 10 et 11</value>
+  </data>
+  <data name="Desktop_Download_Desc" xml:space="preserve">
+    <value>Fichiers exécutables officiels 64 bits compilés nativement avec .NET 9. Choisissez votre package d'installation ci-dessous :</value>
+  </data>
+  <data name="Desktop_Card_Exe_Title" xml:space="preserve">
+    <value>Programme d'installation Windows (.exe)</value>
+  </data>
+  <data name="Desktop_Card_Exe_Sub" xml:space="preserve">
+    <value>Recommandé pour postes individuels</value>
+  </data>
+  <data name="Desktop_Card_Exe_Desc" xml:space="preserve">
+    <value>Assistant d'installation standard avec raccourcis de bureau, mise à jour automatique et pilotes d'imprimante.</value>
+  </data>
+  <data name="Desktop_Card_Msi_Title" xml:space="preserve">
+    <value>Package Entreprise MSI (.msi)</value>
+  </data>
+  <data name="Desktop_Card_Msi_Sub" xml:space="preserve">
+    <value>Pour Active Directory et InTune</value>
+  </data>
+  <data name="Desktop_Card_Msi_Desc" xml:space="preserve">
+    <value>Package de déploiement GPO / InTune supportant l'installation silencieuse (msiexec /i Ozikol.msi /qn).</value>
+  </data>
+  <data name="Desktop_Card_Zip_Title" xml:space="preserve">
+    <value>Version portable autonome (.zip)</value>
+  </data>
+  <data name="Desktop_Card_Zip_Sub" xml:space="preserve">
+    <value>Aucune installation requise</value>
+  </data>
+  <data name="Desktop_Card_Zip_Desc" xml:space="preserve">
+    <value>Décompressez et exécutez directement depuis une clé USB ou un poste sécurisé sans droits administrateur.</value>
+  </data>
+  <data name="Desktop_Btn_Download" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="Desktop_Specs_Os" xml:space="preserve">
+    <value>Système : Windows 10 (1809+) ou Windows 11 (64 bits)</value>
+  </data>
+  <data name="Desktop_Specs_Ram" xml:space="preserve">
+    <value>Mémoire : 4 Go de RAM (8 Go recommandés pour multi-écrans)</value>
+  </data>
+  <data name="Desktop_Specs_Disk" xml:space="preserve">
+    <value>Stockage : 500 Mo d'espace libre</value>
+  </data>
+  <data name="Desktop_Specs_Runtime" xml:space="preserve">
+    <value>Environnement d'exécution : .NET 9 autonome inclus</value>
+  </data>
+  <data name="Desktop_CTA_Heading" xml:space="preserve">
+    <value>Accélérez vos opérations d'accueil et de contrôle d'accès</value>
+  </data>
+  <data name="Desktop_CTA_Desc" xml:space="preserve">
+    <value>Déployez des clients de poste de travail ultra-rapides avec impression matérielle et cache local dans toute votre organisation.</value>
+  </data>
+  <data name="Desktop_CTA_Btn_Consult" xml:space="preserve">
+    <value>Demander un conseil matériel pour bornes</value>
+  </data>
+  <data name="Desktop_CTA_Btn_Mobile" xml:space="preserve">
+    <value>Explorer les applications mobiles</value>
+  </data>
 </root>
