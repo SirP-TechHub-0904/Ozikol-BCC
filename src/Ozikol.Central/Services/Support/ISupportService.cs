@@ -187,5 +187,13 @@ namespace Ozikol.Central.Services.Support
         /// <param name="cancellationToken">Cancellation token for async operations.</param>
         /// <returns>The number of tickets automatically closed.</returns>
         Task<int> AutoCloseInactiveTicketsAsync(System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Retrieves the list of support inquiry categories configured in MasterPlatformSettings.
+        /// Falls back to the default category list if unconfigured.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token for async operations.</param>
+        /// <returns>A list of clean category display names.</returns>
+        Task<IReadOnlyList<string>> GetSupportCategoriesAsync(System.Threading.CancellationToken cancellationToken = default);
     }
 }

@@ -141,11 +141,22 @@
                             <div class="oz-form-group">
                                 <label class="oz-form-label" asp-for="Input.InquiryType">@SharedLocalizer["Support_Form_InquiryType"] *</label>
                                 <select asp-for="Input.InquiryType" class="oz-form-select" id="inquiryTypeSelect">
-                                    <option value="Support">@SharedLocalizer["Support_Form_Inquiry_Support"]</option>
-                                    <option value="Sales">@SharedLocalizer["Support_Form_Inquiry_Sales"]</option>
-                                    <option value="Billing">@SharedLocalizer["Support_Form_Inquiry_Billing"]</option>
-                                    <option value="Partnership">@SharedLocalizer["Support_Form_Inquiry_Partnership"]</option>
-                                    <option value="General">@SharedLocalizer["Support_Form_Inquiry_General"]</option>
+                                    @if (Model.Categories != null && Model.Categories.Count > 0)
+                                    {
+                                        foreach (var cat in Model.Categories)
+                                        {
+                                            <option value="@cat">@cat</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="Support">Support</option>
+                                        <option value="Sales">Sales</option>
+                                        <option value="Billing">Billing</option>
+                                        <option value="Partnership">Partnership</option>
+                                        <option value="Enterprise">Enterprise</option>
+                                        <option value="General">General</option>
+                                    }
                                 </select>
                                 <span asp-validation-for="Input.InquiryType" class="oz-field-error"></span>
                             </div>

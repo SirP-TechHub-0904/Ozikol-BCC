@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace Ozikol.MasterDomain.Models
 {
@@ -83,6 +85,32 @@ namespace Ozikol.MasterDomain.Models
         /// Gets or sets a value indicating whether the 24-hour inactivity ticket auto-close process is active.
         /// </summary>
         public bool EnableTicketAutoClose { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.
+        /// Defaults to "Support, Sales, Billing, Partnership, Enterprise, General".
+        /// </summary>
+        public string SupportCategories { get; set; } = "Support, Sales, Billing, Partnership, Enterprise, General";
+
+        /// <summary>
+        /// Helper property returning the support categories as a clean parsed list of strings.
+        /// Not mapped to the database.
+        /// </summary>
+        [NotMapped]
+        public List<string> SupportCategoryList
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(SupportCategories))
+                {
+                    return new List<string> { "Support", "Sales", "Billing", "Partnership", "Enterprise", "General" };
+                }
+
+                return SupportCategories.Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .ToList();
+            }
+        }
 
         /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
