@@ -145,17 +145,20 @@
                                     {
                                         foreach (var cat in Model.Categories)
                                         {
-                                            <option value="@cat">@cat</option>
+                                            var cleanKey = cat.Replace(" ", "").Replace("&", "");
+                                            var localizedStr = SharedLocalizer[$"Category_{cleanKey}"].Value;
+                                            var displayLabel = (string.IsNullOrWhiteSpace(localizedStr) || localizedStr.StartsWith("Category_")) ? cat : localizedStr;
+                                            <option value="@cat">@displayLabel</option>
                                         }
                                     }
                                     else
                                     {
-                                        <option value="Support">Support</option>
-                                        <option value="Sales">Sales</option>
-                                        <option value="Billing">Billing</option>
-                                        <option value="Partnership">Partnership</option>
-                                        <option value="Enterprise">Enterprise</option>
-                                        <option value="General">General</option>
+                                        <option value="Support">@SharedLocalizer["Category_Support"]</option>
+                                        <option value="Sales">@SharedLocalizer["Category_Sales"]</option>
+                                        <option value="Billing">@SharedLocalizer["Category_Billing"]</option>
+                                        <option value="Partnership">@SharedLocalizer["Category_Partnership"]</option>
+                                        <option value="Enterprise">@SharedLocalizer["Category_Enterprise"]</option>
+                                        <option value="General">@SharedLocalizer["Category_General"]</option>
                                     }
                                 </select>
                                 <span asp-validation-for="Input.InquiryType" class="oz-field-error"></span>
