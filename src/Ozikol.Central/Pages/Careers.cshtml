@@ -5,7 +5,7 @@
     ViewData["MetaDescription"] = "Join Ozikol's mission to revolutionize enterprise business management software. Explore open roles across engineering, customer care, regional leadership, and partnerships.";
 }
 
-<!-- Preserved Signature Hero Banner -->
+<!-- Preserved Signature Hero Banner with Collaborative Team Photography -->
 <div class="oz-careers-hero-wrap">
     <section class="main-banner main-banner--inner" id="hero">
         <div class="main-banner__inner container--lg">
@@ -29,19 +29,17 @@
             </div>
 
             <div class="main-banner__media-block">
-                <div class="oz-hero-stat-card">
-                    <div class="oz-hero-stat-num">@Model.Openings.Count</div>
-                    <div class="oz-hero-stat-label">Active Global Openings</div>
-                    <div class="oz-hero-stat-sub">Across UK, Europe &amp; Global Remote Teams</div>
-                    <div class="mt-4 pt-3 border-top d-flex justify-content-around text-start">
+                <div class="oz-careers-hero-media">
+                    <img src="/images/careers-hero.jpg"
+                         alt="Life at Ozikol - Collaborative Global Tech Culture"
+                         width="580"
+                         height="420"
+                         class="oz-careers-hero-img" />
+                    <div class="oz-careers-hero-badge">
+                        <div class="oz-careers-hero-badge-num">@Model.Openings.Count</div>
                         <div>
-                            <div class="fw-bold text-dark fs-5">3</div>
-                            <div class="text-muted small">Supported Languages</div>
-                        </div>
-                        <div class="vr"></div>
-                        <div>
-                            <div class="fw-bold text-dark fs-5">100%</div>
-                            <div class="text-muted small">Hybrid / Remote Ready</div>
+                            <div class="oz-careers-hero-badge-text">Active Global Openings</div>
+                            <div class="oz-careers-hero-badge-sub">London &bull; Paris &bull; Milan &bull; Remote</div>
                         </div>
                     </div>
                 </div>
@@ -50,7 +48,7 @@
     </section>
 </div>
 
-<!-- Single In-Page Smooth Anchor Bar (Replaces duplicate second menu) -->
+<!-- Single In-Page Smooth Anchor Bar -->
 <nav class="oz-careers-nav-bar" aria-label="Careers Section Navigation">
     <div class="container">
         <div class="oz-careers-nav-wrap">
@@ -83,9 +81,9 @@
 </nav>
 
 <!-- Active Job Openings Section -->
-<section class="oz-corp-section py-5" id="openings">
+<section class="oz-corp-section" id="openings">
     <div class="oz-corp-container">
-        <div class="oz-corp-section-header text-center mb-5">
+        <div class="oz-corp-section-header">
             <span class="oz-corp-section-tag">Current Opportunities</span>
             <h2 class="oz-corp-section-title">Explore Open Positions at Ozikol</h2>
             <p class="oz-corp-section-desc">
@@ -108,9 +106,10 @@
                            class="oz-filter-search-input" />
                 </div>
 
-                <div class="row g-4 pt-2">
+                <!-- Structured 2-Column Filters Grid -->
+                <div class="oz-jobs-filter-groups">
                     <!-- Department Filter Pills -->
-                    <div class="col-lg-6 oz-filter-group">
+                    <div class="oz-filter-group">
                         <span class="oz-filter-group-title">Department:</span>
                         <div class="oz-filter-pills">
                             <a href="@Url.Page("/Careers", new { department = (string?)null, language = Model.Language, query = Model.Query })#openings"
@@ -128,7 +127,7 @@
                     </div>
 
                     <!-- Language Filter Pills -->
-                    <div class="col-lg-6 oz-filter-group">
+                    <div class="oz-filter-group">
                         <span class="oz-filter-group-title">Language Requirements:</span>
                         <div class="oz-filter-pills">
                             <a href="@Url.Page("/Careers", new { department = Model.Department, language = (string?)null, query = Model.Query })#openings"
@@ -153,11 +152,11 @@
 
                 @if (!string.IsNullOrEmpty(Model.Department) || !string.IsNullOrEmpty(Model.Language) || !string.IsNullOrEmpty(Model.Query))
                 {
-                    <div class="pt-2 d-flex align-items-center justify-content-between">
-                        <span class="small text-muted">
-                            Showing filtered results (@Model.Openings.Count positions found)
+                    <div class="pt-3 border-top d-flex align-items-center justify-content-between">
+                        <span class="oz-filter-group-title" style="text-transform: none; font-size: 13.5px;">
+                            Showing filtered results (<strong>@Model.Openings.Count</strong> positions found)
                         </span>
-                        <a href="@Url.Page("/Careers")#openings" class="small text-danger fw-semibold text-decoration-none">
+                        <a href="@Url.Page("/Careers")#openings" class="oz-filter-pill" style="color: #e5173f; font-weight: 700;">
                             Reset all filters
                         </a>
                     </div>
@@ -211,88 +210,119 @@
         }
         else
         {
-            <div class="text-center py-5 my-4 bg-light rounded-4 border p-5">
-                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-muted mb-3">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h4 class="fw-bold text-dark mb-2">No matching positions found</h4>
-                <p class="text-muted mb-4 max-w-md mx-auto">
+            <div class="oz-jobs-empty-state">
+                <div class="oz-jobs-empty-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="oz-jobs-empty-title">No matching positions found</h3>
+                <p class="oz-jobs-empty-desc">
                     We couldn't find any openings matching your filter criteria. Try resetting your search filters or check back soon as new positions open regularly.
                 </p>
-                <a href="@Url.Page("/Careers")#openings" class="btn btn-outline-primary">View All Open Positions</a>
+                <a href="@Url.Page("/Careers")#openings" class="oz-features-btn-outline">View All Open Positions</a>
             </div>
         }
     </div>
 </section>
 
-<!-- Preserved & Polished Culture & Life Section -->
-<section class="oz-corp-section bg-light border-top border-bottom py-5" id="culture">
+<!-- Beautiful 2-Column Culture & Life Section -->
+<section class="oz-corp-section" style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;" id="culture">
     <div class="oz-corp-container">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6">
+        <div class="oz-culture-grid">
+            <!-- Left: Culture Story & Values Checklist -->
+            <div>
                 <span class="oz-corp-section-tag">Life at Ozikol</span>
                 <h2 class="oz-corp-section-title">People are at the heart of everything we build</h2>
-                <p class="lead text-dark fw-semibold mb-3">
+                <p class="oz-corp-lead" style="margin: 0 0 16px 0; text-align: left; font-weight: 600; color: #0f172a;">
                     Our team members are game-changers, life-lovers, culture-builders, and free-thinkers.
                 </p>
-                <p class="oz-corp-section-desc mb-4">
+                <p class="oz-corp-section-desc" style="text-align: left; margin: 0 0 24px 0;">
                     We strive to create an environment where everyone feels valued, respected, and empowered to contribute their best. Whether you are leading regional strategy or providing frontline support to enterprise clients across Europe, you are an essential pillar of the Ozikol story.
                 </p>
-                <div class="d-flex flex-column gap-3 mb-4">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="oz-job-check-dot">&#10003;</div>
+
+                <div class="oz-culture-checklist">
+                    <div class="oz-culture-check-item">
+                        <div class="oz-culture-check-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
                         <div>
-                            <strong class="text-dark">Curiosity &amp; Innovation:</strong>
-                            <span class="text-muted"> We encourage questions, experimentation, and novel ideas that elevate our software and team.</span>
+                            <strong style="color: #0f172a;">Curiosity &amp; Innovation:</strong>
+                            <span style="color: #64748b;"> We encourage bold experimentation and novel ideas that elevate our software and team.</span>
                         </div>
                     </div>
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="oz-job-check-dot">&#10003;</div>
+                    <div class="oz-culture-check-item">
+                        <div class="oz-culture-check-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
                         <div>
-                            <strong class="text-dark">Collective Celebration:</strong>
-                            <span class="text-muted"> We win together as one united global squad and celebrate personal and team milestones.</span>
+                            <strong style="color: #0f172a;">Collective Celebration:</strong>
+                            <span style="color: #64748b;"> We win together as one united global squad and celebrate personal and team milestones.</span>
                         </div>
                     </div>
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="oz-job-check-dot">&#10003;</div>
+                    <div class="oz-culture-check-item">
+                        <div class="oz-culture-check-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
                         <div>
-                            <strong class="text-dark">Serious Fun:</strong>
-                            <span class="text-muted"> Enterprise software is serious business, but our daily culture is relaxed, collaborative, and joyful.</span>
+                            <strong style="color: #0f172a;">Serious Fun:</strong>
+                            <span style="color: #64748b;"> Enterprise software is serious business, but our daily culture is relaxed, collaborative, and joyful.</span>
                         </div>
                     </div>
                 </div>
-                <a href="#openings" class="btn btn-primary">Find Your Role Today</a>
+
+                <div style="margin-top: 32px;">
+                    <a href="#openings" class="oz-btn-primary-hero">
+                        Find Your Role Today
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </a>
+                </div>
             </div>
-            <div class="col-lg-6">
-                <div class="p-4 p-md-5 bg-white rounded-4 border shadow-sm">
-                    <h4 class="fw-bold text-dark mb-4">What Our Employees Say</h4>
-                    <figure class="mb-4">
-                        <blockquote class="blockquote fs-6 text-secondary mb-3">
-                            &ldquo;Working at Ozikol has given me the autonomy to innovate and lead. The team genuinely cares about your wellbeing, and the global flexibility is unmatched.&rdquo;
-                        </blockquote>
-                        <figcaption class="blockquote-footer text-muted mb-0">
-                            Regional Operations Lead &bull; <cite>Ozikol EMEA</cite>
-                        </figcaption>
-                    </figure>
-                    <hr class="my-4" />
-                    <figure class="mb-0">
-                        <blockquote class="blockquote fs-6 text-secondary mb-3">
-                            &ldquo;Providing support in French and Italian while collaborating with our global engineering team makes every single day rewarding and fast-paced.&rdquo;
-                        </blockquote>
-                        <figcaption class="blockquote-footer text-muted mb-0">
-                            Customer Success Specialist &bull; <cite>Multilingual Support Hub</cite>
-                        </figcaption>
-                    </figure>
+
+            <!-- Right: What Our Employees Say Card -->
+            <div class="oz-culture-testimonials">
+                <h4>What Our Employees Say</h4>
+                
+                <div class="oz-culture-quote-block">
+                    <p class="oz-culture-quote-text">
+                        &ldquo;Working at Ozikol has given me the autonomy to innovate and lead. The team genuinely cares about your wellbeing, and the global flexibility is unmatched.&rdquo;
+                    </p>
+                    <div class="oz-culture-quote-author">Regional Operations Lead</div>
+                    <div class="oz-culture-quote-role">Ozikol EMEA &bull; London</div>
+                </div>
+
+                <div class="oz-culture-quote-block">
+                    <p class="oz-culture-quote-text">
+                        &ldquo;Providing support in French and Italian while collaborating with our global engineering team makes every single day rewarding, diverse, and fast-paced.&rdquo;
+                    </p>
+                    <div class="oz-culture-quote-author">Customer Success Specialist</div>
+                    <div class="oz-culture-quote-role">Multilingual Support Hub &bull; Paris</div>
+                </div>
+
+                <div class="oz-culture-quote-block">
+                    <p class="oz-culture-quote-text">
+                        &ldquo;From day one, you feel like your input genuinely moves the needle. Great tooling, smart colleagues, and real work-life balance.&rdquo;
+                    </p>
+                    <div class="oz-culture-quote-author">Senior Cloud Security Engineer</div>
+                    <div class="oz-culture-quote-role">Infrastructure Team &bull; Remote</div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Preserved Our Values: The Ozikol Way -->
-<section class="oz-corp-section py-5" id="values">
+<!-- Values Section (Organized 3-Column Grid) -->
+<section class="oz-corp-section" id="values">
     <div class="oz-corp-container">
-        <div class="oz-corp-section-header text-center mb-5">
+        <div class="oz-corp-section-header">
             <span class="oz-corp-section-tag">Our Guiding Compass</span>
             <h2 class="oz-corp-section-title">Our Values: The Ozikol Way</h2>
             <p class="oz-corp-section-desc">
@@ -300,56 +330,50 @@
             </p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="p-4 p-lg-5 bg-white border rounded-4 h-100 shadow-sm d-flex flex-column">
-                    <div class="oz-feat-card-icon oz-icon-crimson mb-4">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <h3 class="fs-4 fw-bold text-dark mb-3">Winning With Customers</h3>
-                    <p class="text-secondary mb-0">
-                        We are a team that gets it right. We make complex business management simple, transparent, and dependable. We are obsessed with making our customers’ lives better every single day.
-                    </p>
+        <div class="oz-corp-grid-3">
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-crimson">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Winning With Customers</h3>
+                <p class="oz-value-card-desc">
+                    We are a team that gets it right. We make complex business management simple, transparent, and dependable. We are obsessed with making our customers’ lives better every single day.
+                </p>
             </div>
 
-            <div class="col-md-4">
-                <div class="p-4 p-lg-5 bg-white border rounded-4 h-100 shadow-sm d-flex flex-column">
-                    <div class="oz-feat-card-icon oz-icon-indigo mb-4">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                    </div>
-                    <h3 class="fs-4 fw-bold text-dark mb-3">Making Ozikol Better Daily</h3>
-                    <p class="text-secondary mb-0">
-                        We always make things happen. We stay endlessly curious. We believe learn-it-alls beat know-it-alls every single time, and we have serious fun while continuously learning.
-                    </p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-indigo">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Making Ozikol Better Daily</h3>
+                <p class="oz-value-card-desc">
+                    We always make things happen. We stay endlessly curious. We believe learn-it-alls beat know-it-alls every single time, and we have serious fun while continuously learning.
+                </p>
             </div>
 
-            <div class="col-md-4">
-                <div class="p-4 p-lg-5 bg-white border rounded-4 h-100 shadow-sm d-flex flex-column">
-                    <div class="oz-feat-card-icon oz-icon-emerald mb-4">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="fs-4 fw-bold text-dark mb-3">Helping Everyone Thrive</h3>
-                    <p class="text-secondary mb-0">
-                        Everyone belongs here &mdash; no exceptions. Your wellbeing and balance matter. We look after one another, our communities, and our planet. When everyone thrives, we all do.
-                    </p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-emerald">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Helping Everyone Thrive</h3>
+                <p class="oz-value-card-desc">
+                    Everyone belongs here &mdash; no exceptions. Your wellbeing and balance matter. We look after one another, our communities, and our planet. When everyone thrives, we all do.
+                </p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Global Benefits Grid -->
-<section class="oz-corp-section bg-light border-top py-5" id="benefits">
+<!-- Global Benefits Grid (Organized 3-Column Grid) -->
+<section class="oz-corp-section" style="background: #f8fafc; border-top: 1px solid #e2e8f0;" id="benefits">
     <div class="oz-corp-container">
-        <div class="oz-corp-section-header text-center mb-5">
+        <div class="oz-corp-section-header">
             <span class="oz-corp-section-tag">Total Rewards &amp; Wellbeing</span>
             <h2 class="oz-corp-section-title">Designed to Help You Thrive</h2>
             <p class="oz-corp-section-desc">
@@ -357,77 +381,65 @@
             </p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-rose mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Competitive Compensation</h4>
-                    <p class="text-muted small mb-0">Market-benchmarked base salaries, annual merit reviews, and performance bonuses that reward direct impact.</p>
+        <div class="oz-corp-grid-3">
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-rose">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Competitive Compensation</h3>
+                <p class="oz-value-card-desc">Market-benchmarked base salaries, annual merit reviews, and performance bonuses that reward direct impact.</p>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-blue mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Remote &amp; Hybrid Freedom</h4>
-                    <p class="text-muted small mb-0">Flexible working models allowing you to work from home, regional hubs, or across borders with work-from-anywhere allowances.</p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-blue">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Remote &amp; Hybrid Freedom</h3>
+                <p class="oz-value-card-desc">Flexible working models allowing you to work from home, regional hubs, or across borders with work-from-anywhere allowances.</p>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-cyan mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Health &amp; Wellness</h4>
-                    <p class="text-muted small mb-0">Comprehensive private medical, dental, and vision insurance coverage plus mental health counseling resources.</p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-cyan">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Health &amp; Wellness</h3>
+                <p class="oz-value-card-desc">Comprehensive private medical, dental, and vision insurance coverage plus confidential mental health counseling.</p>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-amber mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Learning &amp; Growth Budget</h4>
-                    <p class="text-muted small mb-0">Annual personal training budget, professional certifications, language lessons, and access to learning platforms.</p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-amber">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Learning &amp; Growth Budget</h3>
+                <p class="oz-value-card-desc">Annual personal training budget, professional certifications, language lessons, and unlimited access to learning platforms.</p>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-violet mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Generous Paid Leave</h4>
-                    <p class="text-muted small mb-0">28+ days of paid annual vacation plus regional public holidays, volunteer charity days, and parental leave packages.</p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-violet">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Generous Paid Leave</h3>
+                <p class="oz-value-card-desc">28+ days of paid annual vacation plus regional public holidays, volunteer charity days, and parental leave packages.</p>
             </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="p-4 bg-white border rounded-4 h-100 shadow-sm">
-                    <div class="oz-feat-card-icon oz-icon-emerald mb-3">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">Home Office Stipend</h4>
-                    <p class="text-muted small mb-0">Top-tier laptop equipment (MacBook Pro or Dell XPS), 4K monitors, and ergonomic setup reimbursement.</p>
+            <div class="oz-value-card">
+                <div class="oz-feat-card-icon oz-icon-emerald">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                 </div>
+                <h3 class="oz-value-card-title">Home Office Stipend</h3>
+                <p class="oz-value-card-desc">Top-tier laptop equipment (MacBook Pro or Dell XPS), 4K monitors, and ergonomic home workstation reimbursement.</p>
             </div>
         </div>
     </div>

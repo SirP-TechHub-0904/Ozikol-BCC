@@ -23,17 +23,19 @@
 
 <div class="oz-corp-page">
     <!-- Breadcrumb & Header Bar -->
-    <header class="oz-corp-banner py-4 border-bottom bg-light">
+    <header class="oz-corp-banner" style="padding: 48px 24px; text-align: left;">
         <div class="oz-corp-container">
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb small mb-0">
-                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/careers" class="text-decoration-none text-muted">Careers</a></li>
-                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@Model.Opening.Title</li>
-                </ol>
+            <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
+                <div class="d-flex align-items-center gap-2" style="font-size: 13.5px;">
+                    <a href="/" style="text-decoration: none; color: #64748b; font-weight: 500;">Home</a>
+                    <span style="color: #cbd5e1;">/</span>
+                    <a href="/careers" style="text-decoration: none; color: #64748b; font-weight: 500;">Careers</a>
+                    <span style="color: #cbd5e1;">/</span>
+                    <span style="color: #0f172a; font-weight: 700;">@Model.Opening.Title</span>
+                </div>
             </nav>
 
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px;">
                 <span class="oz-job-badge-dept">@Model.Opening.Department</span>
                 @if (!string.IsNullOrEmpty(Model.Opening.LanguageRequirements))
                 {
@@ -51,11 +53,11 @@
                     </svg>
                     @Model.Opening.Location
                 </span>
-                <span class="oz-job-type-pill ms-auto">@Model.Opening.EmploymentType</span>
+                <span class="oz-job-type-pill" style="margin-left: auto;">@Model.Opening.EmploymentType</span>
             </div>
 
-            <h1 class="oz-corp-title text-start mb-2">@Model.Opening.Title</h1>
-            <p class="lead text-secondary text-start mb-0">@Model.Opening.Summary</p>
+            <h1 class="oz-corp-title" style="text-align: left; margin-bottom: 12px;">@Model.Opening.Title</h1>
+            <p class="oz-corp-lead" style="text-align: left; margin: 0; max-width: 860px;">@Model.Opening.Summary</p>
         </div>
     </header>
 
@@ -69,7 +71,7 @@
                     <!-- About the Role -->
                     <div class="oz-job-content-block">
                         <h2 class="oz-job-content-title">About the Opportunity</h2>
-                        <div class="text-secondary lh-lg">
+                        <div style="color: #475569; font-size: 15px; line-height: 1.75;">
                             @Html.Raw(Model.Opening.DescriptionHtml.Replace("\n", "<br />"))
                         </div>
                     </div>
@@ -121,29 +123,29 @@
                 <div class="oz-job-form-wrapper">
                     @if (Model.IsSubmitted)
                     {
-                        <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 text-center bg-white sticky-top" style="top: 90px;">
-                            <div class="mb-4">
-                                <div class="oz-icon-emerald rounded-circle d-inline-flex p-3 mb-3">
-                                    <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 40px 32px; text-align: center; box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08); position: sticky; top: 90px;">
+                            <div style="margin-bottom: 24px;">
+                                <div class="oz-icon-emerald" style="width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <h3 class="fw-bold text-dark mb-2">Application Received!</h3>
-                                <p class="text-secondary small">
-                                    Thank you for applying to join Ozikol. Your application, CV, and passport identification have been securely received and assigned to our talent committee.
+                                <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Application Received!</h3>
+                                <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin: 0;">
+                                    Thank you for applying to join Ozikol. Your application, CV, and passport identification have been securely received and assigned to our recruitment committee.
                                 </p>
                             </div>
 
-                            <div class="p-3 bg-light rounded-3 mb-4 text-start border">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Your Tracking Reference:</div>
-                                <div class="fs-5 fw-bold text-danger font-monospace">@Model.AssignedReference</div>
-                                <div class="text-muted small mt-2">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 24px; text-align: left;">
+                                <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 6px;">Your Tracking Reference:</div>
+                                <div style="font-size: 20px; font-weight: 800; color: #e5173f; font-family: monospace;">@Model.AssignedReference</div>
+                                <div style="font-size: 12.5px; color: #64748b; margin-top: 8px; line-height: 1.5;">
                                     Please keep this code for your records. A member of our recruitment team will reach out via email regarding next steps.
                                 </div>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <a href="/careers#openings" class="btn btn-outline-dark rounded-pill py-2">
+                            <div>
+                                <a href="/careers#openings" class="oz-features-btn-outline" style="width: 100%; box-sizing: border-box; justify-content: center;">
                                     Browse More Open Roles
                                 </a>
                             </div>
@@ -151,17 +153,17 @@
                     }
                     else
                     {
-                        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-4 bg-white sticky-top" style="top: 90px;">
-                            <div class="border-bottom pb-3 mb-4">
-                                <h3 class="h4 fw-bold text-dark mb-1">Apply for this Role</h3>
-                                <p class="text-muted small mb-0">Complete the form below and attach your CV &amp; Passport/ID.</p>
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 36px 30px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05); position: sticky; top: 90px;">
+                            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 18px; margin-bottom: 24px;">
+                                <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">Apply for this Role</h3>
+                                <p style="font-size: 13.5px; color: #64748b; margin: 0;">Complete the details below and attach your CV &amp; Passport/ID.</p>
                             </div>
 
                             @if (!ModelState.IsValid && HttpContext.Request.Method == "POST")
                             {
-                                <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
-                                    <div class="fw-bold mb-1">Please correct the following errors:</div>
-                                    <ul class="mb-0 ps-3">
+                                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13.5px; color: #991b1b;">
+                                    <div style="font-weight: 700; margin-bottom: 6px;">Please review the following:</div>
+                                    <ul style="margin: 0; padding-left: 20px;">
                                         @foreach (var modelError in ModelState.Values)
                                         {
                                             @foreach (var err in modelError.Errors)
@@ -173,99 +175,107 @@
                                 </div>
                             }
 
-                            <form method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+                            <form method="post" enctype="multipart/form-data">
+                                @Html.AntiForgeryToken()
                                 <input type="hidden" asp-for="Input.JobOpeningId" />
 
                                 <!-- Full Name -->
-                                <div>
-                                    <label asp-for="Input.FullName" class="form-label small fw-bold text-dark">
-                                        Full Legal Name <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.FullName" class="oz-partner-label">
+                                        Full Legal Name <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.FullName"
-                                           class="form-control rounded-3"
-                                           placeholder="e.g. John Doe" />
-                                    <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+                                           class="oz-partner-input"
+                                           placeholder="e.g. John Doe"
+                                           required />
+                                    <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- Email Address -->
-                                <div>
-                                    <label asp-for="Input.Email" class="form-label small fw-bold text-dark">
-                                        Email Address <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.Email" class="oz-partner-label">
+                                        Email Address <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.Email"
                                            type="email"
-                                           class="form-control rounded-3"
-                                           placeholder="name@example.com" />
-                                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                                           class="oz-partner-input"
+                                           placeholder="name@example.com"
+                                           required />
+                                    <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- Phone Number -->
-                                <div>
-                                    <label asp-for="Input.PhoneNumber" class="form-label small fw-bold text-dark">
-                                        Contact Phone <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.PhoneNumber" class="oz-partner-label">
+                                        Contact Phone <span class="oz-partner-req">*</span>
                                     </label>
                                     <input asp-for="Input.PhoneNumber"
-                                           class="form-control rounded-3"
-                                           placeholder="+44 20 7946 0991" />
-                                    <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+                                           class="oz-partner-input"
+                                           placeholder="+44 20 7946 0991"
+                                           required />
+                                    <span asp-validation-for="Input.PhoneNumber" class="oz-partner-field-error"></span>
                                 </div>
 
-                                <!-- City & Country -->
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label asp-for="Input.City" class="form-label small fw-bold text-dark">
-                                            City <span class="text-danger">*</span>
+                                <!-- City & Country Row -->
+                                <div class="oz-partner-row">
+                                    <div class="oz-partner-field">
+                                        <label asp-for="Input.City" class="oz-partner-label">
+                                            City <span class="oz-partner-req">*</span>
                                         </label>
                                         <input asp-for="Input.City"
-                                               class="form-control rounded-3"
-                                               placeholder="e.g. London" />
-                                        <span asp-validation-for="Input.City" class="text-danger small"></span>
+                                               class="oz-partner-input"
+                                               placeholder="e.g. London"
+                                               required />
+                                        <span asp-validation-for="Input.City" class="oz-partner-field-error"></span>
                                     </div>
-                                    <div class="col-6">
-                                        <label asp-for="Input.Country" class="form-label small fw-bold text-dark">
-                                            Country <span class="text-danger">*</span>
+                                    <div class="oz-partner-field">
+                                        <label asp-for="Input.Country" class="oz-partner-label">
+                                            Country <span class="oz-partner-req">*</span>
                                         </label>
                                         <input asp-for="Input.Country"
-                                               class="form-control rounded-3"
-                                               placeholder="e.g. United Kingdom" />
-                                        <span asp-validation-for="Input.Country" class="text-danger small"></span>
+                                               class="oz-partner-input"
+                                               placeholder="e.g. United Kingdom"
+                                               required />
+                                        <span asp-validation-for="Input.Country" class="oz-partner-field-error"></span>
                                     </div>
                                 </div>
 
                                 <!-- LinkedIn Profile -->
-                                <div>
-                                    <label asp-for="Input.LinkedInOrPortfolioUrl" class="form-label small fw-bold text-dark">
-                                        LinkedIn / Portfolio URL <span class="text-muted fw-normal">(Optional)</span>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.LinkedInOrPortfolioUrl" class="oz-partner-label">
+                                        LinkedIn / Portfolio URL <span style="font-weight: normal; color: #94a3b8;">(Optional)</span>
                                     </label>
                                     <input asp-for="Input.LinkedInOrPortfolioUrl"
                                            type="url"
-                                           class="form-control rounded-3"
+                                           class="oz-partner-input"
                                            placeholder="https://linkedin.com/in/..." />
                                 </div>
 
                                 <!-- Cover Letter -->
-                                <div>
-                                    <label asp-for="Input.CoverLetter" class="form-label small fw-bold text-dark">
-                                        Brief Introduction / Pitch <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label asp-for="Input.CoverLetter" class="oz-partner-label">
+                                        Brief Introduction / Pitch <span class="oz-partner-req">*</span>
                                     </label>
                                     <textarea asp-for="Input.CoverLetter"
                                               rows="4"
-                                              class="form-control rounded-3"
-                                              placeholder="Tell us why you are interested in this role and what unique skills you bring to Ozikol..."></textarea>
-                                    <span asp-validation-for="Input.CoverLetter" class="text-danger small"></span>
+                                              class="oz-partner-textarea"
+                                              placeholder="Tell us why you are interested in this role and what unique skills you bring to Ozikol..."
+                                              required></textarea>
+                                    <span asp-validation-for="Input.CoverLetter" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- CV File Upload -->
-                                <div>
-                                    <label class="form-label small fw-bold text-dark">
-                                        Curriculum Vitae / Resume <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label class="oz-partner-label">
+                                        Curriculum Vitae / Resume <span class="oz-partner-req">*</span>
                                     </label>
                                     <div class="oz-file-upload-box">
                                         <input type="file"
                                                asp-for="Input.CvFile"
                                                class="oz-file-upload-input"
                                                accept=".pdf,.docx,.doc"
-                                               onchange="updateFileName(this, 'cvFileNamePreview')" />
+                                               onchange="updateFileName(this, 'cvFileNamePreview')"
+                                               required />
                                         <div class="oz-file-upload-icon">
                                             <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -276,20 +286,21 @@
                                         </div>
                                         <div class="oz-file-upload-hint">Supported formats: PDF, DOCX, DOC (Max 10MB)</div>
                                     </div>
-                                    <span asp-validation-for="Input.CvFile" class="text-danger small"></span>
+                                    <span asp-validation-for="Input.CvFile" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- Passport File Upload -->
-                                <div>
-                                    <label class="form-label small fw-bold text-dark">
-                                        Passport / Government Photo ID <span class="text-danger">*</span>
+                                <div class="oz-partner-field">
+                                    <label class="oz-partner-label">
+                                        Passport / Government Photo ID <span class="oz-partner-req">*</span>
                                     </label>
                                     <div class="oz-file-upload-box">
                                         <input type="file"
                                                asp-for="Input.PassportFile"
                                                class="oz-file-upload-input"
                                                accept=".pdf,.jpg,.jpeg,.png"
-                                               onchange="updateFileName(this, 'passportFileNamePreview')" />
+                                               onchange="updateFileName(this, 'passportFileNamePreview')"
+                                               required />
                                         <div class="oz-file-upload-icon">
                                             <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
@@ -300,39 +311,44 @@
                                         </div>
                                         <div class="oz-file-upload-hint">Supported formats: PDF, JPG, PNG (Max 10MB)</div>
                                     </div>
-                                    <span asp-validation-for="Input.PassportFile" class="text-danger small"></span>
+                                    <span asp-validation-for="Input.PassportFile" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- Terms & Privacy Checkbox -->
-                                <div class="form-check mt-2">
-                                    <input class="form-check-input"
-                                           type="checkbox"
-                                           asp-for="Input.AgreeTerms"
-                                           id="agreeTermsCheck" />
-                                    <label class="form-check-label small text-muted" for="agreeTermsCheck">
-                                        I certify that the information provided is true and agree to Ozikol's recruitment privacy policy and data processing terms. <span class="text-danger">*</span>
+                                <div class="oz-partner-field" style="margin-top: 10px;">
+                                    <label class="oz-partner-checkbox-label">
+                                        <input type="checkbox"
+                                               asp-for="Input.AgreeTerms"
+                                               id="agreeTermsCheck"
+                                               style="margin-top: 3px;"
+                                               required />
+                                        <span>
+                                            I certify that the information provided is accurate and agree to Ozikol's recruitment privacy policy and data processing terms. <span class="oz-partner-req">*</span>
+                                        </span>
                                     </label>
-                                    <span asp-validation-for="Input.AgreeTerms" class="text-danger small d-block"></span>
+                                    <span asp-validation-for="Input.AgreeTerms" class="oz-partner-field-error"></span>
                                 </div>
 
                                 <!-- Google reCAPTCHA -->
-                                <div class="oz-recaptcha-wrap my-2">
+                                <div class="oz-recaptcha-wrap">
                                     <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
                                 </div>
 
                                 <!-- Submit Button -->
-                                <button type="submit" class="oz-btn-primary-hero w-100 py-3 mt-2">
-                                    <span>Submit Application</span>
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                    </svg>
-                                </button>
+                                <div class="oz-partner-submit-wrap" style="margin-top: 16px;">
+                                    <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn" style="width: 100%; justify-content: center;">
+                                        <span>Submit Application</span>
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </button>
+                                </div>
 
-                                <div class="text-center text-muted small mt-2">
-                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
+                                <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
-                                    Files are encrypted and transmitted securely.
+                                    <span>Attachments are encrypted in transit and securely stored.</span>
                                 </div>
                             </form>
                         </div>
