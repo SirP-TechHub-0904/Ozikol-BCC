@@ -35,8 +35,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             // Seed the 10 global & African regional platform currency exchange rates
             await SeedCurrenciesAsync(dbContext, cancellationToken);
 
-            // Ensure ticketing tables and columns exist and seed default MasterPlatformSetting
-            await EnsureTicketingSchemaAndSettingsAsync(dbContext, cancellationToken);
+            // Seed default baseline platform settings record via EF Core
+            await SeedPlatformSettingsAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
@@ -319,98 +319,34 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
         }
 
         /// <summary>
-        /// Idempotently ensures that the MasterPlatformSettings table, MasterTicketReplies table,
-        /// and added columns on MasterSupportInquiries exist, and provisions the default baseline platform settings record.
+        /// Seeds the baseline platform settings record (<c>Id = 1</c>) using standard EF Core entity persistence.
+        /// Strictly relies on official EF Core migrations for database schema management.
         /// </summary>
         /// <param name="dbContext">The master catalog database context instance.</param>
         /// <param name="ct">Cancellation token for async operations.</param>
-        /// <returns>A task representing the asynchronous schema and settings initialization.</returns>
-        public static async Task EnsureTicketingSchemaAndSettingsAsync(MasterCatalogDbContext dbContext, CancellationToken ct = default)
+        /// <returns>A task representing the asynchronous settings initialization.</returns>
+        public static async Task SeedPlatformSettingsAsync(MasterCatalogDbContext dbContext, CancellationToken ct = default)
         {
-            try
+            var existingSetting = await dbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1, ct);
+            if (existingSetting == null)
             {
-                // 1. Idempotently ensure database schema elements exist
-                const string ddlScript = @"
-                    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MasterPlatformSettings')
-                    BEGIN
-                        CREATE TABLE MasterPlatformSettings (
-                            Id INT NOT NULL PRIMARY KEY,
-                            PlatformName NVARCHAR(100) NOT NULL,
-                            SupportContactEmail NVARCHAR(150) NULL,
-                            DefaultFromEmail NVARCHAR(150) NULL,
-                            EnableAdminNotifications BIT NOT NULL DEFAULT 1,
-                            SupportAdminEmails NVARCHAR(MAX) NULL,
-                            PartnerAdminEmails NVARCHAR(MAX) NULL,
-                            CreatorAdminEmails NVARCHAR(MAX) NULL,
-                            CareersAdminEmails NVARCHAR(MAX) NULL,
-                            CertificationAdminEmails NVARCHAR(MAX) NULL,
-                            TicketAutoCloseHours INT NOT NULL DEFAULT 24,
-                            EnableTicketAutoClose BIT NOT NULL DEFAULT 1,
-                            UpdatedUtc DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-                        );
-                    END;
-
-                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MasterSupportInquiries') AND name = 'LastActivityUtc')
-                    BEGIN
-                        ALTER TABLE MasterSupportInquiries ADD LastActivityUtc DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME();
-                    END;
-
-                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MasterSupportInquiries') AND name = 'ClosedAtUtc')
-                    BEGIN
-                        ALTER TABLE MasterSupportInquiries ADD ClosedAtUtc DATETIME2 NULL;
-                    END;
-
-                    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MasterSupportInquiries') AND name = 'AutoClosedReason')
-                    BEGIN
-                        ALTER TABLE MasterSupportInquiries ADD AutoClosedReason NVARCHAR(250) NULL;
-                    END;
-
-                    IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MasterTicketReplies')
-                    BEGIN
-                        CREATE TABLE MasterTicketReplies (
-                            Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
-                            MasterSupportInquiryId UNIQUEIDENTIFIER NOT NULL,
-                            SenderName NVARCHAR(120) NOT NULL,
-                            SenderEmail NVARCHAR(150) NOT NULL,
-                            IsStaffReply BIT NOT NULL DEFAULT 0,
-                            Message NVARCHAR(MAX) NOT NULL,
-                            CreatedUtc DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                            CONSTRAINT FK_MasterTicketReplies_MasterSupportInquiries FOREIGN KEY (MasterSupportInquiryId) REFERENCES MasterSupportInquiries(Id) ON DELETE CASCADE
-                        );
-                        CREATE INDEX IX_MasterTicketReplies_InquiryId ON MasterTicketReplies(MasterSupportInquiryId);
-                        CREATE INDEX IX_MasterTicketReplies_CreatedUtc ON MasterTicketReplies(CreatedUtc);
-                    END;
-                ";
-
-                await dbContext.Database.ExecuteSqlRawAsync(ddlScript, ct);
-
-                // 2. Ensure baseline MasterPlatformSetting record exists (Id = 1)
-                var existingSetting = await dbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1, ct);
-                if (existingSetting == null)
+                var defaultSetting = new MasterPlatformSetting
                 {
-                    var defaultSetting = new MasterPlatformSetting
-                    {
-                        Id = 1,
-                        PlatformName = "Ozikol",
-                        EnableAdminNotifications = true,
-                        SupportAdminEmails = null,
-                        PartnerAdminEmails = null,
-                        CreatorAdminEmails = null,
-                        CareersAdminEmails = null,
-                        CertificationAdminEmails = null,
-                        TicketAutoCloseHours = 24,
-                        EnableTicketAutoClose = true,
-                        UpdatedUtc = DateTime.UtcNow
-                    };
+                    Id = 1,
+                    PlatformName = "Ozikol",
+                    EnableAdminNotifications = true,
+                    SupportAdminEmails = null,
+                    PartnerAdminEmails = null,
+                    CreatorAdminEmails = null,
+                    CareersAdminEmails = null,
+                    CertificationAdminEmails = null,
+                    TicketAutoCloseHours = 24,
+                    EnableTicketAutoClose = true,
+                    UpdatedUtc = DateTime.UtcNow
+                };
 
-                    dbContext.MasterPlatformSettings.Add(defaultSetting);
-                    await dbContext.SaveChangesAsync(ct);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Silently log or bypass during design-time migrations
-                Console.WriteLine($"[MasterCatalogDataSeeder]: Notice during ticketing schema initialization: {ex.Message}");
+                dbContext.MasterPlatformSettings.Add(defaultSetting);
+                await dbContext.SaveChangesAsync(ct);
             }
         }
     }
