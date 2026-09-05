@@ -157,4 +157,84 @@ namespace Ozikol.Central.Pages.Support
             CurrentCulture = current is "en" or "fr" or "es" or "de" ? current : "en";
         }
     }
+
+    /// <summary>
+    /// Input model for submitting support inquiries, ticket requests, and sales consultations.
+    /// </summary>
+    public class SupportInquiryInput
+    {
+        /// <summary>
+        /// Gets or sets the inquirer's full name.
+        /// </summary>
+        [Required(ErrorMessage = "Please enter your full name.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "Full name must be between 2 and 120 characters.")]
+        public string FullName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the work email address.
+        /// </summary>
+        [Required(ErrorMessage = "Please enter your work email address.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [StringLength(150, ErrorMessage = "Email cannot exceed 150 characters.")]
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the optional international telephone number.
+        /// </summary>
+        [Phone(ErrorMessage = "Please enter a valid telephone number.")]
+        [StringLength(40, ErrorMessage = "Phone number cannot exceed 40 characters.")]
+        public string? Phone { get; set; }
+
+        /// <summary>
+        /// Gets or sets the company, estate, or institutional organization name.
+        /// </summary>
+        [Required(ErrorMessage = "Please provide your organization or company name.")]
+        [StringLength(150, MinimumLength = 2, ErrorMessage = "Organization name must be between 2 and 150 characters.")]
+        public string Organization { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the professional job title or administrative role.
+        /// </summary>
+        [StringLength(100, ErrorMessage = "Job title cannot exceed 100 characters.")]
+        public string? JobTitle { get; set; }
+
+        /// <summary>
+        /// Gets or sets the inquiry classification category.
+        /// </summary>
+        [Required(ErrorMessage = "Please select an inquiry classification.")]
+        [StringLength(50)]
+        public string InquiryType { get; set; } = "Support";
+
+        /// <summary>
+        /// Gets or sets the optional targeted enterprise suite code.
+        /// </summary>
+        [StringLength(80)]
+        public string? SuiteCode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional targeted feature module code.
+        /// </summary>
+        [StringLength(80)]
+        public string? FeatureCode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the subject headline of the inquiry.
+        /// </summary>
+        [Required(ErrorMessage = "Please provide a subject summary.")]
+        [StringLength(200, MinimumLength = 5, ErrorMessage = "Subject must be between 5 and 200 characters.")]
+        public string Subject { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the detailed ticket message or question.
+        /// </summary>
+        [Required(ErrorMessage = "Please provide detailed information regarding your inquiry.")]
+        [StringLength(3000, MinimumLength = 15, ErrorMessage = "Message must be between 15 and 3000 characters.")]
+        public string Message { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the user's consent acknowledgment to the privacy policy.
+        /// </summary>
+        [Range(typeof(bool), "true", "true", ErrorMessage = "You must agree to the processing of your inquiry.")]
+        public bool Consent { get; set; }
+    }
 }
