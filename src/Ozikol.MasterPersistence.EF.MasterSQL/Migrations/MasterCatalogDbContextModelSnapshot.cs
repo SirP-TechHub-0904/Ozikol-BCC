@@ -1191,6 +1191,203 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterHeroSlideItems");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterJobApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApplicationReference")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ClientIp")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CoverLetter")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CvFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("CvFileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CvUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("LinkedInOrPortfolioUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("MasterJobOpeningId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PassportFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("PassportFileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PassportUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SubmittedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("TermsAgreed")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationReference")
+                        .IsUnique();
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("MasterJobOpeningId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedUtc");
+
+                    b.ToTable("MasterJobApplications");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterJobOpening", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BenefitsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DescriptionHtml")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExperienceLevel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LanguageRequirements")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("QualificationsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponsibilitiesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Department");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("LanguageRequirements");
+
+                    b.HasIndex("Location");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("MasterJobOpenings");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2224,6 +2421,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("HeroContent");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterJobApplication", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterJobOpening", "JobOpening")
+                        .WithMany("Applications")
+                        .HasForeignKey("MasterJobOpeningId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("JobOpening");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceTemplate", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.MasterMarketplaceCategory", "Category")
@@ -2387,6 +2595,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterHeroContent", b =>
                 {
                     b.Navigation("Slides");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterJobOpening", b =>
+                {
+                    b.Navigation("Applications");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceCategory", b =>

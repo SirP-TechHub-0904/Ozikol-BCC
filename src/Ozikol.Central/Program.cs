@@ -34,6 +34,8 @@ builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IRecaptchaService, GoogleRecaptchaService>();
 builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<Ozikol.Central.Services.Storage.IFileStorageService, Ozikol.Central.Services.Storage.CloudinaryFileStorageService>();
+builder.Services.AddScoped<Ozikol.Central.Services.Careers.ICareersService, Ozikol.Central.Services.Careers.CareersService>();
 
 builder.Services.AddRazorPages(options =>
 {
