@@ -24,10 +24,10 @@ public class MasterEmailLog
     public string BodyHtml { get; set; } = null!;
 
     [MaxLength(50)]
-    public string Provider { get; set; } = "Postmark";
+    public string? Provider { get; set; }
 
     [MaxLength(50)]
-    public string Status { get; set; } = "Sent"; // Sent, Failed, Queued
+    public string Status { get; set; } = "NotSent"; // NotSent, Sent, Failed
 
     public string? ErrorMessage { get; set; }
 
