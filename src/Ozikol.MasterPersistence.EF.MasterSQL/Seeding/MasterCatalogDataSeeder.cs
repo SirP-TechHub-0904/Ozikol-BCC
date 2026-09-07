@@ -43,7 +43,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
         }
 
         /// <summary>
-        /// Seeds the 7 central system roles and provisions the initial default SuperAdmin user account.
+        /// Seeds the 9 central system roles and provisions the initial default SuperAdmin user account.
         /// Designed with dual-execution capability: supports both ASP.NET Identity managers and direct EF Core DbSet fallbacks.
         /// </summary>
         /// <param name="dbContext">The master catalog database context instance.</param>
@@ -57,7 +57,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             UserManager<CentralUser>? userManager,
             CancellationToken ct = default)
         {
-            // Define the 7 core central platform governance roles
+            // Define the 9 core central platform governance roles
             var centralRoles = new[]
             {
                 new CentralRole("SuperAdmin", "Full system governance, database fleet migrations, operator access"),
@@ -66,7 +66,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 new CentralRole("ReferralManager", "Affiliate partner network, commission tiers, payout tracking"),
                 new CentralRole("Operator", "Platform operational staff and monitoring"),
                 new CentralRole("BillingAdmin", "Subscription billing, invoices, and payment gateway configuration"),
-                new CentralRole("SupportAgent", "Customer tickets, live chat assistance, and workspace diagnostics")
+                new CentralRole("SupportAgent", "Customer tickets, live chat assistance, and workspace diagnostics"),
+                new CentralRole("AffiliatePartner", "Affiliate partner portal access for referral tracking and earnings"),
+                new CentralRole("TemplateCreator", "Creator studio portal access for template publishing and revenue tracking")
             };
 
             // Ensure all central roles exist in the database

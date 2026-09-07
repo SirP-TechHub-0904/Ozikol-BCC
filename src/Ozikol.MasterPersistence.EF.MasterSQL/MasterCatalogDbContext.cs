@@ -56,6 +56,16 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterTicketReply> MasterTicketReplies { get; set; } = null!;
     public DbSet<MasterLegalDocument> MasterLegalDocuments { get; set; } = null!;
 
+    /// <summary>
+    /// Audit log entries tracking all administrative actions across the platform.
+    /// </summary>
+    public DbSet<MasterAuditLog> MasterAuditLogs { get; set; } = null!;
+
+    /// <summary>
+    /// Billing transaction records for tenant subscription payments, refunds, and manual adjustments.
+    /// </summary>
+    public DbSet<MasterBillingTransaction> MasterBillingTransactions { get; set; } = null!;
+
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
     }
@@ -71,7 +81,24 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
         base.OnModelCreating(modelBuilder);
 
         // Customize Identity Table Names for Master DB Clarity
-        modelBuilder.Entity<CentralUser>(b => b.ToTable("CentralUsers"));
+        modelBuilder.Entity<CentralUser>(b =>
+        {
+            b.ToTable("CentralUsers");
+
+            // FK to MasterAffiliatePartner — optional link for affiliate-provisioned accounts
+            b.HasIndex(e => e.AffiliatePartnerId);
+            b.HasOne(e => e.AffiliatePartner)
+                .WithMany()
+                .HasForeignKey(e => e.AffiliatePartnerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // FK to MasterCreatorApplication — optional link for creator-provisioned accounts
+            b.HasIndex(e => e.CreatorApplicationId);
+            b.HasOne(e => e.CreatorApplication)
+                .WithMany()
+                .HasForeignKey(e => e.CreatorApplicationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
         modelBuilder.Entity<CentralRole>(b => b.ToTable("CentralRoles"));
         modelBuilder.Entity<IdentityUserRole<string>>(b => b.ToTable("CentralUserRoles"));
         modelBuilder.Entity<IdentityUserClaim<string>>(b => b.ToTable("CentralUserClaims"));
@@ -480,6 +507,38 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.Summary).HasMaxLength(500).IsRequired();
             entity.Property(e => e.Version).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Culture).HasMaxLength(10).IsRequired();
+        });
+
+        // ── Audit Log Configurations ──
+        modelBuilder.Entity<MasterAuditLog>(entity =>
+        {
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.EntityType);
+            entity.HasIndex(e => e.CreatedUtc);
+            // Composite index for common admin console queries: filter by entity type + date range
+            entity.HasIndex(e => new { e.EntityType, e.CreatedUtc });
+        });
+
+        // ── Billing Transaction Configurations ──
+        modelBuilder.Entity<MasterBillingTransaction>(entity =>
+        {
+            entity.HasIndex(e => e.MasterTenantCatalogId);
+            entity.HasIndex(e => e.MasterTenantFeatureSubscriptionId);
+            entity.HasIndex(e => e.InvoiceNumber).IsUnique().HasFilter("[InvoiceNumber] IS NOT NULL");
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedUtc);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Tenant)
+                .WithMany()
+                .HasForeignKey(e => e.MasterTenantCatalogId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.FeatureSubscription)
+                .WithMany()
+                .HasForeignKey(e => e.MasterTenantFeatureSubscriptionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
