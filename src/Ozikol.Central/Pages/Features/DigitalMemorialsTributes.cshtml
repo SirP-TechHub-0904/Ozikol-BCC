@@ -1,0 +1,128 @@
+@page "/features/digital-memorials-tributes"
+@model Ozikol.Central.Pages.Features.DigitalMemorialsTributesModel
+@{
+    ViewData["Title"] = "Digital Memorials & Funeral Tributes - Ozikol BCP Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#life-events-publications">Life Events & Publications</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Digital Memorials & Funeral Tributes</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-suite-pill">
+                    Life Events & Digital Publications
+                </div>
+                <h1 class="oz-feat-title">
+                    Digital Memorials & Funeral Tributes
+                </h1>
+                <p class="oz-feat-lead">
+                    Honor loved ones with dedicated digital memorial portals, virtual candle lighting, YouTube livestream integration, tribute guestbooks, and downloadable PDF order of service brochures.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#capabilities" class="oz-btn-outline-hero">
+                        <span>Explore Capabilities</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="oz-feat-body">
+        <section class="oz-feat-overview-card">
+            <h2>Dignified Memorial Spaces for Life Celebrations</h2>
+            <p>
+                Ozikol's Digital Memorials module empowers families, funeral service directors, religious institutions, and communities to preserve sacred memories in a serene digital environment. Combine live funeral video broadcasts with downloadable PDF brochures, virtual candle tributes, and interactive photo galleries.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-section">
+            <h2 class="oz-feat-section-title">Core Capabilities</h2>
+            
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8m0 0a4 4 0 1 0 4 4m-4-4a4 4 0 1 1-4 4"></path><path d="M12 18v4"></path></svg>
+                    </div>
+                    <h3>Virtual Candle Lighting & Tributes</h3>
+                    <p>Visitors worldwide can light virtual memorial candles, post heartfelt condolence messages, and share cherished memories that remain stored perpetually.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                    </div>
+                    <h3>YouTube & Livestream Integration</h3>
+                    <p>Embed YouTube Live, Vimeo, or custom video streams directly onto the memorial page so family members unable to travel can participate in funeral and burial ceremonies in real time.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    </div>
+                    <h3>Downloadable PDF Funeral Brochure</h3>
+                    <p>Generate and host high-definition digital brochures and order of service booklets that attendees can download as PDF files or print directly for the service.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <h3>High-Resolution Memory Gallery</h3>
+                    <p>Organize photo albums, historical portrait archives, and tribute videos into categorized, responsive galleries accessible on mobile and desktop.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <h3>Life Milestone Timeline</h3>
+                    <p>Present a chronological timeline celebrating key milestones, achievements, service contributions, and family history with rich multimedia elements.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h3>Privacy & Access Controls</h3>
+                    <p>Optionally protect memorial pages with access passcodes or restricted links so tribute content remains shared strictly with family and invited guests.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="oz-feat-cta">
+            <h2>Create a Beautiful Digital Memorial Today</h2>
+            <p>Deploy a sovereign memorial portal with virtual candle lighting, video streaming, and downloadable PDF brochures.</p>
+            <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                <span>Deploy Sovereign Workspace</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
+        </section>
+    </main>
+</div>
