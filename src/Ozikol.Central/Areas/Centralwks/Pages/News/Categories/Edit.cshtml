@@ -1,0 +1,88 @@
+@page "/centralwks/news/categories/edit/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.News.Categories.EditModel
+@{
+    ViewData["Title"] = "Edit News Category";
+    ViewData["BreadcrumbSection"] = "Content";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/news/categories" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Categories</a>
+        </div>
+        <h1 class="admin-title">Edit News Category</h1>
+        <p class="admin-subtitle">Update category name, programmatic key, URL slug, or badge styling.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 650px; padding: 28px;">
+    <form method="post">
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Name" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Category Display Name <span style="color: #f87171;">*</span>
+            </label>
+            <input asp-for="Input.Name" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+            <span asp-validation-for="Input.Name" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Key" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Programmatic Key <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Key" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                <span asp-validation-for="Input.Key" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.Slug" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Permalink Slug <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Slug" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #94a3b8; font-family: monospace; font-size: 13px;" />
+                <span asp-validation-for="Input.Slug" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Description" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Description
+            </label>
+            <textarea asp-for="Input.Description" rows="3" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            <span asp-validation-for="Input.Description" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <label asp-for="Input.BadgeClass" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Badge CSS Class
+                </label>
+                <select asp-for="Input.BadgeClass" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    <option value="oz-badge-blue">Blue Badge</option>
+                    <option value="oz-badge-emerald">Emerald Badge</option>
+                    <option value="oz-badge-amber">Amber Badge</option>
+                    <option value="oz-badge-purple">Purple Badge</option>
+                    <option value="oz-badge-cyan">Cyan Badge</option>
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="Input.SortOrder" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Sort Order
+                </label>
+                <input asp-for="Input.SortOrder" type="number" min="1" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsActive" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Active and visible in editorial filter dropdowns
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="/centralwks/news/categories" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary">Save Changes</button>
+        </div>
+    </form>
+</div>

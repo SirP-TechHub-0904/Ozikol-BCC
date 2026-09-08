@@ -1,0 +1,144 @@
+@page "/centralwks/news/articles/edit/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.News.Articles.EditModel
+@{
+    ViewData["Title"] = "Edit Article";
+    ViewData["BreadcrumbSection"] = "Content";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <a href="/centralwks/news/articles/details/@Model.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                ← Back to Details
+            </a>
+            <a href="/centralwks/news/articles" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                All Articles
+            </a>
+        </div>
+        <h1 class="admin-title">Edit Corporate Article</h1>
+        <p class="admin-subtitle">Modify headlines, permalinks, rich body content, or editorial categorizations.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 900px; padding: 28px;">
+    <form method="post">
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Title" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Article Title <span style="color: #f87171;">*</span>
+            </label>
+            <input asp-for="Input.Title" id="articleTitleInput" placeholder="Article headline..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 15px; font-weight: 500;" />
+            <span asp-validation-for="Input.Title" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Slug" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    URL Permalink Slug <span style="color: #f87171;">*</span>
+                </label>
+                <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden;">
+                    <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid rgba(255, 255, 255, 0.06); font-family: monospace;">
+                        /news/
+                    </span>
+                    <input asp-for="Input.Slug" id="articleSlugInput" 
+                           class="form-control" style="flex: 1; background: transparent; border: none; padding: 10px 14px; color: #93c5fd; font-size: 13px; font-family: monospace;" />
+                </div>
+                <span asp-validation-for="Input.Slug" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.MasterNewsCategoryId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Editorial Category <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.MasterNewsCategoryId" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <option value="@cat.Id">@cat.Name (@cat.Key)</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.MasterNewsCategoryId" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Excerpt" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Summary / Lead Excerpt
+            </label>
+            <textarea asp-for="Input.Excerpt" rows="3" placeholder="Brief 1-2 sentence lead text appearing on index cards and meta descriptions..." 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            <span asp-validation-for="Input.Excerpt" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.ContentHtml" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Article Body (HTML) <span style="color: #f87171;">*</span>
+            </label>
+            <textarea asp-for="Input.ContentHtml" rows="12" placeholder="Full rich HTML markup for the article..." 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: #e2e8f0; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+            <span asp-validation-for="Input.ContentHtml" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.AuthorName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Author Name <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.AuthorName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <span asp-validation-for="Input.AuthorName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.AuthorRole" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Author Title / Group
+                </label>
+                <input asp-for="Input.AuthorRole" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.ReadTimeText" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Estimated Read Time
+                </label>
+                <input asp-for="Input.ReadTimeText" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.CoverGradientClass" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Cover Styling Class
+                </label>
+                <select asp-for="Input.CoverGradientClass" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <option value="oz-news-cover-indigo">Indigo Glow (Architecture & Releases)</option>
+                    <option value="oz-news-cover-emerald">Emerald Shine (Growth & Financial)</option>
+                    <option value="oz-news-cover-amber">Amber Flare (Security & Alerts)</option>
+                    <option value="oz-news-cover-purple">Purple Nebula (AI & Infrastructure)</option>
+                    <option value="oz-news-cover-cyan">Cyan Pulse (Partnerships)</option>
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="Input.Tags" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Topic Tags (JSON or comma-separated)
+                </label>
+                <input asp-for="Input.Tags" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsPublished" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Published Live to Public Portal
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsFeatured" style="accent-color: #f59e0b; width: 16px; height: 16px;" />
+                Feature as Primary Headline
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="/centralwks/news/articles/details/@Model.Id" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary">Save Changes</button>
+        </div>
+    </form>
+</div>

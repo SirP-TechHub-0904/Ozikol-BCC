@@ -1,0 +1,121 @@
+@page "/centralwks/news/articles/details/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.News.Articles.DetailsModel
+@{
+    ViewData["Title"] = Model.Article.Title;
+    ViewData["BreadcrumbSection"] = "Content";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <a href="/centralwks/news/articles" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Articles</a>
+            <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
+            <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                @(Model.Article.Category?.Name ?? Model.Article.CategoryKey)
+            </span>
+            @if (Model.Article.IsFeatured)
+            {
+                <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">★ Featured</span>
+            }
+            @if (Model.Article.IsPublished)
+            {
+                <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">● Live</span>
+            }
+            else
+            {
+                <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">○ Draft</span>
+            }
+        </div>
+        <h1 class="admin-title">@Model.Article.Title</h1>
+        <p class="admin-subtitle">Permalink: <code>/news/@Model.Article.Slug</code></p>
+    </div>
+    <div class="admin-actions">
+        <form method="post" asp-page-handler="TogglePublish" asp-route-id="@Model.Article.Id" style="display: inline;">
+            <button type="submit" class="btn-admin btn-admin-secondary">
+                @(Model.Article.IsPublished ? "Unpublish" : "Publish Live")
+            </button>
+        </form>
+        <form method="post" asp-page-handler="ToggleFeatured" asp-route-id="@Model.Article.Id" style="display: inline;">
+            <button type="submit" class="btn-admin btn-admin-secondary">
+                @(Model.Article.IsFeatured ? "Remove Featured" : "Make Featured")
+            </button>
+        </form>
+        <a href="/centralwks/news/articles/edit/@Model.Article.Id" class="btn-admin btn-admin-primary">
+            <span>✏️</span> Edit Article
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Main Article Preview *@
+    <div class="admin-card" style="padding: 24px;">
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Article Content</h2>
+        
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted); margin-bottom: 6px;">Excerpt / Lead</div>
+            <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0;">@Model.Article.Excerpt</p>
+        </div>
+
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted); margin-bottom: 8px;">Rendered Body HTML</div>
+        <div class="article-content-body" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 24px; line-height: 1.7; color: #e2e8f0;">
+            @Html.Raw(Model.Article.ContentHtml)
+        </div>
+    </div>
+
+    @* Sidebar Metadata *@
+    <div style="display: flex; flexDirection: column; gap: 24px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Editorial Metadata</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Author</div>
+                <div style="font-size: 13px; font-weight: 500; color: var(--admin-text);">@Model.Article.AuthorName</div>
+                <div style="font-size: 11px; color: var(--admin-text-muted);">@Model.Article.AuthorRole</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Published Date (UTC)</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Article.PublishedAtUtc.ToString("dd MMM yyyy, HH:mm") UTC</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Read Time</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Article.ReadTimeText</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Category</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@(Model.Article.Category?.Name ?? Model.Article.CategoryKey)</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Cover Gradient</div>
+                <div style="font-size: 12px; font-family: monospace; color: #94a3b8;">@Model.Article.CoverGradientClass</div>
+            </div>
+
+            <div>
+                <div style="font-size: 11px; color: var(--admin-text-muted); margin-bottom: 4px;">Tags</div>
+                <div style="font-size: 12px; font-family: monospace; color: #93c5fd; background: rgba(59, 130, 246, 0.1); padding: 4px 8px; border-radius: 4px; word-break: break-all;">
+                    @Model.Article.TagsJson
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="padding: 20px; border-color: rgba(239, 68, 68, 0.2);">
+            <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin-bottom: 8px;">Danger Zone</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 12px;">Deleting this article removes it permanently from public circulation and search indexes.</p>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Article.Id">
+                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); width: 100%;" onclick="return confirm('Are you sure you want to permanently delete this article?');">
+                    Permanently Delete Article
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

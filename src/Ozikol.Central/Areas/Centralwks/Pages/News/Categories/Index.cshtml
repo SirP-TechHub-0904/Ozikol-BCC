@@ -1,0 +1,111 @@
+@page "/centralwks/news/categories"
+@model Ozikol.Central.Areas.Centralwks.Pages.News.Categories.IndexModel
+@{
+    ViewData["Title"] = "News Categories";
+    ViewData["BreadcrumbSection"] = "Content";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/news/articles" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Articles</a>
+        </div>
+        <h1 class="admin-title">Editorial News Categories</h1>
+        <p class="admin-subtitle">Organize corporate announcements, releases, and guides into taxonomy categories.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/news/categories/create" class="btn-admin btn-admin-primary">
+            <span>➕</span> New Category
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Sort</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Category Name & Key</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Slug</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Badge Class</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Articles</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Categories.Any())
+                {
+                    <tr>
+                        <td colspan="7" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No categories found. Click "New Category" to create your first taxonomy item.
+                        </td>
+                    </tr>
+                }
+                @foreach (var cat in Model.Categories)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px; font-weight: 600; color: var(--admin-text-muted); font-size: 12px;">
+                            #@cat.SortOrder
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">@cat.Name</div>
+                            <div style="font-size: 11px; font-family: monospace; color: #93c5fd;">@cat.Key</div>
+                            @if (!string.IsNullOrEmpty(cat.Description))
+                            {
+                                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; max-width: 320px;">@cat.Description</div>
+                            }
+                        </td>
+                        <td style="padding: 14px 14px; font-family: monospace; font-size: 12px; color: #94a3b8;">
+                            /news/category/@cat.Slug
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                @cat.BadgeClass
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <span style="font-size: 13px; font-weight: 600; color: var(--admin-text); background: rgba(59, 130, 246, 0.1); padding: 3px 9px; border-radius: 9999px;">
+                                @cat.ArticleCount
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@cat.Id" style="display: inline;">
+                                @if (cat.IsActive)
+                                {
+                                    <button type="submit" title="Click to deactivate" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        Active
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="submit" title="Click to activate" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        Inactive
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/news/categories/edit/@cat.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Edit
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@cat.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Permanently delete category @cat.Name?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
