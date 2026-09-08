@@ -1,0 +1,207 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Support.IndexModel
+@{
+    ViewData["Title"] = "Support & Helpdesk Inquiries";
+    ViewData["BreadcrumbSection"] = "Support";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Support & Customer Inquiries</h1>
+        <p class="admin-subtitle">Enterprise triage desk, customer inquiries, partner requests, and communication audit trail across all sovereign tenants.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary">
+            <span>❓</span> Knowledge Base FAQs
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Ticket Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🎫</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Inquiries</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">🆕</div>
+        <div class="stat-details">
+            <span class="stat-label">New / Unassigned</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.NewCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #60a5fa;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">In Progress</span>
+            <span class="stat-value" style="font-size: 22px; color: #60a5fa;">@Model.InProgressCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-details">
+            <span class="stat-label">Resolved</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ResolvedCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">🔒</div>
+        <div class="stat-details">
+            <span class="stat-label">Closed</span>
+            <span class="stat-value" style="font-size: 22px; color: #94a3b8;">@Model.ClosedCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search reference, customer name, email, organization, or subject..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+        <div style="width: 160px;">
+            <select name="StatusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="All" selected="@(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "All")">All Statuses</option>
+                <option value="New" selected="@(Model.StatusFilter == "New")">New</option>
+                <option value="InProgress" selected="@(Model.StatusFilter == "InProgress")">In Progress</option>
+                <option value="Resolved" selected="@(Model.StatusFilter == "Resolved")">Resolved</option>
+                <option value="Closed" selected="@(Model.StatusFilter == "Closed")">Closed</option>
+            </select>
+        </div>
+        <div style="width: 160px;">
+            <select name="InquiryTypeFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="All" selected="@(string.IsNullOrEmpty(Model.InquiryTypeFilter) || Model.InquiryTypeFilter == "All")">All Categories</option>
+                <option value="Support" selected="@(Model.InquiryTypeFilter == "Support")">Support</option>
+                <option value="Sales" selected="@(Model.InquiryTypeFilter == "Sales")">Sales</option>
+                <option value="Billing" selected="@(Model.InquiryTypeFilter == "Billing")">Billing</option>
+                <option value="Partnership" selected="@(Model.InquiryTypeFilter == "Partnership")">Partnership</option>
+                <option value="General" selected="@(Model.InquiryTypeFilter == "General")">General</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
+                <span>🔍</span> Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.StatusFilter) && Model.StatusFilter != "All") || (!string.IsNullOrEmpty(Model.InquiryTypeFilter) && Model.InquiryTypeFilter != "All"))
+            {
+                <a href="/centralwks/support" class="btn-admin btn-admin-secondary" style="padding: 8px 12px; margin-left: 6px;">Clear</a>
+            }
+        </div>
+    </form>
+</div>
+
+@* ── Tickets Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
+            Support Ticket Queue (@Model.Inquiries.Count)
+        </h2>
+    </div>
+
+    @if (!Model.Inquiries.Any())
+    {
+        <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
+            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📭</span>
+            <p style="font-size: 14px; margin: 0;">No support tickets match the selected criteria.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table admin-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); text-align: left; color: var(--admin-text-muted);">
+                        <th style="padding: 12px 20px;">Reference</th>
+                        <th style="padding: 12px 14px;">Status</th>
+                        <th style="padding: 12px 14px;">Inquirer</th>
+                        <th style="padding: 12px 14px;">Type</th>
+                        <th style="padding: 12px 14px;">Subject</th>
+                        <th style="padding: 12px 14px;">Replies</th>
+                        <th style="padding: 12px 14px;">Last Activity</th>
+                        <th style="padding: 12px 20px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in Model.Inquiries)
+                    {
+                        var statusClass = ticket.Status switch
+                        {
+                            "New" => "background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);",
+                            "InProgress" => "background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);",
+                            "Resolved" => "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);",
+                            "Closed" => "background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);",
+                            _ => "background: rgba(255, 255, 255, 0.05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1);"
+                        };
+
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); transition: background 0.15s ease;">
+                            <td style="padding: 14px 20px;">
+                                <a href="/centralwks/support/details/@ticket.Id" style="color: #60a5fa; font-weight: 600; font-family: monospace; text-decoration: none;">
+                                    @ticket.ReferenceNumber
+                                </a>
+                                <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 2px;">
+                                    Locale: @ticket.Culture.ToUpperInvariant()
+                                </div>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; @statusClass">
+                                    @ticket.Status
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <div style="font-weight: 600; color: var(--admin-text);">@ticket.FullName</div>
+                                <div style="font-size: 11px; color: var(--admin-text-muted);">@ticket.Email</div>
+                                @if (!string.IsNullOrEmpty(ticket.Organization))
+                                {
+                                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">🏢 @ticket.Organization</div>
+                                }
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="background: rgba(255, 255, 255, 0.06); padding: 3px 8px; border-radius: 4px; font-size: 11px; color: #cbd5e1;">
+                                    @ticket.InquiryType
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px; max-width: 260px;">
+                                <div style="font-weight: 500; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@ticket.Subject">
+                                    @ticket.Subject
+                                </div>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--admin-text-muted);">
+                                    💬 @ticket.ReplyCount
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">
+                                <div>@ticket.LastActivityUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                <div style="font-size: 10px; color: #64748b;">Created @ticket.CreatedUtc.ToString("MMM dd, yyyy")</div>
+                            </td>
+                            <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                                <a href="/centralwks/support/details/@ticket.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                    View Thread
+                                </a>
+                                @if (ticket.Status != "Resolved" && ticket.Status != "Closed")
+                                {
+                                    <form method="post" asp-page-handler="QuickResolve" asp-route-id="@ticket.Id" style="display: inline;">
+                                        <button type="submit" class="btn-admin" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Mark ticket as resolved?');">
+                                            Resolve
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,283 @@
+@page "{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.Support.DetailsModel
+@{
+    ViewData["Title"] = $"Ticket {Model.Ticket.ReferenceNumber}";
+    ViewData["BreadcrumbSection"] = "Support";
+
+    var statusBadgeStyle = Model.Ticket.Status switch
+    {
+        "New" => "background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);",
+        "InProgress" => "background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);",
+        "Resolved" => "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);",
+        "Closed" => "background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);",
+        _ => "background: rgba(255, 255, 255, 0.05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1);"
+    };
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <a href="/centralwks/support" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                ← Back to Tickets
+            </a>
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; @statusBadgeStyle">
+                @Model.Ticket.Status
+            </span>
+        </div>
+        <h1 class="admin-title" style="font-family: monospace; font-size: 24px;">@Model.Ticket.ReferenceNumber</h1>
+        <p class="admin-subtitle" style="font-size: 15px; color: #f1f5f9; font-weight: 500;">@Model.Ticket.Subject</p>
+    </div>
+    <div class="admin-actions">
+        @if (Model.Ticket.Status != "Resolved")
+        {
+            <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Ticket.Id" asp-route-status="Resolved" style="display: inline;">
+                <button type="submit" class="btn-admin" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
+                    ✓ Mark Resolved
+                </button>
+            </form>
+        }
+        @if (Model.Ticket.Status != "Closed")
+        {
+            <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Ticket.Id" asp-route-status="Closed" style="display: inline;">
+                <button type="submit" class="btn-admin" style="background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3);">
+                    🔒 Close Ticket
+                </button>
+            </form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Ticket.Id" asp-route-status="InProgress" style="display: inline;">
+                <button type="submit" class="btn-admin btn-admin-secondary">
+                    🔄 Reopen Ticket
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 24px; align-items: start;">
+    @* ── Left: Conversation Thread & Reply Form ── *@
+    <div>
+        @* Original Inquiry Card *@
+        <div class="admin-card" style="margin-bottom: 20px; border-left: 4px solid #6366f1; background: rgba(30, 41, 59, 0.7);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 34px; height: 34px; border-radius: 50%; background: #6366f1; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white;">
+                        @(string.IsNullOrEmpty(Model.Ticket.FullName) ? "U" : Model.Ticket.FullName[0].ToString().ToUpper())
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">@Model.Ticket.FullName</div>
+                        <div style="font-size: 11px; color: var(--admin-text-muted);">
+                            @Model.Ticket.Email @(string.IsNullOrEmpty(Model.Ticket.Organization) ? "" : $"• {Model.Ticket.Organization}")
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: var(--admin-text-muted);">
+                    @Model.Ticket.CreatedUtc.ToString("MMM dd, yyyy HH:mm") UTC
+                </div>
+            </div>
+            <div style="color: #e2e8f0; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">@Model.Ticket.Message</div>
+        </div>
+
+        @* Thread Replies *@
+        @if (Model.Replies.Any())
+        {
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Thread Activity (@Model.Replies.Count @(Model.Replies.Count == 1 ? "Reply" : "Replies"))
+                </h3>
+
+                @foreach (var reply in Model.Replies)
+                {
+                    var isStaff = reply.IsStaffReply;
+                    var replyCardBg = isStaff ? "rgba(15, 23, 42, 0.85)" : "rgba(30, 41, 59, 0.6)";
+                    var replyBorder = isStaff ? "border-left: 4px solid #3b82f6;" : "border-left: 4px solid #10b981;";
+
+                    <div class="admin-card" style="margin-bottom: 14px; background: @replyCardBg; @replyBorder padding: 16px 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 13px; font-weight: 600; color: var(--admin-text);">@reply.SenderName</span>
+                                @if (isStaff)
+                                {
+                                    <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                                        Ozikol Specialist
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                                        Client
+                                    </span>
+                                }
+                                <span style="font-size: 11px; color: var(--admin-text-muted);">(@reply.SenderEmail)</span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">
+                                @reply.CreatedUtc.ToString("MMM dd, yyyy HH:mm") UTC
+                            </div>
+                        </div>
+                        <div style="color: #e2e8f0; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">@reply.Message</div>
+                    </div>
+                }
+            </div>
+        }
+
+        @* Reply Composer Card *@
+        <div class="admin-card" style="padding: 20px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(59, 130, 246, 0.2);">
+            <h3 style="font-size: 15px; font-weight: 600; margin: 0 0 16px 0; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                <span>💬</span> Post Specialist Response
+            </h3>
+
+            <form method="post" asp-page-handler="AddReply" asp-route-id="@Model.Ticket.Id">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 500; color: var(--admin-text-muted); margin-bottom: 4px;">Staff Sender Name</label>
+                        <input asp-for="ReplyInput.SenderName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                        <span asp-validation-for="ReplyInput.SenderName" style="color: #f87171; font-size: 11px;"></span>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 500; color: var(--admin-text-muted); margin-bottom: 4px;">Staff Sender Email</label>
+                        <input asp-for="ReplyInput.SenderEmail" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                        <span asp-validation-for="ReplyInput.SenderEmail" style="color: #f87171; font-size: 11px;"></span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 12px; font-weight: 500; color: var(--admin-text-muted); margin-bottom: 4px;">Specialist Message Content</label>
+                    <textarea asp-for="ReplyInput.Message" rows="5" placeholder="Draft professional resolution, follow-up inquiry, or instructions..." class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 10px 12px; color: var(--admin-text); font-size: 13px; resize: vertical;"></textarea>
+                    <span asp-validation-for="ReplyInput.Message" style="color: #f87171; font-size: 11px;"></span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 12px; color: var(--admin-text-muted);">Set Status After Posting:</label>
+                        <select asp-for="ReplyInput.PostReplyStatus" class="form-control" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 10px; color: var(--admin-text); font-size: 12px;">
+                            <option value="Keep">Keep Current (@Model.Ticket.Status)</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 20px;">
+                        <span>📤</span> Send Response
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* ── Right: Inquirer & Ticket Metadata Sidebar ── *@
+    <div>
+        @* Inquirer Details Card *@
+        <div class="admin-card" style="margin-bottom: 20px; padding: 18px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin: 0 0 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px;">
+                👤 Inquirer Profile
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+                <div>
+                    <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Full Name</span>
+                    <span style="font-weight: 600; color: var(--admin-text);">@Model.Ticket.FullName</span>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Contact Email</span>
+                    <a href="mailto:@Model.Ticket.Email" style="color: #60a5fa; text-decoration: none;">@Model.Ticket.Email</a>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Ticket.Phone))
+                {
+                    <div>
+                        <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Phone Number</span>
+                        <span style="color: var(--admin-text);">@Model.Ticket.Phone</span>
+                    </div>
+                }
+                <div>
+                    <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Organization</span>
+                    <span style="color: var(--admin-text);">@(string.IsNullOrEmpty(Model.Ticket.Organization) ? "Independent" : Model.Ticket.Organization)</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Ticket.JobTitle))
+                {
+                    <div>
+                        <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Role / Title</span>
+                        <span style="color: var(--admin-text);">@Model.Ticket.JobTitle</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Routing & System Diagnostics Card *@
+        <div class="admin-card" style="margin-bottom: 20px; padding: 18px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin: 0 0 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px;">
+                🧭 Classification & Context
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+                <div>
+                    <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Inquiry Classification</span>
+                    <span style="background: rgba(255, 255, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #f8fafc;">
+                        @Model.Ticket.InquiryType
+                    </span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Ticket.SuiteCode))
+                {
+                    <div>
+                        <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Target Suite</span>
+                        <code style="color: #93c5fd; background: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 12px;">@Model.Ticket.SuiteCode</code>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Ticket.FeatureCode))
+                {
+                    <div>
+                        <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Target Feature</span>
+                        <code style="color: #93c5fd; background: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 12px;">@Model.Ticket.FeatureCode</code>
+                    </div>
+                }
+                <div>
+                    <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Language / Culture</span>
+                    <span style="color: var(--admin-text);">@Model.Ticket.Culture.ToUpperInvariant()</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Ticket.IpAddress))
+                {
+                    <div>
+                        <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Client IP Address</span>
+                        <span style="font-family: monospace; font-size: 12px; color: #cbd5e1;">@Model.Ticket.IpAddress</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Timestamps & Lifecycle Audit Card *@
+        <div class="admin-card" style="padding: 18px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin: 0 0 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px;">
+                ⏱ Lifecycle Audit
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--admin-text-muted);">
+                <div>
+                    <span style="display: block; font-weight: 500; color: #cbd5e1;">Submitted (UTC):</span>
+                    <span>@Model.Ticket.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                </div>
+                <div>
+                    <span style="display: block; font-weight: 500; color: #cbd5e1;">Last Activity (UTC):</span>
+                    <span>@Model.Ticket.LastActivityUtc.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                </div>
+                @if (Model.Ticket.ClosedAtUtc.HasValue)
+                {
+                    <div>
+                        <span style="display: block; font-weight: 500; color: #cbd5e1;">Concluded At (UTC):</span>
+                        <span>@Model.Ticket.ClosedAtUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Ticket.AutoClosedReason))
+                {
+                    <div>
+                        <span style="display: block; font-weight: 500; color: #cbd5e1;">Closure / Resolution Reason:</span>
+                        <span style="color: #94a3b8; font-style: italic;">@Model.Ticket.AutoClosedReason</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
