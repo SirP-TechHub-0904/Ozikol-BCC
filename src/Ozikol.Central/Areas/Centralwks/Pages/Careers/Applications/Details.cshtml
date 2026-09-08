@@ -1,0 +1,205 @@
+@page "/centralwks/careers/applications/details/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.Careers.Applications.DetailsModel
+@{
+    ViewData["Title"] = "Applicant: " + Model.Application.FullName;
+    ViewData["BreadcrumbSection"] = "Careers";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <a href="/centralwks/careers/applications" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Applications</a>
+            <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
+            <span style="font-family: monospace; font-size: 12px; color: #94a3b8;">
+                Ref: @Model.Application.ApplicationReference
+            </span>
+            <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                @Model.Application.Status
+            </span>
+        </div>
+        <h1 class="admin-title">@Model.Application.FullName</h1>
+        <p class="admin-subtitle">
+            Applying for 
+            @if (Model.Application.JobOpening != null)
+            {
+                <a href="/centralwks/careers/openings/details/@Model.Application.JobOpening.Id" style="color: #93c5fd; text-decoration: none; font-weight: 600;">
+                    @Model.Application.JobOpening.Title
+                </a>
+                <span> (@Model.Application.JobOpening.Department)</span>
+            }
+            else
+            {
+                <span>General Application</span>
+            }
+        </p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Candidate Profile & Cover Letter *@
+    <div>
+        @* Contact & Profile Information *@
+        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Candidate Profile</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted);">Email Address</div>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                        <a href="mailto:@Model.Application.Email" style="color: #93c5fd; text-decoration: none;">
+                            @Model.Application.Email
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted);">Phone Number</div>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                        @Model.Application.PhoneNumber
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted);">Residence / Location</div>
+                    <div style="font-size: 14px; color: var(--admin-text); margin-top: 2px;">
+                        @Model.Application.City, @Model.Application.Country
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted);">LinkedIn / Portfolio</div>
+                    <div style="font-size: 14px; margin-top: 2px;">
+                        @if (!string.IsNullOrEmpty(Model.Application.LinkedInOrPortfolioUrl))
+                        {
+                            <a href="@Model.Application.LinkedInOrPortfolioUrl" target="_blank" style="color: #93c5fd; text-decoration: none;">
+                                View Portfolio Profile ↗
+                            </a>
+                        }
+                        else
+                        {
+                            <span style="color: var(--admin-text-muted);">None provided</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-top: 20px; margin-bottom: 10px;">Cover Letter & Introduction</h3>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 18px; line-height: 1.7; color: #cbd5e1; font-size: 14px; white-space: pre-wrap;">
+                @Model.Application.CoverLetter
+            </div>
+        </div>
+
+        @* Uploaded Documents *@
+        <div class="admin-card" style="padding: 24px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Candidate Attachments</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 16px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted); margin-bottom: 6px;">Curriculum Vitae / Resume</div>
+                    <div style="font-weight: 500; color: var(--admin-text); font-size: 13px; margin-bottom: 4px;">
+                        @(string.IsNullOrEmpty(Model.Application.CvFileName) ? "Resume.pdf" : Model.Application.CvFileName)
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
+                        @((Model.Application.CvFileSizeBytes / 1024.0).ToString("N0")) KB
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Application.CvUrl))
+                    {
+                        <a href="@Model.Application.CvUrl" target="_blank" class="btn-admin btn-admin-primary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-block;">
+                            📥 Download CV
+                        </a>
+                    }
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 16px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted); margin-bottom: 6px;">Passport / Photo ID</div>
+                    <div style="font-weight: 500; color: var(--admin-text); font-size: 13px; margin-bottom: 4px;">
+                        @(string.IsNullOrEmpty(Model.Application.PassportFileName) ? "Passport.jpg" : Model.Application.PassportFileName)
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
+                        @((Model.Application.PassportFileSizeBytes / 1024.0).ToString("N0")) KB
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Application.PassportUrl))
+                    {
+                        <a href="@Model.Application.PassportUrl" target="_blank" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; display: inline-block;">
+                            🔍 View Identification
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Right Column: Review Stage & Notes *@
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        @* Review Triage Form *@
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Candidate Review Triage</h3>
+            <form method="post" asp-page-handler="UpdateReview" asp-route-id="@Model.Application.Id">
+                <div style="margin-bottom: 14px;">
+                    <label asp-for="Input.Status" style="display: block; font-size: 12px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Pipeline Stage <span style="color: #f87171;">*</span>
+                    </label>
+                    <select asp-for="Input.Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                        <option value="Submitted">Submitted (New)</option>
+                        <option value="UnderReview">Under Review</option>
+                        <option value="InterviewScheduled">Interview Scheduled</option>
+                        <option value="Hired">Hired</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label asp-for="Input.ReviewNotes" style="display: block; font-size: 12px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Recruiter Review Notes
+                    </label>
+                    <textarea asp-for="Input.ReviewNotes" rows="5" placeholder="Record interview notes, technical screening feedback, compensation expectations..." 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+
+                <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%;">
+                    Save Review & Notes
+                </button>
+            </form>
+        </div>
+
+        @* Application Metadata *@
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Application Audit</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Application Reference</div>
+                <div style="font-size: 13px; font-family: monospace; color: #93c5fd;">@Model.Application.ApplicationReference</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Submitted Date</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Application.SubmittedUtc.ToString("dd MMM yyyy, HH:mm") UTC</div>
+            </div>
+
+            <div>
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Terms & Privacy Agreement</div>
+                <div style="font-size: 13px; color: #34d399;">
+                    ✓ Agreed to recruitment privacy terms
+                </div>
+            </div>
+        </div>
+
+        @* Danger Zone *@
+        <div class="admin-card" style="padding: 20px; border-color: rgba(239, 68, 68, 0.2);">
+            <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin-bottom: 8px;">Danger Zone</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 12px;">Permanently removes this candidate dossier and all evaluation notes.</p>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Application.Id">
+                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); width: 100%;" onclick="return confirm('Permanently delete candidate application from @Model.Application.FullName?');">
+                    Permanently Delete Dossier
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
