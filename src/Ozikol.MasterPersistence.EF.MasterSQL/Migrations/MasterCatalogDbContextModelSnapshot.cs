@@ -169,12 +169,22 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("AffiliatePartnerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatorApplicationId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Department")
                         .HasColumnType("nvarchar(max)");
@@ -234,6 +244,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AffiliatePartnerId");
+
+                    b.HasIndex("CreatorApplicationId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -365,6 +379,135 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.HasIndex("ReferredTenantKey");
 
                     b.ToTable("MasterAffiliateReferrals");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action");
+
+                    b.HasIndex("CreatedUtc");
+
+                    b.HasIndex("EntityType");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EntityType", "CreatedUtc");
+
+                    b.ToTable("MasterAuditLogs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBillingTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("MasterTenantCatalogId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("MasterTenantFeatureSubscriptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TransactionRef")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc");
+
+                    b.HasIndex("InvoiceNumber")
+                        .IsUnique()
+                        .HasFilter("[InvoiceNumber] IS NOT NULL");
+
+                    b.HasIndex("MasterTenantCatalogId");
+
+                    b.HasIndex("MasterTenantFeatureSubscriptionId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("MasterBillingTransactions");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBlogContent", b =>
@@ -2762,6 +2905,23 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.CentralUser", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterAffiliatePartner", "AffiliatePartner")
+                        .WithMany()
+                        .HasForeignKey("AffiliatePartnerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterCreatorApplication", "CreatorApplication")
+                        .WithMany()
+                        .HasForeignKey("CreatorApplicationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AffiliatePartner");
+
+                    b.Navigation("CreatorApplication");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAffiliateReferral", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.MasterAffiliatePartner", "AffiliatePartner")
@@ -2771,6 +2931,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("AffiliatePartner");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBillingTransaction", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("MasterTenantCatalogId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantFeatureSubscription", "FeatureSubscription")
+                        .WithMany()
+                        .HasForeignKey("MasterTenantFeatureSubscriptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("FeatureSubscription");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBlogContent", b =>

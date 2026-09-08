@@ -21,7 +21,7 @@ public class MasterBillingTransaction
     /// <summary>
     /// Foreign key to the tenant this transaction belongs to.
     /// </summary>
-    public Guid MasterTenantCatalogId { get; set; }
+    public int MasterTenantCatalogId { get; set; }
 
     /// <summary>
     /// Optional foreign key to the specific feature subscription this payment covers.
