@@ -965,16 +965,16 @@
     <value>99,9 % Verfügbarkeit (SLA)</value>
   </data>
   <data name="Pricing_Meta_Title" xml:space="preserve">
-    <value>All-Inclusive Jahrestarif 40.000 ₦ / Jahr | Ozikol</value>
+    <value>All-Inclusive Jahrestarif | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Betreiben Sie Ihr gesamtes Handelsgeschäft auf Ozikol für 40.000 ₦ pro Jahr. 9 Suites und 37 Funktionen ohne Verkaufsprovision. Sie kaufen nur Ihre Domain.</value>
+    <value>Betreiben Sie Ihr gesamtes Handelsgeschäft auf Ozikol mit einem transparenten Jahrestarif. 9 Suites und 37 Funktionen ohne Verkaufsprovision. Sie kaufen nur Ihre Domain.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
     <value>ALL-INCLUSIVE JAHRESTARIF</value>
   </data>
   <data name="Pricing_Hero_Title" xml:space="preserve">
-    <value>Alles nutzen für 40.000 ₦ pro Jahr</value>
+    <value>Alles nutzen für {0} pro Jahr</value>
   </data>
   <data name="Pricing_Hero_Desc" xml:space="preserve">
     <value>Steuern Sie Filialen, Online-Shop, Warenwirtschaft und Personal auf Ozikol. Eine einfache Jahresgebühr schaltet alle Funktionen frei. Sie kaufen lediglich Ihre eigene Web-Domain.</value>
@@ -1064,7 +1064,7 @@
     <value>Ozikol abonnieren</value>
   </data>
   <data name="Pricing_Domain_Step1_Desc" xml:space="preserve">
-    <value>Aktivieren Sie Ihren Jahreszugang für 40.000 ₦/Jahr und erhalten Sie sofort Ihren Cloud-Workspace (z. B. ihrshop.ozikol.com).</value>
+    <value>Aktivieren Sie Ihren Jahreszugang für {0}/Jahr und erhalten Sie sofort Ihren Cloud-Workspace (z. B. ihrshop.ozikol.com).</value>
   </data>
   <data name="Pricing_Domain_Step2_Num" xml:space="preserve">
     <value>02</value>
@@ -1088,7 +1088,7 @@
     <value>RADIKALE TRANSPARENZ &amp; WERT</value>
   </data>
   <data name="Pricing_Why_Title" xml:space="preserve">
-    <value>Warum nur 40.000 ₦ pro Jahr?</value>
+    <value>Warum nur {0} pro Jahr?</value>
   </data>
   <data name="Pricing_Why_Desc" xml:space="preserve">
     <value>Wir sind überzeugt, dass erstklassige Handelsinfrastruktur Unternehmen stärken muss, anstatt deren Wachstum durch Gebühren zu bremsen.</value>
@@ -1130,16 +1130,16 @@
     <value>HÄUFIG GESTELLTE FRAGEN</value>
   </data>
   <data name="Pricing_Faq_Title" xml:space="preserve">
-    <value>Wichtige Fragen zu unserem 40k-Jahrestarif</value>
+    <value>Wichtige Fragen zu unserem All-Inclusive-Jahrestarif</value>
   </data>
   <data name="Pricing_Faq_Desc" xml:space="preserve">
     <value>Verlässliche Antworten zu Domains, Verlängerung, internationalen Währungen und Funktionen.</value>
   </data>
   <data name="Pricing_Faq1_Q" xml:space="preserve">
-    <value>Sind es wirklich nur 40.000 ₦ für das ganze Jahr mit allen Funktionen?</value>
+    <value>Sind es wirklich nur {0} für das ganze Jahr mit allen Funktionen?</value>
   </data>
   <data name="Pricing_Faq1_A" xml:space="preserve">
-    <value>Ja. Für 40.000 ₦ erhalten Sie 365 Tage lang uneingeschränkten Zugriff auf die gesamte Plattform ohne monatliche Zusatzkosten.</value>
+    <value>Ja. Für {0} erhalten Sie 365 Tage lang uneingeschränkten Zugriff auf die gesamte Plattform ohne monatliche Zusatzkosten.</value>
   </data>
   <data name="Pricing_Faq2_Q" xml:space="preserve">
     <value>Was bedeutet «Sie kaufen nur Ihre Domain»?</value>
@@ -1172,7 +1172,7 @@
     <value>Ja. Sie können alle Funktionen 14 Tage lang ohne Kreditkarte oder Vorauszahlung risikofrei testen.</value>
   </data>
   <data name="Pricing_Cta_Title" xml:space="preserve">
-    <value>Bereit, Ihr Geschäft für 40.000 ₦ / Jahr zu skalieren?</value>
+    <value>Bereit, Ihr Geschäft für {0} / Jahr zu skalieren?</value>
   </data>
   <data name="Pricing_Cta_Desc" xml:space="preserve">
     <value>Starten Sie Ihre kostenlose 14-tägige Testphase heute. Erstellen Sie Ihren Katalog, verbinden Sie Ihre Domain und verkaufen Sie in Minuten.</value>

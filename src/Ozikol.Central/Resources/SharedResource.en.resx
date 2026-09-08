@@ -962,16 +962,16 @@
     <value>Instant workspace deployment</value>
   </data>
   <data name="Pricing_Meta_Title" xml:space="preserve">
-    <value>All-Inclusive Pricing ₦40,000 / Year | Ozikol</value>
+    <value>All-Inclusive Annual Pricing | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Run your entire business on Ozikol for ₦40,000 per year. Enjoy all 9 suites and 37 capabilities with zero per-transaction fees. You only buy your custom domain.</value>
+    <value>Run your entire business on Ozikol for one transparent annual subscription. Enjoy all 9 suites and 37 capabilities with zero per-transaction fees. You only buy your custom domain.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
     <value>ALL-INCLUSIVE ANNUAL PRICING</value>
   </data>
   <data name="Pricing_Hero_Title" xml:space="preserve">
-    <value>Enjoy everything for ₦40,000 per year</value>
+    <value>Enjoy everything for {0} per year</value>
   </data>
   <data name="Pricing_Hero_Desc" xml:space="preserve">
     <value>Run your physical stores, online shop, inventory, and staff on Ozikol. One simple annual fee unlocks every feature. You only buy your custom domain.</value>
@@ -1061,7 +1061,7 @@
     <value>Subscribe to Ozikol</value>
   </data>
   <data name="Pricing_Domain_Step1_Desc" xml:space="preserve">
-    <value>Activate your all-inclusive account for ₦40,000/yr and instantly receive your live cloud store workspace (e.g. yourstore.ozikol.com).</value>
+    <value>Activate your all-inclusive account for {0}/yr and instantly receive your live cloud store workspace (e.g. yourstore.ozikol.com).</value>
   </data>
   <data name="Pricing_Domain_Step2_Num" xml:space="preserve">
     <value>02</value>
@@ -1085,7 +1085,7 @@
     <value>RADICAL VALUE &amp; TRANSPARENCY</value>
   </data>
   <data name="Pricing_Why_Title" xml:space="preserve">
-    <value>Why just ₦40,000 per year?</value>
+    <value>Why just {0} per year?</value>
   </data>
   <data name="Pricing_Why_Desc" xml:space="preserve">
     <value>We believe world-class commerce infrastructure should empower businesses, not penalize their growth with hidden costs.</value>
@@ -1115,7 +1115,7 @@
     <value>Includes managed cloud hosting, automatic software updates, enterprise bank-grade encryption, and automatic daily backups.</value>
   </data>
   <data name="Pricing_Suites_Badge" xml:space="preserve">
-    <value>WHAT 40K GETS YOU</value>
+    <value>WHAT YOUR PLAN GETS YOU</value>
   </data>
   <data name="Pricing_Suites_Title" xml:space="preserve">
     <value>Explore all 9 integrated suites included in your plan</value>
@@ -1127,16 +1127,16 @@
     <value>FREQUENTLY ASKED QUESTIONS</value>
   </data>
   <data name="Pricing_Faq_Title" xml:space="preserve">
-    <value>Everything you need to know about our 40k annual plan</value>
+    <value>Everything you need to know about our all-inclusive annual plan</value>
   </data>
   <data name="Pricing_Faq_Desc" xml:space="preserve">
     <value>Clear answers regarding domain registration, renewals, payment methods, and features.</value>
   </data>
   <data name="Pricing_Faq1_Q" xml:space="preserve">
-    <value>Is it really ₦40,000 for the whole year with everything included?</value>
+    <value>Is it really {0} for the whole year with everything included?</value>
   </data>
   <data name="Pricing_Faq1_A" xml:space="preserve">
-    <value>Yes. For ₦40,000 you get full access to the complete Ozikol commerce platform for a full 365 days. There are no tier restrictions, no per-transaction fees, and no hidden monthly costs.</value>
+    <value>Yes. For {0} you get full access to the complete Ozikol commerce platform for a full 365 days. There are no tier restrictions, no per-transaction fees, and no hidden monthly costs.</value>
   </data>
   <data name="Pricing_Faq2_Q" xml:space="preserve">
     <value>What do you mean by 'you only buy your domain'?</value>
@@ -1163,13 +1163,13 @@
     <value>Your subscription renews at the same transparent flat rate. You will receive reminder notices 30 days before renewal, and you are free to export all your business data at any time.</value>
   </data>
   <data name="Pricing_Faq6_Q" xml:space="preserve">
-    <value>Is there a free trial before I pay ₦40,000?</value>
+    <value>Is there a free trial before I pay {0}?</value>
   </data>
   <data name="Pricing_Faq6_A" xml:space="preserve">
     <value>Yes. You can test all features with a 14-day free trial. No credit card or upfront payment is required to explore and set up your store.</value>
   </data>
   <data name="Pricing_Cta_Title" xml:space="preserve">
-    <value>Ready to run your entire business for ₦40,000 / year?</value>
+    <value>Ready to run your entire business for {0} / year?</value>
   </data>
   <data name="Pricing_Cta_Desc" xml:space="preserve">
     <value>Start your 14-day free trial today. Set up your catalog, connect your domain, and start selling in minutes.</value>
