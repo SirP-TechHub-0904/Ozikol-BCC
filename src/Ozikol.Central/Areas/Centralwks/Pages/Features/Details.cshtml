@@ -1,0 +1,181 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Features.DetailsModel
+@{
+    ViewData["Title"] = Model.Feature.Name;
+    ViewData["BreadcrumbSection"] = "Features";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <h1 class="admin-title">@Model.Feature.Name</h1>
+            @if (Model.Feature.IsActive)
+            {
+                <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
+            }
+            else
+            {
+                <span class="badge badge-danger"><span class="badge-dot"></span> Inactive</span>
+            }
+            @if (Model.Feature.IsCompulsory)
+            {
+                <span class="badge badge-indigo">Compulsory Core</span>
+            }
+        </div>
+        <p class="admin-subtitle">Code: <code>@Model.Feature.FeatureCode</code> • Category: <strong>@Model.Feature.Category</strong></p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/features/edit?id=@Model.Id" class="btn-admin btn-admin-secondary">
+            <span>✏️</span> Edit
+        </a>
+        <form method="post" asp-page-handler="ToggleStatus" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin @(Model.Feature.IsActive ? "btn-admin-danger" : "btn-admin-primary")" onclick="return confirm('Toggle status?');">
+                @(Model.Feature.IsActive ? "Deactivate" : "Activate")
+            </button>
+        </form>
+    </div>
+</div>
+
+@* ── Specs & Pricing Grid ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">⚡ Technical Details</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Workspace Route:</span>
+                <div style="font-weight: 600; color: var(--admin-info);">@(Model.Feature.RoutePrefix ?? "None")</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Icon:</span>
+                <div>@(Model.Feature.Icon ?? "Default")</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Description:</span>
+                <div style="color: var(--admin-text-muted);">@(Model.Feature.Description ?? "No description provided.")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">💰 Pricing Matrix</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Billing Model:</span>
+                <div style="font-weight: 600;">@Model.Feature.BillingType</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Monthly / Quarterly / Yearly:</span>
+                <div style="font-weight: 600; color: var(--admin-success);">
+                    $@Model.Feature.MonthlyPrice.ToString("N2") / $@Model.Feature.QuarterlyPrice.ToString("N2") / $@Model.Feature.YearlyPrice.ToString("N2")
+                </div>
+            </div>
+            @if (Model.Feature.IsMetered)
+            {
+                <div>
+                    <span style="color: var(--admin-text-dim);">Metered Usage:</span>
+                    <div style="color: var(--admin-warning);">
+                        +$@Model.Feature.MeterUnitPrice.ToString("0.0000") per @Model.Feature.MeterBlockSize @Model.Feature.MeterUnitName
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">👥 Fleet Adoption</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Active Subscribed Tenants:</span>
+                <div style="font-weight: 700; color: var(--admin-text); font-size: 20px;">
+                    @Model.Subscriptions.Count(s => s.IsActive)
+                </div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Total Subscriptions (incl. expired):</span>
+                <div>@Model.Subscriptions.Count</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Subscribed Tenants Table ── *@
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h2 class="admin-card-title">🏢 Tenants Subscribed to @Model.Feature.Name</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Organization</th>
+                    <th>Subdomain Key</th>
+                    <th>Cadence</th>
+                    <th>Price Charged</th>
+                    <th>Activated UTC</th>
+                    <th>Expires UTC</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Subscriptions.Any())
+                {
+                    @foreach (var sub in Model.Subscriptions)
+                    {
+                        <tr>
+                            <td>
+                                <strong style="color: var(--admin-text);">@(sub.MasterTenantCatalog?.OrganizationName ?? "Tenant")</strong>
+                            </td>
+                            <td>
+                                <code>@(sub.MasterTenantCatalog?.TenantKey ?? "—")</code>
+                            </td>
+                            <td>@sub.DurationType</td>
+                            <td>
+                                @if (sub.CustomPriceOverride.HasValue)
+                                {
+                                    <span>$@sub.CustomPriceOverride.Value.ToString("N2") <small>(Override)</small></span>
+                                }
+                                else
+                                {
+                                    <span>$@sub.RecurringPrice.ToString("N2")</span>
+                                }
+                            </td>
+                            <td style="font-size: 12px; color: var(--admin-text-muted);">@sub.StartsAtUtc.ToString("MMM dd, yyyy")</td>
+                            <td style="font-size: 12px; color: var(--admin-text-muted);">@sub.ExpiresAtUtc.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                @if (sub.IsActive)
+                                {
+                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger"><span class="badge-dot"></span> @sub.Status</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="/centralwks/tenants/details?id=@sub.MasterTenantCatalogId" class="btn-admin btn-admin-secondary btn-admin-sm">
+                                    View Tenant →
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 28px; color: var(--admin-text-muted);">
+                            No tenants currently subscribed to this capability.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

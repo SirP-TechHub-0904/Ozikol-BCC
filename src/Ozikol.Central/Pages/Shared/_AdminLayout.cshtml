@@ -31,7 +31,7 @@
                         ☰
                     </button>
                     <nav class="topbar-breadcrumb" aria-label="Breadcrumb">
-                        <a href="/admin/dashboard">Console</a>
+                        <a href="/centralwks/dashboard">Console</a>
                         @if (ViewData["BreadcrumbSection"] != null)
                         {
                             <span class="separator">/</span>
@@ -66,11 +66,11 @@
                             </div>
                         </button>
                         <div class="user-menu-dropdown" role="menu">
-                            <a href="/admin/users" role="menuitem">👤 User Accounts</a>
-                            <a href="/admin/platform-settings" role="menuitem">⚙️ Platform Settings</a>
-                            <a href="/admin/audit-log" role="menuitem">📝 Audit Trail</a>
+                            <a href="/centralwks/users" role="menuitem">👤 User Accounts</a>
+                            <a href="/centralwks/platform-settings" role="menuitem">⚙️ Platform Settings</a>
+                            <a href="/centralwks/audit-log" role="menuitem">📝 Audit Trail</a>
                             <div class="user-menu-divider"></div>
-                            <form method="post" asp-page="/Admin/Logout" style="margin:0;">
+                            <form method="post" action="/centralwks/logout" style="margin:0;">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" role="menuitem" style="color: var(--admin-danger);">
                                     🚪 Sign Out

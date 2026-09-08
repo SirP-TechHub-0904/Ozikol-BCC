@@ -1,0 +1,115 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Tenants.FeaturesModel
+@{
+    ViewData["Title"] = $"Modular Capabilities — {Model.Tenant.OrganizationName}";
+    ViewData["BreadcrumbSection"] = "Tenants";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Modular Feature Activations</h1>
+        <p class="admin-subtitle">Activate, configure pricing, or suspend modular capabilities for <strong>@Model.Tenant.OrganizationName</strong> (<code>@Model.Tenant.TenantKey</code>).</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/tenants/details?id=@Model.Id" class="btn-admin btn-admin-secondary">
+            ← Back to Details
+        </a>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Capability</th>
+                    <th>Category</th>
+                    <th>Base Price</th>
+                    <th>Activation Status</th>
+                    <th>Billing Cadence</th>
+                    <th>Expires At</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.AvailableFeatures.Any())
+                {
+                    @foreach (var item in Model.AvailableFeatures)
+                    {
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong style="color: var(--admin-text);">@item.Feature.Name</strong>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-dim);">
+                                        <code>@item.Feature.FeatureCode</code> • @item.Feature.Description
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral">@item.Feature.Category</span>
+                            </td>
+                            <td>
+                                $@item.Feature.MonthlyPrice.ToString("N2")/mo
+                            </td>
+                            <td>
+                                @if (item.IsSubscribed)
+                                {
+                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
+                                }
+                                else if (item.Subscription != null)
+                                {
+                                    <span class="badge badge-warning"><span class="badge-dot"></span> Suspended</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral">Not Subscribed</span>
+                                }
+                            </td>
+                            <td style="font-size: 12.5px; color: var(--admin-text-muted);">
+                                @(item.Subscription?.DurationType.ToString() ?? "—")
+                            </td>
+                            <td style="font-size: 12px; color: var(--admin-text-dim);">
+                                @(item.Subscription?.ExpiresAtUtc.ToString("MMM dd, yyyy") ?? "—")
+                            </td>
+                            <td style="text-align: right;">
+                                @if (item.IsSubscribed && item.Subscription != null)
+                                {
+                                    <form method="post" asp-page-handler="Deactivate" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="subscriptionId" value="@item.Subscription.Id" />
+                                        <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" onclick="return confirm('Suspend capability @item.Feature.Name?');">
+                                            Suspend
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="Activate" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="featureId" value="@item.Feature.Id" />
+                                        <select name="durationType" class="form-select" style="padding: 4px 8px; font-size: 12px; width: 100px;">
+                                            <option value="1">Monthly</option>
+                                            <option value="2">Quarterly</option>
+                                            <option value="3">Yearly</option>
+                                        </select>
+                                        <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm">
+                                            Activate
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 32px; color: var(--admin-text-muted);">
+                            No features found in the master catalog.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,141 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Affiliates.PayoutsModel
+@{
+    ViewData["Title"] = "Affiliate Payouts Queue";
+    ViewData["BreadcrumbSection"] = "Affiliates";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Affiliate Commission Payouts Queue</h1>
+        <p class="admin-subtitle">Process pending partner revenue settlements, review banking/crypto payment details, and balance affiliate ledgers.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/affiliates" class="btn-admin btn-admin-secondary">
+            <span>&larr;</span> Back to Partners
+        </a>
+        @if (Model.EligiblePartners.Any())
+        {
+            <form method="post" asp-page-handler="DisburseAll" style="display: inline;" onsubmit="return confirm('Execute batch payout of $@Model.TotalPendingBalance.ToString("N2") across @Model.EligiblePartnerCount partners?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <span>⚡</span> Settle All Payouts ($@Model.TotalPendingBalance.ToString("N2"))
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Payout Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Total Due</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.TotalPendingBalance.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">👥</div>
+        <div class="stat-details">
+            <span class="stat-label">Eligible Partners</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.EligiblePartnerCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-details">
+            <span class="stat-label">Historically Paid Out</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalHistoricalPaid.ToString("N2")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Eligible Partners Payout Table ── *@
+<div class="admin-card">
+    <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">💸</div>
+        <div>
+            <h3 class="card-header-title">Partners Awaiting Commission Disbursement</h3>
+            <p class="card-header-subtitle">Review payout accounts and mark funds as transferred.</p>
+        </div>
+    </div>
+
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Partner Code</th>
+                    <th>Partner Name & Contact</th>
+                    <th style="text-align: right;">Pending Amount</th>
+                    <th>Payout Settlement Instructions</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.EligiblePartners.Any())
+                {
+                    @foreach (var p in Model.EligiblePartners)
+                    {
+                        <tr>
+                            <td>
+                                <span style="font-family: monospace; font-size: 13px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">
+                                    @p.PartnerCode
+                                </span>
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: #fff; font-size: 14px;">@p.FullName</div>
+                                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">@p.Email</div>
+                            </td>
+                            <td style="text-align: right; font-size: 16px; font-weight: 800; font-family: monospace; color: #f59e0b;">
+                                $@p.PendingBalance.ToString("N2")
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(p.PayoutDetailsJson))
+                                {
+                                    <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 6px 10px; font-family: monospace; font-size: 12px; color: #e2e8f0; max-width: 380px;">
+                                        @p.PayoutDetailsJson
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 12px; color: var(--admin-danger); font-style: italic;">No instructions provided</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 8px;">
+                                    <a href="/centralwks/affiliates/details/@p.Id" class="btn-admin btn-admin-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                        Review Referrals
+                                    </a>
+                                    <form method="post" asp-page-handler="DisburseIndividual" asp-route-partnerId="@p.Id" style="display: inline;" onsubmit="return confirm('Mark payout of $@p.PendingBalance.ToString("N2") as disbursed to @p.FullName?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-primary" style="padding: 6px 12px; font-size: 12px;">
+                                            <span>✅</span> Mark Disbursed
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+                            <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+                            <div style="font-size: 16px; font-weight: 500; color: #fff;">Payouts Queue Clear</div>
+                            <div style="font-size: 13px; margin-top: 4px;">There are no pending affiliate commissions awaiting disbursement at this time.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -75,7 +75,7 @@ function initActiveNavLinks() {
         const normalizedHref = href.toLowerCase();
 
         // Exact match or prefix match for CRUD child pages
-        if (currentPath === normalizedHref || (normalizedHref !== '/admin' && normalizedHref !== '/admin/dashboard' && currentPath.startsWith(normalizedHref))) {
+        if (currentPath === normalizedHref || (normalizedHref !== '/centralwks' && normalizedHref !== '/centralwks/dashboard' && currentPath.startsWith(normalizedHref))) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');
