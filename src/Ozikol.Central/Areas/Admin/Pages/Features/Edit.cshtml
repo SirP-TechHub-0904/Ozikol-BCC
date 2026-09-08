@@ -1,0 +1,164 @@
+@page
+@model Ozikol.Central.Areas.Admin.Pages.Features.EditModel
+@{
+    ViewData["Title"] = $"Edit {Model.Feature.Name}";
+    ViewData["BreadcrumbSection"] = "Features";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Edit Modular Capability</h1>
+        <p class="admin-subtitle">Modify specifications, multi-tier pricing, and status for <code>@Model.Feature.FeatureCode</code>.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/admin/features/details?id=@Model.Id" class="btn-admin btn-admin-secondary">
+            ← Back to Details
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="admin-alert admin-alert-danger" role="alert"></div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2 class="admin-card-title">⚡ Specifications & Pricing</h2>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.Name" class="form-label">Display Name <span class="required">*</span></label>
+                        <input asp-for="Input.Name" class="form-control" />
+                        <span asp-validation-for="Input.Name" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.Category" class="form-label">Category <span class="required">*</span></label>
+                        <input asp-for="Input.Category" class="form-control" />
+                        <span asp-validation-for="Input.Category" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.Icon" class="form-label">Icon / Emoji</label>
+                        <input asp-for="Input.Icon" class="form-control" />
+                        <span asp-validation-for="Input.Icon" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.RoutePrefix" class="form-label">Tenant Workspace Route Prefix</label>
+                        <input asp-for="Input.RoutePrefix" class="form-control" />
+                        <span asp-validation-for="Input.RoutePrefix" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Input.Description" class="form-label">Summary Description</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Input.Description" class="field-validation-error"></span>
+                </div>
+
+                <div class="form-group" style="margin-top: 16px;">
+                    <label asp-for="Input.BillingType" class="form-label">Billing Model Classification</label>
+                    <select asp-for="Input.BillingType" class="form-select">
+                        <option value="1">Flat Subscription (Fixed recurring)</option>
+                        <option value="2">Pay As You Go (Pure usage metered)</option>
+                        <option value="3">Hybrid (Base subscription + metered overage)</option>
+                        <option value="4">Custom Enterprise (Contract negotiated)</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.MonthlyPrice" class="form-label">Monthly ($)</label>
+                        <input asp-for="Input.MonthlyPrice" type="number" step="0.01" class="form-control" />
+                        <span asp-validation-for="Input.MonthlyPrice" class="field-validation-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Input.QuarterlyPrice" class="form-label">Quarterly ($)</label>
+                        <input asp-for="Input.QuarterlyPrice" type="number" step="0.01" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Input.YearlyPrice" class="form-label">Yearly ($)</label>
+                        <input asp-for="Input.YearlyPrice" type="number" step="0.01" class="form-control" />
+                    </div>
+                </div>
+
+                @* Metering Configuration *@
+                <div style="margin-top: 12px; padding: 16px; background: var(--admin-bg-surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--admin-border);">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-check">
+                            <input asp-for="Input.IsMetered" class="form-check-input" type="checkbox" />
+                            <span style="font-weight: 600; color: var(--admin-text);">Enable Additional Metered Charges</span>
+                        </label>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="margin: 0;">
+                            <label asp-for="Input.MeterUnitName" class="form-label">Unit Name</label>
+                            <input asp-for="Input.MeterUnitName" class="form-control" />
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label asp-for="Input.MeterUnitPrice" class="form-label">Price per Unit ($)</label>
+                            <input asp-for="Input.MeterUnitPrice" type="number" step="0.0001" class="form-control" />
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label asp-for="Input.MeterBatchSize" class="form-label">Batch Size</label>
+                            <input asp-for="Input.MeterBatchSize" type="number" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-footer">
+                <a href="/admin/features/details?id=@Model.Id" class="btn-admin btn-admin-secondary">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary">Save Changes</button>
+            </div>
+        </div>
+
+        @* Status & Meta *@
+        <div>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">⚙️ Availability & Core Flags</h2>
+                </div>
+                <div class="admin-card-body" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input asp-for="Input.IsActive" class="form-check-input" type="checkbox" />
+                            <div>
+                                <span style="font-weight: 600; color: var(--admin-text);">Active in Catalog</span>
+                                <div style="font-size: 11.5px; color: var(--admin-text-muted);">Available for tenant subscriptions.</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input asp-for="Input.IsCompulsory" class="form-check-input" type="checkbox" />
+                            <div>
+                                <span style="font-weight: 600; color: var(--admin-text);">Compulsory Core Module</span>
+                                <div style="font-size: 11.5px; color: var(--admin-text-muted);">Auto-provisioned on all tenant databases.</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.DisplayOrder" class="form-label">Sort Order</label>
+                        <input asp-for="Input.DisplayOrder" type="number" class="form-control" />
+                    </div>
+
+                    <div>
+                        <div style="font-size: 11.5px; color: var(--admin-text-dim); text-transform: uppercase;">Stable Feature Code</div>
+                        <code style="font-size: 13px; color: var(--admin-info); display: block; margin-top: 2px;">
+                            @Model.Feature.FeatureCode
+                        </code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,184 @@
+@page
+@model Ozikol.Central.Areas.Admin.Pages.Features.IndexModel
+@{
+    ViewData["Title"] = "Modular Capabilities Catalog";
+    ViewData["BreadcrumbSection"] = "Platform Core";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Modular Capability Catalog</h1>
+        <p class="admin-subtitle">Govern modular SaaS features, recurring billing tiers, metered unit rates, and compulsory platform core tools.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/admin/features/create" class="btn-admin btn-admin-primary">
+            <span>+</span> New Capability
+        </a>
+    </div>
+</div>
+
+@* ── Stat Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">⚡</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Capabilities</span>
+            <span class="stat-value" style="font-size: 20px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✓</div>
+        <div class="stat-details">
+            <span class="stat-label">Active Modules</span>
+            <span class="stat-value" style="font-size: 20px; color: var(--admin-success);">@Model.ActiveCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-indigo" style="width: 40px; height: 40px; font-size: 18px;">🛡️</div>
+        <div class="stat-details">
+            <span class="stat-label">Compulsory Core</span>
+            <span class="stat-value" style="font-size: 20px; color: var(--admin-indigo);">@Model.CompulsoryCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filter Toolbar ── *@
+<div class="admin-card">
+    <div class="table-toolbar">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center;">
+            <div class="table-search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search by name, code, or description..." />
+            </div>
+
+            <select name="category" class="form-select" style="width: 180px; padding: 8px 12px; font-size: 13px;">
+                <option value="">All Categories</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat" selected="@(Model.Category == cat)">@cat</option>
+                }
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">Filter</button>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category))
+            {
+                <a href="/admin/features" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">Clear</a>
+            }
+        </form>
+
+        <div style="font-size: 12.5px; color: var(--admin-text-muted);">
+            Showing @Model.Features.Count capabilities
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Capability Name & Code</th>
+                    <th>Category</th>
+                    <th>Billing Model</th>
+                    <th>Pricing (M / Q / Y)</th>
+                    <th>Core Type</th>
+                    <th>Active Subscribers</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Features.Any())
+                {
+                    @foreach (var item in Model.Features)
+                    {
+                        var feat = item.Feature;
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong style="color: var(--admin-text); font-size: 14px;">@feat.Name</strong>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px;">
+                                        <code>@feat.FeatureCode</code>
+                                        @if (!string.IsNullOrEmpty(feat.RoutePrefix))
+                                        {
+                                            <span> • Route: @feat.RoutePrefix</span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral">@feat.Category</span>
+                            </td>
+                            <td style="font-size: 12.5px;">
+                                @feat.BillingType
+                                @if (feat.IsMetered)
+                                {
+                                    <div style="font-size: 11px; color: var(--admin-warning);">
+                                        + $@feat.MeterUnitPrice.ToString("0.0000") / @feat.MeterUnitName
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-size: 13px; font-weight: 600;">
+                                    $@feat.MonthlyPrice.ToString("N2") <small style="font-weight: normal; color: var(--admin-text-dim);">/mo</small>
+                                </div>
+                                <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                    $@feat.QuarterlyPrice.ToString("N2") qtr • $@feat.YearlyPrice.ToString("N2") yr
+                                </div>
+                            </td>
+                            <td>
+                                @if (feat.IsCompulsory)
+                                {
+                                    <span class="badge badge-indigo">Compulsory Core</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral">Optional Addon</span>
+                                }
+                            </td>
+                            <td>
+                                <a href="/admin/subscriptions?featureId=@feat.Id" style="text-decoration: none;">
+                                    <span class="badge badge-success">
+                                        @item.SubscriberCount Active Tenants
+                                    </span>
+                                </a>
+                            </td>
+                            <td>
+                                @if (feat.IsActive)
+                                {
+                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger"><span class="badge-dot"></span> Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <a href="/admin/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Details</a>
+                                    <a href="/admin/features/edit?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Edit</a>
+                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin @(feat.IsActive ? "btn-admin-danger" : "btn-admin-primary") btn-admin-sm" onclick="return confirm('Toggle status for @feat.Name?');">
+                                            @(feat.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">⚡</div>
+                                <h3 class="empty-state-title">No Capabilities Match Filter</h3>
+                                <p class="empty-state-desc">Try clearing the search query or selecting a different category.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
