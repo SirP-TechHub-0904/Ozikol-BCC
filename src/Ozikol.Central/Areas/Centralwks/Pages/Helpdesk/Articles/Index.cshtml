@@ -1,0 +1,198 @@
+@page "/centralwks/helpdesk/articles"
+@model Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Articles.IndexModel
+@{
+    ViewData["Title"] = "Helpdesk Knowledge Base";
+    ViewData["BreadcrumbSection"] = "Helpdesk";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Knowledge Base & Helpdesk Guides</h1>
+        <p class="admin-subtitle">Curate suite documentation, configuration tutorials, architectural guides, and troubleshooting manuals.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/helpdesk/videos" class="btn-admin btn-admin-secondary">
+            <span>🎬</span> Video Tutorials
+        </a>
+        <a href="/centralwks/helpdesk/articles/create" class="btn-admin btn-admin-primary">
+            <span>➕</span> New KB Article
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Helpdesk Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📚</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Articles</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🌐</div>
+        <div class="stat-details">
+            <span class="stat-label">Published Live</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.PublishedCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">👀</div>
+        <div class="stat-details">
+            <span class="stat-label">Readership Views</span>
+            <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.TotalViews.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(16, 185, 129, 0.2); color: #34d399;">👍</div>
+        <div class="stat-details">
+            <span class="stat-label">Helpful Upvotes</span>
+            <span class="stat-value" style="font-size: 22px; color: #34d399;">@Model.TotalHelpfulVotes.ToString("N0")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search title, slug, excerpt, or suite code..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="suiteFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Suites</option>
+                @foreach (var s in Model.Suites)
+                {
+                    <option value="@s" selected="@(Model.SuiteFilter == s ? "selected" : null)">@s</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 140px;">
+            <select name="categoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Categories</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat" selected="@(Model.CategoryFilter == cat ? "selected" : null)">@cat</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 110px;">
+            <select name="cultureFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Langs</option>
+                @foreach (var cult in Model.Cultures)
+                {
+                    <option value="@cult" selected="@(Model.CultureFilter == cult ? "selected" : null)">@cult.ToUpperInvariant()</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/centralwks/helpdesk/articles" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Articles Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Article & Suite</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Category</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Lang</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Engagement</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Articles.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No knowledge base articles match your active filter criteria. Click "New KB Article" to author one.
+                        </td>
+                    </tr>
+                }
+                @foreach (var art in Model.Articles)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                <a href="/centralwks/helpdesk/articles/details/@art.Id" style="color: var(--admin-text); text-decoration: none;">
+                                    @art.Title
+                                </a>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                <span style="font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 7px; border-radius: 4px; font-weight: 500;">
+                                    @art.SuiteCode
+                                </span>
+                                @if (!string.IsNullOrEmpty(art.FeatureCode))
+                                {
+                                    <span style="font-size: 11px; background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 7px; border-radius: 4px;">
+                                        @art.FeatureCode
+                                    </span>
+                                }
+                                <span style="font-size: 11px; font-family: monospace; color: #64748b;">
+                                    /help/@art.Slug
+                                </span>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 13px; color: #cbd5e1;">
+                            @art.Category
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <span style="font-size: 11px; font-weight: 600; background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 6px; border-radius: 4px;">
+                                @art.Culture.ToUpperInvariant()
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">
+                            <div>@art.ViewCount.ToString("N0") views • @art.HelpfulCount upvotes</div>
+                            <div style="font-size: 10px; color: #64748b;">Read time: @art.EstimatedReadMinutes min</div>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <form method="post" asp-page-handler="TogglePublish" asp-route-id="@art.Id" style="display: inline;">
+                                @if (art.IsPublished)
+                                {
+                                    <button type="submit" title="Click to unpublish" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ● Live
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="submit" title="Click to publish" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ○ Draft
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/helpdesk/articles/details/@art.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                View
+                            </a>
+                            <a href="/centralwks/helpdesk/articles/edit/@art.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Edit
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@art.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Permanently delete helpdesk article @art.Title?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
