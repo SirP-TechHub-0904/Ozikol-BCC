@@ -1,0 +1,173 @@
+@page "/centralwks/platform-settings"
+@model Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings.IndexModel
+@{
+    ViewData["Title"] = "Platform Settings";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Global Platform Settings & Automation</h1>
+        <p class="admin-subtitle">Configure central platform branding, departmental email notification pools, support automation rules, and ticketing SLA parameters.</p>
+    </div>
+    <div class="admin-actions">
+        <span style="font-size: 12px; color: var(--admin-text-muted);">
+            Last updated: @Model.LastUpdatedUtc.ToString("dd MMM yyyy, HH:mm") UTC
+        </span>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<form method="post">
+    <div style="display: flex; flex-direction: column; gap: 24px; max-width: 960px;">
+        @* ── Section 1: Branding & Public Contact ── *@
+        <div class="admin-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+                <span style="font-size: 20px;">🌐</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Platform Branding &amp; Mail Server Identities</h2>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Public-facing platform identity and outbound transaction sender headers.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;">
+                <div>
+                    <label asp-for="Input.PlatformName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Platform Brand Name <span style="color: #f87171;">*</span>
+                    </label>
+                    <input asp-for="Input.PlatformName" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <span asp-validation-for="Input.PlatformName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.SupportContactEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Public Support Contact Email
+                    </label>
+                    <input asp-for="Input.SupportContactEmail" class="form-control" placeholder="support@ozikol.com" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                </div>
+
+                <div>
+                    <label asp-for="Input.DefaultFromEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Default Outbound "From" Email
+                    </label>
+                    <input asp-for="Input.DefaultFromEmail" class="form-control" placeholder="noreply@ozikol.com" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                </div>
+            </div>
+
+            <div style="margin-top: 18px; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                    <input type="checkbox" asp-for="Input.EnableAdminNotifications" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                    Enable administrator notification emails globally across all departments
+                </label>
+            </div>
+        </div>
+
+        @* ── Section 2: Departmental Notification Email Pools ── *@
+        <div class="admin-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+                <span style="font-size: 20px;">📧</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Departmental Notification Routing Pools</h2>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Enter one or more email addresses separated by commas or semicolons to receive alerts.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                <div>
+                    <label asp-for="Input.SupportAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Support &amp; Inquiry Alert Recipients
+                    </label>
+                    <textarea asp-for="Input.SupportAdminEmails" rows="2" placeholder="support-leads@ozikol.com, triage@ozikol.com" 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+
+                <div>
+                    <label asp-for="Input.PartnerAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Affiliate Partner Application Alerts
+                    </label>
+                    <textarea asp-for="Input.PartnerAdminEmails" rows="2" placeholder="affiliates-team@ozikol.com" 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+
+                <div>
+                    <label asp-for="Input.CreatorAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Creator Program Application Alerts
+                    </label>
+                    <textarea asp-for="Input.CreatorAdminEmails" rows="2" placeholder="creators-review@ozikol.com" 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+
+                <div>
+                    <label asp-for="Input.CareersAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Candidate Job Application Alerts
+                    </label>
+                    <textarea asp-for="Input.CareersAdminEmails" rows="2" placeholder="recruitment@ozikol.com" 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+
+                <div style="grid-column: span 2;">
+                    <label asp-for="Input.CertificationAdminEmails" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Certification Exam Registration Alerts
+                    </label>
+                    <textarea asp-for="Input.CertificationAdminEmails" rows="2" placeholder="certifications-ops@ozikol.com" 
+                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 3: Support Ticketing Automation & Taxonomy ── *@
+        <div class="admin-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+                <span style="font-size: 20px;">🎫</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Support Automation &amp; SLA Rules</h2>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Automatic ticket closure upon customer inactivity and available category taxonomy.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 18px; margin-bottom: 18px;">
+                <div>
+                    <label asp-for="Input.TicketAutoCloseHours" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Auto-Close Inactivity Threshold (Hours)
+                    </label>
+                    <input asp-for="Input.TicketAutoCloseHours" type="number" min="1" max="720" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Default is 24 hours.</span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.SupportCategories" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Public Support Inquiry Categories (Comma-separated)
+                    </label>
+                    <input asp-for="Input.SupportCategories" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Populates inquiry classification dropdowns on public portals.</span>
+                </div>
+            </div>
+
+            <div style="padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                    <input type="checkbox" asp-for="Input.EnableTicketAutoClose" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                    Enable automated background closure of resolved tickets after inactivity threshold
+                </label>
+            </div>
+        </div>
+
+        @* ── Submit Actions ── *@
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <a href="/centralwks/dashboard" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 24px; font-size: 14px;">
+                Save Platform Settings
+            </button>
+        </div>
+    </div>
+</form>
