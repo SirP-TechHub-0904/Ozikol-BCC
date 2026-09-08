@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
-namespace Ozikol.Central.Pages.Admin
+namespace Ozikol.Central.Areas.Admin.Pages
 {
     /// <summary>
     /// PageModel handling session termination and audit logging for Central Administration operators.

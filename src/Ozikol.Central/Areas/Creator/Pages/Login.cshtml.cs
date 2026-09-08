@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 
-namespace Ozikol.Central.Pages.Creator
+namespace Ozikol.Central.Areas.Creator.Pages
 {
     /// <summary>
     /// PageModel authenticating approved UI Template Creators into their Creator Studio.

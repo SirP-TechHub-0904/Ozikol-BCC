@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 
-namespace Ozikol.Central.Pages.Creator
+namespace Ozikol.Central.Areas.Affiliate.Pages
 {
     /// <summary>
-    /// PageModel handling sign-out for Template Creators.
+    /// PageModel handling sign-out for Affiliate Partners.
     /// </summary>
     public class LogoutModel : PageModel
     {
@@ -27,21 +27,21 @@ namespace Ozikol.Central.Pages.Creator
         }
 
         /// <summary>
-        /// Handles HTTP GET requests by redirecting to creator login.
+        /// Handles HTTP GET requests by redirecting to partner login.
         /// </summary>
         public IActionResult OnGet()
         {
-            return RedirectToPage("/Creator/Login");
+            return RedirectToPage("/Affiliate/Login");
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to terminate the creator session.
+        /// Handles HTTP POST requests to terminate the partner session.
         /// </summary>
         public async Task<IActionResult> OnPostAsync()
         {
             await _signInManager.SignOutAsync();
-            _logger.LogInformation("Template creator signed out.");
-            return RedirectToPage("/Creator/Login");
+            _logger.LogInformation("Affiliate partner signed out.");
+            return RedirectToPage("/Affiliate/Login");
         }
     }
 }

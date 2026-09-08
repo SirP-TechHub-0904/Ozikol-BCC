@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
-namespace Ozikol.Central.Pages.Admin
+namespace Ozikol.Central.Areas.Admin.Pages
 {
     /// <summary>
     /// PageModel authenticating Platform SuperAdmins and administrative operators into the Central Administration Console.
