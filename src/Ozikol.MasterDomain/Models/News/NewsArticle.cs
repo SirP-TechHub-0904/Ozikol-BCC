@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ozikol.Central.Models.News;
+namespace Ozikol.MasterDomain.Models.News;
 
 /// <summary>
-/// Represents an official company announcement, product update, or security advisory.
+/// Represents an official company announcement, product update, or security advisory presentation model in the Master Domain.
 /// </summary>
 public class NewsArticle
 {

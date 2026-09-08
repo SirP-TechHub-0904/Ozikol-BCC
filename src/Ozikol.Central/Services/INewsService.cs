@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Ozikol.Central.Models.News;
+using Ozikol.MasterDomain.Models.News;
 
 namespace Ozikol.Central.Services;
 

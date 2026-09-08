@@ -2,10 +2,11 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 
-namespace Ozikol.Central.Models.Careers;
+namespace Ozikol.MasterDomain.Models.Careers;
 
 /// <summary>
 /// Form binding model for candidate job applications with CV and passport attachments.
+/// Stored in the Master Domain.
 /// </summary>
 public class JobApplicationInput
 {
