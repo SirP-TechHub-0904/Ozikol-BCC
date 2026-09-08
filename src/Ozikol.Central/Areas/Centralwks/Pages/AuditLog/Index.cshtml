@@ -1,0 +1,156 @@
+@page "/centralwks/audit-log"
+@model Ozikol.Central.Areas.Centralwks.Pages.AuditLog.IndexModel
+@{
+    ViewData["Title"] = "Security Audit Trail";
+    ViewData["BreadcrumbSection"] = "Security";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Immutable Security Audit Trail</h1>
+        <p class="admin-subtitle">Real-time cryptographic and regulatory compliance feed recording administrative operations, role changes, and data modifications.</p>
+    </div>
+</div>
+
+@* ── Audit Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🛡️</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Audit Events</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">⚡</div>
+        <div class="stat-details">
+            <span class="stat-label">Events Logged Today</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.EventsTodayCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">👥</div>
+        <div class="stat-details">
+            <span class="stat-label">Contributing Operators</span>
+            <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.OperatorsCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search by operator username, summary, target ID, or IP address..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 150px;">
+            <select name="actionFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Actions</option>
+                @foreach (var a in Model.AvailableActions)
+                {
+                    <option value="@a" selected="@(Model.ActionFilter == a ? "selected" : null)">@a</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="entityFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Entity Types</option>
+                @foreach (var e in Model.AvailableEntities)
+                {
+                    <option value="@e" selected="@(Model.EntityFilter == e ? "selected" : null)">@e</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/centralwks/audit-log" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Audit Logs Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Timestamp (UTC)</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Operator &amp; Source</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Action</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Entity</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Event Summary</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Inspector</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.AuditLogs.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No security audit log entries match your active filter criteria.
+                        </td>
+                    </tr>
+                }
+                @foreach (var log in Model.AuditLogs)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px; white-space: nowrap; font-family: monospace; font-size: 12px; color: #cbd5e1;">
+                            <div>@log.CreatedUtc.ToString("yyyy-MM-dd")</div>
+                            <div style="color: var(--admin-text-muted); font-size: 11px;">@log.CreatedUtc.ToString("HH:mm:ss") UTC</div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 13px;">
+                                @(string.IsNullOrEmpty(log.UserName) ? "System Automation" : log.UserName)
+                            </div>
+                            <div style="font-size: 11px; font-family: monospace; color: #64748b; margin-top: 2px;">
+                                @(string.IsNullOrEmpty(log.IpAddress) ? "Internal / System" : log.IpAddress)
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @switch (log.Action)
+                            {
+                                case "Create":
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">CREATE</span>
+                                    break;
+                                case "Update":
+                                    <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">UPDATE</span>
+                                    break;
+                                case "Delete":
+                                    <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">DELETE</span>
+                                    break;
+                                case "Suspend":
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">SUSPEND</span>
+                                    break;
+                                case "Login":
+                                    <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">LOGIN</span>
+                                    break;
+                                default:
+                                    <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">@log.Action.ToUpperInvariant()</span>
+                                    break;
+                            }
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="font-size: 12px; font-weight: 500; color: #93c5fd;">@log.EntityType</span>
+                            @if (!string.IsNullOrEmpty(log.EntityId))
+                            {
+                                <div style="font-size: 10px; font-family: monospace; color: #64748b; margin-top: 2px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@log.EntityId">
+                                    #@log.EntityId
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 13px; color: var(--admin-text); max-width: 320px;">
+                            @(log.Summary ?? "Administrative action executed.")
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/audit-log/details/@log.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                                Inspect 🔍
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
