@@ -1,0 +1,106 @@
+@page "/centralwks/email-logs/details/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.EmailLogs.DetailsModel
+@{
+    ViewData["Title"] = $"Email to {Model.EmailLog.RecipientEmail}";
+    ViewData["BreadcrumbSection"] = "Support";
+
+    var statusStyle = Model.EmailLog.Status switch
+    {
+        "Sent" => "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);",
+        "Failed" => "background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);",
+        _ => "background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);"
+    };
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <a href="/centralwks/email-logs" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                ← Back to Email Logs
+            </a>
+            <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; @statusStyle">
+                @Model.EmailLog.Status
+            </span>
+        </div>
+        <h1 class="admin-title" style="font-size: 20px;">@Model.EmailLog.Subject</h1>
+        <p class="admin-subtitle">Recipient: <strong style="color: #93c5fd;">@Model.EmailLog.RecipientEmail</strong></p>
+    </div>
+    <div class="admin-actions">
+        <form method="post" asp-page-handler="Resend" asp-route-id="@Model.EmailLog.Id" style="display: inline;">
+            <button type="submit" class="btn-admin btn-admin-primary" onclick="return confirm('Re-transmit this email now?');">
+                <span>🔄</span> Resend Email
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Diagnostic Failure Warning ── *@
+@if (!string.IsNullOrEmpty(Model.EmailLog.ErrorMessage))
+{
+    <div class="admin-card" style="margin-bottom: 24px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 16px 20px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 22px;">⚠️</span>
+            <div>
+                <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin: 0 0 4px 0;">Transmission Error Diagnostic</h3>
+                <p style="font-size: 13px; color: #fca5a5; font-family: monospace; margin: 0; word-break: break-all;">
+                    @Model.EmailLog.ErrorMessage
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Transmission Headers & Metadata ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 18px 24px;">
+    <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin: 0 0 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 8px;">
+        ✉️ Delivery Metadata
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 13px;">
+        <div>
+            <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Recipient Address</span>
+            <span style="font-weight: 600; color: var(--admin-text);">@Model.EmailLog.RecipientEmail</span>
+        </div>
+        <div>
+            <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Dispatch Provider</span>
+            <span style="color: var(--admin-text);">@(string.IsNullOrEmpty(Model.EmailLog.Provider) ? "Standard SMTP Gateway" : Model.EmailLog.Provider)</span>
+        </div>
+        <div>
+            <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Dispatched (UTC)</span>
+            <span style="color: var(--admin-text);">@Model.EmailLog.SentAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</span>
+        </div>
+        <div>
+            <span style="color: var(--admin-text-muted); font-size: 11px; display: block;">Log Tracking ID</span>
+            <span style="font-family: monospace; font-size: 11px; color: #94a3b8;">@Model.EmailLog.Id</span>
+        </div>
+    </div>
+</div>
+
+@* ── Rendered HTML Email Body Preview ── *@
+<div class="admin-card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 12px;">
+        <h3 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
+            📄 Rendered Message Preview
+        </h3>
+        <span style="font-size: 11px; color: var(--admin-text-muted);">Sanitized Transactional HTML</span>
+    </div>
+
+    <div style="background: #ffffff; color: #1e293b; border-radius: 8px; padding: 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2); min-height: 200px; max-height: 600px; overflow-y: auto;">
+        @Html.Raw(Model.EmailLog.BodyHtml)
+    </div>
+
+    <div style="margin-top: 20px;">
+        <details>
+            <summary style="font-size: 12px; color: var(--admin-text-muted); cursor: pointer; user-select: none;">
+                View Raw HTML Source Code
+            </summary>
+            <pre style="margin-top: 10px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 14px; font-size: 12px; color: #93c5fd; overflow-x: auto; white-space: pre-wrap; font-family: monospace;">@Model.EmailLog.BodyHtml</pre>
+        </details>
+    </div>
+</div>

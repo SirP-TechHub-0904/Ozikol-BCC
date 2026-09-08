@@ -1,0 +1,178 @@
+@page "/centralwks/email-logs"
+@model Ozikol.Central.Areas.Centralwks.Pages.EmailLogs.IndexModel
+@{
+    ViewData["Title"] = "Email Delivery Audit Trail";
+    ViewData["BreadcrumbSection"] = "Support";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Email Delivery Audit Trail</h1>
+        <p class="admin-subtitle">Inspect transactional outbound email communications, tenant invitations, billing receipts, MFA codes, and delivery diagnostics.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Email Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📧</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Outbound</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-details">
+            <span class="stat-label">Delivered (Sent)</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.SentCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(239, 68, 68, 0.2); color: #f87171;">⚠️</div>
+        <div class="stat-details">
+            <span class="stat-label">Delivery Failures</span>
+            <span class="stat-value" style="font-size: 22px; color: #f87171;">@Model.FailedCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">Queued / Pending</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.PendingCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search recipient email address or subject..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+        <div style="width: 160px;">
+            <select name="StatusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="All" selected="@(string.IsNullOrEmpty(Model.StatusFilter) || Model.StatusFilter == "All")">All Statuses</option>
+                <option value="Sent" selected="@(Model.StatusFilter == "Sent")">Sent (Success)</option>
+                <option value="Failed" selected="@(Model.StatusFilter == "Failed")">Failed</option>
+                <option value="NotSent" selected="@(Model.StatusFilter == "NotSent")">Queued / Not Sent</option>
+            </select>
+        </div>
+        @if (Model.Providers.Any())
+        {
+            <div style="width: 160px;">
+                <select name="ProviderFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <option value="All" selected="@(string.IsNullOrEmpty(Model.ProviderFilter) || Model.ProviderFilter == "All")">All Providers</option>
+                    @foreach (var provider in Model.Providers)
+                    {
+                        <option value="@provider" selected="@(Model.ProviderFilter == provider)">@provider</option>
+                    }
+                </select>
+            </div>
+        }
+        <div>
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
+                <span>🔍</span> Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.StatusFilter) && Model.StatusFilter != "All") || (!string.IsNullOrEmpty(Model.ProviderFilter) && Model.ProviderFilter != "All"))
+            {
+                <a href="/centralwks/email-logs" class="btn-admin btn-admin-secondary" style="padding: 8px 12px; margin-left: 6px;">Clear</a>
+            }
+        </div>
+    </form>
+</div>
+
+@* ── Email Logs Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
+            Recent Outbound Deliveries (@Model.EmailLogs.Count)
+        </h2>
+    </div>
+
+    @if (!Model.EmailLogs.Any())
+    {
+        <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
+            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📭</span>
+            <p style="font-size: 14px; margin: 0;">No transactional email logs match the query filters.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table admin-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); text-align: left; color: var(--admin-text-muted);">
+                        <th style="padding: 12px 20px;">Recipient</th>
+                        <th style="padding: 12px 14px;">Subject</th>
+                        <th style="padding: 12px 14px;">Provider</th>
+                        <th style="padding: 12px 14px;">Status</th>
+                        <th style="padding: 12px 14px;">Dispatched (UTC)</th>
+                        <th style="padding: 12px 20px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.EmailLogs)
+                    {
+                        var statusStyle = log.Status switch
+                        {
+                            "Sent" => "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);",
+                            "Failed" => "background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);",
+                            _ => "background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);"
+                        };
+
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); transition: background 0.15s ease;">
+                            <td style="padding: 14px 20px;">
+                                <a href="/centralwks/email-logs/details/@log.Id" style="color: #60a5fa; font-weight: 500; text-decoration: none;">
+                                    @log.RecipientEmail
+                                </a>
+                            </td>
+                            <td style="padding: 14px 14px; max-width: 320px;">
+                                <div style="font-weight: 500; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@log.Subject">
+                                    @log.Subject
+                                </div>
+                                @if (!string.IsNullOrEmpty(log.ErrorMessage))
+                                {
+                                    <div style="font-size: 11px; color: #f87171; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@log.ErrorMessage">
+                                        ⚠ @log.ErrorMessage
+                                    </div>
+                                }
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="background: rgba(255, 255, 255, 0.06); padding: 3px 8px; border-radius: 4px; font-size: 11px; color: #cbd5e1;">
+                                    @(string.IsNullOrEmpty(log.Provider) ? "SMTP" : log.Provider)
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; @statusStyle">
+                                    @log.Status
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">
+                                @log.SentAtUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                                <a href="/centralwks/email-logs/details/@log.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                    Preview
+                                </a>
+                                <form method="post" asp-page-handler="Resend" asp-route-id="@log.Id" style="display: inline;">
+                                    <button type="submit" class="btn-admin" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Re-transmit this email to @log.RecipientEmail?');">
+                                        Resend
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
