@@ -1,0 +1,119 @@
+@page "/affiliate/profile"
+@model Ozikol.Central.Areas.Affiliate.Pages.Profile.IndexModel
+@{
+    ViewData["Title"] = "Partner Profile";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Partner Account &amp; Profile</h1>
+        <p class="admin-subtitle">Update your public contact identity, company channel URL, and review your commission tier settings.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/affiliate/profile/banking" class="btn-admin btn-admin-primary">
+            <span>💳</span> Payout &amp; Banking Settings
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Profile Edit Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 18px;">Contact &amp; Promotional Details</h2>
+        
+        <form method="post">
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.FullName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Full Name / Organization <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.FullName" class="form-control" 
+                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.FullName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.PhoneNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Contact Phone Number
+                </label>
+                <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.PhoneNumber" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label asp-for="Input.WebsiteOrChannel" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Primary Website, YouTube Channel, or Newsletter URL
+                </label>
+                <input asp-for="Input.WebsiteOrChannel" placeholder="https://myblog.com or https://youtube.com/..." 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-size: 14px;" />
+                <span asp-validation-for="Input.WebsiteOrChannel" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="/affiliate/dashboard" class="btn-admin btn-admin-secondary">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary">Save Profile</button>
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Partner Metadata *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Partner Specifications</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Unique Referral Code</div>
+                <div style="font-size: 14px; font-family: monospace; font-weight: 600; color: #34d399; margin-top: 2px;">
+                    @Model.Partner.PartnerCode
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Registered Email Address</div>
+                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    @Model.Partner.Email
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Account Approval Status</div>
+                <div style="margin-top: 4px;">
+                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                        ● @Model.Partner.Status
+                    </span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Recurring Commission Rate</div>
+                <div style="font-size: 16px; font-weight: 700; color: #93c5fd; margin-top: 2px;">
+                    @Model.Partner.CommissionRatePercentage.ToString("0.##")%
+                </div>
+            </div>
+
+            <div>
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Partner Since</div>
+                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    @Model.Partner.CreatedUtc.ToString("dd MMMM yyyy")
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 10px;">Banking &amp; Settlement</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 14px; line-height: 1.5;">
+                Configure where your commission payouts should be routed (Bank Wire / IBAN, SWIFT, or PayPal).
+            </p>
+            <a href="/affiliate/profile/banking" class="btn-admin btn-admin-secondary" style="width: 100%; text-align: center; display: block;">
+                Configure Banking Details →
+            </a>
+        </div>
+    </div>
+</div>

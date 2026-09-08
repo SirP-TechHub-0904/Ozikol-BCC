@@ -1,0 +1,132 @@
+@page "/affiliate/referrals"
+@model Ozikol.Central.Areas.Affiliate.Pages.Referrals.IndexModel
+@{
+    ViewData["Title"] = "Referred Tenants";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Referred Tenants &amp; Conversions</h1>
+        <p class="admin-subtitle">Inspect enterprise customers onboarded via your partner tracking code, subscription values, and approved commissions.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/affiliate/referrals/create-link" class="btn-admin btn-admin-primary">
+            <span>🔗</span> Build Campaign Link
+        </a>
+    </div>
+</div>
+
+@* ── Referral Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">👥</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Referrals</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.Referrals.Count</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💵</div>
+        <div class="stat-details">
+            <span class="stat-label">Approved Commissions</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.ApprovedCommission.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Clearance</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.PendingCommission.ToString("N2")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filter Bar ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search by organization name or tenant key..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="statusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="Pending" selected="@(Model.StatusFilter == "Pending" ? "selected" : null)">Pending</option>
+                <option value="Approved" selected="@(Model.StatusFilter == "Approved" ? "selected" : null)">Approved</option>
+                <option value="Paid" selected="@(Model.StatusFilter == "Paid" ? "selected" : null)">Paid</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/affiliate/referrals" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Referrals Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Referred Organization</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Tenant Key</th>
+                    <th style="padding: 14px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Subscription Plan</th>
+                    <th style="padding: 14px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Your Commission</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Dates</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Referrals.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No referred tenant signups found matching your filter criteria.
+                        </td>
+                    </tr>
+                }
+                @foreach (var r in Model.Referrals)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                @r.ReferredOrganizationName
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px; font-family: monospace; font-size: 12px; color: #93c5fd;">
+                            @r.ReferredTenantKey
+                        </td>
+                        <td style="padding: 14px 14px; text-align: right; font-size: 13px; color: var(--admin-text);">
+                            $@r.SubscriptionAmount.ToString("N2")/mo
+                        </td>
+                        <td style="padding: 14px 14px; text-align: right; font-size: 13px; font-weight: 600; color: #34d399;">
+                            +$@r.CommissionEarned.ToString("N2")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @switch (r.CommissionStatus)
+                            {
+                                case "Approved":
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Approved</span>
+                                    break;
+                                case "Paid":
+                                    <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Paid</span>
+                                    break;
+                                default:
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Pending</span>
+                                    break;
+                            }
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; font-size: 12px; color: var(--admin-text-muted);">
+                            <div>Onboarded: @r.CreatedUtc.ToString("dd MMM yyyy")</div>
+                            @if (r.PaidUtc.HasValue)
+                            {
+                                <div style="font-size: 10px; color: #34d399;">Disbursed: @r.PaidUtc.Value.ToString("dd MMM yyyy")</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

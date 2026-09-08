@@ -1,0 +1,139 @@
+@page "/affiliate/assets"
+@model Ozikol.Central.Areas.Affiliate.Pages.Assets.IndexModel
+@{
+    ViewData["Title"] = "Promotional Assets";
+    var refUrl = $"{Model.BaseHost}/?ref={Model.PartnerCode}";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Promotional Media Kit &amp; Banners</h1>
+        <p class="admin-subtitle">Official marketing collateral, responsive embed banners, and approved pitch copy injected with your tracking code <code>@Model.PartnerCode</code>.</p>
+    </div>
+</div>
+
+@* ── Brand Assets & Logo Marks ── *@
+<div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Official Brand Logos &amp; Identity Marks</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                <img src="/images/oz-logo-red.png" alt="Ozikol Logo" style="max-height: 44px; object-fit: contain;" onerror="this.replaceWith('OZIKOL CLOUD');" />
+            </div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Primary Brand Mark</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin: 4px 0 12px 0;">Vector PNG on Dark Background</div>
+            <a href="/images/oz-logo-red.png" download class="btn-admin btn-admin-secondary" style="padding: 4px 12px; font-size: 12px; width: 100%;">
+                Download PNG
+            </a>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                <div style="font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    OZIKOL
+                </div>
+            </div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Wordmark Logo</div>
+            <div style="font-size: 11px; color: var(--admin-text-muted); margin: 4px 0 12px 0;">Standard Typographic Lockup</div>
+            <button type="button" class="btn-admin btn-admin-secondary" style="padding: 4px 12px; font-size: 12px; width: 100%;" onclick="navigator.clipboard.writeText('Ozikol Sovereign Cloud'); alert('Wordmark text copied!');">
+                Copy Wordmark
+            </button>
+        </div>
+    </div>
+</div>
+
+@* ── Embeddable Web Banners ── *@
+<div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Embeddable Marketing Banners</h2>
+    <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 20px;">Paste these HTML snippets directly into your blog, documentation site, or email templates.</p>
+
+    @* Banner 1: Leaderboard 728x90 *@
+    <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Leaderboard Banner (728 × 90)</div>
+            <button type="button" class="btn-admin btn-admin-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="copyCode('snippetLeaderboard', this)">
+                📋 Copy Code
+            </button>
+        </div>
+        
+        @* Preview *@
+        <div style="background: linear-gradient(90deg, #0b0f19, #1e293b); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; max-width: 728px;">
+            <div>
+                <div style="font-size: 11px; text-transform: uppercase; color: #93c5fd; font-weight: 600; letter-spacing: 0.05em;">SOVEREIGN ENTERPRISE CLOUD</div>
+                <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 2px;">Deploy Dedicated Multi-Tenant Infrastructure with Ozikol</div>
+            </div>
+            <a href="@refUrl" target="_blank" style="background: #3b82f6; color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap;">
+                Explore Platform →
+            </a>
+        </div>
+
+        <textarea id="snippetLeaderboard" readonly rows="2" 
+                  style="width: 100%; max-width: 728px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 6px; padding: 8px 12px; color: #93c5fd; font-family: monospace; font-size: 11px; line-height: 1.4; resize: none;"><a href="@refUrl" target="_blank" rel="noopener noreferrer"><img src="@Model.BaseHost/images/banners/leaderboard-728x90.png" alt="Deploy Sovereign Multi-Tenant Cloud with Ozikol" width="728" height="90" /></a></textarea>
+    </div>
+
+    @* Banner 2: Medium Rectangle 300x250 *@
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; max-width: 300px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Sidebar Rectangle (300 × 250)</div>
+            <button type="button" class="btn-admin btn-admin-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="copyCode('snippetRect', this)">
+                📋 Copy Code
+            </button>
+        </div>
+
+        @* Preview *@
+        <div style="background: linear-gradient(135deg, #0f172a, #1e1b4b); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; padding: 24px; text-align: center; width: 300px; height: 250px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 8px; box-sizing: border-box;">
+            <div>
+                <span style="font-size: 10px; text-transform: uppercase; background: rgba(139, 92, 246, 0.2); color: #c084fc; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">ENTERPRISE SAAS</span>
+                <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 12px;">Unified Commerce &amp; People Management</div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">Zero cross-tenant contamination. Complete data sovereignty.</div>
+            </div>
+            <a href="@refUrl" target="_blank" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                Get Started Today
+            </a>
+        </div>
+
+        <textarea id="snippetRect" readonly rows="2" 
+                  style="width: 300px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 6px; padding: 8px 12px; color: #93c5fd; font-family: monospace; font-size: 11px; line-height: 1.4; resize: none;"><a href="@refUrl" target="_blank" rel="noopener noreferrer"><img src="@Model.BaseHost/images/banners/rect-300x250.png" alt="Ozikol Multi-Tenant Cloud" width="300" height="250" /></a></textarea>
+    </div>
+</div>
+
+@* ── Copyable Pitch Blurbs ── *@
+<div class="admin-card" style="padding: 24px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Approved Marketing Blurbs &amp; Text Copy</h2>
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600; color: #93c5fd;">Elevator Pitch (Social / Newsletter)</span>
+                <button type="button" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px;" onclick="copyCode('pitchElevator', this)">
+                    📋 Copy
+                </button>
+            </div>
+            <div id="pitchElevator" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+                Looking for true multi-tenant data sovereignty? Ozikol provides completely sovereign database-per-tenant architecture for ERP, retail POS, and global commerce. Learn more at @refUrl
+            </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600; color: #93c5fd;">Technical Endorsement (Blog / Article Review)</span>
+                <button type="button" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px;" onclick="copyCode('pitchTech', this)">
+                    📋 Copy
+                </button>
+            </div>
+            <div id="pitchTech" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+                Ozikol decouples master catalog orchestrations from individual tenant persistence, preventing cross-tenant data leaks and enabling regional regulatory compliance (GDPR, HIPAA, and sovereign finance) right out of the box. Check out their architecture at @refUrl
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyCode(elementId, btn) {
+        const el = document.getElementById(elementId);
+        const text = el.tagName === 'TEXTAREA' ? el.value : el.innerText;
+        navigator.clipboard.writeText(text);
+        const orig = btn.innerText;
+        btn.innerText = '✓ Copied!';
+        setTimeout(() => btn.innerText = orig, 2000);
+    }
+</script>

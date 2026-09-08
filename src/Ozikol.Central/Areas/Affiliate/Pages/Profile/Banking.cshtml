@@ -1,0 +1,152 @@
+@page "/affiliate/profile/banking"
+@model Ozikol.Central.Areas.Affiliate.Pages.Profile.BankingModel
+@{
+    ViewData["Title"] = "Banking & Payout Settings";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/affiliate/profile" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Profile</a>
+        </div>
+        <h1 class="admin-title">Banking &amp; Commission Settlement</h1>
+        <p class="admin-subtitle">Specify beneficiary bank accounts, international wire routing instructions, or PayPal credentials for automated commission payouts.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Banking Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <form method="post">
+            <div style="margin-bottom: 20px;">
+                <label asp-for="Input.PayoutChannel" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                    Primary Disbursement Method <span style="color: #f87171;">*</span>
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <label style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" asp-for="Input.PayoutChannel" value="BankWire" id="radioWire" style="accent-color: var(--admin-accent);" />
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Direct Bank Wire</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">IBAN, SWIFT, or ACH</div>
+                        </div>
+                    </label>
+
+                    <label style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" asp-for="Input.PayoutChannel" value="PayPal" id="radioPayPal" style="accent-color: var(--admin-accent);" />
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">PayPal Transfer</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">Instant email disbursement</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            @* Wire Fields *@
+            <div id="wireFieldsSection">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                    <div>
+                        <label asp-for="Input.BeneficiaryName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Account Beneficiary Name
+                        </label>
+                        <input asp-for="Input.BeneficiaryName" placeholder="Legal name on account" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.BankName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Banking Institution Name
+                        </label>
+                        <input asp-for="Input.BankName" placeholder="e.g. JPMorgan Chase, Barclays" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 18px;">
+                    <div>
+                        <label asp-for="Input.IbanOrAccountNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            IBAN or Account Number
+                        </label>
+                        <input asp-for="Input.IbanOrAccountNumber" placeholder="GB29BARC20201531234567" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.SwiftBic" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            SWIFT / BIC Code
+                        </label>
+                        <input asp-for="Input.SwiftBic" placeholder="BARCGB22" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label asp-for="Input.BankCountry" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Bank Domicile Country
+                    </label>
+                    <input asp-for="Input.BankCountry" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                </div>
+            </div>
+
+            @* PayPal Fields *@
+            <div id="paypalFieldsSection" style="margin-bottom: 24px;">
+                <label asp-for="Input.PayPalEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    PayPal Registered Email Address
+                </label>
+                <input asp-for="Input.PayPalEmail" type="email" placeholder="payouts@mycompany.com" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-size: 14px;" />
+                <span asp-validation-for="Input.PayPalEmail" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="/affiliate/profile" class="btn-admin btn-admin-secondary">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary">Save Banking Instructions</button>
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Security & Compliance Checklist *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Data Encryption &amp; Protection</h3>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #34d399;">At-Rest Encryption:</strong>
+                    All IBANs and account numbers are encrypted using platform cryptographic keys before database persistence.
+                </div>
+                <div>
+                    <strong style="color: #93c5fd;">Disbursement Verification:</strong>
+                    Payouts exceeding $5,000 undergo secondary multi-party authorization by platform finance directors.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const radioWire = document.getElementById('radioWire');
+    const radioPayPal = document.getElementById('radioPayPal');
+    const wireSection = document.getElementById('wireFieldsSection');
+    const paypalSection = document.getElementById('paypalFieldsSection');
+
+    function toggleSections() {
+        if (radioPayPal.checked) {
+            wireSection.style.opacity = '0.5';
+            paypalSection.style.opacity = '1.0';
+        } else {
+            wireSection.style.opacity = '1.0';
+            paypalSection.style.opacity = '0.5';
+        }
+    }
+
+    radioWire?.addEventListener('change', toggleSections);
+    radioPayPal?.addEventListener('change', toggleSections);
+    toggleSections();
+</script>
