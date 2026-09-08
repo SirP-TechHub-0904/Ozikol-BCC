@@ -1,0 +1,190 @@
+@page "/centralwks/careers/openings/details/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.Careers.Openings.DetailsModel
+@{
+    ViewData["Title"] = Model.Opening.Title;
+    ViewData["BreadcrumbSection"] = "Careers";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <a href="/centralwks/careers/openings" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Openings</a>
+            <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
+            <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                @Model.Opening.Department
+            </span>
+            <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+                @Model.Opening.Location
+            </span>
+            @if (Model.Opening.IsActive)
+            {
+                <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">● Open</span>
+            }
+            else
+            {
+                <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">○ Paused</span>
+            }
+        </div>
+        <h1 class="admin-title">@Model.Opening.Title</h1>
+        <p class="admin-subtitle">Permalink: <code>/careers/@Model.Opening.Slug</code> • @Model.Opening.EmploymentType (@Model.Opening.ExperienceLevel)</p>
+    </div>
+    <div class="admin-actions">
+        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Opening.Id" style="display: inline;">
+            <button type="submit" class="btn-admin btn-admin-secondary">
+                @(Model.Opening.IsActive ? "Pause Hiring" : "Re-open Hiring")
+            </button>
+        </form>
+        <a href="/centralwks/careers/openings/edit/@Model.Opening.Id" class="btn-admin btn-admin-primary">
+            <span>✏️</span> Edit Opening
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Role Details *@
+    <div>
+        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Directory Card Summary</h2>
+            <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); padding: 14px; border-radius: 8px;">
+                @Model.Opening.Summary
+            </p>
+
+            <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-top: 24px; margin-bottom: 12px;">Detailed Role Overview</h2>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 20px; line-height: 1.7; color: #e2e8f0;">
+                @Html.Raw(Model.Opening.DescriptionHtml)
+            </div>
+
+            @if (Model.Responsibilities.Any())
+            {
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-top: 24px; margin-bottom: 12px;">Core Responsibilities</h2>
+                <ul style="padding-left: 20px; color: #cbd5e1; line-height: 1.7; font-size: 14px; margin: 0;">
+                    @foreach (var resp in Model.Responsibilities)
+                    {
+                        <li style="margin-bottom: 6px;">@resp</li>
+                    }
+                </ul>
+            }
+
+            @if (Model.Qualifications.Any())
+            {
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-top: 24px; margin-bottom: 12px;">Required Qualifications</h2>
+                <ul style="padding-left: 20px; color: #cbd5e1; line-height: 1.7; font-size: 14px; margin: 0;">
+                    @foreach (var qual in Model.Qualifications)
+                    {
+                        <li style="margin-bottom: 6px;">@qual</li>
+                    }
+                </ul>
+            }
+
+            @if (Model.Benefits.Any())
+            {
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-top: 24px; margin-bottom: 12px;">Perks & Benefits</h2>
+                <ul style="padding-left: 20px; color: #cbd5e1; line-height: 1.7; font-size: 14px; margin: 0;">
+                    @foreach (var ben in Model.Benefits)
+                    {
+                        <li style="margin-bottom: 6px;">@ben</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    @* Right Column: Metadata & Applicants *@
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        @* Specifications Card *@
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Position Specifications</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Department</div>
+                <div style="font-size: 13px; font-weight: 500; color: var(--admin-text);">@Model.Opening.Department</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Work Location</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Opening.Location</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Employment Seniority</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Opening.ExperienceLevel (@Model.Opening.EmploymentType)</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Language Requirements</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Opening.LanguageRequirements</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Posted Date</div>
+                <div style="font-size: 13px; color: var(--admin-text);">@Model.Opening.CreatedUtc.ToString("dd MMM yyyy, HH:mm") UTC</div>
+            </div>
+
+            <div>
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Sort Order</div>
+                <div style="font-size: 13px; color: var(--admin-text);">#@Model.Opening.SortOrder</div>
+            </div>
+        </div>
+
+        @* Candidate Applicants Pool for this Opening *@
+        <div class="admin-card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                    Applicants (@Model.Applications.Count)
+                </h3>
+                <a href="/centralwks/careers/applications?jobId=@Model.Opening.Id" style="font-size: 12px; color: #93c5fd; text-decoration: none;">
+                    View All →
+                </a>
+            </div>
+
+            @if (!Model.Applications.Any())
+            {
+                <div style="font-size: 12px; color: var(--admin-text-muted); text-align: center; padding: 20px 0;">
+                    No candidates have applied for this position yet.
+                </div>
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    @foreach (var app in Model.Applications.Take(5))
+                    {
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 6px; padding: 10px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <a href="/centralwks/careers/applications/details/@app.Id" style="font-size: 13px; font-weight: 600; color: var(--admin-text); text-decoration: none;">
+                                        @app.FullName
+                                    </a>
+                                    <div style="font-size: 11px; color: var(--admin-text-muted);">@app.City, @app.Country</div>
+                                </div>
+                                <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 9999px; background: rgba(59, 130, 246, 0.15); color: #93c5fd;">
+                                    @app.Status
+                                </span>
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 6px;">
+                                Applied: @app.SubmittedUtc.ToString("yyyy-MM-dd")
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* Danger Zone *@
+        <div class="admin-card" style="padding: 20px; border-color: rgba(239, 68, 68, 0.2);">
+            <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin-bottom: 8px;">Danger Zone</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 12px;">Permanently removes this position and deletes all associated candidate application submissions.</p>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Opening.Id">
+                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); width: 100%;" onclick="return confirm('Permanently delete this position and all applicant submissions?');">
+                    Permanently Delete Opening
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,214 @@
+@page "/centralwks/careers/applications"
+@model Ozikol.Central.Areas.Centralwks.Pages.Careers.Applications.IndexModel
+@{
+    ViewData["Title"] = "Candidate Applications";
+    ViewData["BreadcrumbSection"] = "Careers";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/careers/openings" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Job Openings</a>
+        </div>
+        <h1 class="admin-title">Candidate Applications & Talent Pipeline</h1>
+        <p class="admin-subtitle">Review incoming resumes, portfolio submissions, and interview progression across open roles.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Pipeline Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📋</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Applications</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">New Submissions</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.SubmittedCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">🔍</div>
+        <div class="stat-details">
+            <span class="stat-label">Under Review</span>
+            <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.UnderReviewCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">🎤</div>
+        <div class="stat-details">
+            <span class="stat-label">Interviews</span>
+            <span class="stat-value" style="font-size: 22px; color: #c084fc;">@Model.InterviewCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🎉</div>
+        <div class="stat-details">
+            <span class="stat-label">Hired</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.HiredCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search applicant, email, city, or reference code..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 200px;">
+            <select name="jobId" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Job Openings</option>
+                @foreach (var job in Model.AvailableOpenings)
+                {
+                    <option value="@job.Id" selected="@(Model.JobId == job.Id ? "selected" : null)">@job.Title</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 150px;">
+            <select name="statusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Review Stages</option>
+                <option value="Submitted" selected="@(Model.StatusFilter == "Submitted" ? "selected" : null)">Submitted (New)</option>
+                <option value="UnderReview" selected="@(Model.StatusFilter == "UnderReview" ? "selected" : null)">Under Review</option>
+                <option value="InterviewScheduled" selected="@(Model.StatusFilter == "InterviewScheduled" ? "selected" : null)">Interview Scheduled</option>
+                <option value="Hired" selected="@(Model.StatusFilter == "Hired" ? "selected" : null)">Hired</option>
+                <option value="Rejected" selected="@(Model.StatusFilter == "Rejected" ? "selected" : null)">Rejected</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/centralwks/careers/applications" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Applications Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Candidate & Ref</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Position Applied</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Location</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">CV / Resume</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Review Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Applications.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No candidate applications match your active filter criteria.
+                        </td>
+                    </tr>
+                }
+                @foreach (var app in Model.Applications)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                <a href="/centralwks/careers/applications/details/@app.Id" style="color: var(--admin-text); text-decoration: none;">
+                                    @app.FullName
+                                </a>
+                            </div>
+                            <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
+                                @app.Email • @app.PhoneNumber
+                            </div>
+                            <div style="font-size: 11px; font-family: monospace; color: #64748b; margin-top: 2px;">
+                                Ref: @app.ApplicationReference
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <div style="font-size: 13px; font-weight: 500; color: var(--admin-text);">
+                                @(app.JobOpening?.Title ?? "General Application")
+                            </div>
+                            <div style="font-size: 11px; color: #93c5fd;">
+                                @(app.JobOpening?.Department ?? "Unassigned")
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">
+                                @app.SubmittedUtc.ToString("dd MMM yyyy, HH:mm") UTC
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 13px; color: #cbd5e1;">
+                            <div>@app.City</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">@app.Country</div>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @if (!string.IsNullOrEmpty(app.CvUrl))
+                            {
+                                <a href="@app.CvUrl" target="_blank" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 11px; text-decoration: none;">
+                                    📄 PDF
+                                </a>
+                            }
+                            else
+                            {
+                                <span style="font-size: 11px; color: var(--admin-text-muted);">N/A</span>
+                            }
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @switch (app.Status)
+                            {
+                                case "Submitted":
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                                        Submitted
+                                    </span>
+                                    break;
+                                case "UnderReview":
+                                    <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                                        Under Review
+                                    </span>
+                                    break;
+                                case "InterviewScheduled":
+                                    <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                                        Interviewing
+                                    </span>
+                                    break;
+                                case "Hired":
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                                        Hired
+                                    </span>
+                                    break;
+                                case "Rejected":
+                                    <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                                        Rejected
+                                    </span>
+                                    break;
+                                default:
+                                    <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 3px 8px; border-radius: 9999px; font-size: 11px;">
+                                        @app.Status
+                                    </span>
+                                    break;
+                            }
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/careers/applications/details/@app.Id" class="btn-admin btn-admin-primary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Review
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@app.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Permanently delete application from @app.FullName?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

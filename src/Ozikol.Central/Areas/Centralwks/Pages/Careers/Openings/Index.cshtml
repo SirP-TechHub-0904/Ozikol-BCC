@@ -1,0 +1,179 @@
+@page "/centralwks/careers/openings"
+@model Ozikol.Central.Areas.Centralwks.Pages.Careers.Openings.IndexModel
+@{
+    ViewData["Title"] = "Job Openings";
+    ViewData["BreadcrumbSection"] = "Careers";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Career Opportunities & Job Openings</h1>
+        <p class="admin-subtitle">Publish global positions, configure qualifications, and monitor incoming applicant talent pipelines.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/careers/applications" class="btn-admin btn-admin-secondary">
+            <span>👥</span> Review Candidates (@Model.TotalCandidateCount)
+        </a>
+        <a href="/centralwks/careers/openings/create" class="btn-admin btn-admin-primary">
+            <span>➕</span> Post Job Opening
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Recruitment Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">💼</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Positions</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalOpeningsCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🌐</div>
+        <div class="stat-details">
+            <span class="stat-label">Actively Hiring</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ActiveOpeningsCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">👥</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Applicants</span>
+            <span class="stat-value" style="font-size: 22px; color: #c084fc;">@Model.TotalCandidateCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filter Bar ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search by title, department, or location..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="departmentFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept" selected="@(Model.DepartmentFilter == dept ? "selected" : null)">@dept</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 130px;">
+            <select name="statusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="Active" selected="@(Model.StatusFilter == "Active" ? "selected" : null)">Active</option>
+                <option value="Inactive" selected="@(Model.StatusFilter == "Inactive" ? "selected" : null)">Inactive</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/centralwks/careers/openings" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Openings Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Position & Department</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Location & Type</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Seniority</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Applicants</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Openings.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No job openings match your active filter criteria. Click "Post Job Opening" to list a new position.
+                        </td>
+                    </tr>
+                }
+                @foreach (var job in Model.Openings)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                <a href="/centralwks/careers/openings/details/@job.Id" style="color: var(--admin-text); text-decoration: none;">
+                                    @job.Title
+                                </a>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                <span style="font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 7px; border-radius: 4px; font-weight: 500;">
+                                    @job.Department
+                                </span>
+                                <span style="font-size: 11px; font-family: monospace; color: #64748b;">
+                                    /careers/@job.Slug
+                                </span>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 13px;">
+                            <div style="color: var(--admin-text);">@job.Location</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">@job.EmploymentType</div>
+                        </td>
+                        <td style="padding: 14px 14px; font-size: 13px; color: #cbd5e1;">
+                            @job.ExperienceLevel
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <a href="/centralwks/careers/applications?jobId=@job.Id" style="text-decoration: none;">
+                                <span style="font-size: 13px; font-weight: 600; color: var(--admin-text); background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 3px 9px; border-radius: 9999px;">
+                                    @job.TotalApplications
+                                </span>
+                                @if (job.PendingApplications > 0)
+                                {
+                                    <span style="display: block; font-size: 10px; color: #f59e0b; margin-top: 2px;">@job.PendingApplications new</span>
+                                }
+                            </a>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@job.Id" style="display: inline;">
+                                @if (job.IsActive)
+                                {
+                                    <button type="submit" title="Click to pause recruitment" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ● Open
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="submit" title="Click to open recruitment" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ○ Paused
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/careers/openings/details/@job.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                View
+                            </a>
+                            <a href="/centralwks/careers/openings/edit/@job.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Edit
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@job.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Permanently delete opening @job.Title and all associated applications?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
