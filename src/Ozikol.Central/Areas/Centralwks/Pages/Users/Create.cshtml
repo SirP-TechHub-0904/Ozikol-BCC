@@ -1,0 +1,138 @@
+@page "/centralwks/users/create"
+@model Ozikol.Central.Areas.Centralwks.Pages.Users.CreateModel
+@{
+    ViewData["Title"] = "Invite Platform Operator";
+    ViewData["BreadcrumbSection"] = "Identity";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/users" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Users</a>
+        </div>
+        <h1 class="admin-title">Provision Operator Account</h1>
+        <p class="admin-subtitle">Create a central operator login with role-based administrative permissions across the platform.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 750px; padding: 28px;">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.FirstName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    First Name <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.FirstName" class="form-control" placeholder="Jane" 
+                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.FirstName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.LastName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Last Name <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.LastName" class="form-control" placeholder="Doe" 
+                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.LastName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Email" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Email Address <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Email" id="userEmailInput" type="email" placeholder="jane.doe@ozikol.com" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.Email" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.UserName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Username <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.UserName" id="userUsernameInput" placeholder="jane.doe" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 14px;" />
+                <span asp-validation-for="Input.UserName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Department" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Department
+                </label>
+                <select asp-for="Input.Department" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    <option value="Engineering & Architecture">Engineering & Architecture</option>
+                    <option value="Cloud Operations & SRE">Cloud Operations & SRE</option>
+                    <option value="Security & Compliance">Security & Compliance</option>
+                    <option value="Customer Success & Support">Customer Success & Support</option>
+                    <option value="Billing & Finance">Billing & Finance</option>
+                    <option value="Commercial & Partnerships">Commercial & Partnerships</option>
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="Input.SelectedRole" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Administrative Role <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.SelectedRole" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-weight: 600; font-size: 13px;">
+                    @foreach (var role in Model.AvailableRoles)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Password" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Password <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Password" type="password" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.Password" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.ConfirmPassword" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Confirm Password <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.ConfirmPassword" type="password" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                <span asp-validation-for="Input.ConfirmPassword" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsActive" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Activate operator account immediately
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="/centralwks/users" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary">Provision Operator</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const emailInput = document.getElementById('userEmailInput');
+    const usernameInput = document.getElementById('userUsernameInput');
+
+    emailInput?.addEventListener('input', function() {
+        if (!usernameInput.value || usernameInput.dataset.touched !== 'true') {
+            const parts = this.value.split('@@');
+            if (parts.length > 0) {
+                usernameInput.value = parts[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
+            }
+        }
+    });
+
+    usernameInput?.addEventListener('input', () => usernameInput.dataset.touched = 'true');
+</script>
