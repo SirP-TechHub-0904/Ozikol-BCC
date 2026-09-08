@@ -1,0 +1,198 @@
+@page "/centralwks/helpdesk/videos"
+@model Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos.IndexModel
+@{
+    ViewData["Title"] = "Video Tutorials & Screencasts";
+    ViewData["BreadcrumbSection"] = "Helpdesk";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/helpdesk/articles" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Articles</a>
+        </div>
+        <h1 class="admin-title">Video Walkthroughs & Screencasts</h1>
+        <p class="admin-subtitle">Embed and organize YouTube feature demonstrations, onboarding tutorials, and masterclasses.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/helpdesk/videos/create" class="btn-admin btn-admin-primary">
+            <span>➕</span> New Video Guide
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Video Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🎬</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Videos</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🌐</div>
+        <div class="stat-details">
+            <span class="stat-label">Published Live</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.PublishedCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">👀</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Video Views</span>
+            <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.TotalViews.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">⏱️</div>
+        <div class="stat-details">
+            <span class="stat-label">Content Runtime</span>
+            <span class="stat-value" style="font-size: 22px; color: #c084fc;">~@Model.TotalDurationMinutes mins</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search by video title, description, or YouTube ID..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="suiteFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Suites</option>
+                @foreach (var s in Model.Suites)
+                {
+                    <option value="@s" selected="@(Model.SuiteFilter == s ? "selected" : null)">@s</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 110px;">
+            <select name="cultureFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Langs</option>
+                @foreach (var cult in Model.Cultures)
+                {
+                    <option value="@cult" selected="@(Model.CultureFilter == cult ? "selected" : null)">@cult.ToUpperInvariant()</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/centralwks/helpdesk/videos" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Videos Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Preview & Video Details</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Suite & Feature</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Duration</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Views</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Videos.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No video guides match your filter criteria. Click "New Video Guide" to add one.
+                        </td>
+                    </tr>
+                }
+                @foreach (var vid in Model.Videos)
+                {
+                    var thumbUrl = string.IsNullOrEmpty(vid.ThumbnailUrl)
+                        ? $"https://img.youtube.com/vi/{vid.YouTubeVideoId}/hqdefault.jpg"
+                        : vid.ThumbnailUrl;
+                    var mins = vid.DurationSeconds / 60;
+                    var secs = vid.DurationSeconds % 60;
+
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="display: flex; gap: 14px; align-items: center;">
+                                <div style="width: 80px; height: 48px; border-radius: 6px; overflow: hidden; background: #000; flex-shrink: 0; position: relative; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <img src="@thumbUrl" alt="@vid.Title" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/80x48/1e293b/94a3b8?text=Video';" />
+                                    <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0, 0, 0, 0.8); color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 2px; font-family: monospace;">
+                                        @mins:@secs.ToString("00")
+                                    </span>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                        <a href="/centralwks/helpdesk/videos/details/@vid.Id" style="color: var(--admin-text); text-decoration: none;">
+                                            @vid.Title
+                                        </a>
+                                    </div>
+                                    <div style="font-size: 11px; font-family: monospace; color: #64748b; margin-top: 2px;">
+                                        YouTube ID: @vid.YouTubeVideoId
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 7px; border-radius: 4px; font-weight: 500;">
+                                @vid.SuiteCode
+                            </span>
+                            @if (!string.IsNullOrEmpty(vid.FeatureCode))
+                            {
+                                <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; font-family: monospace;">
+                                    @vid.FeatureCode
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center; font-family: monospace; font-size: 12px; color: #cbd5e1;">
+                            @mins:@secs.ToString("00")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center; font-size: 13px; color: var(--admin-text);">
+                            @vid.ViewCount.ToString("N0")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <form method="post" asp-page-handler="TogglePublish" asp-route-id="@vid.Id" style="display: inline;">
+                                @if (vid.IsPublished)
+                                {
+                                    <button type="submit" title="Click to unpublish" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ● Live
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="submit" title="Click to publish" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ○ Draft
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/centralwks/helpdesk/videos/details/@vid.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                View
+                            </a>
+                            <a href="/centralwks/helpdesk/videos/edit/@vid.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Edit
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@vid.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Permanently delete video guide @vid.Title?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

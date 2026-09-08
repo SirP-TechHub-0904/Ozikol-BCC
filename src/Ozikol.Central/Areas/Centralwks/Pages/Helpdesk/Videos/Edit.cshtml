@@ -1,0 +1,117 @@
+@page "/centralwks/helpdesk/videos/edit/{id:guid}"
+@model Ozikol.Central.Areas.Centralwks.Pages.Helpdesk.Videos.EditModel
+@{
+    ViewData["Title"] = "Edit Video Guide";
+    ViewData["BreadcrumbSection"] = "Helpdesk";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/helpdesk/videos/details/@Model.Id" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Details</a>
+            <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
+            <a href="/centralwks/helpdesk/videos" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">All Videos</a>
+        </div>
+        <h1 class="admin-title">Edit Video: @Model.Input.Title</h1>
+        <p class="admin-subtitle">Update YouTube video link, descriptions, runtime duration, or publication status.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 800px; padding: 28px;">
+    <form method="post">
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Title" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Video Guide Headline <span style="color: #f87171;">*</span>
+            </label>
+            <input asp-for="Input.Title" class="form-control" 
+                   style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 15px; font-weight: 500;" />
+            <span asp-validation-for="Input.Title" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.YouTubeVideoId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    YouTube Video ID or Link <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.YouTubeVideoId" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                <span asp-validation-for="Input.YouTubeVideoId" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.SuiteCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Enterprise Suite <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.SuiteCode" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    <option value="suite-operations">Operations & Logistics (suite-operations)</option>
+                    <option value="suite-inventory">Multi-Warehouse Inventory (suite-inventory)</option>
+                    <option value="suite-pos">Retail Point of Sale (suite-pos)</option>
+                    <option value="suite-people">Workforce & People (suite-people)</option>
+                    <option value="suite-ecommerce">Global Storefronts (suite-ecommerce)</option>
+                    <option value="suite-billing">Ledger & Financials (suite-billing)</option>
+                    <option value="suite-analytics">Predictive AI Analytics (suite-analytics)</option>
+                    <option value="suite-platform">Platform Core & API (suite-platform)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.FeatureCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Feature Code (Optional)
+                </label>
+                <input asp-for="Input.FeatureCode" class="form-control" 
+                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.DurationSeconds" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Duration in Seconds
+                </label>
+                <input asp-for="Input.DurationSeconds" type="number" min="1" max="86400" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.Culture" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Language <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.Culture" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <option value="en">English (en)</option>
+                    <option value="fr">French (fr)</option>
+                    <option value="es">Spanish (es)</option>
+                    <option value="de">German (de)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.ThumbnailUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Custom Poster Thumbnail URL (Optional)
+            </label>
+            <input asp-for="Input.ThumbnailUrl" 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Description" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Video Description, Chapter Timestamps & Objectives <span style="color: #f87171;">*</span>
+            </label>
+            <textarea asp-for="Input.Description" rows="6" 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            <span asp-validation-for="Input.Description" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsPublished" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Publish video live immediately on the portal
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="/centralwks/helpdesk/videos/details/@Model.Id" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
