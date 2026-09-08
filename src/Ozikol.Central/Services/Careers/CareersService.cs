@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Ozikol.Central.Models.Careers;
+using Ozikol.MasterDomain.Models.Careers;
 using Ozikol.Central.Services.Storage;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;

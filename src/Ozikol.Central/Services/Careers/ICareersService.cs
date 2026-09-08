@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Ozikol.Central.Models.Careers;
+using Ozikol.MasterDomain.Models.Careers;
 
 namespace Ozikol.Central.Services.Careers;
 

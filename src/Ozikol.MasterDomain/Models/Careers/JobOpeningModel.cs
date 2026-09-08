@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ozikol.Central.Models.Careers;
+namespace Ozikol.MasterDomain.Models.Careers;
 
 /// <summary>
-/// Presentation model representing a career opportunity and job opening.
+/// Presentation model representing a career opportunity and job opening in the Master Domain.
 /// </summary>
 public class JobOpeningModel
 {

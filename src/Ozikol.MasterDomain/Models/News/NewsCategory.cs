@@ -1,7 +1,7 @@
-namespace Ozikol.Central.Models.News;
+namespace Ozikol.MasterDomain.Models.News;
 
 /// <summary>
-/// Represents an editorial news and release category in the Central newsroom.
+/// Represents an editorial news and release category presentation model in the Master Domain.
 /// </summary>
 public class NewsCategory
 {

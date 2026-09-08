@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
-using Ozikol.Central.Models.News;
+using Ozikol.MasterDomain.Models.News;
 using Ozikol.Central.Services;
 
 namespace Ozikol.Central.Pages;
