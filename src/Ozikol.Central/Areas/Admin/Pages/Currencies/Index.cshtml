@@ -1,0 +1,210 @@
+@page
+@model Ozikol.Central.Areas.Admin.Pages.Currencies.IndexModel
+@{
+    ViewData["Title"] = "Platform Currencies & FX Rates";
+    ViewData["BreadcrumbSection"] = "Platform Core";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Currencies & FX Rates</h1>
+        <p class="admin-subtitle">Manage global currencies, exchange rates against base USD, culture string formatting, and GeoIP detection mappings.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/admin/currencies/create" class="btn-admin btn-admin-primary">
+            <span>+</span> Add Currency
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Currency Metrics Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">💱</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Currencies</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-details">
+            <span class="stat-label">Active for Checkout</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ActiveCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⭐</div>
+        <div class="stat-details">
+            <span class="stat-label">Base Pricing Currency</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">@Model.BaseCurrencyCode</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <form method="get" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search by code (e.g. NGN, EUR), name, symbol, or country code..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+        <div style="min-width: 150px;">
+            <select name="Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="active" selected="@(Model.Status == "active")">Active Only</option>
+                <option value="inactive" selected="@(Model.Status == "inactive")">Inactive Only</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">
+            <span>🔍</span> Filter
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Status))
+        {
+            <a href="/admin/currencies" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Clear</a>
+        }
+    </form>
+</div>
+
+@* ── Currencies Table ── *@
+<div class="admin-card">
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px; text-align: center;">Order</th>
+                    <th>Currency</th>
+                    <th>Symbol</th>
+                    <th>Rate Multiplier (from 1 USD)</th>
+                    <th>Culture Format</th>
+                    <th>Mapped Countries</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Currencies.Any())
+                {
+                    @foreach (var c in Model.Currencies)
+                    {
+                        <tr>
+                            <td style="text-align: center; font-family: monospace; color: var(--admin-text-muted);">
+                                @c.SortOrder
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a5b4fc;">
+                                        @c.CurrencySymbol
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: #fff;">@c.CurrencyCode</div>
+                                        <div style="font-size: 12px; color: var(--admin-text-muted);">@c.DisplayName</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-size: 16px; font-weight: 700; color: #fff;">
+                                @c.CurrencySymbol
+                            </td>
+                            <td>
+                                <span style="font-family: monospace; font-size: 14px; font-weight: 600; color: @(c.IsBaseCurrency ? "var(--admin-primary)" : "#fff");">
+                                    @c.RateFromUsd.ToString("N4")
+                                </span>
+                                @if (c.IsBaseCurrency)
+                                {
+                                    <span style="font-size: 11px; color: var(--admin-primary); margin-left: 4px;">(Base)</span>
+                                }
+                            </td>
+                            <td style="font-family: monospace; font-size: 12px; color: var(--admin-text-muted);">
+                                @c.CultureName
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(c.AssociatedCountryCodes))
+                                {
+                                    <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 200px;">
+                                        @foreach (var code in c.AssociatedCountryCodes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(4))
+                                        {
+                                            <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: #e2e8f0; font-family: monospace;">
+                                                @code
+                                            </span>
+                                        }
+                                        @if (c.AssociatedCountryCodes.Split(',').Length > 4)
+                                        {
+                                            <span style="font-size: 10px; color: var(--admin-text-muted);">+@(c.AssociatedCountryCodes.Split(',').Length - 4) more</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 12px; color: var(--admin-text-muted); font-style: italic;">None</span>
+                                }
+                            </td>
+                            <td>
+                                @if (c.IsBaseCurrency)
+                                {
+                                    <span class="badge badge-warning" style="font-size: 11px;">⭐ Global Base</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary" style="font-size: 11px;">Regional</span>
+                                }
+                            </td>
+                            <td>
+                                @if (c.IsActive)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger">Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 6px;">
+                                    <a href="/admin/currencies/details/@c.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="View Details">
+                                        👁️
+                                    </a>
+                                    <a href="/admin/currencies/edit/@c.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Edit Currency">
+                                        ✏️
+                                    </a>
+                                    @if (!c.IsBaseCurrency)
+                                    {
+                                        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@c.Id" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="@(c.IsActive ? "Deactivate" : "Activate")">
+                                                @(c.IsActive ? "⏸️" : "▶️")
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" style="display: inline;" onsubmit="return confirm('Permanently delete currency @c.CurrencyCode?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-danger" style="padding: 4px 8px; font-size: 12px;" title="Delete Currency">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+                            <div style="font-size: 32px; margin-bottom: 8px;">💱</div>
+                            <div style="font-size: 16px; font-weight: 500; color: #fff;">No Currencies Found</div>
+                            <div style="font-size: 13px; margin-top: 4px;">Try refining your search filter or add a new currency.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
