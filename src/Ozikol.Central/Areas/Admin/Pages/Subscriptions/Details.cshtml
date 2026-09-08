@@ -1,0 +1,164 @@
+@page
+@model Ozikol.Central.Areas.Admin.Pages.Subscriptions.DetailsModel
+@{
+    ViewData["Title"] = $"Subscription — {Model.Subscription.MasterFeatureCatalog?.Name}";
+    ViewData["BreadcrumbSection"] = "Subscriptions";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <h1 class="admin-title">@Model.Subscription.MasterFeatureCatalog?.Name</h1>
+            @if (Model.Subscription.IsActive)
+            {
+                <span class="badge badge-success"><span class="badge-dot"></span> @Model.Subscription.Status</span>
+            }
+            else
+            {
+                <span class="badge badge-danger"><span class="badge-dot"></span> @Model.Subscription.Status</span>
+            }
+        </div>
+        <p class="admin-subtitle">
+            Tenant: <strong>@Model.Subscription.MasterTenantCatalog?.OrganizationName</strong> (<code>@Model.Subscription.MasterTenantCatalog?.TenantKey</code>)
+        </p>
+    </div>
+    <div class="admin-actions">
+        <a href="/admin/subscriptions/edit?id=@Model.Id" class="btn-admin btn-admin-secondary">
+            <span>✏️</span> Edit Terms
+        </a>
+        <form method="post" asp-page-handler="ToggleStatus" style="display: inline; margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin @(Model.Subscription.IsActive ? "btn-admin-danger" : "btn-admin-primary")" onclick="return confirm('Toggle status?');">
+                @(Model.Subscription.IsActive ? "Suspend Subscription" : "Activate Subscription")
+            </button>
+        </form>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">📋 Contract Specifications</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Billing Duration:</span>
+                <div style="font-weight: 600;">@Model.Subscription.DurationType</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Effective Recurring Price:</span>
+                <div style="font-size: 16px; font-weight: 700; color: var(--admin-success);">
+                    @if (Model.Subscription.CustomPriceOverride.HasValue)
+                    {
+                        <span>$@Model.Subscription.CustomPriceOverride.Value.ToString("N2") <small>(Custom Override)</small></span>
+                    }
+                    else
+                    {
+                        <span>$@Model.Subscription.RecurringPrice.ToString("N2")</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Auto-Renewal:</span>
+                <div>@(Model.Subscription.AutoRenew ? "Enabled" : "Disabled")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">📅 Schedule Dates</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Provisioned UTC:</span>
+                <div>@Model.Subscription.StartsAtUtc.ToString("MMMM dd, yyyy")</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Expiration Date UTC:</span>
+                <div style="font-weight: 600; color: var(--admin-warning);">@Model.Subscription.ExpiresAtUtc.ToString("MMMM dd, yyyy")</div>
+            </div>
+            @if (Model.Subscription.LastRenewedUtc.HasValue)
+            {
+                <div>
+                    <span style="color: var(--admin-text-dim);">Last Renewed:</span>
+                    <div>@Model.Subscription.LastRenewedUtc.Value.ToString("MMMM dd, yyyy")</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 14px 20px;">
+            <h3 class="admin-card-title" style="font-size: 14px;">🏢 Organization Details</h3>
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div>
+                <span style="color: var(--admin-text-dim);">Organization:</span>
+                <div><a href="/admin/tenants/details?id=@Model.Subscription.MasterTenantCatalogId" style="color: var(--admin-info); font-weight: 600; text-decoration: none;">@Model.Subscription.MasterTenantCatalog?.OrganizationName →</a></div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Primary Domain:</span>
+                <div>@Model.Subscription.MasterTenantCatalog?.PrimaryDomain</div>
+            </div>
+            <div>
+                <span style="color: var(--admin-text-dim);">Tenant Database:</span>
+                <code style="font-size: 12px;">@Model.Subscription.MasterTenantCatalog?.DatabaseName</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Linked Payments ── *@
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h2 class="admin-card-title">💰 Payment Transactions Linked to this Subscription</h2>
+        <a href="/admin/billing/create?tenantId=@Model.Subscription.MasterTenantCatalogId&subId=@Model.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
+            + Record Payment
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Invoice Number</th>
+                    <th>Amount</th>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Transactions.Any())
+                {
+                    @foreach (var tx in Model.Transactions)
+                    {
+                        <tr>
+                            <td><code>@tx.InvoiceNumber</code></td>
+                            <td><strong>$@tx.Amount.ToString("N2")</strong> <small>@tx.Currency</small></td>
+                            <td>@(tx.PaymentProvider ?? "Direct")</td>
+                            <td>
+                                <span class="badge @(tx.Status == "Completed" ? "badge-success" : "badge-warning")">
+                                    @tx.Status
+                                </span>
+                            </td>
+                            <td style="font-size: 12px; color: var(--admin-text-muted);">@tx.CreatedUtc.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <a href="/admin/billing/details?id=@tx.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Details</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 24px; color: var(--admin-text-muted);">
+                            No specific payment transactions tagged directly to this subscription.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
