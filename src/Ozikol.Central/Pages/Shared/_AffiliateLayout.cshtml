@@ -1,0 +1,141 @@
+@* ─────────────────────────────────────────────────────────────────────────────
+    _AffiliateLayout.cshtml — Master Layout for the Ozikol Affiliate Partner Portal
+   ───────────────────────────────────────────────────────────────────────────── *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "Partner Portal") — Ozikol Affiliates</title>
+
+    <!-- Fonts & Affiliate Styling -->
+    <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/affiliate.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
+    <meta name="theme-color" content="#0b0f19" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="admin-body">
+    <div class="admin-shell">
+        @* ── Affiliate Sidebar ── *@
+        <nav class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <a href="/affiliate/dashboard" class="sidebar-brand">
+                    <span class="brand-icon" style="color: var(--admin-primary);">✦</span>
+                    <span class="brand-text">Affiliate Hub</span>
+                </a>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">✕</button>
+            </div>
+
+            <div class="sidebar-nav-container">
+                <ul class="sidebar-nav">
+                    <li class="nav-section-label">PARTNER MENU</li>
+                    <li class="nav-item">
+                        <a href="/affiliate/dashboard" class="nav-link" data-page="dashboard">
+                            <span class="nav-icon">📊</span> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/affiliate/referrals" class="nav-link" data-page="referrals">
+                            <span class="nav-icon">👥</span> My Referrals
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/affiliate/earnings" class="nav-link" data-page="earnings">
+                            <span class="nav-icon">💳</span> Earnings & Payouts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/affiliate/assets" class="nav-link" data-page="assets">
+                            <span class="nav-icon">🎁</span> Promo Assets
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/affiliate/profile" class="nav-link" data-page="profile">
+                            <span class="nav-icon">⚙️</span> Profile & Banking
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="/" class="nav-link sidebar-footer-link" target="_blank">
+                    <span class="nav-icon">🌐</span> Public Platform
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        @* ── Main Content Wrapper ── *@
+        <div class="admin-content-wrapper">
+            <header class="admin-topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation">
+                        ☰
+                    </button>
+                    <nav class="topbar-breadcrumb" aria-label="Breadcrumb">
+                        <a href="/affiliate/dashboard">Partner Hub</a>
+                        @if (ViewData["Title"] != null)
+                        {
+                            <span class="separator">/</span>
+                            <span class="current">@ViewData["Title"]</span>
+                        }
+                    </nav>
+                </div>
+
+                <div class="topbar-right">
+                    <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle Theme">
+                        🌓
+                    </button>
+
+                    <div class="topbar-user">
+                        <button class="user-badge" id="userBadgeBtn">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #10b981, #0ea5e9);">
+                                @(User.Identity?.Name?.Substring(0, Math.Min(2, User.Identity.Name.Length)).ToUpperInvariant() ?? "AF")
+                            </div>
+                            <div class="user-info">
+                                <span class="user-name">@(User.Identity?.Name ?? "Affiliate")</span>
+                                <span class="user-role" style="color: #10b981;">Partner</span>
+                            </div>
+                        </button>
+                        <div class="user-menu-dropdown" role="menu">
+                            <a href="/affiliate/profile" role="menuitem">👤 Account Details</a>
+                            <div class="user-menu-divider"></div>
+                            <form method="post" asp-page="/Affiliate/Logout" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" role="menuitem" style="color: var(--admin-danger);">
+                                    🚪 Sign Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="admin-main">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="admin-alert admin-alert-success" role="alert">
+                        <span>✓ @TempData["Success"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="admin-alert admin-alert-danger" role="alert">
+                        <span>⚠ @TempData["Error"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

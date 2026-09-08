@@ -1,0 +1,125 @@
+@* ─────────────────────────────────────────────────────────────────────────────
+    _AdminLayout.cshtml — Main Master Layout for the Ozikol Central Admin Console
+   ───────────────────────────────────────────────────────────────────────────── *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "Admin Console") — Ozikol Central</title>
+
+    <!-- Fonts & Core Console Styling -->
+    <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
+    <meta name="theme-color" content="#0b0f19" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="admin-body">
+    <div class="admin-shell">
+        @* ── Sidebar Partial ── *@
+        <partial name="/Pages/Admin/_AdminSidebarPartial.cshtml" />
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        @* ── Main Content Wrapper ── *@
+        <div class="admin-content-wrapper">
+            @* ── Topbar ── *@
+            <header class="admin-topbar">
+                <div class="topbar-left">
+                    <button class="topbar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation">
+                        ☰
+                    </button>
+                    <nav class="topbar-breadcrumb" aria-label="Breadcrumb">
+                        <a href="/admin/dashboard">Console</a>
+                        @if (ViewData["BreadcrumbSection"] != null)
+                        {
+                            <span class="separator">/</span>
+                            <span>@ViewData["BreadcrumbSection"]</span>
+                        }
+                        @if (ViewData["Title"] != null)
+                        {
+                            <span class="separator">/</span>
+                            <span class="current">@ViewData["Title"]</span>
+                        }
+                    </nav>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="topbar-search">
+                        <input type="text" placeholder="Quick search... (Press /)" aria-label="Search" />
+                        <span class="search-icon">🔍</span>
+                    </div>
+
+                    <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark/light theme" aria-label="Toggle Theme">
+                        🌓
+                    </button>
+
+                    <div class="topbar-user">
+                        <button class="user-badge" id="userBadgeBtn" aria-haspopup="true" aria-expanded="false">
+                            <div class="user-avatar">
+                                @(User.Identity?.Name?.Substring(0, Math.Min(2, User.Identity.Name.Length)).ToUpperInvariant() ?? "AD")
+                            </div>
+                            <div class="user-info">
+                                <span class="user-name">@(User.Identity?.Name ?? "Administrator")</span>
+                                <span class="user-role">Super Admin</span>
+                            </div>
+                        </button>
+                        <div class="user-menu-dropdown" role="menu">
+                            <a href="/admin/users" role="menuitem">👤 User Accounts</a>
+                            <a href="/admin/platform-settings" role="menuitem">⚙️ Platform Settings</a>
+                            <a href="/admin/audit-log" role="menuitem">📝 Audit Trail</a>
+                            <div class="user-menu-divider"></div>
+                            <form method="post" asp-page="/Admin/Logout" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" role="menuitem" style="color: var(--admin-danger);">
+                                    🚪 Sign Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            @* ── Main Content ── *@
+            <main class="admin-main">
+                @* ── Flash Messages ── *@
+                @if (TempData["Success"] != null)
+                {
+                    <div class="admin-alert admin-alert-success" role="alert">
+                        <span>✓ @TempData["Success"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="admin-alert admin-alert-danger" role="alert">
+                        <span>⚠ @TempData["Error"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+                @if (TempData["Warning"] != null)
+                {
+                    <div class="admin-alert admin-alert-warning" role="alert">
+                        <span>⚠ @TempData["Warning"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+                @if (TempData["Info"] != null)
+                {
+                    <div class="admin-alert admin-alert-info" role="alert">
+                        <span>ℹ @TempData["Info"]</span>
+                        <button type="button" class="admin-alert-close" aria-label="Close">✕</button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
