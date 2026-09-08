@@ -1,0 +1,158 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Support.FaqsModel
+@{
+    ViewData["Title"] = "Knowledge Base FAQs";
+    ViewData["BreadcrumbSection"] = "Support";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <a href="/centralwks/support" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                ← Support Tickets
+            </a>
+        </div>
+        <h1 class="admin-title">Knowledge Base FAQs</h1>
+        <p class="admin-subtitle">Maintain public frequently asked questions, categorized documentation answers, and self-service help content.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/support/faqcreate" class="btn-admin btn-admin-primary">
+            <span>➕</span> Add New FAQ
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Filter Bar ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search question or answer text..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+        <div style="width: 170px;">
+            <select name="CategoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="All" selected="@(string.IsNullOrEmpty(Model.CategoryFilter) || Model.CategoryFilter == "All")">All Categories</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat" selected="@(Model.CategoryFilter == cat)">@cat</option>
+                }
+            </select>
+        </div>
+        <div style="width: 150px;">
+            <select name="PublishFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="All" selected="@(string.IsNullOrEmpty(Model.PublishFilter) || Model.PublishFilter == "All")">All Statuses</option>
+                <option value="Published" selected="@(Model.PublishFilter == "Published")">Published</option>
+                <option value="Draft" selected="@(Model.PublishFilter == "Draft")">Draft / Hidden</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
+                <span>🔍</span> Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.CategoryFilter) && Model.CategoryFilter != "All") || (!string.IsNullOrEmpty(Model.PublishFilter) && Model.PublishFilter != "All"))
+            {
+                <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary" style="padding: 8px 12px; margin-left: 6px;">Clear</a>
+            }
+        </div>
+    </form>
+</div>
+
+@* ── FAQs List ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--admin-text);">
+            Published Knowledge Base Articles (@Model.Faqs.Count)
+        </h2>
+    </div>
+
+    @if (!Model.Faqs.Any())
+    {
+        <div style="padding: 48px; text-align: center; color: var(--admin-text-muted);">
+            <span style="font-size: 40px; display: block; margin-bottom: 12px;">❓</span>
+            <p style="font-size: 14px; margin: 0 0 16px 0;">No FAQ entries found matching the filter criteria.</p>
+            <a href="/centralwks/support/faqcreate" class="btn-admin btn-admin-primary">Add First FAQ</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table admin-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); text-align: left; color: var(--admin-text-muted);">
+                        <th style="padding: 12px 20px; width: 45%;">Question & Answer</th>
+                        <th style="padding: 12px 14px;">Category</th>
+                        <th style="padding: 12px 14px;">Culture</th>
+                        <th style="padding: 12px 14px;">Sort Order</th>
+                        <th style="padding: 12px 14px;">Status</th>
+                        <th style="padding: 12px 14px;">Updated</th>
+                        <th style="padding: 12px 20px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var faq in Model.Faqs)
+                    {
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); transition: background 0.15s ease;">
+                            <td style="padding: 14px 20px;">
+                                <div style="font-weight: 600; color: var(--admin-text); margin-bottom: 4px;">
+                                    @faq.Question
+                                </div>
+                                <div style="font-size: 12px; color: var(--admin-text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    @faq.Answer
+                                </div>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="background: rgba(255, 255, 255, 0.06); padding: 3px 8px; border-radius: 4px; font-size: 11px; color: #cbd5e1;">
+                                    @(string.IsNullOrEmpty(faq.Category) ? "General" : faq.Category)
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <span style="font-family: monospace; font-size: 12px; color: #94a3b8;">
+                                    @faq.Culture.ToUpperInvariant()
+                                </span>
+                            </td>
+                            <td style="padding: 14px 14px; font-family: monospace; color: var(--admin-text-muted);">
+                                @faq.SortOrder
+                            </td>
+                            <td style="padding: 14px 14px;">
+                                <form method="post" asp-page-handler="TogglePublish" asp-route-id="@faq.Id" style="display: inline;">
+                                    @if (faq.IsPublished)
+                                    {
+                                        <button type="submit" title="Click to unpublish" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                            ● Published
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" title="Click to publish" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                            ○ Draft
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                            <td style="padding: 14px 14px; font-size: 12px; color: var(--admin-text-muted);">
+                                @faq.UpdatedUtc.ToString("yyyy-MM-dd")
+                            </td>
+                            <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                                <a href="/centralwks/support/faqcreate?id=@faq.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                    Edit
+                                </a>
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@faq.Id" style="display: inline;">
+                                    <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Are you sure you want to delete this FAQ?');">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

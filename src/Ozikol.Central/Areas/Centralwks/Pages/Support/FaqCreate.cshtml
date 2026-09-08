@@ -1,0 +1,115 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Support.FaqCreateModel
+@{
+    var isEdit = Model.IsEditMode;
+    ViewData["Title"] = isEdit ? "Edit FAQ Article" : "Create New FAQ Article";
+    ViewData["BreadcrumbSection"] = "Support";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px;">
+                ← Back to FAQs
+            </a>
+        </div>
+        <h1 class="admin-title">@(isEdit ? "Edit Knowledge Base Article" : "Create Knowledge Base Article")</h1>
+        <p class="admin-subtitle">Author and configure public help answers, searchable customer FAQ responses, and localization settings.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 800px; padding: 28px;">
+    <form method="post">
+        @if (isEdit)
+        {
+            <input type="hidden" asp-for="Input.Id" />
+        }
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Question" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Question Title <span style="color: #f87171;">*</span>
+            </label>
+            <input asp-for="Input.Question" placeholder="e.g. How do sovereign multi-tenant databases isolate customer records?" 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+            <span asp-validation-for="Input.Question" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Category" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Category <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Category" list="categoryOptions" placeholder="e.g. General, Security, Billing"
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                <datalist id="categoryOptions">
+                    <option value="General" />
+                    <option value="Support" />
+                    <option value="Billing" />
+                    <option value="Platform" />
+                    <option value="Security" />
+                    <option value="Architecture" />
+                </datalist>
+                <span asp-validation-for="Input.Category" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.SuiteCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Target Suite (Optional)
+                </label>
+                <input asp-for="Input.SuiteCode" placeholder="e.g. suite-workforce" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.Culture" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Locale <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.Culture" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    <option value="en">English (en)</option>
+                    <option value="fr">French (fr)</option>
+                    <option value="es">Spanish (es)</option>
+                    <option value="de">German (de)</option>
+                    <option value="pt">Portuguese (pt)</option>
+                    <option value="*">Universal (*)</option>
+                </select>
+                <span asp-validation-for="Input.Culture" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.Answer" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Answer Content <span style="color: #f87171;">*</span>
+            </label>
+            <textarea asp-for="Input.Answer" rows="7" placeholder="Detailed technical or policy explanation answering the customer inquiry..."
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: var(--admin-text); font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
+            <span asp-validation-for="Input.Answer" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div>
+                <label asp-for="Input.SortOrder" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Sort Order Priority
+                </label>
+                <input asp-for="Input.SortOrder" type="number" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Lower numbers appear first in the customer portal.</span>
+            </div>
+
+            <div style="display: flex; align-items: center; padding-top: 24px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--admin-text); font-size: 13px;">
+                    <input asp-for="Input.IsPublished" type="checkbox" style="width: 18px; height: 18px; cursor: pointer;" />
+                    <span style="font-weight: 500;">Publish Immediately (Visible to Public Portal)</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 18px;">
+            <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary" style="padding: 10px 20px;">
+                Cancel
+            </a>
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 24px;">
+                <span>💾</span> @(isEdit ? "Update Article" : "Save & Publish Article")
+            </button>
+        </div>
+    </form>
+</div>
