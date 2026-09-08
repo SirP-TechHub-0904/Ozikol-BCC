@@ -950,16 +950,16 @@
     <value>Commencer gratuitement</value>
   </data>
   <data name="Pricing_Meta_Title" xml:space="preserve">
-    <value>Tarification Tout-en-un 40 000 ₦ / an | Ozikol</value>
+    <value>Tarification annuelle tout-en-un | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Gérez l'ensemble de votre commerce sur Ozikol pour 40 000 ₦ par an. 9 suites et 37 fonctionnalités sans commission de vente. Vous achetez seulement votre domaine.</value>
+    <value>Gérez l'ensemble de votre commerce sur Ozikol pour un abonnement annuel transparent. 9 suites et 37 fonctionnalités sans commission de vente. Vous achetez seulement votre domaine.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
     <value>TARIFICATION ANNUELLE TOUT-EN-UN</value>
   </data>
   <data name="Pricing_Hero_Title" xml:space="preserve">
-    <value>Profitez de tout pour 40 000 ₦ par an</value>
+    <value>Profitez de tout pour {0} par an</value>
   </data>
   <data name="Pricing_Hero_Desc" xml:space="preserve">
     <value>Gérez vos magasins physiques, votre boutique en ligne, votre inventaire et vos équipes sur Ozikol. Une seule cotisation annuelle. Vous achetez seulement votre nom de domaine.</value>
@@ -1049,7 +1049,7 @@
     <value>Abonnez-vous à Ozikol</value>
   </data>
   <data name="Pricing_Domain_Step1_Desc" xml:space="preserve">
-    <value>Activez votre compte tout-en-un pour 40 000 ₦/an et recevez immédiatement votre espace cloud (ex. votreboutique.ozikol.com).</value>
+    <value>Activez votre compte tout-en-un pour {0}/an et recevez immédiatement votre espace cloud (ex. votreboutique.ozikol.com).</value>
   </data>
   <data name="Pricing_Domain_Step2_Num" xml:space="preserve">
     <value>02</value>
@@ -1073,7 +1073,7 @@
     <value>VALEUR ET TRANSPARENCE RADICALES</value>
   </data>
   <data name="Pricing_Why_Title" xml:space="preserve">
-    <value>Pourquoi seulement 40 000 ₦ par an ?</value>
+    <value>Pourquoi seulement {0} par an ?</value>
   </data>
   <data name="Pricing_Why_Desc" xml:space="preserve">
     <value>Nous estimons qu'une infrastructure technologique de classe mondiale doit soutenir les entreprises sans prélever des commissions excessives.</value>
@@ -1121,10 +1121,10 @@
     <value>Réponses claires concernant les noms de domaine, le renouvellement, les devises et les fonctionnalités.</value>
   </data>
   <data name="Pricing_Faq1_Q" xml:space="preserve">
-    <value>Est-ce vraiment 40 000 ₦ pour l'année complète avec tout inclus ?</value>
+    <value>Est-ce vraiment {0} pour l'année complète avec tout inclus ?</value>
   </data>
   <data name="Pricing_Faq1_A" xml:space="preserve">
-    <value>Oui. Pour 40 000 ₦, vous bénéficiez d'un accès complet à l'ensemble de la plateforme Ozikol pendant 365 jours. Aucune restriction et aucun frais caché.</value>
+    <value>Oui. Pour {0}, vous bénéficiez d'un accès complet à l'ensemble de la plateforme Ozikol pendant 365 jours. Aucune restriction et aucun frais caché.</value>
   </data>
   <data name="Pricing_Faq2_Q" xml:space="preserve">
     <value>Que signifie « vous achetez seulement votre domaine » ?</value>
@@ -1157,7 +1157,7 @@
     <value>Oui. Vous pouvez tester toutes les fonctionnalités avec un essai gratuit de 14 jours sans carte bancaire ni paiement préalable.</value>
   </data>
   <data name="Pricing_Cta_Title" xml:space="preserve">
-    <value>Prêt à propulser votre entreprise pour 40 000 ₦ / an ?</value>
+    <value>Prêt à propulser votre entreprise pour {0} / an ?</value>
   </data>
   <data name="Pricing_Cta_Desc" xml:space="preserve">
     <value>Démarrez votre essai gratuit de 14 jours aujourd'hui. Configurez votre catalogue, connectez votre domaine et vendez dès maintenant.</value>
