@@ -1,0 +1,168 @@
+@page "/affiliate/dashboard"
+@model Ozikol.Central.Areas.Affiliate.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Partner Dashboard";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                ● @Model.Partner.Status Partner
+            </span>
+            <span style="font-family: monospace; font-size: 11px; color: #94a3b8;">
+                Code: @Model.Partner.PartnerCode
+            </span>
+        </div>
+        <h1 class="admin-title">Welcome back, @Model.Partner.FullName</h1>
+        <p class="admin-subtitle">Track your referred enterprise tenants, inspect commissions, and request payouts.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/affiliate/earnings/request-payout" class="btn-admin btn-admin-primary">
+            <span>💳</span> Request Payout
+        </a>
+    </div>
+</div>
+
+@* ── Referral Link Copy Card ── *@
+<div class="admin-card" style="padding: 20px 24px; margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(14, 165, 233, 0.05)); border-color: rgba(16, 185, 129, 0.2);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+        <div>
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: #34d399; margin-bottom: 4px;">
+                Your Sovereign Referral Link
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1;">
+                Share this link on your platform, webinars, or documentation to earn <strong>@Model.Partner.CommissionRatePercentage.ToString("0.##")% recurring commission</strong>.
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 520px; min-width: 280px;">
+            <input type="text" id="refLinkInput" readonly value="@Model.PrimaryReferralUrl" 
+                   class="form-control" style="flex: 1; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+            <button type="button" class="btn-admin btn-admin-primary" onclick="copyRefLink()" id="copyBtn" style="padding: 8px 16px; font-size: 13px; white-space: nowrap;">
+                📋 Copy Link
+            </button>
+            <a href="/affiliate/referrals/create-link" class="btn-admin btn-admin-secondary" style="padding: 8px 14px; font-size: 13px; white-space: nowrap;" title="Build custom UTM campaign link">
+                ⚙️ UTM
+            </a>
+        </div>
+    </div>
+</div>
+
+@* ── Key Financial & Conversion Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 44px; height: 44px; font-size: 20px;">💵</div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Balance</span>
+            <span class="stat-value" style="font-size: 24px; color: #34d399;">$@Model.Partner.PendingBalance.ToString("N2")</span>
+            <a href="/affiliate/earnings/request-payout" style="font-size: 11px; color: #93c5fd; text-decoration: none; margin-top: 4px; display: inline-block;">
+                Disburse funds →
+            </a>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 44px; height: 44px; font-size: 20px;">💰</div>
+        <div class="stat-details">
+            <span class="stat-label">Lifetime Earned</span>
+            <span class="stat-value" style="font-size: 24px;">$@Model.Partner.TotalEarned.ToString("N2")</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Paid: $@Model.Partner.PaidBalance.ToString("N2")</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">👥</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Referrals</span>
+            <span class="stat-value" style="font-size: 24px; color: #93c5fd;">@Model.TotalReferralsCount</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">@Model.ApprovedReferralsCount active subscribers</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">🏷️</div>
+        <div class="stat-details">
+            <span class="stat-label">Commission Rate</span>
+            <span class="stat-value" style="font-size: 24px; color: #c084fc;">@Model.Partner.CommissionRatePercentage.ToString("0.##")%</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Recurring subscription share</span>
+        </div>
+    </div>
+</div>
+
+@* ── Recent Referrals ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-card-border); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin: 0;">Recent Tenant Referrals</h2>
+        <a href="/affiliate/referrals" style="font-size: 12px; color: #93c5fd; text-decoration: none;">View All Referrals →</a>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 12px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Referred Tenant</th>
+                    <th style="padding: 12px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Tenant Key</th>
+                    <th style="padding: 12px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Subscription</th>
+                    <th style="padding: 12px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Commission</th>
+                    <th style="padding: 12px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 12px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.RecentReferrals.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 36px; text-align: center; color: var(--admin-text-muted); font-size: 13px;">
+                            No referred tenant signups yet. Share your referral link above to start earning recurring commissions!
+                        </td>
+                    </tr>
+                }
+                @foreach (var refItem in Model.RecentReferrals)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px; font-weight: 600; color: var(--admin-text); font-size: 13px;">
+                            @refItem.ReferredOrganizationName
+                        </td>
+                        <td style="padding: 14px 14px; font-family: monospace; font-size: 12px; color: #93c5fd;">
+                            @refItem.ReferredTenantKey
+                        </td>
+                        <td style="padding: 14px 14px; text-align: right; font-size: 13px; color: var(--admin-text);">
+                            $@refItem.SubscriptionAmount.ToString("N2")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: right; font-size: 13px; font-weight: 600; color: #34d399;">
+                            +$@refItem.CommissionEarned.ToString("N2")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @switch (refItem.CommissionStatus)
+                            {
+                                case "Approved":
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Approved</span>
+                                    break;
+                                case "Paid":
+                                    <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Paid</span>
+                                    break;
+                                default:
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">Pending</span>
+                                    break;
+                            }
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; font-size: 12px; color: var(--admin-text-muted);">
+                            @refItem.CreatedUtc.ToString("dd MMM yyyy")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function copyRefLink() {
+        const input = document.getElementById('refLinkInput');
+        input.select();
+        navigator.clipboard.writeText(input.value);
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.innerText;
+        btn.innerText = '✓ Copied!';
+        setTimeout(() => btn.innerText = orig, 2000);
+    }
+</script>

@@ -1,0 +1,147 @@
+@page "/affiliate/referrals/create-link"
+@model Ozikol.Central.Areas.Affiliate.Pages.Referrals.CreateLinkModel
+@{
+    ViewData["Title"] = "Campaign Link Builder";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/affiliate/referrals" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Referrals</a>
+        </div>
+        <h1 class="admin-title">Custom Campaign &amp; UTM Link Builder</h1>
+        <p class="admin-subtitle">Generate tracked referral links with custom UTM parameters to monitor performance across newsletters, social media, and paid ads.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Configuration Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <form method="post" id="linkBuilderForm">
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.DestinationPath" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Target Landing Page <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.DestinationPath" id="destPathSelect" class="form-control" 
+                        style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;">
+                    <option value="/">Platform Homepage (/)</option>
+                    <option value="/pricing">Pricing &amp; Enterprise Plans (/pricing)</option>
+                    <option value="/enterprise">Sovereign Cloud &amp; Dedicated Deployment (/enterprise)</option>
+                    <option value="/features">Enterprise Features &amp; Capability Directory (/features)</option>
+                    <option value="/marketplace">Community Marketplace &amp; Storefront Templates (/marketplace)</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                <div>
+                    <label asp-for="Input.Source" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Campaign Source (utm_source)
+                    </label>
+                    <input asp-for="Input.Source" id="utmSourceInput" placeholder="e.g. youtube, newsletter, twitter" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                </div>
+
+                <div>
+                    <label asp-for="Input.Medium" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Campaign Medium (utm_medium)
+                    </label>
+                    <input asp-for="Input.Medium" id="utmMediumInput" placeholder="e.g. video, banner, cpc, email" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label asp-for="Input.Campaign" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Campaign Name (utm_campaign)
+                </label>
+                <input asp-for="Input.Campaign" id="utmCampaignInput" placeholder="e.g. cloud_migration_2026, tech_review" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            @* Generated Result Card *@
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 18px;">
+                <div style="font-size: 12px; font-weight: 600; color: #34d399; margin-bottom: 8px;">
+                    Generated Tracking URL
+                </div>
+                <textarea id="liveResultBox" readonly rows="3" 
+                          style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 10px 12px; color: #93c5fd; font-family: monospace; font-size: 13px; line-height: 1.4; resize: none;">@Model.GeneratedUrl</textarea>
+                
+                <div style="display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn-admin btn-admin-primary" onclick="copyGeneratedLink()" id="btnCopyGenerated">
+                        📋 Copy Tracking URL
+                    </button>
+                    <a href="@Model.GeneratedUrl" target="_blank" id="btnTestGenerated" class="btn-admin btn-admin-secondary">
+                        Test Link ↗
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Best Practice Tips *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Tracking Best Practices</h3>
+            
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #93c5fd;">Cookie Attribution:</strong>
+                    Referral attribution cookies persist across <strong>90 days</strong>. If a customer visits via your link and signs up anytime within 90 days, the commission is attributed to you.
+                </div>
+                <div>
+                    <strong style="color: #93c5fd;">Landing Page Selection:</strong>
+                    Directing technical decision-makers to <code style="color: #cbd5e1;">/features</code> or <code style="color: #cbd5e1;">/enterprise</code> typically converts 35% higher than general homepages.
+                </div>
+                <div>
+                    <strong style="color: #93c5fd;">UTM Hygiene:</strong>
+                    Use lowercase alphanumeric characters and hyphens for consistency in Google Analytics and tracking dashboards.
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Partner Code Safeguard</h3>
+            <div style="font-size: 13px; color: var(--admin-text-muted); line-height: 1.5;">
+                Your unique partner code <code style="color: #34d399; font-weight: 600;">@Model.PartnerCode</code> is permanently embedded into every link generated here.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const baseHost = '@Model.BaseHost';
+    const partnerCode = '@Model.PartnerCode';
+    const destSelect = document.getElementById('destPathSelect');
+    const sourceInput = document.getElementById('utmSourceInput');
+    const mediumInput = document.getElementById('utmMediumInput');
+    const campInput = document.getElementById('utmCampaignInput');
+    const resultBox = document.getElementById('liveResultBox');
+    const testBtn = document.getElementById('btnTestGenerated');
+
+    function updateLiveUrl() {
+        const dest = destSelect.value || '/';
+        const params = new URLSearchParams();
+        params.set('ref', partnerCode);
+        if (sourceInput.value.trim()) params.set('utm_source', sourceInput.value.trim());
+        if (mediumInput.value.trim()) params.set('utm_medium', mediumInput.value.trim());
+        if (campInput.value.trim()) params.set('utm_campaign', campInput.value.trim());
+
+        const fullUrl = baseHost + dest + '?' + params.toString();
+        resultBox.value = fullUrl;
+        testBtn.href = fullUrl;
+    }
+
+    [destSelect, sourceInput, mediumInput, campInput].forEach(el => {
+        el.addEventListener('input', updateLiveUrl);
+        el.addEventListener('change', updateLiveUrl);
+    });
+
+    function copyGeneratedLink() {
+        resultBox.select();
+        navigator.clipboard.writeText(resultBox.value);
+        const btn = document.getElementById('btnCopyGenerated');
+        const orig = btn.innerText;
+        btn.innerText = '✓ Copied!';
+        setTimeout(() => btn.innerText = orig, 2000);
+    }
+</script>
