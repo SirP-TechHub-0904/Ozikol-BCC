@@ -1,0 +1,212 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Affiliates.IndexModel
+@{
+    ViewData["Title"] = "Affiliate Partners";
+    ViewData["BreadcrumbSection"] = "Marketplace";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Affiliate Partner Network</h1>
+        <p class="admin-subtitle">Monitor referral promo codes, track multi-tenant onboarding attributions, and manage commission wallet balances.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/affiliates/payouts" class="btn-admin btn-admin-secondary">
+            <span>💸</span> Payouts Queue (@Model.TotalPendingBalance.ToString("C0"))
+        </a>
+        <a href="/centralwks/affiliates/create" class="btn-admin btn-admin-primary">
+            <span>+</span> Register Partner
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Affiliate Financial Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🤝</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Partners</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💰</div>
+        <div class="stat-details">
+            <span class="stat-label">Lifetime Commissions</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalGrossCommissions.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Payouts</span>
+            <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.TotalPendingBalance.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-details">
+            <span class="stat-label">Paid to Date</span>
+            <span class="stat-value" style="font-size: 22px;">$@Model.TotalPaidOut.ToString("N2")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px;">
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search by partner code, full name, email, or channel..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+        <div style="min-width: 150px;">
+            <select name="Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="Active" selected="@(Model.Status == "Active")">Active</option>
+                <option value="UnderReview" selected="@(Model.Status == "UnderReview")">Under Review</option>
+                <option value="Suspended" selected="@(Model.Status == "Suspended")">Suspended</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">
+            <span>🔍</span> Filter
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Status))
+        {
+            <a href="/centralwks/affiliates" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Clear</a>
+        }
+    </form>
+</div>
+
+@* ── Partners Table ── *@
+<div class="admin-card">
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Partner Code</th>
+                    <th>Partner Name & Contact</th>
+                    <th>Channel / Website</th>
+                    <th style="text-align: center;">Rate</th>
+                    <th style="text-align: right;">Total Earned</th>
+                    <th style="text-align: right;">Pending</th>
+                    <th style="text-align: center;">Referrals</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Partners.Any())
+                {
+                    @foreach (var p in Model.Partners)
+                    {
+                        var isSuspended = p.Status.Equals("Suspended", StringComparison.OrdinalIgnoreCase);
+                        var isUnderReview = p.Status.Equals("UnderReview", StringComparison.OrdinalIgnoreCase);
+
+                        <tr>
+                            <td>
+                                <span style="font-family: monospace; font-size: 13px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">
+                                    @p.PartnerCode
+                                </span>
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: #fff; font-size: 14px;">@p.FullName</div>
+                                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">@p.Email</div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(p.WebsiteOrChannel))
+                                {
+                                    <span style="font-size: 13px; color: #a5b4fc;">@p.WebsiteOrChannel</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size: 12px; color: var(--admin-text-muted); font-style: italic;">Not specified</span>
+                                }
+                            </td>
+                            <td style="text-align: center;">
+                                <span style="font-weight: 700; color: #fff;">@p.CommissionRatePercentage.ToString("0.#")%</span>
+                            </td>
+                            <td style="text-align: right; font-weight: 600; color: #fff; font-family: monospace;">
+                                $@p.TotalEarned.ToString("N2")
+                            </td>
+                            <td style="text-align: right; font-weight: 700; font-family: monospace; color: @(p.PendingBalance > 0 ? "#f59e0b" : "var(--admin-text-muted)");">
+                                $@p.PendingBalance.ToString("N2")
+                            </td>
+                            <td style="text-align: center; font-weight: 600; color: #fff;">
+                                @p.Referrals.Count
+                            </td>
+                            <td>
+                                @if (isSuspended)
+                                {
+                                    <span class="badge badge-danger">Suspended</span>
+                                }
+                                else if (isUnderReview)
+                                {
+                                    <span class="badge badge-warning">Under Review</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 6px;">
+                                    <a href="/centralwks/affiliates/details/@p.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="View Partner Profile">
+                                        👁️
+                                    </a>
+                                    <a href="/centralwks/affiliates/edit/@p.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Edit Partner">
+                                        ✏️
+                                    </a>
+                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@p.Id" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="@(isSuspended ? "Activate" : "Suspend")">
+                                            @(isSuspended ? "▶️" : "⏸️")
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
+                            <div style="font-size: 32px; margin-bottom: 8px;">🤝</div>
+                            <div style="font-size: 16px; font-weight: 500; color: #fff;">No Affiliate Partners Found</div>
+                            <div style="font-size: 13px; margin-top: 4px;">Register a partner or adjust search criteria.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Pagination ── *@
+    @if (Model.TotalPages > 1)
+    {
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="font-size: 13px; color: var(--admin-text-muted);">
+                Showing page @Model.PageNumber of @Model.TotalPages (@Model.TotalCount total partners)
+            </div>
+            <div style="display: flex; gap: 8px;">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="/centralwks/affiliates?PageNumber=@(Model.PageNumber - 1)&Search=@Model.Search&Status=@Model.Status" 
+                       class="btn-admin btn-admin-secondary" style="padding: 6px 12px; font-size: 12px;">&larr; Previous</a>
+                }
+                @if (Model.PageNumber < Model.TotalPages)
+                {
+                    <a href="/centralwks/affiliates?PageNumber=@(Model.PageNumber + 1)&Search=@Model.Search&Status=@Model.Status" 
+                       class="btn-admin btn-admin-secondary" style="padding: 6px 12px; font-size: 12px;">Next &rarr;</a>
+                }
+            </div>
+        </div>
+    }
+</div>

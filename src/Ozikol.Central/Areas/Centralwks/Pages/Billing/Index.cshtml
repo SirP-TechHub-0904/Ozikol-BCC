@@ -1,0 +1,196 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Billing.IndexModel
+@{
+    ViewData["Title"] = "Platform Billing & Ledger";
+    ViewData["BreadcrumbSection"] = "Platform Core";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Financial Ledger & Invoices</h1>
+        <p class="admin-subtitle">Inspect settled subscription payments, manual account credits, offline transfers, and invoice audit trails.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/centralwks/billing/create" class="btn-admin btn-admin-primary">
+            <span>+</span> Record Transaction
+        </a>
+    </div>
+</div>
+
+@* ── Financial Stats ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 20px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">💰</div>
+        <div class="stat-details">
+            <span class="stat-label">Gross Settled Revenue</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalGrossRevenue.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-details">
+            <span class="stat-label">Pending Invoices</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-warning);">$@Model.TotalPendingRevenue.ToString("N2")</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">↩️</div>
+        <div class="stat-details">
+            <span class="stat-label">Refunds & Adjustments</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-danger);">$@Model.TotalRefunds.ToString("N2")</span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-toolbar">
+        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div class="table-search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" name="search" value="@Model.Search" placeholder="Search invoice, ref, tenant..." />
+            </div>
+
+            <select name="status" class="form-select" style="width: 140px; padding: 8px 12px; font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="Completed" selected="@(Model.Status == "Completed")">Completed</option>
+                <option value="Pending" selected="@(Model.Status == "Pending")">Pending</option>
+                <option value="Failed" selected="@(Model.Status == "Failed")">Failed</option>
+                <option value="Refunded" selected="@(Model.Status == "Refunded")">Refunded</option>
+                <option value="Cancelled" selected="@(Model.Status == "Cancelled")">Cancelled</option>
+            </select>
+
+            <select name="provider" class="form-select" style="width: 150px; padding: 8px 12px; font-size: 13px;">
+                <option value="">All Gateways</option>
+                @foreach (var p in Model.Providers)
+                {
+                    <option value="@p" selected="@(Model.Provider == p)">@p</option>
+                }
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">Filter</button>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Status) || !string.IsNullOrEmpty(Model.Provider) || Model.TenantId.HasValue)
+            {
+                <a href="/centralwks/billing" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">Clear</a>
+            }
+        </form>
+
+        <div style="font-size: 12.5px; color: var(--admin-text-muted);">
+            Showing @Model.Transactions.Count of @Model.TotalCount records
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Invoice / ID</th>
+                    <th>Tenant Organization</th>
+                    <th>Amount</th>
+                    <th>Provider / Method</th>
+                    <th>Reference</th>
+                    <th>Status</th>
+                    <th>Date UTC</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Transactions.Any())
+                {
+                    @foreach (var tx in Model.Transactions)
+                    {
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong style="color: var(--admin-text); font-size: 13.5px;">
+                                        @(tx.InvoiceNumber ?? "—")
+                                    </strong>
+                                    <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                        <code>@tx.Id.ToString().Substring(0, 8)</code>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (tx.Tenant != null)
+                                {
+                                    <a href="/centralwks/tenants/details?id=@tx.MasterTenantCatalogId" style="color: var(--admin-text); font-weight: 500; text-decoration: none;">
+                                        @tx.Tenant.OrganizationName
+                                    </a>
+                                    <div style="font-size: 11.5px; color: var(--admin-text-dim);">
+                                        <code>@tx.Tenant.TenantKey</code>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--admin-text-dim);">Tenant #@tx.MasterTenantCatalogId</span>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-size: 14px; font-weight: 700; color: @(tx.Amount >= 0 ? "var(--admin-text)" : "var(--admin-danger)");">
+                                    @(tx.Amount >= 0 ? "$" : "-$")@Math.Abs(tx.Amount).ToString("N2")
+                                    <span style="font-size: 11px; font-weight: normal; color: var(--admin-text-dim);">@tx.Currency</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral">@(tx.PaymentProvider ?? "Manual")</span>
+                            </td>
+                            <td>
+                                <span style="font-size: 12px; color: var(--admin-text-muted); font-family: monospace;">
+                                    @(tx.TransactionRef ?? "—")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(tx.Status switch { "Completed" => "badge-success", "Pending" => "badge-warning", "Refunded" => "badge-danger", "Failed" => "badge-danger", _ => "badge-neutral" })">
+                                    <span class="badge-dot"></span> @tx.Status
+                                </span>
+                            </td>
+                            <td style="font-size: 12px; color: var(--admin-text-muted);">
+                                @tx.CreatedUtc.ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="/centralwks/billing/details?id=@tx.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
+                                    Details →
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">💰</div>
+                                <h3 class="empty-state-title">No Transactions Recorded</h3>
+                                <p class="empty-state-desc">No billing transactions or invoices match your filter criteria.</p>
+                                <a href="/centralwks/billing/create" class="btn-admin btn-admin-primary btn-admin-sm">+ Record First Transaction</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="admin-card-footer">
+            <div style="font-size: 12.5px; color: var(--admin-text-muted);">
+                Page @Model.PageNumber of @Model.TotalPages
+            </div>
+            <ul class="admin-pagination">
+                <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                    <a class="page-link" href="?pageNumber=@(Model.PageNumber - 1)&search=@Model.Search&status=@Model.Status&provider=@Model.Provider">‹ Previous</a>
+                </li>
+                @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+                {
+                    <li class="page-item @(p == Model.PageNumber ? "active" : "")">
+                        <a class="page-link" href="?pageNumber=@p&search=@Model.Search&status=@Model.Status&provider=@Model.Provider">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="?pageNumber=@(Model.PageNumber + 1)&search=@Model.Search&status=@Model.Status&provider=@Model.Provider">Next ›</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
