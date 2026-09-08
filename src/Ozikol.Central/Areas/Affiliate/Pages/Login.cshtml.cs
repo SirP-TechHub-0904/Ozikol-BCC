@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 
-namespace Ozikol.Central.Pages.Affiliate
+namespace Ozikol.Central.Areas.Affiliate.Pages
 {
     /// <summary>
     /// PageModel authenticating registered and approved Affiliate Partners into their partner earnings and referral portal.
