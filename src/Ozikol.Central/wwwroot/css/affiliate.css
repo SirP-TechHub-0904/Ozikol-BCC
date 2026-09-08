@@ -1,0 +1,50 @@
+/* ===================================================================
+   Ozikol Affiliate Partner Portal — Stylesheet
+   Tailored emerald/green financial accent theme based on admin core
+   =================================================================== */
+
+@import url('admin.css');
+
+:root {
+    --admin-primary: #10b981;
+    --admin-primary-hover: #059669;
+    --admin-primary-light: rgba(16, 185, 129, 0.12);
+    --admin-primary-glow: rgba(16, 185, 129, 0.25);
+}
+
+.affiliate-link-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(14, 165, 233, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.affiliate-copy-input-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.affiliate-copy-input-group input {
+    background: var(--admin-bg-surface-elevated);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    color: var(--admin-text);
+    font-size: 14px;
+    font-family: monospace;
+    flex: 1;
+}
+
+.commission-rate-pill {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}

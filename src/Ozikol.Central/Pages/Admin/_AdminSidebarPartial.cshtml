@@ -1,0 +1,143 @@
+@* ─────────────────────────────────────────────────────────────────────────────
+    Admin Sidebar Partial — Reusable collapsible navigation for the Admin portal.
+    Referenced by _AdminLayout.cshtml. Sidebar items organized by management section.
+   ───────────────────────────────────────────────────────────────────────────── *@
+
+<nav class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+        <a href="/admin/dashboard" class="sidebar-brand">
+            <span class="brand-icon">◈</span>
+            <span class="brand-text">Ozikol Console</span>
+        </a>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">✕</button>
+    </div>
+
+    <div class="sidebar-nav-container">
+        @* ── Dashboard ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">OVERVIEW</li>
+            <li class="nav-item">
+                <a href="/admin/dashboard" class="nav-link" data-page="dashboard">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+            </li>
+        </ul>
+
+        @* ── Platform Core ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">PLATFORM CORE</li>
+            <li class="nav-item">
+                <a href="/admin/tenants" class="nav-link" data-page="tenants">
+                    <span class="nav-icon">🏢</span> Tenants
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/features" class="nav-link" data-page="features">
+                    <span class="nav-icon">⚡</span> Features
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/subscriptions" class="nav-link" data-page="subscriptions">
+                    <span class="nav-icon">📋</span> Subscriptions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/billing" class="nav-link" data-page="billing">
+                    <span class="nav-icon">💰</span> Billing
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/currencies" class="nav-link" data-page="currencies">
+                    <span class="nav-icon">💱</span> Currencies
+                </a>
+            </li>
+        </ul>
+
+        @* ── Marketplace ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">MARKETPLACE</li>
+            <li class="nav-item">
+                <a href="/admin/templates" class="nav-link" data-page="templates">
+                    <span class="nav-icon">🎨</span> Templates
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/affiliates" class="nav-link" data-page="affiliates">
+                    <span class="nav-icon">🤝</span> Affiliates
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/creators" class="nav-link" data-page="creators">
+                    <span class="nav-icon">✏️</span> Creators
+                </a>
+            </li>
+        </ul>
+
+        @* ── Support & Communications ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">SUPPORT</li>
+            <li class="nav-item">
+                <a href="/admin/support" class="nav-link" data-page="support">
+                    <span class="nav-icon">🎫</span> Support Tickets
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/email-logs" class="nav-link" data-page="email-logs">
+                    <span class="nav-icon">📧</span> Email Logs
+                </a>
+            </li>
+        </ul>
+
+        @* ── Content Management ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">CONTENT</li>
+            <li class="nav-item">
+                <a href="/admin/news/articles" class="nav-link" data-page="news">
+                    <span class="nav-icon">📰</span> News & Blog
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/careers/openings" class="nav-link" data-page="careers">
+                    <span class="nav-icon">💼</span> Careers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/legal" class="nav-link" data-page="legal">
+                    <span class="nav-icon">📜</span> Legal Docs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/helpdesk/articles" class="nav-link" data-page="helpdesk">
+                    <span class="nav-icon">❓</span> Helpdesk
+                </a>
+            </li>
+        </ul>
+
+        @* ── System Administration ── *@
+        <ul class="sidebar-nav">
+            <li class="nav-section-label">SYSTEM</li>
+            <li class="nav-item">
+                <a href="/admin/platform-settings" class="nav-link" data-page="platform-settings">
+                    <span class="nav-icon">⚙️</span> Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/users" class="nav-link" data-page="users">
+                    <span class="nav-icon">👥</span> Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/audit-log" class="nav-link" data-page="audit-log">
+                    <span class="nav-icon">📝</span> Audit Log
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    @* ── Sidebar Footer ── *@
+    <div class="sidebar-footer">
+        <a href="/" class="nav-link sidebar-footer-link" target="_blank">
+            <span class="nav-icon">🌐</span> Public Portal
+        </a>
+    </div>
+</nav>
