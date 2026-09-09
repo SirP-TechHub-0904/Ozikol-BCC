@@ -1273,7 +1273,7 @@ interface CategoryPreset {
               </div>
             </div>
 
-            <!-- Viewport Controls (Desktop vs Mobile) -->
+            <!-- Viewport Controls (Desktop vs Tablet vs Mobile) -->
             <div class="viewport-toggle-group">
               <button
                 type="button"
@@ -1283,6 +1283,15 @@ interface CategoryPreset {
               >
                 <span class="material-symbols-outlined">desktop_windows</span>
                 <span>Desktop (100%)</span>
+              </button>
+              <button
+                type="button"
+                class="btn-viewport"
+                [class.active]="previewViewport === 'tablet'"
+                (click)="previewViewport = 'tablet'"
+              >
+                <span class="material-symbols-outlined">tablet_mac</span>
+                <span>Tablet (768px)</span>
               </button>
               <button
                 type="button"
@@ -1299,7 +1308,11 @@ interface CategoryPreset {
 
           <!-- Modal Body (Simulation Canvas) -->
           <div class="preview-modal-body">
-            <div class="canvas-viewport-frame" [class.mobile-frame]="previewViewport === 'mobile'">
+            <div
+              class="canvas-viewport-frame"
+              [class.tablet-frame]="previewViewport === 'tablet'"
+              [class.mobile-frame]="previewViewport === 'mobile'"
+            >
               <div class="canvas-mobile-notch" *ngIf="previewViewport === 'mobile'"></div>
               <div class="rendered-html-box" [innerHTML]="safeHydratedHtml"></div>
             </div>
@@ -2745,11 +2758,44 @@ interface CategoryPreset {
       gap: 12px;
     }
 
-    @media (max-width: 900px) {
+    .canvas-viewport-frame.tablet-frame {
+      max-width: 768px;
+      border-radius: 16px;
+      border: 6px solid #1e293b;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+    }
+
+    @media (max-width: 992px) {
+      .custom-studio-container { padding: 16px; }
+      .header-main-row { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
       .meta-config-grid { grid-template-columns: 1fr; }
       .inspector-form-grid { grid-template-columns: 1fr 1fr; }
       .inspector-form-grid-2 { grid-template-columns: 1fr; }
       .inspector-form-grid-3 { grid-template-columns: 1fr; }
+      .preview-modal-dialog { width: 96vw; height: 92vh; }
+    }
+
+    @media (max-width: 640px) {
+      .custom-studio-container { padding: 12px 8px; }
+      .studio-header-card { padding: 16px 14px; border-radius: 10px; }
+      .page-title { font-size: 18px; }
+      .header-actions { flex-direction: column; width: 100%; gap: 8px; }
+      .header-actions .btn { width: 100%; justify-content: center; }
+      .meta-config-grid { gap: 12px; }
+      .token-palette-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .token-category-tabs { width: 100%; overflow-x: auto; }
+      .editor-tabs-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+      .tabs-group { width: 100%; }
+      .editor-tab-btn { flex: 1; justify-content: center; }
+      .btn-reset-boilerplate { width: 100%; justify-content: center; }
+      .mock-segmented-nav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .inspector-form-grid { grid-template-columns: 1fr; }
+      .preview-modal-header { flex-direction: column; align-items: stretch; gap: 12px; }
+      .viewport-toggle-group { justify-content: center; flex-wrap: wrap; }
+      .preview-modal-body { padding: 10px 4px; }
+      .preview-modal-footer { flex-direction: column-reverse; gap: 8px; }
+      .preview-modal-footer .btn { width: 100%; justify-content: center; }
     }
   `]
 })
@@ -2778,7 +2824,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   activeMockTab: 'scalars' | 'rich' | 'media' | 'cards' | 'faqs' | 'menu' | 'identity' = 'scalars';
   savingTemplate: boolean = false;
   showPreviewModal: boolean = false;
-  previewViewport: 'desktop' | 'mobile' = 'desktop';
+  previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeHydratedHtml: SafeHtml = '';
   showRawHtmlEditor: boolean = false;
 
@@ -2917,6 +2963,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 .oz-nav-brand {
   display: flex;
@@ -2945,9 +2992,23 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+  display: inline-block;
   transition: 0.2s;
+  white-space: nowrap;
 }
-.oz-btn-nav:hover { background: #0041ba; }`,
+.oz-btn-nav:hover { background: #0041ba; }
+@media (max-width: 768px) {
+  .oz-nav-header { padding: 12px 16px; }
+  .oz-nav-container { flex-wrap: wrap; justify-content: space-between; }
+  .oz-nav-links { order: 3; width: 100%; justify-content: center; gap: 14px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
+}
+@media (max-width: 480px) {
+  .oz-nav-container { flex-direction: column; align-items: stretch; text-align: center; gap: 12px; }
+  .oz-nav-brand { justify-content: center; }
+  .oz-nav-links { flex-wrap: wrap; gap: 10px; }
+  .oz-nav-cta { text-align: center; }
+  .oz-btn-nav { width: 100%; box-sizing: border-box; }
+}`,
       sampleContent: {
         brandName: 'Acme Global',
         buttonText: 'Console Sign In',
@@ -2995,6 +3056,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
 }
 .oz-hero-container {
   max-width: 1200px;
@@ -3023,6 +3085,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   letter-spacing: -0.02em;
   margin: 0 0 16px 0;
   color: #ffffff;
+  word-break: break-word;
 }
 .oz-hero-desc {
   font-size: 16px;
@@ -3044,6 +3107,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   text-decoration: none;
   box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
   transition: 0.2s;
+  display: inline-block;
 }
 .oz-btn-primary:hover { background: #0041ba; transform: translateY(-1px); }
 .oz-btn-secondary {
@@ -3055,6 +3119,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: 0.2s;
+  display: inline-block;
 }
 .oz-btn-secondary:hover { background: rgba(255, 255, 255, 0.18); }
 .oz-hero-media { text-align: center; }
@@ -3065,9 +3130,18 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   box-shadow: 0 16px 36px rgba(0,0,0,0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-@media (max-width: 768px) {
-  .oz-hero-container { grid-template-columns: 1fr; gap: 32px; }
-  .oz-hero-title { font-size: 32px; }
+@media (max-width: 900px) {
+  .oz-hero-section { padding: 60px 20px; }
+  .oz-hero-container { grid-template-columns: 1fr; gap: 36px; text-align: center; }
+  .oz-hero-title { font-size: 34px; }
+  .oz-hero-actions { justify-content: center; }
+}
+@media (max-width: 480px) {
+  .oz-hero-section { padding: 44px 16px; }
+  .oz-hero-title { font-size: 26px; }
+  .oz-hero-desc { font-size: 14px; margin-bottom: 24px; }
+  .oz-hero-actions { flex-direction: column; width: 100%; }
+  .oz-btn-primary, .oz-btn-secondary { width: 100%; text-align: center; box-sizing: border-box; }
 }`,
       sampleContent: {
         title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
@@ -3146,7 +3220,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   max-width: 1140px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
   text-align: left;
 }
@@ -3176,7 +3250,14 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 }
 .oz-feature-icon-box .material-symbols-outlined { font-size: 26px; }
 .oz-feature-card-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 8px 0; }
-.oz-feature-card-desc { font-size: 13.5px; color: #64748b; line-height: 1.55; margin: 0; }`,
+.oz-feature-card-desc { font-size: 13.5px; color: #64748b; line-height: 1.55; margin: 0; }
+@media (max-width: 768px) {
+  .oz-features-section { padding: 48px 16px; }
+  .oz-features-title { font-size: 26px; }
+  .oz-features-desc { font-size: 14px; margin-bottom: 32px; }
+  .oz-features-grid { grid-template-columns: 1fr; gap: 16px; }
+  .oz-feature-card { padding: 20px; }
+}`,
       sampleContent: {
         title: 'Engineered For Enterprise Scale And Sub-Millisecond Speed',
         miniTitle: 'PLATFORM CAPABILITIES',
@@ -3295,7 +3376,16 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   color: #475569;
   line-height: 1.6;
 }
-.oz-answer-box p { margin: 0; }`,
+.oz-answer-box p { margin: 0; }
+@media (max-width: 768px) {
+  .oz-faq-section { padding: 48px 16px; }
+  .oz-faq-header { margin-bottom: 32px; }
+  .oz-faq-title { font-size: 24px; }
+  .oz-faq-desc { font-size: 14px; }
+  .oz-cat-heading { font-size: 16px; margin-bottom: 12px; }
+  .oz-faq-summary { padding: 14px 16px; font-size: 14px; }
+  .oz-answer-box { padding: 0 16px 14px 16px; font-size: 13.5px; }
+}`,
       sampleContent: {
         title: 'Frequently Asked Questions',
         miniTitle: 'KNOWLEDGE BASE',
@@ -3365,6 +3455,12 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 @keyframes ozScroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+@media (max-width: 768px) {
+  .oz-marquee-section { padding: 24px 12px; }
+  .oz-marquee-track { gap: 18px; }
+  .oz-marquee-item { padding: 8px 14px; font-size: 12px; gap: 6px; }
+  .oz-m-icon { font-size: 17px; }
 }`,
       sampleContent: {
         title: 'TRUSTED BY GLOBAL ENTERPRISES & FAST-GROWING TEAMS',
@@ -3488,9 +3584,10 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  flex-shrink: 0;
 }
 .oz-info-row strong { font-size: 13px; color: #0f172a; display: block; }
-.oz-info-row p { font-size: 14px; color: #475569; margin: 2px 0 0 0; }
+.oz-info-row p { font-size: 14px; color: #475569; margin: 2px 0 0 0; word-break: break-word; }
 .oz-contact-card {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
@@ -3527,9 +3624,20 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
+  transition: background 0.15s;
 }
-@media (max-width: 768px) {
-  .oz-contact-container { grid-template-columns: 1fr; }
+.oz-btn-submit:hover { background: #0041ba; }
+@media (max-width: 900px) {
+  .oz-contact-section { padding: 48px 18px; }
+  .oz-contact-container { grid-template-columns: 1fr; gap: 36px; }
+  .oz-contact-title { font-size: 28px; }
+}
+@media (max-width: 480px) {
+  .oz-contact-section { padding: 40px 16px; }
+  .oz-contact-card { padding: 20px 16px; }
+  .oz-contact-title { font-size: 24px; }
+  .oz-contact-desc { font-size: 14px; margin-bottom: 24px; }
+  .oz-form-ctrl { font-size: 13px; }
 }`,
       sampleContent: {
         title: "Let's Build Something Exceptional Together",
@@ -3635,8 +3743,19 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   text-decoration: underline;
   color: #7dd3fc;
 }
-@media (max-width: 768px) {
-  .oz-footer-container { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+  .oz-site-footer { padding: 48px 20px 32px 20px; }
+  .oz-footer-container { grid-template-columns: 1fr; gap: 36px; }
+  .oz-footer-tagline { max-width: 100%; }
+}
+@media (max-width: 640px) {
+  .oz-footer-links-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .oz-footer-bottom-wrap { flex-direction: column; text-align: center; justify-content: center; gap: 12px; }
+}
+@media (max-width: 440px) {
+  .oz-footer-links-grid { grid-template-columns: 1fr; text-align: center; }
+  .oz-footer-brand-col { text-align: center; }
+  .oz-footer-tagline { text-align: center; }
 }`,
       sampleContent: {
         brandName: 'Acme Global Platform',
