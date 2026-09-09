@@ -75,15 +75,14 @@ export interface CodeInjectionTag {
           </div>
 
           <div class="header-actions">
-            <button
-              type="button"
+            <a
+              routerLink="/content/console/templates/create"
               class="btn btn-add-custom-template"
-              (click)="openCreateCustomTemplateModal()"
               title="Create a custom section template directly with HTML placeholders"
             >
               <span class="material-symbols-outlined btn-icon">add_circle</span>
               <span>Create Custom Section</span>
-            </button>
+            </a>
             <button
               type="button"
               class="btn btn-full-demo-hero"
@@ -1050,95 +1049,7 @@ export interface CodeInjectionTag {
       </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- MODAL 4: CREATE CUSTOM SECTION TEMPLATE        -->
-    <!-- ============================================== -->
-    <div class="modal-backdrop" *ngIf="showCustomTemplateModal" (click)="closeCustomTemplateModal()">
-      <div class="modal-card custom-tpl-modal-card" (click)="$event.stopPropagation()">
-        <div class="preview-modal-header">
-          <div class="preview-title-info">
-            <span class="material-symbols-outlined preview-modal-badge-icon">add_circle</span>
-            <div>
-              <h3 class="preview-modal-name">Create Custom Section Template</h3>
-              <span class="preview-modal-sub">Craft a standalone HTML section with CMS tokens. CSS is optional if using a global theme stylesheet.</span>
-            </div>
-          </div>
-          <button type="button" class="btn-close-modal" (click)="closeCustomTemplateModal()">✕</button>
-        </div>
 
-        <div class="custom-tpl-modal-body">
-          <div class="custom-tpl-form-grid">
-            <div class="form-group">
-              <label class="form-lbl">TEMPLATE NAME *</label>
-              <input type="text" [(ngModel)]="customTemplateForm.name" class="form-ctrl" placeholder="e.g. 4-Column Service Grid" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-lbl">SECTION ROLE / CATEGORY *</label>
-              <select [(ngModel)]="customTemplateForm.categoryKey" class="form-ctrl" (change)="onCustomCategoryChange()">
-                <option value="menu">Navigation Menu (Navbar)</option>
-                <option value="hero">Hero / Showcase Banner</option>
-                <option value="body">Body Section / Features / About</option>
-                <option value="footer">Footer Bar</option>
-                <option value="newsletter">Newsletter / Lead Capture</option>
-                <option value="contact">Contact Us Block</option>
-                <option value="blog">Blog / News Layout</option>
-                <option value="ecommerce">E-Commerce Showcase</option>
-                <option value="faq">FAQ Section</option>
-                <option value="marquee">Marquee / Logo Ribbon</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-lbl">VARIANT CODE / KEY</label>
-              <input type="text" [(ngModel)]="customTemplateForm.variantCode" class="form-ctrl" placeholder="e.g. Body_ServiceGrid4 (auto-generated if blank)" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-lbl">DESCRIPTION</label>
-              <input type="text" [(ngModel)]="customTemplateForm.description" class="form-ctrl" placeholder="Brief explanation of this section design..." />
-            </div>
-          </div>
-
-          <!-- Token Insertion Toolbar -->
-          <div class="placeholder-toolbar">
-            <span class="toolbar-hint"><span class="material-symbols-outlined icon-mini">toll</span> Click to insert CMS token:</span>
-            <div class="token-btn-group">
-              <button type="button" class="btn-token" (click)="insertNamedToken('Title')" [innerText]="'+ {{ Title }}'"></button>
-              <button type="button" class="btn-token" (click)="insertNamedToken('MiniTitle')" [innerText]="'+ {{ MiniTitle }}'"></button>
-              <button type="button" class="btn-token" (click)="insertNamedToken('Description')" [innerText]="'+ {{ Description }}'"></button>
-              <button type="button" class="btn-token" (click)="insertNamedToken('ImageUrl')" [innerText]="'+ {{ ImageUrl }}'"></button>
-              <button type="button" class="btn-token" (click)="insertNamedToken('ButtonText')" [innerText]="'+ {{ ButtonText }}'"></button>
-              <button type="button" class="btn-token" (click)="insertNamedToken('ButtonLink')" [innerText]="'+ {{ ButtonLink }}'"></button>
-              <button type="button" class="btn-token token-loop" (click)="insertNamedToken('PageSectionLists')">+ Card Loop (PageSectionLists)</button>
-            </div>
-          </div>
-
-          <!-- HTML Template Textarea -->
-          <div class="form-group" style="margin-top: 14px;">
-            <label class="form-lbl">SEMANTIC HTML MARKUP *</label>
-            <textarea [(ngModel)]="customTemplateForm.htmlTemplate" class="form-ctrl code-editor" rows="8" placeholder="<section class=&quot;my-custom-section&quot;>\n  <h2>Heading</h2>\n  <p>Description text</p>\n</section>"></textarea>
-          </div>
-
-          <!-- Scoped CSS Styles Textarea -->
-          <div class="form-group" style="margin-top: 14px;">
-            <div class="lbl-with-note">
-              <label class="form-lbl">SCOPED CSS STYLES (OPTIONAL)</label>
-              <span class="note-pill">💡 Leave empty if you loaded your CSS via Header Tags!</span>
-            </div>
-            <textarea [(ngModel)]="customTemplateForm.cssStyles" class="form-ctrl code-editor" rows="5" placeholder="/* Optional section-scoped CSS */\n.my-custom-section {\n  padding: 60px 20px;\n}"></textarea>
-          </div>
-        </div>
-
-        <div class="preview-modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeCustomTemplateModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" (click)="saveCustomTemplate()" [disabled]="savingCustomTemplate">
-            <span class="material-symbols-outlined">save</span>
-            <span>{{ savingCustomTemplate ? 'Saving...' : 'Save to Template Vault' }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- ============================================== -->
     <!-- MODAL 5: CODE INJECTION TAG (ADD / EDIT)       -->

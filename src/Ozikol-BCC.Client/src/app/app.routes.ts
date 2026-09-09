@@ -48,6 +48,7 @@ import { SettingsComponent } from './pages/admin/settings/settings.component';
 import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.component';
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
+import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
 import { WebPagesComponent } from './pages/admin/content/web-pages.component';
 import { WebPageDetailsComponent } from './pages/admin/content/web-page-details.component';
 import { WebPageEditComponent } from './pages/admin/content/web-page-edit.component';
@@ -189,6 +190,7 @@ export const routes: Routes = [
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },
 
       // 5. CMS Studio Suite, My Templates, & UI Marketplace (Console Only)
+      { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates', component: MyTemplatesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/templates', redirectTo: 'content/console/templates', pathMatch: 'full' },
       { path: 'content/console/marketplace', component: MarketplaceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
