@@ -68,7 +68,7 @@ export interface CodeInjectionTag {
                   <span class="badge-total-count">{{ installedTemplates.length }} Active</span>
                 </div>
                 <p class="page-subtitle">
-                  Your tenant's component vault. Installed templates can be assigned to pages in CMS Studio or previewed together in a live simulated website demo.
+                  Your component vault. Installed templates can be assigned to pages in CMS Studio or previewed together in a live simulated website demo.
                 </p>
               </div>
             </div>
@@ -1249,7 +1249,7 @@ export interface CodeInjectionTag {
         <div class="confirm-modal-body">
           <h3 class="confirm-modal-title">Uninstall Template Blueprint?</h3>
           <p class="confirm-modal-subtitle">
-            Are you sure you want to uninstall this template from your tenant library?
+            Are you sure you want to uninstall this template from your library?
           </p>
 
           <!-- Highlight Preview Card -->
