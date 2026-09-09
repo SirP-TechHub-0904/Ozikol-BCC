@@ -45,7 +45,6 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
     options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
     options.Conventions.AddPageRoute("/Auth/Login", "login");
-    options.Conventions.AddPageRoute("/Auth/Login", "auth/login");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
 
@@ -53,19 +52,26 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AddFolderRouteModelConvention("/", model =>
     {
         var selectors = model.Selectors.ToList();
+        // Track unique route templates case-insensitively to prevent duplicate selectors / AmbiguousMatchException
+        var seenTemplates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var selector in selectors)
         {
             var existingTemplate = selector.AttributeRouteModel?.Template ?? "";
+            var prefixedTemplate = AttributeRouteModel.CombineTemplates("{culture:regex(^(en|fr|es|de)$)}", existingTemplate);
 
-            // Strictly require culture segment on the prefixed selector so it never collides with the un-prefixed original
-            model.Selectors.Add(new SelectorModel
+            if (seenTemplates.Add(prefixedTemplate))
             {
-                AttributeRouteModel = new AttributeRouteModel
+                // Strictly require culture segment on the prefixed selector so it never collides with the un-prefixed original
+                model.Selectors.Add(new SelectorModel
                 {
-                    Order = -1,
-                    Template = AttributeRouteModel.CombineTemplates("{culture:regex(^(en|fr|es|de)$)}", existingTemplate)
-                }
-            });
+                    AttributeRouteModel = new AttributeRouteModel
+                    {
+                        Order = -1,
+                        Template = prefixedTemplate
+                    }
+                });
+            }
         }
     });
 
