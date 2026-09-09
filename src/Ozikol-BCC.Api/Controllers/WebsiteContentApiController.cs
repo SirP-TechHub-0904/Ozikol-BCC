@@ -303,5 +303,34 @@ namespace Ozikol_BCC.Api.Controllers
 
             return (device, browser);
         }
+
+        // ==========================================
+        // 7. PUBLIC 3-ZONE CODE INJECTIONS
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all active code injection tags for public UI rendering,
+        /// grouped by zone ("head", "body_open", "footer") and ordered by SortOrder ascending.
+        /// </summary>
+        [HttpGet("code-injections")]
+        public async Task<IActionResult> GetPublicCodeInjections()
+        {
+            var activeTags = await _context.SiteCodeInjectionTags
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.CreatedAtUtc)
+                .ToListAsync();
+
+            var head = activeTags.Where(t => t.Zone.Equals("head", StringComparison.OrdinalIgnoreCase)).ToList();
+            var bodyOpen = activeTags.Where(t => t.Zone.Equals("body_open", StringComparison.OrdinalIgnoreCase)).ToList();
+            var footer = activeTags.Where(t => t.Zone.Equals("footer", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                head,
+                bodyOpen,
+                footer
+            }, "Active code injection tags retrieved."));
+        }
     }
 }

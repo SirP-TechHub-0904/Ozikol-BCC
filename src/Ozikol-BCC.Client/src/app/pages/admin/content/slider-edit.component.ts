@@ -173,6 +173,29 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <!-- Side Column -->
         <div class="side-column">
+          <!-- Template Selection -->
+          <div class="cms-card">
+            <div class="card-header-bar">
+              <div>
+                <h3>Theme Layout Blueprint</h3>
+                <p class="card-sub">Select modular Hero layout from your library.</p>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>HERO SECTION TEMPLATE</label>
+              <select [(ngModel)]="slider.templateKey" class="form-control">
+                <option value="">-- Default System Slider --</option>
+                <option *ngFor="let t of heroTemplates" [value]="t.templateKey || t.variantCode">
+                  {{ t.name }} ({{ t.variantCode }})
+                </option>
+              </select>
+              <small class="form-hint" style="color: #64748b; font-size: 11px; margin-top: 6px; display: block;">
+                Directly renders this template markup &amp; styles. Manage blueprints in
+                <a routerLink="/content/console/templates" target="_blank" style="color: #0050e5; font-weight: 600;">My Templates</a>.
+              </small>
+            </div>
+          </div>
+
           <!-- Visibility & Toggles -->
           <div class="cms-card">
             <div class="card-header-bar">
@@ -285,6 +308,7 @@ export class SliderEditComponent implements OnInit {
     isVideo: false,
     disableVideoButton: false
   };
+  heroTemplates: any[] = [];
   loading = true;
   uploadingPrimary = false;
   uploadingSecondary = false;
@@ -304,6 +328,18 @@ export class SliderEditComponent implements OnInit {
     } else {
       this.loading = false;
     }
+    this.loadHeroTemplates();
+  }
+
+  loadHeroTemplates(): void {
+    this.api.get<any>('ContentApi/templates/installed').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.heroTemplates = res.data.filter((t: any) => t.categoryKey?.toLowerCase() === 'hero');
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadSlider(): void {

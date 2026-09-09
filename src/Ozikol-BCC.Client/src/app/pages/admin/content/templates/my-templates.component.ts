@@ -28,6 +28,17 @@ export interface InstalledTemplateItem {
   isCustomized?: boolean;
 }
 
+export interface CodeInjectionTag {
+  id: string;
+  name: string;
+  zone: 'head' | 'body_open' | 'footer';
+  tagType: string;
+  content: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAtUtc?: string;
+}
+
 @Component({
   selector: 'app-my-templates',
   standalone: true,
@@ -65,6 +76,15 @@ export interface InstalledTemplateItem {
           <div class="header-actions">
             <button
               type="button"
+              class="btn btn-add-custom-template"
+              (click)="openCreateCustomTemplateModal()"
+              title="Create a custom section template directly with HTML placeholders"
+            >
+              <span class="material-symbols-outlined btn-icon">add_circle</span>
+              <span>Create Custom Section</span>
+            </button>
+            <button
+              type="button"
               class="btn btn-full-demo-hero"
               (click)="openFullSiteDemoModal()"
               [disabled]="installedTemplates.length === 0"
@@ -81,8 +101,34 @@ export interface InstalledTemplateItem {
         </div>
       </div>
 
-      <!-- Active Theme Blueprint Pipeline Banner -->
-      <div class="theme-blueprint-card" *ngIf="installedTemplates.length > 0">
+      <!-- Main Navigation Tabs: Section Vault vs 3-Zone Injections -->
+      <div class="mytemplates-main-tabs">
+        <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'vault'" (click)="activeMainTab = 'vault'">
+          <span class="material-symbols-outlined">layers</span>
+          <span>Section Templates</span>
+          <span class="tab-count-pill">{{ installedTemplates.length }}</span>
+        </button>
+        <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'head'" (click)="activeMainTab = 'head'">
+          <span class="material-symbols-outlined">code</span>
+          <span>Header Tags (&lt;head&gt;)</span>
+          <span class="tab-count-pill">{{ headTags.length }}</span>
+        </button>
+        <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'body_open'" (click)="activeMainTab = 'body_open'">
+          <span class="material-symbols-outlined">transit_enterexit</span>
+          <span>Body Open (&lt;body&gt;)</span>
+          <span class="tab-count-pill">{{ bodyOpenTags.length }}</span>
+        </button>
+        <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'footer'" (click)="activeMainTab = 'footer'">
+          <span class="material-symbols-outlined">dock_to_bottom</span>
+          <span>Footer Scripts (&lt;/body&gt;)</span>
+          <span class="tab-count-pill">{{ footerTags.length }}</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Section Templates Vault Pane -->
+      <div class="vault-tab-pane" *ngIf="activeMainTab === 'vault'">
+        <!-- Active Theme Blueprint Pipeline Banner -->
+        <div class="theme-blueprint-card" *ngIf="installedTemplates.length > 0">
         <div class="blueprint-header">
           <div class="blueprint-title-wrap">
             <span class="material-symbols-outlined blueprint-icon">tune</span>
@@ -497,6 +543,101 @@ export interface InstalledTemplateItem {
           </a>
         </div>
       </div>
+      </div> <!-- End Tab 1: vault-tab-pane -->
+
+      <!-- ============================================== -->
+      <!-- TAB CONTENT: 3-ZONE CODE INJECTIONS MANAGER    -->
+      <!-- ============================================== -->
+      <div class="injections-zone-pane" *ngIf="activeMainTab !== 'vault'">
+        <div class="zone-banner-card">
+          <div class="zone-banner-left">
+            <div class="zone-icon-box">
+              <span class="material-symbols-outlined">{{ getZoneIcon(activeMainTab) }}</span>
+            </div>
+            <div>
+              <h2 class="zone-title">{{ getZoneTitle(activeMainTab) }}</h2>
+              <p class="zone-desc">{{ getZoneDescription(activeMainTab) }}</p>
+            </div>
+          </div>
+          <div class="zone-banner-actions">
+            <button type="button" class="btn btn-primary" (click)="openCreateTagModal(activeMainTab)">
+              <span class="material-symbols-outlined">add</span>
+              <span>Add {{ getZoneShortTitle(activeMainTab) }} Tag</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tags List Table -->
+        <div class="installed-table-card" *ngIf="getActiveZoneTags().length > 0">
+          <div class="table-responsive">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">Order</th>
+                  <th style="width: 240px;">Name</th>
+                  <th style="width: 170px;">Type</th>
+                  <th>Code Snippet Preview</th>
+                  <th style="width: 110px;">Status</th>
+                  <th style="text-align: right; width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tag of getActiveZoneTags()">
+                  <td>
+                    <span class="order-pill">#{{ tag.sortOrder }}</span>
+                  </td>
+                  <td>
+                    <strong class="tag-name-cell">{{ tag.name }}</strong>
+                  </td>
+                  <td>
+                    <span class="tag-type-badge">{{ getTagTypeLabel(tag.tagType) }}</span>
+                  </td>
+                  <td>
+                    <code class="code-preview-cell">{{ tag.content | slice:0:110 }}{{ tag.content.length > 110 ? '...' : '' }}</code>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn-status-toggle"
+                      [class.active]="tag.isActive"
+                      (click)="toggleTag(tag)"
+                      [title]="tag.isActive ? 'Click to disable tag' : 'Click to enable tag'"
+                    >
+                      <span class="material-symbols-outlined">{{ tag.isActive ? 'toggle_on' : 'toggle_off' }}</span>
+                      <span>{{ tag.isActive ? 'Active' : 'Disabled' }}</span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button type="button" class="btn-tbl-action preview" (click)="openEditTagModal(tag)" title="Edit Tag">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button type="button" class="btn-tbl-action delete" (click)="deleteTag(tag)" title="Delete Tag">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty Zone State -->
+        <div class="empty-installed-state" *ngIf="getActiveZoneTags().length === 0">
+          <div class="empty-icon-circle">
+            <span class="material-symbols-outlined">{{ getZoneIcon(activeMainTab) }}</span>
+          </div>
+          <h3 class="empty-title">No {{ getZoneShortTitle(activeMainTab) }} tags configured yet</h3>
+          <p class="empty-desc">Add stylesheets, tracking codes, or custom scripts into this zone. Items will be injected in ascending sort order.</p>
+          <div class="empty-actions">
+            <button type="button" class="btn btn-primary" (click)="openCreateTagModal(activeMainTab)">
+              <span class="material-symbols-outlined">add</span>
+              <span>Add First {{ getZoneShortTitle(activeMainTab) }} Tag</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ============================================== -->
@@ -570,11 +711,20 @@ export interface InstalledTemplateItem {
             <button
               type="button"
               class="viewport-btn"
+              [class.active]="previewViewport === 'tablet'"
+              (click)="previewViewport = 'tablet'"
+            >
+              <span class="material-symbols-outlined">tablet_mac</span>
+              <span>Tablet (768px)</span>
+            </button>
+            <button
+              type="button"
+              class="viewport-btn"
               [class.active]="previewViewport === 'mobile'"
               (click)="previewViewport = 'mobile'"
             >
               <span class="material-symbols-outlined">smartphone</span>
-              <span>Mobile</span>
+              <span>Mobile (375px)</span>
             </button>
           </div>
 
@@ -582,7 +732,7 @@ export interface InstalledTemplateItem {
         </div>
 
         <!-- Mode 1: Rendered Visual Canvas -->
-        <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'">
+        <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
           <div class="preview-canvas-wrapper" (click)="onPreviewCanvasClick($event)" [innerHTML]="safeSinglePreviewHtml"></div>
         </div>
 
@@ -706,11 +856,20 @@ export interface InstalledTemplateItem {
             <button
               type="button"
               class="viewport-btn"
+              [class.active]="fullDemoViewport === 'tablet'"
+              (click)="fullDemoViewport = 'tablet'"
+            >
+              <span class="material-symbols-outlined">tablet_mac</span>
+              <span>Tablet (768px)</span>
+            </button>
+            <button
+              type="button"
+              class="viewport-btn"
               [class.active]="fullDemoViewport === 'mobile'"
               (click)="fullDemoViewport = 'mobile'"
             >
               <span class="material-symbols-outlined">smartphone</span>
-              <span>Mobile</span>
+              <span>Mobile (375px)</span>
             </button>
           </div>
 
@@ -718,7 +877,7 @@ export interface InstalledTemplateItem {
         </div>
 
         <!-- Rendered Full Page Canvas -->
-        <div class="full-demo-body" [class.viewport-mobile]="fullDemoViewport === 'mobile'">
+        <div class="full-demo-body" [class.viewport-mobile]="fullDemoViewport === 'mobile'" [class.viewport-tablet]="fullDemoViewport === 'tablet'">
           <div class="full-demo-canvas-wrapper" (click)="onPreviewCanvasClick($event)" [innerHTML]="safeFullDemoHtml"></div>
         </div>
 
@@ -793,6 +952,188 @@ export interface InstalledTemplateItem {
           <button type="button" class="btn btn-primary" (click)="confirmAssignToPage()">
             <span class="material-symbols-outlined">check</span>
             <span>Insert Section into Page</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL 4: CREATE CUSTOM SECTION TEMPLATE        -->
+    <!-- ============================================== -->
+    <div class="modal-backdrop" *ngIf="showCustomTemplateModal" (click)="closeCustomTemplateModal()">
+      <div class="modal-card custom-tpl-modal-card" (click)="$event.stopPropagation()">
+        <div class="preview-modal-header">
+          <div class="preview-title-info">
+            <span class="material-symbols-outlined preview-modal-badge-icon">add_circle</span>
+            <div>
+              <h3 class="preview-modal-name">Create Custom Section Template</h3>
+              <span class="preview-modal-sub">Craft a standalone HTML section with CMS tokens. CSS is optional if using a global theme stylesheet.</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeCustomTemplateModal()">✕</button>
+        </div>
+
+        <div class="custom-tpl-modal-body">
+          <div class="custom-tpl-form-grid">
+            <div class="form-group">
+              <label class="form-lbl">TEMPLATE NAME *</label>
+              <input type="text" [(ngModel)]="customTemplateForm.name" class="form-ctrl" placeholder="e.g. 4-Column Service Grid" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-lbl">SECTION ROLE / CATEGORY *</label>
+              <select [(ngModel)]="customTemplateForm.categoryKey" class="form-ctrl" (change)="onCustomCategoryChange()">
+                <option value="menu">Navigation Menu (Navbar)</option>
+                <option value="hero">Hero / Showcase Banner</option>
+                <option value="body">Body Section / Features / About</option>
+                <option value="footer">Footer Bar</option>
+                <option value="newsletter">Newsletter / Lead Capture</option>
+                <option value="contact">Contact Us Block</option>
+                <option value="blog">Blog / News Layout</option>
+                <option value="ecommerce">E-Commerce Showcase</option>
+                <option value="faq">FAQ Section</option>
+                <option value="marquee">Marquee / Logo Ribbon</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-lbl">VARIANT CODE / KEY</label>
+              <input type="text" [(ngModel)]="customTemplateForm.variantCode" class="form-ctrl" placeholder="e.g. Body_ServiceGrid4 (auto-generated if blank)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-lbl">DESCRIPTION</label>
+              <input type="text" [(ngModel)]="customTemplateForm.description" class="form-ctrl" placeholder="Brief explanation of this section design..." />
+            </div>
+          </div>
+
+          <!-- Token Insertion Toolbar -->
+          <div class="placeholder-toolbar">
+            <span class="toolbar-hint"><span class="material-symbols-outlined icon-mini">toll</span> Click to insert CMS token:</span>
+            <div class="token-btn-group">
+              <button type="button" class="btn-token" (click)="insertNamedToken('Title')" [innerText]="'+ {{ Title }}'"></button>
+              <button type="button" class="btn-token" (click)="insertNamedToken('MiniTitle')" [innerText]="'+ {{ MiniTitle }}'"></button>
+              <button type="button" class="btn-token" (click)="insertNamedToken('Description')" [innerText]="'+ {{ Description }}'"></button>
+              <button type="button" class="btn-token" (click)="insertNamedToken('ImageUrl')" [innerText]="'+ {{ ImageUrl }}'"></button>
+              <button type="button" class="btn-token" (click)="insertNamedToken('ButtonText')" [innerText]="'+ {{ ButtonText }}'"></button>
+              <button type="button" class="btn-token" (click)="insertNamedToken('ButtonLink')" [innerText]="'+ {{ ButtonLink }}'"></button>
+              <button type="button" class="btn-token token-loop" (click)="insertNamedToken('PageSectionLists')">+ Card Loop (PageSectionLists)</button>
+            </div>
+          </div>
+
+          <!-- HTML Template Textarea -->
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-lbl">SEMANTIC HTML MARKUP *</label>
+            <textarea [(ngModel)]="customTemplateForm.htmlTemplate" class="form-ctrl code-editor" rows="8" placeholder="<section class=&quot;my-custom-section&quot;>\n  <h2>Heading</h2>\n  <p>Description text</p>\n</section>"></textarea>
+          </div>
+
+          <!-- Scoped CSS Styles Textarea -->
+          <div class="form-group" style="margin-top: 14px;">
+            <div class="lbl-with-note">
+              <label class="form-lbl">SCOPED CSS STYLES (OPTIONAL)</label>
+              <span class="note-pill">💡 Leave empty if you loaded your CSS via Header Tags!</span>
+            </div>
+            <textarea [(ngModel)]="customTemplateForm.cssStyles" class="form-ctrl code-editor" rows="5" placeholder="/* Optional section-scoped CSS */\n.my-custom-section {\n  padding: 60px 20px;\n}"></textarea>
+          </div>
+        </div>
+
+        <div class="preview-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeCustomTemplateModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="saveCustomTemplate()" [disabled]="savingCustomTemplate">
+            <span class="material-symbols-outlined">save</span>
+            <span>{{ savingCustomTemplate ? 'Saving...' : 'Save to Template Vault' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL 5: CODE INJECTION TAG (ADD / EDIT)       -->
+    <!-- ============================================== -->
+    <div class="modal-backdrop" *ngIf="showTagModal" (click)="closeTagModal()">
+      <div class="modal-card tag-modal-card" (click)="$event.stopPropagation()">
+        <div class="preview-modal-header">
+          <div class="preview-title-info">
+            <span class="material-symbols-outlined preview-modal-badge-icon">{{ getZoneIcon(tagFormZone) }}</span>
+            <div>
+              <h3 class="preview-modal-name">{{ isEditingTag ? 'Edit' : 'Add' }} {{ getZoneTitle(tagFormZone) }} Tag</h3>
+              <span class="preview-modal-sub">Target browser zone: <code>&lt;{{ getZoneHtmlTag(tagFormZone) }}&gt;</code> • Execution priority by Sort Order</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeTagModal()">✕</button>
+        </div>
+
+        <div class="custom-tpl-modal-body">
+          <div class="custom-tpl-form-grid">
+            <div class="form-group full-width">
+              <label class="form-lbl">TAG / SCRIPT NAME *</label>
+              <input type="text" [(ngModel)]="tagForm.name" class="form-ctrl" placeholder="e.g. Google Tag Manager Head, Bootstrap 5.3 CDN, Theme Init" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-lbl">TAG CATEGORY / TYPE *</label>
+              <select [(ngModel)]="tagForm.tagType" class="form-ctrl" (change)="onTagTypeChanged()">
+                <!-- Header Zone Types -->
+                <ng-container *ngIf="tagFormZone === 'head'">
+                  <option value="link_stylesheet">External Stylesheet (&lt;link rel="stylesheet"&gt;)</option>
+                  <option value="inline_css">Inline Custom CSS (&lt;style&gt;)</option>
+                  <option value="google_fonts">Google Fonts Link &amp; Preconnect</option>
+                  <option value="meta_tag">SEO / Social Meta Tag (&lt;meta&gt;)</option>
+                  <option value="script_url">External Head Script (&lt;script src="" async&gt;)</option>
+                  <option value="inline_script">Inline Head Script (&lt;script&gt;)</option>
+                  <option value="raw_html">Raw Custom HTML Snippet</option>
+                </ng-container>
+
+                <!-- Body Open Zone Types -->
+                <ng-container *ngIf="tagFormZone === 'body_open'">
+                  <option value="gtm_noscript">Google Tag Manager (&lt;noscript&gt; iframe)</option>
+                  <option value="pixel_noscript">Meta / Facebook Pixel (&lt;noscript&gt; img)</option>
+                  <option value="page_loader">Page Splash / Preloader Screen</option>
+                  <option value="svg_sprites">SVG Icon Sprite Sheet (&lt;symbol&gt;)</option>
+                  <option value="raw_html">Raw HTML / Code Snippet</option>
+                </ng-container>
+
+                <!-- Footer Zone Types -->
+                <ng-container *ngIf="tagFormZone === 'footer'">
+                  <option value="script_url">External Vendor JS (&lt;script src="" defer&gt;)</option>
+                  <option value="inline_script">Inline JavaScript (&lt;script&gt; DOMContentLoaded)</option>
+                  <option value="live_chat">Live Chat / Helpdesk Widget</option>
+                  <option value="raw_html">Raw HTML / Footer Snippet</option>
+                </ng-container>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-lbl">SORT ORDER (EXECUTION PRIORITY)</label>
+              <input type="number" [(ngModel)]="tagForm.sortOrder" class="form-ctrl" placeholder="10" />
+              <small class="form-hint">Lower numbers execute first (e.g. 1 before 10).</small>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="toggle-card">
+                <input type="checkbox" [(ngModel)]="tagForm.isActive" />
+                <span class="toggle-card-txt">
+                  <strong>Active / Enabled</strong>
+                  <small>Inject this snippet live into the document</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <div class="lbl-with-note">
+              <label class="form-lbl">TAG / SCRIPT CODE CONTENT *</label>
+              <span class="note-pill">⚡ Auto-generated sample boilerplate. Customize as needed!</span>
+            </div>
+            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="8" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
+          </div>
+        </div>
+
+        <div class="preview-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeTagModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="saveTag()" [disabled]="savingTag">
+            <span class="material-symbols-outlined">save</span>
+            <span>{{ savingTag ? 'Saving...' : (isEditingTag ? 'Update Tag' : 'Save & Inject Tag') }}</span>
           </button>
         </div>
       </div>
@@ -1737,6 +2078,12 @@ export interface InstalledTemplateItem {
       border-radius: 32px;
       border: 8px solid #334155;
     }
+    .preview-modal-body.viewport-tablet .preview-canvas-wrapper,
+    .full-demo-body.viewport-tablet .full-demo-canvas-wrapper {
+      max-width: 768px;
+      border-radius: 20px;
+      border: 6px solid #334155;
+    }
 
     /* Modal Code Inspection Tabs & Panes */
     .modal-view-mode-tabs {
@@ -1913,6 +2260,287 @@ export interface InstalledTemplateItem {
     .btn-primary:hover { background: #0041ba; }
     .btn-outline { background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; }
+
+    /* Main Tabs Bar */
+    .mytemplates-main-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      overflow-x: auto;
+    }
+    .main-tab-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .main-tab-item:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .main-tab-item.active {
+      background: #0f172a;
+      color: #38bdf8;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+    }
+    .tab-count-pill {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 7px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .main-tab-item:not(.active) .tab-count-pill {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .btn-add-custom-template {
+      background: #0f172a;
+      color: #38bdf8;
+      border: 1.5px solid #38bdf8;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-add-custom-template:hover {
+      background: #1e293b;
+      color: #7dd3fc;
+      border-color: #7dd3fc;
+      transform: translateY(-1px);
+    }
+
+    /* 3-Zone Injections Styles */
+    .zone-banner-card {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      color: #ffffff;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+    }
+    .zone-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .zone-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+    }
+    .zone-icon-box .material-symbols-outlined { font-size: 26px; }
+    .zone-title { font-size: 18px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
+    .zone-desc { font-size: 13px; color: #94a3b8; margin: 0; }
+
+    .order-pill {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+    .tag-name-cell { font-size: 13px; color: #0f172a; }
+    .tag-type-badge {
+      background: rgba(0, 80, 229, 0.08);
+      color: #0050e5;
+      border: 1px solid rgba(0, 80, 229, 0.2);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .code-preview-cell {
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 11px;
+      display: inline-block;
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-status-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-status-toggle.active {
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+    .btn-status-toggle .material-symbols-outlined { font-size: 16px; }
+
+    /* Modals & Forms */
+    .custom-tpl-modal-card, .tag-modal-card {
+      width: 100%;
+      max-width: 820px;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+    .custom-tpl-modal-body {
+      padding: 24px;
+      max-height: calc(85vh - 140px);
+      overflow-y: auto;
+    }
+    .custom-tpl-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-lbl {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .form-ctrl {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0f172a;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-ctrl:focus { border-color: #0050e5; }
+    .form-hint { font-size: 11px; color: #94a3b8; margin-top: 3px; display: block; }
+    .code-editor {
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      background: #0f172a;
+      color: #38bdf8;
+      tab-size: 2;
+    }
+    .code-editor:focus { border-color: #38bdf8; }
+
+    .placeholder-toolbar {
+      margin-top: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .toolbar-hint {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .token-btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .btn-token {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0050e5;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-token:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .btn-token.token-loop {
+      background: #fdf2f8;
+      border-color: #f472b6;
+      color: #db2777;
+    }
+    .btn-token.token-loop:hover {
+      background: #db2777;
+      color: #ffffff;
+    }
+
+    .lbl-with-note {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .note-pill {
+      font-size: 11px;
+      font-weight: 600;
+      color: #0284c7;
+      background: #f0f9ff;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid #bae6fd;
+    }
+
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .toggle-card input { width: 18px; height: 18px; cursor: pointer; }
+    .toggle-card-txt { display: flex; flex-direction: column; }
+    .toggle-card-txt strong { font-size: 12.5px; color: #0f172a; }
+    .toggle-card-txt small { font-size: 11px; color: #64748b; }
   `]
 })
 export class MyTemplatesComponent implements OnInit {
@@ -1934,16 +2562,71 @@ export class MyTemplatesComponent implements OnInit {
     { id: 'breadcrumb', name: 'Breadcrumbs', icon: 'linear_scale' }
   ];
 
+  // Active Main Tab
+  activeMainTab: 'vault' | 'head' | 'body_open' | 'footer' = 'vault';
+  headTags: CodeInjectionTag[] = [];
+  bodyOpenTags: CodeInjectionTag[] = [];
+  footerTags: CodeInjectionTag[] = [];
+  loadingTags: boolean = false;
+
+  // Custom Template Modal State
+  showCustomTemplateModal: boolean = false;
+  savingCustomTemplate: boolean = false;
+  customTemplateForm = {
+    name: '',
+    categoryKey: 'body',
+    variantCode: '',
+    description: '',
+    htmlTemplate: '',
+    cssStyles: '',
+    jsScript: ''
+  };
+
+  // Code Injection Modal State
+  showTagModal: boolean = false;
+  isEditingTag: boolean = false;
+  tagFormZone: 'head' | 'body_open' | 'footer' = 'head';
+  tagForm: CodeInjectionTag = {
+    id: '',
+    name: '',
+    zone: 'head',
+    tagType: 'link_stylesheet',
+    content: '',
+    sortOrder: 10,
+    isActive: true
+  };
+  savingTag: boolean = false;
+
+  private readonly tagBoilerplates: Record<string, string> = {
+    // Head zone
+    link_stylesheet: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />',
+    inline_css: '<style>\n  /* Custom CSS Overrides */\n  :root {\n    --theme-accent: #0050e5;\n  }\n</style>',
+    google_fonts: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">',
+    meta_tag: '<meta name="keywords" content="sovereign cloud, enterprise bcc, ozikol" />\n<meta property="og:type" content="website" />',
+    script_url: '<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" async></script>',
+    inline_script: '<script>\n  // Google Tag Manager / Analytics Head Snippet\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n</script>',
+    // Body open zone
+    gtm_noscript: '<!-- Google Tag Manager (noscript) -->\n<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"\nheight="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n<!-- End Google Tag Manager (noscript) -->',
+    pixel_noscript: '<!-- Meta Pixel (noscript) -->\n<noscript><img height="1" width="1" style="display:none"\nsrc="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>',
+    page_loader: '<div id="oz-site-preloader" style="position:fixed;inset:0;background:#0f172a;z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s;">\n  <div style="width:40px;height:40px;border:3px solid rgba(56,189,248,0.2);border-top-color:#38bdf8;border-radius:50%;animation:ozSpin 0.8s linear infinite;"></div>\n</div>\n<script>window.addEventListener(\'load\',function(){var p=document.getElementById(\'oz-site-preloader\');if(p){p.style.opacity=\'0\';setTimeout(function(){p.remove();},500);}});</script>',
+    svg_sprites: '<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">\n  <symbol id="icon-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>\n</svg>',
+    // Footer zone
+    footer_script_url: '<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>',
+    footer_inline_script: '<script>\n  document.addEventListener(\'DOMContentLoaded\', function() {\n    // Initialize theme animations & carousels\n    console.log(\'Theme scripts initialized successfully.\');\n  });\n</script>',
+    live_chat: '<!-- Live Chat Widget -->\n<script>\n  window.$ozikolChat = { tenantId: \'workspace-default\' };\n</script>',
+    raw_html: '<!-- Custom Snippet -->\n'
+  };
+
   // Single Preview Modal
   showSinglePreviewModal: boolean = false;
   activePreviewItem: InstalledTemplateItem | null = null;
-  previewViewport: 'desktop' | 'mobile' = 'desktop';
+  previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   previewModalTab: 'preview' | 'html' | 'css' | 'js' = 'preview';
   safeSinglePreviewHtml: SafeHtml = '';
 
   // Full-Site Demo Modal
   showFullSiteDemoModal: boolean = false;
-  fullDemoViewport: 'desktop' | 'mobile' = 'desktop';
+  fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeFullDemoHtml: SafeHtml = '';
 
   // Assign to Page Modal
@@ -1973,11 +2656,329 @@ export class MyTemplatesComponent implements OnInit {
     const savedView = localStorage.getItem('oz_templates_view_mode') as 'grid' | 'table';
     if (savedView) this.viewMode = savedView;
     this.loadInstalledTemplates();
+    this.loadAllCodeInjections();
   }
 
   setViewMode(mode: 'grid' | 'table'): void {
     this.viewMode = mode;
     localStorage.setItem('oz_templates_view_mode', mode);
+  }
+
+  // ==========================================
+  // CODE INJECTION ZONE HELPERS & CRUD
+  // ==========================================
+  getZoneIcon(zone: string): string {
+    switch (zone) {
+      case 'head': return 'code';
+      case 'body_open': return 'vertical_align_top';
+      case 'footer': return 'dock_to_bottom';
+      default: return 'code';
+    }
+  }
+
+  getZoneTitle(zone: string): string {
+    switch (zone) {
+      case 'head': return 'Header (<head>)';
+      case 'body_open': return 'Body Open (<body>)';
+      case 'footer': return 'Footer (</body>)';
+      default: return 'Code Injection';
+    }
+  }
+
+  getZoneShortTitle(zone: string): string {
+    switch (zone) {
+      case 'head': return 'Header';
+      case 'body_open': return 'Body Open';
+      case 'footer': return 'Footer';
+      default: return 'Tag';
+    }
+  }
+
+  getZoneHtmlTag(zone: string): string {
+    switch (zone) {
+      case 'head': return 'head';
+      case 'body_open': return 'body - immediately after opening';
+      case 'footer': return 'body - before closing';
+      default: return 'head';
+    }
+  }
+
+  getZoneDescription(zone: string): string {
+    switch (zone) {
+      case 'head': return 'Injected inside document <head>. Ideal for external stylesheets, web fonts, favicon links, and SEO meta tags.';
+      case 'body_open': return 'Injected immediately after the opening <body> tag. Essential for GTM noscript fallbacks, Facebook Pixel noscript, and site loaders.';
+      case 'footer': return 'Injected just prior to the closing </body> tag. Perfect for vendor JavaScript bundles, analytics trackers, and live chat widgets.';
+      default: return '';
+    }
+  }
+
+  getActiveZoneTags(): CodeInjectionTag[] {
+    if (this.activeMainTab === 'head') return this.headTags;
+    if (this.activeMainTab === 'body_open') return this.bodyOpenTags;
+    if (this.activeMainTab === 'footer') return this.footerTags;
+    return [];
+  }
+
+  getTagTypeLabel(tagType: string): string {
+    const labels: Record<string, string> = {
+      link_stylesheet: 'CSS Stylesheet Link',
+      inline_css: 'Inline CSS Style',
+      google_fonts: 'Google Fonts',
+      meta_tag: 'Meta Tag',
+      script_url: 'External Script',
+      inline_script: 'Inline Script',
+      gtm_noscript: 'GTM (noscript)',
+      pixel_noscript: 'Pixel (noscript)',
+      page_loader: 'Page Preloader',
+      svg_sprites: 'SVG Sprite Sheet',
+      live_chat: 'Live Chat Widget',
+      raw_html: 'Raw Snippet'
+    };
+    return labels[tagType] || tagType;
+  }
+
+  loadAllCodeInjections(): void {
+    this.loadingTags = true;
+    const cached = localStorage.getItem('oz_code_injections_cache');
+    if (cached) {
+      try {
+        const parsed: CodeInjectionTag[] = JSON.parse(cached);
+        this.headTags = parsed.filter(t => t.zone === 'head').sort((a, b) => a.sortOrder - b.sortOrder);
+        this.bodyOpenTags = parsed.filter(t => t.zone === 'body_open').sort((a, b) => a.sortOrder - b.sortOrder);
+        this.footerTags = parsed.filter(t => t.zone === 'footer').sort((a, b) => a.sortOrder - b.sortOrder);
+      } catch (e) {}
+    }
+
+    this.api.get<any>('ContentApi/code-injections').subscribe({
+      next: (res) => {
+        this.loadingTags = false;
+        if (res?.data && Array.isArray(res.data)) {
+          const tags: CodeInjectionTag[] = res.data;
+          this.headTags = tags.filter(t => t.zone === 'head').sort((a, b) => a.sortOrder - b.sortOrder);
+          this.bodyOpenTags = tags.filter(t => t.zone === 'body_open').sort((a, b) => a.sortOrder - b.sortOrder);
+          this.footerTags = tags.filter(t => t.zone === 'footer').sort((a, b) => a.sortOrder - b.sortOrder);
+          localStorage.setItem('oz_code_injections_cache', JSON.stringify(tags));
+        }
+      },
+      error: () => {
+        this.loadingTags = false;
+      }
+    });
+  }
+
+  openCreateTagModal(zone?: 'head' | 'body_open' | 'footer' | string): void {
+    this.isEditingTag = false;
+    const targetZone: 'head' | 'body_open' | 'footer' =
+      (zone === 'head' || zone === 'body_open' || zone === 'footer')
+        ? zone
+        : (this.activeMainTab === 'vault' ? 'head' : this.activeMainTab);
+
+    let defaultType = 'link_stylesheet';
+    if (targetZone === 'body_open') defaultType = 'gtm_noscript';
+    if (targetZone === 'footer') defaultType = 'script_url';
+
+    const currentCount = (targetZone === 'head' ? this.headTags : targetZone === 'body_open' ? this.bodyOpenTags : this.footerTags).length;
+
+    this.tagFormZone = targetZone;
+    this.tagForm = {
+      id: '',
+      name: '',
+      zone: targetZone,
+      tagType: defaultType,
+      content: this.tagBoilerplates[defaultType] || '',
+      sortOrder: (currentCount + 1) * 10,
+      isActive: true
+    };
+    this.showTagModal = true;
+  }
+
+  openEditTagModal(tag: CodeInjectionTag): void {
+    this.isEditingTag = true;
+    this.tagFormZone = tag.zone;
+    this.tagForm = { ...tag };
+    this.showTagModal = true;
+  }
+
+  closeTagModal(): void {
+    this.showTagModal = false;
+  }
+
+  onTagTypeChanged(): void {
+    if (this.tagBoilerplates[this.tagForm.tagType]) {
+      this.tagForm.content = this.tagBoilerplates[this.tagForm.tagType];
+    }
+  }
+
+  saveTag(): void {
+    if (!this.tagForm.name?.trim() || !this.tagForm.content?.trim()) {
+      this.toast.error('Please enter a tag name and snippet content.');
+      return;
+    }
+
+    this.savingTag = true;
+    this.tagForm.zone = this.tagFormZone;
+
+    if (this.isEditingTag) {
+      this.api.put<any>(`ContentApi/code-injections/${this.tagForm.id}`, this.tagForm).subscribe({
+        next: () => {
+          this.savingTag = false;
+          this.toast.success(`Tag '${this.tagForm.name}' updated.`);
+          this.closeTagModal();
+          this.loadAllCodeInjections();
+        },
+        error: () => {
+          this.savingTag = false;
+          this.toast.error('Failed to update tag. Please check your network.');
+        }
+      });
+    } else {
+      this.api.post<any>('ContentApi/code-injections', this.tagForm).subscribe({
+        next: () => {
+          this.savingTag = false;
+          this.toast.success(`Tag '${this.tagForm.name}' injected into ${this.getZoneShortTitle(this.tagFormZone)}.`);
+          this.closeTagModal();
+          this.loadAllCodeInjections();
+        },
+        error: () => {
+          this.savingTag = false;
+          this.toast.error('Failed to save tag. Please check your network.');
+        }
+      });
+    }
+  }
+
+  toggleTag(tag: CodeInjectionTag): void {
+    tag.isActive = !tag.isActive;
+    this.api.post<any>(`ContentApi/code-injections/${tag.id}/toggle`, {}).subscribe({
+      next: () => {
+        this.toast.success(`Tag '${tag.name}' is now ${tag.isActive ? 'Active' : 'Disabled'}.`);
+        this.loadAllCodeInjections();
+      },
+      error: () => {
+        tag.isActive = !tag.isActive;
+        this.toast.error('Failed to toggle tag status.');
+      }
+    });
+  }
+
+  deleteTag(tag: CodeInjectionTag): void {
+    if (!confirm(`Are you sure you want to remove tag '${tag.name}'?`)) return;
+
+    this.api.delete<any>(`ContentApi/code-injections/${tag.id}`).subscribe({
+      next: () => {
+        this.toast.success(`Tag '${tag.name}' deleted.`);
+        this.loadAllCodeInjections();
+      },
+      error: () => {
+        this.toast.error('Failed to delete tag.');
+      }
+    });
+  }
+
+  // ==========================================
+  // CUSTOM SECTION TEMPLATE BUILDER METHODS
+  // ==========================================
+  openCreateCustomTemplateModal(): void {
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    this.customTemplateForm = {
+      name: '',
+      categoryKey: 'body',
+      variantCode: `Body_Custom_${randomSuffix}`,
+      description: '',
+      htmlTemplate: `<section class="oz-custom-section">\n  <div class="oz-container">\n    <h2>{{ Title }}</h2>\n    <p>{{ Description }}</p>\n  </div>\n</section>`,
+      cssStyles: `/* Optional Scoped CSS (Leave blank if styling via Header Tags) */\n.oz-custom-section {\n  padding: 60px 24px;\n  background: #f8fafc;\n  font-family: Inter, sans-serif;\n}`,
+      jsScript: ''
+    };
+    this.showCustomTemplateModal = true;
+  }
+
+  closeCustomTemplateModal(): void {
+    this.showCustomTemplateModal = false;
+  }
+
+  onCustomCategoryChange(): void {
+    const cat = this.customTemplateForm.categoryKey || 'body';
+    const prefixMap: Record<string, string> = {
+      menu: 'Menu_Custom',
+      hero: 'Hero_Custom',
+      body: 'Body_Custom',
+      footer: 'Footer_Custom',
+      newsletter: 'Newsletter_Custom',
+      contact: 'Contact_Custom',
+      blog: 'Blog_Custom',
+      ecommerce: 'Ecom_Custom',
+      faq: 'Faq_Custom',
+      marquee: 'Marquee_Custom'
+    };
+    const pfx = prefixMap[cat] || 'Section_Custom';
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    this.customTemplateForm.variantCode = `${pfx}_${randomSuffix}`;
+  }
+
+  insertPlaceholder(token: string): void {
+    this.customTemplateForm.htmlTemplate = (this.customTemplateForm.htmlTemplate || '') + '\n' + token;
+    this.toast.info(`Inserted token: ${token.split('\n')[0]}`);
+  }
+
+  insertNamedToken(tokenName: string): void {
+    let token = `{{ ${tokenName} }}`;
+    if (tokenName === 'PageSectionLists') {
+      token = '{{#each PageSectionLists}}\n  <div class="item">\n    <h4>{{ Title }}</h4>\n    <p>{{ Description }}</p>\n  </div>\n{{/each}}';
+    }
+    this.insertPlaceholder(token);
+  }
+
+  saveCustomTemplate(): void {
+    if (!this.customTemplateForm.name?.trim()) {
+      this.toast.error('Please enter a template name.');
+      return;
+    }
+    if (!this.customTemplateForm.htmlTemplate?.trim()) {
+      this.toast.error('Please provide the HTML markup for this section.');
+      return;
+    }
+    if (!this.customTemplateForm.variantCode?.trim()) {
+      this.onCustomCategoryChange();
+    }
+
+    this.savingCustomTemplate = true;
+
+    this.api.post<any>('ContentApi/templates/custom', this.customTemplateForm).subscribe({
+      next: (res) => {
+        this.savingCustomTemplate = false;
+        const newDbItem = res?.data;
+        const newTemplate: InstalledTemplateItem = {
+          id: this.customTemplateForm.variantCode,
+          dbId: newDbItem?.id,
+          name: this.customTemplateForm.name,
+          category: this.customTemplateForm.categoryKey,
+          variantCode: this.customTemplateForm.variantCode,
+          tag: 'custom',
+          badge: 'Custom',
+          description: this.customTemplateForm.description || 'Custom crafted section template',
+          thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          previewIcon: this.getCategoryIcon(this.customTemplateForm.categoryKey),
+          previewSubtitle: this.getCategoryName(this.customTemplateForm.categoryKey),
+          previewTitle: this.customTemplateForm.name,
+          previewBody: 'Custom section component',
+          htmlTemplate: this.customTemplateForm.htmlTemplate,
+          cssStyles: this.customTemplateForm.cssStyles,
+          jsScript: this.customTemplateForm.jsScript,
+          version: '1.0.0',
+          installedUtc: new Date().toISOString()
+        };
+
+        this.installedTemplates.unshift(newTemplate);
+        this.saveInstalledTemplates();
+        this.applyFilters();
+        this.closeCustomTemplateModal();
+        this.toast.success(`Custom template '${newTemplate.name}' created and added to your library!`);
+      },
+      error: () => {
+        this.savingCustomTemplate = false;
+        this.toast.error('Failed to create custom template. Please verify API connection.');
+      }
+    });
   }
 
   loadInstalledTemplates(): void {
