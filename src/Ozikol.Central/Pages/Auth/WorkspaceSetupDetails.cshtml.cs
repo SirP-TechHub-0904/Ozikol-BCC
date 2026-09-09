@@ -119,10 +119,8 @@ namespace Ozikol.Central.Pages.Auth
                 ProvisionedUtc = payload.ProvisionedUtc;
                 IsExpired = false;
 
-                // IMMEDIATELY EVICT/DESTROY TOKEN FROM CACHE TO PREVENT RE-VIEWING
-                _cache.Remove(cacheKey);
-
-                _logger.LogInformation("One-time workspace setup summary viewed and destroyed for [{WorkspaceSlug}]", WorkspaceSlug);
+                // Keep cache entry alive for the 15-minute provisioning window so browser refreshes do not prematurely lock out the user
+                _logger.LogInformation("Workspace setup summary viewed for [{WorkspaceSlug}]", WorkspaceSlug);
             }
             else
             {
