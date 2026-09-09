@@ -1,0 +1,131 @@
+@page "/creator/earnings"
+@model Ozikol.Central.Areas.Creator.Pages.Earnings.IndexModel
+@{
+    ViewData["Title"] = "Creator Royalties";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Template Royalties &amp; Revenue Share</h1>
+        <p class="admin-subtitle">Track your marketplace component adoptions, 70% revenue share splits, and withdraw cleared royalties.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/creator/profile/banking" class="btn-admin btn-admin-secondary">
+            <span>⚙️</span> Banking Settings
+        </a>
+        <a href="/creator/earnings/request-payout" class="btn-admin btn-admin-primary">
+            <span>💎</span> Request Payout
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Royalty Financial Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 44px; height: 44px; font-size: 20px;">💎</div>
+        <div class="stat-details">
+            <span class="stat-label">Available for Payout</span>
+            <span class="stat-value" style="font-size: 24px; color: #34d399;">$@Model.PendingBalance.ToString("N2")</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Min payout: $100.00</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 44px; height: 44px; font-size: 20px;">💰</div>
+        <div class="stat-details">
+            <span class="stat-label">Lifetime Earned</span>
+            <span class="stat-value" style="font-size: 24px;">$@Model.LifetimeEarned.ToString("N2")</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Gross creator earnings</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">🏦</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Disbursed</span>
+            <span class="stat-value" style="font-size: 24px; color: #93c5fd;">$@Model.DisbursedBalance.ToString("N2")</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Transferred to bank</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">📈</div>
+        <div class="stat-details">
+            <span class="stat-label">Creator Split</span>
+            <span class="stat-value" style="font-size: 24px; color: #c084fc;">70%</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Marketplace licensing share</span>
+        </div>
+    </div>
+</div>
+
+@* ── Template Performance Breakdown Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-card-border); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin: 0;">Template Monetization &amp; Royalties (@Model.TemplateRoyalties.Count)</h2>
+        @if (Model.PendingBalance >= 100m)
+        {
+            <a href="/creator/earnings/request-payout" class="btn-admin btn-admin-primary" style="padding: 4px 12px; font-size: 12px;">
+                Request Payout of $@Model.PendingBalance.ToString("N2") →
+            </a>
+        }
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 12px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Component Template</th>
+                    <th style="padding: 12px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Category</th>
+                    <th style="padding: 12px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Storefront Installs</th>
+                    <th style="padding: 12px 14px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Gross Sales</th>
+                    <th style="padding: 12px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Your 70% Royalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.TemplateRoyalties.Any())
+                {
+                    <tr>
+                        <td colspan="5" style="padding: 36px; text-align: center; color: var(--admin-text-muted); font-size: 13px;">
+                            No monetization events recorded yet. Publish your templates to begin generating installation royalties!
+                        </td>
+                    </tr>
+                }
+                @foreach (var row in Model.TemplateRoyalties)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                <a href="/creator/templates/details/@row.Id" style="color: var(--admin-text); text-decoration: none;">
+                                    @row.Name
+                                </a>
+                            </div>
+                            <div style="font-size: 11px; font-family: monospace; color: #93c5fd; margin-top: 2px;">
+                                @row.VariantCode
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+                                @row.Category
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center; font-weight: 600; color: var(--admin-text);">
+                            @row.InstallCount.ToString("N0")
+                        </td>
+                        <td style="padding: 14px 14px; text-align: right; font-size: 13px; color: var(--admin-text-muted);">
+                            $@row.GrossRevenue.ToString("N2")
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; font-size: 14px; font-weight: 700; color: #34d399;">
+                            +$@row.CreatorRoyalty.ToString("N2")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

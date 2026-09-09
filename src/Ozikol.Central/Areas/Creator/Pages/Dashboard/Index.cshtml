@@ -1,0 +1,152 @@
+@page "/creator/dashboard"
+@model Ozikol.Central.Areas.Creator.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Creator Studio Overview";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                ● @Model.Creator.Status Creator
+            </span>
+            <span style="font-family: monospace; font-size: 11px; color: #94a3b8;">
+                @Model.Creator.CreatorCode
+            </span>
+            @if (!string.IsNullOrEmpty(Model.Creator.StudioOrBrandName))
+            {
+                <span style="color: var(--admin-text-muted); font-size: 11px;">• @Model.Creator.StudioOrBrandName</span>
+            }
+        </div>
+        <h1 class="admin-title">Creator Studio: @Model.Creator.FullName</h1>
+        <p class="admin-subtitle">Author, preview, and monetize sovereign HTML/CSS component templates across the Ozikol enterprise network.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/creator/templates/create" class="btn-admin btn-admin-primary">
+            <span>✨</span> Submit New Template
+        </a>
+    </div>
+</div>
+
+@* ── Studio Metrics ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 44px; height: 44px; font-size: 20px;">🎨</div>
+        <div class="stat-details">
+            <span class="stat-label">Marketplace Templates</span>
+            <span class="stat-value" style="font-size: 24px;">@Model.TotalTemplatesCount</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">@Model.ActiveTemplatesCount published live</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 44px; height: 44px; font-size: 20px;">⚡</div>
+        <div class="stat-details">
+            <span class="stat-label">Tenant Installations</span>
+            <span class="stat-value" style="font-size: 24px; color: #34d399;">@Model.TotalInstallsCount.ToString("N0")</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Active storefront adoptions</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">💎</div>
+        <div class="stat-details">
+            <span class="stat-label">Accrued Royalties</span>
+            <span class="stat-value" style="font-size: 24px; color: #c084fc;">$@Model.RoyaltyBalance.ToString("N2")</span>
+            <a href="/creator/earnings" style="font-size: 11px; color: #93c5fd; text-decoration: none; margin-top: 4px; display: inline-block;">
+                Disbursement ledger →
+            </a>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px;">
+        <div class="stat-icon-wrapper" style="width: 44px; height: 44px; font-size: 20px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">🎯</div>
+        <div class="stat-details">
+            <span class="stat-label">Revenue Share</span>
+            <span class="stat-value" style="font-size: 24px; color: #93c5fd;">70%</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px;">Creator marketplace split</span>
+        </div>
+    </div>
+</div>
+
+@* ── Recent Templates List ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--admin-card-border); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin: 0;">Marketplace Templates Portfolio</h2>
+        <a href="/creator/templates" style="font-size: 12px; color: #c084fc; text-decoration: none;">View All Templates →</a>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 12px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Template Name &amp; Variant</th>
+                    <th style="padding: 12px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Category</th>
+                    <th style="padding: 12px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Version</th>
+                    <th style="padding: 12px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 12px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.RecentTemplates.Any())
+                {
+                    <tr>
+                        <td colspan="5" style="padding: 36px; text-align: center; color: var(--admin-text-muted); font-size: 13px;">
+                            You haven't authored any marketplace templates yet. Click "+ Submit New Template" to publish your first design!
+                        </td>
+                    </tr>
+                }
+                @foreach (var t in Model.RecentTemplates)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 38px; height: 38px; border-radius: 6px; background: @t.ThumbnailGradient; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+                                    🧩
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                        <a href="/creator/templates/details/@t.Id" style="color: var(--admin-text); text-decoration: none;">
+                                            @t.Name
+                                        </a>
+                                    </div>
+                                    <div style="font-size: 11px; font-family: monospace; color: #93c5fd; margin-top: 2px;">
+                                        Variant: @t.VariantCode
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+                                @(t.Category?.Name ?? t.CategoryKey)
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center; font-family: monospace; font-size: 12px; color: #94a3b8;">
+                            v@t.Version
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            @if (t.IsActive)
+                            {
+                                <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">● Live</span>
+                            }
+                            else
+                            {
+                                <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">○ Draft</span>
+                            }
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/creator/templates/preview/@t.Id" target="_blank" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Canvas ↗
+                            </a>
+                            <a href="/creator/templates/details/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Details
+                            </a>
+                            <a href="/creator/templates/edit/@t.Id" class="btn-admin btn-admin-primary" style="padding: 4px 10px; font-size: 12px;">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

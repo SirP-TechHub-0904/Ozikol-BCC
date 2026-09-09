@@ -1,0 +1,181 @@
+@page "/creator/templates"
+@model Ozikol.Central.Areas.Creator.Pages.Templates.IndexModel
+@{
+    ViewData["Title"] = "My Templates";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Authored Component Templates</h1>
+        <p class="admin-subtitle">Inspect, update, test on live canvas, and publish your UI blocks and page templates to the sovereign marketplace.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/creator/templates/create" class="btn-admin btn-admin-primary">
+            <span>✨</span> Submit New Template
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+@* ── Template Counters ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🧩</div>
+        <div class="stat-details">
+            <span class="stat-label">Total Templates</span>
+            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🟢</div>
+        <div class="stat-details">
+            <span class="stat-label">Published Live</span>
+            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.LiveCount</span>
+        </div>
+    </div>
+    <div class="stat-card" style="padding: 16px;">
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">📝</div>
+        <div class="stat-details">
+            <span class="stat-label">Unpublished Drafts</span>
+            <span class="stat-value" style="font-size: 22px; color: #94a3b8;">@Model.DraftCount</span>
+        </div>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search templates by name, variant, or description..." 
+                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="categoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Categories</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c" selected="@(Model.CategoryFilter == c ? "selected" : null)">@c</option>
+                }
+            </select>
+        </div>
+
+        <div style="min-width: 130px;">
+            <select name="statusFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <option value="">All Statuses</option>
+                <option value="Live" selected="@(Model.StatusFilter == "Live" ? "selected" : null)">Published Live</option>
+                <option value="Draft" selected="@(Model.StatusFilter == "Draft" ? "selected" : null)">Draft</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <a href="/creator/templates" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
+    </form>
+</div>
+
+@* ── Templates Table ── *@
+<div class="admin-card" style="padding: 0; overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--admin-card-border); background: rgba(255, 255, 255, 0.02);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Template Spec</th>
+                    <th style="padding: 14px 14px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Category</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Tag &amp; Badge</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Version</th>
+                    <th style="padding: 14px 14px; text-align: center; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Status</th>
+                    <th style="padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--admin-text-muted);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Templates.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--admin-text-muted);">
+                            No component templates match your active filters. Click "+ Submit New Template" to author a block.
+                        </td>
+                    </tr>
+                }
+                @foreach (var t in Model.Templates)
+                {
+                    <tr style="border-bottom: 1px solid var(--admin-card-border);">
+                        <td style="padding: 14px 20px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: @t.ThumbnailGradient; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                    🧩
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 14px;">
+                                        <a href="/creator/templates/details/@t.Id" style="color: var(--admin-text); text-decoration: none;">
+                                            @t.Name
+                                        </a>
+                                    </div>
+                                    <div style="font-size: 11px; font-family: monospace; color: #93c5fd; margin-top: 2px;">
+                                        @t.VariantCode
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 14px;">
+                            <span style="background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+                                @(t.Category?.Name ?? t.CategoryKey)
+                            </span>
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <span style="font-size: 11px; color: #94a3b8; background: rgba(255, 255, 255, 0.03); padding: 2px 6px; border-radius: 4px;">
+                                #@t.Tag
+                            </span>
+                            @if (!string.IsNullOrEmpty(t.Badge))
+                            {
+                                <span style="font-size: 11px; font-weight: 600; background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">
+                                    @t.Badge
+                                </span>
+                            }
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center; font-family: monospace; font-size: 12px; color: #cbd5e1;">
+                            v@t.Version
+                        </td>
+                        <td style="padding: 14px 14px; text-align: center;">
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@t.Id" style="display: inline;">
+                                @if (t.IsActive)
+                                {
+                                    <button type="submit" title="Click to unpublish to draft" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ● Live
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="submit" title="Click to publish live" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                        ○ Draft
+                                    </button>
+                                }
+                            </form>
+                        </td>
+                        <td style="padding: 14px 20px; text-align: right; white-space: nowrap;">
+                            <a href="/creator/templates/preview/@t.Id" target="_blank" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Canvas ↗
+                            </a>
+                            <a href="/creator/templates/details/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Details
+                            </a>
+                            <a href="/creator/templates/edit/@t.Id" class="btn-admin btn-admin-primary" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">
+                                Edit
+                            </a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@t.Id" style="display: inline;">
+                                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 12px;" onclick="return confirm('Delete template @t.Name?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
