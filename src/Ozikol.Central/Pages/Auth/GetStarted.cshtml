@@ -135,7 +135,7 @@
                         <label class="form-label" style="margin-bottom: 0;">@SharedLocalizer["Auth_GetStarted_Password"]</label>
                         <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">@SharedLocalizer["Auth_Login_ShowPassword"]</button>
                     </div>
-                    <input asp-for="Input.Password" type="password" id="regPassword" required placeholder="@SharedLocalizer["Auth_GetStarted_PasswordPlaceholder"]" oninput="updateStrength(this.value)" class="form-input" />
+                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="@SharedLocalizer["Auth_GetStarted_PasswordPlaceholder"]" oninput="updateStrength(this.value)" class="form-input" />
                     <div class="strength-meter">
                         <div id="strengthFill" class="strength-fill"></div>
                     </div>
@@ -342,6 +342,13 @@ async function handleOnboardingSubmit(e) {
         if (result.success) {
             const step4 = document.getElementById('step4');
             if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready! Launching portal...'; }
+
+            // Clear credentials from DOM immediately so Chromium credential manager does not prompt to save
+            const regPwd = document.getElementById('regPassword');
+            if (regPwd) {
+                regPwd.value = '';
+            }
+            form.reset();
 
             setTimeout(() => {
                 window.location.href = result.redirectUrl;
