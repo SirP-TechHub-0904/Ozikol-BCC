@@ -657,7 +657,7 @@ export interface CodeInjectionTag {
             </div>
           </div>
 
-          <!-- Mode Tabs: Preview, HTML, CSS, JS -->
+          <!-- Mode Tabs: Preview, Sample Content, HTML, CSS, JS -->
           <div class="modal-view-mode-tabs">
             <button
               type="button"
@@ -667,6 +667,15 @@ export interface CodeInjectionTag {
             >
               <span class="material-symbols-outlined">visibility</span>
               <span>Preview</span>
+            </button>
+            <button
+              type="button"
+              class="modal-mode-tab-btn"
+              [class.active]="previewModalTab === 'content'"
+              (click)="previewModalTab = 'content'"
+            >
+              <span class="material-symbols-outlined">edit_note</span>
+              <span>Sample Content</span>
             </button>
             <button
               type="button"
@@ -734,6 +743,87 @@ export interface CodeInjectionTag {
         <!-- Mode 1: Rendered Visual Canvas -->
         <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
           <div class="preview-canvas-wrapper" (click)="onPreviewCanvasClick($event)" [innerHTML]="safeSinglePreviewHtml"></div>
+        </div>
+
+        <!-- Mode: Interactive Sample Content Editor -->
+        <div *ngIf="previewModalTab === 'content'" class="content-editor-container">
+          <div class="content-editor-header">
+            <div class="content-editor-title-wrap">
+              <span class="material-symbols-outlined editor-head-icon">tune</span>
+              <div>
+                <h4 class="editor-head-title">Dynamic Preview Content Replacements</h4>
+                <p class="editor-head-sub">Type custom titles, descriptions, and list cards below. The preview updates instantly!</p>
+              </div>
+            </div>
+            <div class="content-editor-actions">
+              <button type="button" class="btn-reset-content" (click)="resetPreviewContent()">
+                <span class="material-symbols-outlined">restart_alt</span>
+                <span>Reset Defaults</span>
+              </button>
+              <button type="button" class="btn btn-primary" (click)="previewModalTab = 'preview'">
+                <span class="material-symbols-outlined">visibility</span>
+                <span>Return to Preview</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="content-editor-body">
+            <div class="custom-tpl-form-grid">
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Empowering Modern Organizations" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. CORE CAPABILITIES" />
+              </div>
+
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
+                <textarea [(ngModel)]="previewContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Overview narrative..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'PRIMARY IMAGE URL ({{ ImageUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; gap: 10px;">
+                  <div style="flex: 1;">
+                    <label class="form-lbl" [innerText]="'BUTTON TEXT ({{ ButtonText }})'"></label>
+                    <input type="text" [(ngModel)]="previewContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Get Started" />
+                  </div>
+                  <div style="flex: 1;">
+                    <label class="form-lbl" [innerText]="'BUTTON LINK ({{ ButtonLink }})'"></label>
+                    <input type="text" [(ngModel)]="previewContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="# or /page" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Repeatable Card Loop (PageSectionLists) -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl">REPEATABLE CARDS / SUB-ITEMS (PageSectionLists Loop)</label>
+                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add Card Item</button>
+                </div>
+
+                <div class="subitems-list">
+                  <div class="subitem-card-row" *ngFor="let item of previewContent.items; let i = index">
+                    <span class="subitem-badge">#{{ i + 1 }}</span>
+                    <div class="subitem-inputs">
+                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Card Title" />
+                      <input type="text" [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="Card Description" />
+                    </div>
+                    <button type="button" class="btn-del-subitem" (click)="removePreviewSubItem(i)" title="Remove item">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Mode 2: HTML Source Code -->
@@ -2541,6 +2631,132 @@ export interface CodeInjectionTag {
     .toggle-card-txt { display: flex; flex-direction: column; }
     .toggle-card-txt strong { font-size: 12.5px; color: #0f172a; }
     .toggle-card-txt small { font-size: 11px; color: #64748b; }
+
+    /* Interactive Sample Content Live Editor */
+    .content-editor-container {
+      background: #ffffff;
+      padding: 24px;
+      max-height: calc(85vh - 140px);
+      overflow-y: auto;
+    }
+    .content-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .content-editor-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .editor-head-icon {
+      font-size: 28px;
+      color: #0050e5;
+    }
+    .editor-head-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .editor-head-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+    .content-editor-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-reset-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-reset-content:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-add-subitem {
+      background: #eef2ff;
+      color: #4f46e5;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-add-subitem:hover {
+      background: #4f46e5;
+      color: #ffffff;
+    }
+    .subitems-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .subitem-card-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .subitem-badge {
+      font-size: 11px;
+      font-weight: 800;
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 4px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      font-family: monospace;
+    }
+    .subitem-inputs {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 10px;
+    }
+    @media (max-width: 650px) {
+      .subitem-inputs { grid-template-columns: 1fr; }
+    }
+    .subitem-title { font-weight: 700; }
+    .btn-del-subitem {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .btn-del-subitem:hover {
+      background: #fee2e2;
+    }
   `]
 })
 export class MyTemplatesComponent implements OnInit {
@@ -2621,8 +2837,23 @@ export class MyTemplatesComponent implements OnInit {
   showSinglePreviewModal: boolean = false;
   activePreviewItem: InstalledTemplateItem | null = null;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
-  previewModalTab: 'preview' | 'html' | 'css' | 'js' = 'preview';
+  previewModalTab: 'preview' | 'content' | 'html' | 'css' | 'js' = 'preview';
   safeSinglePreviewHtml: SafeHtml = '';
+
+  // Interactive Test / Sample Content Replacements
+  previewContent = {
+    title: 'Empowering Modern Organizations',
+    miniTitle: 'NEXT-GENERATION PLATFORM',
+    description: 'Streamline administrative workflows, automate financial governance, and deliver seamless digital experiences across sovereign systems.',
+    imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+    buttonText: 'Explore Platform Solutions →',
+    buttonLink: '#',
+    items: [
+      { title: 'Real-Time Sync', description: 'Instantaneous WebSocket state propagation across all connected devices with zero polling latency.' },
+      { title: 'Granular Governance', description: 'Fine-grained permission matrices, committee chair controls, and audit verification.' },
+      { title: 'Cloud Asset Vault', description: 'High-performance media streaming and document management for all organization tiers.' }
+    ]
+  };
 
   // Full-Site Demo Modal
   showFullSiteDemoModal: boolean = false;
@@ -3245,8 +3476,16 @@ export class MyTemplatesComponent implements OnInit {
     this.previewViewport = 'desktop';
     this.previewModalTab = 'preview';
 
-    const combined = `<style>${item.cssStyles}</style>\n${item.htmlTemplate}`;
-    this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
+    // Populate initial sample content from item if available
+    if (item.previewTitle) this.previewContent.title = item.previewTitle;
+    else if (item.name) this.previewContent.title = item.name;
+
+    if (item.previewBody) this.previewContent.description = item.previewBody;
+    else if (item.description) this.previewContent.description = item.description;
+
+    if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+
+    this.updateSinglePreviewHtml();
 
     let styleEl = document.getElementById('oz-template-single-preview-css') as HTMLStyleElement;
     if (!styleEl) {
@@ -3257,6 +3496,89 @@ export class MyTemplatesComponent implements OnInit {
     styleEl.textContent = item.cssStyles;
 
     this.showSinglePreviewModal = true;
+  }
+
+  updateSinglePreviewHtml(): void {
+    if (!this.activePreviewItem) return;
+    const hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, this.previewContent);
+    const combined = `<style>${this.activePreviewItem.cssStyles}</style>\n${hydrated}`;
+    this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
+  }
+
+  onPreviewContentChange(): void {
+    this.updateSinglePreviewHtml();
+  }
+
+  addPreviewSubItem(): void {
+    const nextIdx = this.previewContent.items.length + 1;
+    this.previewContent.items.push({
+      title: `Feature Pillar ${nextIdx}`,
+      description: 'Comprehensive capability designed to streamline leadership operations.'
+    });
+    this.onPreviewContentChange();
+    this.toast.success(`Added Card #${nextIdx} to preview list.`);
+  }
+
+  removePreviewSubItem(index: number): void {
+    if (this.previewContent.items.length <= 1) {
+      this.toast.warning('At least one item is recommended for loop preview.');
+      return;
+    }
+    this.previewContent.items.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  resetPreviewContent(): void {
+    this.previewContent = {
+      title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Empowering Modern Organizations',
+      miniTitle: this.activePreviewItem?.previewSubtitle?.toUpperCase() || 'CORE PLATFORM CAPABILITIES',
+      description: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Streamline administrative workflows, automate financial governance, and deliver seamless digital experiences.',
+      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      buttonText: 'Explore Platform Solutions →',
+      buttonLink: '#',
+      items: [
+        { title: 'Real-Time Sync', description: 'Instantaneous WebSocket state propagation across all connected devices.' },
+        { title: 'Zero-Trust Security', description: 'Fine-grained permission matrices, committee chair controls, and audit verification.' },
+        { title: 'Digital Asset Vault', description: 'High-performance media streaming and document management for all organization tiers.' }
+      ]
+    };
+    this.onPreviewContentChange();
+    this.toast.info('Sample content reset to defaults.');
+  }
+
+  hydrateTemplate(rawHtml: string, data?: any): string {
+    if (!rawHtml) return '';
+    const ctx = data || this.previewContent;
+
+    let output = rawHtml;
+
+    // 1. Loop over {{#each PageSectionLists}}...{{/each}}
+    const eachRegex = /\{\{#each\s+PageSectionLists\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(eachRegex, (_match, innerTemplate) => {
+      if (!ctx.items || !Array.isArray(ctx.items) || ctx.items.length === 0) {
+        return '';
+      }
+      return ctx.items.map((item: any, idx: number) => {
+        let renderedItem = innerTemplate;
+        renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
+        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || ctx.miniTitle || '');
+        renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || ctx.imageUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || ctx.buttonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || ctx.buttonLink || '#');
+        return renderedItem;
+      }).join('\n');
+    });
+
+    // 2. Scalar placeholders
+    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
+    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
+    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
+    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
+    output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+
+    return output;
   }
 
   copyCode(content: string, type: string): void {
@@ -3310,7 +3632,16 @@ export class MyTemplatesComponent implements OnInit {
 
     activeBlocks.forEach(b => {
       combinedStyles += `\n/* Block: ${b.name} (${b.variantCode}) */\n${b.cssStyles}\n`;
-      combinedHtml += `\n<!-- Section: ${b.name} (${b.category}) -->\n${b.htmlTemplate}\n`;
+      const hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, {
+        title: b.previewTitle || b.name,
+        miniTitle: b.previewSubtitle?.toUpperCase() || b.category.toUpperCase(),
+        description: b.previewBody || b.description,
+        imageUrl: this.previewContent.imageUrl,
+        buttonText: this.previewContent.buttonText,
+        buttonLink: this.previewContent.buttonLink,
+        items: this.previewContent.items
+      });
+      combinedHtml += `\n<!-- Section: ${b.name} (${b.category}) -->\n${hydratedBlockHtml}\n`;
     });
 
     this.safeFullDemoHtml = this.sanitizer.bypassSecurityTrustHtml(`<style>${combinedStyles}</style>\n${combinedHtml}`);
