@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -48,6 +48,7 @@ interface CategoryPreset {
     title: string;
     miniTitle: string;
     description: string;
+    fullDescription?: string;
     imageUrl: string;
     buttonText: string;
     buttonLink: string;
@@ -231,7 +232,14 @@ interface CategoryPreset {
                 class="token-chip chip-core"
                 (click)="insertTokenAtCursor('{{ Description }}')"
                 [innerText]="'+ {{ Description }}'"
-                title="Inserts narrative description token"
+                title="Inserts short narrative description token"
+              ></button>
+              <button
+                type="button"
+                class="token-chip chip-core chip-rich"
+                (click)="insertTokenAtCursor('{{ FullDescription }}')"
+                [innerText]="'+ {{ FullDescription }}'"
+                title="Inserts rich text full HTML description token"
               ></button>
               <button
                 type="button"
@@ -471,6 +479,67 @@ interface CategoryPreset {
                 placeholder="https://..."
               />
             </div>
+          </div>
+
+          <!-- Full Description (Summernote WYSIWYG Rich Text) -->
+          <div class="summernote-wrapper-block">
+            <div class="field-label-row">
+              <label class="field-label">
+                <span>Full Description (Summernote Rich Text HTML)</span>
+                <code [innerText]="'{{ FullDescription }}'"></code>
+              </label>
+              <span class="rich-hint-tag">WYSIWYG Rich Editor</span>
+            </div>
+
+            <!-- Summernote Style Toolbar -->
+            <div class="summernote-toolbar">
+              <div class="sn-btn-group">
+                <button type="button" class="sn-btn" (click)="execFormat('bold')" title="Bold"><b>B</b></button>
+                <button type="button" class="sn-btn" (click)="execFormat('italic')" title="Italic"><i>I</i></button>
+                <button type="button" class="sn-btn" (click)="execFormat('underline')" title="Underline"><u>U</u></button>
+                <button type="button" class="sn-btn" (click)="execFormat('strikeThrough')" title="Strikethrough"><s>S</s></button>
+              </div>
+              <span class="sn-sep"></span>
+              <div class="sn-btn-group">
+                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h2>')" title="Heading 2">H2</button>
+                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h3>')" title="Heading 3">H3</button>
+                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<p>')" title="Paragraph">¶</button>
+                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<blockquote>')" title="Quote">❝</button>
+              </div>
+              <span class="sn-sep"></span>
+              <div class="sn-btn-group">
+                <button type="button" class="sn-btn" (click)="execFormat('insertUnorderedList')" title="Bullet List">• List</button>
+                <button type="button" class="sn-btn" (click)="execFormat('insertOrderedList')" title="Numbered List">1. List</button>
+                <button type="button" class="sn-btn" (click)="insertRichLink()" title="Hyperlink">🔗 Link</button>
+                <button type="button" class="sn-btn" (click)="execFormat('removeFormat')" title="Clear Formatting">🧹</button>
+              </div>
+              <span class="sn-sep"></span>
+              <div class="sn-btn-group" style="margin-left: auto;">
+                <button type="button" class="sn-btn sn-toggle-mode" (click)="toggleRichHtmlView()">
+                  <span class="material-symbols-outlined icon-small">code</span>
+                  <span [innerText]="showRawHtmlEditor ? 'Visual Editor' : '<> HTML Source'"></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Summernote Visual Contenteditable Box -->
+            <div
+              #richTextEditor
+              *ngIf="!showRawHtmlEditor"
+              contenteditable="true"
+              class="summernote-editable-box"
+              (input)="onRichTextInput($event)"
+            ></div>
+
+            <!-- Summernote Raw HTML Source View -->
+            <textarea
+              *ngIf="showRawHtmlEditor"
+              [(ngModel)]="sampleContent.fullDescription"
+              (ngModelChange)="onRawHtmlChange()"
+              class="form-control font-mono summernote-code-box"
+              rows="5"
+              placeholder="<p>Type raw HTML markup here...</p>"
+            ></textarea>
           </div>
 
           <!-- Category Specific Fields -->
@@ -1129,6 +1198,121 @@ interface CategoryPreset {
     }
     .inspector-input:focus { border-color: #0050e5; }
 
+    /* Summernote Rich Text Editor */
+    .summernote-wrapper-block {
+      margin-bottom: 18px;
+    }
+    .field-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .rich-hint-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0050e5;
+      background: #eef2ff;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .summernote-toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 6px 10px;
+    }
+    .sn-btn-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .sn-btn {
+      height: 28px;
+      min-width: 28px;
+      padding: 0 6px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .sn-btn:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0050e5;
+    }
+    .sn-sep {
+      width: 1px;
+      height: 18px;
+      background: #cbd5e1;
+      margin: 0 4px;
+    }
+    .sn-toggle-mode {
+      font-size: 11.5px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      padding: 0 8px;
+      gap: 4px;
+    }
+    .icon-small { font-size: 14px; }
+    .summernote-editable-box {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0 0 8px 8px;
+      padding: 14px 16px;
+      background: #ffffff;
+      min-height: 140px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #0f172a;
+      outline: none;
+    }
+    .summernote-editable-box:focus {
+      border-color: #0050e5;
+    }
+    .summernote-editable-box h2 { font-size: 18px; font-weight: 800; margin: 8px 0; }
+    .summernote-editable-box h3 { font-size: 15px; font-weight: 700; margin: 6px 0; }
+    .summernote-editable-box p { margin: 0 0 8px 0; }
+    .summernote-editable-box blockquote {
+      border-left: 3px solid #0050e5;
+      padding-left: 12px;
+      color: #64748b;
+      margin: 8px 0;
+      font-style: italic;
+    }
+    .summernote-editable-box ul, .summernote-editable-box ol {
+      padding-left: 20px;
+      margin: 4px 0 8px 0;
+    }
+    .summernote-code-box {
+      border-radius: 0 0 8px 8px;
+      border-top: none;
+      min-height: 140px;
+    }
+    .chip-rich {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+    .chip-rich:hover {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
     /* Repeater Cards */
     .repeater-subitems-block {
       border-top: 1.5px dashed #e2e8f0;
@@ -1353,10 +1537,11 @@ interface CategoryPreset {
     }
   `]
 })
-export class CreateCustomTemplateComponent implements OnInit {
+export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   @ViewChild('htmlEditor') htmlEditorRef?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('cssEditor') cssEditorRef?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('jsEditor') jsEditorRef?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('richTextEditor') richTextEditorRef?: ElementRef<HTMLDivElement>;
 
   // Form Metadata
   templateName: string = '';
@@ -1377,12 +1562,14 @@ export class CreateCustomTemplateComponent implements OnInit {
   showPreviewModal: boolean = false;
   previewViewport: 'desktop' | 'mobile' = 'desktop';
   safeHydratedHtml: SafeHtml = '';
+  showRawHtmlEditor: boolean = false;
 
   // Sample Content Inspector State
   sampleContent: any = {
     title: '',
     miniTitle: '',
     description: '',
+    fullDescription: '',
     imageUrl: '',
     buttonText: '',
     buttonLink: '',
@@ -1597,6 +1784,7 @@ export class CreateCustomTemplateComponent implements OnInit {
         title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
         miniTitle: 'ENTERPRISE CLOUD PLATFORM',
         description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
+        fullDescription: '<p>Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with <strong>sub-millisecond resilience</strong>.</p>',
         imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&auto=format&fit=crop&q=80',
         buttonText: 'Get Started Free',
         buttonLink: '#signup',
@@ -1704,6 +1892,7 @@ export class CreateCustomTemplateComponent implements OnInit {
         title: 'Engineered For Enterprise Scale And Sub-Millisecond Speed',
         miniTitle: 'PLATFORM CAPABILITIES',
         description: 'Unified toolchain built from the ground up to solve distributed bottlenecks and enhance organizational productivity.',
+        fullDescription: '<p>Discover how our <strong>next-generation architecture</strong> redefines high-throughput workloads with sub-millisecond latency and zero trust compliance.</p><ul><li>Automatic edge node caching</li><li>Cryptographic integrity verification</li><li>Integrated CI/CD with instant rollbacks</li></ul>',
         imageUrl: '',
         buttonText: '',
         buttonLink: '',
@@ -1712,7 +1901,10 @@ export class CreateCustomTemplateComponent implements OnInit {
           { title: 'Zero Trust Security', description: 'Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every call.', icon: 'verified_user' },
           { title: 'Automated CI/CD Workflows', description: 'Push to git and deploy production containers in seconds with automated rollbacks.', icon: 'rocket_launch' }
         ]
-      }
+      },
+      specificTokens: [
+        { label: 'Full Description (Rich Text)', token: '{{ FullDescription }}' }
+      ]
     },
     {
       id: 'marquee',
@@ -2045,6 +2237,70 @@ export class CreateCustomTemplateComponent implements OnInit {
     this.onCategoryChange(false);
   }
 
+  ngAfterViewInit(): void {
+    setTimeout(() => this.syncRichEditorFromModel(), 0);
+  }
+
+  /**
+   * Executes formatting commands (Bold, Italic, Lists, Headings) on the Summernote editor.
+   */
+  execFormat(command: string, value: string = ''): void {
+    if (this.showRawHtmlEditor) return;
+    document.execCommand(command, false, value);
+    const el = this.richTextEditorRef?.nativeElement;
+    if (el) {
+      this.sampleContent.fullDescription = el.innerHTML;
+      this.updatePreviewSimulation();
+    }
+  }
+
+  /**
+   * Prompts for a hyperlink URL and applies it to the active text selection.
+   */
+  insertRichLink(): void {
+    if (this.showRawHtmlEditor) return;
+    const url = prompt('Enter destination URL (e.g. https://...):', 'https://');
+    if (url) {
+      this.execFormat('createLink', url);
+    }
+  }
+
+  /**
+   * Triggered on input inside the Summernote visual contenteditable box.
+   */
+  onRichTextInput(event: any): void {
+    this.sampleContent.fullDescription = event?.target?.innerHTML || '';
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Triggered when editing in raw HTML source textarea mode.
+   */
+  onRawHtmlChange(): void {
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Toggles between Summernote visual WYSIWYG editor and raw HTML source view.
+   */
+  toggleRichHtmlView(): void {
+    this.showRawHtmlEditor = !this.showRawHtmlEditor;
+    if (!this.showRawHtmlEditor) {
+      setTimeout(() => {
+        this.syncRichEditorFromModel();
+      }, 0);
+    }
+  }
+
+  /**
+   * Synchronizes the DOM contenteditable box with sampleContent.fullDescription.
+   */
+  syncRichEditorFromModel(): void {
+    if (this.richTextEditorRef?.nativeElement && !this.showRawHtmlEditor) {
+      this.richTextEditorRef.nativeElement.innerHTML = this.sampleContent.fullDescription || '';
+    }
+  }
+
   /**
    * Resolves clean tenant key (e.g. "acme-global") and domain initials (e.g. "AG")
    * without unwanted .localhost or port strings.
@@ -2147,6 +2403,7 @@ export class CreateCustomTemplateComponent implements OnInit {
     this.sampleContent = JSON.parse(JSON.stringify(preset.sampleContent));
 
     this.updatePreviewSimulation();
+    setTimeout(() => this.syncRichEditorFromModel(), 0);
 
     if (isUserAction) {
       this.toast.info(`Loaded ${preset.name} boilerplate markup & sample content.`);
@@ -2205,6 +2462,7 @@ export class CreateCustomTemplateComponent implements OnInit {
   resetSampleContentToCategoryDefaults(): void {
     this.sampleContent = JSON.parse(JSON.stringify(this.currentPreset.sampleContent));
     this.updatePreviewSimulation();
+    setTimeout(() => this.syncRichEditorFromModel(), 0);
     this.toast.info('Sample content reset to category presets.');
   }
 
@@ -2275,6 +2533,7 @@ export class CreateCustomTemplateComponent implements OnInit {
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
     output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
+    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
     output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
