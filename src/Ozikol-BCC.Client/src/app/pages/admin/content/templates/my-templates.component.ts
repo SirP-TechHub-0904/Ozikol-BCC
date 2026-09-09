@@ -26,6 +26,7 @@ export interface InstalledTemplateItem {
   version: string;
   installedUtc: string;
   isCustomized?: boolean;
+  defaultContentJson?: string;
 }
 
 export interface CodeInjectionTag {
@@ -1008,10 +1009,12 @@ export interface CodeInjectionTag {
             <label class="form-label"><strong>Select Target Page:</strong></label>
             <select class="form-control" [(ngModel)]="targetPageSlug">
               <option value="home">Home Page ( / )</option>
-              <option value="about">About Us ( /about )</option>
-              <option value="services">Services & Solutions ( /services )</option>
-              <option value="contact">Contact Us ( /contact )</option>
-              <option value="custom">Create New Page...</option>
+              <ng-container *ngFor="let p of availablePages">
+                <option *ngIf="(p.directUrl || p.slug) !== 'home'" [value]="p.directUrl || p.slug || p.id">{{ p.title }} ( /{{ p.directUrl || p.slug }} )</option>
+              </ng-container>
+              <option value="about" *ngIf="availablePages.length === 0">About Us ( /about )</option>
+              <option value="services" *ngIf="availablePages.length === 0">Services & Solutions ( /services )</option>
+              <option value="contact" *ngIf="availablePages.length === 0">Contact Us ( /contact )</option>
             </select>
           </div>
 
@@ -2865,6 +2868,8 @@ export class MyTemplatesComponent implements OnInit {
   selectedAssignItem: InstalledTemplateItem | null = null;
   targetPageSlug: string = 'home';
   insertPosition: 'top' | 'bottom' = 'bottom';
+  availablePages: any[] = [];
+  loadingPages: boolean = false;
 
   // Active Singletons state (menu, hero, newsletter, footer, blog, breadcrumb = 1 active each; body, contact = additive)
   activeMenuId: string = 'menu-01';
@@ -2888,6 +2893,22 @@ export class MyTemplatesComponent implements OnInit {
     if (savedView) this.viewMode = savedView;
     this.loadInstalledTemplates();
     this.loadAllCodeInjections();
+    this.loadAvailablePages();
+  }
+
+  loadAvailablePages(): void {
+    this.loadingPages = true;
+    this.api.get<any>('ContentApi/pages').subscribe({
+      next: (res) => {
+        this.loadingPages = false;
+        if (res?.data && Array.isArray(res.data)) {
+          this.availablePages = res.data;
+        }
+      },
+      error: () => {
+        this.loadingPages = false;
+      }
+    });
   }
 
   setViewMode(mode: 'grid' | 'table'): void {
@@ -3174,7 +3195,12 @@ export class MyTemplatesComponent implements OnInit {
 
     this.savingCustomTemplate = true;
 
-    this.api.post<any>('ContentApi/templates/custom', this.customTemplateForm).subscribe({
+    const payload = {
+      ...this.customTemplateForm,
+      defaultContentJson: JSON.stringify(this.previewContent)
+    };
+
+    this.api.post<any>('ContentApi/templates/custom', payload).subscribe({
       next: (res) => {
         this.savingCustomTemplate = false;
         const newDbItem = res?.data;
@@ -3196,7 +3222,8 @@ export class MyTemplatesComponent implements OnInit {
           cssStyles: this.customTemplateForm.cssStyles,
           jsScript: this.customTemplateForm.jsScript,
           version: '1.0.0',
-          installedUtc: new Date().toISOString()
+          installedUtc: new Date().toISOString(),
+          defaultContentJson: payload.defaultContentJson
         };
 
         this.installedTemplates.unshift(newTemplate);
@@ -3265,6 +3292,7 @@ export class MyTemplatesComponent implements OnInit {
             const existing = this.installedTemplates.find(t => t.id === apiT.templateKey || t.variantCode === apiT.variantCode);
             if (existing) {
               existing.dbId = apiT.id;
+              if (apiT.defaultContentJson) existing.defaultContentJson = apiT.defaultContentJson;
               const cat = apiT.categoryKey?.toLowerCase();
               if (cat === 'menu' && apiT.isActive) { this.activeMenuId = existing.id; localStorage.setItem('oz_active_menu_id', existing.id); }
               if (cat === 'hero' && apiT.isActive) { this.activeHeroId = existing.id; localStorage.setItem('oz_active_hero_id', existing.id); }
@@ -3291,7 +3319,8 @@ export class MyTemplatesComponent implements OnInit {
                 cssStyles: apiT.cssStyles,
                 jsScript: apiT.jsScript,
                 version: apiT.installedVersion || '1.0.0',
-                installedUtc: apiT.installedUtc || new Date().toISOString()
+                installedUtc: apiT.installedUtc || new Date().toISOString(),
+                defaultContentJson: apiT.defaultContentJson
               });
             }
           });
@@ -3476,14 +3505,35 @@ export class MyTemplatesComponent implements OnInit {
     this.previewViewport = 'desktop';
     this.previewModalTab = 'preview';
 
-    // Populate initial sample content from item if available
-    if (item.previewTitle) this.previewContent.title = item.previewTitle;
-    else if (item.name) this.previewContent.title = item.name;
+    // Populate initial sample content from template's unique DefaultContentJson if available
+    let hydratedFromBlueprint = false;
+    if (item.defaultContentJson) {
+      try {
+        const parsed = JSON.parse(item.defaultContentJson);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.title) this.previewContent.title = parsed.title;
+          if (parsed.miniTitle) this.previewContent.miniTitle = parsed.miniTitle;
+          if (parsed.description) this.previewContent.description = parsed.description;
+          if (parsed.imageUrl) this.previewContent.imageUrl = parsed.imageUrl;
+          if (parsed.buttonText) this.previewContent.buttonText = parsed.buttonText;
+          if (parsed.buttonLink) this.previewContent.buttonLink = parsed.buttonLink;
+          if (parsed.items && Array.isArray(parsed.items) && parsed.items.length > 0) {
+            this.previewContent.items = parsed.items;
+          }
+          hydratedFromBlueprint = true;
+        }
+      } catch (e) {}
+    }
 
-    if (item.previewBody) this.previewContent.description = item.previewBody;
-    else if (item.description) this.previewContent.description = item.description;
+    if (!hydratedFromBlueprint) {
+      if (item.previewTitle) this.previewContent.title = item.previewTitle;
+      else if (item.name) this.previewContent.title = item.name;
 
-    if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+      if (item.previewBody) this.previewContent.description = item.previewBody;
+      else if (item.description) this.previewContent.description = item.description;
+
+      if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+    }
 
     this.updateSinglePreviewHtml();
 
@@ -3529,6 +3579,29 @@ export class MyTemplatesComponent implements OnInit {
   }
 
   resetPreviewContent(): void {
+    if (this.activePreviewItem?.defaultContentJson) {
+      try {
+        const parsed = JSON.parse(this.activePreviewItem.defaultContentJson);
+        if (parsed && typeof parsed === 'object') {
+          this.previewContent = {
+            title: parsed.title || this.activePreviewItem.name,
+            miniTitle: parsed.miniTitle || '',
+            description: parsed.description || this.activePreviewItem.description,
+            imageUrl: parsed.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+            buttonText: parsed.buttonText || 'Explore Platform Solutions →',
+            buttonLink: parsed.buttonLink || '#',
+            items: (parsed.items && Array.isArray(parsed.items) && parsed.items.length > 0) ? parsed.items : [
+              { title: 'Real-Time Sync', description: 'Instantaneous WebSocket state propagation.' },
+              { title: 'Granular Governance', description: 'Fine-grained permission matrices.' }
+            ]
+          };
+          this.onPreviewContentChange();
+          this.toast.info('Sample content restored to template blueprint defaults.');
+          return;
+        }
+      } catch (e) {}
+    }
+
     this.previewContent = {
       title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Empowering Modern Organizations',
       miniTitle: this.activePreviewItem?.previewSubtitle?.toUpperCase() || 'CORE PLATFORM CAPABILITIES',
@@ -3700,9 +3773,27 @@ export class MyTemplatesComponent implements OnInit {
   confirmAssignToPage(): void {
     if (!this.selectedAssignItem) return;
     const item = this.selectedAssignItem;
-    this.toast.success(`'${item.name}' added to ${this.targetPageSlug.toUpperCase()} page!`);
-    this.closeAssignModal();
-    this.router.navigate(['/content/console']);
+
+    const payload = {
+      templateId: item.dbId || null,
+      templateKey: item.id,
+      variantCode: item.variantCode,
+      targetPageSlug: this.targetPageSlug,
+      insertPosition: this.insertPosition,
+      customContentJson: JSON.stringify(this.previewContent)
+    };
+
+    this.api.post<any>('ContentApi/templates/assign-to-page', payload).subscribe({
+      next: () => {
+        this.toast.success(`'${item.name}' inserted into ${this.targetPageSlug.toUpperCase()} page with showcase content!`);
+        this.closeAssignModal();
+        this.router.navigate(['/content/console']);
+      },
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to insert section into page.';
+        this.toast.error(msg);
+      }
+    });
   }
 
   uninstallTemplate(item: InstalledTemplateItem): void {

@@ -60,6 +60,13 @@ namespace Ozikol_BCC.Domain.Models
         public string? JsScript { get; set; }
 
         /// <summary>
+        /// Dedicated JSON payload housing this template's unique showcase/demo content:
+        /// Title, MiniTitle, Description, ImageUrl, ButtonText, ButtonLink, and repeated card items.
+        /// Used for template previews, simulated full-site demos, and initial CMS section population.
+        /// </summary>
+        public string? DefaultContentJson { get; set; }
+
+        /// <summary>
         /// Installed version string (e.g., "1.0.0").
         /// </summary>
         [MaxLength(20)]
