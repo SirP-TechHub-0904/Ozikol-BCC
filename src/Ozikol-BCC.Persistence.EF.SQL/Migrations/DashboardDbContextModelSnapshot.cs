@@ -5878,7 +5878,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
                         .WithMany()
                         .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("UserProfile");
@@ -5889,7 +5889,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
                         .WithMany()
                         .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("UserProfile");
@@ -5900,7 +5900,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -5923,7 +5923,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Group");
@@ -5938,7 +5938,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpVoteCategory", "BcpVoteCategory")
                         .WithMany("BcpCandidates")
                         .HasForeignKey("BcpVoteCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "Profile")
@@ -5971,7 +5971,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpPhoneBook", "BcpPhoneBook")
                         .WithMany("Contacts")
                         .HasForeignKey("BcpPhoneBookId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpPhoneBook");
@@ -5992,7 +5992,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "ReceiverUser")
                         .WithMany()
                         .HasForeignKey("ReceiverUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpDirectMessage", "ReplyToMessage")
@@ -6003,7 +6003,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "SenderUser")
                         .WithMany()
                         .HasForeignKey("SenderUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("File");
@@ -6022,7 +6022,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpElection", "BcpElection")
                         .WithMany("BcpElectionVoters")
                         .HasForeignKey("BcpElectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
@@ -6052,7 +6052,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpEquipmentCategory", "BcpEquipmentCategory")
                         .WithMany("BcpEquipments")
                         .HasForeignKey("BcpEquipmentCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AssignedToUser");
@@ -6074,7 +6074,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpTicketType", "BcpTicketType")
                         .WithMany("Tickets")
                         .HasForeignKey("BcpTicketTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "ScannedByUser")
@@ -6099,7 +6099,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpFeature", "BcpFeature")
                         .WithMany()
                         .HasForeignKey("BcpFeatureId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpFeature");
@@ -6127,7 +6127,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpForm", "BcpForm")
                         .WithMany("Responses")
                         .HasForeignKey("BcpFormId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
@@ -6144,7 +6144,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpDonor", "BcpDonor")
                         .WithMany("Grants")
                         .HasForeignKey("BcpDonorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProposal", "BcpProposal")
@@ -6161,7 +6161,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGrant", "BcpGrant")
                         .WithMany("Milestones")
                         .HasForeignKey("BcpGrantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpGrant");
@@ -6182,7 +6182,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroup", "BcpGroup")
                         .WithMany("Files")
                         .HasForeignKey("BcpGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UploadedByUser")
@@ -6228,7 +6228,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroup", "BcpGroup")
                         .WithMany("Members")
                         .HasForeignKey("BcpGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
@@ -6247,7 +6247,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroup", "BcpGroup")
                         .WithMany()
                         .HasForeignKey("BcpGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "CreatedByUser")
@@ -6266,7 +6266,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroupPoll", "Poll")
                         .WithMany("Options")
                         .HasForeignKey("PollId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Poll");
@@ -6289,7 +6289,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Option");
@@ -6304,7 +6304,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroup", "BcpGroup")
                         .WithMany("Posts")
                         .HasForeignKey("BcpGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpGroupFile", "File")
@@ -6323,7 +6323,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
                         .WithMany()
                         .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpGroup");
@@ -6342,13 +6342,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpApplicantAccount", "BcpApplicantAccount")
                         .WithMany("Applications")
                         .HasForeignKey("BcpApplicantAccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpJobPosting", "BcpJobPosting")
                         .WithMany("Applicants")
                         .HasForeignKey("BcpJobPostingId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpApplicantAccount");
@@ -6361,7 +6361,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpJobApplicant", "BcpJobApplicant")
                         .WithMany("Documents")
                         .HasForeignKey("BcpJobApplicantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpJobApplicant");
@@ -6372,7 +6372,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpJobApplicant", "BcpJobApplicant")
                         .WithMany("Interviews")
                         .HasForeignKey("BcpJobApplicantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpJobApplicant");
@@ -6383,13 +6383,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpKpiIndicator", "BcpKpiIndicator")
                         .WithMany("BcpKpiUserScores")
                         .HasForeignKey("BcpKpiIndicatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "Profile")
                         .WithMany()
                         .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpKpiIndicator");
@@ -6420,7 +6420,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpEquipment", "BcpEquipment")
                         .WithMany("BcpMaintenanceLogs")
                         .HasForeignKey("BcpEquipmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpEquipment");
@@ -6431,7 +6431,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpManualPage", "BcpManualPage")
                         .WithMany("BcpManualElements")
                         .HasForeignKey("BcpManualPageId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpManualPage");
@@ -6442,7 +6442,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpManual", "BcpManual")
                         .WithMany("BcpManualPages")
                         .HasForeignKey("BcpManualId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpManual");
@@ -6468,7 +6468,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Message");
@@ -6481,7 +6481,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6492,7 +6492,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpNewsletterList", "BcpNewsletterList")
                         .WithMany("Contacts")
                         .HasForeignKey("BcpNewsletterListId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpNewsletterList");
@@ -6512,7 +6512,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6523,13 +6523,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpNewsletterPlan", "BcpNewsletterPlan")
                         .WithMany()
                         .HasForeignKey("BcpNewsletterPlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpNewsletterPlan");
@@ -6542,7 +6542,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpNewsletterCampaign", "BcpNewsletterCampaign")
                         .WithMany("Recipients")
                         .HasForeignKey("BcpNewsletterCampaignId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
@@ -6561,7 +6561,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6572,7 +6572,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpNewsletterWallet", "BcpNewsletterWallet")
                         .WithMany("Transactions")
                         .HasForeignKey("BcpNewsletterWalletId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpNewsletterWallet");
@@ -6630,13 +6630,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProduct", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("BcpProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProductOrder", "Order")
                         .WithMany("Items")
                         .HasForeignKey("BcpProductOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -6649,7 +6649,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProject", "BcpProject")
                         .WithMany("Sprints")
                         .HasForeignKey("BcpProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpProject");
@@ -6664,7 +6664,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProject", "BcpProject")
                         .WithMany("Tasks")
                         .HasForeignKey("BcpProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProjectSprint", "BcpProjectSprint")
@@ -6683,7 +6683,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProject", "BcpProject")
                         .WithMany("ProjectUsers")
                         .HasForeignKey("BcpProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
@@ -6709,7 +6709,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProposal", "BcpProposal")
                         .WithMany("ProposalFiles")
                         .HasForeignKey("BcpProposalId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpProposal");
@@ -6720,7 +6720,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpProposal", "BcpProposal")
                         .WithMany("Phases")
                         .HasForeignKey("BcpProposalId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpProposal");
@@ -6731,13 +6731,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpReportSchema", "BcpReportSchema")
                         .WithMany("Participants")
                         .HasForeignKey("BcpReportSchemaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
                         .WithMany()
                         .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpReportSchema");
@@ -6750,13 +6750,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpReportSchema", "BcpReportSchema")
                         .WithMany("Submissions")
                         .HasForeignKey("BcpReportSchemaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "UserProfile")
                         .WithMany()
                         .HasForeignKey("UserProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpReportSchema");
@@ -6769,7 +6769,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpReportSubmission", "BcpReportSubmission")
                         .WithMany("TimeLogs")
                         .HasForeignKey("BcpReportSubmissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpReportSubmission");
@@ -6798,7 +6798,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpSmsCampaign", "BcpSmsCampaign")
                         .WithMany("Recipients")
                         .HasForeignKey("BcpSmsCampaignId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpSmsCampaign");
@@ -6818,7 +6818,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpEvent", "BcpEvent")
                         .WithMany("TicketTypes")
                         .HasForeignKey("BcpEventId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpEvent");
@@ -6829,7 +6829,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6840,7 +6840,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6851,7 +6851,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "Profile")
                         .WithMany()
                         .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Profile");
@@ -6877,7 +6877,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -6888,7 +6888,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "Profile")
                         .WithMany()
                         .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Profile");
@@ -6927,7 +6927,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.BcpElection", "BcpElection")
                         .WithMany("BcpVoteCategories")
                         .HasForeignKey("BcpElectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("BcpElection");
@@ -7043,7 +7043,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.HasOne("Ozikol_BCC.Domain.Models.Profile", "Profile")
                         .WithMany()
                         .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Profile");
