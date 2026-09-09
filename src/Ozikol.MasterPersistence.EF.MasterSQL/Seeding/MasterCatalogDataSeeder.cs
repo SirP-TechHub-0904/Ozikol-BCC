@@ -93,68 +93,72 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 }
             }
 
-            // Seed SuperAdmin User
-            const string superAdminEmail = "superadmin@ozikol.cloud";
-            if (userManager != null)
-            {
-                var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
-                if (existingUser == null)
-                {
-                    var superAdmin = new CentralUser
-                    {
-                        UserName = superAdminEmail,
-                        Email = superAdminEmail,
-                        EmailConfirmed = true,
-                        FirstName = "Ozikol",
-                        LastName = "SuperAdmin",
-                        Department = "Global DevOps & Architecture",
-                        IsActive = true,
-                        CreatedUtc = DateTime.UtcNow
-                    };
+            // Seed SuperAdmin Users (support both .cloud and .com domains for seamless administrative access)
+            var superAdminEmails = new[] { "superadmin@ozikol.cloud", "superadmin@ozikol.com" };
 
-                    var createResult = await userManager.CreateAsync(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
-                    if (createResult.Succeeded)
+            foreach (var superAdminEmail in superAdminEmails)
+            {
+                if (userManager != null)
+                {
+                    var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
+                    if (existingUser == null)
                     {
-                        await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                        var superAdmin = new CentralUser
+                        {
+                            UserName = superAdminEmail,
+                            Email = superAdminEmail,
+                            EmailConfirmed = true,
+                            FirstName = "Ozikol",
+                            LastName = "SuperAdmin",
+                            Department = "Global DevOps & Architecture",
+                            IsActive = true,
+                            CreatedUtc = DateTime.UtcNow
+                        };
+
+                        var createResult = await userManager.CreateAsync(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
+                        if (createResult.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                        }
                     }
                 }
-            }
-            else
-            {
-                // Fallback direct creation when executed in headless migrator contexts
-                if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == superAdminEmail.ToUpperInvariant(), ct))
+                else
                 {
-                    var hasher = new PasswordHasher<CentralUser>();
-                    var superAdmin = new CentralUser
+                    // Fallback direct creation when executed in headless migrator contexts
+                    if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == superAdminEmail.ToUpperInvariant(), ct))
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        UserName = superAdminEmail,
-                        NormalizedUserName = superAdminEmail.ToUpperInvariant(),
-                        Email = superAdminEmail,
-                        NormalizedEmail = superAdminEmail.ToUpperInvariant(),
-                        EmailConfirmed = true,
-                        FirstName = "Ozikol",
-                        LastName = "SuperAdmin",
-                        Department = "Global DevOps & Architecture",
-                        IsActive = true,
-                        SecurityStamp = Guid.NewGuid().ToString(),
-                        ConcurrencyStamp = Guid.NewGuid().ToString(),
-                        CreatedUtc = DateTime.UtcNow
-                    };
-                    superAdmin.PasswordHash = hasher.HashPassword(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
-
-                    dbContext.Users.Add(superAdmin);
-                    await dbContext.SaveChangesAsync(ct);
-
-                    var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
-                    if (superAdminRole != null)
-                    {
-                        dbContext.UserRoles.Add(new IdentityUserRole<string>
+                        var hasher = new PasswordHasher<CentralUser>();
+                        var superAdmin = new CentralUser
                         {
-                            UserId = superAdmin.Id,
-                            RoleId = superAdminRole.Id
-                        });
+                            Id = Guid.NewGuid().ToString(),
+                            UserName = superAdminEmail,
+                            NormalizedUserName = superAdminEmail.ToUpperInvariant(),
+                            Email = superAdminEmail,
+                            NormalizedEmail = superAdminEmail.ToUpperInvariant(),
+                            EmailConfirmed = true,
+                            FirstName = "Ozikol",
+                            LastName = "SuperAdmin",
+                            Department = "Global DevOps & Architecture",
+                            IsActive = true,
+                            SecurityStamp = Guid.NewGuid().ToString(),
+                            ConcurrencyStamp = Guid.NewGuid().ToString(),
+                            CreatedUtc = DateTime.UtcNow
+                        };
+                        superAdmin.PasswordHash = hasher.HashPassword(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
+
+                        dbContext.Users.Add(superAdmin);
                         await dbContext.SaveChangesAsync(ct);
+
+                        var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
+                        if (superAdminRole != null)
+                        {
+                            dbContext.UserRoles.Add(new IdentityUserRole<string>
+                            {
+                                UserId = superAdmin.Id,
+                                RoleId = superAdminRole.Id
+                            });
+                            await dbContext.SaveChangesAsync(ct);
+                        }
                     }
                 }
             }
