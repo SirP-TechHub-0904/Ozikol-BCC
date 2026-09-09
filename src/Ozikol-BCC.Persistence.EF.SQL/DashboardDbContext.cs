@@ -354,6 +354,72 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .HasForeignKey(a => a.GroupId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<BcpGroup>()
+            .HasOne(g => g.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(g => g.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupInvitation>()
+            .HasOne(i => i.Group)
+            .WithMany()
+            .HasForeignKey(i => i.GroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupInvitation>()
+            .HasOne(i => i.InvitedUser)
+            .WithMany()
+            .HasForeignKey(i => i.InvitedUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupInvitation>()
+            .HasOne(i => i.InvitedByUser)
+            .WithMany()
+            .HasForeignKey(i => i.InvitedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupMember>()
+            .HasOne(m => m.UserProfile)
+            .WithMany()
+            .HasForeignKey(m => m.UserProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupPoll>()
+            .HasOne(p => p.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(p => p.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpGroupFile>()
+            .HasOne(f => f.UploadedByUser)
+            .WithMany()
+            .HasForeignKey(f => f.UploadedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpLeaveRequest>()
+            .HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpLeaveRequest>()
+            .HasOne(l => l.ReviewedBy)
+            .WithMany()
+            .HasForeignKey(l => l.ReviewedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpEventTicket>()
+            .HasOne(t => t.UserProfile)
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BcpEventTicket>()
+            .HasOne(t => t.ScannedByUser)
+            .WithMany()
+            .HasForeignKey(t => t.ScannedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // --- Products & Commerce Taxonomy ---
         modelBuilder.Entity<BcpProductCategory>()
             .HasOne(c => c.ParentCategory)

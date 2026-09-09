@@ -1816,7 +1816,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         name: "FK_BcpGroups_AspNetUsers_CreatedByUserId",
                         column: x => x.CreatedByUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1874,13 +1875,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         name: "FK_BcpLeaveRequests_AspNetUsers_ReviewedById",
                         column: x => x.ReviewedById,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpLeaveRequests_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2607,8 +2609,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BcpTicketTypeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserProfileId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     GuestName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     GuestEmail = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     GuestPhone = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
@@ -2626,12 +2627,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         name: "FK_BcpEventTickets_AspNetUsers_ScannedByUserId",
                         column: x => x.ScannedByUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_BcpEventTickets_AspNetUsers_UserProfileId",
-                        column: x => x.UserProfileId,
+                        name: "FK_BcpEventTickets_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpEventTickets_BcpTicketTypes_BcpTicketTypeId",
                         column: x => x.BcpTicketTypeId,
@@ -2742,7 +2745,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UploadedByUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupFiles_BcpGroups_BcpGroupId",
                         column: x => x.BcpGroupId,
@@ -2770,19 +2773,19 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.InvitedByUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupInvitations_AspNetUsers_InvitedUserId",
                         column: x => x.InvitedUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupInvitations_BcpGroups_GroupId",
                         column: x => x.GroupId,
                         principalTable: "BcpGroups",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2816,7 +2819,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupMembers_BcpGroups_BcpGroupId",
                         column: x => x.BcpGroupId,
@@ -2847,7 +2850,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.CreatedByUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupPolls_BcpGroups_BcpGroupId",
                         column: x => x.BcpGroupId,
@@ -3596,9 +3599,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                 column: "ScannedByUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BcpEventTickets_UserProfileId",
+                name: "IX_BcpEventTickets_UserId",
                 table: "BcpEventTickets",
-                column: "UserProfileId");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BcpFeatureInvoices_BcpFeatureId",
