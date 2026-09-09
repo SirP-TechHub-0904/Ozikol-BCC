@@ -414,7 +414,7 @@ export interface CodeInjectionTag {
               <button
                 type="button"
                 class="btn btn-card-uninstall"
-                (click)="uninstallTemplate(item)"
+                (click)="openUninstallModal(item)"
                 title="Uninstall from library"
               >
                 <span class="material-symbols-outlined">delete_outline</span>
@@ -509,7 +509,7 @@ export interface CodeInjectionTag {
                       <button
                         type="button"
                         class="btn-tbl-action delete"
-                        (click)="uninstallTemplate(item)"
+                        (click)="openUninstallModal(item)"
                         title="Uninstall"
                       >
                         <span class="material-symbols-outlined">delete</span>
@@ -613,7 +613,7 @@ export interface CodeInjectionTag {
                       <button type="button" class="btn-tbl-action preview" (click)="openEditTagModal(tag)" title="Edit Tag">
                         <span class="material-symbols-outlined">edit</span>
                       </button>
-                      <button type="button" class="btn-tbl-action delete" (click)="deleteTag(tag)" title="Delete Tag">
+                      <button type="button" class="btn-tbl-action delete" (click)="openDeleteTagModal(tag)" title="Delete Tag">
                         <span class="material-symbols-outlined">delete</span>
                       </button>
                     </div>
@@ -1227,6 +1227,109 @@ export interface CodeInjectionTag {
           <button type="button" class="btn btn-primary" (click)="saveTag()" [disabled]="savingTag">
             <span class="material-symbols-outlined">save</span>
             <span>{{ savingTag ? 'Saving...' : (isEditingTag ? 'Update Tag' : 'Save & Inject Tag') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL 6: MODERN UNINSTALL CONFIRMATION MODAL   -->
+    <!-- ============================================== -->
+    <div class="modal-backdrop" *ngIf="showUninstallModal && itemToUninstall" (click)="closeUninstallModal()">
+      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="confirm-modal-header">
+          <div class="confirm-danger-badge">
+            <span class="material-symbols-outlined confirm-icon">delete_forever</span>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeUninstallModal()">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="confirm-modal-body">
+          <h3 class="confirm-modal-title">Uninstall Template Blueprint?</h3>
+          <p class="confirm-modal-subtitle">
+            Are you sure you want to uninstall this template from your tenant library?
+          </p>
+
+          <!-- Highlight Preview Card -->
+          <div class="confirm-item-preview-card">
+            <div class="confirm-item-icon" [style.background]="itemToUninstall.thumbnailGradient">
+              <span class="material-symbols-outlined">{{ itemToUninstall.previewIcon }}</span>
+            </div>
+            <div class="confirm-item-info">
+              <strong class="confirm-item-name">{{ itemToUninstall.name }}</strong>
+              <div class="confirm-item-meta">
+                <span class="confirm-category-badge">{{ getCategoryName(itemToUninstall.category) }}</span>
+                <code class="confirm-variant-code">{{ itemToUninstall.variantCode }}</code>
+              </div>
+            </div>
+          </div>
+
+          <!-- Safe Note Alert -->
+          <div class="confirm-warning-box">
+            <span class="material-symbols-outlined warn-icon">shield</span>
+            <span>
+              <strong>Safe Removal:</strong> This removes the blueprint from your active vault. Any pages where this section has already been published or added will remain completely intact.
+            </span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeUninstallModal()">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger-action" (click)="confirmUninstallTemplate()" [disabled]="uninstallingTemplate">
+            <span class="material-symbols-outlined">delete</span>
+            <span>{{ uninstallingTemplate ? 'Uninstalling...' : 'Yes, Uninstall Template' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL 7: MODERN DELETE TAG CONFIRMATION MODAL  -->
+    <!-- ============================================== -->
+    <div class="modal-backdrop" *ngIf="showDeleteTagModal && tagToDelete" (click)="closeDeleteTagModal()">
+      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="confirm-modal-header">
+          <div class="confirm-danger-badge">
+            <span class="material-symbols-outlined confirm-icon">delete_forever</span>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeDeleteTagModal()">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="confirm-modal-body">
+          <h3 class="confirm-modal-title">Remove Code Injection Tag?</h3>
+          <p class="confirm-modal-subtitle">
+            Are you sure you want to delete this script / stylesheet tag?
+          </p>
+
+          <div class="confirm-item-preview-card">
+            <div class="confirm-item-icon" style="background: #0f172a; color: #38bdf8;">
+              <span class="material-symbols-outlined">{{ getZoneIcon(tagToDelete.zone) }}</span>
+            </div>
+            <div class="confirm-item-info">
+              <strong class="confirm-item-name">{{ tagToDelete.name }}</strong>
+              <div class="confirm-item-meta">
+                <span class="confirm-category-badge">{{ getZoneShortTitle(tagToDelete.zone) }} Zone</span>
+                <span class="tag-type-badge">{{ getTagTypeLabel(tagToDelete.tagType) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeDeleteTagModal()">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger-action" (click)="confirmDeleteTag()" [disabled]="deletingTag">
+            <span class="material-symbols-outlined">delete</span>
+            <span>{{ deletingTag ? 'Deleting...' : 'Delete Tag' }}</span>
           </button>
         </div>
       </div>
@@ -2354,6 +2457,163 @@ export interface CodeInjectionTag {
     .btn-outline { background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; }
 
+    /* Confirmation Modal Styles */
+    .confirm-modal-card {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+    }
+    .confirm-modal-header {
+      padding: 24px 24px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .confirm-danger-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: #fef2f2;
+      border: 1.5px solid #fee2e2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ef4444;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+    }
+    .confirm-danger-badge .confirm-icon {
+      font-size: 28px;
+    }
+    .confirm-modal-body {
+      padding: 16px 24px 20px 24px;
+    }
+    .confirm-modal-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.01em;
+    }
+    .confirm-modal-subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 18px 0;
+      line-height: 1.5;
+    }
+    .confirm-item-preview-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .confirm-item-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+    .confirm-item-icon .material-symbols-outlined {
+      font-size: 22px;
+    }
+    .confirm-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+    .confirm-item-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .confirm-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .confirm-category-badge {
+      background: #eff6ff;
+      color: #0050e5;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .confirm-variant-code {
+      background: #0f172a;
+      color: #38bdf8;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+    .confirm-warning-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: #166534;
+      line-height: 1.45;
+    }
+    .confirm-warning-box .warn-icon {
+      font-size: 18px;
+      color: #16a34a;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .confirm-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 24px 20px 24px;
+      background: #ffffff;
+      border-top: 1.5px solid #f1f5f9;
+    }
+    .btn-danger-action {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+      transition: all 0.15s ease;
+    }
+    .btn-danger-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+    }
+    .btn-danger-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     /* Main Tabs Bar */
     .mytemplates-main-tabs {
       display: flex;
@@ -2871,6 +3131,15 @@ export class MyTemplatesComponent implements OnInit {
   availablePages: any[] = [];
   loadingPages: boolean = false;
 
+  // Modern Confirmation Modal States
+  showUninstallModal: boolean = false;
+  itemToUninstall: InstalledTemplateItem | null = null;
+  uninstallingTemplate: boolean = false;
+
+  showDeleteTagModal: boolean = false;
+  tagToDelete: CodeInjectionTag | null = null;
+  deletingTag: boolean = false;
+
   // Active Singletons state (menu, hero, newsletter, footer, blog, breadcrumb = 1 active each; body, contact = additive)
   activeMenuId: string = 'menu-01';
   activeHeroId: string = 'hero-01';
@@ -3113,16 +3382,33 @@ export class MyTemplatesComponent implements OnInit {
     });
   }
 
-  deleteTag(tag: CodeInjectionTag): void {
-    if (!confirm(`Are you sure you want to remove tag '${tag.name}'?`)) return;
+  openDeleteTagModal(tag: CodeInjectionTag): void {
+    this.tagToDelete = tag;
+    this.showDeleteTagModal = true;
+  }
+
+  closeDeleteTagModal(): void {
+    this.showDeleteTagModal = false;
+    this.tagToDelete = null;
+    this.deletingTag = false;
+  }
+
+  confirmDeleteTag(): void {
+    if (!this.tagToDelete) return;
+    const tag = this.tagToDelete;
+    this.deletingTag = true;
 
     this.api.delete<any>(`ContentApi/code-injections/${tag.id}`).subscribe({
       next: () => {
+        this.deletingTag = false;
         this.toast.success(`Tag '${tag.name}' deleted.`);
+        this.closeDeleteTagModal();
         this.loadAllCodeInjections();
       },
       error: () => {
+        this.deletingTag = false;
         this.toast.error('Failed to delete tag.');
+        this.closeDeleteTagModal();
       }
     });
   }
@@ -3796,20 +4082,43 @@ export class MyTemplatesComponent implements OnInit {
     });
   }
 
-  uninstallTemplate(item: InstalledTemplateItem): void {
-    if (confirm(`Are you sure you want to uninstall '${item.name}' (${item.variantCode}) from your template library?`)) {
-      this.installedTemplates = this.installedTemplates.filter(t => t.id !== item.id);
-      this.saveInstalledTemplates();
-      this.applyFilters();
+  openUninstallModal(item: InstalledTemplateItem): void {
+    this.itemToUninstall = item;
+    this.showUninstallModal = true;
+  }
 
-      if (item.dbId) {
-        this.api.delete<any>(`ContentApi/templates/installed/${item.dbId}`).subscribe({
-          next: () => {},
-          error: () => {}
-        });
-      }
+  closeUninstallModal(): void {
+    this.showUninstallModal = false;
+    this.itemToUninstall = null;
+    this.uninstallingTemplate = false;
+  }
 
+  confirmUninstallTemplate(): void {
+    if (!this.itemToUninstall) return;
+    const item = this.itemToUninstall;
+    this.uninstallingTemplate = true;
+
+    this.installedTemplates = this.installedTemplates.filter(t => t.id !== item.id);
+    this.saveInstalledTemplates();
+    this.applyFilters();
+
+    if (item.dbId) {
+      this.api.delete<any>(`ContentApi/templates/installed/${item.dbId}`).subscribe({
+        next: () => {
+          this.uninstallingTemplate = false;
+          this.toast.success(`Template '${item.name}' uninstalled.`);
+          this.closeUninstallModal();
+        },
+        error: () => {
+          this.uninstallingTemplate = false;
+          this.toast.success(`Template '${item.name}' uninstalled from local library.`);
+          this.closeUninstallModal();
+        }
+      });
+    } else {
+      this.uninstallingTemplate = false;
       this.toast.success(`Template '${item.name}' uninstalled.`);
+      this.closeUninstallModal();
     }
   }
 
