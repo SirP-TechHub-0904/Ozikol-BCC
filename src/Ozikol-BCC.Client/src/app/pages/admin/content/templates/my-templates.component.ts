@@ -2646,39 +2646,47 @@ export interface CodeInjectionTag {
       color: #0f172a;
     }
     .main-tab-item.active {
-      background: #0f172a;
-      color: #38bdf8;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+      background: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
     }
     .tab-count-pill {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.2);
       padding: 2px 7px;
       border-radius: 12px;
       font-size: 11px;
+      font-weight: 700;
     }
     .main-tab-item:not(.active) .tab-count-pill {
       background: #e2e8f0;
       color: #475569;
     }
     .btn-add-custom-template {
-      background: #0f172a;
-      color: #38bdf8;
-      border: 1.5px solid #38bdf8;
-      padding: 9px 18px;
-      border-radius: 8px;
+      height: 42px;
+      padding: 0 18px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #0f172a;
+      border: 1.5px solid #cbd5e1;
       font-weight: 700;
-      font-size: 12.5px;
+      font-size: 13px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       cursor: pointer;
-      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+    }
+    .btn-add-custom-template .btn-icon {
+      color: #0050e5;
+      font-size: 20px;
     }
     .btn-add-custom-template:hover {
-      background: #1e293b;
-      color: #7dd3fc;
-      border-color: #7dd3fc;
+      background: #f8fafc;
+      border-color: #0050e5;
+      color: #0050e5;
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.12);
     }
 
     /* 3-Zone Injections Styles */
