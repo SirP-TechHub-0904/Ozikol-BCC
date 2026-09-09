@@ -114,7 +114,7 @@ namespace Ozikol.Central.Pages
                 {
                     return Redirect(returnUrl);
                 }
-                return RedirectToPage("/Index");
+                return Redirect("/centralwks/dashboard");
             }
 
             if (result.IsLockedOut)
