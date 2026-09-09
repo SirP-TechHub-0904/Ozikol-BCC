@@ -67,12 +67,41 @@ builder.Services.AddRazorPages(options =>
             });
         }
     });
+
+    // 2b. Enforce Role-Based Access Control on Administrative Console Areas
+    options.Conventions.AuthorizeAreaFolder("Centralwks", "/", "CentralAdminPolicy");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Logout");
+
+    options.Conventions.AuthorizeAreaFolder("Affiliate", "/", "AffiliatePartnerPolicy");
+    options.Conventions.AllowAnonymousToAreaPage("Affiliate", "/Login");
+    options.Conventions.AllowAnonymousToAreaPage("Affiliate", "/Logout");
+
+    options.Conventions.AuthorizeAreaFolder("Creator", "/", "TemplateCreatorPolicy");
+    options.Conventions.AllowAnonymousToAreaPage("Creator", "/Login");
+    options.Conventions.AllowAnonymousToAreaPage("Creator", "/Logout");
 })
 .AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix)
 .AddDataAnnotationsLocalization(options =>
 {
     options.DataAnnotationLocalizerProvider = (type, factory) =>
         factory.Create(typeof(SharedResource));
+});
+
+// 2c. Register Central Platform Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    // Central administrative operators (SuperAdmin, Admin, Operator, Billing, Support, Templates, Referrals)
+    options.AddPolicy("CentralAdminPolicy", policy =>
+        policy.RequireRole("SuperAdmin", "Admin", "Operator", "BillingAdmin", "SupportAgent", "TemplateManager", "ReferralManager"));
+
+    // Sovereign Affiliate Partner Network
+    options.AddPolicy("AffiliatePartnerPolicy", policy =>
+        policy.RequireRole("AffiliatePartner", "SuperAdmin"));
+
+    // Sovereign Template Creator Studio
+    options.AddPolicy("TemplateCreatorPolicy", policy =>
+        policy.RequireRole("TemplateCreator", "SuperAdmin"));
 });
 
 // 3. Multi-Tenant Infrastructure Support
@@ -103,11 +132,61 @@ builder.Services.AddIdentity<CentralUser, CentralRole>(options =>
 .AddEntityFrameworkStores<MasterCatalogDbContext>()
 .AddDefaultTokenProviders();
 
+// 6b. Configure Multi-Portal Dynamic Application Cookie Authentication
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Auth/Login";
     options.AccessDeniedPath = "/Auth/Login";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
+
+    // Dynamically route unauthenticated challenges to the appropriate portal login
+    options.Events.OnRedirectToLogin = context =>
+    {
+        var path = context.Request.Path.Value ?? "";
+        if (path.StartsWith("/Centralwks", StringComparison.OrdinalIgnoreCase))
+        {
+            var returnUrl = Uri.EscapeDataString(context.Request.Path + context.Request.QueryString);
+            context.Response.Redirect($"/Centralwks/Login?ReturnUrl={returnUrl}");
+        }
+        else if (path.StartsWith("/Affiliate", StringComparison.OrdinalIgnoreCase))
+        {
+            var returnUrl = Uri.EscapeDataString(context.Request.Path + context.Request.QueryString);
+            context.Response.Redirect($"/Affiliate/Login?ReturnUrl={returnUrl}");
+        }
+        else if (path.StartsWith("/Creator", StringComparison.OrdinalIgnoreCase))
+        {
+            var returnUrl = Uri.EscapeDataString(context.Request.Path + context.Request.QueryString);
+            context.Response.Redirect($"/Creator/Login?ReturnUrl={returnUrl}");
+        }
+        else
+        {
+            context.Response.Redirect(context.RedirectUri);
+        }
+        return Task.CompletedTask;
+    };
+
+    // Dynamically route access-denied challenges to the appropriate portal
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        var path = context.Request.Path.Value ?? "";
+        if (path.StartsWith("/Centralwks", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/Centralwks/Login?accessDenied=true");
+        }
+        else if (path.StartsWith("/Affiliate", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/Affiliate/Login?accessDenied=true");
+        }
+        else if (path.StartsWith("/Creator", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/Creator/Login?accessDenied=true");
+        }
+        else
+        {
+            context.Response.Redirect(context.RedirectUri);
+        }
+        return Task.CompletedTask;
+    };
 });
 
 builder.Services.AddMemoryCache();
@@ -175,14 +254,17 @@ app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "";
 
-    // Skip static assets, bundles, and APIs
+    // Skip static assets, bundles, APIs, and administrative console areas
     if (path.StartsWith("/css", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/js", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/images", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/fonts", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/centralwks", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/affiliate", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/creator", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
