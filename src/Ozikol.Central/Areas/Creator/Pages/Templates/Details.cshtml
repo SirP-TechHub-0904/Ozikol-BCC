@@ -1,0 +1,156 @@
+@page "/creator/templates/details/{id:guid}"
+@model Ozikol.Central.Areas.Creator.Pages.Templates.DetailsModel
+@{
+    ViewData["Title"] = "Template: " + Model.Template.Name;
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <a href="/creator/templates" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Templates</a>
+            <span style="color: var(--admin-text-muted); font-size: 12px;">•</span>
+            <span style="font-family: monospace; font-size: 11px; color: #93c5fd;">
+                @Model.Template.VariantCode
+            </span>
+            @if (Model.Template.IsActive)
+            {
+                <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">● Live in Catalog</span>
+            }
+            else
+            {
+                <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">○ Draft</span>
+            }
+            <span style="font-family: monospace; font-size: 11px; color: var(--admin-text-muted);">v@Model.Template.Version</span>
+        </div>
+        <h1 class="admin-title">@Model.Template.Name</h1>
+        <p class="admin-subtitle">@(Model.Template.Description ?? "No description provided.")</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/creator/templates/preview/@Model.Template.Id" target="_blank" class="btn-admin btn-admin-secondary">
+            <span>👁️</span> Live Canvas ↗
+        </a>
+        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Template.Id" style="display: inline;">
+            <button type="submit" class="btn-admin btn-admin-secondary">
+                @(Model.Template.IsActive ? "Unpublish to Draft" : "Publish Live")
+            </button>
+        </form>
+        <a href="/creator/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary">
+            <span>✏️</span> Edit Template
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Interactive Canvas Preview & Code *@
+    <div>
+        @* Sandboxed Preview Frame *@
+        <div class="admin-card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+            <div style="padding: 14px 20px; border-bottom: 1px solid var(--admin-card-border); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+                <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Component Sandbox Preview</div>
+                <a href="/creator/templates/preview/@Model.Template.Id" target="_blank" style="font-size: 12px; color: #c084fc; text-decoration: none;">
+                    Open Fullscreen Canvas ↗
+                </a>
+            </div>
+            <iframe src="/creator/templates/preview/@Model.Template.Id" 
+                    style="width: 100%; height: 360px; border: none; background: #0b0f19;" 
+                    loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+
+        @* Code Inspections *@
+        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Semantic HTML Markup</h2>
+            <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; color: #93c5fd; font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 280px; overflow: auto; margin: 0;">@Model.Template.HtmlTemplate</pre>
+        </div>
+
+        <div class="admin-card" style="padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Scoped CSS Stylesheet</h2>
+            <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; color: #86efac; font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 280px; overflow: auto; margin: 0;">@Model.Template.CssStyles</pre>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
+        {
+            <div class="admin-card" style="padding: 24px;">
+                <h2 style="font-size: 15px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Sandboxed JavaScript Hook</h2>
+                <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; color: #fca5a5; font-family: monospace; font-size: 12px; line-height: 1.5; max-height: 200px; overflow: auto; margin: 0;">@Model.Template.JsScript</pre>
+            </div>
+        }
+    </div>
+
+    @* Right Column: Metadata & Danger Zone *@
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Template Specifications</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Category</div>
+                <div style="font-size: 13px; font-weight: 500; color: var(--admin-text); margin-top: 2px;">
+                    @(Model.Template.Category?.Name ?? Model.Template.CategoryKey)
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Variant Code</div>
+                <div style="font-size: 13px; font-family: monospace; color: #93c5fd; margin-top: 2px;">
+                    @Model.Template.VariantCode
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Theme Tag &amp; Badge</div>
+                <div style="margin-top: 4px;">
+                    <span style="font-size: 11px; background: rgba(255, 255, 255, 0.05); color: #cbd5e1; padding: 2px 7px; border-radius: 4px;">
+                        #@Model.Template.Tag
+                    </span>
+                    @if (!string.IsNullOrEmpty(Model.Template.Badge))
+                    {
+                        <span style="font-size: 11px; font-weight: 600; background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 2px 7px; border-radius: 4px; margin-left: 4px;">
+                            @Model.Template.Badge
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Release Version</div>
+                <div style="font-size: 13px; font-family: monospace; color: var(--admin-text); margin-top: 2px;">
+                    v@Model.Template.Version
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Authored Date</div>
+                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    @Model.Template.CreatedUtc.ToString("dd MMM yyyy, HH:mm") UTC
+                </div>
+            </div>
+
+            @if (Model.Template.UpdatedUtc.HasValue)
+            {
+                <div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted);">Last Modified</div>
+                    <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                        @Model.Template.UpdatedUtc.Value.ToString("dd MMM yyyy, HH:mm") UTC
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Danger Zone *@
+        <div class="admin-card" style="padding: 20px; border-color: rgba(239, 68, 68, 0.2);">
+            <h3 style="font-size: 14px; font-weight: 600; color: #f87171; margin-bottom: 8px;">Danger Zone</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 12px;">Permanently removes this template and revokes marketplace listings.</p>
+            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Template.Id">
+                <button type="submit" class="btn-admin" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); width: 100%;" onclick="return confirm('Permanently delete template @Model.Template.Name?');">
+                    Permanently Delete Template
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

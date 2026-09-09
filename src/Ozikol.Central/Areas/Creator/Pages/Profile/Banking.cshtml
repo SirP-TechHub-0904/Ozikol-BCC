@@ -1,0 +1,152 @@
+@page "/creator/profile/banking"
+@model Ozikol.Central.Areas.Creator.Pages.Profile.BankingModel
+@{
+    ViewData["Title"] = "Royalty Banking Settings";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/creator/profile" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Profile</a>
+        </div>
+        <h1 class="admin-title">Royalty Banking &amp; Settlement</h1>
+        <p class="admin-subtitle">Specify your studio beneficiary account, wire routing coordinates, or business PayPal account for monthly revenue disbursements.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Banking Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <form method="post">
+            <div style="margin-bottom: 20px;">
+                <label asp-for="Input.PayoutChannel" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                    Disbursement Channel <span style="color: #f87171;">*</span>
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <label style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" asp-for="Input.PayoutChannel" value="BankWire" id="creatorWire" style="accent-color: var(--admin-accent);" />
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">Direct Corporate Wire</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">SWIFT / IBAN / Domestic Wire</div>
+                        </div>
+                    </label>
+
+                    <label style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" asp-for="Input.PayoutChannel" value="PayPal" id="creatorPayPal" style="accent-color: var(--admin-accent);" />
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--admin-text);">PayPal Business</div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted);">Instant transfer</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            @* Wire Fields *@
+            <div id="creatorWireSection">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                    <div>
+                        <label asp-for="Input.BeneficiaryName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Account Beneficiary / Studio Legal Name
+                        </label>
+                        <input asp-for="Input.BeneficiaryName" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.BankName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Bank Institution Name
+                        </label>
+                        <input asp-for="Input.BankName" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 18px;">
+                    <div>
+                        <label asp-for="Input.IbanOrAccountNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            IBAN or Account Routing Number
+                        </label>
+                        <input asp-for="Input.IbanOrAccountNumber" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.SwiftBic" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            SWIFT / BIC Code
+                        </label>
+                        <input asp-for="Input.SwiftBic" 
+                               class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label asp-for="Input.BankCountry" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Bank Domicile Country
+                    </label>
+                    <input asp-for="Input.BankCountry" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                </div>
+            </div>
+
+            @* PayPal Fields *@
+            <div id="creatorPaypalSection" style="margin-bottom: 24px;">
+                <label asp-for="Input.PayPalEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    PayPal Business Account Email
+                </label>
+                <input asp-for="Input.PayPalEmail" type="email" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-size: 14px;" />
+                <span asp-validation-for="Input.PayPalEmail" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="/creator/profile" class="btn-admin btn-admin-secondary">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary">Save Banking Credentials</button>
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Security Note *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Disbursement Protocols</h3>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #34d399;">Enterprise Direct Wire:</strong>
+                    Wire routing is validated through automated SWIFT directory lookups before disbursement execution.
+                </div>
+                <div>
+                    <strong style="color: #c084fc;">Royalty Statements:</strong>
+                    Monthly tax statements and VAT remittance summaries are downloadable under the Royalties Ledger.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const rWire = document.getElementById('creatorWire');
+    const rPP = document.getElementById('creatorPayPal');
+    const wSec = document.getElementById('creatorWireSection');
+    const ppSec = document.getElementById('creatorPaypalSection');
+
+    function toggleCreatorSections() {
+        if (rPP.checked) {
+            wSec.style.opacity = '0.5';
+            ppSec.style.opacity = '1.0';
+        } else {
+            wSec.style.opacity = '1.0';
+            ppSec.style.opacity = '0.5';
+        }
+    }
+
+    rWire?.addEventListener('change', toggleCreatorSections);
+    rPP?.addEventListener('change', toggleCreatorSections);
+    toggleCreatorSections();
+</script>

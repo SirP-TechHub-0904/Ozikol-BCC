@@ -1,0 +1,142 @@
+@page "/creator/templates/create"
+@model Ozikol.Central.Areas.Creator.Pages.Templates.CreateModel
+@{
+    ViewData["Title"] = "Submit New Template";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/creator/templates" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Templates</a>
+        </div>
+        <h1 class="admin-title">Author &amp; Submit Component Template</h1>
+        <p class="admin-subtitle">Provide pure semantic HTML markup with placeholder tags, scoped CSS stylesheets, and optional JS hooks.</p>
+    </div>
+</div>
+
+<div class="admin-card" style="max-width: 960px; padding: 28px;">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;"></div>
+
+        @* ── Basic Metadata ── *@
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Name" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Template Display Headline <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.Name" placeholder="e.g. Split Glassmorphic Hero Showcase" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px; font-weight: 500;" />
+                <span asp-validation-for="Input.Name" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.VariantCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Variant Permacode <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.VariantCode" placeholder="Hero_SplitGlassmorphic" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
+                <span asp-validation-for="Input.VariantCode" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.CategoryId" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Category <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.CategoryId" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    @foreach (var c in Model.Categories)
+                    {
+                        <option value="@c.Id">@c.Name (@c.CategoryKey)</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="Input.Tag" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Theme Tag <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.Tag" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <option value="modern">Modern Glassmorphic</option>
+                    <option value="dark">Deep Sovereign Dark</option>
+                    <option value="corporate">Executive Corporate</option>
+                    <option value="ecommerce">High-Conversion Retail</option>
+                    <option value="minimal">Minimalist Clean</option>
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="Input.Badge" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Marketing Badge
+                </label>
+                <input asp-for="Input.Badge" placeholder="e.g. Popular, New" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.Version" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Version
+                </label>
+                <input asp-for="Input.Version" placeholder="1.0.0" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-family: monospace; font-size: 13px;" />
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label asp-for="Input.Description" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Component Feature Summary
+                </label>
+                <input asp-for="Input.Description" placeholder="Two-column responsive hero banner with video embed modal..." 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+            </div>
+
+            <div>
+                <label asp-for="Input.ThumbnailGradient" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    CSS Thumbnail Gradient
+                </label>
+                <input asp-for="Input.ThumbnailGradient" 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: #93c5fd; font-family: monospace; font-size: 12px;" />
+            </div>
+        </div>
+
+        @* ── Code Editors ── *@
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.HtmlTemplate" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Semantic HTML Markup (Supports <code>{{ Title }}</code>, <code>{{ Description }}</code>, <code>{{ ImageUrl }}</code>) <span style="color: #f87171;">*</span>
+            </label>
+            <textarea asp-for="Input.HtmlTemplate" rows="7" 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; color: #93c5fd; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+            <span asp-validation-for="Input.HtmlTemplate" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label asp-for="Input.CssStyles" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Scoped CSS Stylesheet <span style="color: #f87171;">*</span>
+            </label>
+            <textarea asp-for="Input.CssStyles" rows="6" 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; color: #86efac; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+            <span asp-validation-for="Input.CssStyles" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label asp-for="Input.JsScript" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                Sandboxed JavaScript Hook (Optional)
+            </label>
+            <textarea asp-for="Input.JsScript" rows="4" placeholder="// Optional client interaction logic: sliders, tab toggles, modal open/close" 
+                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; color: #fca5a5; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.IsActive" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Publish template live immediately to marketplace catalog
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <a href="/creator/templates" class="btn-admin btn-admin-secondary">Cancel</a>
+            <button type="submit" class="btn-admin btn-admin-primary">Submit Template</button>
+        </div>
+    </form>
+</div>

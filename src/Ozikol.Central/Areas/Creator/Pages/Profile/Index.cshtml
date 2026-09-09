@@ -1,0 +1,140 @@
+@page "/creator/profile"
+@model Ozikol.Central.Areas.Creator.Pages.Profile.IndexModel
+@{
+    ViewData["Title"] = "Studio Profile";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title">Studio Profile &amp; Brand Settings</h1>
+        <p class="admin-subtitle">Manage your public creator portfolio, agency brand identity, and design specializations.</p>
+    </div>
+    <div class="admin-actions">
+        <a href="/creator/profile/banking" class="btn-admin btn-admin-primary">
+            <span>💳</span> Royalty Banking Settings
+        </a>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+        @Model.StatusMessage
+    </div>
+}
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Profile Edit Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin-bottom: 18px;">Studio Information</h2>
+        
+        <form method="post">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                <div>
+                    <label asp-for="Input.FullName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Full Legal Name <span style="color: #f87171;">*</span>
+                    </label>
+                    <input asp-for="Input.FullName" class="form-control" 
+                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <span asp-validation-for="Input.FullName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.StudioOrBrandName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Studio / Agency Brand Name
+                    </label>
+                    <input asp-for="Input.StudioOrBrandName" placeholder="e.g. Apex Design Labs" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+                <div>
+                    <label asp-for="Input.PhoneNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Contact Phone Number
+                    </label>
+                    <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                </div>
+
+                <div>
+                    <label asp-for="Input.Specialization" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Design Specialization <span style="color: #f87171;">*</span>
+                    </label>
+                    <input asp-for="Input.Specialization" placeholder="e.g. ERP Dashboards, Retail POS" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                    <span asp-validation-for="Input.Specialization" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.PortfolioUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Portfolio / Figma / GitHub Showcase URL <span style="color: #f87171;">*</span>
+                </label>
+                <input asp-for="Input.PortfolioUrl" placeholder="https://figma.com/@@mybrand or https://github.com/..." 
+                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-size: 14px;" />
+                <span asp-validation-for="Input.PortfolioUrl" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label asp-for="Input.ProposalPitch" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Creator Bio &amp; Design Philosophy
+                </label>
+                <textarea asp-for="Input.ProposalPitch" rows="4" placeholder="Brief statement regarding your component architecture and design ethos..." 
+                          class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="/creator/dashboard" class="btn-admin btn-admin-secondary">Cancel</a>
+                <button type="submit" class="btn-admin btn-admin-primary">Save Studio Profile</button>
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Creator Metadata *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 16px;">Creator Accreditation</h3>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Creator Tracking Code</div>
+                <div style="font-size: 14px; font-family: monospace; font-weight: 600; color: #c084fc; margin-top: 2px;">
+                    @Model.Creator.CreatorCode
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Registered Email</div>
+                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    @Model.Creator.Email
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Program Status</div>
+                <div style="margin-top: 4px;">
+                    <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+                        ● @Model.Creator.Status Creator
+                    </span>
+                </div>
+            </div>
+
+            <div>
+                <div style="font-size: 11px; color: var(--admin-text-muted);">Accredited Since</div>
+                <div style="font-size: 13px; color: var(--admin-text); margin-top: 2px;">
+                    @Model.Creator.CreatedUtc.ToString("dd MMMM yyyy")
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 10px;">Royalty Disbursement</h3>
+            <p style="font-size: 12px; color: var(--admin-text-muted); margin-bottom: 14px; line-height: 1.5;">
+                Configure corporate wire routing or PayPal for monthly 70% revenue share payouts.
+            </p>
+            <a href="/creator/profile/banking" class="btn-admin btn-admin-secondary" style="width: 100%; text-align: center; display: block;">
+                Configure Banking Details →
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,103 @@
+@page "/creator/earnings/request-payout"
+@model Ozikol.Central.Areas.Creator.Pages.Earnings.RequestPayoutModel
+@{
+    ViewData["Title"] = "Withdraw Template Royalties";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/creator/earnings" style="color: var(--admin-text-muted); text-decoration: none; font-size: 13px;">← Back to Royalties</a>
+        </div>
+        <h1 class="admin-title">Disburse Creator Royalties</h1>
+        <p class="admin-subtitle">Withdraw your marketplace component revenue to your registered corporate or individual banking account.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; align-items: start;">
+    @* Left Column: Payout Form *@
+    <div class="admin-card" style="padding: 28px;">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;"></div>
+
+            <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted);">Cleared Royalty Balance</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #c084fc; margin-top: 2px;">
+                        $@Model.PendingBalance.ToString("N2")
+                    </div>
+                </div>
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="document.getElementById('royaltyAmountInput').value = '@Model.PendingBalance';" style="font-size: 12px;">
+                    Withdraw Max
+                </button>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.Amount" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Disbursement Amount (USD) <span style="color: #f87171;">*</span>
+                </label>
+                <div style="position: relative;">
+                    <span style="position: absolute; left: 14px; top: 10px; color: var(--admin-text-muted); font-size: 16px; font-weight: 600;">$</span>
+                    <input asp-for="Input.Amount" id="royaltyAmountInput" type="number" step="0.01" min="100" max="@Model.PendingBalance" 
+                           class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px 10px 30px; color: var(--admin-text); font-size: 16px; font-weight: 600;" />
+                </div>
+                <span asp-validation-for="Input.Amount" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+                <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Minimum withdrawal amount for creator royalties is $100.00.</span>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label asp-for="Input.PayoutMethod" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Disbursement Channel <span style="color: #f87171;">*</span>
+                </label>
+                <select asp-for="Input.PayoutMethod" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                    <option value="BankWire">Direct Corporate Wire (IBAN / SWIFT)</option>
+                    <option value="PayPal">PayPal Premier / Business</option>
+                    <option value="StripeConnect">Stripe Connect Direct</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label asp-for="Input.Notes" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                    Tax Invoice Reference / Memo (Optional)
+                </label>
+                <textarea asp-for="Input.Notes" rows="3" placeholder="e.g. Studio Invoice #INV-2026-09..." 
+                          class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="/creator/earnings" class="btn-admin btn-admin-secondary">Cancel</a>
+                @if (Model.PendingBalance >= 100m)
+                {
+                    <button type="submit" class="btn-admin btn-admin-primary">Submit Royalty Request</button>
+                }
+                else
+                {
+                    <button type="button" class="btn-admin" disabled style="opacity: 0.5; cursor: not-allowed;">Balance Below $100 Threshold</button>
+                }
+            </div>
+        </form>
+    </div>
+
+    @* Right Column: Schedule Notes *@
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="admin-card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-bottom: 12px;">Royalty Disbursement Terms</h3>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <strong style="color: #c084fc;">70% Net Revenue Split:</strong>
+                    You retain 70% of gross template license and installation revenue across sovereign enterprise tenants.
+                </div>
+                <div>
+                    <strong style="color: #93c5fd;">Monthly Processing:</strong>
+                    Creator royalty runs are audited and settled on the <strong>15th of each calendar month</strong>.
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--admin-card-border);">
+                <a href="/creator/profile/banking" style="color: #c084fc; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    <span>⚙️</span> Manage Studio Banking Settings →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

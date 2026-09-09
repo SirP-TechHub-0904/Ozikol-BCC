@@ -1,0 +1,118 @@
+@page "/creator/templates/preview/{id:guid}"
+@model Ozikol.Central.Areas.Creator.Pages.Templates.PreviewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canvas: @Model.Template.Name — Ozikol Studio</title>
+    <link rel="stylesheet" href="~/css/fonts.css" />
+    <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0b0f19;
+            color: #f1f5f9;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-toolbar {
+            background: #0f172a;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .canvas-viewport-btns button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .canvas-viewport-btns button.active {
+            background: #8b5cf6;
+            color: #fff;
+            border-color: #8b5cf6;
+        }
+        .canvas-frame-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px;
+            background: #060911;
+            overflow: auto;
+        }
+        .canvas-container {
+            width: 100%;
+            transition: max-width 0.25s ease;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+
+    @* ── Scoped CSS Stylesheet from Template ── *@
+    <style id="templateScopedStyles">
+        @Html.Raw(Model.Template.CssStyles)
+    </style>
+</head>
+<body>
+    <div class="canvas-toolbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px;">🎨</span>
+            <div>
+                <strong style="font-size: 13px; color: #fff;">@Model.Template.Name</strong>
+                <span style="color: #93c5fd; font-family: monospace; font-size: 11px; margin-left: 6px;">(@Model.Template.VariantCode)</span>
+            </div>
+        </div>
+        <div class="canvas-viewport-btns">
+            <button type="button" class="active" onclick="setViewport('100%', this)">🖥️ Desktop</button>
+            <button type="button" onclick="setViewport('768px', this)">📱 Tablet</button>
+            <button type="button" onclick="setViewport('375px', this)">📱 Mobile</button>
+        </div>
+    </div>
+
+    <div class="canvas-frame-wrapper">
+        <div class="canvas-container" id="canvasContainer">
+            @* ── Rendered Semantic HTML Template ── *@
+            @Html.Raw(Model.CompiledHtml)
+        </div>
+    </div>
+
+    @* ── Sandboxed Client JavaScript Hook ── *@
+    @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
+    {
+        <script>
+            try {
+                @Html.Raw(Model.Template.JsScript)
+            } catch (err) {
+                console.error("Template JS execution error:", err);
+            }
+        </script>
+    }
+
+    <script>
+        function setViewport(width, btn) {
+            document.getElementById('canvasContainer').style.maxWidth = width;
+            document.querySelectorAll('.canvas-viewport-btns button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
