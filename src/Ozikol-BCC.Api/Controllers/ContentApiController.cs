@@ -7,6 +7,7 @@ using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -1047,6 +1048,7 @@ namespace Ozikol_BCC.Api.Controllers
                     template.HtmlTemplate = request.HtmlTemplate;
                     template.CssStyles = request.CssStyles;
                     template.JsScript = request.JsScript;
+                    template.DefaultContentJson = request.DefaultContentJson;
                     template.InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion;
                     template.IsActive = true;
                     template.LastUpdatedUtc = DateTime.UtcNow;
@@ -1068,6 +1070,7 @@ namespace Ozikol_BCC.Api.Controllers
                         HtmlTemplate = request.HtmlTemplate,
                         CssStyles = request.CssStyles,
                         JsScript = request.JsScript,
+                        DefaultContentJson = request.DefaultContentJson,
                         InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion,
                         IsActive = true,
                         IsCustomized = false,
@@ -1199,6 +1202,7 @@ namespace Ozikol_BCC.Api.Controllers
                     template.HtmlTemplate = request.HtmlTemplate ?? string.Empty;
                     template.CssStyles = request.CssStyles ?? string.Empty;
                     template.JsScript = request.JsScript;
+                    template.DefaultContentJson = request.DefaultContentJson;
                     template.InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion;
                     template.IsCustomized = true;
                     template.IsActive = true;
@@ -1216,6 +1220,7 @@ namespace Ozikol_BCC.Api.Controllers
                         HtmlTemplate = request.HtmlTemplate ?? string.Empty,
                         CssStyles = request.CssStyles ?? string.Empty,
                         JsScript = request.JsScript,
+                        DefaultContentJson = request.DefaultContentJson,
                         InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion,
                         IsCustomized = true,
                         IsActive = true,
@@ -1231,6 +1236,184 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
                 return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to save custom template: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Inserts a section into a WebPage (or Homepage) instantiated from an installed UI template.
+        /// Automatically parses DefaultContentJson (or provided CustomContentJson) to populate the
+        /// PageSection scalar fields (Title, MiniTitle, Description, ImageUrl, ButtonText, ButtonLink)
+        /// and its child PageSectionList items.
+        /// </summary>
+        /// <param name="request">The assignment parameters and content payload.</param>
+        /// <returns>The newly created and populated PageSection.</returns>
+        [HttpPost("templates/assign-to-page")]
+        public async Task<IActionResult> AssignTemplateToPage([FromBody] AssignTemplateToPageRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid request payload."));
+            }
+
+            try
+            {
+                // 1. Locate template from installed templates
+                TenantInstalledTemplate? template = null;
+                if (request.TemplateId.HasValue && request.TemplateId.Value != Guid.Empty)
+                {
+                    template = await _context.TenantInstalledTemplates.FindAsync(request.TemplateId.Value);
+                }
+
+                if (template == null && !string.IsNullOrWhiteSpace(request.TemplateKey))
+                {
+                    var cleanKey = request.TemplateKey.Trim();
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.TemplateKey == cleanKey || t.VariantCode == cleanKey);
+                }
+
+                if (template == null && !string.IsNullOrWhiteSpace(request.VariantCode))
+                {
+                    var cleanVariant = request.VariantCode.Trim();
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.VariantCode == cleanVariant);
+                }
+
+                // 2. Resolve target WebPage
+                WebPage? targetPage = null;
+                var isHomePage = false;
+
+                if (request.WebPageId.HasValue && request.WebPageId.Value != Guid.Empty)
+                {
+                    targetPage = await _context.WebPages.FindAsync(request.WebPageId.Value);
+                }
+                else if (!string.IsNullOrWhiteSpace(request.TargetPageSlug))
+                {
+                    var slug = request.TargetPageSlug.Trim().ToLowerInvariant();
+                    if (slug == "home" || slug == "/")
+                    {
+                        isHomePage = true;
+                        targetPage = await _context.WebPages
+                            .FirstOrDefaultAsync(p => p.DirectUrl == "home" || p.DirectUrl == "/" || p.DirectUrl == "" || p.Title.ToLower() == "home");
+                    }
+                    else
+                    {
+                        targetPage = await _context.WebPages
+                            .FirstOrDefaultAsync(p => p.DirectUrl != null && p.DirectUrl.ToLower() == slug);
+                    }
+                }
+
+                // 3. Determine order
+                var insertAtTop = string.Equals(request.InsertPosition, "top", StringComparison.OrdinalIgnoreCase);
+                int sortOrder = 10;
+
+                if (targetPage != null)
+                {
+                    var existingOrders = await _context.PageSections
+                        .Where(s => s.WebPageId == targetPage.Id)
+                        .Select(s => s.PageSortOrder)
+                        .ToListAsync();
+
+                    if (existingOrders.Any())
+                    {
+                        sortOrder = insertAtTop ? Math.Max(1, existingOrders.Min() - 5) : existingOrders.Max() + 10;
+                    }
+                }
+                else if (isHomePage)
+                {
+                    var existingOrders = await _context.PageSections
+                        .Where(s => s.ShowInHome)
+                        .Select(s => s.HomePageSortOrder)
+                        .ToListAsync();
+
+                    if (existingOrders.Any())
+                    {
+                        sortOrder = insertAtTop ? Math.Max(1, existingOrders.Min() - 5) : existingOrders.Max() + 10;
+                    }
+                }
+
+                // 4. Parse content JSON (user's edited content or template's default content)
+                var rawJson = !string.IsNullOrWhiteSpace(request.CustomContentJson)
+                    ? request.CustomContentJson
+                    : template?.DefaultContentJson;
+
+                TemplateContentPayload? contentData = null;
+                if (!string.IsNullOrWhiteSpace(rawJson))
+                {
+                    try
+                    {
+                        contentData = JsonSerializer.Deserialize<TemplateContentPayload>(rawJson, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                    }
+                    catch
+                    {
+                        // Fallback gracefully if parsing fails
+                    }
+                }
+
+                // 5. Build PageSection entity
+                var section = new PageSection
+                {
+                    Id = Guid.NewGuid(),
+                    WebPageId = targetPage?.Id,
+                    TemplateKey = template?.TemplateKey ?? request.TemplateKey ?? template?.VariantCode ?? "Section_Custom",
+                    MasterTemplateId = template?.MasterTemplateId,
+                    InstalledVersion = template?.InstalledVersion ?? "1.0.0",
+                    IsCustomized = template?.IsCustomized ?? true,
+                    HtmlTemplate = template?.HtmlTemplate ?? string.Empty,
+                    CssStyles = template?.CssStyles ?? string.Empty,
+                    JsScript = template?.JsScript,
+                    Title = contentData?.Title ?? template?.Name ?? "New Section",
+                    MiniTitle = contentData?.MiniTitle,
+                    Description = contentData?.Description,
+                    ImageUrl = contentData?.ImageUrl,
+                    ButtonText = contentData?.ButtonText,
+                    ButtonLink = contentData?.ButtonLink,
+                    ShowInHome = isHomePage || (targetPage == null),
+                    PageSortOrder = sortOrder,
+                    HomePageSortOrder = sortOrder,
+                    Disable = false
+                };
+
+                _context.PageSections.Add(section);
+
+                // 6. If repeating sub-items exist, populate PageSectionList children
+                if (contentData?.Items != null && contentData.Items.Any())
+                {
+                    int itemOrder = 1;
+                    foreach (var item in contentData.Items)
+                    {
+                        var child = new PageSectionList
+                        {
+                            Id = Guid.NewGuid(),
+                            PageSectionId = section.Id,
+                            Title = item.Title ?? $"Item {itemOrder}",
+                            MiniTitle = item.MiniTitle,
+                            Description = item.Description,
+                            ImageUrl = item.ImageUrl,
+                            ButtonText = item.ButtonText,
+                            ButtonLink = item.ButtonLink,
+                            SortOrder = itemOrder++
+                        };
+                        _context.PageSectionLists.Add(child);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Reload section with children to return complete object
+                var saved = await _context.PageSections
+                    .Include(s => s.WebPage)
+                    .Include(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                    .FirstOrDefaultAsync(s => s.Id == section.Id);
+
+                return Ok(ApiResponse<object>.SuccessResponse(saved, $"Template section successfully inserted into {(targetPage != null ? targetPage.Title : "Home")} page."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to assign template section: {msg}"));
             }
         }
 
@@ -1394,6 +1577,9 @@ namespace Ozikol_BCC.Api.Controllers
         }
     }
 
+    /// <summary>
+    /// Request model for creating a custom section template directly in the tenant vault.
+    /// </summary>
     public class CreateCustomTemplateRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -1403,7 +1589,49 @@ namespace Ozikol_BCC.Api.Controllers
         public string? HtmlTemplate { get; set; }
         public string? CssStyles { get; set; }
         public string? JsScript { get; set; }
+        public string? DefaultContentJson { get; set; }
         public string? InstalledVersion { get; set; } = "1.0.0";
+    }
+
+    /// <summary>
+    /// Request model for assigning an installed template into a specific WebPage or Homepage.
+    /// </summary>
+    public class AssignTemplateToPageRequest
+    {
+        public Guid? TemplateId { get; set; }
+        public string? TemplateKey { get; set; }
+        public string? VariantCode { get; set; }
+        public Guid? WebPageId { get; set; }
+        public string? TargetPageSlug { get; set; }
+        public string InsertPosition { get; set; } = "bottom";
+        public string? CustomContentJson { get; set; }
+    }
+
+    /// <summary>
+    /// Serialized JSON schema representation of default or custom sample showcase content for template hydration.
+    /// </summary>
+    public class TemplateContentPayload
+    {
+        public string? Title { get; set; }
+        public string? MiniTitle { get; set; }
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ButtonText { get; set; }
+        public string? ButtonLink { get; set; }
+        public List<TemplateContentItemPayload>? Items { get; set; }
+    }
+
+    /// <summary>
+    /// Serialized JSON item schema for repeatable loop cards (PageSectionLists).
+    /// </summary>
+    public class TemplateContentItemPayload
+    {
+        public string? Title { get; set; }
+        public string? MiniTitle { get; set; }
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ButtonText { get; set; }
+        public string? ButtonLink { get; set; }
     }
 
     public class CreateCodeInjectionRequest
@@ -1436,6 +1664,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string HtmlTemplate { get; set; } = string.Empty;
         public string CssStyles { get; set; } = string.Empty;
         public string? JsScript { get; set; }
+        public string? DefaultContentJson { get; set; }
         public string? InstalledVersion { get; set; } = "1.0.0";
     }
 

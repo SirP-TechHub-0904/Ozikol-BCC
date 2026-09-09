@@ -5640,6 +5640,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DefaultContentJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("HtmlTemplate")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
