@@ -1074,15 +1074,15 @@ export interface CodeInjectionTag {
               <input type="text" [(ngModel)]="tagForm.name" class="form-ctrl" placeholder="e.g. Google Tag Manager Head, Bootstrap 5.3 CDN, Theme Init" />
             </div>
 
-            <div class="form-group">
+            <div class="form-group" [class.full-width]="tagForm.tagType !== 'meta_tag'">
               <label class="form-lbl">TAG CATEGORY / TYPE *</label>
               <select [(ngModel)]="tagForm.tagType" class="form-ctrl" (change)="onTagTypeChanged()">
                 <!-- Header Zone Types -->
                 <ng-container *ngIf="tagFormZone === 'head'">
-                  <option value="link_stylesheet">External Stylesheet (&lt;link rel="stylesheet"&gt;)</option>
+                  <option value="meta_tag">SEO / Social Meta Tag (&lt;meta&gt;)</option>
+                  <option value="link_stylesheet">External Stylesheet (&lt;link rel="stylesheet"&gt;) / Upload CSS</option>
                   <option value="inline_css">Inline Custom CSS (&lt;style&gt;)</option>
                   <option value="google_fonts">Google Fonts Link &amp; Preconnect</option>
-                  <option value="meta_tag">SEO / Social Meta Tag (&lt;meta&gt;)</option>
                   <option value="script_url">External Head Script (&lt;script src="" async&gt;)</option>
                   <option value="inline_script">Inline Head Script (&lt;script&gt;)</option>
                   <option value="raw_html">Raw Custom HTML Snippet</option>
@@ -1107,14 +1107,28 @@ export interface CodeInjectionTag {
               </select>
             </div>
 
+            <!-- Meta & Icon Preset Dropdown (Shown when meta_tag is selected) -->
+            <div class="form-group" *ngIf="tagForm.tagType === 'meta_tag'">
+              <label class="form-lbl">META TAG &amp; ICON PRESET TEMPLATE (DROPDOWN)</label>
+              <select [(ngModel)]="selectedMetaPreset" class="form-ctrl" (change)="onMetaPresetChanged()">
+                <option value="full_suite">🌟 Comprehensive SEO, Social &amp; Icons Suite (All-In-One)</option>
+                <option value="favicons_icons">🎨 Favicons, Web App Icons &amp; Manifest (.ico, .png, .svg)</option>
+                <option value="open_graph">🌐 Open Graph Protocol Suite (Facebook, LinkedIn, Discord)</option>
+                <option value="twitter">🐦 Twitter / X Card Suite (Large Summary Image)</option>
+                <option value="seo_core">🔍 Search Engine Crawlers &amp; Canonical (Google, Bing, Robots)</option>
+                <option value="mobile_pwa">📱 Mobile PWA &amp; Theme Color (Viewport, Theme Color)</option>
+                <option value="custom">⚙️ Custom Meta Tag (Add Mine Myself)</option>
+              </select>
+            </div>
+
             <div class="form-group">
               <label class="form-lbl">SORT ORDER (EXECUTION PRIORITY)</label>
               <input type="number" [(ngModel)]="tagForm.sortOrder" class="form-ctrl" placeholder="10" />
               <small class="form-hint">Lower numbers execute first (e.g. 1 before 10).</small>
             </div>
 
-            <div class="form-group full-width">
-              <label class="toggle-card">
+            <div class="form-group">
+              <label class="toggle-card" style="height: 100%; box-sizing: border-box;">
                 <input type="checkbox" [(ngModel)]="tagForm.isActive" />
                 <span class="toggle-card-txt">
                   <strong>Active / Enabled</strong>
@@ -1122,14 +1136,109 @@ export interface CodeInjectionTag {
                 </span>
               </label>
             </div>
+
+            <!-- Custom Meta Tag Builder (Shown when custom is selected) -->
+            <div class="form-group full-width" *ngIf="selectedMetaPreset === 'custom' && tagForm.tagType === 'meta_tag'">
+              <div class="custom-meta-builder-card">
+                <div class="custom-meta-builder-header">
+                  <span class="material-symbols-outlined icon-sm">tune</span>
+                  <strong>Custom Meta Tag Builder (Add Mine Myself)</strong>
+                </div>
+                <div class="custom-meta-builder-grid">
+                  <div>
+                    <label class="form-lbl-xs">ATTRIBUTE TYPE</label>
+                    <select [(ngModel)]="customMetaAttrType" class="form-ctrl form-ctrl-sm">
+                      <option value="name">name="..."</option>
+                      <option value="property">property="..."</option>
+                      <option value="http-equiv">http-equiv="..."</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-lbl-xs">ATTRIBUTE KEY</label>
+                    <input type="text" [(ngModel)]="customMetaAttrName" class="form-ctrl form-ctrl-sm" placeholder="e.g. fb:app_id, geo.region, referrer" />
+                  </div>
+                  <div>
+                    <label class="form-lbl-xs">CONTENT / VALUE</label>
+                    <input type="text" [(ngModel)]="customMetaAttrContent" class="form-ctrl form-ctrl-sm" placeholder="e.g. 123456 or placeholder" />
+                  </div>
+                  <div class="btn-insert-wrap">
+                    <button type="button" class="btn-add-meta-item" (click)="insertCustomMetaTag()">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Insert Custom Tag</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CSS File Upload & Link Studio (Shown when stylesheet or css is selected in head) -->
+            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
+              <div class="css-upload-studio-card">
+                <div class="css-upload-header">
+                  <div class="css-upload-title-box">
+                    <div class="css-icon-badge">
+                      <span class="material-symbols-outlined">upload_file</span>
+                    </div>
+                    <div>
+                      <strong>Upload Custom CSS File &amp; Link It</strong>
+                      <small>Select a .css file from your computer to host and link via &lt;link rel="stylesheet"&gt; or embed inline.</small>
+                    </div>
+                  </div>
+                  <input type="file" #cssFileInput accept=".css" (change)="onCssFileSelected($event)" style="display: none;" />
+                  <button type="button" class="btn-choose-css" (click)="cssFileInput.click()">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <span>Choose .CSS File</span>
+                  </button>
+                </div>
+
+                <div class="css-file-status-bar" *ngIf="selectedCssFileName">
+                  <div class="css-file-info">
+                    <span class="material-symbols-outlined icon-file">css</span>
+                    <span class="css-filename">{{ selectedCssFileName }}</span>
+                    <span class="css-filesize">({{ selectedCssFileSize }})</span>
+                  </div>
+                  <div class="css-action-buttons">
+                    <button type="button" class="btn-action-link-css" (click)="uploadAndLinkCssFile()" [disabled]="uploadingCss">
+                      <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'link' }}</span>
+                      <span>{{ uploadingCss ? 'Uploading...' : 'Upload &amp; Link (&lt;link rel="stylesheet"&gt;)' }}</span>
+                    </button>
+                    <button type="button" class="btn-action-import-css" (click)="importCssAsInlineStyle()" [disabled]="uploadingCss">
+                      <span class="material-symbols-outlined">code</span>
+                      <span>Import as Inline CSS (&lt;style&gt;)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group" style="margin-top: 14px;">
+          <!-- Placeholder Tokens Quick Ribbon -->
+          <div class="token-quick-ribbon" style="margin-top: 14px;">
+            <div class="token-ribbon-heading">
+              <span class="material-symbols-outlined icon-token">token</span>
+              <span>Available Placeholders (Click to insert):</span>
+            </div>
+            <div class="token-chips-scroll">
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ Title }}')" [innerText]="'{{ Title }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ Description }}')" [innerText]="'{{ Description }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ Keywords }}')" [innerText]="'{{ Keywords }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ CanonicalUrl }}')" [innerText]="'{{ CanonicalUrl }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ ImageUrl }}')" [innerText]="'{{ ImageUrl }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ FaviconUrl }}')" [innerText]="'{{ FaviconUrl }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ AppleTouchIconUrl }}')" [innerText]="'{{ AppleTouchIconUrl }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ BrandName }}')" [innerText]="'{{ BrandName }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ Author }}')" [innerText]="'{{ Author }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ ThemeColor }}')" [innerText]="'{{ ThemeColor }}'"></button>
+              <button type="button" class="tag-token-chip" (click)="insertPlaceholderIntoTag('{{ DomainName }}')" [innerText]="'{{ DomainName }}'"></button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 10px;">
             <div class="lbl-with-note">
               <label class="form-lbl">TAG / SCRIPT CODE CONTENT *</label>
-              <span class="note-pill">⚡ Auto-generated sample boilerplate. Customize as needed!</span>
+              <span class="note-pill">⚡ Auto-generated sample boilerplate with placeholders. Customize as needed!</span>
             </div>
-            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="8" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
+            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
           </div>
         </div>
 
@@ -2814,6 +2923,279 @@ export interface CodeInjectionTag {
     .toggle-card-txt strong { font-size: 12.5px; color: #0f172a; }
     .toggle-card-txt small { font-size: 11px; color: #64748b; }
 
+    /* Custom Meta Tag Builder */
+    .custom-meta-builder-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1.5px dashed #93c5fd;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .custom-meta-builder-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: #1e40af;
+      font-size: 13px;
+    }
+    .custom-meta-builder-header .icon-sm {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .custom-meta-builder-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr 1fr auto;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    @media (max-width: 768px) {
+      .custom-meta-builder-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-lbl-xs {
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .form-ctrl-sm {
+      height: 34px !important;
+      padding: 0 10px !important;
+      font-size: 12px !important;
+      border-radius: 6px !important;
+      border: 1.5px solid #cbd5e1 !important;
+      background: #ffffff !important;
+    }
+    .btn-insert-wrap {
+      display: flex;
+      align-items: flex-end;
+    }
+    .btn-add-meta-item {
+      height: 34px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .btn-add-meta-item:hover {
+      background: #003bb5;
+      transform: translateY(-1px);
+    }
+    .btn-add-meta-item .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    /* CSS File Upload Studio */
+    .css-upload-studio-card {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .css-upload-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .css-upload-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .css-icon-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #dcfce7;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .css-icon-badge .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .css-upload-title-box strong {
+      display: block;
+      font-size: 13px;
+      color: #14532d;
+    }
+    .css-upload-title-box small {
+      display: block;
+      font-size: 11px;
+      color: #166534;
+      margin-top: 1px;
+    }
+    .btn-choose-css {
+      height: 36px;
+      background: #ffffff;
+      border: 1.5px solid #16a34a;
+      color: #15803d;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-choose-css:hover {
+      background: #16a34a;
+      color: #ffffff;
+    }
+    .btn-choose-css .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .css-file-status-bar {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #bbf7d0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .css-file-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon-file {
+      font-size: 20px;
+      color: #0284c7;
+    }
+    .css-filename {
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .css-filesize {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .css-action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-action-link-css {
+      height: 32px;
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-action-link-css:hover:not(:disabled) {
+      background: #0369a1;
+    }
+    .btn-action-link-css:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-action-link-css .material-symbols-outlined {
+      font-size: 16px;
+    }
+    .btn-action-import-css {
+      height: 32px;
+      background: #ffffff;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-action-import-css:hover:not(:disabled) {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-action-import-css:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-action-import-css .material-symbols-outlined {
+      font-size: 16px;
+    }
+
+    /* Token Quick Ribbon */
+    .token-quick-ribbon {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .token-ribbon-heading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+    .icon-token {
+      font-size: 15px;
+      color: #0050e5;
+    }
+    .token-chips-scroll {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag-token-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0284c7;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tag-token-chip:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+      transform: translateY(-1px);
+    }
+
     /* Interactive Sample Content Live Editor */
     .content-editor-container {
       background: #ffffff;
@@ -2995,12 +3377,169 @@ export class MyTemplatesComponent implements OnInit {
   };
   savingTag: boolean = false;
 
+  // Comprehensive Meta & Icon Presets State
+  selectedMetaPreset: string = 'full_suite';
+  customMetaAttrType: 'name' | 'property' | 'http-equiv' = 'name';
+  customMetaAttrName: string = '';
+  customMetaAttrContent: string = '';
+
+  // CSS File Upload State
+  selectedCssFile: File | null = null;
+  selectedCssFileName: string = '';
+  selectedCssFileSize: string = '';
+  uploadingCss: boolean = false;
+  uploadedCssUrl: string = '';
+
+  readonly metaPresets: Record<string, { name: string; icon: string; content: string }> = {
+    full_suite: {
+      name: 'Full SEO & Social Meta Suite (All-In-One with Placeholders)',
+      icon: 'auto_awesome',
+      content: `<!-- Primary SEO Meta Tags -->
+<title>{{ Title }} | {{ BrandName }}</title>
+<meta name="title" content="{{ Title }} | {{ BrandName }}" />
+<meta name="description" content="{{ Description }}" />
+<meta name="keywords" content="{{ Keywords }}" />
+<meta name="author" content="{{ Author }}" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="{{ CanonicalUrl }}" />
+
+<!-- Open Graph Protocol (Facebook, LinkedIn, Discord) -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="{{ CanonicalUrl }}" />
+<meta property="og:title" content="{{ Title }} | {{ BrandName }}" />
+<meta property="og:description" content="{{ Description }}" />
+<meta property="og:image" content="{{ ImageUrl }}" />
+<meta property="og:site_name" content="{{ BrandName }}" />
+
+<!-- Twitter / X Cards -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content="{{ CanonicalUrl }}" />
+<meta name="twitter:title" content="{{ Title }} | {{ BrandName }}" />
+<meta name="twitter:description" content="{{ Description }}" />
+<meta name="twitter:image" content="{{ ImageUrl }}" />
+<meta name="twitter:site" content="@{{ BrandName }}" />
+
+<!-- Favicon & Web App Icons -->
+<link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
+<link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
+<link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ AppleTouchIconUrl }}" />
+<meta name="theme-color" content="{{ ThemeColor }}" />`
+    },
+    favicons_icons: {
+      name: 'Favicons, Web App Icons & Manifest (.ico, .png, .svg, Apple Touch)',
+      icon: 'star',
+      content: `<!-- Standard Web Favicons -->
+<link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
+<link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
+<link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
+
+<!-- Apple Touch Icon (iOS Home Screen) -->
+<link rel="apple-touch-icon" sizes="180x180" href="{{ AppleTouchIconUrl }}" />
+
+<!-- Android Chrome / PWA Web Manifest -->
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- Safari Pinned Tab Icon -->
+<link rel="mask-icon" href="{{ SafariPinnedTabUrl }}" color="{{ ThemeColor }}" />
+<meta name="msapplication-TileColor" content="{{ ThemeColor }}" />
+<meta name="theme-color" content="{{ ThemeColor }}" />`
+    },
+    open_graph: {
+      name: 'Open Graph Protocol (Facebook, LinkedIn, Discord)',
+      icon: 'share',
+      content: `<!-- Open Graph / Social Media Sharing -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="{{ BrandName }}" />
+<meta property="og:url" content="{{ CanonicalUrl }}" />
+<meta property="og:title" content="{{ Title }}" />
+<meta property="og:description" content="{{ Description }}" />
+<meta property="og:image" content="{{ ImageUrl }}" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="en_US" />`
+    },
+    twitter: {
+      name: 'Twitter / X Card Suite (Large Summary Image)',
+      icon: 'campaign',
+      content: `<!-- Twitter / X Card Metadata -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:domain" content="{{ DomainName }}" />
+<meta name="twitter:url" content="{{ CanonicalUrl }}" />
+<meta name="twitter:title" content="{{ Title }}" />
+<meta name="twitter:description" content="{{ Description }}" />
+<meta name="twitter:image" content="{{ ImageUrl }}" />
+<meta name="twitter:site" content="@{{ BrandName }}" />
+<meta name="twitter:creator" content="@{{ Author }}" />`
+    },
+    seo_core: {
+      name: 'Core SEO & Search Bots (Keywords, Description, Robots, Canonical)',
+      icon: 'search',
+      content: `<!-- Core Search Engine Optimization -->
+<title>{{ Title }} | {{ BrandName }}</title>
+<meta name="description" content="{{ Description }}" />
+<meta name="keywords" content="{{ Keywords }}" />
+<meta name="author" content="{{ Author }}" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+<meta name="googlebot" content="index, follow" />
+<link rel="canonical" href="{{ CanonicalUrl }}" />`
+    },
+    mobile_pwa: {
+      name: 'Mobile PWA & Browser Theme (Viewport, Theme Color, Web App)',
+      icon: 'smartphone',
+      content: `<!-- Mobile & PWA Device Configuration -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+<meta name="theme-color" content="{{ ThemeColor }}" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="{{ BrandName }}" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />`
+    },
+    custom: {
+      name: 'Custom Meta Tag (Add Mine Myself)',
+      icon: 'tune',
+      content: `<!-- Custom Meta Tags -->
+<meta name="custom-name" content="{{ CustomValue }}" />`
+    }
+  };
+
   private readonly tagBoilerplates: Record<string, string> = {
     // Head zone
     link_stylesheet: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />',
     inline_css: '<style>\n  /* Custom CSS Overrides */\n  :root {\n    --theme-accent: #0050e5;\n  }\n</style>',
     google_fonts: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">',
-    meta_tag: '<meta name="keywords" content="sovereign cloud, enterprise bcc, ozikol" />\n<meta property="og:type" content="website" />',
+    meta_tag: `<!-- Primary SEO Meta Tags -->
+<title>{{ Title }} | {{ BrandName }}</title>
+<meta name="title" content="{{ Title }} | {{ BrandName }}" />
+<meta name="description" content="{{ Description }}" />
+<meta name="keywords" content="{{ Keywords }}" />
+<meta name="author" content="{{ Author }}" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="{{ CanonicalUrl }}" />
+
+<!-- Open Graph Protocol (Facebook, LinkedIn, Discord) -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="{{ CanonicalUrl }}" />
+<meta property="og:title" content="{{ Title }} | {{ BrandName }}" />
+<meta property="og:description" content="{{ Description }}" />
+<meta property="og:image" content="{{ ImageUrl }}" />
+<meta property="og:site_name" content="{{ BrandName }}" />
+
+<!-- Twitter / X Cards -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content="{{ CanonicalUrl }}" />
+<meta name="twitter:title" content="{{ Title }} | {{ BrandName }}" />
+<meta name="twitter:description" content="{{ Description }}" />
+<meta name="twitter:image" content="{{ ImageUrl }}" />
+<meta name="twitter:site" content="@{{ BrandName }}" />
+
+<!-- Favicon & Web App Icons -->
+<link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
+<link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
+<link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ AppleTouchIconUrl }}" />
+<meta name="theme-color" content="{{ ThemeColor }}" />`,
     script_url: '<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" async></script>',
     inline_script: '<script>\n  // Google Tag Manager / Analytics Head Snippet\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n</script>',
     // Body open zone
@@ -3244,9 +3783,127 @@ export class MyTemplatesComponent implements OnInit {
   }
 
   onTagTypeChanged(): void {
+    if (this.tagForm.tagType === 'meta_tag') {
+      this.selectedMetaPreset = 'full_suite';
+      this.tagForm.content = this.metaPresets['full_suite'].content;
+      if (!this.tagForm.name || this.tagForm.name === 'SEO / Social Meta Tag') {
+        this.tagForm.name = 'Primary SEO, Social & Favicon Meta Suite';
+      }
+      return;
+    }
+
     if (this.tagBoilerplates[this.tagForm.tagType]) {
       this.tagForm.content = this.tagBoilerplates[this.tagForm.tagType];
     }
+  }
+
+  /**
+   * Switches the active meta boilerplate when the user changes the meta preset dropdown.
+   */
+  onMetaPresetChanged(): void {
+    if (this.metaPresets[this.selectedMetaPreset]) {
+      this.tagForm.content = this.metaPresets[this.selectedMetaPreset].content;
+      this.tagForm.name = `Meta: ${this.metaPresets[this.selectedMetaPreset].name.split('(')[0].trim()}`;
+      this.toast.info(`Loaded ${this.metaPresets[this.selectedMetaPreset].name.split('(')[0].trim()} preset.`);
+    }
+  }
+
+  /**
+   * Inserts a custom meta tag built via the interactive "Add Mine Myself" builder.
+   */
+  insertCustomMetaTag(): void {
+    if (!this.customMetaAttrName?.trim()) {
+      this.toast.error('Please enter a meta attribute name (e.g. fb:app_id, geo.region, referrer).');
+      return;
+    }
+    const val = this.customMetaAttrContent?.trim() || '';
+    const tag = `\n<meta ${this.customMetaAttrType}="${this.customMetaAttrName.trim()}" content="${val}" />`;
+    this.tagForm.content = (this.tagForm.content || '').trimEnd() + tag;
+    this.toast.success(`Inserted <meta ${this.customMetaAttrType}="${this.customMetaAttrName.trim()}">`);
+    this.customMetaAttrName = '';
+    this.customMetaAttrContent = '';
+  }
+
+  /**
+   * Inserts a dynamic placeholder token directly into the tag code textarea.
+   */
+  insertPlaceholderIntoTag(placeholder: string): void {
+    this.tagForm.content = (this.tagForm.content || '').trimEnd() + ' ' + placeholder;
+    this.toast.info(`Inserted ${placeholder}`);
+  }
+
+  /**
+   * Handles local CSS file selection.
+   */
+  onCssFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.css')) {
+      this.toast.error('Please select a valid CSS file (.css).');
+      return;
+    }
+    this.selectedCssFile = file;
+    this.selectedCssFileName = file.name;
+    this.selectedCssFileSize = (file.size / 1024).toFixed(1) + ' KB';
+    this.toast.info(`Selected CSS file: ${file.name}`);
+  }
+
+  /**
+   * Uploads the selected CSS file to the backend and links it via <link rel="stylesheet">.
+   */
+  uploadAndLinkCssFile(): void {
+    if (!this.selectedCssFile) {
+      this.toast.error('Please choose a .css file first.');
+      return;
+    }
+
+    this.uploadingCss = true;
+    const formData = new FormData();
+    formData.append('file', this.selectedCssFile);
+
+    this.api.post<any>('ContentApi/upload-css', formData).subscribe({
+      next: (res) => {
+        this.uploadingCss = false;
+        const url = res?.data?.url;
+        if (url) {
+          this.uploadedCssUrl = url;
+          this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
+          this.tagForm.name = `Stylesheet: ${this.selectedCssFileName}`;
+          this.tagForm.tagType = 'link_stylesheet';
+          this.toast.success('CSS uploaded and stylesheet link generated successfully!');
+        } else {
+          this.toast.error('Failed to resolve uploaded CSS URL.');
+        }
+      },
+      error: () => {
+        this.uploadingCss = false;
+        this.toast.warning('Remote upload failed. Automatically importing as inline <style> directly.');
+        this.importCssAsInlineStyle();
+      }
+    });
+  }
+
+  /**
+   * Reads the selected CSS file and embeds its raw contents into an inline <style> tag.
+   */
+  importCssAsInlineStyle(): void {
+    if (!this.selectedCssFile) {
+      this.toast.error('Please choose a .css file first.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const cssText = reader.result as string;
+      this.tagForm.content = `<style>\n  /* Source: ${this.selectedCssFileName} */\n${cssText}\n</style>`;
+      this.tagForm.name = `Custom CSS: ${this.selectedCssFileName}`;
+      this.tagForm.tagType = 'inline_css';
+      this.toast.success(`Imported ${this.selectedCssFileName} into inline <style>!`);
+    };
+    reader.onerror = () => {
+      this.toast.error('Failed to read CSS file from disk.');
+    };
+    reader.readAsText(this.selectedCssFile);
   }
 
   saveTag(): void {

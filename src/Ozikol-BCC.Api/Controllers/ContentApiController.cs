@@ -7,6 +7,8 @@ using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -63,6 +65,98 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}"));
             }
+        }
+
+        // ==========================================
+        // 0.1. CSS ASSET UPLOAD & HOSTING
+        // ==========================================
+
+        /// <summary>
+        /// Uploads a custom CSS stylesheet file, saves it to persistent storage, and returns the direct stylesheet URL and raw CSS content.
+        /// </summary>
+        /// <param name="file">The .css stylesheet file to upload.</param>
+        /// <returns>JSON payload containing the public stylesheet URL and raw CSS content.</returns>
+        [HttpPost("upload-css")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadCss([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
+            }
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (extension != ".css")
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Only CSS (.css) stylesheet files are permitted."));
+            }
+
+            try
+            {
+                // Create storage directory under AppContext.BaseDirectory / uploads / css
+                var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads", "css");
+                if (!Directory.Exists(uploadsDir))
+                {
+                    Directory.CreateDirectory(uploadsDir);
+                }
+
+                // Sanitize file name and create unique persistent file
+                var rawBaseName = Path.GetFileNameWithoutExtension(file.FileName).Replace(" ", "-").ToLowerInvariant();
+                var safeBaseName = Regex.Replace(rawBaseName, @"[^a-z0-9\-_]", "");
+                if (string.IsNullOrWhiteSpace(safeBaseName)) safeBaseName = "stylesheet";
+                var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}.css";
+                var filePath = Path.Combine(uploadsDir, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Read file content for preview and inline style usage
+                var cssContent = await System.IO.File.ReadAllTextAsync(filePath);
+
+                // Compute public accessible URL
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                var stylesheetUrl = $"{baseUrl}/api/ContentApi/css/{uniqueFileName}";
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    url = stylesheetUrl,
+                    fileName = file.FileName,
+                    safeName = uniqueFileName,
+                    size = file.Length,
+                    content = cssContent
+                }, "CSS stylesheet uploaded and hosted successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process CSS upload: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Serves an uploaded CSS stylesheet asset with proper text/css content type and caching headers.
+        /// </summary>
+        /// <param name="fileName">The stored CSS filename.</param>
+        /// <returns>The CSS stylesheet file stream.</returns>
+        [HttpGet("css/{fileName}")]
+        [AllowAnonymous]
+        public IActionResult GetCssAsset(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || Path.GetInvalidFileNameChars().Any(fileName.Contains))
+            {
+                return BadRequest("Invalid filename.");
+            }
+
+            var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads", "css");
+            var filePath = Path.Combine(uploadsDir, fileName);
+
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("CSS asset not found.");
+            }
+
+            return PhysicalFile(filePath, "text/css", enableRangeProcessing: true);
         }
 
         // ==========================================
