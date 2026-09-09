@@ -927,7 +927,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpElectionId,
                         principalTable: "BcpElections",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -950,7 +950,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpFeatureId,
                         principalTable: "BcpFeatures",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1006,13 +1006,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpApplicantAccountId,
                         principalTable: "BcpApplicantAccounts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpJobApplicants_BcpJobPostings_BcpJobPostingId",
                         column: x => x.BcpJobPostingId,
                         principalTable: "BcpJobPostings",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1033,7 +1033,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpManualId,
                         principalTable: "BcpManuals",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1116,7 +1116,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProjectId,
                         principalTable: "BcpProjects",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1331,7 +1331,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpEventId,
                         principalTable: "BcpEvents",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1352,7 +1352,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpJobApplicantId,
                         principalTable: "BcpJobApplicants",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1376,7 +1376,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpJobApplicantId,
                         principalTable: "BcpJobApplicants",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1398,7 +1398,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpManualPageId,
                         principalTable: "BcpManualPages",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1536,7 +1536,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1562,7 +1562,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1588,7 +1588,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1617,7 +1617,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpVoteCategoryId,
                         principalTable: "BcpVoteCategories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1643,7 +1643,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpElectionId,
                         principalTable: "BcpElections",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1709,7 +1709,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpEquipmentCategoryId,
                         principalTable: "BcpEquipmentCategories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1773,7 +1773,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpFormId,
                         principalTable: "BcpForms",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1841,13 +1841,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.ProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpKpiUserScores_BcpKpiIndicators_BcpKpiIndicatorId",
                         column: x => x.BcpKpiIndicatorId,
                         principalTable: "BcpKpiIndicators",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1907,7 +1907,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1928,7 +1928,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1955,13 +1955,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpNewsletterPlanTransactions_BcpNewsletterPlans_BcpNewsletterPlanId",
                         column: x => x.BcpNewsletterPlanId,
                         principalTable: "BcpNewsletterPlans",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1981,7 +1981,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2109,7 +2109,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProjectId,
                         principalTable: "BcpProjects",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2135,7 +2135,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProjectId,
                         principalTable: "BcpProjects",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2183,13 +2183,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpReportParticipants_BcpReportSchemas_BcpReportSchemaId",
                         column: x => x.BcpReportSchemaId,
                         principalTable: "BcpReportSchemas",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2220,13 +2220,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpReportSubmissions_BcpReportSchemas_BcpReportSchemaId",
                         column: x => x.BcpReportSchemaId,
                         principalTable: "BcpReportSchemas",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2332,7 +2332,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2358,7 +2358,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2381,7 +2381,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.ProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2432,7 +2432,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2454,7 +2454,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.ProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2519,7 +2519,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.ProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2640,7 +2640,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpTicketTypeId,
                         principalTable: "BcpTicketTypes",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2689,7 +2689,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpEquipmentId,
                         principalTable: "BcpEquipments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2751,7 +2751,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpGroupId,
                         principalTable: "BcpGroups",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2825,7 +2825,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpGroupId,
                         principalTable: "BcpGroups",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2856,7 +2856,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpGroupId,
                         principalTable: "BcpGroups",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2911,7 +2911,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpNewsletterCampaignId,
                         principalTable: "BcpNewsletterCampaigns",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2933,7 +2933,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpNewsletterListId,
                         principalTable: "BcpNewsletterLists",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2955,7 +2955,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpNewsletterWalletId,
                         principalTable: "BcpNewsletterWallets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -2976,7 +2976,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpPhoneBookId,
                         principalTable: "BcpPhoneBooks",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3004,13 +3004,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProductOrderId,
                         principalTable: "BcpProductOrders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpProductOrderItems_BcpProducts_BcpProductId",
                         column: x => x.BcpProductId,
                         principalTable: "BcpProducts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3036,7 +3036,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpDonorId,
                         principalTable: "BcpDonors",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGrants_BcpProposals_BcpProposalId",
                         column: x => x.BcpProposalId,
@@ -3062,7 +3062,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProposalId,
                         principalTable: "BcpProposals",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3087,7 +3087,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpProposalId,
                         principalTable: "BcpProposals",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3108,7 +3108,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpReportSubmissionId,
                         principalTable: "BcpReportSubmissions",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3129,7 +3129,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpSmsCampaignId,
                         principalTable: "BcpSmsCampaigns",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3218,13 +3218,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.ReceiverUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpDirectMessages_AspNetUsers_SenderUserId",
                         column: x => x.SenderUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpDirectMessages_BcpDirectMessages_ReplyToMessageId",
                         column: x => x.ReplyToMessageId,
@@ -3260,7 +3260,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.PollId,
                         principalTable: "BcpGroupPolls",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3291,7 +3291,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserProfileId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupPosts_BcpGroupFiles_FileId",
                         column: x => x.FileId,
@@ -3313,7 +3313,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpGroupId,
                         principalTable: "BcpGroups",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3337,7 +3337,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.BcpGrantId,
                         principalTable: "BcpGrants",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3358,7 +3358,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpGroupPollVotes_BcpGroupPollOptions_OptionId",
                         column: x => x.OptionId,
@@ -3391,7 +3391,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpBookmarkedMessages_BcpGroupPosts_MessageId",
                         column: x => x.MessageId,
@@ -3425,7 +3425,7 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_BcpMessageReadReceipts_BcpGroupPosts_MessageId",
                         column: x => x.MessageId,

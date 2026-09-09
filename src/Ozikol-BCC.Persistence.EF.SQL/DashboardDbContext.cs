@@ -449,6 +449,22 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                 .HasColumnName("BcpFinanceCategoryId");
         });
 
+        // --- Prevent SQL Server Multiple Cascade Paths (Error 1785) across all domain entities ---
+        var cascadeFKs = modelBuilder.Model.GetEntityTypes()
+            .SelectMany(t => t.GetForeignKeys())
+            .Where(fk => !fk.IsOwnership && fk.DeleteBehavior == DeleteBehavior.Cascade);
+
+        foreach (var fk in cascadeFKs)
+        {
+            // Preserve default cascade delete behavior for internal ASP.NET Identity entity mappings
+            if (fk.DeclaringEntityType.ClrType.Namespace?.StartsWith("Microsoft.AspNetCore.Identity") == true)
+            {
+                continue;
+            }
+
+            fk.DeleteBehavior = DeleteBehavior.Restrict;
+        }
+
         // ConfigureCustomer(modelBuilder);
     }
 
