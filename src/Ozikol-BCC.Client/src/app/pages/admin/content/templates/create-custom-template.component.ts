@@ -483,7 +483,7 @@ interface CategoryPreset {
               (click)="activeMockTab = 'rich'"
             >
               <span class="material-symbols-outlined icon-micro">edit_document</span>
-              <span>Summernote Rich Text</span>
+              <span>Rich Description (WYSIWYG)</span>
             </button>
             <button
               type="button"
@@ -492,7 +492,7 @@ interface CategoryPreset {
               (click)="activeMockTab = 'media'"
             >
               <span class="material-symbols-outlined icon-micro">palette</span>
-              <span>Media, Style & Class</span>
+              <span>Media & Style</span>
             </button>
             <button
               type="button"
@@ -501,7 +501,8 @@ interface CategoryPreset {
               (click)="activeMockTab = 'cards'"
             >
               <span class="material-symbols-outlined icon-micro">view_agenda</span>
-              <span>Cards Loop ({{ sampleContent.items?.length || 0 }})</span>
+              <span>Cards Loop</span>
+              <span class="mock-tab-badge" *ngIf="sampleContent.items?.length">{{ sampleContent.items.length }}</span>
             </button>
             <button
               type="button"
@@ -510,7 +511,8 @@ interface CategoryPreset {
               (click)="activeMockTab = 'faqs'"
             >
               <span class="material-symbols-outlined icon-micro">quiz</span>
-              <span>FAQ Categories ({{ sampleContent.faqCategories?.length || 0 }})</span>
+              <span>FAQ Hierarchy</span>
+              <span class="mock-tab-badge" *ngIf="sampleContent.faqCategories?.length">{{ sampleContent.faqCategories.length }}</span>
             </button>
             <button
               type="button"
@@ -518,8 +520,9 @@ interface CategoryPreset {
               [class.active]="activeMockTab === 'menu'"
               (click)="activeMockTab = 'menu'"
             >
-              <span class="material-symbols-outlined icon-micro">menu_book</span>
-              <span>Menu Tree ({{ sampleContent.navigationMenu?.length || 0 }})</span>
+              <span class="material-symbols-outlined icon-micro">account_tree</span>
+              <span>Menu Tree</span>
+              <span class="mock-tab-badge" *ngIf="sampleContent.navigationMenu?.length">{{ sampleContent.navigationMenu.length }}</span>
             </button>
             <button
               type="button"
@@ -816,7 +819,7 @@ interface CategoryPreset {
             <div class="repeater-subitems-block" style="border-top: none; padding-top: 0; margin-top: 0;">
               <div class="repeater-header-bar">
                 <div class="repeater-title-box">
-                  <span class="repeater-label">PageSectionLists Repeater Cards:</span>
+                  <span class="repeater-label">PageSectionLists Repeater Cards</span>
                   <span class="repeater-loop-badge font-mono">{{ sampleContent.items?.length || 0 }} items</span>
                 </div>
                 <button type="button" class="btn-add-item" (click)="addSampleSubItem()">
@@ -830,60 +833,110 @@ interface CategoryPreset {
                   class="repeater-card-item"
                   *ngFor="let item of sampleContent.items; let idx = index"
                 >
-                  <div class="card-item-top">
-                    <span class="card-idx-pill">#{{ idx + 1 }}</span>
-                    <input
-                      type="text"
-                      [(ngModel)]="item.title"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-title"
-                      [placeholder]="'Title {{ Title }}'"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="item.subTitle"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-sub"
-                      [placeholder]="'Subtitle {{ MiniTitle }}'"
-                    />
+                  <!-- Card Header Bar -->
+                  <div class="card-item-header">
+                    <div class="card-badge-box">
+                      <span class="card-idx-pill">Card #{{ idx + 1 }}</span>
+                    </div>
                     <button
                       type="button"
-                      class="btn-remove-card"
+                      class="btn-trash-action"
                       (click)="removeSampleSubItem(idx)"
                       title="Remove card"
                     >
-                      ✕
+                      <span class="material-symbols-outlined">delete</span>
                     </button>
                   </div>
-                  <div class="card-item-bottom">
-                    <input
-                      type="text"
-                      [(ngModel)]="item.description"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-desc"
-                      [placeholder]="'Description {{ Description }}'"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="item.icon"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-icon"
-                      [placeholder]="'Icon {{ Icon }}'"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="item.buttonText"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-btn"
-                      [placeholder]="'Btn {{ ButtonText }}'"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="item.buttonLink"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control card-input-link"
-                      [placeholder]="'Link {{ ButtonLink }}'"
-                    />
+
+                  <!-- Card Fields Grid -->
+                  <div class="card-form-grid">
+                    <div class="card-field-row-2">
+                      <div class="card-field-unit">
+                        <label class="card-field-label">
+                          <span>Title</span>
+                          <code [innerText]="'{{ Title }}'"></code>
+                        </label>
+                        <input
+                          type="text"
+                          [(ngModel)]="item.title"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control card-ctrl"
+                          [placeholder]="'Headline Title'"
+                        />
+                      </div>
+                      <div class="card-field-unit">
+                        <label class="card-field-label">
+                          <span>Subtitle</span>
+                          <code [innerText]="'{{ MiniTitle }}'"></code>
+                        </label>
+                        <input
+                          type="text"
+                          [(ngModel)]="item.subTitle"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control card-ctrl"
+                          [placeholder]="'Subtitle / Eyebrow'"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="card-field-unit">
+                      <label class="card-field-label">
+                        <span>Description</span>
+                        <code [innerText]="'{{ Description }}'"></code>
+                      </label>
+                      <input
+                        type="text"
+                        [(ngModel)]="item.description"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control card-ctrl"
+                        [placeholder]="'Item narrative copy...'"
+                      />
+                    </div>
+
+                    <div class="card-field-row-3">
+                      <div class="card-field-unit">
+                        <label class="card-field-label">
+                          <span>Icon</span>
+                          <code [innerText]="'{{ Icon }}'"></code>
+                        </label>
+                        <div class="input-with-icon-preview">
+                          <span class="material-symbols-outlined icon-inline-preview">{{ item.icon || 'star' }}</span>
+                          <input
+                            type="text"
+                            [(ngModel)]="item.icon"
+                            (ngModelChange)="updatePreviewSimulation()"
+                            class="form-control card-ctrl card-ctrl-with-icon"
+                            [placeholder]="'Icon name'"
+                          />
+                        </div>
+                      </div>
+                      <div class="card-field-unit">
+                        <label class="card-field-label">
+                          <span>Button Text</span>
+                          <code [innerText]="'{{ ButtonText }}'"></code>
+                        </label>
+                        <input
+                          type="text"
+                          [(ngModel)]="item.buttonText"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control card-ctrl"
+                          [placeholder]="'Learn More'"
+                        />
+                      </div>
+                      <div class="card-field-unit">
+                        <label class="card-field-label">
+                          <span>Button Link</span>
+                          <code [innerText]="'{{ ButtonLink }}'"></code>
+                        </label>
+                        <input
+                          type="text"
+                          [(ngModel)]="item.buttonLink"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control card-ctrl font-mono"
+                          [placeholder]="'#link or /url'"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -895,7 +948,7 @@ interface CategoryPreset {
             <div class="faq-manager-block">
               <div class="repeater-header-bar">
                 <div class="repeater-title-box">
-                  <span class="repeater-label">FAQ Categories & Questions Hierarchy:</span>
+                  <span class="repeater-label">FAQ Categories & Questions Hierarchy</span>
                   <span class="repeater-loop-badge font-mono">{{ sampleContent.faqCategories?.length || 0 }} categories</span>
                 </div>
                 <button type="button" class="btn-add-item" (click)="addSampleFaqCategory()">
@@ -906,48 +959,64 @@ interface CategoryPreset {
 
               <div class="faq-categories-tree">
                 <div class="faq-cat-card" *ngFor="let cat of sampleContent.faqCategories; let catIdx = index">
-                  <div class="faq-cat-top-bar">
-                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                      <span class="card-idx-pill">Cat #{{ catIdx + 1 }}</span>
+                  <!-- Category Header Bar -->
+                  <div class="faq-cat-header-banner">
+                    <div class="faq-cat-title-wrap">
+                      <div class="faq-cat-badge">
+                        <span class="material-symbols-outlined">folder</span>
+                        <span>Category #{{ catIdx + 1 }}</span>
+                      </div>
                       <input
                         type="text"
                         [(ngModel)]="cat.title"
                         (ngModelChange)="updatePreviewSimulation()"
-                        class="form-control font-bold"
-                        [placeholder]="'Category Title {{ CategoryTitle }}'"
+                        class="form-control faq-cat-name-input font-bold"
+                        [placeholder]="'Category Title (e.g. Platform Architecture)'"
                       />
                     </div>
-                    <button type="button" class="btn-add-mini" (click)="addSampleFaq(catIdx)">
-                      <span class="material-symbols-outlined">add</span>
-                      <span>Add Q&A</span>
-                    </button>
-                    <button type="button" class="btn-remove-card" (click)="removeSampleFaqCategory(catIdx)" title="Remove Category">
-                      ✕
-                    </button>
+                    <div class="faq-cat-actions">
+                      <button type="button" class="btn-add-mini" (click)="addSampleFaq(catIdx)">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>Add Q&A</span>
+                      </button>
+                      <button type="button" class="btn-trash-action" (click)="removeSampleFaqCategory(catIdx)" title="Remove Category">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div class="faq-items-nest">
-                    <div class="faq-nested-row" *ngFor="let f of cat.faqs; let fIdx = index">
-                      <div class="faq-q-bar">
-                        <span class="faq-q-badge">Q{{ fIdx + 1 }}</span>
+                  <!-- Questions & Answers in Category -->
+                  <div class="faq-cat-body">
+                    <div class="faq-qa-card" *ngFor="let f of cat.faqs; let fIdx = index">
+                      <div class="faq-qa-header">
+                        <div class="faq-q-badge-box">
+                          <span class="faq-q-num-pill">Q{{ fIdx + 1 }}</span>
+                          <span class="material-symbols-outlined faq-q-icon">help_outline</span>
+                        </div>
                         <input
                           type="text"
                           [(ngModel)]="f.question"
                           (ngModelChange)="updatePreviewSimulation()"
-                          class="form-control"
-                          [placeholder]="'Question {{ Question }}'"
+                          class="form-control faq-question-input"
+                          [placeholder]="'Question headline...'"
                         />
-                        <button type="button" class="btn-remove-card-sm" (click)="removeSampleFaq(catIdx, fIdx)" title="Remove Question">
-                          ✕
+                        <button type="button" class="btn-trash-action-sm" (click)="removeSampleFaq(catIdx, fIdx)" title="Remove Question">
+                          <span class="material-symbols-outlined">delete</span>
                         </button>
                       </div>
-                      <textarea
-                        [(ngModel)]="f.answer"
-                        (ngModelChange)="updatePreviewSimulation()"
-                        class="form-control"
-                        rows="2"
-                        [placeholder]="'Answer {{ Answer }} copy...'"
-                      ></textarea>
+                      <div class="faq-answer-wrap">
+                        <label class="faq-ans-label">
+                          <span>Answer Text / Response</span>
+                          <code [innerText]="'{{ Answer }}'"></code>
+                        </label>
+                        <textarea
+                          [(ngModel)]="f.answer"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control faq-answer-textarea"
+                          rows="2"
+                          [placeholder]="'Detailed response or explanatory text...'"
+                        ></textarea>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -960,7 +1029,7 @@ interface CategoryPreset {
             <div class="nav-manager-block">
               <div class="repeater-header-bar">
                 <div class="repeater-title-box">
-                  <span class="repeater-label">Navigation Hierarchy (Parents -> Sub-Categories -> Pages):</span>
+                  <span class="repeater-label">Navigation Hierarchy (Menus → Sub-Categories → Pages)</span>
                   <span class="repeater-loop-badge font-mono">{{ sampleContent.navigationMenu?.length || 0 }} main menus</span>
                 </div>
                 <button type="button" class="btn-add-item" (click)="addSampleNavCategory()">
@@ -971,103 +1040,126 @@ interface CategoryPreset {
 
               <div class="nav-tree-container">
                 <div class="nav-parent-card" *ngFor="let menu of sampleContent.navigationMenu; let mIdx = index">
-                  <div class="nav-parent-top">
-                    <span class="card-idx-pill">Menu #{{ mIdx + 1 }}</span>
-                    <input
-                      type="text"
-                      [(ngModel)]="menu.title"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control font-bold"
-                      [placeholder]="'Category Title {{ Title }}'"
-                    />
-                    <input
-                      type="text"
-                      [(ngModel)]="menu.icon"
-                      (ngModelChange)="updatePreviewSimulation()"
-                      class="form-control"
-                      style="max-width: 110px;"
-                      [placeholder]="'Icon {{ Icon }}'"
-                    />
-                    <button type="button" class="btn-add-mini" (click)="addSampleNavChild(mIdx)">
-                      <span class="material-symbols-outlined">add</span>
-                      <span>Add Sub-Dropdown</span>
-                    </button>
-                    <button type="button" class="btn-remove-card" (click)="removeSampleNavCategory(mIdx)" title="Remove Menu">
-                      ✕
-                    </button>
-                  </div>
-
-                  <!-- Level 2 Sub-Categories -->
-                  <div class="nav-children-list" *ngIf="menu.children?.length">
-                    <div class="nav-child-block" *ngFor="let child of menu.children; let cIdx = index">
-                      <div class="nav-child-header">
-                        <span class="material-symbols-outlined icon-small" style="color: #0050e5;">subdirectory_arrow_right</span>
+                  <!-- Parent Menu Header -->
+                  <div class="nav-parent-header">
+                    <div class="nav-parent-left">
+                      <div class="nav-parent-badge">
+                        <span class="material-symbols-outlined">menu_open</span>
+                        <span>Menu #{{ mIdx + 1 }}</span>
+                      </div>
+                      <input
+                        type="text"
+                        [(ngModel)]="menu.title"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control nav-parent-title font-bold"
+                        [placeholder]="'Menu Title (e.g. Solutions)'"
+                      />
+                      <div class="input-with-icon-preview" style="max-width: 130px;">
+                        <span class="material-symbols-outlined icon-inline-preview">{{ menu.icon || 'category' }}</span>
                         <input
                           type="text"
-                          [(ngModel)]="child.title"
+                          [(ngModel)]="menu.icon"
                           (ngModelChange)="updatePreviewSimulation()"
-                          class="form-control"
-                          [placeholder]="'Sub-Category Title {{ Title }}'"
+                          class="form-control card-ctrl card-ctrl-with-icon"
+                          [placeholder]="'Icon'"
                         />
-                        <button type="button" class="btn-add-mini-ghost" (click)="addSampleNavPage(mIdx, cIdx)">
-                          <span class="material-symbols-outlined">add</span>
-                          <span>Add Page</span>
-                        </button>
-                        <button type="button" class="btn-remove-card-sm" (click)="removeSampleNavChild(mIdx, cIdx)" title="Remove Sub-Dropdown">
-                          ✕
-                        </button>
                       </div>
+                    </div>
+                    <div class="nav-parent-actions">
+                      <button type="button" class="btn-add-mini" (click)="addSampleNavChild(mIdx)">
+                        <span class="material-symbols-outlined">subdirectory_arrow_right</span>
+                        <span>+ Sub-Dropdown</span>
+                      </button>
+                      <button type="button" class="btn-trash-action" (click)="removeSampleNavCategory(mIdx)" title="Remove Menu">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
 
-                      <!-- Sub-Pages -->
-                      <div class="nav-pages-list" *ngIf="child.pages?.length">
-                        <div class="nav-page-row" *ngFor="let page of child.pages; let pIdx = index">
+                  <div class="nav-parent-body">
+                    <!-- Level 2 Sub-Categories -->
+                    <div class="nav-children-wrapper" *ngIf="menu.children?.length">
+                      <span class="nav-group-heading">Sub-Dropdown Categories (Level 2 Flyout / Columns):</span>
+                      <div class="nav-child-card" *ngFor="let child of menu.children; let cIdx = index">
+                        <div class="nav-child-header-bar">
+                          <div class="nav-child-badge-row">
+                            <span class="nav-child-pill">Sub {{ cIdx + 1 }}</span>
+                            <input
+                              type="text"
+                              [(ngModel)]="child.title"
+                              (ngModelChange)="updatePreviewSimulation()"
+                              class="form-control nav-child-title-input font-bold"
+                              [placeholder]="'Sub-Category Title (e.g. Cloud Infrastructure)'"
+                            />
+                          </div>
+                          <div class="nav-child-actions">
+                            <button type="button" class="btn-add-mini-ghost" (click)="addSampleNavPage(mIdx, cIdx)">
+                              <span class="material-symbols-outlined">add</span>
+                              <span>Add Page</span>
+                            </button>
+                            <button type="button" class="btn-trash-action-sm" (click)="removeSampleNavChild(mIdx, cIdx)" title="Remove Sub-Dropdown">
+                              <span class="material-symbols-outlined">delete</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Sub-Pages -->
+                        <div class="nav-child-pages-list" *ngIf="child.pages?.length">
+                          <div class="nav-page-item-card" *ngFor="let page of child.pages; let pIdx = index">
+                            <span class="nav-page-dot material-symbols-outlined">link</span>
+                            <div class="nav-page-grid-inputs">
+                              <input
+                                type="text"
+                                [(ngModel)]="page.title"
+                                (ngModelChange)="updatePreviewSimulation()"
+                                class="form-control nav-page-name"
+                                [placeholder]="'Page Title (e.g. Edge Compute)'"
+                              />
+                              <input
+                                type="text"
+                                [(ngModel)]="page.pageUrl"
+                                (ngModelChange)="updatePreviewSimulation()"
+                                class="form-control nav-page-url font-mono"
+                                [placeholder]="'/solutions/compute'"
+                              />
+                              <input
+                                type="text"
+                                [(ngModel)]="page.pageDescription"
+                                (ngModelChange)="updatePreviewSimulation()"
+                                class="form-control nav-page-desc"
+                                [placeholder]="'Short excerpt for mega menu cards...'"
+                              />
+                            </div>
+                            <button type="button" class="btn-trash-action-sm" (click)="removeSampleNavPage(mIdx, cIdx, pIdx)" title="Remove Page">
+                              <span class="material-symbols-outlined">delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Direct Top Pages -->
+                    <div class="nav-direct-wrapper" *ngIf="menu.pages?.length">
+                      <span class="nav-group-heading">Direct Category Pages:</span>
+                      <div class="nav-page-item-card" *ngFor="let page of menu.pages; let dpIdx = index">
+                        <span class="nav-page-dot material-symbols-outlined">link</span>
+                        <div class="nav-page-grid-inputs" style="grid-template-columns: 1fr 1fr;">
                           <input
                             type="text"
                             [(ngModel)]="page.title"
                             (ngModelChange)="updatePreviewSimulation()"
-                            class="form-control"
-                            [placeholder]="'Page Title {{ PageTitle }}'"
+                            class="form-control nav-page-name"
+                            [placeholder]="'Page Title (e.g. Documentation)'"
                           />
                           <input
                             type="text"
                             [(ngModel)]="page.pageUrl"
                             (ngModelChange)="updatePreviewSimulation()"
-                            class="form-control"
-                            [placeholder]="'URL {{ PageUrl }}'"
+                            class="form-control nav-page-url font-mono"
+                            [placeholder]="'/docs'"
                           />
-                          <input
-                            type="text"
-                            [(ngModel)]="page.pageDescription"
-                            (ngModelChange)="updatePreviewSimulation()"
-                            class="form-control"
-                            [placeholder]="'Desc {{ PageDescription }}'"
-                          />
-                          <button type="button" class="btn-remove-card-sm" (click)="removeSampleNavPage(mIdx, cIdx, pIdx)" title="Remove Page">
-                            ✕
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  <!-- Direct Top Pages -->
-                  <div class="nav-direct-pages" *ngIf="menu.pages?.length">
-                    <span class="nav-direct-tag">Direct Category Pages:</span>
-                    <div class="nav-page-row" *ngFor="let page of menu.pages; let dpIdx = index">
-                      <input
-                        type="text"
-                        [(ngModel)]="page.title"
-                        (ngModelChange)="updatePreviewSimulation()"
-                        class="form-control"
-                        [placeholder]="'Page Title {{ PageTitle }}'"
-                      />
-                      <input
-                        type="text"
-                        [(ngModel)]="page.pageUrl"
-                        (ngModelChange)="updatePreviewSimulation()"
-                        class="form-control"
-                        [placeholder]="'URL {{ PageUrl }}'"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1882,101 +1974,204 @@ interface CategoryPreset {
       border-color: #86efac;
     }
 
-    /* Repeater Cards */
+    /* ======================================================== */
+    /* REPEATER CARDS STUDIO (PageSectionLists)                 */
+    /* ======================================================== */
     .repeater-subitems-block {
-      border-top: 1.5px dashed #e2e8f0;
-      padding-top: 18px;
-      margin-top: 10px;
+      padding-top: 6px;
     }
     .repeater-header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
-    .repeater-label { font-size: 13.5px; font-weight: 800; color: #0f172a; }
+    .repeater-label {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
     .repeater-loop-badge {
       font-size: 11px;
       background: #fdf2f8;
       color: #db2777;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 12px;
       margin-left: 8px;
       font-weight: 700;
+      border: 1px solid #fbcfe8;
     }
     .btn-add-item {
-      height: 32px;
-      padding: 0 12px;
-      border-radius: 6px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1d4ed8;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: #0050e5;
+      border: none;
+      color: #ffffff;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.2);
+      transition: all 0.15s ease;
     }
+    .btn-add-item:hover {
+      background: #0041ba;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.3);
+    }
+    .btn-add-item .material-symbols-outlined { font-size: 18px; }
+
     .repeater-items-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
     }
     .repeater-card-item {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
-    .card-item-top { display: flex; align-items: center; gap: 8px; }
+    .repeater-card-item:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      transform: translateY(-2px);
+    }
+    .card-item-header {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     .card-idx-pill {
       font-size: 11px;
       font-weight: 800;
-      color: #64748b;
-      background: #e2e8f0;
-      padding: 2px 6px;
-      border-radius: 4px;
+      color: #0050e5;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
     }
-    .card-input-title { flex: 2; height: 32px; font-size: 12.5px; }
-    .card-input-sub { flex: 1; height: 32px; font-size: 12.5px; }
-    .btn-remove-card {
+    .btn-trash-action {
       width: 28px;
       height: 28px;
-      border-radius: 4px;
-      border: none;
-      background: #fee2e2;
-      color: #dc2626;
-      font-size: 12px;
-      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #94a3b8;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
-    .card-item-bottom { display: flex; gap: 8px; }
-    .card-input-desc { flex: 3; height: 32px; font-size: 12.5px; }
-    .card-input-icon { flex: 1; height: 32px; font-size: 12.5px; }
+    .btn-trash-action:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    .btn-trash-action .material-symbols-outlined { font-size: 18px; }
+
+    .card-form-grid {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-field-row-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+    }
+    .card-field-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .card-field-unit {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .card-field-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-field-label code {
+      font-size: 10px;
+      color: #0050e5;
+      background: #eef2ff;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    .card-ctrl {
+      height: 36px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 0 10px;
+      font-size: 12.5px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+      transition: all 0.15s ease;
+    }
+    .card-ctrl:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.08);
+    }
+    .input-with-icon-preview {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .icon-inline-preview {
+      position: absolute;
+      left: 8px;
+      font-size: 18px;
+      color: #0050e5;
+      pointer-events: none;
+    }
+    .card-ctrl-with-icon {
+      padding-left: 32px !important;
+    }
 
     /* Mock Tabs Nav */
     .mock-tabs-nav {
       display: flex;
       gap: 6px;
-      padding: 12px 16px;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 6px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      margin-bottom: 20px;
       overflow-x: auto;
+      border: 1px solid #e2e8f0;
     }
     .mock-tab-btn {
-      height: 32px;
-      padding: 0 12px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #475569;
-      font-size: 12px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #64748b;
+      font-size: 12.5px;
       font-weight: 700;
       display: inline-flex;
       align-items: center;
@@ -1986,38 +2181,125 @@ interface CategoryPreset {
       transition: all 0.15s ease;
     }
     .mock-tab-btn:hover {
-      border-color: #0050e5;
-      color: #0050e5;
+      background: rgba(255, 255, 255, 0.7);
+      color: #0f172a;
     }
     .mock-tab-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border-color: #e2e8f0;
+    }
+    .mock-tab-badge {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0050e5;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+    .mock-tab-btn.active .mock-tab-badge {
       background: #0050e5;
-      border-color: #0050e5;
       color: #ffffff;
+      border-color: #0050e5;
     }
     .mock-tab-pane {
-      padding: 18px 20px;
+      padding: 4px 0 0 0;
     }
 
-    /* FAQ Manager */
+    /* ======================================================== */
+    /* FAQ MANAGER STUDIO                                       */
+    /* ======================================================== */
     .faq-categories-tree {
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
     .faq-cat-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 14px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }
-    .faq-cat-top-bar {
+    .faq-cat-header-banner {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .faq-cat-title-wrap {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      flex: 1;
+      min-width: 260px;
+    }
+    .faq-cat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0050e5;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 5px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .faq-cat-badge .material-symbols-outlined { font-size: 16px; }
+    .faq-cat-name-input {
+      height: 36px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 0 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      flex: 1;
+      min-width: 200px;
+      transition: all 0.15s ease;
+    }
+    .faq-cat-name-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.08);
+    }
+    .faq-cat-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .btn-add-mini {
-      height: 30px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      background: #eef2ff;
+      border: 1.5px solid #c7d2fe;
+      color: #0050e5;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .btn-add-mini:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .btn-add-mini-ghost {
+      height: 28px;
       padding: 0 10px;
       border-radius: 6px;
       background: #eff6ff;
@@ -2028,126 +2310,300 @@ interface CategoryPreset {
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-    }
-    .btn-add-mini-ghost {
-      height: 26px;
-      padding: 0 8px;
-      border-radius: 4px;
-      background: transparent;
-      border: 1px dashed #0050e5;
-      color: #0050e5;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
       gap: 3px;
+      transition: all 0.15s;
     }
-    .faq-items-nest {
+    .btn-add-mini-ghost:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+    .faq-cat-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #fafafa;
+    }
+    .faq-qa-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding-left: 12px;
-      border-left: 2px solid #e2e8f0;
-      margin-top: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: border-color 0.15s;
     }
-    .faq-nested-row {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 10px;
+    .faq-qa-card:hover {
+      border-color: #cbd5e1;
+    }
+    .faq-qa-header {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 10px;
     }
-    .faq-q-bar { display: flex; align-items: center; gap: 8px; }
-    .faq-q-badge {
+    .faq-q-badge-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .faq-q-num-pill {
       font-size: 11px;
       font-weight: 800;
-      background: #eef2ff;
-      color: #0050e5;
-      padding: 2px 6px;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 4px 8px;
       border-radius: 4px;
     }
-    .btn-remove-card-sm {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
+    .faq-q-icon {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .faq-question-input {
+      height: 36px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      outline: none;
+      flex: 1;
+      transition: all 0.15s;
+    }
+    .faq-question-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.08);
+    }
+    .btn-trash-action-sm {
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
       border: none;
-      background: #fee2e2;
-      color: #dc2626;
-      font-size: 11px;
-      cursor: pointer;
+      background: transparent;
+      color: #94a3b8;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-trash-action-sm:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .btn-trash-action-sm .material-symbols-outlined { font-size: 16px; }
+    .faq-answer-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .faq-ans-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+    .faq-ans-label code {
+      color: #0050e5;
+      background: #eef2ff;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    .faq-answer-textarea {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #334155;
+      outline: none;
+      min-height: 64px;
+      resize: vertical;
+      width: 100%;
+      box-sizing: border-box;
+      background: #ffffff;
+      transition: all 0.15s;
+    }
+    .faq-answer-textarea:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.08);
     }
 
-    /* Nav Manager Tree */
+    /* ======================================================== */
+    /* NAVIGATION HIERARCHY STUDIO                              */
+    /* ======================================================== */
     .nav-tree-container {
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
     .nav-parent-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 14px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }
-    .nav-parent-top {
+    .nav-parent-header {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .nav-parent-left {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      flex: 1;
+      min-width: 280px;
     }
-    .nav-children-list {
+    .nav-parent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #7c3aed;
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      padding: 5px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .nav-parent-badge .material-symbols-outlined { font-size: 16px; }
+    .nav-parent-title {
+      height: 36px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 0 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      flex: 1;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .nav-parent-title:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.08);
+    }
+    .nav-parent-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-parent-body {
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding-left: 14px;
-      border-left: 2px solid #cbd5e1;
-      margin-top: 8px;
+      gap: 14px;
+      background: #fafafa;
     }
-    .nav-child-block {
+    .nav-group-heading {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .nav-child-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
-    .nav-child-header {
+    .nav-child-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .nav-child-badge-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
+      flex: 1;
     }
-    .nav-pages-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding-left: 12px;
-      border-left: 2px dashed #e2e8f0;
-      margin-top: 6px;
-    }
-    .nav-page-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .nav-direct-pages {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px dashed #e2e8f0;
-    }
-    .nav-direct-tag {
+    .nav-child-pill {
       font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
+      font-weight: 800;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .nav-child-title-input {
+      height: 32px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 12.5px;
+      outline: none;
+      flex: 1;
+      max-width: 320px;
+      transition: all 0.15s;
+    }
+    .nav-child-title-input:focus {
+      border-color: #0050e5;
+    }
+    .nav-child-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-page-item-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 6px;
-      display: block;
+      transition: all 0.15s;
+    }
+    .nav-page-item-card:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+    }
+    .nav-page-dot {
+      font-size: 16px;
+      color: #0050e5;
+      flex-shrink: 0;
+    }
+    .nav-page-grid-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.5fr;
+      gap: 8px;
+      flex: 1;
+    }
+    .nav-page-name, .nav-page-url, .nav-page-desc {
+      height: 32px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0 8px;
+      font-size: 12px;
+      outline: none;
+      background: #ffffff;
+      transition: all 0.15s;
+    }
+    .nav-page-name:focus, .nav-page-url:focus, .nav-page-desc:focus {
+      border-color: #0050e5;
     }
     .font-bold { font-weight: 700; }
 
