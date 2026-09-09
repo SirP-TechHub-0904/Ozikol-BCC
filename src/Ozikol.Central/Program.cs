@@ -41,7 +41,7 @@ builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozik
 
 builder.Services.AddRazorPages(options =>
 {
-    // Register route aliases for Auth pages so that both /auth/... and clean top-level paths work seamlessly with culture prefixes
+    // Register clean top-level and hyphenated route aliases for Auth pages
     options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
     options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
     options.Conventions.AddPageRoute("/Auth/Login", "login");
@@ -57,12 +57,13 @@ builder.Services.AddRazorPages(options =>
         {
             var existingTemplate = selector.AttributeRouteModel?.Template ?? "";
 
+            // Strictly require culture segment on the prefixed selector so it never collides with the un-prefixed original
             model.Selectors.Add(new SelectorModel
             {
                 AttributeRouteModel = new AttributeRouteModel
                 {
                     Order = -1,
-                    Template = AttributeRouteModel.CombineTemplates("{culture:regex(^(en|fr|es|de)$)?}", existingTemplate)
+                    Template = AttributeRouteModel.CombineTemplates("{culture:regex(^(en|fr|es|de)$)}", existingTemplate)
                 }
             });
         }
