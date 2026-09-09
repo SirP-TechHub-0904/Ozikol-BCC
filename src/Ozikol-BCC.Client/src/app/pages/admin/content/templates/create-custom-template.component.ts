@@ -44,31 +44,7 @@ interface CategoryPreset {
   defaultName: string;
   html: string;
   css: string;
-  sampleContent: {
-    title: string;
-    miniTitle: string;
-    description: string;
-    fullDescription?: string;
-    imageUrl: string;
-    buttonText: string;
-    buttonLink: string;
-    secondaryButtonText?: string;
-    secondaryButtonLink?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    brandName?: string;
-    copyright?: string;
-    items: Array<{
-      title: string;
-      subTitle?: string;
-      description: string;
-      icon?: string;
-      imageUrl?: string;
-      buttonText?: string;
-      buttonLink?: string;
-    }>;
-  };
+  sampleContent: any;
   specificTokens?: Array<{ label: string; token: string }>;
 }
 
@@ -205,88 +181,175 @@ interface CategoryPreset {
         <div class="code-editor-card">
           <!-- Token Toolbar Ribbon -->
           <div class="token-ribbon-bar">
-            <div class="token-ribbon-header">
-              <span class="material-symbols-outlined token-header-icon">token</span>
-              <span class="token-header-title">Insert Token at Cursor:</span>
-            </div>
+            <div class="token-palette-top">
+              <div class="token-ribbon-header">
+                <span class="material-symbols-outlined token-header-icon">token</span>
+                <span class="token-header-title">Insert Token at Cursor:</span>
+              </div>
 
-            <div class="token-chips-flow">
-              <!-- Core Placeholder Chips -->
-              <span class="ribbon-tag">Core:</span>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ Title }}')"
-                [innerText]="'+ {{ Title }}'"
-                title="Inserts headline token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ MiniTitle }}')"
-                [innerText]="'+ {{ MiniTitle }}'"
-                title="Inserts eyebrow badge token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ Description }}')"
-                [innerText]="'+ {{ Description }}'"
-                title="Inserts short narrative description token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core chip-rich"
-                (click)="insertTokenAtCursor('{{ FullDescription }}')"
-                [innerText]="'+ {{ FullDescription }}'"
-                title="Inserts rich text full HTML description token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ ImageUrl }}')"
-                [innerText]="'+ {{ ImageUrl }}'"
-                title="Inserts graphic/photo URL token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ ButtonText }}')"
-                [innerText]="'+ {{ ButtonText }}'"
-                title="Inserts CTA button text token"
-              ></button>
-              <button
-                type="button"
-                class="token-chip chip-core"
-                (click)="insertTokenAtCursor('{{ ButtonLink }}')"
-                [innerText]="'+ {{ ButtonLink }}'"
-                title="Inserts CTA target link token"
-              ></button>
-
-              <!-- Category-Specific Tokens -->
-              <ng-container *ngIf="currentPreset.specificTokens?.length">
-                <span class="ribbon-tag">{{ currentPreset.name }}:</span>
+              <!-- Palette Category Filter Tabs -->
+              <div class="token-category-tabs">
                 <button
                   type="button"
-                  *ngFor="let spec of currentPreset.specificTokens"
-                  class="token-chip chip-specific"
-                  (click)="insertTokenAtCursor(spec.token)"
-                  [innerText]="'+ ' + spec.token"
-                  [title]="'Inserts ' + spec.label + ' token'"
-                ></button>
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'core'"
+                  (click)="activeTokenCategory = 'core'"
+                >
+                  <span class="material-symbols-outlined icon-micro">article</span>
+                  <span>PageSection</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'media'"
+                  (click)="activeTokenCategory = 'media'"
+                >
+                  <span class="material-symbols-outlined icon-micro">image</span>
+                  <span>Media & Style</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'sectionlist'"
+                  (click)="activeTokenCategory = 'sectionlist'"
+                >
+                  <span class="material-symbols-outlined icon-micro">view_agenda</span>
+                  <span>Card Loop (PageSectionLists)</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'faq'"
+                  (click)="activeTokenCategory = 'faq'"
+                >
+                  <span class="material-symbols-outlined icon-micro">quiz</span>
+                  <span>FAQ & Categories</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'navigation'"
+                  (click)="activeTokenCategory = 'navigation'"
+                >
+                  <span class="material-symbols-outlined icon-micro">menu_book</span>
+                  <span>Menus & Mega Menu</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'identity'"
+                  (click)="activeTokenCategory = 'identity'"
+                >
+                  <span class="material-symbols-outlined icon-micro">corporate_fare</span>
+                  <span>Brand & Identity</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Token Chips Flow based on activeTokenCategory -->
+            <div class="token-chips-flow">
+              <!-- Category: CORE (PageSection) -->
+              <ng-container *ngIf="activeTokenCategory === 'core'">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'" title="Inserts section headline title"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'" title="Inserts eyebrow / sub-badge token"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'" title="Inserts short narrative description token"></button>
+                <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ FullDescription }}')" [innerText]="'+ {{ FullDescription }}'" title="Inserts Summernote rich HTML full description token"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Qoute }}')" [innerText]="'+ {{ Qoute }}'" title="Inserts blockquote highlight token"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'" title="Inserts primary CTA button text"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'" title="Inserts primary CTA button target link"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'+ {{ DirectUrl }}'" title="Inserts custom direct route URL"></button>
+                <button type="button" class="token-chip chip-core chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
               </ng-container>
 
-              <!-- Sub-Items Loop Token -->
-              <span class="ribbon-tag">Loop:</span>
-              <button
-                type="button"
-                class="token-chip chip-repeater"
-                (click)="insertRepeaterLoopAtCursor()"
-                title="Inserts structured repeater block for repeating list items"
-              >
-                <span class="material-symbols-outlined chip-icon">repeat</span>
-                <span>+ Card Loop (PageSectionLists)</span>
-              </button>
+              <!-- Category: MEDIA & STYLE -->
+              <ng-container *ngIf="activeTokenCategory === 'media'">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'" title="Inserts primary hero / background image URL"></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ SecondImageUrl }}')" [innerText]="'+ {{ SecondImageUrl }}'" title="Inserts secondary overlay image URL"></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ VideoUrl }}')" [innerText]="'+ {{ VideoUrl }}'" title="Inserts hosted MP4/WebM video file URL"></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ YoutubeUrlLink }}')" [innerText]="'+ {{ YoutubeUrlLink }}'" title="Inserts external YouTube embed URL"></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ BackgroundColor }}')" [innerText]="'+ {{ BackgroundColor }}'" title="Inserts section background color or theme token"></button>
+                <button type="button" class="token-chip chip-media chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+              </ng-container>
+
+              <!-- Category: REPEATER (PageSectionLists) -->
+              <ng-container *ngIf="activeTokenCategory === 'sectionlist'">
+                <button type="button" class="token-chip chip-repeater" (click)="insertRepeaterLoopAtCursor()" title="Inserts entire structured repeater loop for card lists">
+                  <span class="material-symbols-outlined chip-icon">repeat</span>
+                  <span>+ Card Loop (PageSectionLists)</span>
+                </button>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">Card Tokens:</span>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'" title="Card heading"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'{{ MiniTitle }}'" title="Card subtitle or badge"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SubTitle }}')" [innerText]="'{{ SubTitle }}'" title="Alternative card subtitle"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'{{ Description }}'" title="Card body description"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ MoreDescription }}')" [innerText]="'{{ MoreDescription }}'" title="Card extended details copy"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Icon }}')" [innerText]="'{{ Icon }}'" title="Card icon name (Material symbol)"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ IconText }}')" [innerText]="'{{ IconText }}'" title="Card icon class (FontAwesome / Bootstrap)"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'{{ ImageUrl }}'" title="Card thumbnail photo URL"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ VideoUrl }}')" [innerText]="'{{ VideoUrl }}'" title="Card video URL"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'{{ ButtonText }}'" title="Card button label"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'{{ ButtonLink }}'" title="Card button destination link"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'{{ DirectUrl }}'" title="Card direct route"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SortOrder }}')" [innerText]="'{{ SortOrder }}'" title="Card numeric sort order"></button>
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+              </ng-container>
+
+              <!-- Category: FAQ & CATEGORIES -->
+              <ng-container *ngIf="activeTokenCategory === 'faq'">
+                <button type="button" class="token-chip chip-repeater" (click)="insertFaqCategoryLoopAtCursor()" title="Inserts category-grouped accordion FAQ loop">
+                  <span class="material-symbols-outlined chip-icon">folder_open</span>
+                  <span>+ FAQ Category Accordion Loop</span>
+                </button>
+                <button type="button" class="token-chip chip-repeater" (click)="insertFlatFaqLoopAtCursor()" title="Inserts flat FAQ question & answer list">
+                  <span class="material-symbols-outlined chip-icon">quiz</span>
+                  <span>+ Flat FAQ Loop</span>
+                </button>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">FAQ Tokens:</span>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'" title="FAQ Category heading"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Question }}')" [innerText]="'{{ Question }}'" title="FAQ Question text"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Answer }}')" [innerText]="'{{ Answer }}'" title="FAQ Answer text/HTML"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Message }}')" [innerText]="'{{ Message }}'" title="Alternative answer token"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SortOrder }}')" [innerText]="'{{ SortOrder }}'" title="FAQ sort order"></button>
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+              </ng-container>
+
+              <!-- Category: MENUS & MEGA MENUS -->
+              <ng-container *ngIf="activeTokenCategory === 'navigation'">
+                <button type="button" class="token-chip chip-repeater" (click)="insertNestedMenuLoopAtCursor()" title="Inserts 2-level cascading flyout dropdown navigation">
+                  <span class="material-symbols-outlined chip-icon">account_tree</span>
+                  <span>+ 2-Level Nested Dropdown Loop</span>
+                </button>
+                <button type="button" class="token-chip chip-repeater" (click)="insertMegaMenuLoopAtCursor()" title="Inserts multi-column mega menu with categories, sub-items and page cards">
+                  <span class="material-symbols-outlined chip-icon">grid_view</span>
+                  <span>+ Mega Menu Grid Loop</span>
+                </button>
+                <button type="button" class="token-chip chip-repeater" (click)="insertFlatNavbarLoopAtCursor()" title="Inserts standard single-dropdown top navbar">
+                  <span class="material-symbols-outlined chip-icon">menu</span>
+                  <span>+ Flat Navbar Loop</span>
+                </button>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">Menu Tokens:</span>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'" title="Category or Dropdown title"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Icon }}')" [innerText]="'{{ Icon }}'" title="Category icon symbol"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageTitle }}')" [innerText]="'{{ PageTitle }}'" title="WebPage link title"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'" title="WebPage route URL"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageDescription }}')" [innerText]="'{{ PageDescription }}'" title="Page excerpt for mega menu cards"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageImage }}')" [innerText]="'{{ PageImage }}'" title="Page thumbnail image for mega menu cards"></button>
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+              </ng-container>
+
+              <!-- Category: BRAND & IDENTITY -->
+              <ng-container *ngIf="activeTokenCategory === 'identity'">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'" title="Inserts tenant brand name"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Copyright }}')" [innerText]="'+ {{ Copyright }}'" title="Inserts corporate copyright string"></button>
+                <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ PoweredBy }}')" [innerText]="'+ {{ PoweredBy }}'" title="Inserts Powered by Ozikol badge link"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Email }}')" [innerText]="'+ {{ Email }}'" title="Inserts corporate contact email"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Phone }}')" [innerText]="'+ {{ Phone }}'" title="Inserts corporate telephone number"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Address }}')" [innerText]="'+ {{ Address }}'" title="Inserts corporate headquarters address"></button>
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+              </ng-container>
             </div>
           </div>
 
@@ -402,263 +465,697 @@ interface CategoryPreset {
             </button>
           </div>
 
-          <!-- Scalar Fields 4-Column Grid -->
-          <div class="inspector-form-grid">
-            <div class="form-group">
-              <label class="field-label">
-                <span>Headline / Title</span>
-                <code [innerText]="'{{ Title }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.title"
-                class="form-control inspector-input"
-              />
+          <!-- Mock Data Categorized Sub-Tabs -->
+          <div class="mock-tabs-nav">
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'scalars'"
+              (click)="activeMockTab = 'scalars'"
+            >
+              <span class="material-symbols-outlined icon-micro">title</span>
+              <span>Section Scalars</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'rich'"
+              (click)="activeMockTab = 'rich'"
+            >
+              <span class="material-symbols-outlined icon-micro">edit_document</span>
+              <span>Summernote Rich Text</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'media'"
+              (click)="activeMockTab = 'media'"
+            >
+              <span class="material-symbols-outlined icon-micro">palette</span>
+              <span>Media, Style & Class</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'cards'"
+              (click)="activeMockTab = 'cards'"
+            >
+              <span class="material-symbols-outlined icon-micro">view_agenda</span>
+              <span>Cards Loop ({{ sampleContent.items?.length || 0 }})</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'faqs'"
+              (click)="activeMockTab = 'faqs'"
+            >
+              <span class="material-symbols-outlined icon-micro">quiz</span>
+              <span>FAQ Categories ({{ sampleContent.faqCategories?.length || 0 }})</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'menu'"
+              (click)="activeMockTab = 'menu'"
+            >
+              <span class="material-symbols-outlined icon-micro">menu_book</span>
+              <span>Menu Tree ({{ sampleContent.navigationMenu?.length || 0 }})</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'identity'"
+              (click)="activeMockTab = 'identity'"
+            >
+              <span class="material-symbols-outlined icon-micro">corporate_fare</span>
+              <span>Brand & Identity</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: SECTION SCALARS -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'scalars'">
+            <div class="inspector-form-grid">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Headline / Title</span>
+                  <code [innerText]="'{{ Title }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.title"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Eyebrow / Badge</span>
+                  <code [innerText]="'{{ MiniTitle }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.miniTitle"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Button Text</span>
+                  <code [innerText]="'{{ ButtonText }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.buttonText"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Button Target Link</span>
+                  <code [innerText]="'{{ ButtonLink }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.buttonLink"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
             </div>
 
-            <div class="form-group">
-              <label class="field-label">
-                <span>Eyebrow / Badge</span>
-                <code [innerText]="'{{ MiniTitle }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.miniTitle"
-                class="form-control inspector-input"
-              />
+            <div class="inspector-form-grid-2" style="margin-top: 14px;">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Narrative Description</span>
+                  <code [innerText]="'{{ Description }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.description"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  rows="2"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Blockquote / Highlight</span>
+                  <code [innerText]="'{{ Qoute }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.qoute"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  rows="2"
+                  placeholder="Featured quote or testimonial excerpt..."
+                ></textarea>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label class="field-label">
-                <span>Button Text</span>
-                <code [innerText]="'{{ ButtonText }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.buttonText"
-                class="form-control inspector-input"
-              />
-            </div>
+            <div class="inspector-form-grid-2" style="margin-top: 14px;">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Direct URL Route</span>
+                  <code [innerText]="'{{ DirectUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.directUrl"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="#route-path"
+                />
+              </div>
 
-            <div class="form-group">
-              <label class="field-label">
-                <span>Button Target Link</span>
-                <code [innerText]="'{{ ButtonLink }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.buttonLink"
-                class="form-control inspector-input"
-              />
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Secondary Button Text</span>
+                  <code [innerText]="'{{ SecondaryButtonText }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.secondaryButtonText"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
             </div>
           </div>
 
-          <!-- Description & Image URL Row -->
-          <div class="inspector-form-grid-2">
-            <div class="form-group">
-              <label class="field-label">
-                <span>Narrative Description</span>
-                <code [innerText]="'{{ Description }}'"></code>
-              </label>
-              <textarea
-                [(ngModel)]="sampleContent.description"
-                class="form-control inspector-input"
-                rows="2"
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="field-label">
-                <span>Hero / Section Image URL</span>
-                <code [innerText]="'{{ ImageUrl }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.imageUrl"
-                class="form-control inspector-input"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-
-          <!-- Full Description (Summernote WYSIWYG Rich Text) -->
-          <div class="summernote-wrapper-block">
-            <div class="field-label-row">
-              <label class="field-label">
-                <span>Full Description (Summernote Rich Text HTML)</span>
-                <code [innerText]="'{{ FullDescription }}'"></code>
-              </label>
-              <span class="rich-hint-tag">WYSIWYG Rich Editor</span>
-            </div>
-
-            <!-- Summernote Style Toolbar -->
-            <div class="summernote-toolbar">
-              <div class="sn-btn-group">
-                <button type="button" class="sn-btn" (click)="execFormat('bold')" title="Bold"><b>B</b></button>
-                <button type="button" class="sn-btn" (click)="execFormat('italic')" title="Italic"><i>I</i></button>
-                <button type="button" class="sn-btn" (click)="execFormat('underline')" title="Underline"><u>U</u></button>
-                <button type="button" class="sn-btn" (click)="execFormat('strikeThrough')" title="Strikethrough"><s>S</s></button>
+          <!-- TAB 2: SUMMERNOTE RICH TEXT -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'rich'">
+            <div class="summernote-wrapper-block">
+              <div class="field-label-row">
+                <label class="field-label">
+                  <span>Full Description (Summernote Rich Text HTML)</span>
+                  <code [innerText]="'{{ FullDescription }}'"></code>
+                </label>
+                <span class="rich-hint-tag">WYSIWYG Rich Editor</span>
               </div>
-              <span class="sn-sep"></span>
-              <div class="sn-btn-group">
-                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h2>')" title="Heading 2">H2</button>
-                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h3>')" title="Heading 3">H3</button>
-                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<p>')" title="Paragraph">¶</button>
-                <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<blockquote>')" title="Quote">❝</button>
-              </div>
-              <span class="sn-sep"></span>
-              <div class="sn-btn-group">
-                <button type="button" class="sn-btn" (click)="execFormat('insertUnorderedList')" title="Bullet List">• List</button>
-                <button type="button" class="sn-btn" (click)="execFormat('insertOrderedList')" title="Numbered List">1. List</button>
-                <button type="button" class="sn-btn" (click)="insertRichLink()" title="Hyperlink">🔗 Link</button>
-                <button type="button" class="sn-btn" (click)="execFormat('removeFormat')" title="Clear Formatting">🧹</button>
-              </div>
-              <span class="sn-sep"></span>
-              <div class="sn-btn-group" style="margin-left: auto;">
-                <button type="button" class="sn-btn sn-toggle-mode" (click)="toggleRichHtmlView()">
-                  <span class="material-symbols-outlined icon-small">code</span>
-                  <span [innerText]="showRawHtmlEditor ? 'Visual Editor' : '<> HTML Source'"></span>
-                </button>
-              </div>
-            </div>
 
-            <!-- Summernote Visual Contenteditable Box -->
-            <div
-              #richTextEditor
-              *ngIf="!showRawHtmlEditor"
-              contenteditable="true"
-              class="summernote-editable-box"
-              (input)="onRichTextInput($event)"
-            ></div>
-
-            <!-- Summernote Raw HTML Source View -->
-            <textarea
-              *ngIf="showRawHtmlEditor"
-              [(ngModel)]="sampleContent.fullDescription"
-              (ngModelChange)="onRawHtmlChange()"
-              class="form-control font-mono summernote-code-box"
-              rows="5"
-              placeholder="<p>Type raw HTML markup here...</p>"
-            ></textarea>
-          </div>
-
-          <!-- Category Specific Fields -->
-          <div class="inspector-form-grid-3" *ngIf="selectedCategory === 'contactus'">
-            <div class="form-group">
-              <label class="field-label">
-                <span>Support Email</span>
-                <code [innerText]="'{{ Email }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.email"
-                class="form-control inspector-input"
-              />
-            </div>
-            <div class="form-group">
-              <label class="field-label">
-                <span>Contact Phone</span>
-                <code [innerText]="'{{ Phone }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.phone"
-                class="form-control inspector-input"
-              />
-            </div>
-            <div class="form-group">
-              <label class="field-label">
-                <span>HQ Address</span>
-                <code [innerText]="'{{ Address }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.address"
-                class="form-control inspector-input"
-              />
-            </div>
-          </div>
-
-          <div class="inspector-form-grid-2" *ngIf="selectedCategory === 'menu' || selectedCategory === 'footer'">
-            <div class="form-group">
-              <label class="field-label">
-                <span>Brand Name</span>
-                <code [innerText]="'{{ BrandName }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.brandName"
-                class="form-control inspector-input"
-              />
-            </div>
-            <div class="form-group" *ngIf="selectedCategory === 'footer'">
-              <label class="field-label">
-                <span>Copyright Notice</span>
-                <code [innerText]="'{{ Copyright }}'"></code>
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="sampleContent.copyright"
-                class="form-control inspector-input"
-              />
-            </div>
-          </div>
-
-          <!-- Repeater Cards Sub-Items -->
-          <div class="repeater-subitems-block">
-            <div class="repeater-header-bar">
-              <div class="repeater-title-box">
-                <span class="repeater-label">Repeater Cards / Sub-Items:</span>
-                <span class="repeater-loop-badge font-mono">PageSectionLists ({{ sampleContent.items?.length || 0 }} items)</span>
-              </div>
-              <button type="button" class="btn-add-item" (click)="addSampleSubItem()">
-                <span class="material-symbols-outlined">add</span>
-                <span>Add Item</span>
-              </button>
-            </div>
-
-            <div class="repeater-items-grid">
-              <div
-                class="repeater-card-item"
-                *ngFor="let item of sampleContent.items; let idx = index"
-              >
-                <div class="card-item-top">
-                  <span class="card-idx-pill">#{{ idx + 1 }}</span>
-                  <input
-                    type="text"
-                    [(ngModel)]="item.title"
-                    class="form-control card-input-title"
-                    placeholder="Item Title"
-                  />
-                  <input
-                    type="text"
-                    [(ngModel)]="item.subTitle"
-                    class="form-control card-input-sub"
-                    placeholder="Subtitle / Price"
-                  />
-                  <button
-                    type="button"
-                    class="btn-remove-card"
-                    (click)="removeSampleSubItem(idx)"
-                    title="Remove item"
-                  >
-                    ✕
+              <!-- Summernote Style Toolbar -->
+              <div class="summernote-toolbar">
+                <div class="sn-btn-group">
+                  <button type="button" class="sn-btn" (click)="execFormat('bold')" title="Bold"><b>B</b></button>
+                  <button type="button" class="sn-btn" (click)="execFormat('italic')" title="Italic"><i>I</i></button>
+                  <button type="button" class="sn-btn" (click)="execFormat('underline')" title="Underline"><u>U</u></button>
+                  <button type="button" class="sn-btn" (click)="execFormat('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                </div>
+                <span class="sn-sep"></span>
+                <div class="sn-btn-group">
+                  <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h2>')" title="Heading 2">H2</button>
+                  <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<h3>')" title="Heading 3">H3</button>
+                  <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<p>')" title="Paragraph">¶</button>
+                  <button type="button" class="sn-btn" (click)="execFormat('formatBlock', '<blockquote>')" title="Quote">❝</button>
+                </div>
+                <span class="sn-sep"></span>
+                <div class="sn-btn-group">
+                  <button type="button" class="sn-btn" (click)="execFormat('insertUnorderedList')" title="Bullet List">• List</button>
+                  <button type="button" class="sn-btn" (click)="execFormat('insertOrderedList')" title="Numbered List">1. List</button>
+                  <button type="button" class="sn-btn" (click)="insertRichLink()" title="Hyperlink">🔗 Link</button>
+                  <button type="button" class="sn-btn" (click)="execFormat('removeFormat')" title="Clear Formatting">🧹</button>
+                </div>
+                <span class="sn-sep"></span>
+                <div class="sn-btn-group" style="margin-left: auto;">
+                  <button type="button" class="sn-btn sn-toggle-mode" (click)="toggleRichHtmlView()">
+                    <span class="material-symbols-outlined icon-small">code</span>
+                    <span [innerText]="showRawHtmlEditor ? 'Visual Editor' : '<> HTML Source'"></span>
                   </button>
                 </div>
-                <div class="card-item-bottom">
+              </div>
+
+              <!-- Summernote Visual Contenteditable Box -->
+              <div
+                #richTextEditor
+                *ngIf="!showRawHtmlEditor"
+                contenteditable="true"
+                class="summernote-editable-box"
+                (input)="onRichTextInput($event)"
+              ></div>
+
+              <!-- Summernote Raw HTML Source View -->
+              <textarea
+                *ngIf="showRawHtmlEditor"
+                [(ngModel)]="sampleContent.fullDescription"
+                (ngModelChange)="onRawHtmlChange()"
+                class="form-control font-mono summernote-code-box"
+                rows="5"
+                placeholder="<p>Type raw HTML markup here...</p>"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- TAB 3: MEDIA, STYLE & CLASS -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'media'">
+            <div class="inspector-form-grid-2">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Primary Image URL</span>
+                  <code [innerText]="'{{ ImageUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.imageUrl"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="https://images.unsplash.com/..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Secondary Image URL</span>
+                  <code [innerText]="'{{ SecondImageUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.secondImageUrl"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div class="inspector-form-grid-2" style="margin-top: 14px;">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Hosted Video URL (MP4 / WebM)</span>
+                  <code [innerText]="'{{ VideoUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.videoUrl"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>YouTube Video Embed URL</span>
+                  <code [innerText]="'{{ YoutubeUrlLink }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.youtubeUrlLink"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="https://www.youtube.com/embed/..."
+                />
+              </div>
+            </div>
+
+            <div class="inspector-form-grid-2" style="margin-top: 14px;">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Custom CSS Class (Critical)</span>
+                  <code [innerText]="'{{ CustomClass }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.customClass"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                  placeholder="e.g. oz-glass-card shadow-xl rounded-2xl"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Background Color / Theme Token</span>
+                  <code [innerText]="'{{ BackgroundColor }}'"></code>
+                </label>
+                <div style="display: flex; gap: 8px; align-items: center;">
                   <input
-                    type="text"
-                    [(ngModel)]="item.description"
-                    class="form-control card-input-desc"
-                    placeholder="Item description narrative..."
+                    type="color"
+                    [(ngModel)]="sampleContent.backgroundColor"
+                    (ngModelChange)="updatePreviewSimulation()"
+                    style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;"
                   />
                   <input
                     type="text"
-                    [(ngModel)]="item.icon"
-                    class="form-control card-input-icon"
-                    placeholder="Icon (e.g. star, bolt)"
+                    [(ngModel)]="sampleContent.backgroundColor"
+                    (ngModelChange)="updatePreviewSimulation()"
+                    class="form-control inspector-input"
+                    placeholder="#ffffff or dark or transparent"
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: CARDS REPEATER (PageSectionLists) -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'cards'">
+            <div class="repeater-subitems-block" style="border-top: none; padding-top: 0; margin-top: 0;">
+              <div class="repeater-header-bar">
+                <div class="repeater-title-box">
+                  <span class="repeater-label">PageSectionLists Repeater Cards:</span>
+                  <span class="repeater-loop-badge font-mono">{{ sampleContent.items?.length || 0 }} items</span>
+                </div>
+                <button type="button" class="btn-add-item" (click)="addSampleSubItem()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Card</span>
+                </button>
+              </div>
+
+              <div class="repeater-items-grid">
+                <div
+                  class="repeater-card-item"
+                  *ngFor="let item of sampleContent.items; let idx = index"
+                >
+                  <div class="card-item-top">
+                    <span class="card-idx-pill">#{{ idx + 1 }}</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.title"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-title"
+                      [placeholder]="'Title {{ Title }}'"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.subTitle"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-sub"
+                      [placeholder]="'Subtitle {{ MiniTitle }}'"
+                    />
+                    <button
+                      type="button"
+                      class="btn-remove-card"
+                      (click)="removeSampleSubItem(idx)"
+                      title="Remove card"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div class="card-item-bottom">
+                    <input
+                      type="text"
+                      [(ngModel)]="item.description"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-desc"
+                      [placeholder]="'Description {{ Description }}'"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.icon"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-icon"
+                      [placeholder]="'Icon {{ Icon }}'"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.buttonText"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-btn"
+                      [placeholder]="'Btn {{ ButtonText }}'"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.buttonLink"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control card-input-link"
+                      [placeholder]="'Link {{ ButtonLink }}'"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: FAQ MOCK MANAGER -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'faqs'">
+            <div class="faq-manager-block">
+              <div class="repeater-header-bar">
+                <div class="repeater-title-box">
+                  <span class="repeater-label">FAQ Categories & Questions Hierarchy:</span>
+                  <span class="repeater-loop-badge font-mono">{{ sampleContent.faqCategories?.length || 0 }} categories</span>
+                </div>
+                <button type="button" class="btn-add-item" (click)="addSampleFaqCategory()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add FAQ Category</span>
+                </button>
+              </div>
+
+              <div class="faq-categories-tree">
+                <div class="faq-cat-card" *ngFor="let cat of sampleContent.faqCategories; let catIdx = index">
+                  <div class="faq-cat-top-bar">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                      <span class="card-idx-pill">Cat #{{ catIdx + 1 }}</span>
+                      <input
+                        type="text"
+                        [(ngModel)]="cat.title"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control font-bold"
+                        [placeholder]="'Category Title {{ CategoryTitle }}'"
+                      />
+                    </div>
+                    <button type="button" class="btn-add-mini" (click)="addSampleFaq(catIdx)">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Add Q&A</span>
+                    </button>
+                    <button type="button" class="btn-remove-card" (click)="removeSampleFaqCategory(catIdx)" title="Remove Category">
+                      ✕
+                    </button>
+                  </div>
+
+                  <div class="faq-items-nest">
+                    <div class="faq-nested-row" *ngFor="let f of cat.faqs; let fIdx = index">
+                      <div class="faq-q-bar">
+                        <span class="faq-q-badge">Q{{ fIdx + 1 }}</span>
+                        <input
+                          type="text"
+                          [(ngModel)]="f.question"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control"
+                          [placeholder]="'Question {{ Question }}'"
+                        />
+                        <button type="button" class="btn-remove-card-sm" (click)="removeSampleFaq(catIdx, fIdx)" title="Remove Question">
+                          ✕
+                        </button>
+                      </div>
+                      <textarea
+                        [(ngModel)]="f.answer"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control"
+                        rows="2"
+                        [placeholder]="'Answer {{ Answer }} copy...'"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: MENU & MEGA MENU TREE -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'menu'">
+            <div class="nav-manager-block">
+              <div class="repeater-header-bar">
+                <div class="repeater-title-box">
+                  <span class="repeater-label">Navigation Hierarchy (Parents -> Sub-Categories -> Pages):</span>
+                  <span class="repeater-loop-badge font-mono">{{ sampleContent.navigationMenu?.length || 0 }} main menus</span>
+                </div>
+                <button type="button" class="btn-add-item" (click)="addSampleNavCategory()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Menu Column</span>
+                </button>
+              </div>
+
+              <div class="nav-tree-container">
+                <div class="nav-parent-card" *ngFor="let menu of sampleContent.navigationMenu; let mIdx = index">
+                  <div class="nav-parent-top">
+                    <span class="card-idx-pill">Menu #{{ mIdx + 1 }}</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="menu.title"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control font-bold"
+                      [placeholder]="'Category Title {{ Title }}'"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="menu.icon"
+                      (ngModelChange)="updatePreviewSimulation()"
+                      class="form-control"
+                      style="max-width: 110px;"
+                      [placeholder]="'Icon {{ Icon }}'"
+                    />
+                    <button type="button" class="btn-add-mini" (click)="addSampleNavChild(mIdx)">
+                      <span class="material-symbols-outlined">add</span>
+                      <span>Add Sub-Dropdown</span>
+                    </button>
+                    <button type="button" class="btn-remove-card" (click)="removeSampleNavCategory(mIdx)" title="Remove Menu">
+                      ✕
+                    </button>
+                  </div>
+
+                  <!-- Level 2 Sub-Categories -->
+                  <div class="nav-children-list" *ngIf="menu.children?.length">
+                    <div class="nav-child-block" *ngFor="let child of menu.children; let cIdx = index">
+                      <div class="nav-child-header">
+                        <span class="material-symbols-outlined icon-small" style="color: #0050e5;">subdirectory_arrow_right</span>
+                        <input
+                          type="text"
+                          [(ngModel)]="child.title"
+                          (ngModelChange)="updatePreviewSimulation()"
+                          class="form-control"
+                          [placeholder]="'Sub-Category Title {{ Title }}'"
+                        />
+                        <button type="button" class="btn-add-mini-ghost" (click)="addSampleNavPage(mIdx, cIdx)">
+                          <span class="material-symbols-outlined">add</span>
+                          <span>Add Page</span>
+                        </button>
+                        <button type="button" class="btn-remove-card-sm" (click)="removeSampleNavChild(mIdx, cIdx)" title="Remove Sub-Dropdown">
+                          ✕
+                        </button>
+                      </div>
+
+                      <!-- Sub-Pages -->
+                      <div class="nav-pages-list" *ngIf="child.pages?.length">
+                        <div class="nav-page-row" *ngFor="let page of child.pages; let pIdx = index">
+                          <input
+                            type="text"
+                            [(ngModel)]="page.title"
+                            (ngModelChange)="updatePreviewSimulation()"
+                            class="form-control"
+                            [placeholder]="'Page Title {{ PageTitle }}'"
+                          />
+                          <input
+                            type="text"
+                            [(ngModel)]="page.pageUrl"
+                            (ngModelChange)="updatePreviewSimulation()"
+                            class="form-control"
+                            [placeholder]="'URL {{ PageUrl }}'"
+                          />
+                          <input
+                            type="text"
+                            [(ngModel)]="page.pageDescription"
+                            (ngModelChange)="updatePreviewSimulation()"
+                            class="form-control"
+                            [placeholder]="'Desc {{ PageDescription }}'"
+                          />
+                          <button type="button" class="btn-remove-card-sm" (click)="removeSampleNavPage(mIdx, cIdx, pIdx)" title="Remove Page">
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Direct Top Pages -->
+                  <div class="nav-direct-pages" *ngIf="menu.pages?.length">
+                    <span class="nav-direct-tag">Direct Category Pages:</span>
+                    <div class="nav-page-row" *ngFor="let page of menu.pages; let dpIdx = index">
+                      <input
+                        type="text"
+                        [(ngModel)]="page.title"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control"
+                        [placeholder]="'Page Title {{ PageTitle }}'"
+                      />
+                      <input
+                        type="text"
+                        [(ngModel)]="page.pageUrl"
+                        (ngModelChange)="updatePreviewSimulation()"
+                        class="form-control"
+                        [placeholder]="'URL {{ PageUrl }}'"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 7: BRAND & IDENTITY -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'identity'">
+            <div class="inspector-form-grid-3">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Brand Name</span>
+                  <code [innerText]="'{{ BrandName }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.brandName"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Copyright Notice</span>
+                  <code [innerText]="'{{ Copyright }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.copyright"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Powered By Link (Fixed Tail)</span>
+                  <code [innerText]="'{{ PoweredBy }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.poweredBy"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+            </div>
+
+            <div class="inspector-form-grid-3" style="margin-top: 14px;">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Support Email</span>
+                  <code [innerText]="'{{ Email }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.email"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Contact Phone</span>
+                  <code [innerText]="'{{ Phone }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.phone"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Corporate Headquarters Address</span>
+                  <code [innerText]="'{{ Address }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.address"
+                  (ngModelChange)="updatePreviewSimulation()"
+                  class="form-control inspector-input"
+                />
               </div>
             </div>
           </div>
@@ -949,15 +1446,23 @@ interface CategoryPreset {
       overflow: hidden;
     }
 
-    /* Token Ribbon */
+    /* Token Ribbon & Palette */
     .token-ribbon-bar {
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
       padding: 10px 16px;
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .token-palette-top {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      overflow-x: auto;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 1px dashed #e2e8f0;
+      padding-bottom: 8px;
     }
     .token-ribbon-header {
       display: flex;
@@ -969,12 +1474,45 @@ interface CategoryPreset {
       white-space: nowrap;
     }
     .token-header-icon { font-size: 16px; color: #0050e5; }
+    .token-category-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .tcat-tab {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tcat-tab:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .tcat-tab.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+    }
+    .icon-micro { font-size: 14px; }
     .token-chips-flow {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: nowrap;
       white-space: nowrap;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
     .ribbon-tag {
       font-size: 10px;
@@ -1007,6 +1545,37 @@ interface CategoryPreset {
     .chip-core:hover {
       background: #dbeafe;
       border-color: #93c5fd;
+      transform: translateY(-1px);
+    }
+    .chip-media {
+      background: #faf5ff;
+      color: #7e22ce;
+      border-color: #e9d5ff;
+    }
+    .chip-media:hover {
+      background: #f3e8ff;
+      border-color: #d8b4fe;
+      transform: translateY(-1px);
+    }
+    .chip-inner {
+      background: #f1f5f9;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .chip-inner:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+    .chip-accent {
+      background: #fff7ed;
+      color: #c2410c;
+      border-color: #ffedd5;
+    }
+    .chip-accent:hover {
+      background: #ffedd5;
+      border-color: #fed7aa;
       transform: translateY(-1px);
     }
     .chip-specific {
@@ -1391,6 +1960,197 @@ interface CategoryPreset {
     .card-input-desc { flex: 3; height: 32px; font-size: 12.5px; }
     .card-input-icon { flex: 1; height: 32px; font-size: 12.5px; }
 
+    /* Mock Tabs Nav */
+    .mock-tabs-nav {
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      overflow-x: auto;
+    }
+    .mock-tab-btn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .mock-tab-btn:hover {
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+    .mock-tab-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+    }
+    .mock-tab-pane {
+      padding: 18px 20px;
+    }
+
+    /* FAQ Manager */
+    .faq-categories-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .faq-cat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .faq-cat-top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-add-mini {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .btn-add-mini-ghost {
+      height: 26px;
+      padding: 0 8px;
+      border-radius: 4px;
+      background: transparent;
+      border: 1px dashed #0050e5;
+      color: #0050e5;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .faq-items-nest {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-left: 12px;
+      border-left: 2px solid #e2e8f0;
+      margin-top: 8px;
+    }
+    .faq-nested-row {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .faq-q-bar { display: flex; align-items: center; gap: 8px; }
+    .faq-q-badge {
+      font-size: 11px;
+      font-weight: 800;
+      background: #eef2ff;
+      color: #0050e5;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .btn-remove-card-sm {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: none;
+      background: #fee2e2;
+      color: #dc2626;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Nav Manager Tree */
+    .nav-tree-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-parent-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .nav-parent-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .nav-children-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-left: 14px;
+      border-left: 2px solid #cbd5e1;
+      margin-top: 8px;
+    }
+    .nav-child-block {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .nav-child-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .nav-pages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-left: 12px;
+      border-left: 2px dashed #e2e8f0;
+      margin-top: 6px;
+    }
+    .nav-page-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-direct-pages {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed #e2e8f0;
+    }
+    .nav-direct-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .font-bold { font-weight: 700; }
+
     /* ======================================================== */
     /* MODAL: LIVE SIMULATED PREVIEW STYLES                     */
     /* ======================================================== */
@@ -1558,6 +2318,8 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   // Editor and Preview State
   activeEditorTab: 'html' | 'css' | 'js' = 'html';
+  activeTokenCategory: 'core' | 'media' | 'sectionlist' | 'faq' | 'navigation' | 'identity' = 'core';
+  activeMockTab: 'scalars' | 'rich' | 'media' | 'cards' | 'faqs' | 'menu' | 'identity' = 'scalars';
   savingTemplate: boolean = false;
   showPreviewModal: boolean = false;
   previewViewport: 'desktop' | 'mobile' = 'desktop';
@@ -1570,17 +2332,88 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     miniTitle: '',
     description: '',
     fullDescription: '',
-    imageUrl: '',
+    qoute: '“Ozikol has enabled our engineering teams to scale distributed systems with 99.999% availability.”',
     buttonText: '',
     buttonLink: '',
     secondaryButtonText: '',
     secondaryButtonLink: '',
-    email: '',
-    phone: '',
-    address: '',
-    brandName: '',
-    copyright: '',
-    items: []
+    directUrl: '#',
+    customClass: '',
+    backgroundColor: '#ffffff',
+    imageUrl: '',
+    secondImageUrl: '',
+    videoUrl: '',
+    youtubeUrlLink: '',
+    brandName: 'Acme Global',
+    copyright: '© 2026 Acme Global Corp. All rights reserved.',
+    poweredBy: '<a href="https://ozikol.com" target="_blank" rel="noopener noreferrer">Powered by <strong>Ozikol</strong></a>',
+    email: 'contact@acme-global.com',
+    phone: '+1 (800) 555-0199',
+    address: '100 Silicon Way, Tech Park, Suite 400',
+    items: [],
+    faqCategories: [
+      {
+        title: 'Platform Architecture',
+        sortOrder: 1,
+        faqs: [
+          { question: 'How does edge multi-cloud routing handle packet failovers?', answer: 'Our intelligent mesh network uses real-time BGP telemetry to re-route requests across resilient regional points in less than 5ms.', sortOrder: 1 },
+          { question: 'What compliance certifications are supported out of the box?', answer: 'SOC2 Type II, ISO 27001, HIPAA, and GDPR compliance validation are standard across all tenant environments.', sortOrder: 2 }
+        ]
+      },
+      {
+        title: 'Billing & Dues',
+        sortOrder: 2,
+        faqs: [
+          { question: 'Can we switch between monthly and annual plans at any time?', answer: 'Yes, tier adjustments are prorated instantly without interruption to active workloads or API endpoints.', sortOrder: 1 },
+          { question: 'Do you offer dedicated enterprise SLAs with guaranteed uptime?', answer: 'Enterprise contracts include a 99.999% uptime guarantee with 24/7 priority incident response.', sortOrder: 2 }
+        ]
+      }
+    ],
+    navigationMenu: [
+      {
+        title: 'Solutions',
+        icon: 'hub',
+        children: [
+          {
+            title: 'Cloud Infrastructure',
+            icon: 'cloud',
+            pages: [
+              { title: 'Edge Compute Engines', pageUrl: '/solutions/compute', pageDescription: 'Ultra-low latency serverless containers at edge points.', pageImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&auto=format&fit=crop&q=80' },
+              { title: 'Global Mesh Cache', pageUrl: '/solutions/cache', pageDescription: 'Distributed memory caching across 180+ global PoPs.', pageImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80' }
+            ]
+          },
+          {
+            title: 'Security & Zero Trust',
+            icon: 'verified_user',
+            pages: [
+              { title: 'Identity & Access Gateways', pageUrl: '/solutions/iam', pageDescription: 'Granular role policies and hardware key verification.', pageImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&auto=format&fit=crop&q=80' },
+              { title: 'Cryptographic Audit Trails', pageUrl: '/solutions/audit', pageDescription: 'Immutable ledger logging for regulatory compliance.', pageImage: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&auto=format&fit=crop&q=80' }
+            ]
+          }
+        ],
+        pages: []
+      },
+      {
+        title: 'Platform',
+        icon: 'dataset',
+        children: [],
+        pages: [
+          { title: 'API Documentation', pageUrl: '/docs/api', pageDescription: 'Comprehensive REST and GraphQL endpoint schemas.', pageImage: '' },
+          { title: 'Developer SDKs', pageUrl: '/docs/sdks', pageDescription: 'Official libraries for TypeScript, Python, Go, and C#.', pageImage: '' },
+          { title: 'Release Notes', pageUrl: '/changelog', pageDescription: 'Weekly features, performance improvements, and fixes.', pageImage: '' }
+        ]
+      },
+      {
+        title: 'Company',
+        icon: 'domain',
+        children: [],
+        pages: [
+          { title: 'About Acme Global', pageUrl: '/about', pageDescription: 'Our founding mission and global engineering culture.', pageImage: '' },
+          { title: 'Careers & Open Roles', pageUrl: '/careers', pageDescription: 'Join our fully distributed team building next-gen cloud.', pageImage: '' },
+          { title: 'Contact & Support', pageUrl: '/contact', pageDescription: 'Reach our enterprise support desk and global offices.', pageImage: '' }
+        ]
+      }
+    ]
   };
 
   /**
@@ -1594,7 +2427,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'menu',
       tagline: 'Sticky frosted glass navbar with brand logo, nav links loop, and direct action button',
       defaultName: 'Apex Glassmorphism Sticky Navbar',
-      html: `<header class="oz-nav-header">
+      html: `<header class="oz-nav-header {{ CustomClass }}">
   <div class="oz-nav-container">
     <a href="/" class="oz-nav-brand">
       <span class="oz-brand-icon material-symbols-outlined">dataset</span>
@@ -1685,7 +2518,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'view_carousel',
       tagline: 'High-impact landing hero with bold headline, dual CTAs, badge, and graphic layout',
       defaultName: 'Quantum Split Showcase Hero',
-      html: `<section class="oz-hero-section">
+      html: `<section class="oz-hero-section {{ CustomClass }}">
   <div class="oz-hero-container">
     <div class="oz-hero-content">
       <span class="oz-hero-badge">{{ MiniTitle }}</span>
@@ -1804,7 +2637,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'view_quilt',
       tagline: 'Multi-column responsive grid with icon badges, feature cards, and narrative copy',
       defaultName: 'Nexus Tri-Card Features Grid',
-      html: `<section class="oz-features-section">
+      html: `<section class="oz-features-section {{ CustomClass }}">
   <div class="oz-features-header">
     <span class="oz-sub-badge">{{ MiniTitle }}</span>
     <h2 class="oz-features-title">{{ Title }}</h2>
@@ -1907,13 +2740,121 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       ]
     },
     {
+      id: 'faq',
+      codePrefix: 'FAQ',
+      name: 'FAQ & Accordions',
+      icon: 'quiz',
+      tagline: 'Collapsible interactive accordion list grouped by knowledge categories',
+      defaultName: 'Apex Interactive FAQ Accordion',
+      html: `<section class="oz-faq-section {{ CustomClass }}">
+  <div class="oz-faq-container">
+    <div class="oz-faq-header">
+      <span class="oz-faq-badge">{{ MiniTitle }}</span>
+      <h2 class="oz-faq-title">{{ Title }}</h2>
+      <p class="oz-faq-desc">{{ Description }}</p>
+    </div>
+
+    <div class="oz-faq-categories-wrap">
+      {{#each FaqCategories}}
+      <div class="oz-faq-cat-block">
+        <h3 class="oz-cat-heading">{{ CategoryTitle }}</h3>
+        <div class="oz-accordion-list">
+          {{#each FAQs}}
+          <details class="oz-faq-details">
+            <summary class="oz-faq-summary">
+              <span class="oz-question-text">{{ Question }}</span>
+              <span class="material-symbols-outlined oz-chevron-icon">expand_more</span>
+            </summary>
+            <div class="oz-answer-box">
+              <p>{{ Answer }}</p>
+            </div>
+          </details>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>`,
+      css: `.oz-faq-section {
+  padding: 72px 24px;
+  background: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.oz-faq-container { max-width: 900px; margin: 0 auto; }
+.oz-faq-header { text-align: center; margin-bottom: 48px; }
+.oz-faq-badge {
+  display: inline-block;
+  background: #eef2ff;
+  color: #0050e5;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+.oz-faq-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+}
+.oz-faq-desc { font-size: 15px; color: #64748b; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+.oz-faq-cat-block { margin-bottom: 36px; }
+.oz-cat-heading {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0050e5;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+.oz-accordion-list { display: flex; flex-direction: column; gap: 12px; }
+.oz-faq-details {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.oz-faq-details[open] { border-color: #0050e5; box-shadow: 0 4px 12px rgba(0, 80, 229, 0.06); }
+.oz-faq-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  user-select: none;
+}
+.oz-faq-summary::-webkit-details-marker { display: none; }
+.oz-chevron-icon { transition: transform 0.2s ease; color: #64748b; }
+.oz-faq-details[open] .oz-chevron-icon { transform: rotate(180deg); color: #0050e5; }
+.oz-answer-box {
+  padding: 0 20px 18px 20px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+.oz-answer-box p { margin: 0; }`,
+      sampleContent: {
+        title: 'Frequently Asked Questions',
+        miniTitle: 'KNOWLEDGE BASE',
+        description: 'Answers to commonly asked questions about our enterprise platform architecture and deployment.',
+        items: []
+      }
+    },
+    {
       id: 'marquee',
       codePrefix: 'MARQUEE',
       name: 'Marquee & Tickers',
       icon: 'linear_scale',
       tagline: 'Infinite horizontal ticker ribbon with enterprise logos, client badges, or metrics',
       defaultName: 'Velocity Infinite Logo Marquee',
-      html: `<section class="oz-marquee-section">
+      html: `<section class="oz-marquee-section {{ CustomClass }}">
   <div class="oz-marquee-header">
     <span class="oz-marquee-title">{{ Title }}</span>
   </div>
@@ -1992,7 +2933,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'contact_mail',
       tagline: 'Split layout with company contact points and styled responsive message form',
       defaultName: 'Beacon Enterprise Contact & Booking',
-      html: `<section class="oz-contact-section">
+      html: `<section class="oz-contact-section {{ CustomClass }}">
   <div class="oz-contact-container">
     <div class="oz-contact-info">
       <span class="oz-sub-badge">{{ MiniTitle }}</span>
@@ -2159,12 +3100,11 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'dock_to_bottom',
       tagline: 'Multi-column corporate footer with links, brand info, and copyright bar',
       defaultName: 'Sovereign Enterprise Clean Footer',
-      html: `<footer class="oz-site-footer">
+      html: `<footer class="oz-site-footer {{ CustomClass }}">
   <div class="oz-footer-container">
     <div class="oz-footer-brand-col">
       <h3 class="oz-footer-brand">{{ BrandName }}</h3>
       <p class="oz-footer-tagline">{{ Description }}</p>
-      <span class="oz-footer-copy">{{ Copyright }}</span>
     </div>
 
     <div class="oz-footer-links-grid">
@@ -2174,6 +3114,15 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         <p class="oz-footer-col-sub">{{ Description }}</p>
       </div>
       {{/each}}
+    </div>
+  </div>
+
+  <div class="oz-footer-bottom-bar">
+    <div class="oz-footer-bottom-wrap">
+      <span class="oz-footer-copy">{{ Copyright }}</span>
+      <div class="oz-powered-by">
+        {{ PoweredBy }}
+      </div>
     </div>
   </div>
 </footer>`,
@@ -2192,7 +3141,6 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 }
 .oz-footer-brand { font-size: 22px; font-weight: 900; margin: 0 0 10px 0; }
 .oz-footer-tagline { font-size: 14px; color: #94a3b8; line-height: 1.6; max-width: 320px; margin: 0 0 24px 0; }
-.oz-footer-copy { font-size: 12px; color: #64748b; }
 .oz-footer-links-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2200,6 +3148,37 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 }
 .oz-footer-col-title { font-size: 14px; font-weight: 700; color: #ffffff; margin: 0 0 8px 0; }
 .oz-footer-col-sub { font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.5; }
+.oz-footer-bottom-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 48px;
+  padding-top: 24px;
+}
+.oz-footer-bottom-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.oz-footer-copy { font-size: 13px; color: #64748b; }
+.oz-powered-by {
+  font-size: 13px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.oz-powered-by a {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 700;
+}
+.oz-powered-by a:hover {
+  text-decoration: underline;
+  color: #7dd3fc;
+}
 @media (max-width: 768px) {
   .oz-footer-container { grid-template-columns: 1fr; }
 }`,
@@ -2207,6 +3186,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         brandName: 'Acme Global Platform',
         description: 'Empowering organizations worldwide with autonomous cloud deployment and intelligent telemetry.',
         copyright: '© 2026 Acme Global Corp. All rights reserved.',
+        poweredBy: '<a href="https://ozikol.com" target="_blank" rel="noopener noreferrer">Powered by <strong>Ozikol</strong></a>',
         title: '',
         miniTitle: '',
         imageUrl: '',
@@ -2220,7 +3200,8 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       },
       specificTokens: [
         { label: 'Brand Name', token: '{{ BrandName }}' },
-        { label: 'Copyright Notice', token: '{{ Copyright }}' }
+        { label: 'Copyright Notice', token: '{{ Copyright }}' },
+        { label: 'Powered by Ozikol', token: '{{ PoweredBy }}' }
       ]
     }
   ];
@@ -2459,6 +3440,298 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     this.insertTokenAtCursor(loopBlock);
   }
 
+  /**
+   * Inserts category-grouped accordion FAQ loop at cursor.
+   */
+  insertFaqCategoryLoopAtCursor(): void {
+    const loopBlock = `\n<div class="oz-faq-categories-wrap">
+  {{#each FaqCategories}}
+  <div class="oz-faq-cat-block">
+    <h3 class="oz-cat-heading">{{ CategoryTitle }}</h3>
+    <div class="oz-accordion-list">
+      {{#each FAQs}}
+      <details class="oz-faq-details">
+        <summary class="oz-faq-summary">
+          <span class="oz-question-text">{{ Question }}</span>
+          <span class="material-symbols-outlined oz-chevron-icon">expand_more</span>
+        </summary>
+        <div class="oz-answer-box">
+          <p>{{ Answer }}</p>
+        </div>
+      </details>
+      {{/each}}
+    </div>
+  </div>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts flat FAQ accordion loop at cursor.
+   */
+  insertFlatFaqLoopAtCursor(): void {
+    const loopBlock = `\n<div class="oz-accordion-list">
+  {{#each FAQs}}
+  <details class="oz-faq-details">
+    <summary class="oz-faq-summary">
+      <span class="oz-question-text">{{ Question }}</span>
+      <span class="material-symbols-outlined oz-chevron-icon">expand_more</span>
+    </summary>
+    <div class="oz-answer-box">
+      <p>{{ Answer }}</p>
+    </div>
+  </details>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts 2-level cascading flyout dropdown navigation loop at cursor.
+   */
+  insertNestedMenuLoopAtCursor(): void {
+    const loopBlock = `\n<ul class="oz-nav-tree">
+  {{#each NavigationMenu}}
+  <li class="oz-nav-dropdown-parent">
+    <a href="#" class="oz-nav-parent-link">
+      <span class="material-symbols-outlined">{{ Icon }}</span>
+      <span>{{ CategoryTitle }}</span>
+      <span class="material-symbols-outlined oz-arrow">expand_more</span>
+    </a>
+    <ul class="oz-subdropdown-menu">
+      {{#each Children}}
+      <li class="oz-subdropdown-category">
+        <span class="oz-subcategory-title">{{ CategoryTitle }}</span>
+        <ul class="oz-nested-pages-list">
+          {{#each Pages}}
+          <li><a href="{{ PageUrl }}" class="oz-nested-page-link">{{ PageTitle }}</a></li>
+          {{/each}}
+        </ul>
+      </li>
+      {{/each}}
+      {{#each Pages}}
+      <li><a href="{{ PageUrl }}" class="oz-direct-page-link">{{ PageTitle }}</a></li>
+      {{/each}}
+    </ul>
+  </li>
+  {{/each}}
+</ul>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts multi-column mega menu grid loop at cursor.
+   */
+  insertMegaMenuLoopAtCursor(): void {
+    const loopBlock = `\n<div class="oz-mega-nav-container">
+  {{#each NavigationMenu}}
+  <div class="oz-mega-menu-item">
+    <button type="button" class="oz-mega-btn-trigger">
+      <span class="material-symbols-outlined">{{ Icon }}</span>
+      <span>{{ CategoryTitle }}</span>
+    </button>
+    <div class="oz-mega-panel">
+      <div class="oz-mega-grid">
+        {{#each Children}}
+        <div class="oz-mega-col">
+          <h4 class="oz-mega-col-title">{{ CategoryTitle }}</h4>
+          <div class="oz-mega-cards-stack">
+            {{#each Pages}}
+            <a href="{{ PageUrl }}" class="oz-mega-card-link">
+              <strong class="oz-mega-card-name">{{ PageTitle }}</strong>
+              <p class="oz-mega-card-excerpt">{{ PageDescription }}</p>
+            </a>
+            {{/each}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts standard flat navbar navigation loop at cursor.
+   */
+  insertFlatNavbarLoopAtCursor(): void {
+    const loopBlock = `\n<nav class="oz-flat-nav-bar">
+  {{#each NavigationMenu}}
+  <div class="oz-nav-simple-group">
+    <a href="#" class="oz-nav-main-link">{{ CategoryTitle }}</a>
+    <div class="oz-nav-dropdown-flyout">
+      {{#each Pages}}
+      <a href="{{ PageUrl }}" class="oz-nav-dropdown-link">{{ PageTitle }}</a>
+      {{/each}}
+    </div>
+  </div>
+  {{/each}}
+</nav>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * FAQ Mock Manager: Adds a new FAQ category block.
+   */
+  addSampleFaqCategory(): void {
+    if (!this.sampleContent.faqCategories) this.sampleContent.faqCategories = [];
+    const idx = this.sampleContent.faqCategories.length + 1;
+    this.sampleContent.faqCategories.push({
+      title: `Category ${idx}`,
+      sortOrder: idx,
+      faqs: [
+        { question: `New sample question ${idx}.1?`, answer: 'Detailed explanatory response for this question.', sortOrder: 1 }
+      ]
+    });
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * FAQ Mock Manager: Removes a FAQ category by index.
+   * @param catIdx Index of category to remove
+   */
+  removeSampleFaqCategory(catIdx: number): void {
+    if (this.sampleContent.faqCategories?.length > 1) {
+      this.sampleContent.faqCategories.splice(catIdx, 1);
+      this.updatePreviewSimulation();
+    } else {
+      this.toast.info('Keep at least 1 FAQ category for preview simulation.');
+    }
+  }
+
+  /**
+   * FAQ Mock Manager: Adds a new Question & Answer to a specific category.
+   * @param catIdx Category index
+   */
+  addSampleFaq(catIdx: number): void {
+    const cat = this.sampleContent.faqCategories?.[catIdx];
+    if (!cat) return;
+    if (!cat.faqs) cat.faqs = [];
+    const fIdx = cat.faqs.length + 1;
+    cat.faqs.push({
+      question: `New question ${catIdx + 1}.${fIdx}?`,
+      answer: 'Sample answer explanation content.',
+      sortOrder: fIdx
+    });
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * FAQ Mock Manager: Removes a Question & Answer from a specific category.
+   * @param catIdx Category index
+   * @param fIdx FAQ index
+   */
+  removeSampleFaq(catIdx: number, fIdx: number): void {
+    const cat = this.sampleContent.faqCategories?.[catIdx];
+    if (!cat || !cat.faqs) return;
+    if (cat.faqs.length > 1) {
+      cat.faqs.splice(fIdx, 1);
+      this.updatePreviewSimulation();
+    } else {
+      this.toast.info('Keep at least 1 question per category.');
+    }
+  }
+
+  /**
+   * Navigation Mock Manager: Adds a top-level menu column/category.
+   */
+  addSampleNavCategory(): void {
+    if (!this.sampleContent.navigationMenu) this.sampleContent.navigationMenu = [];
+    const idx = this.sampleContent.navigationMenu.length + 1;
+    this.sampleContent.navigationMenu.push({
+      title: `Menu ${idx}`,
+      icon: 'category',
+      children: [],
+      pages: [
+        { title: `Page ${idx}.1`, pageUrl: `/page-${idx}`, pageDescription: 'Page description excerpt.', pageImage: '' }
+      ]
+    });
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Navigation Mock Manager: Removes a top-level menu category.
+   * @param mIdx Menu index
+   */
+  removeSampleNavCategory(mIdx: number): void {
+    if (this.sampleContent.navigationMenu?.length > 1) {
+      this.sampleContent.navigationMenu.splice(mIdx, 1);
+      this.updatePreviewSimulation();
+    } else {
+      this.toast.info('Keep at least 1 navigation category.');
+    }
+  }
+
+  /**
+   * Navigation Mock Manager: Adds a sub-dropdown category (Level 2).
+   * @param mIdx Parent menu index
+   */
+  addSampleNavChild(mIdx: number): void {
+    const menu = this.sampleContent.navigationMenu?.[mIdx];
+    if (!menu) return;
+    if (!menu.children) menu.children = [];
+    const cIdx = menu.children.length + 1;
+    menu.children.push({
+      title: `Sub-Category ${cIdx}`,
+      icon: 'folder',
+      pages: [
+        { title: `Sub Page ${cIdx}.1`, pageUrl: `/sub-${cIdx}`, pageDescription: 'Sub page item description.', pageImage: '' }
+      ]
+    });
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Navigation Mock Manager: Removes a sub-dropdown category.
+   * @param mIdx Parent menu index
+   * @param cIdx Child index
+   */
+  removeSampleNavChild(mIdx: number, cIdx: number): void {
+    const menu = this.sampleContent.navigationMenu?.[mIdx];
+    if (!menu || !menu.children) return;
+    menu.children.splice(cIdx, 1);
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Navigation Mock Manager: Adds a sub-page to a child category.
+   * @param mIdx Parent menu index
+   * @param cIdx Child index
+   */
+  addSampleNavPage(mIdx: number, cIdx: number): void {
+    const child = this.sampleContent.navigationMenu?.[mIdx]?.children?.[cIdx];
+    if (!child) return;
+    if (!child.pages) child.pages = [];
+    const pIdx = child.pages.length + 1;
+    child.pages.push({
+      title: `New Page ${pIdx}`,
+      pageUrl: `/page-${pIdx}`,
+      pageDescription: 'Page description excerpt.',
+      pageImage: ''
+    });
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Navigation Mock Manager: Removes a sub-page.
+   * @param mIdx Parent menu index
+   * @param cIdx Child index
+   * @param pIdx Page index
+   */
+  removeSampleNavPage(mIdx: number, cIdx: number, pIdx: number): void {
+    const child = this.sampleContent.navigationMenu?.[mIdx]?.children?.[cIdx];
+    if (!child || !child.pages) return;
+    if (child.pages.length > 1) {
+      child.pages.splice(pIdx, 1);
+      this.updatePreviewSimulation();
+    } else {
+      this.toast.info('Keep at least 1 page in this sub-category.');
+    }
+  }
+
   resetSampleContentToCategoryDefaults(): void {
     this.sampleContent = JSON.parse(JSON.stringify(this.currentPreset.sampleContent));
     this.updatePreviewSimulation();
@@ -2503,47 +3776,179 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   /**
    * Hydrates raw template HTML containing {{ Placeholders }} with the sample content.
+   * Supports:
+   * 1. Multi-level NavigationMenu (Parents -> Children submenus -> Pages)
+   * 2. Hierarchical FaqCategories with nested FAQs, plus flat FAQs loops
+   * 3. PageSectionLists repeater card items
+   * 4. All PageSection and Media/Identity scalar tokens including CustomClass and PoweredBy.
    */
   hydrateMarkup(rawHtml: string): string {
     if (!rawHtml) return '';
     let output = rawHtml;
     const ctx = this.sampleContent;
 
-    // 1. Loop over {{#each PageSectionLists}}...{{/each}}
-    const eachRegex = /\{\{#each\s+PageSectionLists\}\}([\s\S]*?)\{\{\/each\}\}/gi;
-    output = output.replace(eachRegex, (_match, innerTemplate) => {
+    // 1. NavigationMenu / PageCategories Loop (Multi-level cascading dropdowns & Mega Menus)
+    const navMenuRegex = /\{\{#each\s+(?:NavigationMenu|PageCategories)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(navMenuRegex, (_match: string, outerTemplate: string) => {
+      const menus = ctx.navigationMenu || [];
+      if (!Array.isArray(menus) || menus.length === 0) return '';
+
+      return menus.map((menu: any, mIdx: number) => {
+        let renderedMenu = outerTemplate;
+
+        // Render nested {{#each Children}}
+        const childrenRegex = /\{\{#each\s+Children\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        renderedMenu = renderedMenu.replace(childrenRegex, (_cMatch: string, childTemplate: string) => {
+          const children = menu.children || [];
+          if (!Array.isArray(children) || children.length === 0) return '';
+
+          return children.map((child: any, cIdx: number) => {
+            let renderedChild = childTemplate;
+
+            // Render nested {{#each Pages}} inside Child
+            const subPagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+            renderedChild = renderedChild.replace(subPagesRegex, (_pMatch: string, pageTemplate: string) => {
+              const pages = child.pages || [];
+              if (!Array.isArray(pages) || pages.length === 0) return '';
+              return pages.map((p: any, pIdx: number) => {
+                let renderedPage = pageTemplate;
+                renderedPage = renderedPage.replace(/\{\{\s*(?:PageTitle|Title)\s*\}\}/gi, p.title || `Page ${pIdx + 1}`);
+                renderedPage = renderedPage.replace(/\{\{\s*(?:PageUrl|DirectUrl)\s*\}\}/gi, p.pageUrl || '#');
+                renderedPage = renderedPage.replace(/\{\{\s*(?:PageDescription|MetaDescription)\s*\}\}/gi, p.pageDescription || '');
+                renderedPage = renderedPage.replace(/\{\{\s*(?:PageImage|ImageUrl)\s*\}\}/gi, p.pageImage || '');
+                return renderedPage;
+              }).join('\n');
+            });
+
+            renderedChild = renderedChild.replace(/\{\{\s*(?:CategoryTitle|Title)\s*\}\}/gi, child.title || `Sub-Category ${cIdx + 1}`);
+            renderedChild = renderedChild.replace(/\{\{\s*Icon\s*\}\}/gi, child.icon || 'folder');
+            return renderedChild;
+          }).join('\n');
+        });
+
+        // Render direct top-level {{#each Pages}}
+        const directPagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        renderedMenu = renderedMenu.replace(directPagesRegex, (_pMatch: string, pageTemplate: string) => {
+          const pages = menu.pages || [];
+          if (!Array.isArray(pages) || pages.length === 0) return '';
+          return pages.map((p: any, pIdx: number) => {
+            let renderedPage = pageTemplate;
+            renderedPage = renderedPage.replace(/\{\{\s*(?:PageTitle|Title)\s*\}\}/gi, p.title || `Page ${pIdx + 1}`);
+            renderedPage = renderedPage.replace(/\{\{\s*(?:PageUrl|DirectUrl)\s*\}\}/gi, p.pageUrl || '#');
+            renderedPage = renderedPage.replace(/\{\{\s*(?:PageDescription|MetaDescription)\s*\}\}/gi, p.pageDescription || '');
+            renderedPage = renderedPage.replace(/\{\{\s*(?:PageImage|ImageUrl)\s*\}\}/gi, p.pageImage || '');
+            return renderedPage;
+          }).join('\n');
+        });
+
+        renderedMenu = renderedMenu.replace(/\{\{\s*(?:CategoryTitle|Title)\s*\}\}/gi, menu.title || `Menu ${mIdx + 1}`);
+        renderedMenu = renderedMenu.replace(/\{\{\s*Icon\s*\}\}/gi, menu.icon || 'category');
+        return renderedMenu;
+      }).join('\n');
+    });
+
+    // 2. FAQ Categories Hierarchy Loop ({{#each FaqCategories}}...{{#each FAQs}}...{{/each}}...{{/each}})
+    const faqCatRegex = /\{\{#each\s+FaqCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(faqCatRegex, (_match: string, catTemplate: string) => {
+      const categories = ctx.faqCategories || [];
+      if (!Array.isArray(categories) || categories.length === 0) return '';
+
+      return categories.map((cat: any, catIdx: number) => {
+        let renderedCat = catTemplate;
+
+        // Render nested FAQs
+        const faqsRegex = /\{\{#each\s+FAQs\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        renderedCat = renderedCat.replace(faqsRegex, (_fMatch: string, faqTemplate: string) => {
+          const faqs = cat.faqs || [];
+          if (!Array.isArray(faqs) || faqs.length === 0) return '';
+          return faqs.map((f: any, fIdx: number) => {
+            let renderedFaq = faqTemplate;
+            renderedFaq = renderedFaq.replace(/\{\{\s*(?:Question|Title)\s*\}\}/gi, f.question || `Question ${fIdx + 1}`);
+            renderedFaq = renderedFaq.replace(/\{\{\s*(?:Answer|Message)\s*\}\}/gi, f.answer || '');
+            renderedFaq = renderedFaq.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(f.sortOrder ?? fIdx + 1));
+            return renderedFaq;
+          }).join('\n');
+        });
+
+        renderedCat = renderedCat.replace(/\{\{\s*(?:CategoryTitle|Title)\s*\}\}/gi, cat.title || `FAQ Category ${catIdx + 1}`);
+        renderedCat = renderedCat.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(cat.sortOrder ?? catIdx + 1));
+        return renderedCat;
+      }).join('\n');
+    });
+
+    // 3. Standalone / Flat FAQs Loop ({{#each FAQs}}...{{/each}})
+    const flatFaqsRegex = /\{\{#each\s+FAQs\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(flatFaqsRegex, (_match: string, faqTemplate: string) => {
+      // Gather all FAQs across categories or standalone
+      const allFaqs: any[] = [];
+      if (Array.isArray(ctx.faqCategories)) {
+        ctx.faqCategories.forEach((c: any) => {
+          if (Array.isArray(c.faqs)) allFaqs.push(...c.faqs);
+        });
+      }
+      if (allFaqs.length === 0) return '';
+
+      return allFaqs.map((f: any, fIdx: number) => {
+        let renderedFaq = faqTemplate;
+        renderedFaq = renderedFaq.replace(/\{\{\s*(?:Question|Title)\s*\}\}/gi, f.question || `Question ${fIdx + 1}`);
+        renderedFaq = renderedFaq.replace(/\{\{\s*(?:Answer|Message)\s*\}\}/gi, f.answer || '');
+        renderedFaq = renderedFaq.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(f.sortOrder ?? fIdx + 1));
+        return renderedFaq;
+      }).join('\n');
+    });
+
+    // 4. PageSectionLists / Items Loop
+    const eachRegex = /\{\{#each\s+(?:PageSectionLists|Items)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(eachRegex, (_match: string, innerTemplate: string) => {
       if (!ctx.items || !Array.isArray(ctx.items) || ctx.items.length === 0) {
         return '';
       }
       return ctx.items.map((item: any, idx: number) => {
         let renderedItem = innerTemplate;
         renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
-        renderedItem = renderedItem.replace(/\{\{\s*SubTitle\s*\}\}/gi, item.subTitle || '');
-        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || ctx.miniTitle || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:SubTitle|MiniTitle)\s*\}\}/gi, item.subTitle || item.miniTitle || '');
         renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, item.icon || 'star');
+        renderedItem = renderedItem.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || item.description || '');
+        renderedItem = renderedItem.replace(/\{\{\s*(?:Icon|IconText)\s*\}\}/gi, item.icon || item.iconText || 'star');
         renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || ctx.imageUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || ctx.buttonText || 'Learn More');
         renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || ctx.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*DirectUrl\s*\}\}/gi, item.directUrl || item.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, String(idx + 1));
         return renderedItem;
       }).join('\n');
     });
 
-    // 2. Scalar Field Placeholders
+    // 5. Scalar Field Placeholders (PageSection, Media, Styles & Identity)
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
     output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
     output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
-    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
     output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || '');
     output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || '#');
+    output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
+
+    // Custom CSS Class
+    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, (ctx.customClass || '').trim());
+
+    // Media & Styles
+    output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || 'transparent');
+    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || '');
+    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
+
+    // Brand & Identity with Fixed Powered By
+    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Acme Global');
+    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || '© 2026 Acme Global. All rights reserved.');
+    output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || '<a href="https://ozikol.com" target="_blank" rel="noopener noreferrer">Powered by <strong>Ozikol</strong></a>');
     output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@acme-global.com');
     output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (800) 555-0199');
     output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Enterprise Blvd, Silicon Valley');
-    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Acme Global');
-    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || '© 2026 Acme Global. All rights reserved.');
 
     return output;
   }
