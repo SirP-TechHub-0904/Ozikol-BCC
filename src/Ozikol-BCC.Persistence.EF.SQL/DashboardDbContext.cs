@@ -69,6 +69,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<ContactUsCategory> ContactUsCategories { get; set; }
     public DbSet<ContactUs> ContactUs { get; set; }
     public DbSet<WebPageViewLog> WebPageViewLogs { get; set; }
+    public DbSet<SiteCodeInjectionTag> SiteCodeInjectionTags { get; set; } = null!;
 
     // Legacy website/content tables retained by the same tenant database.
     public DbSet<PostModal> PostModal { get; set; }

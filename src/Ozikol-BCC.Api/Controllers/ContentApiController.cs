@@ -525,6 +525,7 @@ namespace Ozikol_BCC.Api.Controllers
             existing.VideoButtonText = updated.VideoButtonText;
             existing.SortOrder = updated.SortOrder;
             existing.Show = updated.Show;
+            existing.TemplateKey = updated.TemplateKey;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Slider updated successfully."));
@@ -1131,6 +1132,298 @@ namespace Ozikol_BCC.Api.Controllers
 
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Template '{template.Name}' removed from tenant library."));
         }
+
+        // ==========================================
+        // 13. DIRECT CUSTOM SECTION TEMPLATES
+        // ==========================================
+
+        /// <summary>
+        /// Creates a custom section template directly in the tenant database without requiring a marketplace installation.
+        /// Supports {{ Placeholders }} and optional CSS (CSS can be left blank when relying on global theme styles).
+        /// </summary>
+        /// <param name="request">The custom template definition.</param>
+        /// <returns>The created or updated TenantInstalledTemplate.</returns>
+        [HttpPost("templates/custom")]
+        public async Task<IActionResult> CreateCustomTemplate([FromBody] CreateCustomTemplateRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.CategoryKey))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Template Name and Category are required."));
+            }
+
+            try
+            {
+                var catKey = request.CategoryKey.Trim().ToLowerInvariant();
+                var cleanName = request.Name.Trim();
+                var cleanVariant = string.IsNullOrWhiteSpace(request.VariantCode)
+                    ? $"{char.ToUpper(catKey[0])}{catKey[1..]}_{Guid.NewGuid().ToString("N")[..6]}"
+                    : request.VariantCode.Trim();
+
+                var cleanKey = string.IsNullOrWhiteSpace(request.TemplateKey)
+                    ? cleanVariant
+                    : request.TemplateKey.Trim();
+
+                // 1. Singleton enforcement for Menu and Footer categories
+                if (catKey == "menu")
+                {
+                    var existingMenus = await _context.TenantInstalledTemplates
+                        .Where(t => t.CategoryKey.ToLower() == "menu" && t.IsActive)
+                        .ToListAsync();
+
+                    foreach (var m in existingMenus)
+                    {
+                        m.IsActive = false;
+                    }
+                }
+                else if (catKey == "footer")
+                {
+                    var existingFooters = await _context.TenantInstalledTemplates
+                        .Where(t => t.CategoryKey.ToLower() == "footer" && t.IsActive)
+                        .ToListAsync();
+
+                    foreach (var f in existingFooters)
+                    {
+                        f.IsActive = false;
+                    }
+                }
+
+                // 2. Add or update tenant template
+                var template = await _context.TenantInstalledTemplates
+                    .FirstOrDefaultAsync(t => t.TemplateKey == cleanKey || t.VariantCode == cleanVariant);
+
+                if (template != null)
+                {
+                    template.Name = cleanName;
+                    template.CategoryKey = catKey;
+                    template.VariantCode = cleanVariant;
+                    template.HtmlTemplate = request.HtmlTemplate ?? string.Empty;
+                    template.CssStyles = request.CssStyles ?? string.Empty;
+                    template.JsScript = request.JsScript;
+                    template.InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion;
+                    template.IsCustomized = true;
+                    template.IsActive = true;
+                    template.LastUpdatedUtc = DateTime.UtcNow;
+                }
+                else
+                {
+                    template = new TenantInstalledTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        TemplateKey = cleanKey,
+                        CategoryKey = catKey,
+                        Name = cleanName,
+                        VariantCode = cleanVariant,
+                        HtmlTemplate = request.HtmlTemplate ?? string.Empty,
+                        CssStyles = request.CssStyles ?? string.Empty,
+                        JsScript = request.JsScript,
+                        InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion,
+                        IsCustomized = true,
+                        IsActive = true,
+                        InstalledUtc = DateTime.UtcNow
+                    };
+                    _context.TenantInstalledTemplates.Add(template);
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(template, $"Custom template '{template.Name}' saved successfully."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to save custom template: {msg}"));
+            }
+        }
+
+        // ==========================================
+        // 14. 3-ZONE CODE INJECTION (HEAD, BODY OPEN, FOOTER)
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves code injection tags for the tenant, optionally filtered by zone ("head", "body_open", "footer").
+        /// Sorted by SortOrder ascending.
+        /// </summary>
+        /// <param name="zone">Optional zone filter: "head", "body_open", or "footer".</param>
+        /// <returns>List of SiteCodeInjectionTag items.</returns>
+        [HttpGet("code-injections")]
+        public async Task<IActionResult> GetCodeInjections([FromQuery] string? zone = null)
+        {
+            try
+            {
+                var query = _context.SiteCodeInjectionTags.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(zone))
+                {
+                    var cleanZone = zone.Trim().ToLowerInvariant();
+                    query = query.Where(t => t.Zone.ToLower() == cleanZone);
+                }
+
+                var list = await query
+                    .OrderBy(t => t.SortOrder)
+                    .ThenBy(t => t.CreatedAtUtc)
+                    .ToListAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(list, "Code injection tags retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to fetch code injection tags: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new ordered code injection tag for head, body_open, or footer.
+        /// </summary>
+        /// <param name="request">Tag parameters.</param>
+        /// <returns>Created SiteCodeInjectionTag record.</returns>
+        [HttpPost("code-injections")]
+        public async Task<IActionResult> CreateCodeInjection([FromBody] CreateCodeInjectionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Content))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Tag Name and Content are required."));
+            }
+
+            var cleanZone = (request.Zone ?? "head").Trim().ToLowerInvariant();
+            if (cleanZone != "head" && cleanZone != "body_open" && cleanZone != "footer")
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
+            }
+
+            try
+            {
+                var tag = new SiteCodeInjectionTag
+                {
+                    Id = Guid.NewGuid(),
+                    Name = request.Name.Trim(),
+                    Zone = cleanZone,
+                    TagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant(),
+                    Content = request.Content.Trim(),
+                    SortOrder = request.SortOrder,
+                    IsActive = request.IsActive,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+
+                _context.SiteCodeInjectionTags.Add(tag);
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(tag, $"Tag '{tag.Name}' created in {cleanZone} zone."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to create code injection tag: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing code injection tag.
+        /// </summary>
+        /// <param name="id">Tag identifier.</param>
+        /// <param name="request">Updated tag fields.</param>
+        /// <returns>Updated SiteCodeInjectionTag record.</returns>
+        [HttpPut("code-injections/{id:guid}")]
+        public async Task<IActionResult> UpdateCodeInjection(Guid id, [FromBody] UpdateCodeInjectionRequest request)
+        {
+            var tag = await _context.SiteCodeInjectionTags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Code injection tag not found."));
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Content))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Tag Name and Content are required."));
+            }
+
+            var cleanZone = (request.Zone ?? tag.Zone).Trim().ToLowerInvariant();
+            if (cleanZone != "head" && cleanZone != "body_open" && cleanZone != "footer")
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
+            }
+
+            tag.Name = request.Name.Trim();
+            tag.Zone = cleanZone;
+            tag.TagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+            tag.Content = request.Content.Trim();
+            tag.SortOrder = request.SortOrder;
+            tag.IsActive = request.IsActive;
+            tag.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(tag, $"Tag '{tag.Name}' updated successfully."));
+        }
+
+        /// <summary>
+        /// Deletes a code injection tag.
+        /// </summary>
+        /// <param name="id">Tag identifier.</param>
+        /// <returns>Success response.</returns>
+        [HttpDelete("code-injections/{id:guid}")]
+        public async Task<IActionResult> DeleteCodeInjection(Guid id)
+        {
+            var tag = await _context.SiteCodeInjectionTags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Code injection tag not found."));
+            }
+
+            _context.SiteCodeInjectionTags.Remove(tag);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Tag '{tag.Name}' deleted successfully."));
+        }
+
+        /// <summary>
+        /// Toggles active/inactive state of a code injection tag.
+        /// </summary>
+        /// <param name="id">Tag identifier.</param>
+        /// <returns>Updated status response.</returns>
+        [HttpPost("code-injections/{id:guid}/toggle")]
+        public async Task<IActionResult> ToggleCodeInjection(Guid id)
+        {
+            var tag = await _context.SiteCodeInjectionTags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Code injection tag not found."));
+            }
+
+            tag.IsActive = !tag.IsActive;
+            tag.UpdatedAtUtc = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(tag, $"Tag '{tag.Name}' status set to {(tag.IsActive ? "Active" : "Disabled")}."));
+        }
+    }
+
+    public class CreateCustomTemplateRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string CategoryKey { get; set; } = string.Empty;
+        public string? TemplateKey { get; set; }
+        public string? VariantCode { get; set; }
+        public string? HtmlTemplate { get; set; }
+        public string? CssStyles { get; set; }
+        public string? JsScript { get; set; }
+        public string? InstalledVersion { get; set; } = "1.0.0";
+    }
+
+    public class CreateCodeInjectionRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Zone { get; set; } = "head";
+        public string TagType { get; set; } = "raw_html";
+        public string Content { get; set; } = string.Empty;
+        public int SortOrder { get; set; } = 0;
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class UpdateCodeInjectionRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Zone { get; set; } = "head";
+        public string TagType { get; set; } = "raw_html";
+        public string Content { get; set; } = string.Empty;
+        public int SortOrder { get; set; } = 0;
+        public bool IsActive { get; set; } = true;
     }
 
     public class InstallTemplateRequest

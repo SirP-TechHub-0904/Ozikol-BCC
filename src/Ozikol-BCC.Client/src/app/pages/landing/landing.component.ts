@@ -1760,6 +1760,77 @@ export class LandingComponent implements OnInit {
     this.loadStoreSettings();
     this.loadFeaturedProducts();
     this.loadFaqs();
+    this.injectSiteCodeTags();
+  }
+
+  injectSiteCodeTags(): void {
+    this.api.get<any>('WebsiteContentApi/code-injections').subscribe({
+      next: (res) => {
+        const data = res?.data;
+        if (!data) return;
+
+        // 1. Head Zone (<head>)
+        if (Array.isArray(data.head)) {
+          data.head.forEach((tag: any) => {
+            const tagId = `oz-site-head-tag-${tag.id}`;
+            if (!document.getElementById(tagId)) {
+              const container = document.createElement('div');
+              container.id = tagId;
+              container.style.display = 'none';
+              container.innerHTML = tag.content || '';
+              while (container.firstChild) {
+                const child = container.firstChild as HTMLElement;
+                if (child.tagName === 'SCRIPT') {
+                  const s = document.createElement('script');
+                  Array.from(child.attributes).forEach(attr => s.setAttribute(attr.name, attr.value));
+                  s.textContent = child.textContent;
+                  document.head.appendChild(s);
+                  child.remove();
+                } else {
+                  document.head.appendChild(child);
+                }
+              }
+            }
+          });
+        }
+
+        // 2. Body Open Zone (<body> start)
+        if (Array.isArray(data.bodyOpen)) {
+          data.bodyOpen.forEach((tag: any) => {
+            const tagId = `oz-site-body-open-tag-${tag.id}`;
+            if (!document.getElementById(tagId)) {
+              const wrap = document.createElement('div');
+              wrap.id = tagId;
+              wrap.className = 'oz-body-open-tag';
+              wrap.innerHTML = tag.content || '';
+              document.body.insertAdjacentElement('afterbegin', wrap);
+            }
+          });
+        }
+
+        // 3. Footer Zone (</body> before closing)
+        if (Array.isArray(data.footer)) {
+          data.footer.forEach((tag: any) => {
+            const tagId = `oz-site-footer-tag-${tag.id}`;
+            if (!document.getElementById(tagId)) {
+              const wrap = document.createElement('div');
+              wrap.id = tagId;
+              wrap.className = 'oz-footer-tag';
+              wrap.innerHTML = tag.content || '';
+              const scripts = wrap.querySelectorAll('script');
+              scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode?.replaceChild(newScript, oldScript);
+              });
+              document.body.appendChild(wrap);
+            }
+          });
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadBrandSettings(): void {

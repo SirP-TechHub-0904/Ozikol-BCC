@@ -192,8 +192,14 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
             <div class="form-group">
               <label>TEMPLATE DESIGN KEY *</label>
-              <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. services-grid, hero-features">
-              <small class="help-text">Directly maps to the HTML/CSS presentation block in your theme.</small>
+              <select [(ngModel)]="section.templateKey" class="form-control" *ngIf="installedTemplates.length > 0">
+                <option value="">-- Select Installed Template --</option>
+                <option *ngFor="let t of installedTemplates" [value]="t.templateKey || t.variantCode">
+                  {{ t.name }} ({{ t.variantCode }}) [{{ t.categoryKey }}]
+                </option>
+              </select>
+              <input type="text" [(ngModel)]="section.templateKey" class="form-control" placeholder="e.g. services-grid, hero-features" [style.margin-top]="installedTemplates.length > 0 ? '8px' : '0'">
+              <small class="help-text">Choose from your installed blueprint library or type a custom key. View all in <a routerLink="/content/console/templates" target="_blank" style="color: #0050e5; font-weight: 600;">My Templates</a>.</small>
             </div>
 
             <div class="form-group" style="margin-top:12px;">
@@ -375,6 +381,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class PageSectionEditComponent implements OnInit {
   sectionId = '';
   section: any = null;
+  installedTemplates: any[] = [];
   allPages: any[] = [];
   loading = false;
   uploadingPrimary = false;
@@ -395,6 +402,18 @@ export class PageSectionEditComponent implements OnInit {
     if (this.sectionId) {
       this.loadSection();
     }
+    this.loadInstalledTemplates();
+  }
+
+  loadInstalledTemplates(): void {
+    this.api.get<any>('ContentApi/templates/installed').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.installedTemplates = res.data;
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadSection(): void {

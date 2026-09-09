@@ -104,6 +104,14 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [Display(Name = "Video Button Text")]
         public string? VideoButtonText { get; set; }
+
+        /// <summary>
+        /// Key matching an installed Hero template in TenantInstalledTemplates (e.g., "Hero_SplitProduct", "Hero_CenteredSaaS").
+        /// Links this slider's content to a modular HTML/CSS Hero layout.
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Template Layout Key")]
+        public string? TemplateKey { get; set; }
     }
 }
 
