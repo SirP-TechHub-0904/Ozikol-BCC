@@ -36,19 +36,27 @@
         else
         {
             <!-- Active One-Time View -->
-            <!-- Prominent One-Time Security Alert -->
-            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 16px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 12px;">
-                <svg width="22" height="22" fill="none" stroke="#d97706" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <div style="font-size: 13px; color: #92400e; line-height: 1.5;">
-                    <strong style="display: block; margin-bottom: 2px;">One-Time Display Security Notice</strong>
-                    This detailed setup summary is only displayed once upon provisioning and cannot be re-opened if this page is closed or refreshed. A copy has been delivered to your email. Please bookmark your links now.
+            <!-- Keep This Safe Security Notice -->
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #d1fae5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <div style="font-size: 13px; color: #065f46; line-height: 1.5;">
+                        <strong style="display: block; font-size: 14px; margin-bottom: 2px; color: #047857;">Keep this safe</strong>
+                        This setup summary is only displayed once upon provisioning and cannot be re-opened if this page is closed or refreshed. A copy has been delivered to your email. Please download or bookmark your details now.
+                    </div>
                 </div>
+                <button type="button" onclick="downloadCredentials()" style="flex-shrink: 0; background: #059669; color: #ffffff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: background 0.15s ease;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download (.txt)
+                </button>
             </div>
 
             <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
                 <div style="display: inline-flex; align-items: center; gap: 6px; background: #ecfdf5; color: #059669; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 8px;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    @SharedLocalizer["Auth_Setup_ReadyBadge"]
+                    Your workspace is ready
                 </div>
                 <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 4px;">@Model.OrganizationName</h1>
                 <p class="auth-subtitle">@SharedLocalizer["Auth_Setup_ReadyDesc"]</p>
@@ -82,24 +90,51 @@
                 <!-- Admin Credentials Info -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
                     <div style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">@SharedLocalizer["Auth_Setup_CredentialsLabel"]</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #0f172a;">@SharedLocalizer["Auth_Setup_UsernameLabel"] <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">@Model.AdminEmail</code></div>
+                    <div style="font-size: 14px; font-weight: 600; color: #0f172a;">@SharedLocalizer["Auth_Setup_UsernameLabel"] <code id="adminEmailVal" style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">@Model.AdminEmail</code></div>
                     <div style="font-size: 12px; color: #64748b; margin-top: 4px;">@SharedLocalizer["Auth_Setup_PasswordNotice"]</div>
                 </div>
             </div>
 
-            <!-- Prominent Access Guidance Note -->
-            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px 16px; font-size: 12.5px; color: #1e40af; margin-bottom: 24px; line-height: 1.5;">
-                <strong>How to sign in later:</strong> To sign in to your workspace at any time, go directly to your website link above. The Central Ozikol website login is strictly for Central platform operators.
-            </div>
+            <!-- Action Buttons: Mandatory Download (.txt) & Launch Workspace -->
+            <div style="display: flex; gap: 12px; align-items: stretch;">
+                <button type="button" id="btnDownloadDetails" onclick="downloadCredentials()" class="btn-auth-outline" style="flex: 1; padding: 12px 14px; border: 2px solid #059669; color: #059669; background: #ffffff; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span id="downloadBtnText">Download Setup (.txt)</span>
+                </button>
 
-            <a href="@Model.LoginUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px; font-size: 15px;">
-                @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
-            </a>
+                <a href="@Model.LoginUrl" id="btnLaunchWorkspace" onclick="handleLaunchClick(event)" class="btn-auth-submit" style="flex: 1.2; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; line-height: 20px; font-size: 14px; padding: 12px 16px; margin: 0; background: var(--ozikol-primary); border-radius: 8px; font-weight: 700;">
+                    @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
+                </a>
+            </div>
         }
     </div>
 </div>
 
+<!-- Mandatory Download Required Modal -->
+<div id="downloadRequiredModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 440px; width: 100%; padding: 26px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04); text-align: center; border: 1px solid #e2e8f0;">
+        <div style="width: 58px; height: 58px; border-radius: 50%; background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </div>
+        <h3 style="font-size: 19px; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Download Required First</h3>
+        <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 20px;">
+            For your security and to ensure you never lose access to your dedicated workspace, you must download your setup credentials (.txt) before entering the command center.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button type="button" onclick="downloadFromModal()" style="background: #059669; color: #ffffff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(5,150,105,0.25); transition: background 0.15s ease;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download Credentials (.txt) & Proceed
+            </button>
+            <button type="button" onclick="closeDownloadModal()" style="background: #f1f5f9; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+let hasDownloaded = false;
+
 function copyValue(id, btn) {
     const text = document.getElementById(id).innerText.trim();
     navigator.clipboard.writeText(text).then(() => {
@@ -107,5 +142,99 @@ function copyValue(id, btn) {
         btn.innerText = 'Copied!';
         setTimeout(() => { btn.innerText = original; }, 2000);
     });
+}
+
+function handleLaunchClick(e) {
+    if (!hasDownloaded) {
+        e.preventDefault();
+        openDownloadModal();
+    }
+}
+
+function openDownloadModal() {
+    const modal = document.getElementById('downloadRequiredModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeDownloadModal() {
+    const modal = document.getElementById('downloadRequiredModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function downloadCredentials() {
+    const orgName = '@(Model.OrganizationName?.Replace("'", "\\'"))';
+    const siteUrl = document.getElementById('siteVal') ? document.getElementById('siteVal').innerText.trim() : '@(Model.WebsiteUrl?.Replace("'", "\\'"))';
+    const loginUrl = document.getElementById('loginVal') ? document.getElementById('loginVal').innerText.trim() : '@(Model.LoginUrl?.Replace("'", "\\'"))';
+    const adminEmail = document.getElementById('adminEmailVal') ? document.getElementById('adminEmailVal').innerText.trim() : '@(Model.AdminEmail?.Replace("'", "\\'"))';
+    const timestamp = new Date().toLocaleString();
+
+    const content = 
+`=============================================================
+OZIKOL CLOUD WORKSPACE - SETUP SUMMARY & ACCESS DETAILS
+=============================================================
+
+ORGANIZATION DETAILS:
+  Organization Name: ${orgName}
+  Provisioned Date:  ${timestamp}
+
+ACCESS URLS:
+  Dedicated Website: ${siteUrl}
+  Command Center:    ${loginUrl}
+
+ADMINISTRATOR CREDENTIALS:
+  Username / Email:  ${adminEmail}
+  Password:          [The password created during onboarding]
+
+SECURITY ADVISORY:
+  1. Store this file securely in your organization's password manager.
+  2. For security, the setup page cannot be re-opened once closed.
+  3. Sign in strictly through your dedicated Command Center URL above.
+
+=============================================================
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const cleanOrg = orgName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const fileName = `${cleanOrg || 'workspace'}-setup-details.txt`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    // Mark download as completed
+    hasDownloaded = true;
+    
+    // Update button visual states
+    const btnText = document.getElementById('downloadBtnText');
+    if (btnText) {
+        btnText.innerHTML = 'Downloaded ✓';
+    }
+    const btnDl = document.getElementById('btnDownloadDetails');
+    if (btnDl) {
+        btnDl.style.background = '#ecfdf5';
+        btnDl.style.borderColor = '#10b981';
+        btnDl.style.color = '#047857';
+    }
+    const launchBtn = document.getElementById('btnLaunchWorkspace');
+    if (launchBtn) {
+        launchBtn.style.boxShadow = '0 4px 14px rgba(5, 150, 105, 0.3)';
+    }
+}
+
+function downloadFromModal() {
+    downloadCredentials();
+    closeDownloadModal();
+    // Seamlessly navigate to the login portal after initiating download
+    setTimeout(() => {
+        window.location.href = '@Model.LoginUrl';
+    }, 700);
 }
 </script>
