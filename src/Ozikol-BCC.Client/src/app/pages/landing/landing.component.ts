@@ -609,7 +609,7 @@ interface FaqItem {
             </span>
             <div class="footer-bottom-badges">
               <span class="badge-pill-sec">🔒 256-Bit SSL Encrypted</span>
-              <span class="badge-pill-sec">⚡ Powered by Ozikol BCP Multi-Tenant Architecture</span>
+              <span class="badge-pill-sec">⚡ Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-weight: 700;">Ozikol</a>.</span>
             </div>
           </div>
         </div>
