@@ -1346,7 +1346,7 @@ export class AdminLayoutComponent implements OnInit {
   sidebarCollapsed = false;
   darkMode = false;
   brandName = localStorage.getItem('tenant_name') || 'Workspace';
-  brandAbbreviation = localStorage.getItem('tenant_abbreviation') || 'CC';
+  brandAbbreviation = this.computeAbbreviation(localStorage.getItem('tenant_abbreviation') && localStorage.getItem('tenant_abbreviation') !== 'CC' ? localStorage.getItem('tenant_abbreviation')! : (localStorage.getItem('tenant_name') || 'Workspace'));
   brandLogoUrl = localStorage.getItem('tenant_logo') || '';
   brandIconUrl = localStorage.getItem('tenant_icon') || '';
   categoryAlias = localStorage.getItem('alias_category') || 'User Categories';
@@ -1553,18 +1553,32 @@ export class AdminLayoutComponent implements OnInit {
     return this.currentRoute.startsWith('/admin/content/faqs');
   }
 
+  computeAbbreviation(name: string): string {
+    if (!name || !name.trim()) return 'ORG';
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) {
+      const single = words[0].trim();
+      return single.length >= 3 ? single.substring(0, 3).toUpperCase() : single.toUpperCase();
+    }
+    return words.slice(0, 4).map(w => w[0].toUpperCase()).join('');
+  }
+
   loadTenantInfo(): void {
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {
         if (res?.data) {
+          const name = res.data.companyName || this.brandName;
           if (res.data.companyName) {
             this.brandName = res.data.companyName;
             localStorage.setItem('tenant_name', res.data.companyName);
             document.title = `${this.brandName} - Console`;
           }
-          if (res.data.companyNameAbbreviation) {
+          if (res.data.companyNameAbbreviation && res.data.companyNameAbbreviation !== 'CC') {
             this.brandAbbreviation = res.data.companyNameAbbreviation;
             localStorage.setItem('tenant_abbreviation', res.data.companyNameAbbreviation);
+          } else {
+            this.brandAbbreviation = this.computeAbbreviation(name);
+            localStorage.setItem('tenant_abbreviation', this.brandAbbreviation);
           }
           this.brandLogoUrl = res.data.companyLogoUrl || '';
           if (res.data.companyLogoUrl) {

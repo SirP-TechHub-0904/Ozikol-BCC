@@ -21,6 +21,7 @@ public class TenantOnboardingRequest
     public string? PhoneNumber { get; set; }
     public string? CustomDomain { get; set; }
     public string? ReferredBy { get; set; }
+    public string? Sector { get; set; }
 }
 
 public class TenantOnboardingResult
@@ -519,6 +520,9 @@ public class TenantOnboardingService : ITenantOnboardingService
                 }
             }
 
+            var sectorDefaults = GetSectorDefaults(request.Sector, request.OrganizationName);
+            var abbreviation = ComputeAbbreviation(request.OrganizationName);
+
             // 3. Seed ConfigSettings
             if (!await dbContext.ConfigSettings.AnyAsync(cancellationToken))
             {
@@ -526,6 +530,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 {
                     Id = Guid.NewGuid(),
                     CompanyName = request.OrganizationName,
+                    CompanyNameAbbreviation = abbreviation,
+                    CompanyDescription = sectorDefaults.Description,
                     WebsiteTitle = request.OrganizationName,
                     DashboardTitle = $"{request.OrganizationName} Command Center",
                     TemplateLayoutKey = "standard",
@@ -549,45 +555,78 @@ public class TenantOnboardingService : ITenantOnboardingService
                 });
             }
 
-            // 5. Seed Default Web Pages
-            if (!await dbContext.WebPages.AnyAsync(cancellationToken))
+            // 5. Seed Default Web Pages (Home, About Us, Services, Contact Us)
+            var homePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "home", cancellationToken);
+            if (homePage == null)
             {
-                dbContext.WebPages.AddRange(
-                    new WebPage
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Home",
-                        DirectUrl = "home",
-                        ShowInMainMenu = true,
-                        ShowInFooter = true,
-                        EnableDirectUrl = true,
-                        Publish = true,
-                        SortOrder = 1
-                    },
-                    new WebPage
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "About Us",
-                        DirectUrl = "about",
-                        ShowInMainMenu = true,
-                        ShowInFooter = true,
-                        EnableDirectUrl = true,
-                        Publish = true,
-                        SortOrder = 2
-                    },
-                    new WebPage
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Contact Us",
-                        DirectUrl = "contact",
-                        ShowInMainMenu = true,
-                        ShowInFooter = true,
-                        EnableDirectUrl = true,
-                        Publish = true,
-                        SortOrder = 3
-                    }
-                );
+                homePage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Home",
+                    DirectUrl = "home",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 1
+                };
+                dbContext.WebPages.Add(homePage);
             }
+
+            var aboutPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "about", cancellationToken);
+            if (aboutPage == null)
+            {
+                aboutPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "About Us",
+                    DirectUrl = "about",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 2
+                };
+                dbContext.WebPages.Add(aboutPage);
+            }
+
+            var servicesPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "services", cancellationToken);
+            if (servicesPage == null)
+            {
+                servicesPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Services",
+                    DirectUrl = "services",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 3
+                };
+                dbContext.WebPages.Add(servicesPage);
+            }
+
+            var contactPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "contact", cancellationToken);
+            if (contactPage == null)
+            {
+                contactPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Contact Us",
+                    DirectUrl = "contact",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 4
+                };
+                dbContext.WebPages.Add(contactPage);
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5b. Seed Structured Page Sections & Repeatable Child Lists
+            await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, servicesPage, contactPage, cancellationToken);
 
             // 6. Seed Default Hero Slider
             if (!await dbContext.Sliders.AnyAsync(cancellationToken))
@@ -596,9 +635,9 @@ public class TenantOnboardingService : ITenantOnboardingService
                 {
                     Id = Guid.NewGuid(),
                     Title = $"Welcome to {request.OrganizationName}",
-                    Text = "Modern workspace management, member governance, and dynamic digital experience.",
-                    ButtonText = "Get Started",
-                    ButtonLink = "/auth/login",
+                    Text = sectorDefaults.Slogan,
+                    ButtonText = "Explore Solutions",
+                    ButtonLink = "/services",
                     Show = true,
                     SortOrder = 1
                 });
@@ -1535,5 +1574,424 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
 
         dbContext.TenantInstalledTemplates.AddRange(templates);
+    }
+
+    /// <summary>
+    /// Computes the corporate abbreviation from the organization name.
+    /// If multi-word, takes the initial letter of each word (e.g. "Rozzy kik" -> "RK").
+    /// If single-word, takes the first 3 characters uppercase (e.g. "Rozzy" -> "ROZ").
+    /// </summary>
+    /// <param name="name">The organization name.</param>
+    /// <returns>Computed abbreviation string.</returns>
+    public static string ComputeAbbreviation(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "ORG";
+        var words = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 1)
+        {
+            var single = words[0].Trim();
+            return single.Length >= 3 ? single[..3].ToUpperInvariant() : single.ToUpperInvariant();
+        }
+        return string.Concat(words.Take(4).Select(w => char.ToUpperInvariant(w[0])));
+    }
+
+    /// <summary>
+    /// Generates sector-aligned slogans, descriptions, and service defaults.
+    /// </summary>
+    /// <param name="sector">The sector chosen during onboarding.</param>
+    /// <param name="orgName">The organization name.</param>
+    /// <returns>Tuple containing tailored slogan, description, and service copy.</returns>
+    public static (string Slogan, string Description, string Service1Title, string Service1Desc, string Service2Title, string Service2Desc, string Service3Title, string Service3Desc) GetSectorDefaults(string? sector, string orgName)
+    {
+        var s = (sector ?? "").Trim().ToLowerInvariant();
+        if (s.Contains("health") || s.Contains("care"))
+        {
+            return (
+                "Compassionate Care, Clinical Excellence, and Patient Well-Being",
+                $"{orgName} is committed to delivering patient-centered healthcare solutions, clinical innovation, and compassionate service to elevate community wellness.",
+                "Clinical Services & Patient Care", "High-standard clinical diagnosis, outpatient consultation, and specialized treatment programs.",
+                "Preventive Health & Wellness", "Community health screening, preventive therapies, and proactive lifestyle wellness management.",
+                "Emergency & Acute Response", "Rapid, coordinated acute medical assistance and multi-disciplinary specialty coordination."
+            );
+        }
+        if (s.Contains("edu") || s.Contains("acad"))
+        {
+            return (
+                "Empowering Minds, Inspiring Excellence, and Shaping the Future",
+                $"{orgName} provides modern educational leadership, dynamic academic programs, and inspiring learning environments that equip future leaders.",
+                "Academic Curricula & Programs", "Comprehensive academic curricula fostering intellectual curiosity, rigor, and practical knowledge.",
+                "Professional Training & Skills", "Specialized executive workshops, industry certifications, and workforce skill development.",
+                "Research & Mentorship", "Dedicated research programs, student mentorship, and international academic partnerships."
+            );
+        }
+        if (s.Contains("tech") || s.Contains("soft"))
+        {
+            return (
+                "Engineering Scalable Solutions, Modern Architecture, and Digital Transformation",
+                $"{orgName} engineers resilient software architectures, scalable cloud infrastructure, and intelligent digital experiences to accelerate enterprise growth.",
+                "Custom Software Engineering", "Full-stack development, cloud-native architectures, and robust API-first enterprise platforms.",
+                "Cloud & Infrastructure Solutions", "Scalable cloud migrations, DevOps automation, and high-availability systems management.",
+                "AI & Intelligent Automation", "Integrating practical machine learning, smart analytics, and workflow automation into core operations."
+            );
+        }
+        if (s.Contains("non-profit") || s.Contains("found"))
+        {
+            return (
+                "Empowering Communities, Driving Impact, and Creating Lasting Change",
+                $"{orgName} is dedicated to impactful humanitarian initiatives, social empowerment, and sustainable community development.",
+                "Community Outreach & Aid", "Targeted humanitarian programs, relief distribution, and essential community support services.",
+                "Youth & Family Empowerment", "Educational sponsorships, family counseling, and grassroots vocational development.",
+                "Civic Advocacy & Partnerships", "Collaborating with local and global stakeholders to champion civic rights and sustainability."
+            );
+        }
+        if (s.Contains("gov") || s.Contains("pub"))
+        {
+            return (
+                "Transparent Governance, Civic Integrity, and Trusted Public Service",
+                $"{orgName} serves the public interest through accountable public administration, civic engagement platforms, and transparent operations.",
+                "Civic Information & Services", "Accessible public resource portals, citizen engagement, and administrative assistance.",
+                "Regulatory & Compliance Oversight", "Ensuring statutory adherence, legal compliance, and reliable operational transparency.",
+                "Public Infrastructure Initiatives", "Coordinating civic development programs and cross-agency public collaboration."
+            );
+        }
+        // Default: Business & Enterprise
+        return (
+            "Strategic Solutions, Operational Excellence, and Sustainable Value",
+            $"{orgName} delivers tailored corporate solutions, operational excellence, and value-driven services designed to accelerate organizational success.",
+            "Strategic Consulting & Advisory", "In-depth market analysis, strategic business planning, and organizational optimization.",
+            "Operations & Delivery Management", "Streamlined project delivery, resource allocation, and quality-assured implementation.",
+            "Client Success & Managed Services", "Dedicated account management, performance monitoring, and continuous operational support."
+        );
+    }
+
+    /// <summary>
+    /// Seeds structured PageSection and PageSectionList entities across Home, Services, About Us, and Contact Us web pages.
+    /// </summary>
+    private static async Task SeedDefaultPageSectionsAsync(
+        DashboardDbContext dbContext,
+        TenantOnboardingRequest request,
+        (string Slogan, string Description, string Service1Title, string Service1Desc, string Service2Title, string Service2Desc, string Service3Title, string Service3Desc) sectorDefaults,
+        string abbreviation,
+        WebPage homePage,
+        WebPage aboutPage,
+        WebPage servicesPage,
+        WebPage contactPage,
+        CancellationToken cancellationToken)
+    {
+        if (await dbContext.PageSections.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var sections = new List<PageSection>();
+
+        // 1. HOME PAGE SECTIONS
+        var homeHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = homePage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = request.OrganizationName,
+            MiniTitle = $"OFFICIAL PORTAL \u2022 {abbreviation}",
+            Description = sectorDefaults.Slogan,
+            FullDescription = sectorDefaults.Description,
+            ButtonText = "Explore Services",
+            ButtonLink = "/services",
+            DirectUrl = "home-hero",
+            ShowInHome = true,
+            HomePageSortOrder = 1,
+            PageSortOrder = 1
+        };
+        sections.Add(homeHero);
+
+        var homeFeatures = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = homePage.Id,
+            TemplateKey = "Body_FeatureGrid3",
+            Title = "Strategic Capabilities & Core Solutions",
+            MiniTitle = "WHAT WE OFFER",
+            Description = $"Comprehensive, reliable solutions built for modern {request.OrganizationName} operations.",
+            ButtonText = "View All Services",
+            ButtonLink = "/services",
+            DirectUrl = "home-features",
+            ShowInHome = true,
+            HomePageSortOrder = 2,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service1Title, Description = sectorDefaults.Service1Desc, IconText = "fa-solid fa-chart-line", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service2Title, Description = sectorDefaults.Service2Desc, IconText = "fa-solid fa-cubes", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service3Title, Description = sectorDefaults.Service3Desc, IconText = "fa-solid fa-shield-halved", SortOrder = 3 }
+            }
+        };
+        sections.Add(homeFeatures);
+
+        var homeStats = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = homePage.Id,
+            TemplateKey = "Body_StatsCounters",
+            Title = "Key Performance & Reliability Highlights",
+            MiniTitle = "PROVEN TRACK RECORD",
+            Description = "Empowering operations with dependable uptime, verified compliance, and end-to-end operational visibility.",
+            DirectUrl = "home-stats",
+            ShowInHome = true,
+            HomePageSortOrder = 3,
+            PageSortOrder = 3,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "99.9%", MiniTitle = "Uptime SLA", Description = "High-availability enterprise systems", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "24/7", MiniTitle = "Continuous Support", Description = "Dedicated response team", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Data Privacy", Description = "Encrypted communications & audit logs", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Multi-Region", MiniTitle = "Global Sync", Description = "Real-time synchronization across channels", SortOrder = 4 }
+            }
+        };
+        sections.Add(homeStats);
+
+        var homeProcess = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = homePage.Id,
+            TemplateKey = "Body_ProcessSteps",
+            Title = "Our Structured Engagement Process",
+            MiniTitle = "HOW WE WORK",
+            Description = "From initial consultation to seamless delivery, our structured methodology ensures precision and success.",
+            DirectUrl = "home-process",
+            ShowInHome = true,
+            HomePageSortOrder = 4,
+            PageSortOrder = 4,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "1. Consultation", MiniTitle = "Step 01", Description = "Understanding objectives, operational parameters, and key requirements.", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "2. Architecture", MiniTitle = "Step 02", Description = "Formulating tailored solutions and disciplined milestone roadmaps.", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "3. Deployment", MiniTitle = "Step 03", Description = "Delivering execution with rigorous quality assurance and oversight.", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "4. Operations", MiniTitle = "Step 04", Description = "Providing continuous maintenance, monitoring, and ongoing optimization.", SortOrder = 4 }
+            }
+        };
+        sections.Add(homeProcess);
+
+        var homeCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = homePage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = $"Partner with {request.OrganizationName} Today",
+            MiniTitle = "ACCELERATE YOUR INITIATIVES",
+            Description = "Connect with our experienced team to explore tailored solutions designed for your goals.",
+            ButtonText = "Get In Touch",
+            ButtonLink = "/contact",
+            DirectUrl = "home-cta",
+            ShowInHome = true,
+            HomePageSortOrder = 5,
+            PageSortOrder = 5
+        };
+        sections.Add(homeCta);
+
+        // 2. SERVICES PAGE SECTIONS
+        var servicesHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = servicesPage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = "Specialized Professional Services",
+            MiniTitle = $"SOLUTIONS BY {abbreviation}",
+            Description = sectorDefaults.Description,
+            ButtonText = "Request a Consultation",
+            ButtonLink = "/contact",
+            DirectUrl = "services-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(servicesHero);
+
+        var servicesGrid = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = servicesPage.Id,
+            TemplateKey = "Body_FeatureGrid3",
+            Title = "Comprehensive Service Offerings",
+            MiniTitle = "OUR CORE CAPABILITIES",
+            Description = "Tailored service packages structured to provide strategic clarity, technical excellence, and sustainable results.",
+            ButtonText = "Contact Our Team",
+            ButtonLink = "/contact",
+            DirectUrl = "services-grid",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service1Title, Description = sectorDefaults.Service1Desc, IconText = "fa-solid fa-briefcase", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service2Title, Description = sectorDefaults.Service2Desc, IconText = "fa-solid fa-gears", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service3Title, Description = sectorDefaults.Service3Desc, IconText = "fa-solid fa-headset", SortOrder = 3 }
+            }
+        };
+        sections.Add(servicesGrid);
+
+        var servicesProcess = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = servicesPage.Id,
+            TemplateKey = "Body_ProcessSteps",
+            Title = "Service Delivery Framework",
+            MiniTitle = "STRUCTURED DELIVERY",
+            Description = "We employ standardized delivery phases to guarantee transparency, timely milestones, and superior outcome quality.",
+            DirectUrl = "services-process",
+            ShowInHome = false,
+            PageSortOrder = 3,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Phase 1: Needs Assessment", MiniTitle = "Step 01", Description = "In-depth review of specific goals, resource requirements, and deliverables.", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 2: Solution Design", MiniTitle = "Step 02", Description = "Detailed scoping, milestone scheduling, and architecture blueprints.", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 3: Agile Execution", MiniTitle = "Step 03", Description = "Iterative delivery with clear stakeholder check-ins and quality tests.", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 4: Ongoing Review", MiniTitle = "Step 04", Description = "Continuous performance monitoring and proactive client advisory.", SortOrder = 4 }
+            }
+        };
+        sections.Add(servicesProcess);
+
+        var servicesCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = servicesPage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = "Ready to Discuss Your Project Requirements?",
+            MiniTitle = "LET'S WORK TOGETHER",
+            Description = "Contact our specialists today for an initial consultation and tailored proposal.",
+            ButtonText = "Schedule Consultation",
+            ButtonLink = "/contact",
+            DirectUrl = "services-cta",
+            ShowInHome = false,
+            PageSortOrder = 4
+        };
+        sections.Add(servicesCta);
+
+        // 3. ABOUT US PAGE SECTIONS
+        var aboutHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = aboutPage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = $"About {request.OrganizationName}",
+            MiniTitle = "OUR MISSION & PURPOSE",
+            Description = $"{request.OrganizationName} was established to deliver outstanding standards of service, innovative solutions, and reliable operational value.",
+            ButtonText = "View Our Services",
+            ButtonLink = "/services",
+            DirectUrl = "about-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(aboutHero);
+
+        var aboutValues = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = aboutPage.Id,
+            TemplateKey = "Body_FeatureGrid3",
+            Title = "Our Core Values & Principles",
+            MiniTitle = "GUIDING ETHICS",
+            Description = "The bedrock principles that inform our decisions, guide our teamwork, and cultivate lasting trust.",
+            DirectUrl = "about-values",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Integrity & Accountability", Description = "Upholding uncompromising ethical standards, clear communication, and transparency in all dealings.", IconText = "fa-solid fa-scale-balanced", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Operational Excellence", Description = "Constantly refining methods, adopting industry best practices, and delivering dependable quality.", IconText = "fa-solid fa-medal", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Client-Centric Commitment", Description = "Prioritizing client priorities, anticipating needs, and building collaborative partnerships.", IconText = "fa-solid fa-users", SortOrder = 3 }
+            }
+        };
+        sections.Add(aboutValues);
+
+        var aboutStats = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = aboutPage.Id,
+            TemplateKey = "Body_StatsCounters",
+            Title = "Enterprise Track Record",
+            MiniTitle = "MEASURABLE IMPACT",
+            Description = "A consistent record of dependable execution, client satisfaction, and operational resilience.",
+            DirectUrl = "about-stats",
+            ShowInHome = false,
+            PageSortOrder = 3,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Commitment", Description = "Dedicated to partner objectives", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Zero", MiniTitle = "Compromise", Description = "Strict quality standards", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Trusted", MiniTitle = "Reputation", Description = "Proven track record of delivery", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Continuous", MiniTitle = "Innovation", Description = "Evolving with modern standards", SortOrder = 4 }
+            }
+        };
+        sections.Add(aboutStats);
+
+        var aboutCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = aboutPage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = $"Connect with the {request.OrganizationName} Team",
+            MiniTitle = "BUILDING MEANINGFUL PARTNERSHIPS",
+            Description = "We welcome the opportunity to discuss your goals and demonstrate how our expertise can assist.",
+            ButtonText = "Reach Out Today",
+            ButtonLink = "/contact",
+            DirectUrl = "about-cta",
+            ShowInHome = false,
+            PageSortOrder = 4
+        };
+        sections.Add(aboutCta);
+
+        // 4. CONTACT US PAGE SECTIONS
+        var contactHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = contactPage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = "Contact & Communications Hub",
+            MiniTitle = "WE'RE HERE TO ASSIST",
+            Description = $"Reach out to {request.OrganizationName} for inquiries, corporate collaborations, or specialized support.",
+            ButtonText = "Email Our Office",
+            ButtonLink = $"mailto:{request.AdminEmail}",
+            DirectUrl = "contact-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(contactHero);
+
+        var contactChannels = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = contactPage.Id,
+            TemplateKey = "Body_FeatureGrid3",
+            Title = "Communication Channels",
+            MiniTitle = "DIRECT ACCESS",
+            Description = "Choose the most convenient communication method to connect directly with our departments.",
+            DirectUrl = "contact-channels",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "General Inquiries", Description = $"Direct correspondence and corporate information: {request.AdminEmail}", IconText = "fa-solid fa-envelope", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Client Support", Description = "Dedicated customer assistance and operational inquiry resolution.", IconText = "fa-solid fa-headset", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Operating Hours", Description = "Monday through Friday: 8:30 AM to 5:30 PM (Local Standard Time).", IconText = "fa-solid fa-clock", SortOrder = 3 }
+            }
+        };
+        sections.Add(contactChannels);
+
+        var contactCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = contactPage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = "Send an Inquiry or Schedule a Meeting",
+            MiniTitle = "PROMPT RESPONSE GUARANTEED",
+            Description = "Our administrative team reviews all incoming inquiries promptly and will connect with you within 24 business hours.",
+            ButtonText = "Compose Email",
+            ButtonLink = $"mailto:{request.AdminEmail}",
+            DirectUrl = "contact-cta",
+            ShowInHome = false,
+            PageSortOrder = 3
+        };
+        sections.Add(contactCta);
+
+        dbContext.PageSections.AddRange(sections);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

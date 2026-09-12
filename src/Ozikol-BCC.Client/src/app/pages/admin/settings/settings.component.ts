@@ -132,7 +132,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <span>Company / Organization Name</span>
                   <span class="field-req">*</span>
                 </label>
-                <input type="text" [(ngModel)]="brand.companyName" class="form-control" placeholder="e.g. Acme Corporation, Global Enterprises" />
+                <input type="text" [(ngModel)]="brand.companyName" (input)="onCompanyNameChange()" class="form-control" placeholder="e.g. Acme Corporation, Global Enterprises" />
                 <span class="field-hint">Official organization name displayed across the portal</span>
               </div>
 
@@ -2350,7 +2350,7 @@ export class SettingsComponent implements OnInit {
   // Tab 1: Brand
   brand: any = {
     companyName: '',
-    companyNameAbbreviation: 'CC',
+    companyNameAbbreviation: '',
     companyDescription: '',
     companyWebsiteLink: '',
     websiteTitle: '',
@@ -2631,13 +2631,32 @@ export class SettingsComponent implements OnInit {
     this.showManualUrl[assetKey] = !this.showManualUrl[assetKey];
   }
 
+  computeAbbreviation(name: string): string {
+    if (!name || !name.trim()) return '';
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) {
+      const single = words[0].trim();
+      return single.length >= 3 ? single.substring(0, 3).toUpperCase() : single.toUpperCase();
+    }
+    return words.slice(0, 4).map(w => w[0].toUpperCase()).join('');
+  }
+
+  onCompanyNameChange(): void {
+    if (!this.brand.companyNameAbbreviation || this.brand.companyNameAbbreviation === 'CC') {
+      this.brand.companyNameAbbreviation = this.computeAbbreviation(this.brand.companyName);
+    }
+  }
+
   loadBrandSettings(): void {
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {
         if (res?.data) {
           this.brand = { ...this.brand, ...res.data };
-          if (res.data.companyNameAbbreviation) {
-            localStorage.setItem('tenant_abbreviation', res.data.companyNameAbbreviation);
+          if (!this.brand.companyNameAbbreviation || this.brand.companyNameAbbreviation === 'CC') {
+            this.brand.companyNameAbbreviation = this.computeAbbreviation(this.brand.companyName);
+          }
+          if (this.brand.companyNameAbbreviation) {
+            localStorage.setItem('tenant_abbreviation', this.brand.companyNameAbbreviation);
           }
           if (res.data.companyName) {
             localStorage.setItem('tenant_name', res.data.companyName);
@@ -2654,6 +2673,10 @@ export class SettingsComponent implements OnInit {
   onSaveBrandSettings(): void {
     this.savingBrand = true;
     this.successMessage = '';
+
+    if (!this.brand.companyNameAbbreviation || this.brand.companyNameAbbreviation === 'CC') {
+      this.brand.companyNameAbbreviation = this.computeAbbreviation(this.brand.companyName);
+    }
 
     this.api.put<any>('SettingsApi/brand', this.brand).subscribe({
       next: () => {
