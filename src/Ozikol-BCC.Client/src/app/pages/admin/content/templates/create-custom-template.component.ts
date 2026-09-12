@@ -4600,14 +4600,6 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
           defaultContentJson: payload.defaultContentJson
         };
 
-        // Update local storage installed templates cache
-        try {
-          const stored = localStorage.getItem('oz_installed_templates');
-          const list: InstalledTemplateItem[] = stored ? JSON.parse(stored) : [];
-          list.unshift(newTemplate);
-          localStorage.setItem('oz_installed_templates', JSON.stringify(list));
-        } catch (e) {}
-
         this.toast.success(`Custom template '${newTemplate.name}' saved to your vault!`);
         this.router.navigate(['/content/console/templates']);
       },

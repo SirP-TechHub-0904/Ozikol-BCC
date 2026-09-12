@@ -3333,7 +3333,6 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
   }
 
   loadInstalledTemplateKeys(): void {
-    const stored = localStorage.getItem('oz_installed_templates');
     const storedMenu = localStorage.getItem('oz_active_menu_id');
     const storedHero = localStorage.getItem('oz_active_hero_id');
     const storedNewsletter = localStorage.getItem('oz_active_newsletter_id');
@@ -3350,32 +3349,9 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
     if (storedBreadcrumb) this.activeBreadcrumbId = storedBreadcrumb;
     if (storedEcommerce) this.activeEcommerceId = storedEcommerce;
 
-    if (stored) {
-      try {
-        const list: any[] = JSON.parse(stored);
-        list.forEach(t => this.installedTemplateIds.add(t.id));
-        const menuObj = list.find(t => t.category === 'menu');
-        if (menuObj && !storedMenu) this.activeMenuId = menuObj.id;
-        const heroObj = list.find(t => t.category === 'hero');
-        if (heroObj && !storedHero) this.activeHeroId = heroObj.id;
-        const newsletterObj = list.find(t => t.category === 'newsletter');
-        if (newsletterObj && !storedNewsletter) this.activeNewsletterId = newsletterObj.id;
-        const footerObj = list.find(t => t.category === 'footer');
-        if (footerObj && !storedFooter) this.activeFooterId = footerObj.id;
-        const blogObj = list.find(t => t.category === 'blog');
-        if (blogObj && !storedBlog) this.activeBlogId = blogObj.id;
-        const breadcrumbObj = list.find(t => t.category === 'breadcrumb');
-        if (breadcrumbObj && !storedBreadcrumb) this.activeBreadcrumbId = breadcrumbObj.id;
-        const ecomObj = list.find(t => t.category === 'ecommerce');
-        if (ecomObj && !storedEcommerce) this.activeEcommerceId = ecomObj.id;
-      } catch (e) {
-        this.installedTemplateIds = new Set<string>(['menu-01', 'hero-01', 'body-01', 'footer-01', 'ecom-01']);
-      }
-    } else {
-      this.installedTemplateIds = new Set<string>(['menu-01', 'hero-01', 'body-01', 'footer-01', 'ecom-01']);
-    }
+    this.installedTemplateIds.clear();
 
-    // Attempt to sync from backend tenant DB API
+    // Query installed templates from the tenant database API
     this.api.get<any>('ContentApi/templates/installed').subscribe({
       next: (res) => {
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
@@ -3624,43 +3600,6 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
           } else {
             // Body/additive — can have many
             this.installedTemplateIds.add(item.id);
-          }
-
-          // Save to local storage vault
-          const stored = localStorage.getItem('oz_installed_templates');
-          let list: any[] = [];
-          if (stored) {
-            try { list = JSON.parse(stored); } catch (e) { list = []; }
-          }
-
-          // For singleton categories, remove previous entries of this category
-          if (this.isSingletonCategory(item.category)) {
-            list = list.filter(t => t.category !== item.category);
-          }
-
-          if (!list.some(t => t.id === item.id)) {
-            list.push({
-              id: item.id,
-              name: item.name,
-              category: item.category,
-              variantCode: item.variantCode,
-              groupCode: (item as any).groupCode || 'apex-commerce',
-              groupName: (item as any).groupName || 'Apex Commerce Pro',
-              badge: item.badge,
-              tag: item.tag,
-              description: item.description,
-              thumbnailGradient: item.thumbnailGradient,
-              previewIcon: item.previewIcon,
-              previewSubtitle: item.previewSubtitle,
-              previewTitle: item.previewTitle,
-              previewBody: item.previewBody,
-              htmlTemplate: item.htmlTemplate,
-              cssStyles: item.cssStyles,
-              jsScript: item.jsScript,
-              version: '1.0.0',
-              installedUtc: new Date().toISOString()
-            });
-            localStorage.setItem('oz_installed_templates', JSON.stringify(list));
           }
 
           // Send to tenant DB API

@@ -3477,6 +3477,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   bodyOpenTags: CodeInjectionTag[] = [];
   footerTags: CodeInjectionTag[] = [];
   loadingTags: boolean = false;
+  loadingTemplates: boolean = false;
 
   // Custom Template Modal State
   showCustomTemplateModal: boolean = false;
@@ -4291,10 +4292,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Loads installed templates from local storage or defaults, auto-migrating legacy dark templates.
+   * Loads installed templates dynamically from the tenant database via ContentApi.
+   * Multi-tenant architecture: The database is the sole authority; no templates or content are hardcoded in the client.
    */
   loadInstalledTemplates(): void {
-    const stored = localStorage.getItem('oz_installed_templates');
     const storedMenu = localStorage.getItem('oz_active_menu_id');
     const storedHero = localStorage.getItem('oz_active_hero_id');
     const storedNewsletter = localStorage.getItem('oz_active_newsletter_id');
@@ -4311,104 +4312,100 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (storedBreadcrumb) this.activeBreadcrumbId = storedBreadcrumb;
     if (storedEcommerce) this.activeEcommerceId = storedEcommerce;
 
-    const v5MigrationKey = 'oz_installed_templates_v5_neutral_corp';
-    const isV5Migrated = localStorage.getItem(v5MigrationKey);
-    let parsedCount = 0;
-    try {
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        parsedCount = Array.isArray(parsed) ? parsed.length : 0;
-      }
-    } catch (e) {}
+    this.loadingTemplates = true;
 
-    const shouldMigrate = !isV5Migrated || !stored || parsedCount < 14 || (stored && (stored.includes('E-Voting') || stored.includes('sovereign') || stored.includes('multi-tenant') || stored.includes('Hero_DarkGlow')));
-
-    if (shouldMigrate) {
-      // Clean migration: populate all 14 turnkey Bootstrap 5 + Font Awesome 6 neutral business templates
-      this.installedTemplates = this.getInitialInstalledTemplates();
-      this.saveInstalledTemplates();
-      localStorage.setItem(v5MigrationKey, 'true');
-    } else {
-      try {
-        this.installedTemplates = JSON.parse(stored);
-        const menuObj = this.installedTemplates.find(t => t.category === 'menu');
-        if (menuObj && !storedMenu) this.activeMenuId = menuObj.id;
-        const heroObj = this.installedTemplates.find(t => t.category === 'hero');
-        if (heroObj && !storedHero) this.activeHeroId = heroObj.id;
-        const newsletterObj = this.installedTemplates.find(t => t.category === 'newsletter');
-        if (newsletterObj && !storedNewsletter) this.activeNewsletterId = newsletterObj.id;
-        const footerObj = this.installedTemplates.find(t => t.category === 'footer');
-        if (footerObj && !storedFooter) this.activeFooterId = footerObj.id;
-        if (footerObj && footerObj.htmlTemplate.includes('Powered by')) {
-          footerObj.htmlTemplate = footerObj.htmlTemplate.replace(/\s*<div>Powered by[\s\S]*?<\/div>/gi, '');
-          this.saveInstalledTemplates();
-        }
-        const blogObj = this.installedTemplates.find(t => t.category === 'blog');
-        if (blogObj && !storedBlog) this.activeBlogId = blogObj.id;
-        const breadcrumbObj = this.installedTemplates.find(t => t.category === 'breadcrumb');
-        if (breadcrumbObj && !storedBreadcrumb) this.activeBreadcrumbId = breadcrumbObj.id;
-        const ecomObj = this.installedTemplates.find(t => t.category === 'ecommerce');
-        if (ecomObj && !storedEcommerce) this.activeEcommerceId = ecomObj.id;
-      } catch (e) {
-        this.installedTemplates = this.getInitialInstalledTemplates();
-        this.saveInstalledTemplates();
-      }
-    }
-    this.applyFilters();
-
-    // Fetch from backend API
+    // Fetch strictly from tenant database via backend API
     this.api.get<any>('ContentApi/templates/installed').subscribe({
       next: (res) => {
+        this.loadingTemplates = false;
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const apiTemplates: any[] = res.data;
-          apiTemplates.forEach(apiT => {
-            const existing = this.installedTemplates.find(t => t.id === apiT.templateKey || t.variantCode === apiT.variantCode);
-            if (existing) {
-              existing.dbId = apiT.id;
-              if (apiT.defaultContentJson) existing.defaultContentJson = apiT.defaultContentJson;
-              const cat = apiT.categoryKey?.toLowerCase();
-              if (cat === 'menu' && apiT.isActive) { this.activeMenuId = existing.id; localStorage.setItem('oz_active_menu_id', existing.id); }
-              if (cat === 'hero' && apiT.isActive) { this.activeHeroId = existing.id; localStorage.setItem('oz_active_hero_id', existing.id); }
-              if (cat === 'newsletter' && apiT.isActive) { this.activeNewsletterId = existing.id; localStorage.setItem('oz_active_newsletter_id', existing.id); }
-              if (cat === 'footer' && apiT.isActive) { this.activeFooterId = existing.id; localStorage.setItem('oz_active_footer_id', existing.id); }
-              if (cat === 'blog' && apiT.isActive) { this.activeBlogId = existing.id; localStorage.setItem('oz_active_blog_id', existing.id); }
-              if (cat === 'breadcrumb' && apiT.isActive) { this.activeBreadcrumbId = existing.id; localStorage.setItem('oz_active_breadcrumb_id', existing.id); }
-              if (cat === 'ecommerce' && apiT.isActive) { this.activeEcommerceId = existing.id; localStorage.setItem('oz_active_ecommerce_id', existing.id); }
-            } else {
-              this.installedTemplates.push({
-                id: apiT.templateKey || apiT.variantCode,
-                dbId: apiT.id,
-                name: apiT.name,
-                category: apiT.categoryKey,
-                variantCode: apiT.variantCode,
-                tag: 'custom',
-                groupCode: 'apex-commerce',
-                groupName: 'Apex Commerce Pro',
-                description: 'Installed template blueprint from Master catalog.',
-                thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                previewIcon: 'widgets',
-                previewSubtitle: apiT.categoryKey,
-                previewTitle: apiT.name,
-                previewBody: 'Installed component block',
-                htmlTemplate: apiT.htmlTemplate,
-                cssStyles: apiT.cssStyles,
-                jsScript: apiT.jsScript,
-                version: apiT.installedVersion || '1.0.0',
-                installedUtc: apiT.installedUtc || new Date().toISOString(),
-                defaultContentJson: apiT.defaultContentJson
-              });
+          this.installedTemplates = res.data.map((apiT: any) => this.mapApiToItem(apiT));
+
+          // Set active layout references from database isActive flags
+          res.data.forEach((apiT: any) => {
+            const cat = apiT.categoryKey?.toLowerCase();
+            const itemId = apiT.templateKey || apiT.variantCode || apiT.id;
+            if (apiT.isActive) {
+              if (cat === 'menu') { this.activeMenuId = itemId; localStorage.setItem('oz_active_menu_id', itemId); }
+              if (cat === 'hero') { this.activeHeroId = itemId; localStorage.setItem('oz_active_hero_id', itemId); }
+              if (cat === 'newsletter') { this.activeNewsletterId = itemId; localStorage.setItem('oz_active_newsletter_id', itemId); }
+              if (cat === 'footer') { this.activeFooterId = itemId; localStorage.setItem('oz_active_footer_id', itemId); }
+              if (cat === 'blog') { this.activeBlogId = itemId; localStorage.setItem('oz_active_blog_id', itemId); }
+              if (cat === 'breadcrumb') { this.activeBreadcrumbId = itemId; localStorage.setItem('oz_active_breadcrumb_id', itemId); }
+              if (cat === 'ecommerce') { this.activeEcommerceId = itemId; localStorage.setItem('oz_active_ecommerce_id', itemId); }
             }
           });
-          this.saveInstalledTemplates();
+
+          this.applyFilters();
+        } else {
+          this.installedTemplates = [];
           this.applyFilters();
         }
       },
-      error: () => {}
+      error: () => {
+        this.loadingTemplates = false;
+        this.toast.error('Failed to load installed templates from database.');
+        this.installedTemplates = [];
+        this.applyFilters();
+      }
     });
   }
 
   saveInstalledTemplates(): void {
-    localStorage.setItem('oz_installed_templates', JSON.stringify(this.installedTemplates));
+    // Pure multi-tenant mode: Domain templates are persisted strictly in the tenant database, not in localStorage.
+  }
+
+  private mapApiToItem(apiT: any): InstalledTemplateItem {
+    const cat = (apiT.categoryKey || 'body').toLowerCase();
+    const meta = this.getCategoryVisualMeta(cat);
+
+    return {
+      id: apiT.templateKey || apiT.variantCode || apiT.id,
+      dbId: apiT.id,
+      name: apiT.name || 'Untitled Template',
+      category: cat,
+      variantCode: apiT.variantCode || apiT.templateKey || 'Section_Custom',
+      badge: apiT.isActive ? 'Active' : meta.badge,
+      tag: cat,
+      groupCode: 'apex-corporate',
+      groupName: 'Corporate Suite',
+      description: apiT.description || `${apiT.name} component blueprint installed in tenant database.`,
+      thumbnailGradient: meta.gradient,
+      previewIcon: meta.icon,
+      previewSubtitle: meta.subtitle,
+      previewTitle: apiT.name,
+      previewBody: apiT.description || 'Tenant component template block.',
+      htmlTemplate: apiT.htmlTemplate || '',
+      cssStyles: apiT.cssStyles || '',
+      jsScript: apiT.jsScript || '',
+      version: apiT.installedVersion || '1.0.0',
+      installedUtc: apiT.installedUtc || new Date().toISOString(),
+      isCustomized: apiT.isCustomized,
+      defaultContentJson: apiT.defaultContentJson
+    };
+  }
+
+  private getCategoryVisualMeta(cat: string): { icon: string; gradient: string; badge: string; subtitle: string } {
+    switch (cat) {
+      case 'menu':
+        return { icon: 'menu', gradient: 'linear-gradient(135deg, #0050e5 0%, #1e40af 100%)', badge: 'Navbar', subtitle: 'Navigation' };
+      case 'hero':
+        return { icon: 'view_carousel', gradient: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', badge: 'Hero', subtitle: 'Hero Banner' };
+      case 'footer':
+        return { icon: 'dock_to_bottom', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', badge: 'Footer', subtitle: 'Page Footer' };
+      case 'newsletter':
+        return { icon: 'mail', gradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', badge: 'Newsletter', subtitle: 'Subscription Bar' };
+      case 'contact':
+        return { icon: 'contact_mail', gradient: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', badge: 'Intake', subtitle: 'Contact Form' };
+      case 'blog':
+        return { icon: 'newspaper', gradient: 'linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)', badge: 'Articles', subtitle: 'News & Insights' };
+      case 'ecommerce':
+        return { icon: 'shopping_bag', gradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', badge: 'Storefront', subtitle: 'Products Grid' };
+      case 'breadcrumb':
+        return { icon: 'linear_scale', gradient: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', badge: 'Header', subtitle: 'Page Header' };
+      default:
+        return { icon: 'view_quilt', gradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', badge: 'Section', subtitle: 'Content Block' };
+    }
   }
 
   // Active Blueprint Helpers
@@ -5211,947 +5208,5 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       this.toast.success(`Template '${item.name}' uninstalled.`);
       this.closeUninstallModal();
     }
-  }
-
-  private getInitialInstalledTemplates(): InstalledTemplateItem[] {
-    return [
-      // 1. Navigation / Menu
-      {
-        id: 'menu-01',
-        name: 'Classic Light Corporate Navbar',
-        category: 'menu',
-        variantCode: 'Menu_Classic',
-        badge: 'Corporate',
-        tag: 'corporate',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Clean light corporate navbar with business brand name, text-only navigation links, and special Request a Service CTA.',
-        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
-        previewIcon: 'menu',
-        previewSubtitle: 'Header Navigation',
-        previewTitle: 'Apex Corporate Pro',
-        previewBody: 'Home • About • Services • News • Contact • Request a Service',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<header class="oz-nav-header sticky-top bg-white border-bottom shadow-sm">
-  <nav class="navbar navbar-expand-lg navbar-light py-3">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="#home">
-        <span class="fw-bolder text-dark fs-4 tracking-tight">{{ BrandName }}</span>
-      </a>
-      <button class="navbar-toggler border-0 shadow-none" type="button" onclick="this.closest('nav').querySelector('.collapse').classList.toggle('show')">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="ozNavMain">
-        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4">
-          <li class="nav-item"><a class="nav-link fw-semibold text-dark active" href="#home">Home</a></li>
-          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#about">About</a></li>
-          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#services">Services</a></li>
-          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#blog">News</a></li>
-          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#contact">Contact</a></li>
-        </ul>
-        <div class="d-flex align-items-center gap-3">
-          <a href="#request-service" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-            <span>Request a Service</span>
-            <span style="font-size: 16px;">→</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  </nav>
-</header>`,
-        cssStyles: `
-.oz-nav-header { background-color: #ffffff !important; }
-.oz-nav-header .navbar-brand { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; }
-.oz-nav-header .nav-link { font-size: 14.5px; font-weight: 600; color: #475569 !important; padding: 8px 4px !important; transition: color 0.15s ease; }
-.oz-nav-header .nav-link:hover, .oz-nav-header .nav-link.active { color: #0050e5 !important; }
-.oz-nav-header .btn-primary { background-color: #0050e5; border-color: #0050e5; font-size: 13.5px; transition: all 0.2s ease; }
-.oz-nav-header .btn-primary:hover { background-color: #003bb5; border-color: #003bb5; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35) !important; }`
-      },
-
-      // 2. Hero Unit
-      {
-        id: 'hero-01',
-        name: 'Modern Corporate Split Hero',
-        category: 'hero',
-        variantCode: 'Hero_CorporateSplit',
-        badge: 'Popular',
-        tag: 'corporate',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Executive split hero with bold headline, value proposition, consultation CTAs, and high-resolution corporate photography.',
-        thumbnailGradient: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-        previewIcon: 'space_dashboard',
-        previewSubtitle: 'Executive Hero',
-        previewTitle: 'Empowering Modern Enterprises to Scale with Confidence',
-        previewBody: 'Delivering innovative solutions, strategic consulting, and operational excellence to help businesses scale and succeed.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom">
-  <div class="container py-lg-4">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-6">
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3">
-          <span class="small fw-bold text-uppercase">Enterprise Solutions</span>
-        </div>
-        <h1 class="display-5 fw-bolder text-dark mb-3 lh-sm">Empowering Modern Enterprises to Scale with Confidence.</h1>
-        <p class="lead text-muted mb-4 fs-6">Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.</p>
-        <div class="d-flex flex-wrap gap-3">
-          <a href="#services" class="btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-            <span>Explore Services</span>
-            <span style="font-size: 16px;">→</span>
-          </a>
-          <a href="#contact" class="btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white">
-            Schedule Consultation
-          </a>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="rounded-4 overflow-hidden shadow-lg border border-light-subtle">
-          <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80" 
-               alt="Modern Corporate Architecture" class="img-fluid w-100 object-fit-cover" style="max-height: 420px;" />
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 3. Body Section 1 - 3-Column Core Capabilities Grid
-      {
-        id: 'body-01',
-        name: '3-Column Modern Feature Grid',
-        category: 'body',
-        variantCode: 'Body_FeatureGrid3',
-        badge: 'Core Section',
-        tag: 'modern',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: '3-column feature cards with pastel icon badges, hover elevation, and clean corporate value propositions.',
-        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-        previewIcon: 'grid_view',
-        previewSubtitle: 'Core Capabilities',
-        previewTitle: 'Engineered for Maximum Impact',
-        previewBody: 'Essential infrastructure designed for seamless organizational execution and rapid growth.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-white border-bottom">
-  <div class="container py-4">
-    <div class="text-center max-w-700 mx-auto mb-5">
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Core Capabilities</span>
-      <h2 class="fw-bold text-dark mt-2 mb-3">Engineered for Maximum Impact</h2>
-      <p class="text-muted">Essential infrastructure designed for seamless organizational execution and rapid growth.</p>
-    </div>
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
-          <div class="rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
-            <i class="fa-solid fa-shield-halved fs-4"></i>
-          </div>
-          <h5 class="fw-bold text-dark">Data Security &amp; Privacy</h5>
-          <p class="text-muted small mb-0">Enterprise-grade encryption, role-based access management, and proactive compliance protection.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
-          <div class="rounded-3 bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
-            <i class="fa-solid fa-comments fs-4"></i>
-          </div>
-          <h5 class="fw-bold text-dark">Collaboration Hub</h5>
-          <p class="text-muted small mb-0">Unified communication channels, real-time dispatches, and organizational announcements.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
-          <div class="rounded-3 bg-info-subtle text-info d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
-            <i class="fa-solid fa-bolt fs-4"></i>
-          </div>
-          <h5 class="fw-bold text-dark">Operational Efficiency</h5>
-          <p class="text-muted small mb-0">Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 4. Body Section 2 - Corporate Mission & Standards
-      {
-        id: 'body-02',
-        name: 'Corporate Mission & Standards Split',
-        category: 'body',
-        variantCode: 'Body_MissionSplit',
-        badge: 'Core Story',
-        tag: 'corporate',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Horizontal split featuring executive collaboration photography, core institutional values, and company overview.',
-        thumbnailGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-        previewIcon: 'corporate_fare',
-        previewSubtitle: 'About Firm',
-        previewTitle: 'Built for Organizational Excellence & Long-Term Trust',
-        previewBody: 'We partner with premier institutions, professional associations, and growing enterprises.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-white border-bottom" id="about">
-  <div class="container py-4">
-    <div class="row align-items-center g-5">
-      <div class="col-lg-6">
-        <div class="rounded-4 overflow-hidden shadow border border-light-subtle">
-          <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80" 
-               alt="Executive Collaboration Team" class="img-fluid w-100 object-fit-cover" style="max-height: 380px;" />
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-3">Our Mission & Standards</span>
-        <h2 class="fw-bolder text-dark mb-3">Built for Organizational Excellence & Long-Term Trust</h2>
-        <p class="text-muted mb-4">We partner with forward-thinking enterprises, growing organizations, and industry leaders to streamline operations, enhance client service, and drive sustainable growth.</p>
-        <div class="d-flex flex-column gap-3 mb-4">
-          <div class="d-flex align-items-start gap-3">
-            <span class="badge rounded-circle bg-primary-subtle text-primary p-2 mt-1"><i class="fa-solid fa-check"></i></span>
-            <div>
-              <h6 class="fw-bold text-dark mb-1">Strategic Planning &amp; Execution</h6>
-              <p class="text-muted small mb-0">Data-backed strategies, transparent execution, and dedicated accountability for every business milestone.</p>
-            </div>
-          </div>
-          <div class="d-flex align-items-start gap-3">
-            <span class="badge rounded-circle bg-primary-subtle text-primary p-2 mt-1"><i class="fa-solid fa-check"></i></span>
-            <div>
-              <h6 class="fw-bold text-dark mb-1">Enterprise Data Protection</h6>
-              <p class="text-muted small mb-0">Industry-standard encryption, secure cloud infrastructure, and strict client confidentiality standards.</p>
-            </div>
-          </div>
-        </div>
-        <a href="#contact" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
-          Learn More About Our Firm →
-        </a>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 5. Body Section 3 - Metrics & Stat Counters
-      {
-        id: 'body-03',
-        name: '4-Column Metric Counter Bar',
-        category: 'body',
-        variantCode: 'Body_MetricsCounter',
-        badge: 'Proof',
-        tag: 'corporate',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: '4-column metric statistics row displaying organizational milestones, uptime, verified members, and support SLA.',
-        thumbnailGradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
-        previewIcon: 'bar_chart',
-        previewSubtitle: 'Verified Telemetry',
-        previewTitle: '12,500+ Active Verified Members',
-        previewBody: '99.98% System Reliability • 45+ Chapters • 24/7 Support',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-white border-bottom">
-  <div class="container py-3">
-    <div class="row g-4 text-center">
-      <div class="col-6 col-md-3">
-        <div class="p-3">
-          <i class="fa-solid fa-users text-primary fs-2 mb-2"></i>
-          <div class="display-6 fw-bold text-dark">12,500+</div>
-          <div class="small text-muted fw-semibold text-uppercase">Verified Members</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="p-3">
-          <i class="fa-solid fa-server text-success fs-2 mb-2"></i>
-          <div class="display-6 fw-bold text-dark">99.98%</div>
-          <div class="small text-muted fw-semibold text-uppercase">System Reliability</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="p-3">
-          <i class="fa-solid fa-earth-americas text-info fs-2 mb-2"></i>
-          <div class="display-6 fw-bold text-dark">45+</div>
-          <div class="small text-muted fw-semibold text-uppercase">Global Chapters</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="p-3">
-          <i class="fa-solid fa-headset text-warning fs-2 mb-2"></i>
-          <div class="display-6 fw-bold text-dark">24/7</div>
-          <div class="small text-muted fw-semibold text-uppercase">Priority Support</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 6. Body Section 4 - Testimonials & Reviews
-      {
-        id: 'body-04',
-        name: '3-Card Social Proof & Testimonials',
-        category: 'body',
-        variantCode: 'Body_Testimonials',
-        badge: 'Reviews',
-        tag: 'social-proof',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: '3 customer endorsement cards featuring 5-star review ratings, quotes, user avatars, and organization titles.',
-        thumbnailGradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
-        previewIcon: 'rate_review',
-        previewSubtitle: 'Testimonials',
-        previewTitle: 'Trusted by Organizations Worldwide',
-        previewBody: 'Hear directly from leaders who rely on our portal for everyday operational governance.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom">
-  <div class="container py-4">
-    <div class="text-center max-w-700 mx-auto mb-5">
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Client Testimonials</span>
-      <h2 class="fw-bold text-dark mt-2 mb-3">Trusted by Clients &amp; Industry Leaders</h2>
-      <p class="text-muted">Hear directly from businesses and partners who rely on our services for sustainable growth.</p>
-    </div>
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
-          <div class="text-warning mb-3">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p class="text-secondary mb-4 fst-italic">"Working with {{ BrandName }} transformed our operational efficiency. Their team provided clear strategic direction and delivered outstanding results from day one."</p>
-          <div class="d-flex align-items-center gap-3 mt-auto">
-            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">SA</div>
-            <div>
-              <div class="fw-bold text-dark small">Sarah Adams</div>
-              <div class="text-muted small">Chief Operating Officer</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
-          <div class="text-warning mb-3">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p class="text-secondary mb-4 fst-italic">"Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner in scaling our business."</p>
-          <div class="d-flex align-items-center gap-3 mt-auto">
-            <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">MK</div>
-            <div>
-              <div class="fw-bold text-dark small">Marcus Kim</div>
-              <div class="text-muted small">Managing Director</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
-          <div class="text-warning mb-3">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p class="text-secondary mb-4 fst-italic">"The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time and above benchmark."</p>
-          <div class="d-flex align-items-center gap-3 mt-auto">
-            <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">EL</div>
-            <div>
-              <div class="fw-bold text-dark small">Elena Rostova</div>
-              <div class="text-muted small">VP of Business Development</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 7. Body Section 5 - Interactive FAQ Accordion
-      {
-        id: 'body-05',
-        name: 'Collapsible FAQ Accordion',
-        category: 'body',
-        variantCode: 'Body_FaqAccordion',
-        badge: 'FAQ',
-        tag: 'support',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Interactive FAQ accordion with clean question rows, smooth collapse toggle, and supportive answers.',
-        thumbnailGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
-        previewIcon: 'help',
-        previewSubtitle: 'Q&A Support',
-        previewTitle: 'Frequently Asked Questions',
-        previewBody: 'Helpful answers regarding our services, client engagements, and delivery process.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-white border-bottom">
-  <div class="container py-4">
-    <div class="text-center max-w-700 mx-auto mb-5">
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Questions &amp; Answers</span>
-      <h2 class="fw-bold text-dark mt-2 mb-3">Frequently Asked Questions</h2>
-      <p class="text-muted">Helpful answers regarding our services, client engagements, and delivery process.</p>
-    </div>
-    <div class="max-w-800 mx-auto">
-      <div class="accordion" id="ozFaqAccordion">
-        <div class="accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm">
-          <h2 class="accordion-header">
-            <button class="accordion-button fw-bold text-dark bg-light" type="button" onclick="this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')">
-              <i class="fa-solid fa-circle-question text-primary me-2"></i> How does {{ BrandName }} tailor its services to our business needs?
-            </button>
-          </h2>
-          <div class="accordion-collapse collapse show">
-            <div class="accordion-body text-secondary small">
-              We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements, then design a customized solution that aligns precisely with your business priorities.
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed fw-bold text-dark bg-light" type="button" onclick="this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')">
-              <i class="fa-solid fa-circle-question text-primary me-2"></i> What kind of ongoing support and collaboration can we expect?
-            </button>
-          </h2>
-          <div class="accordion-collapse collapse">
-            <div class="accordion-body text-secondary small">
-              Every client is paired with a dedicated account lead and receives regular milestone reviews, transparent progress reporting, and responsive technical and strategic support throughout our partnership.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 8. Body Section 6 - High-Conversion CTA Banner
-      {
-        id: 'body-06',
-        name: 'Gradient Action CTA Ribbon',
-        category: 'body',
-        variantCode: 'Body_CtaBanner',
-        badge: 'Conversion',
-        tag: 'cta',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Vibrant action banner with royal blue gradient background, heading, value prop text, and dual join buttons.',
-        thumbnailGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-        previewIcon: 'campaign',
-        previewSubtitle: 'Action Ribbon',
-        previewTitle: 'Ready to Elevate Your Business?',
-        previewBody: 'Partner with our team to accelerate your operations, modernize systems, and achieve lasting growth.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom">
-  <div class="container py-3">
-    <div class="card border-0 rounded-4 p-5 text-center text-white shadow" style="background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);">
-      <h2 class="display-6 fw-bold mb-3">Ready to Elevate Your Business?</h2>
-      <p class="lead opacity-90 max-w-600 mx-auto mb-4 fs-6">Partner with our team to accelerate your operations, modernize systems, and achieve sustainable long-term growth.</p>
-      <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a href="#request-service" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow">
-          <i class="fa-solid fa-arrow-right me-1"></i> Request a Consultation
-        </a>
-        <a href="#contact" class="btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold">
-          <i class="fa-solid fa-envelope me-1"></i> Contact Our Team
-        </a>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 9. E-Commerce Storefront Grid
-      {
-        id: 'ecom-01',
-        name: 'Clean Light Storefront Product Grid',
-        category: 'ecommerce',
-        variantCode: 'Ecom_ProductGrid',
-        badge: 'Storefront',
-        tag: 'ecommerce',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: '4-column storefront catalog with category filter pills, stock badges, price tags, and Add to Cart action.',
-        thumbnailGradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-        previewIcon: 'shopping_bag',
-        previewSubtitle: 'Product Catalog',
-        previewTitle: 'Official Merchandise Collection',
-        previewBody: 'Apparel, NFC Credentials, Leather Folios, and Executive Accessories.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-white border-bottom" id="shop">
-  <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
-      <div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Official Store</span>
-        <h2 class="fw-bold text-dark mt-2 mb-0">Featured Merchandise</h2>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-primary rounded-pill px-3">All</button>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Apparel</button>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Hardware</button>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Badges</button>
-      </div>
-    </div>
-    <div class="row g-4">
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
-          <div class="p-4 bg-light text-center"><i class="fa-solid fa-shirt text-secondary display-4"></i></div>
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">In Stock</span>
-            <h6 class="fw-bold text-dark mb-1">Signature Member Hoodie</h6>
-            <p class="text-muted small mb-3">Heavyweight organic fleece with embroidered crest.</p>
-            <div class="d-flex justify-content-between align-items-center mt-auto">
-              <span class="fw-bold text-primary fs-5">$55.00</span>
-              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
-          <div class="p-4 bg-light text-center"><i class="fa-solid fa-id-card text-secondary display-4"></i></div>
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Official</span>
-            <h6 class="fw-bold text-dark mb-1">Smart NFC Badge Holder</h6>
-            <p class="text-muted small mb-3">Contactless titanium credential clip with lanyard.</p>
-            <div class="d-flex justify-content-between align-items-center mt-auto">
-              <span class="fw-bold text-primary fs-5">$24.00</span>
-              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
-          <div class="p-4 bg-light text-center"><i class="fa-solid fa-briefcase text-secondary display-4"></i></div>
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Hot</span>
-            <h6 class="fw-bold text-dark mb-1">Executive Leather Folio</h6>
-            <p class="text-muted small mb-3">Document portfolio with pen loop and brass zippers.</p>
-            <div class="d-flex justify-content-between align-items-center mt-auto">
-              <span class="fw-bold text-primary fs-5">$75.00</span>
-              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
-          <div class="p-4 bg-light text-center"><i class="fa-solid fa-mug-hot text-secondary display-4"></i></div>
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-secondary-subtle text-secondary w-auto align-self-start mb-2">Accessory</span>
-            <h6 class="fw-bold text-dark mb-1">Ceramic Travel Tumbler</h6>
-            <p class="text-muted small mb-3">Double-wall insulated 16oz thermal beverage cup.</p>
-            <div class="d-flex justify-content-between align-items-center mt-auto">
-              <span class="fw-bold text-primary fs-5">$18.00</span>
-              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 10. Newsletter Section
-      {
-        id: 'news-01',
-        name: 'Clean Light Newsletter Dispatch',
-        category: 'newsletter',
-        variantCode: 'News_MinimalBar',
-        badge: 'Engagement',
-        tag: 'newsletter',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Centered subscription box with email input, join button, and privacy reassurance note.',
-        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-        previewIcon: 'mark_email_read',
-        previewSubtitle: 'Weekly Dispatch',
-        previewTitle: 'Stay Informed with Weekly Dispatches',
-        previewBody: 'Subscribe to receive vital organizational announcements and community updates.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom">
-  <div class="container py-3">
-    <div class="card border border-light-subtle rounded-4 p-4 p-lg-5 bg-white text-center shadow-sm max-w-800 mx-auto">
-      <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px;">
-        <i class="fa-solid fa-envelope-open-text fs-3"></i>
-      </div>
-      <h3 class="fw-bold text-dark mb-2">Stay Informed with Weekly Dispatches</h3>
-      <p class="text-muted small mb-4 max-w-500 mx-auto">Subscribe to receive vital organizational announcements, governance updates, and community highlights directly in your inbox.</p>
-      <form class="d-flex flex-column flex-sm-row gap-2 max-w-500 mx-auto w-100">
-        <input type="email" class="form-control rounded-pill px-3 py-2 border-secondary-subtle" placeholder="Enter your email address..." required />
-        <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold text-nowrap">
-          <i class="fa-solid fa-paper-plane me-1"></i> Subscribe
-        </button>
-      </form>
-      <small class="text-muted mt-3 d-block"><i class="fa-solid fa-lock me-1"></i> Zero spam. Unsubscribe at any time.</small>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 11. Contact & Service Intake Section
-      {
-        id: 'contact-01',
-        name: 'Split Service Intake & Inquiries Form',
-        category: 'contact',
-        variantCode: 'Contact_SplitDetails',
-        badge: 'Intake',
-        tag: 'contact',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Left advisory scope, standards, and hotline info + Right structured 5-question service request intake form with interactive pills and instant confirmation.',
-        thumbnailGradient: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
-        previewIcon: 'contact_mail',
-        previewSubtitle: 'Service Intake & Consultation',
-        previewTitle: 'Request a Tailored Enterprise Service',
-        previewBody: 'Structured project specifications, timeline, organization scale, and brief.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom" id="request-service">
-  <div class="container py-4">
-    <div class="row g-5">
-      <!-- Left Column: Executive Consultation Scope & Hotline -->
-      <div class="col-lg-5">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2">Service Consultation</span>
-        <h2 class="fw-bold text-dark mb-3">Request a Tailored Enterprise Service</h2>
-        <p class="text-muted mb-4 fs-6">Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.</p>
-
-        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
-          <h6 class="fw-bold text-dark text-uppercase small mb-3 tracking-wider text-primary">Engagement Standards</h6>
-          <div class="d-flex flex-column gap-3">
-            <div class="d-flex align-items-start gap-3">
-              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
-              <div><strong class="text-dark small d-block">Dedicated Solutions Lead</strong><span class="text-muted small">Direct engagement with an enterprise systems architect.</span></div>
-            </div>
-            <div class="d-flex align-items-start gap-3">
-              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
-              <div><strong class="text-dark small d-block">Feasibility &amp; Scope Assessment</strong><span class="text-muted small">Actionable roadmap, architectural fit, and resource modeling.</span></div>
-            </div>
-            <div class="d-flex align-items-start gap-3">
-              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
-              <div><strong class="text-dark small d-block">Client Confidentiality &amp; NDA</strong><span class="text-muted small">Strict confidentiality agreements and secure communication channels guaranteed.</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex flex-column gap-2 text-muted small">
-          <div class="d-flex align-items-center gap-2"><i class="fa-solid fa-phone text-primary"></i><span>Direct Hotline: +1 (800) 555-0199</span></div>
-          <div class="d-flex align-items-center gap-2"><i class="fa-solid fa-envelope text-primary"></i><span>Advisory Desk: advisory@{{ BrandName }}.com</span></div>
-        </div>
-      </div>
-
-      <!-- Right Column: Interactive Questions & Request Form -->
-      <div class="col-lg-7">
-        <div class="card border-0 rounded-4 p-4 p-lg-5 shadow-sm bg-white" id="ozServiceFormCard">
-          <h4 class="fw-bold text-dark mb-1">Service Request &amp; Project Intake</h4>
-          <p class="text-muted small mb-4">Please answer the questions below so we can pair you with the right specialist.</p>
-
-          <form id="ozServiceForm" onsubmit="event.preventDefault(); document.getElementById('ozServiceForm').style.display='none'; document.getElementById('ozServiceSuccess').style.display='block';">
-            <!-- Question 1: Service Area -->
-            <div class="mb-4">
-              <label class="form-label fw-bold text-dark small text-uppercase">1. What service or solution do you require?</label>
-              <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn active" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Strategic Consulting &amp; Advisory</button>
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Digital Systems Modernization</button>
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Directory &amp; Portal Governance</button>
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Custom Enterprise Integration</button>
-              </div>
-            </div>
-
-            <!-- Question 2: Timeline & Scope -->
-            <div class="row g-3 mb-4">
-              <div class="col-md-6">
-                <label class="form-label fw-bold text-dark small text-uppercase">2. Estimated Timeline</label>
-                <select class="form-select bg-light border-0 rounded-3 py-2">
-                  <option selected>Immediate (Within 30 Days)</option>
-                  <option>1–3 Months</option>
-                  <option>Next Fiscal Quarter</option>
-                  <option>Exploratory / Feasibility Only</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold text-dark small text-uppercase">3. Organization Scale</label>
-                <select class="form-select bg-light border-0 rounded-3 py-2">
-                  <option selected>1–50 Members / Staff</option>
-                  <option>50–500 Enterprise Members</option>
-                  <option>500+ Large Institutional Body</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Question 4: Primary Contact Details -->
-            <div class="mb-4">
-              <label class="form-label fw-bold text-dark small text-uppercase">4. Your Organization &amp; Contact Details</label>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Your Full Name *" required />
-                </div>
-                <div class="col-md-6">
-                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Professional Title *" required />
-                </div>
-                <div class="col-md-6">
-                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Organization / Institution Name *" required />
-                </div>
-                <div class="col-md-6">
-                  <input type="email" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Official Business Email *" required />
-                </div>
-              </div>
-            </div>
-
-            <!-- Question 5: Project Brief -->
-            <div class="mb-4">
-              <label class="form-label fw-bold text-dark small text-uppercase">5. Project Brief &amp; Key Requirements</label>
-              <textarea class="form-control bg-light border-0 rounded-3 p-3" rows="4" placeholder="Describe your primary objectives, deliverables, existing pain points, or questions..."></textarea>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-primary rounded-pill px-5 py-3 fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
-              <span>Submit Service Request</span>
-              <span style="font-size: 18px;">&rarr;</span>
-            </button>
-          </form>
-
-          <!-- Interactive Success State -->
-          <div id="ozServiceSuccess" style="display: none;" class="text-center py-5">
-            <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; font-size: 28px;">
-              <i class="fa-solid fa-circle-check"></i>
-            </div>
-            <h4 class="fw-bold text-dark mb-2">Service Request Received!</h4>
-            <p class="text-muted mx-auto mb-4" style="max-width: 480px;">Thank you for submitting your project specifications. Our lead advisory partner has been notified and will review your requirements and reach out within 1 business day.</p>
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2 small" onclick="document.getElementById('ozServiceSuccess').style.display='none'; document.getElementById('ozServiceForm').style.display='block';">Submit Another Inquiry</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: `
-.oz-pill-btn {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  transition: all 0.2s ease !important;
-}
-.oz-pill-btn.active, .oz-pill-btn:hover {
-  background-color: #0050e5 !important;
-  border-color: #0050e5 !important;
-  color: #ffffff !important;
-}`
-      },
-
-      // 12. Blog & News Articles Grid
-      {
-        id: 'blog-01',
-        name: '3-Column News & Articles Showcase',
-        category: 'blog',
-        variantCode: 'Blog_CardGrid3',
-        badge: 'Articles',
-        tag: 'blog',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: '3 high-impact article cards with real high-resolution photography, category pills, and executive insights.',
-        thumbnailGradient: 'linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)',
-        previewIcon: 'article',
-        previewSubtitle: 'News & Insights',
-        previewTitle: 'Latest Insights & Announcements',
-        previewBody: 'Strategic insights, operational excellence, and enterprise digital solutions.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="py-5 bg-light border-bottom" id="blog">
-  <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
-      <div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Newsroom</span>
-        <h2 class="fw-bold text-dark mt-2 mb-0">Latest Insights & Announcements</h2>
-      </div>
-      <a href="#blog" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">View All Articles →</a>
-    </div>
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
-          <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" 
-               alt="Corporate Architecture & Strategy" class="w-100 object-fit-cover" style="height: 180px;" />
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-light text-primary border border-light-subtle w-auto align-self-start mb-2 fw-bold">Strategy</span>
-            <h5 class="fw-bold text-dark mb-2">Accelerating Enterprise Transformation in 2026</h5>
-            <p class="text-muted small mb-4">How modern organizations align people, processes, and technology for sustainable long-term growth.</p>
-            <div class="small text-muted mt-auto pt-2 border-top d-flex justify-content-between">
-              <span>Sep 10, 2026</span>
-              <span class="fw-semibold text-primary">Read Article →</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
-          <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80" 
-               alt="Data Protection & Cyber Security" class="w-100 object-fit-cover" style="height: 180px;" />
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-light text-success border border-light-subtle w-auto align-self-start mb-2 fw-bold">Security</span>
-            <h5 class="fw-bold text-dark mb-2">Modern Data Protection &amp; Governance Standards</h5>
-            <p class="text-muted small mb-4">Best practices for maintaining data privacy, regulatory compliance, and robust risk management.</p>
-            <div class="small text-muted mt-auto pt-2 border-top d-flex justify-content-between">
-              <span>Sep 04, 2026</span>
-              <span class="fw-semibold text-primary">Read Article →</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
-          <img src="https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=800&q=80" 
-               alt="Executive Meeting & Operations" class="w-100 object-fit-cover" style="height: 180px;" />
-          <div class="card-body d-flex flex-column">
-            <span class="badge bg-light text-info border border-light-subtle w-auto align-self-start mb-2 fw-bold">Operations</span>
-            <h5 class="fw-bold text-dark mb-2">Scaling Operational Efficiency Across Distributed Teams</h5>
-            <p class="text-muted small mb-4">Proven strategies for streamlining workflows and unifying communications across business units.</p>
-            <div class="small text-muted mt-auto pt-2 border-top d-flex justify-content-between">
-              <span>Aug 28, 2026</span>
-              <span class="fw-semibold text-primary">Read Article →</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>`,
-        cssStyles: ``
-      },
-
-      // 13. Centered Background Image Breadcrumbs & Page Headers
-      {
-        id: 'crumb-01',
-        name: 'Centered Background Image Breadcrumb Banner',
-        category: 'breadcrumb',
-        variantCode: 'Breadcrumb_PageHeader',
-        badge: 'Header',
-        tag: 'breadcrumb',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Inner-page hero banner with corporate background photography, dark overlay scrim, centered title, and centered breadcrumb path to Home.',
-        thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        previewIcon: 'linear_scale',
-        previewSubtitle: 'Centered Page Header',
-        previewTitle: 'Centered Page Header Banner',
-        previewBody: 'Home / {{ PageTitle }} • Centered corporate banner',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<section class="oz-breadcrumb-hero py-5 text-center position-relative overflow-hidden">
-  <div class="oz-breadcrumb-overlay position-absolute top-0 start-0 w-100 h-100"></div>
-  <div class="container position-relative py-lg-4" style="z-index: 2;">
-    <nav aria-label="breadcrumb" class="d-flex justify-content-center mb-2">
-      <ol class="breadcrumb justify-content-center align-items-center mb-0 small">
-        <li class="breadcrumb-item"><a href="#home" class="text-white text-opacity-75 text-decoration-none">Home</a></li>
-        <li class="breadcrumb-item text-white text-opacity-50">/</li>
-        <li class="breadcrumb-item active text-white fw-bold" aria-current="page">{{ Title }}</li>
-      </ol>
-    </nav>
-    <h1 class="display-5 fw-bold text-white mb-2">{{ Title }}</h1>
-    <p class="text-white text-opacity-75 lead fs-6 mx-auto mb-0" style="max-width: 650px;">{{ Description }}</p>
-  </div>
-</section>`,
-        cssStyles: `
-.oz-breadcrumb-hero {
-  background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center center / cover no-repeat;
-  position: relative;
-}
-.oz-breadcrumb-overlay {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(15, 23, 42, 0.88) 100%);
-}
-.oz-breadcrumb-hero .breadcrumb-item + .breadcrumb-item::before {
-  display: none !important;
-}
-.oz-breadcrumb-hero .breadcrumb-item a:hover {
-  color: #ffffff !important;
-  text-decoration: underline !important;
-}`
-      },
-
-      // 14. Corporate Footer
-      {
-        id: 'footer-01',
-        name: 'Clean Light Corporate Footer',
-        category: 'footer',
-        variantCode: 'Footer_4ColCorporate',
-        badge: 'Popular',
-        tag: 'corporate',
-        groupCode: 'apex-corporate',
-        groupName: 'Apex Corporate Pro',
-        description: 'Clean light multi-column corporate footer with brand overview, services links, company resources, and inline newsletter subscription.',
-        thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        previewIcon: 'dock_to_bottom',
-        previewSubtitle: 'Light Footer',
-        previewTitle: 'Apex Corporate Footer',
-        previewBody: 'Services, Solutions, Legal links, and copyright bar.',
-        version: '1.0.0',
-        installedUtc: new Date().toISOString(),
-        htmlTemplate: `
-<footer class="bg-light border-top py-5 text-secondary">
-  <div class="container">
-    <div class="row g-4 mb-5">
-      <div class="col-lg-4">
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <span class="fw-bold text-dark fs-5">{{ BrandName }}</span>
-        </div>
-        <p class="small text-muted max-w-300">Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.</p>
-        <div class="d-flex gap-2 text-secondary">
-          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-linkedin-in"></i></a>
-          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-x-twitter"></i></a>
-          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-facebook-f"></i></a>
-        </div>
-      </div>
-      <div class="col-6 col-lg-2">
-        <h6 class="fw-bold text-dark text-uppercase small mb-3">Solutions</h6>
-        <ul class="list-unstyled small d-flex flex-column gap-2">
-          <li><a href="#services" class="text-decoration-none text-muted">Strategic Consulting</a></li>
-          <li><a href="#services" class="text-decoration-none text-muted">Systems Modernization</a></li>
-          <li><a href="#services" class="text-decoration-none text-muted">Performance &amp; Scale</a></li>
-          <li><a href="#services" class="text-decoration-none text-muted">Enterprise Advisory</a></li>
-        </ul>
-      </div>
-      <div class="col-6 col-lg-2">
-        <h6 class="fw-bold text-dark text-uppercase small mb-3">Company</h6>
-        <ul class="list-unstyled small d-flex flex-column gap-2">
-          <li><a href="#about" class="text-decoration-none text-muted">About Us</a></li>
-          <li><a href="#about" class="text-decoration-none text-muted">Leadership &amp; Team</a></li>
-          <li><a href="#blog" class="text-decoration-none text-muted">Insights &amp; News</a></li>
-          <li><a href="#request-service" class="text-decoration-none text-muted">Request a Service</a></li>
-        </ul>
-      </div>
-      <div class="col-lg-4">
-        <h6 class="fw-bold text-dark text-uppercase small mb-3">Stay Connected</h6>
-        <p class="small text-muted">Subscribe to our newsletter for executive insights, market updates, and announcements.</p>
-        <div class="input-group input-group-sm">
-          <input type="email" class="form-control bg-white rounded-start-pill px-3" placeholder="Your email address..." />
-          <button class="btn btn-primary rounded-end-pill px-3 fw-bold" type="button">Join</button>
-        </div>
-      </div>
-    </div>
-    <div class="border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted">
-      <div>&copy; {{ Year }} {{ BrandName }}. All rights reserved.</div>
-    </div>
-  </div>
-</footer>`,
-        cssStyles: ``
-      }
-    ];
   }
 }
