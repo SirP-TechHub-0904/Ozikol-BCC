@@ -705,48 +705,50 @@ public class TenantOnboardingService : ITenantOnboardingService
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
                 HtmlTemplate = @"
-<header class=""oz-nav-header shadow-sm"">
-  <nav class=""navbar navbar-expand-lg navbar-light bg-white border-bottom py-3"">
+<header class=""oz-nav-header sticky-top bg-white border-bottom shadow-sm"">
+  <nav class=""navbar navbar-expand-lg navbar-light py-3"">
     <div class=""container"">
-      <a class=""navbar-brand d-flex align-items-center gap-2"" href=""#"">
-        <span class=""badge bg-primary rounded-3 p-2 text-white""><i class=""fa-solid fa-cube fs-5""></i></span>
-        <span class=""fw-bold text-dark fs-5 tracking-tight"">{{ BrandName }}</span>
+      <a class=""navbar-brand d-flex align-items-center gap-2"" href=""#home"">
+        <span class=""fw-bolder text-dark fs-4 tracking-tight"">{{ BrandName }}</span>
       </a>
       <button class=""navbar-toggler border-0 shadow-none"" type=""button"" onclick=""this.closest('nav').querySelector('.collapse').classList.toggle('show')"">
         <span class=""navbar-toggler-icon""></span>
       </button>
       <div class=""collapse navbar-collapse"" id=""ozNavMain"">
-        <ul class=""navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-3"">
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary active"" href=""#home""><i class=""fa-solid fa-house me-1 text-primary""></i> Home</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#shop""><i class=""fa-solid fa-bag-shopping me-1 text-primary""></i> Shop</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#about""><i class=""fa-solid fa-circle-info me-1 text-primary""></i> About</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#blog""><i class=""fa-solid fa-newspaper me-1 text-primary""></i> Blog</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#contact""><i class=""fa-solid fa-envelope me-1 text-primary""></i> Contact</a></li>
+        <ul class=""navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4"">
+          <li class=""nav-item""><a class=""nav-link fw-semibold text-dark active"" href=""#home"">Home</a></li>
+          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#about"">About</a></li>
+          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#services"">Services</a></li>
+          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#blog"">News</a></li>
+          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#contact"">Contact</a></li>
         </ul>
         <div class=""d-flex align-items-center gap-3"">
-          <a href=""#shop"" class=""btn btn-light position-relative border rounded-pill px-3 py-2 text-secondary"">
-            <i class=""fa-solid fa-cart-shopping""></i>
-            <span class=""position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary"">0</span>
-          </a>
-          <a href=""/auth/login"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm"">
-            <i class=""fa-solid fa-arrow-right-to-bracket me-1""></i> Get Started
+          <a href=""#contact"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
+            <span>Request a Service</span>
+            <span style=""font-size: 16px;"">→</span>
           </a>
         </div>
       </div>
     </div>
   </nav>
 </header>",
-                CssStyles = @".oz-nav-header .nav-link:hover { color: #2563eb !important; }"
+                CssStyles = @"
+.oz-nav-header { background-color: #ffffff !important; }
+.oz-nav-header .navbar-brand { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; }
+.oz-nav-header .nav-link { font-size: 14.5px; font-weight: 600; color: #475569 !important; padding: 8px 4px !important; transition: color 0.15s ease; }
+.oz-nav-header .nav-link:hover, .oz-nav-header .nav-link.active { color: #0050e5 !important; }
+.oz-nav-header .btn-primary { background-color: #0050e5; border-color: #0050e5; font-size: 13.5px; transition: all 0.2s ease; }
+.oz-nav-header .btn-primary:hover { background-color: #003bb5; border-color: #003bb5; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35) !important; }"
             },
 
             // 2. Hero Unit
             new()
             {
                 Id = Guid.NewGuid(),
-                TemplateKey = "Hero_SplitProduct",
+                TemplateKey = "Hero_CorporateSplit",
                 CategoryKey = "hero",
-                Name = "Modern Light Split Hero",
-                VariantCode = "Hero_SplitProduct",
+                Name = "Modern Corporate Split Hero",
+                VariantCode = "Hero_CorporateSplit",
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
@@ -756,34 +758,24 @@ public class TenantOnboardingService : ITenantOnboardingService
     <div class=""row align-items-center g-5"">
       <div class=""col-lg-6"">
         <div class=""d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3"">
-          <i class=""fa-solid fa-bolt""></i>
-          <span class=""small fw-bold text-uppercase"">Enterprise Suite v2.5</span>
+          <span class=""small fw-bold text-uppercase"">Enterprise Solutions</span>
         </div>
-        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Streamline your entire organizational workflow.</h1>
-        <p class=""lead text-muted mb-4 fs-6"">Manage members, execute secure e-voting, track real-time analytics, and automate transactions in one sovereign platform.</p>
+        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Empowering Modern Organizations to Scale with Confidence.</h1>
+        <p class=""lead text-muted mb-4 fs-6"">Delivering robust digital governance, operational agility, and high-impact member services across every tier of your institution.</p>
         <div class=""d-flex flex-wrap gap-3"">
-          <a href=""#shop"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm"">
-            <i class=""fa-solid fa-rocket me-2""></i> Explore Storefront
+          <a href=""#services"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
+            <span>Explore Services</span>
+            <span style=""font-size: 16px;"">→</span>
           </a>
-          <a href=""#about"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
-            <i class=""fa-solid fa-play me-2 text-primary""></i> Watch Demo
+          <a href=""#contact"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
+            Schedule Consultation
           </a>
         </div>
       </div>
       <div class=""col-lg-6"">
-        <div class=""card border border-light-subtle shadow rounded-4 overflow-hidden p-3 bg-white"">
-          <div class=""d-flex align-items-center justify-content-between pb-3 border-bottom mb-3"">
-            <div class=""d-flex gap-2"">
-              <span class=""badge bg-danger rounded-circle p-1""></span>
-              <span class=""badge bg-warning rounded-circle p-1""></span>
-              <span class=""badge bg-success rounded-circle p-1""></span>
-            </div>
-            <span class=""small text-muted fw-bold""><i class=""fa-solid fa-chart-pie me-1 text-primary""></i> Live Telemetry</span>
-          </div>
-          <div class=""row g-2 text-center"">
-            <div class=""col-6""><div class=""p-3 rounded-3 bg-light border""><div class=""h4 fw-bold text-dark mb-0"">24.5k</div><small class=""text-muted"">Active Members</small></div></div>
-            <div class=""col-6""><div class=""p-3 rounded-3 bg-light border""><div class=""h4 fw-bold text-success mb-0"">99.9%</div><small class=""text-muted"">Uptime SLA</small></div></div>
-          </div>
+        <div class=""rounded-4 overflow-hidden shadow-lg border border-light-subtle"">
+          <img src=""https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"" 
+               alt=""Modern Corporate Architecture"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 420px;"" />
         </div>
       </div>
     </div>
@@ -845,42 +837,50 @@ public class TenantOnboardingService : ITenantOnboardingService
                 CssStyles = @""
             },
 
-            // 4. Body Section 2 - Featured Product / Deal Spotlight
+            // 4. Body Section 2 - Corporate Mission & Standards
             new()
             {
                 Id = Guid.NewGuid(),
-                TemplateKey = "Body_ProductShowcase",
+                TemplateKey = "Body_MissionSplit",
                 CategoryKey = "body",
-                Name = "Product Spotlight & Deal Banner",
-                VariantCode = "Body_ProductShowcase",
+                Name = "Corporate Mission & Standards Split",
+                VariantCode = "Body_MissionSplit",
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
                 HtmlTemplate = @"
-<section class=""py-5 bg-light border-bottom"">
+<section class=""py-5 bg-white border-bottom"" id=""about"">
   <div class=""container py-4"">
-    <div class=""card border border-light-subtle shadow-sm rounded-4 overflow-hidden p-4 p-lg-5 bg-white"">
-      <div class=""row align-items-center g-4"">
-        <div class=""col-lg-6"">
-          <span class=""badge bg-danger rounded-pill px-3 py-1 mb-3""><i class=""fa-solid fa-fire me-1""></i> Featured Spotlight</span>
-          <h3 class=""fw-bolder text-dark mb-2"">Executive Signature Folio & Smart Badge</h3>
-          <p class=""text-muted mb-4"">Handcrafted vegan leather document suite paired with contactless NFC credentials for seamless campus admission.</p>
-          <div class=""d-flex align-items-baseline gap-3 mb-4"">
-            <span class=""h3 fw-bold text-primary mb-0"">$89.00</span>
-            <span class=""text-muted text-decoration-line-through"">$120.00</span>
-            <span class=""badge bg-success-subtle text-success border border-success-subtle rounded-pill"">Save 25%</span>
+    <div class=""row align-items-center g-5"">
+      <div class=""col-lg-6"">
+        <div class=""rounded-4 overflow-hidden shadow border border-light-subtle"">
+          <img src=""https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80"" 
+               alt=""Executive Collaboration Team"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 380px;"" />
+        </div>
+      </div>
+      <div class=""col-lg-6"">
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-3"">Our Mission & Standards</span>
+        <h2 class=""fw-bolder text-dark mb-3"">Built for Organizational Excellence & Long-Term Trust</h2>
+        <p class=""text-muted mb-4"">We partner with premier institutions, professional associations, and growing enterprises to streamline operational administration, ensure compliance, and unlock sustainable collective growth.</p>
+        <div class=""d-flex flex-column gap-3 mb-4"">
+          <div class=""d-flex align-items-start gap-3"">
+            <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
+            <div>
+              <h6 class=""fw-bold text-dark mb-1"">Institutional Governance</h6>
+              <p class=""text-muted small mb-0"">Certified audit trails, compliant electoral protocols, and verified committee accountability.</p>
+            </div>
           </div>
-          <div class=""d-flex gap-3"">
-            <a href=""#shop"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold""><i class=""fa-solid fa-cart-plus me-1""></i> Order Now</a>
-            <a href=""#shop"" class=""btn btn-outline-secondary rounded-pill px-4 py-2""><i class=""fa-solid fa-eye me-1""></i> Details</a>
+          <div class=""d-flex align-items-start gap-3"">
+            <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
+            <div>
+              <h6 class=""fw-bold text-dark mb-1"">Sovereign Data Protection</h6>
+              <p class=""text-muted small mb-0"">Dedicated isolated database architecture ensuring strict tenant confidentiality and data ownership.</p>
+            </div>
           </div>
         </div>
-        <div class=""col-lg-6 text-center"">
-          <div class=""p-4 rounded-4 bg-light d-inline-flex flex-column align-items-center justify-content-center w-100"" style=""min-height: 240px;"">
-            <i class=""fa-solid fa-box-open text-primary display-2 mb-3 opacity-75""></i>
-            <span class=""fw-semibold text-dark"">Official Merchandise Collection</span>
-          </div>
-        </div>
+        <a href=""#contact"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"">
+          Learn More About Our Firm →
+        </a>
       </div>
     </div>
   </div>
@@ -1284,39 +1284,51 @@ public class TenantOnboardingService : ITenantOnboardingService
         <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Newsroom</span>
         <h2 class=""fw-bold text-dark mt-2 mb-0"">Latest Insights & Announcements</h2>
       </div>
-      <a href=""#blog"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold""><i class=""fa-solid fa-arrow-right me-1""></i> View All Articles</a>
+      <a href=""#blog"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"">View All Articles →</a>
     </div>
     <div class=""row g-4"">
       <div class=""col-md-4"">
         <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <div class=""p-4 bg-primary-subtle text-center text-primary""><i class=""fa-solid fa-landmark display-4""></i></div>
-          <div class=""card-body"">
-            <span class=""badge bg-light text-secondary border mb-2"">Governance</span>
-            <h5 class=""fw-bold text-dark"">Modernizing Annual General Meetings with E-Voting</h5>
-            <p class=""text-muted small"">How sovereign distributed voting algorithms safeguard quorums and record keeping.</p>
-            <div class=""small text-muted""><i class=""fa-solid fa-calendar me-1""></i> Sep 10, 2026 • 4 min read</div>
+          <img src=""https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"" 
+               alt=""Corporate Architecture & Strategy"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
+          <div class=""card-body d-flex flex-column"">
+            <span class=""badge bg-light text-primary border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Governance</span>
+            <h5 class=""fw-bold text-dark mb-2"">Modernizing Institutional Governance and Voting</h5>
+            <p class=""text-muted small mb-4"">How distributed validation protocols safeguard quorums and preserve permanent record keeping.</p>
+            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
+              <span>Sep 10, 2026</span>
+              <span class=""fw-semibold text-primary"">Read Article →</span>
+            </div>
           </div>
         </div>
       </div>
       <div class=""col-md-4"">
         <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <div class=""p-4 bg-success-subtle text-center text-success""><i class=""fa-solid fa-shield-halved display-4""></i></div>
-          <div class=""card-body"">
-            <span class=""badge bg-light text-secondary border mb-2"">Security</span>
-            <h5 class=""fw-bold text-dark"">Sovereign Data Retention and Multi-Tenancy</h5>
-            <p class=""text-muted small"">Why dedicated database isolation provides superior regulatory compliance.</p>
-            <div class=""small text-muted""><i class=""fa-solid fa-calendar me-1""></i> Sep 04, 2026 • 5 min read</div>
+          <img src=""https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"" 
+               alt=""Data Protection & Cyber Security"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
+          <div class=""card-body d-flex flex-column"">
+            <span class=""badge bg-light text-success border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Security</span>
+            <h5 class=""fw-bold text-dark mb-2"">Sovereign Data Retention and Multi-Tenancy</h5>
+            <p class=""text-muted small mb-4"">Why isolated database boundaries provide superior compliance against modern data privacy mandates.</p>
+            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
+              <span>Sep 04, 2026</span>
+              <span class=""fw-semibold text-primary"">Read Article →</span>
+            </div>
           </div>
         </div>
       </div>
       <div class=""col-md-4"">
         <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <div class=""p-4 bg-info-subtle text-center text-info""><i class=""fa-solid fa-store display-4""></i></div>
-          <div class=""card-body"">
-            <span class=""badge bg-light text-secondary border mb-2"">Storefront</span>
-            <h5 class=""fw-bold text-dark"">Generating Sustainable Non-Dues Revenue</h5>
-            <p class=""text-muted small"">Leveraging embedded member storefronts for official merchandise and training courses.</p>
-            <div class=""small text-muted""><i class=""fa-solid fa-calendar me-1""></i> Aug 28, 2026 • 3 min read</div>
+          <img src=""https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=800&q=80"" 
+               alt=""Executive Meeting & Operations"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
+          <div class=""card-body d-flex flex-column"">
+            <span class=""badge bg-light text-info border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Operations</span>
+            <h5 class=""fw-bold text-dark mb-2"">Scaling Operational Efficiency Across Regional Chapters</h5>
+            <p class=""text-muted small mb-4"">Key lessons from multi-chapter rollouts and unified digital communication channels.</p>
+            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
+              <span>Aug 28, 2026</span>
+              <span class=""fw-semibold text-primary"">Read Article →</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1342,19 +1354,12 @@ public class TenantOnboardingService : ITenantOnboardingService
   <div class=""container"">
     <nav aria-label=""breadcrumb"">
       <ol class=""breadcrumb mb-2 small"">
-        <li class=""breadcrumb-item""><a href=""#home"" class=""text-decoration-none text-muted""><i class=""fa-solid fa-house me-1""></i> Home</a></li>
+        <li class=""breadcrumb-item""><a href=""#home"" class=""text-decoration-none text-muted"">Home</a></li>
         <li class=""breadcrumb-item active text-primary fw-semibold"" aria-current=""page"">{{ Title }}</li>
       </ol>
     </nav>
-    <div class=""d-flex justify-content-between align-items-center flex-wrap gap-2"">
-      <div>
-        <h1 class=""h3 fw-bold text-dark mb-1"">{{ Title }}</h1>
-        <p class=""text-muted small mb-0"">{{ Description }}</p>
-      </div>
-      <span class=""badge bg-white text-secondary border px-3 py-2 rounded-pill small shadow-sm"">
-        <i class=""fa-solid fa-circle-check text-success me-1""></i> Verified Page
-      </span>
-    </div>
+    <h1 class=""h3 fw-bold text-dark mb-1"">{{ Title }}</h1>
+    <p class=""text-muted small mb-0"">{{ Description }}</p>
   </div>
 </section>",
                 CssStyles = @""
