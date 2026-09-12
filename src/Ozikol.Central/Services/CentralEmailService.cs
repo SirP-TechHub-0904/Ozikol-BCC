@@ -93,7 +93,7 @@ public class CentralEmailService : ICentralEmailService
     public async Task<bool> SendWelcomeWorkspaceEmailAsync(string toEmail, string organizationName, string domainUrl, CancellationToken cancellationToken = default)
     {
         var subject = $"Welcome to Ozikol: Sovereign Workspace for {organizationName} is Ready!";
-        var loginUrl = $"http://{domainUrl}/auth/login";
+        var loginUrl = $"https://{domainUrl}/auth/login";
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
@@ -106,7 +106,7 @@ public class CentralEmailService : ICentralEmailService
                 <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 24px 0;'>
                     <div style='margin-bottom: 14px;'>
                         <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Dedicated Website URL:</div>
-                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='http://{domainUrl}' style='color: #0284c7; text-decoration: none;'>http://{domainUrl}</a></div>
+                        <div style='font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;'><a href='https://{domainUrl}' style='color: #0284c7; text-decoration: none;'>https://{domainUrl}</a></div>
                     </div>
                     <div style='margin-bottom: 14px;'>
                         <div style='font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Administrator Login Portal:</div>

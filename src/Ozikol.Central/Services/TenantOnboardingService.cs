@@ -261,6 +261,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TenantKey = cleanKey,
                 OrganizationName = request.OrganizationName,
                 PrimaryDomain = primaryDomain,
+                WebsiteUrl = $"https://{primaryDomain}",
                 CustomDomain = string.IsNullOrWhiteSpace(request.CustomDomain) ? null : request.CustomDomain.Trim().ToLowerInvariant(),
                 DatabaseName = dbName,
                 ConnectionString = dedicatedTenantConnStr,
@@ -341,7 +342,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                 OrganizationName = request.OrganizationName,
                 PrimaryDomain = primaryDomain,
                 DatabaseName = dbName,
-                RedirectUrl = $"http://{primaryDomain}/auth/login",
+                RedirectUrl = $"https://{primaryDomain}/auth/login",
                 Message = $"Workspace '{request.OrganizationName}' created successfully!"
             };
         }
