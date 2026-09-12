@@ -760,8 +760,8 @@ public class TenantOnboardingService : ITenantOnboardingService
         <div class=""d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3"">
           <span class=""small fw-bold text-uppercase"">Enterprise Solutions</span>
         </div>
-        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Empowering Modern Organizations to Scale with Confidence.</h1>
-        <p class=""lead text-muted mb-4 fs-6"">Delivering robust digital governance, operational agility, and high-impact member services across every tier of your institution.</p>
+        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Empowering Modern Enterprises to Scale with Confidence.</h1>
+        <p class=""lead text-muted mb-4 fs-6"">Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.</p>
         <div class=""d-flex flex-wrap gap-3"">
           <a href=""#services"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
             <span>Explore Services</span>
@@ -809,8 +809,8 @@ public class TenantOnboardingService : ITenantOnboardingService
           <div class=""rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
             <i class=""fa-solid fa-shield-halved fs-4""></i>
           </div>
-          <h5 class=""fw-bold text-dark"">Identity & Access</h5>
-          <p class=""text-muted small mb-0"">Granular role-based security matrix, session controls, and multi-factor authorization safeguards.</p>
+          <h5 class=""fw-bold text-dark"">Data Security & Privacy</h5>
+          <p class=""text-muted small mb-0"">Enterprise-grade encryption, role-based access management, and proactive compliance protection.</p>
         </div>
       </div>
       <div class=""col-md-4"">
@@ -825,10 +825,10 @@ public class TenantOnboardingService : ITenantOnboardingService
       <div class=""col-md-4"">
         <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm"">
           <div class=""rounded-3 bg-info-subtle text-info d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
-            <i class=""fa-solid fa-check-to-slot fs-4""></i>
+            <i class=""fa-solid fa-bolt fs-4""></i>
           </div>
-          <h5 class=""fw-bold text-dark"">E-Voting & Polls</h5>
-          <p class=""text-muted small mb-0"">Tamper-proof real-time electoral polling with instant ballot auditing and verified participation.</p>
+          <h5 class=""fw-bold text-dark"">Operational Efficiency</h5>
+          <p class=""text-muted small mb-0"">Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.</p>
         </div>
       </div>
     </div>
@@ -861,20 +861,20 @@ public class TenantOnboardingService : ITenantOnboardingService
       <div class=""col-lg-6"">
         <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-3"">Our Mission & Standards</span>
         <h2 class=""fw-bolder text-dark mb-3"">Built for Organizational Excellence & Long-Term Trust</h2>
-        <p class=""text-muted mb-4"">We partner with premier institutions, professional associations, and growing enterprises to streamline operational administration, ensure compliance, and unlock sustainable collective growth.</p>
+        <p class=""text-muted mb-4"">We partner with forward-thinking enterprises, growing organizations, and industry leaders to streamline operations, enhance client service, and drive sustainable growth.</p>
         <div class=""d-flex flex-column gap-3 mb-4"">
           <div class=""d-flex align-items-start gap-3"">
             <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
             <div>
-              <h6 class=""fw-bold text-dark mb-1"">Institutional Governance</h6>
-              <p class=""text-muted small mb-0"">Certified audit trails, compliant electoral protocols, and verified committee accountability.</p>
+              <h6 class=""fw-bold text-dark mb-1"">Strategic Planning & Execution</h6>
+              <p class=""text-muted small mb-0"">Data-backed strategies, transparent execution, and dedicated accountability for every business milestone.</p>
             </div>
           </div>
           <div class=""d-flex align-items-start gap-3"">
             <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
             <div>
-              <h6 class=""fw-bold text-dark mb-1"">Sovereign Data Protection</h6>
-              <p class=""text-muted small mb-0"">Dedicated isolated database architecture ensuring strict tenant confidentiality and data ownership.</p>
+              <h6 class=""fw-bold text-dark mb-1"">Enterprise Data Protection</h6>
+              <p class=""text-muted small mb-0"">Industry-standard encryption, secure cloud infrastructure, and strict client confidentiality standards.</p>
             </div>
           </div>
         </div>
@@ -952,9 +952,9 @@ public class TenantOnboardingService : ITenantOnboardingService
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-4"">
     <div class=""text-center max-w-700 mx-auto mb-5"">
-      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Member Testimonials</span>
-      <h2 class=""fw-bold text-dark mt-2 mb-3"">Trusted by Organizations Worldwide</h2>
-      <p class=""text-muted"">Hear directly from leaders who rely on our portal for everyday operational governance.</p>
+      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Client Testimonials</span>
+      <h2 class=""fw-bold text-dark mt-2 mb-3"">Trusted by Clients &amp; Industry Leaders</h2>
+      <p class=""text-muted"">Hear directly from businesses and partners who rely on our services for sustainable growth.</p>
     </div>
     <div class=""row g-4"">
       <div class=""col-md-4"">
@@ -962,12 +962,12 @@ public class TenantOnboardingService : ITenantOnboardingService
           <div class=""text-warning mb-3"">
             <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
           </div>
-          <p class=""text-secondary mb-4 fst-italic"">""The e-voting and committee management modules saved our annual general meeting over 40 hours of manual reconciliation.""</p>
+          <p class=""text-secondary mb-4 fst-italic"">""Working with {{ BrandName }} transformed our operational efficiency. Their team provided clear strategic direction and delivered outstanding results from day one.""</p>
           <div class=""d-flex align-items-center gap-3 mt-auto"">
             <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">SA</div>
             <div>
-              <div class=""fw-bold text-dark small"">Dr. Sarah Adams</div>
-              <div class=""text-muted small"">Executive Secretary</div>
+              <div class=""fw-bold text-dark small"">Sarah Adams</div>
+              <div class=""text-muted small"">Chief Operating Officer</div>
             </div>
           </div>
         </div>
@@ -977,12 +977,12 @@ public class TenantOnboardingService : ITenantOnboardingService
           <div class=""text-warning mb-3"">
             <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
           </div>
-          <p class=""text-secondary mb-4 fst-italic"">""The sovereign multi-tenant architecture gives our compliance officers absolute peace of mind regarding member data sovereignty.""</p>
+          <p class=""text-secondary mb-4 fst-italic"">""Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner in scaling our business.""</p>
           <div class=""d-flex align-items-center gap-3 mt-auto"">
             <div class=""rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">MK</div>
             <div>
               <div class=""fw-bold text-dark small"">Marcus Kim</div>
-              <div class=""text-muted small"">Director of Governance</div>
+              <div class=""text-muted small"">Managing Director</div>
             </div>
           </div>
         </div>
@@ -992,12 +992,12 @@ public class TenantOnboardingService : ITenantOnboardingService
           <div class=""text-warning mb-3"">
             <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
           </div>
-          <p class=""text-secondary mb-4 fst-italic"">""Our integrated merchandise storefront paid for our entire portal subscription within the first 60 days of launch.""</p>
+          <p class=""text-secondary mb-4 fst-italic"">""The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time and above benchmark.""</p>
           <div class=""d-flex align-items-center gap-3 mt-auto"">
             <div class=""rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">EL</div>
             <div>
               <div class=""fw-bold text-dark small"">Elena Rostova</div>
-              <div class=""text-muted small"">Treasurer & Finance Chair</div>
+              <div class=""text-muted small"">VP of Business Development</div>
             </div>
           </div>
         </div>
@@ -1025,31 +1025,31 @@ public class TenantOnboardingService : ITenantOnboardingService
     <div class=""text-center max-w-700 mx-auto mb-5"">
       <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Questions & Answers</span>
       <h2 class=""fw-bold text-dark mt-2 mb-3"">Frequently Asked Questions</h2>
-      <p class=""text-muted"">Common answers regarding tenant membership, data security, and portal operations.</p>
+      <p class=""text-muted"">Helpful answers regarding our services, client engagements, and delivery process.</p>
     </div>
     <div class=""max-w-800 mx-auto"">
       <div class=""accordion"" id=""ozFaqAccordion"">
         <div class=""accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm"">
           <h2 class=""accordion-header"">
             <button class=""accordion-button fw-bold text-dark bg-light"" type=""button"" onclick=""this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')"">
-              <i class=""fa-solid fa-circle-question text-primary me-2""></i> How is member voter privacy protected during e-voting?
+              <i class=""fa-solid fa-circle-question text-primary me-2""></i> How does {{ BrandName }} tailor its services to our business needs?
             </button>
           </h2>
           <div class=""accordion-collapse collapse show"">
             <div class=""accordion-body text-secondary small"">
-              All ballot votes are cryptographically blinded using modern cryptographic hashes, guaranteeing voter anonymity while ensuring mathematical proof of legitimate eligibility.
+              We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements, then design a customized solution that aligns precisely with your business priorities.
             </div>
           </div>
         </div>
         <div class=""accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm"">
           <h2 class=""accordion-header"">
             <button class=""accordion-button collapsed fw-bold text-dark bg-light"" type=""button"" onclick=""this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')"">
-              <i class=""fa-solid fa-circle-question text-primary me-2""></i> Can our organization add custom domain names?
+              <i class=""fa-solid fa-circle-question text-primary me-2""></i> What kind of ongoing support and collaboration can we expect?
             </button>
           </h2>
           <div class=""accordion-collapse collapse"">
             <div class=""accordion-body text-secondary small"">
-              Yes, organizations can easily bind custom domains with automated SSL provisioning from the Administrative Settings console.
+              Every client is paired with a dedicated account lead and receives regular milestone reviews, transparent progress reporting, and responsive technical and strategic support throughout our partnership.
             </div>
           </div>
         </div>
@@ -1075,14 +1075,14 @@ public class TenantOnboardingService : ITenantOnboardingService
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-3"">
     <div class=""card border-0 rounded-4 p-5 text-center text-white shadow"" style=""background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);"">
-      <h2 class=""display-6 fw-bold mb-3"">Ready to Transform Your Organization?</h2>
-      <p class=""lead opacity-90 max-w-600 mx-auto mb-4 fs-6"">Join thousands of members enjoying seamless digital governance, online storefronts, and automated records.</p>
+      <h2 class=""display-6 fw-bold mb-3"">Ready to Elevate Your Business?</h2>
+      <p class=""lead opacity-90 max-w-600 mx-auto mb-4 fs-6"">Partner with our team to accelerate your operations, modernize systems, and achieve sustainable long-term growth.</p>
       <div class=""d-flex justify-content-center gap-3 flex-wrap"">
-        <a href=""/auth/login"" class=""btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow"">
-          <i class=""fa-solid fa-user-plus me-1""></i> Join Workspace
+        <a href=""#request-service"" class=""btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow"">
+          <i class=""fa-solid fa-arrow-right me-1""></i> Request a Consultation
         </a>
         <a href=""#contact"" class=""btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold"">
-          <i class=""fa-solid fa-headset me-1""></i> Talk to Support
+          <i class=""fa-solid fa-envelope me-1""></i> Contact Our Team
         </a>
       </div>
     </div>
@@ -1247,7 +1247,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             </div>
             <div class=""d-flex align-items-start gap-3"">
               <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:32px; height:32px;""><i class=""fa-solid fa-check""></i></div>
-              <div><strong class=""text-dark small d-block"">Institutional Privacy &amp; NDA</strong><span class=""text-muted small"">Bank-grade data confidentiality and sovereign compliance guaranteed.</span></div>
+              <div><strong class=""text-dark small d-block"">Client Confidentiality &amp; NDA</strong><span class=""text-muted small"">Strict confidentiality agreements and secure communication channels guaranteed.</span></div>
             </div>
           </div>
         </div>
@@ -1383,9 +1383,9 @@ public class TenantOnboardingService : ITenantOnboardingService
           <img src=""https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"" 
                alt=""Corporate Architecture & Strategy"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
           <div class=""card-body d-flex flex-column"">
-            <span class=""badge bg-light text-primary border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Governance</span>
-            <h5 class=""fw-bold text-dark mb-2"">Modernizing Institutional Governance and Voting</h5>
-            <p class=""text-muted small mb-4"">How distributed validation protocols safeguard quorums and preserve permanent record keeping.</p>
+            <span class=""badge bg-light text-primary border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Strategy</span>
+            <h5 class=""fw-bold text-dark mb-2"">Accelerating Enterprise Transformation in 2026</h5>
+            <p class=""text-muted small mb-4"">How modern organizations align people, processes, and technology for sustainable long-term growth.</p>
             <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
               <span>Sep 10, 2026</span>
               <span class=""fw-semibold text-primary"">Read Article →</span>
@@ -1399,8 +1399,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                alt=""Data Protection & Cyber Security"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
           <div class=""card-body d-flex flex-column"">
             <span class=""badge bg-light text-success border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Security</span>
-            <h5 class=""fw-bold text-dark mb-2"">Sovereign Data Retention and Multi-Tenancy</h5>
-            <p class=""text-muted small mb-4"">Why isolated database boundaries provide superior compliance against modern data privacy mandates.</p>
+            <h5 class=""fw-bold text-dark mb-2"">Modern Data Protection &amp; Governance Standards</h5>
+            <p class=""text-muted small mb-4"">Best practices for maintaining data privacy, regulatory compliance, and robust risk management.</p>
             <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
               <span>Sep 04, 2026</span>
               <span class=""fw-semibold text-primary"">Read Article →</span>
@@ -1414,8 +1414,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                alt=""Executive Meeting & Operations"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
           <div class=""card-body d-flex flex-column"">
             <span class=""badge bg-light text-info border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Operations</span>
-            <h5 class=""fw-bold text-dark mb-2"">Scaling Operational Efficiency Across Regional Chapters</h5>
-            <p class=""text-muted small mb-4"">Key lessons from multi-chapter rollouts and unified digital communication channels.</p>
+            <h5 class=""fw-bold text-dark mb-2"">Scaling Operational Efficiency Across Distributed Teams</h5>
+            <p class=""text-muted small mb-4"">Proven strategies for streamlining workflows and unifying communications across business units.</p>
             <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
               <span>Aug 28, 2026</span>
               <span class=""fw-semibold text-primary"">Read Article →</span>
@@ -1491,7 +1491,7 @@ public class TenantOnboardingService : ITenantOnboardingService
         <div class=""d-flex align-items-center gap-2 mb-3"">
           <span class=""fw-bold text-dark fs-5"">{{ BrandName }}</span>
         </div>
-        <p class=""small text-muted max-w-300"">The sovereign digital platform engineered for organizational governance, member collaboration, and integrated operations.</p>
+        <p class=""small text-muted max-w-300"">Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.</p>
         <div class=""d-flex gap-2 text-secondary"">
           <a href=""#"" class=""btn btn-sm btn-white border rounded-circle text-secondary""><i class=""fa-brands fa-linkedin-in""></i></a>
           <a href=""#"" class=""btn btn-sm btn-white border rounded-circle text-secondary""><i class=""fa-brands fa-x-twitter""></i></a>
@@ -1499,26 +1499,26 @@ public class TenantOnboardingService : ITenantOnboardingService
         </div>
       </div>
       <div class=""col-6 col-lg-2"">
-        <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Services</h6>
+        <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Solutions</h6>
         <ul class=""list-unstyled small d-flex flex-column gap-2"">
-          <li><a href=""#services"" class=""text-decoration-none text-muted"">Services &amp; Advisory</a></li>
-          <li><a href=""#about"" class=""text-decoration-none text-muted"">Governance</a></li>
-          <li><a href=""#about"" class=""text-decoration-none text-muted"">E-Voting</a></li>
-          <li><a href=""#about"" class=""text-decoration-none text-muted"">Member IDs</a></li>
+          <li><a href=""#services"" class=""text-decoration-none text-muted"">Strategic Consulting</a></li>
+          <li><a href=""#services"" class=""text-decoration-none text-muted"">Systems Modernization</a></li>
+          <li><a href=""#services"" class=""text-decoration-none text-muted"">Performance &amp; Scale</a></li>
+          <li><a href=""#services"" class=""text-decoration-none text-muted"">Enterprise Advisory</a></li>
         </ul>
       </div>
       <div class=""col-6 col-lg-2"">
-        <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Organization</h6>
+        <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Company</h6>
         <ul class=""list-unstyled small d-flex flex-column gap-2"">
           <li><a href=""#about"" class=""text-decoration-none text-muted"">About Us</a></li>
-          <li><a href=""#blog"" class=""text-decoration-none text-muted"">Leadership</a></li>
-          <li><a href=""#blog"" class=""text-decoration-none text-muted"">Security</a></li>
+          <li><a href=""#about"" class=""text-decoration-none text-muted"">Leadership &amp; Team</a></li>
+          <li><a href=""#blog"" class=""text-decoration-none text-muted"">Insights &amp; News</a></li>
           <li><a href=""#request-service"" class=""text-decoration-none text-muted"">Request a Service</a></li>
         </ul>
       </div>
       <div class=""col-lg-4"">
         <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Stay Connected</h6>
-        <p class=""small text-muted"">Subscribe to our weekly dispatch for community updates and announcements.</p>
+        <p class=""small text-muted"">Subscribe to our newsletter for executive insights, market updates, and announcements.</p>
         <div class=""input-group input-group-sm"">
           <input type=""email"" class=""form-control bg-white rounded-start-pill px-3"" placeholder=""Your email address..."" />
           <button class=""btn btn-primary rounded-end-pill px-3 fw-bold"" type=""button"">Join</button>
