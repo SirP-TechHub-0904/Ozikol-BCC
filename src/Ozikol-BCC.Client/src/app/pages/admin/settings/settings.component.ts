@@ -103,6 +103,24 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <span class="tab-sub">Standard Site vs. Online Store</span>
           </div>
         </button>
+
+        <button
+          type="button"
+          class="studio-nav-btn"
+          [class.active]="activeTab === 'storage'"
+          (click)="setTab('storage')"
+        >
+          <span class="material-symbols-outlined nav-tab-icon">cloud_sync</span>
+          <div class="nav-tab-text">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span class="tab-title">Media &amp; Cloud Storage</span>
+              <span class="tab-mode-mini-pill" [class.pill-store]="storageSettings.useCustomStorage" [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#eff6ff'" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#2563eb'">
+                {{ storageSettings.useCustomStorage ? 'Custom Cloudinary' : 'Platform Default' }}
+              </span>
+            </div>
+            <span class="tab-sub">BYOS Cloudinary Credentials</span>
+          </div>
+        </button>
       </div>
 
       <!-- =================================================================== -->
@@ -1295,6 +1313,144 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </section>
       </div>
+
+      <!-- =================================================================== -->
+      <!-- TAB 6: MEDIA & CLOUD STORAGE (BYOS CLOUDINARY)                     -->
+      <!-- =================================================================== -->
+      <div *ngIf="activeTab === 'storage'" class="tab-content-pane">
+        <section class="console-widget full-width-widget">
+          <div class="widget-head">
+            <div class="widget-title-wrap">
+              <span class="material-symbols-outlined header-widget-icon text-indigo">cloud_sync</span>
+              <div>
+                <h2 class="widget-title">Media &amp; Cloud Storage Configuration</h2>
+                <p class="widget-subtitle">
+                  By default, your uploads use our high-speed Platform Cloudinary storage. You can optionally connect your own free Cloudinary account.
+                </p>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button
+                *ngIf="storageSettings.useCustomStorage"
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                (click)="revertToPlatformStorage()"
+                [disabled]="connectingStorage"
+                title="Switch back to the Platform Default Cloudinary storage"
+              >
+                <span class="material-symbols-outlined">restart_alt</span>
+                <span>Revert to Platform Default</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="onConnectCustomStorage()"
+                [disabled]="connectingStorage"
+              >
+                <span class="material-symbols-outlined" *ngIf="!connectingStorage">verified_user</span>
+                <span>{{ connectingStorage ? 'Verifying &amp; Saving...' : 'Test &amp; Connect Storage' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="widget-body">
+            <!-- Active Status Banner -->
+            <div
+              style="padding:16px 20px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:16px;"
+              [style.background]="storageSettings.useCustomStorage ? 'rgba(34,197,94,0.08)' : 'rgba(59,130,246,0.08)'"
+              [style.border]="storageSettings.useCustomStorage ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(59,130,246,0.3)'"
+            >
+              <div style="display:flex; align-items:center; gap:14px;">
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size:28px;"
+                  [style.color]="storageSettings.useCustomStorage ? '#16a34a' : '#2563eb'"
+                >
+                  {{ storageSettings.useCustomStorage ? 'check_circle' : 'cloud_done' }}
+                </span>
+                <div>
+                  <div style="font-weight:700; font-size:14px;" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#1d4ed8'">
+                    Current Storage Mode: {{ storageSettings.useCustomStorage ? 'Custom Cloudinary Account (Connected)' : 'Platform Master Cloudinary (Default)' }}
+                  </div>
+                  <p style="margin:2px 0 0; font-size:12px; color:#64748b;">
+                    {{ storageSettings.useCustomStorage
+                        ? 'All website images, logos, and media files for your portal are stored directly inside your own Cloudinary bucket (' + storageSettings.customCloudName + ').'
+                        : 'Your portal is currently using our high-speed platform Cloudinary storage. You can start uploading right away or connect your own account below.' }}
+                  </p>
+                </div>
+              </div>
+              <span
+                style="font-size:12px; font-weight:700; padding:6px 12px; border-radius:20px; white-space:nowrap;"
+                [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#dbeafe'"
+                [style.color]="storageSettings.useCustomStorage ? '#166534' : '#1e40af'"
+              >
+                {{ storageSettings.useCustomStorage ? 'BYOS ACTIVE' : 'DEFAULT ACTIVE' }}
+              </span>
+            </div>
+
+            <!-- Explanatory Guide Box -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:24px;">
+              <h4 style="margin:0 0 8px; font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:18px; color:#f59e0b;">info</span>
+                <span>Why connect your own free Cloudinary storage?</span>
+              </h4>
+              <p style="margin:0; font-size:12px; line-height:1.6; color:#475569;">
+                Cloudinary offers a generous <strong>free plan with 25 GB of CDN storage and transformations</strong> every month. By connecting your own account, all media assets remain under your full ownership and direct control.
+                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noopener noreferrer" style="color:#2563eb; font-weight:600; text-decoration:underline; margin-left:4px;">
+                  Create a Free Cloudinary Account &rarr;
+                </a>
+              </p>
+            </div>
+
+            <!-- Credentials Form -->
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Cloudinary Cloud Name</span>
+                  <span class="field-req">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="customStorageForm.cloudName"
+                  class="form-control"
+                  placeholder="e.g. dxyz123ab"
+                />
+                <span class="field-hint">Found at the top of your Cloudinary Dashboard.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span>API Key</span>
+                  <span class="field-req">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="customStorageForm.apiKey"
+                  class="form-control"
+                  placeholder="e.g. 123456789012345"
+                />
+                <span class="field-hint" *ngIf="storageSettings.maskedApiKey">
+                  Current: {{ storageSettings.maskedApiKey }}
+                </span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span>API Secret</span>
+                <span class="field-req">*</span>
+              </label>
+              <input
+                type="password"
+                [(ngModel)]="customStorageForm.apiSecret"
+                class="form-control"
+                placeholder="Enter your Cloudinary API Secret"
+              />
+              <span class="field-hint">Encrypted securely; never exposed in client responses.</span>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   `,
   styles: [`
@@ -2333,14 +2489,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
   `]
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' = 'brand';
+  activeTab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' = 'brand';
 
   savingBrand = false;
   savingAliases = false;
   savingColors = false;
   savingIdConfig = false;
   savingStore = false;
+  connectingStorage = false;
   successMessage = '';
+
+  // Tab 6: Media & Cloud Storage (BYOS Cloudinary)
+  storageSettings: {
+    useCustomStorage: boolean;
+    customCloudName?: string;
+    maskedApiKey?: string;
+    usingPlatformDefault: boolean;
+  } = {
+    useCustomStorage: false,
+    usingPlatformDefault: true
+  };
+
+  customStorageForm = {
+    cloudName: '',
+    apiKey: '',
+    apiSecret: ''
+  };
 
   // File Upload & Drag & Drop State
   uploadingAsset: { [key: string]: boolean } = {};
@@ -2502,9 +2676,10 @@ export class SettingsComponent implements OnInit {
     this.loadMemberIdConfig();
     this.loadTemplates();
     this.loadStoreSettings();
+    this.loadStorageSettings();
   }
 
-  setTab(tab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce'): void {
+  setTab(tab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage'): void {
     this.activeTab = tab;
     this.updateHeaderButtonText();
   }
@@ -2516,6 +2691,7 @@ export class SettingsComponent implements OnInit {
     else if (this.activeTab === 'member-id') btnText = 'Save Format Rule';
     else if (this.activeTab === 'templates') btnText = 'Save Template';
     else if (this.activeTab === 'ecommerce') btnText = 'Save Store Settings';
+    else if (this.activeTab === 'storage') btnText = 'Test & Connect Storage';
 
     this.headerButtons = [
       {
@@ -2534,6 +2710,60 @@ export class SettingsComponent implements OnInit {
     else if (this.activeTab === 'member-id') this.onSaveMemberIdConfig();
     else if (this.activeTab === 'templates') this.saveCurrentTemplate();
     else if (this.activeTab === 'ecommerce') this.onSaveStoreSettings();
+    else if (this.activeTab === 'storage') this.onConnectCustomStorage();
+  }
+
+  loadStorageSettings(): void {
+    this.api.get<any>('SettingsApi/storage-settings').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.storageSettings = res.data;
+          if (res.data.customCloudName) {
+            this.customStorageForm.cloudName = res.data.customCloudName;
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  onConnectCustomStorage(): void {
+    if (!this.customStorageForm.cloudName || !this.customStorageForm.apiKey || !this.customStorageForm.apiSecret) {
+      this.toast.error('Please enter Cloud Name, API Key, and API Secret.');
+      return;
+    }
+
+    this.connectingStorage = true;
+    this.api.post<any>('SettingsApi/connect-custom-storage', this.customStorageForm).subscribe({
+      next: () => {
+        this.connectingStorage = false;
+        this.toast.success('Custom Cloudinary storage verified and connected successfully!');
+        this.loadStorageSettings();
+        this.customStorageForm.apiSecret = '';
+      },
+      error: (err) => {
+        this.connectingStorage = false;
+        const msg = err?.error?.message || 'Failed to verify Cloudinary credentials. Please verify your keys.';
+        this.toast.error(msg);
+      }
+    });
+  }
+
+  revertToPlatformStorage(): void {
+    this.connectingStorage = true;
+    this.api.post<any>('SettingsApi/disconnect-custom-storage', {}).subscribe({
+      next: () => {
+        this.connectingStorage = false;
+        this.toast.success('Reverted to Platform Default Cloudinary storage.');
+        this.loadStorageSettings();
+        this.customStorageForm.apiKey = '';
+        this.customStorageForm.apiSecret = '';
+      },
+      error: (err) => {
+        this.connectingStorage = false;
+        this.toast.error(err?.error?.message || 'Failed to revert to default storage.');
+      }
+    });
   }
 
   onAssetDragOver(event: DragEvent, assetKey: string): void {

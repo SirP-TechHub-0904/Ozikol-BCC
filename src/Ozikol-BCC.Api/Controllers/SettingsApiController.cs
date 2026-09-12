@@ -9,6 +9,7 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Domain.Models.Settings;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -30,7 +31,8 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Uploads a branding asset (Logo, Icon, Background Image) to cloud storage and returns its secure URL and key.
+        /// Uploads a branding asset (Logo, Icon, Background Image) to Cloudinary and returns its secure URL and key.
+        /// Resolves the tenant's custom Cloudinary storage if configured; otherwise utilizes the platform default Cloudinary.
         /// </summary>
         [HttpPost("upload-asset")]
         [Consumes("multipart/form-data")]
@@ -46,52 +48,137 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder);
+                // Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) credentials
+                var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+                string? customCloud = null;
+                string? customKey = null;
+                string? customSecret = null;
+
+                if (config?.UseCustomStorage == true &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                {
+                    customCloud = config.CustomCloudinaryCloudName;
+                    customKey = config.CustomCloudinaryApiKey;
+                    customSecret = config.CustomCloudinaryApiSecret;
+                }
+
+                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(
+                    file, folder, customCloud, customKey, customSecret);
+
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     url = secureUrl,
                     key = publicId,
                     fileName = file.FileName,
                     fileSize = file.Length,
-                    contentType = file.ContentType
+                    contentType = file.ContentType,
+                    storageMode = customCloud != null ? "custom_tenant" : "platform_default"
                 }, "Branding asset uploaded successfully."));
             }
             catch (Exception ex)
             {
-                // Fallback to local filesystem in wwwroot/uploads if Cloudinary service is not configured
-                try
-                {
-                    var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                    var targetDir = Path.Combine(webRoot, "uploads", folder);
-                    if (!Directory.Exists(targetDir))
-                    {
-                        Directory.CreateDirectory(targetDir);
-                    }
-
-                    var ext = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
-                    var localFileName = $"{Guid.NewGuid():N}{ext}";
-                    var localPath = Path.Combine(targetDir, localFileName);
-
-                    await using (var stream = new System.IO.FileStream(localPath, System.IO.FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    var localUrl = $"/uploads/{folder}/{localFileName}";
-                    return Ok(ApiResponse<object>.SuccessResponse(new
-                    {
-                        url = localUrl,
-                        key = localFileName,
-                        fileName = file.FileName,
-                        fileSize = file.Length,
-                        contentType = file.ContentType
-                    }, "Branding asset uploaded successfully."));
-                }
-                catch
-                {
-                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Asset upload failed: {ex.Message}"));
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse($"Cloudinary asset upload failed: {ex.Message}"));
             }
+        }
+
+        /// <summary>
+        /// Retrieves the active media storage provider configuration for this tenant.
+        /// </summary>
+        [HttpGet("storage-settings")]
+        [ProducesResponseType(typeof(ApiResponse<StorageSettingsResponseDto>), 200)]
+        public async Task<IActionResult> GetStorageSettings()
+        {
+            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            var hasCustom = config?.UseCustomStorage == true &&
+                            !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName);
+
+            string? maskedKey = null;
+            if (!string.IsNullOrWhiteSpace(config?.CustomCloudinaryApiKey))
+            {
+                var k = config.CustomCloudinaryApiKey.Trim();
+                maskedKey = k.Length > 4 ? $"{new string('*', k.Length - 4)}{k[^4..]}" : "****";
+            }
+
+            var response = new StorageSettingsResponseDto
+            {
+                UseCustomStorage = hasCustom,
+                CustomCloudName = config?.CustomCloudinaryCloudName,
+                MaskedApiKey = maskedKey,
+                UsingPlatformDefault = !hasCustom
+            };
+
+            return Ok(ApiResponse<StorageSettingsResponseDto>.SuccessResponse(response, "Storage settings retrieved."));
+        }
+
+        /// <summary>
+        /// Validates and connects the tenant's own Cloudinary account (Bring-Your-Own-Storage).
+        /// Performs an authenticated test upload to confirm credentials before persisting.
+        /// </summary>
+        [HttpPost("connect-custom-storage")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        public async Task<IActionResult> ConnectCustomStorage([FromBody] ConnectCustomStorageDto dto)
+        {
+            if (dto == null ||
+                string.IsNullOrWhiteSpace(dto.CloudName) ||
+                string.IsNullOrWhiteSpace(dto.ApiKey) ||
+                string.IsNullOrWhiteSpace(dto.ApiSecret))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Cloud Name, API Key, and API Secret are all required."));
+            }
+
+            // Verify live credentials against Cloudinary
+            var isValid = await _cloudinaryService.ValidateCredentialsAsync(
+                dto.CloudName.Trim(), dto.ApiKey.Trim(), dto.ApiSecret.Trim());
+
+            if (!isValid)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Could not verify Cloudinary credentials. Please verify your Cloud Name, API Key, and API Secret."));
+            }
+
+            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            if (config == null)
+            {
+                config = new ConfigSetting { Id = Guid.NewGuid() };
+                _db.ConfigSettings.Add(config);
+            }
+
+            config.UseCustomStorage = true;
+            config.CustomCloudinaryCloudName = dto.CloudName.Trim();
+            config.CustomCloudinaryApiKey = dto.ApiKey.Trim();
+            config.CustomCloudinaryApiSecret = dto.ApiSecret.Trim();
+
+            await _db.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                cloudName = config.CustomCloudinaryCloudName,
+                useCustomStorage = true
+            }, "Custom Cloudinary storage verified and connected successfully. All future uploads will use your account."));
+        }
+
+        /// <summary>
+        /// Disconnects custom tenant storage and reverts to using the platform default Cloudinary storage.
+        /// </summary>
+        [HttpPost("disconnect-custom-storage")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+        public async Task<IActionResult> DisconnectCustomStorage()
+        {
+            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            if (config != null)
+            {
+                config.UseCustomStorage = false;
+                await _db.SaveChangesAsync();
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                useCustomStorage = false,
+                usingPlatformDefault = true
+            }, "Reverted to Platform Default Cloudinary storage successfully."));
         }
 
         /// <summary>
@@ -333,7 +420,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves Store & Website E-Commerce mode configuration.
+        /// Retrieves Store &amp; Website E-Commerce mode configuration.
         /// </summary>
         [HttpGet("ecommerce")]
         [ProducesResponseType(typeof(ApiResponse<StoreSettingsDto>), 200)]
@@ -377,7 +464,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Updates Store & Website E-Commerce mode configuration.
+        /// Updates Store &amp; Website E-Commerce mode configuration.
         /// </summary>
         [HttpPut("ecommerce")]
         [Authorize]
@@ -594,5 +681,55 @@ namespace Ozikol_BCC.Api.Controllers
         public string SupportEmail { get; set; } = "";
         public string SupportPhone { get; set; } = "";
         public string PickupAddress { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Payload to verify and save custom tenant Cloudinary credentials.
+    /// </summary>
+    public class ConnectCustomStorageDto
+    {
+        /// <summary>
+        /// The tenant's custom Cloudinary Cloud Name.
+        /// </summary>
+        [Required]
+        public string CloudName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The tenant's custom Cloudinary API Key.
+        /// </summary>
+        [Required]
+        public string ApiKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The tenant's custom Cloudinary API Secret.
+        /// </summary>
+        [Required]
+        public string ApiSecret { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Response model describing the active storage configuration for the tenant.
+    /// </summary>
+    public class StorageSettingsResponseDto
+    {
+        /// <summary>
+        /// Whether the tenant has custom storage enabled.
+        /// </summary>
+        public bool UseCustomStorage { get; set; }
+
+        /// <summary>
+        /// The active custom Cloud Name, if configured.
+        /// </summary>
+        public string? CustomCloudName { get; set; }
+
+        /// <summary>
+        /// Masked API Key for security (e.g. *******1234).
+        /// </summary>
+        public string? MaskedApiKey { get; set; }
+
+        /// <summary>
+        /// Indicates if the tenant is currently using the platform master Cloudinary default.
+        /// </summary>
+        public bool UsingPlatformDefault { get; set; } = true;
     }
 }
