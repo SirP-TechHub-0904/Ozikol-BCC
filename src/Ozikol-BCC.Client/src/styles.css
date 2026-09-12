@@ -69,7 +69,7 @@ body.dark-mode {
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
   display: flex;
@@ -99,6 +99,7 @@ app-root {
   height: 100vh;
   background-color: var(--sidebar-bg);
   color: var(--sidebar-color);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
   display: flex;
   flex-direction: column;
   transition: margin-left 0.3s ease, transform 0.3s ease;
@@ -395,10 +396,12 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
 
 .brand-logo-text {
   display: block;
-  font-size: 17px;
-  font-weight: 800;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
   color: var(--sidebar-header-color, #0f172a);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.02em !important;
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
@@ -417,6 +420,7 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   overflow-y: auto;
   scrollbar-width: thin;
   min-height: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 .sidebar-footer {
@@ -424,6 +428,7 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   border-top: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
   padding: 12px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 .sidebar-footer-brand {
@@ -444,16 +449,18 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
 
 .sidebar-footer-title {
   color: var(--md-sys-color-on-surface);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 16px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 16px !important;
 }
 
 .sidebar-footer-meta {
   color: var(--sidebar-header-color);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 14px !important;
 }
 
 .sidebar-footer-actions {
@@ -472,8 +479,9 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
   text-decoration: none;
   transition: 0.15s ease;
 }
@@ -488,14 +496,16 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   font-size: 18px;
 }
 
-/* Category Headers (MENU, PAGES, COMPONENTS) */
+/* Category Headers (COMMAND CENTER, CONTENT CMS STUDIO, USER MANAGEMENT) */
 .menu-title {
   padding: 12px 10px 4px 10px;
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--sidebar-header-color);
-  letter-spacing: 0.08em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: var(--sidebar-header-color) !important;
+  letter-spacing: 0.08em !important;
+  line-height: 14px !important;
   white-space: nowrap;
 }
 
@@ -516,8 +526,10 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   border-radius: 6px;
   text-decoration: none;
   color: var(--sidebar-color);
-  font-size: 12px;
-  font-weight: 500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
@@ -536,6 +548,8 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 12px !important;
 }
 
 .nav-link .material-symbols-outlined {
@@ -557,11 +571,19 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
 .nav-link.active {
   background-color: var(--sidebar-active-bg);
   color: var(--sidebar-active-color);
-  font-weight: 600;
+  font-weight: 600 !important;
+  font-size: 12px !important;
 }
 
 .nav-link.active .material-symbols-outlined {
   color: var(--sidebar-active-color);
+}
+
+.badge-pill {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
 }
 
 /* Chevron & Pin Icons */

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -1633,7 +1633,7 @@ export interface MarketComponentItem {
     }
   `]
 })
-export class MarketplaceComponent implements OnInit {
+export class MarketplaceComponent implements OnInit, OnDestroy {
   // Category Definitions
   categories: MarketCategory[] = [
     { id: 'menu', name: 'Navigation & Menu', icon: 'menu', description: 'Header navigation bars, responsive mobile drawers, and megamenus' },
@@ -3320,9 +3320,16 @@ export class MarketplaceComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const el = document.getElementById('oz-marketplace-preview-style');
+    if (el) el.remove();
     this.totalComponentsCount = this.allComponents.length;
     this.loadInstalledTemplateKeys();
     this.applyFilters();
+  }
+
+  ngOnDestroy(): void {
+    const el = document.getElementById('oz-marketplace-preview-style');
+    if (el) el.remove();
   }
 
   loadInstalledTemplateKeys(): void {
@@ -3773,7 +3780,7 @@ export class MarketplaceComponent implements OnInit {
     this.installStatusMsg = '';
     this.safePreviewHtml = '';
     const styleEl = document.getElementById('oz-marketplace-preview-style');
-    if (styleEl) styleEl.textContent = '';
+    if (styleEl) styleEl.remove();
   }
 
   openInsertModal(item: MarketComponentItem): void {

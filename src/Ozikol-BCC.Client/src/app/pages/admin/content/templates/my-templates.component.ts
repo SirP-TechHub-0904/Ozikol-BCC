@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -776,7 +776,9 @@ export interface CodeInjectionTag {
 
         <!-- Mode 1: Rendered Visual Canvas -->
         <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
-          <div class="preview-canvas-wrapper" (click)="onPreviewCanvasClick($event)" [innerHTML]="safeSinglePreviewHtml"></div>
+          <div class="preview-canvas-wrapper">
+            <iframe class="full-demo-iframe" [srcdoc]="safeSinglePreviewSrcDoc" title="Single Template Visual Preview"></iframe>
+          </div>
         </div>
 
         <!-- Mode: Interactive Sample Content Editor -->
@@ -1027,7 +1029,9 @@ export interface CodeInjectionTag {
 
         <!-- Rendered Full Page Canvas -->
         <div class="full-demo-body" [class.viewport-mobile]="fullDemoViewport === 'mobile'" [class.viewport-tablet]="fullDemoViewport === 'tablet'">
-          <div class="full-demo-canvas-wrapper" (click)="onPreviewCanvasClick($event)" [innerHTML]="safeFullDemoHtml"></div>
+          <div class="full-demo-canvas-wrapper">
+            <iframe class="full-demo-iframe" [srcdoc]="safeFullDemoSrcDoc" title="Full-Site Demo Canvas"></iframe>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -2487,6 +2491,14 @@ export interface CodeInjectionTag {
       border-radius: 20px;
       border: 6px solid #334155;
     }
+    .full-demo-iframe {
+      width: 100%;
+      height: 75vh;
+      min-height: 550px;
+      border: none;
+      background: #ffffff;
+      display: block;
+    }
 
     /* Modal Code Inspection Tabs & Panes */
     .modal-view-mode-tabs {
@@ -3510,7 +3522,7 @@ export interface CodeInjectionTag {
     }
   `]
 })
-export class MyTemplatesComponent implements OnInit {
+export class MyTemplatesComponent implements OnInit, OnDestroy {
   installedTemplates: InstalledTemplateItem[] = [];
   filteredTemplates: InstalledTemplateItem[] = [];
   searchQuery: string = '';
@@ -3751,6 +3763,7 @@ export class MyTemplatesComponent implements OnInit {
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   previewModalTab: 'preview' | 'content' | 'html' | 'css' | 'js' = 'preview';
   safeSinglePreviewHtml: SafeHtml = '';
+  safeSinglePreviewSrcDoc: SafeHtml | string = '';
 
   // Interactive Test / Sample Content Replacements
   previewContent = {
@@ -3771,6 +3784,7 @@ export class MyTemplatesComponent implements OnInit {
   showFullSiteDemoModal: boolean = false;
   fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeFullDemoHtml: SafeHtml = '';
+  safeFullDemoSrcDoc: SafeHtml | string = '';
 
   // Assign to Page Modal
   showAssignModal: boolean = false;
@@ -3807,11 +3821,55 @@ export class MyTemplatesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cleanupLeakedStyles();
     const savedView = localStorage.getItem('oz_templates_view_mode') as 'grid' | 'table';
     if (savedView) this.viewMode = savedView;
     this.loadInstalledTemplates();
     this.loadAllCodeInjections();
     this.loadAvailablePages();
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupLeakedStyles();
+  }
+
+  private cleanupLeakedStyles(): void {
+    const s1 = document.getElementById('oz-template-single-preview-css');
+    if (s1) s1.remove();
+    const s2 = document.getElementById('oz-full-demo-preview-css');
+    if (s2) s2.remove();
+    const s3 = document.getElementById('oz-marketplace-preview-style');
+    if (s3) s3.remove();
+  }
+
+  @HostListener('window:message', ['$event'])
+  onIframeMessage(event: MessageEvent): void {
+    if (!event.data || typeof event.data !== 'object') return;
+    if (event.data.type === 'DEMO_NAV') {
+      const href = (event.data.href || '').toLowerCase();
+      const text = (event.data.text || '').toLowerCase();
+
+      if (href.includes('shop') || text.includes('shop') || text.includes('store') || text.includes('merchandise')) {
+        this.setPreviewPage('shop');
+        this.toast.info('Navigated to Storefront in live preview.');
+      } else if (href.includes('about') || text.includes('about') || text.includes('leadership')) {
+        this.setPreviewPage('about');
+        this.toast.info('Navigated to About Us in live preview.');
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+        this.setPreviewPage('blog');
+        this.toast.info('Navigated to Newsroom in live preview.');
+      } else if (href.includes('contact') || text.includes('contact') || text.includes('support')) {
+        this.setPreviewPage('contact');
+        this.toast.info('Navigated to Contact Us in live preview.');
+      } else if (href.includes('home') || text.includes('home')) {
+        this.setPreviewPage('home');
+        this.toast.info('Navigated to Home in live preview.');
+      }
+    } else if (event.data.type === 'DEMO_CART') {
+      this.previewCartCount++;
+      this.toast.success(`Item added to cart! (${this.previewCartCount} items in cart)`);
+      this.renderFullSitePreview();
+    }
   }
 
   loadAvailablePages(): void {
@@ -4613,15 +4671,6 @@ export class MyTemplatesComponent implements OnInit {
     }
 
     this.updateSinglePreviewHtml();
-
-    let styleEl = document.getElementById('oz-template-single-preview-css') as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'oz-template-single-preview-css';
-      document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = item.cssStyles;
-
     this.showSinglePreviewModal = true;
   }
 
@@ -4630,6 +4679,30 @@ export class MyTemplatesComponent implements OnInit {
     const hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, this.previewContent);
     const combined = `<style>${this.activePreviewItem.cssStyles}</style>\n${hydrated}`;
     this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
+
+    const singleIframeDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    ${this.activePreviewItem.cssStyles || ''}
+  </style>
+</head>
+<body>
+  ${hydrated}
+</body>
+</html>`;
+    this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
   }
 
   onPreviewContentChange(): void {
@@ -4744,8 +4817,9 @@ export class MyTemplatesComponent implements OnInit {
     this.showSinglePreviewModal = false;
     this.activePreviewItem = null;
     this.safeSinglePreviewHtml = '';
+    this.safeSinglePreviewSrcDoc = '';
     const styleEl = document.getElementById('oz-template-single-preview-css');
-    if (styleEl) styleEl.textContent = '';
+    if (styleEl) styleEl.remove();
   }
 
   // Full-Site Demo Modal & Multi-Page Engine
@@ -4899,13 +4973,48 @@ export class MyTemplatesComponent implements OnInit {
 
     this.safeFullDemoHtml = this.sanitizer.bypassSecurityTrustHtml(`<style>${combinedStyles}</style>\n${combinedHtml}`);
 
-    let styleEl = document.getElementById('oz-full-demo-preview-css') as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'oz-full-demo-preview-css';
-      document.head.appendChild(styleEl);
+    const iframeHtmlDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-    styleEl.textContent = combinedStyles;
+    ${combinedStyles}
+  </style>
+  <script>
+    document.addEventListener('click', function(e) {
+      var a = e.target.closest('a');
+      if (a) {
+        e.preventDefault();
+        window.parent.postMessage({ type: 'DEMO_NAV', href: a.getAttribute('href') || '', text: a.textContent || '' }, '*');
+        return;
+      }
+      var btn = e.target.closest('button, .btn');
+      if (btn) {
+        var txt = (btn.textContent || '').toLowerCase();
+        if (txt.includes('cart') || txt.includes('add')) {
+          e.preventDefault();
+          window.parent.postMessage({ type: 'DEMO_CART' }, '*');
+        }
+      }
+    });
+  <\/script>
+</head>
+<body>
+  ${combinedHtml}
+</body>
+</html>`;
+
+    this.safeFullDemoSrcDoc = this.sanitizer.bypassSecurityTrustHtml(iframeHtmlDoc);
   }
 
   getFullDemoBlockCount(): number {
@@ -4962,8 +5071,9 @@ export class MyTemplatesComponent implements OnInit {
   closeFullSiteDemoModal(): void {
     this.showFullSiteDemoModal = false;
     this.safeFullDemoHtml = '';
+    this.safeFullDemoSrcDoc = '';
     const styleEl = document.getElementById('oz-full-demo-preview-css');
-    if (styleEl) styleEl.textContent = '';
+    if (styleEl) styleEl.remove();
   }
 
   // Assign to Page Modal
