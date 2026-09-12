@@ -4727,6 +4727,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }
       return ctx.items.map((item: any, idx: number) => {
         let renderedItem = innerTemplate;
+        const icon = (item.iconText && item.iconText.trim().length > 0)
+          ? item.iconText.trim()
+          : ((item.icon && item.icon.trim().length > 0) ? item.icon.trim() : 'fa-solid fa-cube');
+
+        renderedItem = renderedItem.replace(/\{\{\s*IconText\s*\}\}/gi, icon);
+        renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
         renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || ctx.miniTitle || '');
         renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
@@ -4744,6 +4750,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+    output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || 'fa-solid fa-cube');
+    output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || 'fa-solid fa-cube');
+
+    // 2b. Universal safety fallback for empty icon tags
+    output = output.replace(/class=["']\s*fa-solid\s*["']/gi, 'class="fa-solid fa-cube"');
+    output = output.replace(/<i\s+class=["']\s*["']\s*><\/i>/gi, '<i class="fa-solid fa-cube"></i>');
 
     // 3. Global Brand & Year placeholders (universal case-insensitive resolution)
     const brandName = ctx.BrandName || this.currentTenantBrandName || 'Organization Portal';

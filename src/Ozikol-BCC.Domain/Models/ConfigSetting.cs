@@ -559,6 +559,26 @@ namespace Ozikol_BCC.Domain.Models
         /// Sets the ticker to the top or bottom of the screen.
         /// </summary>
         public RibonPosition RibonPosition { get; set; }
+
+        /// <summary>
+        /// Indicates whether this tenant uses their own custom Cloudinary account instead of the platform default.
+        /// </summary>
+        public bool UseCustomStorage { get; set; } = false;
+
+        /// <summary>
+        /// Custom Cloudinary Cloud Name for this tenant's Bring-Your-Own-Storage (BYOS).
+        /// </summary>
+        public string? CustomCloudinaryCloudName { get; set; }
+
+        /// <summary>
+        /// Custom Cloudinary API Key for this tenant's Bring-Your-Own-Storage (BYOS).
+        /// </summary>
+        public string? CustomCloudinaryApiKey { get; set; }
+
+        /// <summary>
+        /// Custom Cloudinary API Secret for this tenant's Bring-Your-Own-Storage (BYOS).
+        /// </summary>
+        public string? CustomCloudinaryApiSecret { get; set; }
     }
 }
 

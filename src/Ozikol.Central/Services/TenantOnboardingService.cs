@@ -702,6 +702,66 @@ public class TenantOnboardingService : ITenantOnboardingService
             new()
             {
                 Id = Guid.NewGuid(),
+                Name = "Primary SEO & Crawler Directives",
+                Zone = "head",
+                TagType = "meta_tag",
+                Content = "<meta name=\"description\" content=\"{{ MetaDescription }}\" />\n<meta name=\"keywords\" content=\"{{ Keywords }}\" />\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"{{ CanonicalUrl }}\" />",
+                SortOrder = 40,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "OpenGraph Social Protocol",
+                Zone = "head",
+                TagType = "meta_tag",
+                Content = "<meta property=\"og:type\" content=\"website\" />\n<meta property=\"og:site_name\" content=\"{{ BrandName }}\" />\n<meta property=\"og:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta property=\"og:description\" content=\"{{ MetaDescription }}\" />\n<meta property=\"og:url\" content=\"{{ CanonicalUrl }}\" />\n<meta property=\"og:image\" content=\"{{ LogoUrl }}\" />",
+                SortOrder = 50,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Twitter & X Card Directives",
+                Zone = "head",
+                TagType = "meta_tag",
+                Content = "<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta name=\"twitter:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta name=\"twitter:description\" content=\"{{ MetaDescription }}\" />\n<meta name=\"twitter:image\" content=\"{{ LogoUrl }}\" />\n<meta name=\"twitter:site\" content=\"@{{ BrandName }}\" />",
+                SortOrder = 60,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mobile Web App & Theme Color",
+                Zone = "head",
+                TagType = "meta_tag",
+                Content = "<meta name=\"theme-color\" content=\"#0050e5\" />\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\" />\n<meta name=\"apple-mobile-web-app-title\" content=\"{{ BrandName }}\" />",
+                SortOrder = 70,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Schema.org JSON-LD Structured Data",
+                Zone = "head",
+                TagType = "raw_html",
+                Content = "<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"name\": \"{{ BrandName }}\",\n  \"url\": \"{{ CanonicalUrl }}\",\n  \"logo\": \"{{ LogoUrl }}\",\n  \"description\": \"{{ MetaDescription }}\"\n}\n</script>",
+                SortOrder = 80,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Favicon & Web App Icons",
+                Zone = "head",
+                TagType = "raw_html",
+                Content = "<link rel=\"icon\" type=\"image/x-icon\" href=\"{{ FaviconUrl }}\" />\n<link rel=\"apple-touch-icon\" href=\"{{ LogoUrl }}\" />",
+                SortOrder = 90,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
                 Name = "Bootstrap 5.3 Bundle JS",
                 Zone = "footer",
                 TagType = "script_url",
@@ -1741,10 +1801,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "99.9%", MiniTitle = "Uptime SLA", Description = "High-availability enterprise systems", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "24/7", MiniTitle = "Continuous Support", Description = "Dedicated response team", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Data Privacy", Description = "Encrypted communications & audit logs", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Multi-Region", MiniTitle = "Global Sync", Description = "Real-time synchronization across channels", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "99.9%", MiniTitle = "Uptime SLA", Description = "High-availability enterprise systems", IconText = "fa-solid fa-server", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "24/7", MiniTitle = "Continuous Support", Description = "Dedicated response team", IconText = "fa-solid fa-headset", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Data Privacy", Description = "Encrypted communications & audit logs", IconText = "fa-solid fa-lock", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Multi-Region", MiniTitle = "Global Sync", Description = "Real-time synchronization across channels", IconText = "fa-solid fa-globe", SortOrder = 4 }
             }
         };
         sections.Add(homeStats);
@@ -1763,10 +1823,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 4,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "1. Consultation", MiniTitle = "Step 01", Description = "Understanding objectives, operational parameters, and key requirements.", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "2. Architecture", MiniTitle = "Step 02", Description = "Formulating tailored solutions and disciplined milestone roadmaps.", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "3. Deployment", MiniTitle = "Step 03", Description = "Delivering execution with rigorous quality assurance and oversight.", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "4. Operations", MiniTitle = "Step 04", Description = "Providing continuous maintenance, monitoring, and ongoing optimization.", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "1. Consultation", MiniTitle = "Step 01", Description = "Understanding objectives, operational parameters, and key requirements.", IconText = "fa-solid fa-comments", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "2. Architecture", MiniTitle = "Step 02", Description = "Formulating tailored solutions and disciplined milestone roadmaps.", IconText = "fa-solid fa-drafting-compass", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "3. Deployment", MiniTitle = "Step 03", Description = "Delivering execution with rigorous quality assurance and oversight.", IconText = "fa-solid fa-rocket", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "4. Operations", MiniTitle = "Step 04", Description = "Providing continuous maintenance, monitoring, and ongoing optimization.", IconText = "fa-solid fa-chart-pie", SortOrder = 4 }
             }
         };
         sections.Add(homeProcess);
@@ -1840,10 +1900,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "Phase 1: Needs Assessment", MiniTitle = "Step 01", Description = "In-depth review of specific goals, resource requirements, and deliverables.", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 2: Solution Design", MiniTitle = "Step 02", Description = "Detailed scoping, milestone scheduling, and architecture blueprints.", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 3: Agile Execution", MiniTitle = "Step 03", Description = "Iterative delivery with clear stakeholder check-ins and quality tests.", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 4: Ongoing Review", MiniTitle = "Step 04", Description = "Continuous performance monitoring and proactive client advisory.", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "Phase 1: Needs Assessment", MiniTitle = "Step 01", Description = "In-depth review of specific goals, resource requirements, and deliverables.", IconText = "fa-solid fa-clipboard-check", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 2: Solution Design", MiniTitle = "Step 02", Description = "Detailed scoping, milestone scheduling, and architecture blueprints.", IconText = "fa-solid fa-pen-ruler", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 3: Agile Execution", MiniTitle = "Step 03", Description = "Iterative delivery with clear stakeholder check-ins and quality tests.", IconText = "fa-solid fa-cogs", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 4: Ongoing Review", MiniTitle = "Step 04", Description = "Continuous performance monitoring and proactive client advisory.", IconText = "fa-solid fa-sync", SortOrder = 4 }
             }
         };
         sections.Add(servicesProcess);
@@ -1914,10 +1974,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Commitment", Description = "Dedicated to partner objectives", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Zero", MiniTitle = "Compromise", Description = "Strict quality standards", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Trusted", MiniTitle = "Reputation", Description = "Proven track record of delivery", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Continuous", MiniTitle = "Innovation", Description = "Evolving with modern standards", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Commitment", Description = "Dedicated to partner objectives", IconText = "fa-solid fa-bullseye", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Zero", MiniTitle = "Compromise", Description = "Strict quality standards", IconText = "fa-solid fa-award", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Trusted", MiniTitle = "Reputation", Description = "Proven track record of delivery", IconText = "fa-solid fa-handshake", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Continuous", MiniTitle = "Innovation", Description = "Evolving with modern standards", IconText = "fa-solid fa-lightbulb", SortOrder = 4 }
             }
         };
         sections.Add(aboutStats);
