@@ -1667,24 +1667,29 @@ export interface CodeInjectionTag {
       color: #94a3b8;
       font-size: 18px;
       pointer-events: none;
+      z-index: 2;
     }
-    .templates-search {
+    .templates-search,
+    input.templates-search.form-control {
       width: 100%;
-      height: 40px;
-      padding-left: 40px;
-      padding-right: 36px;
+      height: 42px;
+      padding-left: 44px !important;
+      padding-right: 40px !important;
+      padding-top: 8px;
+      padding-bottom: 8px;
       border: 1.5px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 13px;
-      background: #f8fafc;
+      border-radius: 9px;
+      font-size: 13.5px;
+      background: #ffffff;
       color: #0f172a;
       box-sizing: border-box;
     }
-    .templates-search:focus {
+    .templates-search:focus,
+    input.templates-search.form-control:focus {
       outline: none;
-      border-color: #0050e5;
+      border-color: #2563eb;
       background: #ffffff;
-      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
     .btn-clear-search {
       position: absolute;
