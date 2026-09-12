@@ -969,53 +969,39 @@ export interface CodeInjectionTag {
             </div>
           </div>
 
-          <!-- Page Switcher Tabs -->
-          <div class="demo-page-nav-bar">
-            <div class="demo-page-tabs">
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'home'" (click)="setPreviewPage('home')">Home</button>
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'about'" (click)="setPreviewPage('about')">About Us</button>
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'services'" (click)="setPreviewPage('services')">Services</button>
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'request-service'" (click)="setPreviewPage('request-service')">Request a Service</button>
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'blog'" (click)="setPreviewPage('blog')">News</button>
-              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'contact'" (click)="setPreviewPage('contact')">Contact</button>
+          <div class="full-demo-header-actions" style="display: flex; align-items: center; gap: 14px;">
+            <div class="viewport-toggle-group">
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="fullDemoViewport === 'desktop'"
+                (click)="fullDemoViewport = 'desktop'"
+              >
+                <span class="material-symbols-outlined">desktop_windows</span>
+                <span>Desktop</span>
+              </button>
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="fullDemoViewport === 'tablet'"
+                (click)="fullDemoViewport = 'tablet'"
+              >
+                <span class="material-symbols-outlined">tablet_mac</span>
+                <span>Tablet (768px)</span>
+              </button>
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="fullDemoViewport === 'mobile'"
+                (click)="fullDemoViewport = 'mobile'"
+              >
+                <span class="material-symbols-outlined">smartphone</span>
+                <span>Mobile (375px)</span>
+              </button>
             </div>
-            <div class="preview-url-badge">
-              <i class="fa-solid fa-lock text-success me-1"></i>
-              <span class="preview-url-text">https://{{ currentTenantSubdomain }}.ozikol.com/{{ previewActivePageSlug === 'home' ? '' : previewActivePageSlug }}</span>
-            </div>
-          </div>
 
-          <div class="viewport-toggle-group">
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="fullDemoViewport === 'desktop'"
-              (click)="fullDemoViewport = 'desktop'"
-            >
-              <span class="material-symbols-outlined">desktop_windows</span>
-              <span>Desktop</span>
-            </button>
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="fullDemoViewport === 'tablet'"
-              (click)="fullDemoViewport = 'tablet'"
-            >
-              <span class="material-symbols-outlined">tablet_mac</span>
-              <span>Tablet (768px)</span>
-            </button>
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="fullDemoViewport === 'mobile'"
-              (click)="fullDemoViewport = 'mobile'"
-            >
-              <span class="material-symbols-outlined">smartphone</span>
-              <span>Mobile (375px)</span>
-            </button>
+            <button type="button" class="btn-close-modal" (click)="closeFullSiteDemoModal()" title="Close Live Demo">✕</button>
           </div>
-
-          <button type="button" class="btn-close-modal" (click)="closeFullSiteDemoModal()">✕</button>
         </div>
 
         <!-- Rendered Full Page Canvas -->
@@ -2348,59 +2334,6 @@ export interface CodeInjectionTag {
     }
     .preview-modal-name, .full-demo-title, .assign-title { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
     .preview-modal-sub, .full-demo-subtitle, .assign-sub { font-size: 11.5px; color: #64748b; font-weight: 600; }
-
-    .demo-page-nav-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      background: #f8fafc;
-      padding: 6px 12px;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      width: 100%;
-      margin-top: 10px;
-    }
-    .demo-page-tabs {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-    .demo-page-tab {
-      background: none;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #64748b;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      transition: all 0.15s ease;
-    }
-    .demo-page-tab:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
-    .demo-page-tab.active {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-    }
-    .preview-url-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: #ffffff;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-      font-size: 11.5px;
-      font-family: monospace;
-      color: #334155;
-    }
 
     .viewport-toggle-group {
       display: flex;
@@ -4970,6 +4903,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       .full-demo-canvas-wrapper button {
         cursor: pointer;
       }
+      /* Active Navigation Link Highlighting */
+      .oz-nav-header .nav-link.active {
+        color: #0050e5 !important;
+        font-weight: 700 !important;
+      }
+      .oz-nav-header .nav-link:not(.active) {
+        color: #64748b !important;
+        font-weight: 500 !important;
+      }
+      .oz-nav-header .btn.active {
+        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.4) !important;
+        transform: translateY(-1px);
+      }
     `;
 
     let combinedHtml = '';
@@ -4996,6 +4942,37 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           /badge rounded-pill bg-primary">0<\/span>/g,
           `badge rounded-pill bg-primary">${this.previewCartCount}</span>`
         );
+
+        // Dynamically synchronize active navbar link highlighting with the current page slug
+        const activeSlug = this.previewActivePageSlug; // 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact'
+
+        // 1. Strip hardcoded active / text-dark classes from all nav-links
+        hydratedBlockHtml = hydratedBlockHtml
+          .replace(/\bnav-link\b([^"]*?)\bactive\b/g, 'nav-link$1')
+          .replace(/\bnav-link\b([^"]*?)\btext-dark\b/g, 'nav-link$1text-secondary');
+
+        // 2. Set active class on current matching page
+        if (activeSlug === 'request-service') {
+          hydratedBlockHtml = hydratedBlockHtml.replace(
+            /(href=["']#request-service["'][^>]*class=["'][^"']*btn\b[^"']*)(["'])/i,
+            '$1 active$2'
+          );
+        } else {
+          // Check for link matching target slug
+          const slugRegex = new RegExp(`(<a\\s+[^>]*class=["'][^"']*nav-link)([^"']*)(["'][^>]*href=["'](?:#|\\/)?${activeSlug}["'])`, 'i');
+          if (slugRegex.test(hydratedBlockHtml)) {
+            hydratedBlockHtml = hydratedBlockHtml.replace(slugRegex, (match, p1, p2, p3) => {
+              const clean = p2.replace(/\btext-secondary\b/g, '').replace(/\s+/g, ' ');
+              return `${p1}${clean} text-dark active"${p3.substring(1)}`;
+            });
+          } else {
+            const revRegex = new RegExp(`(<a\\s+[^>]*href=["'](?:#|\\/)?${activeSlug}["'][^>]*class=["'][^"']*nav-link[^"']*)(["'])`, 'i');
+            hydratedBlockHtml = hydratedBlockHtml.replace(revRegex, (match, prefix, quote) => {
+              const clean = prefix.replace(/\btext-secondary\b/g, '').replace(/\s+/g, ' ');
+              return `${clean} text-dark active${quote}`;
+            });
+          }
+        }
       }
 
       combinedHtml += `\n<!-- Section: ${b.name} (${b.category}) -->\n${hydratedBlockHtml}\n`;
