@@ -58,7 +58,39 @@ namespace Ozikol_BCC.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Cloudinary upload failed: {ex.Message}"));
+                // Fallback to local filesystem in wwwroot/uploads if Cloudinary service is not configured
+                try
+                {
+                    var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    var targetDir = Path.Combine(webRoot, "uploads", folder);
+                    if (!Directory.Exists(targetDir))
+                    {
+                        Directory.CreateDirectory(targetDir);
+                    }
+
+                    var ext = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
+                    var localFileName = $"{Guid.NewGuid():N}{ext}";
+                    var localPath = Path.Combine(targetDir, localFileName);
+
+                    await using (var stream = new System.IO.FileStream(localPath, System.IO.FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    var localUrl = $"/uploads/{folder}/{localFileName}";
+                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    {
+                        url = localUrl,
+                        key = localFileName,
+                        fileName = file.FileName,
+                        fileSize = file.Length,
+                        contentType = file.ContentType
+                    }, "Branding asset uploaded successfully."));
+                }
+                catch
+                {
+                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Asset upload failed: {ex.Message}"));
+                }
             }
         }
 
@@ -109,7 +141,6 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// <summary>
         /// Retrieves brand identity settings (Logo, Favicon, Title, Colors, Login copy).
         /// </summary>
         [HttpGet("brand")]
@@ -117,11 +148,15 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> GetBrandSettings()
         {
             var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            var companyName = config?.CompanyName ?? "Workspace";
+            var abbreviation = !string.IsNullOrWhiteSpace(config?.CompanyNameAbbreviation)
+                ? config.CompanyNameAbbreviation
+                : ComputeAbbreviation(companyName);
 
             var data = new BrandSettingsResponseDto
             {
-                CompanyName = config?.CompanyName ?? "Workspace",
-                CompanyNameAbbreviation = config?.CompanyNameAbbreviation ?? "CC",
+                CompanyName = companyName,
+                CompanyNameAbbreviation = abbreviation,
                 CompanyDescription = config?.CompanyDescription ?? "",
                 CompanyWebsiteLink = config?.CompanyWebsiteLink ?? "",
                 WebsiteTitle = config?.WebsiteTitle ?? "",
@@ -168,7 +203,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Sync with ConfigSetting table
             config.CompanyName = dto.CompanyName;
-            config.CompanyNameAbbreviation = dto.CompanyNameAbbreviation;
+            config.CompanyNameAbbreviation = !string.IsNullOrWhiteSpace(dto.CompanyNameAbbreviation)
+                ? dto.CompanyNameAbbreviation.Trim()
+                : ComputeAbbreviation(dto.CompanyName);
             config.CompanyDescription = dto.CompanyDescription;
             config.CompanyWebsiteLink = dto.CompanyWebsiteLink;
             config.WebsiteTitle = dto.WebsiteTitle;
@@ -447,12 +484,29 @@ namespace Ozikol_BCC.Api.Controllers
             var data = new { os = Environment.OSVersion.ToString(), runtime = Environment.Version.ToString(), uptime = "99.9%" };
             return Ok(ApiResponse<object>.SuccessResponse(data, "System health retrieved."));
         }
+
+        /// <summary>
+        /// Computes organization abbreviation from company name.
+        /// If multi-word, takes initial letter of each word (e.g. "Rozzy kik" -> "RK").
+        /// If single-word, takes first 3 characters uppercase (e.g. "Rozzy" -> "ROZ").
+        /// </summary>
+        private static string ComputeAbbreviation(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "ORG";
+            var words = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (words.Length == 1)
+            {
+                var single = words[0].Trim();
+                return single.Length >= 3 ? single[..3].ToUpperInvariant() : single.ToUpperInvariant();
+            }
+            return string.Concat(words.Take(4).Select(w => char.ToUpperInvariant(w[0])));
+        }
     }
 
     public class BrandSettingsResponseDto
     {
         public string CompanyName { get; set; } = "Workspace";
-        public string CompanyNameAbbreviation { get; set; } = "CC";
+        public string CompanyNameAbbreviation { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
         public string CompanyWebsiteLink { get; set; } = string.Empty;
         public string WebsiteTitle { get; set; } = string.Empty;
@@ -480,7 +534,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class BrandSettingsUpdateRequestDto
     {
         public string CompanyName { get; set; } = "Workspace";
-        public string CompanyNameAbbreviation { get; set; } = "CC";
+        public string CompanyNameAbbreviation { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
         public string CompanyWebsiteLink { get; set; } = string.Empty;
         public string WebsiteTitle { get; set; } = string.Empty;
