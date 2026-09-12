@@ -1669,7 +1669,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
       previewIcon: 'menu',
       previewSubtitle: 'Header Navigation',
-      previewTitle: 'Acme Enterprise Solutions',
+      previewTitle: 'Apex Corporate Navbar',
       previewBody: 'Features • Solutions • Pricing • Company • Contact',
       htmlTemplate: `
         <nav class="oz-nav-classic">
