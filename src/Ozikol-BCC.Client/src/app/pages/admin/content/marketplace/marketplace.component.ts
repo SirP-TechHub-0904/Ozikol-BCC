@@ -18,6 +18,8 @@ export interface MarketComponentItem {
   name: string;
   category: string;
   variantCode: string;
+  groupCode?: string;
+  groupName?: string;
   badge?: string;
   tag: string;
   description: string;
@@ -182,7 +184,10 @@ export interface MarketComponentItem {
                 <span class="card-category-badge">{{ getCategoryName(item.category) }}</span>
                 <span class="card-code-tag">{{ item.variantCode }}</span>
               </div>
-              <h4 class="card-name" (click)="openPreviewModal(item)">{{ item.name }}</h4>
+              <h4 class="card-name" (click)="openPreviewModal(item)">
+                {{ item.name }}
+                <span class="theme-suite-badge" *ngIf="item.groupName">[{{ item.groupName }}]</span>
+              </h4>
               <p class="card-desc">{{ item.description }}</p>
 
               <div class="card-footer-actions">
@@ -307,7 +312,7 @@ export interface MarketComponentItem {
             <!-- TAB 2: HTML Template Code View -->
             <div class="code-view-container" *ngIf="previewTab === 'html'">
               <div class="code-view-header">
-                <span>📄 Pure Semantic HTML Template (with Dynamic Placeholders)</span>
+                <span><i class="fa-solid fa-code me-2"></i> Semantic HTML5 Template (with Dynamic Placeholders)</span>
                 <span class="code-badge">HTML5</span>
               </div>
               <pre class="code-block"><code>{{ activePreviewComponent.htmlTemplate }}</code></pre>
@@ -316,7 +321,7 @@ export interface MarketComponentItem {
             <!-- TAB 3: Scoped CSS Styles Code View -->
             <div class="code-view-container" *ngIf="previewTab === 'css'">
               <div class="code-view-header">
-                <span>🎨 Scoped CSS Properties (Zero Global Style Collisions)</span>
+                <span><i class="fa-solid fa-palette me-2"></i> Scoped CSS Properties (Zero Global Collisions)</span>
                 <span class="code-badge">CSS3</span>
               </div>
               <pre class="code-block"><code>{{ activePreviewComponent.cssStyles }}</code></pre>
@@ -325,7 +330,7 @@ export interface MarketComponentItem {
             <!-- TAB 4: Sandboxed JavaScript Code View -->
             <div class="code-view-container" *ngIf="previewTab === 'js'">
               <div class="code-view-header">
-                <span>⚡ Sandboxed JavaScript Execution Hook</span>
+                <span><i class="fa-solid fa-bolt me-2 text-warning"></i> Sandboxed JavaScript Execution Hook</span>
                 <span class="code-badge">ES6+</span>
               </div>
               <pre class="code-block"><code>{{ activePreviewComponent.jsScript || '// No custom JavaScript required for this lightweight CSS/HTML block.' }}</code></pre>
@@ -335,10 +340,10 @@ export interface MarketComponentItem {
           <!-- Preview Modal Footer Bar -->
           <div class="preview-modal-footer">
             <div class="preview-features-info" *ngIf="!isInstalling">
-              <span class="feature-tag">✔ Pure Scoped CSS & HTML</span>
-              <span class="feature-tag">✔ Pre-bundled Mock Data</span>
+              <span class="feature-tag"><i class="fa-solid fa-check text-success me-1"></i> Pure Scoped CSS & HTML</span>
+              <span class="feature-tag"><i class="fa-solid fa-check text-success me-1"></i> Pre-bundled Mock Data</span>
               <span class="feature-tag" *ngIf="activePreviewComponent.sectionLists?.length">
-                ✔ {{ activePreviewComponent.sectionLists?.length }} Sub-Items
+                <i class="fa-solid fa-check text-success me-1"></i> {{ activePreviewComponent.sectionLists?.length }} Sub-Items
               </span>
             </div>
 
@@ -1062,6 +1067,18 @@ export interface MarketComponentItem {
       color: #94a3b8;
       font-family: monospace;
     }
+    .theme-suite-badge {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #0284c7;
+      background: #e0f2fe;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
     .card-name {
       font-size: 14.5px;
       font-weight: 800;
@@ -1644,6 +1661,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Classic Light Corporate Navbar',
       category: 'menu',
       variantCode: 'Menu_Classic',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Popular',
       tag: 'corporate',
       description: 'Clean light corporate navbar with brand logo, centered navigation links, and right Get Started CTA button.',
@@ -1733,6 +1752,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Centered Logo Split Menu',
       category: 'menu',
       variantCode: 'Menu_Centered',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Centered brand logo with split menu items left and right, plus mobile hamburger drawer.',
       thumbnailGradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
@@ -1795,6 +1816,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Floating Glassmorphic Navbar',
       category: 'menu',
       variantCode: 'Menu_Glassmorphic',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Trending',
       tag: 'modern',
       description: 'Floating rounded translucent header with glassmorphism backdrop blur.',
@@ -1839,6 +1862,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'E-Commerce Mega Navbar',
       category: 'menu',
       variantCode: 'Menu_MegaCommerce',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'ecommerce',
       description: 'E-Commerce header with category drawer dropdown, live search input, and cart badge.',
       thumbnailGradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
@@ -1857,10 +1882,10 @@ export class MarketplaceComponent implements OnInit {
               </a>
             </div>
             <div class="oz-ecom-search"><input type="text" placeholder="Search 10,000+ products..." /></div>
-            <div class="oz-ecom-icons"><span>❤️ Wishlist</span><span class="oz-cart-pill">🛒 Cart (3)</span></div>
+            <div class="oz-ecom-icons"><span><i class="fa-solid fa-heart text-danger me-1"></i> Wishlist</span><span class="oz-cart-pill"><i class="fa-solid fa-cart-shopping me-1"></i> Cart (3)</span></div>
           </div>
           <div class="oz-ecom-cats">
-            <a href="#">🔥 Deals</a><a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Home</a><a href="#">Beauty</a><a href="#">Clearance</a>
+            <a href="#"><i class="fa-solid fa-fire text-danger me-1"></i> Deals</a><a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Home</a><a href="#">Beauty</a><a href="#">Clearance</a>
           </div>
         </div>
       `,
@@ -1892,6 +1917,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Modern Light Split Hero',
       category: 'hero',
       variantCode: 'Hero_SplitProduct',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Popular',
       tag: 'modern',
       description: 'Left headline, subtitle, and dual action buttons + Right clean light interactive product dashboard card.',
@@ -1903,7 +1930,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-hero-split">
           <div class="oz-hero-left">
-            <span class="oz-hero-pill">⚡ ENTERPRISE SUITE v2.5</span>
+            <span class="oz-hero-pill"><i class="fa-solid fa-bolt text-warning me-1"></i> ENTERPRISE SUITE v2.5</span>
             <h1 class="oz-hero-h1">Streamline your entire organizational workflow.</h1>
             <p class="oz-hero-p">Manage members, execute e-voting, track key performance metrics, and automate communications in one unified platform.</p>
             <div class="oz-hero-btns">
@@ -1915,7 +1942,7 @@ export class MarketplaceComponent implements OnInit {
             <div class="oz-mockup-window">
               <div class="oz-window-head"><span></span><span></span><span></span></div>
               <div class="oz-window-body">
-                <div class="oz-stat-bar"><strong>Total Members:</strong> 24,580 🟢 Active</div>
+                <div class="oz-stat-bar"><strong>Total Members:</strong> 24,580 <i class="fa-solid fa-circle text-success ms-1" style="font-size:8px;"></i> Active</div>
                 <div class="oz-chart-mock"></div>
               </div>
             </div>
@@ -1945,6 +1972,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Cinematic Video Background Hero',
       category: 'hero',
       variantCode: 'Hero_FullscreenVideo',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'dark',
       description: 'Dark cinematic full-width hero unit with glowing badge, play video button, and proof metrics.',
       thumbnailGradient: 'linear-gradient(135deg, #475569 0%, #0f172a 100%)',
@@ -1954,7 +1983,7 @@ export class MarketplaceComponent implements OnInit {
       previewBody: 'Full-bleed atmospheric hero with video play trigger',
       htmlTemplate: `
         <section class="oz-hero-video">
-          <span class="oz-badge-glow">🎬 NEW RELEASE 2026</span>
+          <span class="oz-badge-glow"><i class="fa-solid fa-star me-1"></i> NEW RELEASE 2026</span>
           <h1 class="oz-video-h1">The modern operating system for forward-thinking institutions.</h1>
           <p class="oz-video-sub">Over 500+ global organizations rely on our secure infrastructure for community governance.</p>
           <div class="oz-video-action">
@@ -1975,6 +2004,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Minimal Clean Typography Hero',
       category: 'hero',
       variantCode: 'Hero_MinimalClean',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Clean typography with animated gradient text, pill tag, and quick email signup input.',
       thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
@@ -2008,6 +2039,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'E-Commerce Deal Hero Banner',
       category: 'hero',
       variantCode: 'Hero_EcommerceCarousel',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'ecommerce',
       description: 'Rotating product showcase with discount banner, star reviews, and Shop Now button.',
       thumbnailGradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
@@ -2018,7 +2051,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-hero-ecom">
           <div class="oz-ecom-left">
-            <span class="oz-ecom-badge">🔥 LIMITED TIME DEAL</span>
+            <span class="oz-ecom-badge"><i class="fa-solid fa-fire me-1"></i> LIMITED TIME DEAL</span>
             <h1 class="oz-ecom-title">Special Member Collection & Exclusive Merchandise</h1>
             <p class="oz-ecom-sub">Get up to 40% discount on official member gear, branded apparel, and conference kits.</p>
             <a href="#" class="oz-ecom-btn">Shop Collection Now →</a>
@@ -2026,7 +2059,7 @@ export class MarketplaceComponent implements OnInit {
           <div class="oz-ecom-right">
             <div class="oz-product-hero-card">
               <span class="oz-sale-tag">-40% OFF</span>
-              <div class="oz-prod-mock-img">📦</div>
+              <div class="oz-prod-mock-img"><i class="fa-solid fa-box-open fa-2x text-primary"></i></div>
               <h4>Premium Executive Kit</h4>
               <div class="oz-prod-price"><del>$120.00</del> <strong>$72.00</strong></div>
             </div>
@@ -2055,6 +2088,8 @@ export class MarketplaceComponent implements OnInit {
       name: '3-Column Modern Feature Grid',
       category: 'body',
       variantCode: 'Body_FeatureGrid3',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Core Section',
       tag: 'modern',
       description: '3-column feature cards with hover lift animation, icon header, and child SectionList items.',
@@ -2077,17 +2112,17 @@ export class MarketplaceComponent implements OnInit {
           </div>
           <div class="oz-feat-grid">
             <div class="oz-feat-card">
-              <div class="oz-feat-icon">🛡️</div>
+              <div class="oz-feat-icon"><i class="fa-solid fa-shield-halved text-primary"></i></div>
               <h3>Identity & Access</h3>
               <p>Granular role-based authorization matrix, session control, and two-factor authentication.</p>
             </div>
             <div class="oz-feat-card">
-              <div class="oz-feat-icon">💬</div>
+              <div class="oz-feat-icon"><i class="fa-solid fa-comments text-info"></i></div>
               <h3>Collaboration Hub</h3>
               <p>Real-time group chat channels, direct messaging, and multimedia sharing.</p>
             </div>
             <div class="oz-feat-card">
-              <div class="oz-feat-icon">🗳️</div>
+              <div class="oz-feat-icon"><i class="fa-solid fa-check-to-slot text-success"></i></div>
               <h3>E-Voting & Polls</h3>
               <p>Tamper-proof real-time electoral polling with automated tally audits.</p>
             </div>
@@ -2114,6 +2149,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Split Story & Mission Section',
       category: 'body',
       variantCode: 'Body_AboutStory',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Split layout with company mission story, 4 checkmark bullet points, and high-resolution photo.',
       thumbnailGradient: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)',
@@ -2128,13 +2165,13 @@ export class MarketplaceComponent implements OnInit {
             <h2>Two decades of innovation and trusted leadership</h2>
             <p>We are dedicated to building digital bridges that empower member organizations, alumni networks, and corporate governing bodies with transparent tools.</p>
             <ul class="oz-check-list">
-              <li>✔ Bank-grade cryptographic security and audit trails</li>
-              <li>✔ Seamless Cloudinary media asset delivery and CDN speed</li>
-              <li>✔ 24/7 dedicated support team and institutional SLAs</li>
+              <li><i class="fa-solid fa-check text-success me-1"></i> Bank-grade cryptographic security and audit trails</li>
+              <li><i class="fa-solid fa-check text-success me-1"></i> Seamless Cloudinary media asset delivery and CDN speed</li>
+              <li><i class="fa-solid fa-check text-success me-1"></i> 24/7 dedicated support team and institutional SLAs</li>
             </ul>
           </div>
           <div class="oz-story-right">
-            <div class="oz-story-img-box">🏛️ Institutional Leadership</div>
+            <div class="oz-story-img-box"><i class="fa-solid fa-building-columns me-2"></i> Institutional Leadership</div>
           </div>
         </section>
       `,
@@ -2152,6 +2189,8 @@ export class MarketplaceComponent implements OnInit {
       name: '4-Column Animated Milestone Counters',
       category: 'body',
       variantCode: 'Body_MilestoneCounters',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: '4-column animated statistic counters (e.g. 50k+ Active Members, 99.9% Uptime, $10M+ Raised).',
       thumbnailGradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
@@ -2191,6 +2230,8 @@ export class MarketplaceComponent implements OnInit {
       name: '3-Tier Modern Pricing Matrix',
       category: 'body',
       variantCode: 'Body_PricingCards',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'High Conversion',
       tag: 'modern',
       description: '3-tier pricing matrix with monthly/yearly toggle and featured "Most Popular" highlight card.',
@@ -2246,6 +2287,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Clean Light Corporate Footer',
       category: 'footer',
       variantCode: 'Footer_Corporate4Col',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: '4-column clean light corporate footer with brand biography, quick links, solutions, and newsletter.',
       thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
@@ -2295,6 +2338,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Minimal Centered Footer',
       category: 'footer',
       variantCode: 'Footer_MinimalCentered',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Centered logo, inline navigation menu, social media icons, and copyright disclaimer.',
       thumbnailGradient: 'linear-gradient(135deg, #334155 0%, #1e293b 100%)',
@@ -2331,6 +2376,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Dark Slate High-Contrast Footer',
       category: 'footer',
       variantCode: 'Footer_DarkHighContrast',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'dark',
       description: 'Dark slate footer with app store download badges, security seals, and localized copyright.',
       thumbnailGradient: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
@@ -2347,9 +2394,9 @@ export class MarketplaceComponent implements OnInit {
                      onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'38\\' height=\\'38\\' rx=\\'9\\' fill=\\'%2338BDF8\\'/><path d=\\'M13 25V13L25 25V13\\' stroke=\\'%230F172A\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'48\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'16\\' font-weight=\\'800\\' fill=\\'%23FFFFFF\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%2338BDF8\\'>.BCC</tspan></text></svg>'"
                      alt="Brand Logo" class="oz-brand-logo-img" />
               </a>
-              <span class="oz-sec-tag">🔒 Protected by 256-bit Encryption</span>
+              <span class="oz-sec-tag"><i class="fa-solid fa-lock me-1"></i> Protected by 256-bit Encryption</span>
             </div>
-            <div class="oz-app-badges"><span>🍏 App Store</span><span>🤖 Google Play</span></div>
+            <div class="oz-app-badges"><span><i class="fa-brands fa-apple me-1"></i> App Store</span><span><i class="fa-brands fa-google-play me-1"></i> Google Play</span></div>
           </div>
         </footer>
       `,
@@ -2369,6 +2416,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Single-Line Minimalist Footer',
       category: 'footer',
       variantCode: 'Footer_SimpleBar',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Single-line minimalist footer strip with copyright and terms/privacy links.',
       thumbnailGradient: 'linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)',
@@ -2408,6 +2457,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Horizontal Inline Subscribe Bar',
       category: 'newsletter',
       variantCode: 'Form_InlineBar',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Horizontal lead capture bar with email input, submit button, and privacy disclaimer.',
       thumbnailGradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
@@ -2440,6 +2491,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Split Card with Lead Magnet Image',
       category: 'newsletter',
       variantCode: 'Form_SplitCard',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Visual container with free guide/ebook cover on left, headline & email form on right.',
       thumbnailGradient: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
@@ -2450,7 +2503,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-form-split">
           <div class="oz-form-box">
-            <div class="oz-form-l">📘 FREE REPORT 2026</div>
+            <div class="oz-form-l"><i class="fa-solid fa-book-open me-1"></i> FREE REPORT 2026</div>
             <div class="oz-form-r">
               <h3>Get the Executive Governance Playbook</h3>
               <p>Discover how leading institutions optimize voting, compliance, and member engagement.</p>
@@ -2476,6 +2529,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Vibrant Gradient Banner Form',
       category: 'newsletter',
       variantCode: 'Form_GradientBanner',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Vibrant gradient container with headline, guarantee pill, and 1-click submit.',
       thumbnailGradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
@@ -2507,6 +2562,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Dark Glassmorphism Subscriber Box',
       category: 'newsletter',
       variantCode: 'Form_DarkMinimal',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'dark',
       description: 'Dark glassmorphism subscriber card with privacy guarantee tag.',
       thumbnailGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
@@ -2517,7 +2574,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-form-dark">
           <div class="oz-dark-box">
-            <h3>🔒 Verified Member Newsletter</h3>
+            <h3><i class="fa-solid fa-shield-check me-2"></i> Verified Member Newsletter</h3>
             <p>Access embargoed policy updates and committee announcements.</p>
             <div class="oz-dark-row">
               <input type="email" placeholder="user@organization.com" />
@@ -2545,6 +2602,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Split Map & Direct Inquiry Form',
       category: 'contact',
       variantCode: 'Contact_SplitMapForm',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Popular',
       tag: 'corporate',
       description: 'Left embedded interactive map/address cards + Right direct inquiry messaging form.',
@@ -2560,9 +2619,9 @@ export class MarketplaceComponent implements OnInit {
             <h2>We would love to hear from you</h2>
             <p>Our team is available Monday through Friday to answer your governance inquiries.</p>
             <div class="oz-con-info">
-              <div>📍 100 Enterprise Way, Suite 400</div>
-              <div>📞 +1 (800) 555-0199</div>
-              <div>✉️ support&#64;workspace.org</div>
+              <div><i class="fa-solid fa-location-dot me-2 text-primary"></i> 100 Enterprise Way, Suite 400</div>
+              <div><i class="fa-solid fa-phone me-2 text-success"></i> +1 (800) 555-0199</div>
+              <div><i class="fa-solid fa-envelope me-2 text-warning"></i> support&#64;workspace.org</div>
             </div>
           </div>
           <div class="oz-con-right">
@@ -2590,6 +2649,8 @@ export class MarketplaceComponent implements OnInit {
       name: '3-Column Direct Contact Cards',
       category: 'contact',
       variantCode: 'Contact_Cards3Col',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: '3 quick contact info cards (Phone & WhatsApp, Email Support, Headquarters Office).',
       thumbnailGradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -2633,6 +2694,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Clean Centered Contact Form',
       category: 'contact',
       variantCode: 'Contact_SimpleForm',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Clean centered contact card with Name, Email, Subject, and Message textarea.',
       thumbnailGradient: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
@@ -2670,8 +2733,10 @@ export class MarketplaceComponent implements OnInit {
       name: 'Office Hours & Emergency Desk',
       category: 'contact',
       variantCode: 'Contact_OfficeHours',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
-      description: 'Contact info block with live business hours status indicator ("🟢 Open Now").',
+      description: 'Contact info block with live business hours status indicator ("Open Now").',
       thumbnailGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       previewIcon: 'schedule',
       previewSubtitle: 'Live Office Status',
@@ -2680,7 +2745,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-con-hours">
           <div class="oz-hours-box">
-            <span class="oz-status-pill">🟢 Operating Live Now (09:00 - 18:00 EST)</span>
+            <span class="oz-status-pill"><i class="fa-solid fa-circle text-success me-1" style="font-size:8px;"></i> Operating Live Now (09:00 - 18:00 EST)</span>
             <h2>Connect with our Executive Help Desk</h2>
             <div class="oz-hours-grid">
               <div><strong>Monday – Friday:</strong> 08:00 AM – 06:00 PM</div>
@@ -2707,6 +2772,8 @@ export class MarketplaceComponent implements OnInit {
       name: '3-Column Magazine Article Grid',
       category: 'blog',
       variantCode: 'Blog_3ColGrid',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Popular',
       tag: 'modern',
       description: '3-column article cards with thumbnail image, category badge, date, and read time.',
@@ -2723,7 +2790,7 @@ export class MarketplaceComponent implements OnInit {
           </div>
           <div class="oz-b-grid">
             <div class="oz-b-card">
-              <div class="oz-b-thumb">📰 Strategic Governance</div>
+              <div class="oz-b-thumb"><i class="fa-solid fa-newspaper me-1"></i> Strategic Governance</div>
               <div class="oz-b-body">
                 <span class="oz-b-cat">GOVERNANCE</span>
                 <h4>How AI is Transforming Modern Board Elections</h4>
@@ -2731,7 +2798,7 @@ export class MarketplaceComponent implements OnInit {
               </div>
             </div>
             <div class="oz-b-card">
-              <div class="oz-b-thumb">📊 Member Metrics</div>
+              <div class="oz-b-thumb"><i class="fa-solid fa-chart-line me-1"></i> Member Metrics</div>
               <div class="oz-b-body">
                 <span class="oz-b-cat">ANALYTICS</span>
                 <h4>Top 5 KPIs for Measuring Alumni Engagement</h4>
@@ -2739,7 +2806,7 @@ export class MarketplaceComponent implements OnInit {
               </div>
             </div>
             <div class="oz-b-card">
-              <div class="oz-b-thumb">🛡️ Identity Security</div>
+              <div class="oz-b-thumb"><i class="fa-solid fa-user-shield me-1"></i> Identity Security</div>
               <div class="oz-b-body">
                 <span class="oz-b-cat">SECURITY</span>
                 <h4>Implementing Zero-Trust in Community Portals</h4>
@@ -2767,6 +2834,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Featured Hero Article + Compact List',
       category: 'blog',
       variantCode: 'Blog_FeaturedHighlight',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: '1 large featured hero article on left + 3 compact articles on right.',
       thumbnailGradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
@@ -2802,6 +2871,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Modern Masonry Tagged Cards',
       category: 'blog',
       variantCode: 'Blog_MasonryCards',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Staggered dynamic card layout with author avatars and pill tags.',
       thumbnailGradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
@@ -2817,6 +2888,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Clean Horizontal Article List',
       category: 'blog',
       variantCode: 'Blog_MinimalList',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Clean text-first horizontal article list with arrow hover transitions.',
       thumbnailGradient: 'linear-gradient(135deg, #475569 0%, #334155 100%)',
@@ -2836,6 +2909,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Modern Retail Storefront Suite',
       category: 'ecommerce',
       variantCode: 'Ecom_ModernRetail',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       badge: 'Popular',
       tag: 'ecommerce',
       description: 'Complete high-conversion storefront: 4-column responsive merchandise catalog, category filter pills, stock badges, and slide-cart trigger.',
@@ -2872,7 +2947,7 @@ export class MarketplaceComponent implements OnInit {
           <div class="oz-eg-cards">
             <div class="oz-eg-card">
               <div class="oz-eg-badge">NEW</div>
-              <div class="oz-eg-img">🧥</div>
+              <div class="oz-eg-img"><i class="fa-solid fa-shirt fa-2x text-secondary"></i></div>
               <h4>Executive Blazer</h4>
               <p class="oz-eg-desc">Tailored navy blazer with subtle logo crest</p>
               <div class="oz-eg-bottom">
@@ -2882,7 +2957,7 @@ export class MarketplaceComponent implements OnInit {
             </div>
             <div class="oz-eg-card">
               <div class="oz-eg-badge hot">HOT SELLER</div>
-              <div class="oz-eg-img">🎖️</div>
+              <div class="oz-eg-img"><i class="fa-solid fa-award fa-2x text-warning"></i></div>
               <h4>Member Lapel Pin</h4>
               <p class="oz-eg-desc">24K gold-plated official fellowship pin</p>
               <div class="oz-eg-bottom">
@@ -2891,7 +2966,7 @@ export class MarketplaceComponent implements OnInit {
               </div>
             </div>
             <div class="oz-eg-card">
-              <div class="oz-eg-img">👜</div>
+              <div class="oz-eg-img"><i class="fa-solid fa-bag-shopping fa-2x text-info"></i></div>
               <h4>Conference Tote Bag</h4>
               <p class="oz-eg-desc">Heavyweight eco canvas with inner zipper</p>
               <div class="oz-eg-bottom">
@@ -2900,7 +2975,7 @@ export class MarketplaceComponent implements OnInit {
               </div>
             </div>
             <div class="oz-eg-card">
-              <div class="oz-eg-img">📁</div>
+              <div class="oz-eg-img"><i class="fa-solid fa-folder-open fa-2x text-primary"></i></div>
               <h4>Executive Leather Folio</h4>
               <p class="oz-eg-desc">Handcrafted top-grain leather document folder</p>
               <div class="oz-eg-bottom">
@@ -2939,6 +3014,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Tech & Digital Boutique Suite',
       category: 'ecommerce',
       variantCode: 'Ecom_TechBoutique',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'dark',
       description: 'Sleek dark mode storefront with flash deal countdown timer, digital license picker, and cyber glow accents.',
       thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
@@ -2949,7 +3026,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-ecom-dark">
           <div class="oz-ed-banner">
-            <div>⚡ FLASH SALE ENDS IN: <span class="oz-ed-clock">03h : 22m : 45s</span></div>
+            <div><i class="fa-solid fa-bolt text-warning me-1"></i> FLASH SALE ENDS IN: <span class="oz-ed-clock">03h : 22m : 45s</span></div>
             <span class="oz-ed-disc">SAVE 30% SITEWIDE</span>
           </div>
           <div class="oz-ed-head">
@@ -2997,6 +3074,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Minimalist Luxury Boutique Suite',
       category: 'ecommerce',
       variantCode: 'Ecom_MinimalLuxury',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'High-end editorial aesthetics with generous whitespace, serif headings, and department image tiles.',
       thumbnailGradient: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)',
@@ -3018,12 +3097,12 @@ export class MarketplaceComponent implements OnInit {
               <span>$450.00</span>
             </div>
             <div class="oz-el-tile">
-              <div class="oz-el-ph">🖋️</div>
+              <div class="oz-el-ph"><i class="fa-solid fa-pen-nib fa-2x text-dark"></i></div>
               <h4>Sterling Fountain Pen</h4>
               <span>$180.00</span>
             </div>
             <div class="oz-el-tile">
-              <div class="oz-el-ph">🧣</div>
+              <div class="oz-el-ph"><i class="fa-solid fa-gem fa-2x text-danger"></i></div>
               <h4>Cashmere Travel Wrap</h4>
               <span>$220.00</span>
             </div>
@@ -3048,6 +3127,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'High-Volume Wholesale & Catalog Suite',
       category: 'ecommerce',
       variantCode: 'Ecom_SupermarketGrid',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'High-density multi-department catalog with quick quantity steppers, bulk pricing tiers, and fast checkout.',
       thumbnailGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
@@ -3058,7 +3139,7 @@ export class MarketplaceComponent implements OnInit {
       htmlTemplate: `
         <section class="oz-ecom-whole">
           <div class="oz-ew-top">
-            <h3>🏢 Association Bulk Supply Catalog</h3>
+            <h3><i class="fa-solid fa-building me-2"></i> Association Bulk Supply Catalog</h3>
             <span class="oz-ew-tier">Tier 1 Member Wholesale Active</span>
           </div>
           <table class="oz-ew-table">
@@ -3091,6 +3172,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Clean Minimal Breadcrumb Strip',
       category: 'breadcrumb',
       variantCode: 'Breadcrumb_CleanMinimal',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Simple horizontal breadcrumb navigation strip (Home > Pages > Detail).',
       thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
@@ -3115,6 +3198,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Dark Background Banner Header',
       category: 'breadcrumb',
       variantCode: 'Breadcrumb_DarkBanner',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'dark',
       description: 'Dark background header with page title, subtitle, and breadcrumb path.',
       thumbnailGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
@@ -3142,6 +3227,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Rich Photo Background Header',
       category: 'breadcrumb',
       variantCode: 'Breadcrumb_ImageOverlay',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'corporate',
       description: 'Rich photo background with dark overlay and centered headline title.',
       thumbnailGradient: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
@@ -3157,6 +3244,8 @@ export class MarketplaceComponent implements OnInit {
       name: 'Split Header with Page Actions',
       category: 'breadcrumb',
       variantCode: 'Breadcrumb_SplitAction',
+      groupCode: 'apex-commerce',
+      groupName: 'Apex Commerce Pro',
       tag: 'modern',
       description: 'Left breadcrumb path + title, Right page action buttons (e.g. Export, Share).',
       thumbnailGradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
@@ -3548,6 +3637,8 @@ export class MarketplaceComponent implements OnInit {
               name: item.name,
               category: item.category,
               variantCode: item.variantCode,
+              groupCode: (item as any).groupCode || 'apex-commerce',
+              groupName: (item as any).groupName || 'Apex Commerce Pro',
               badge: item.badge,
               tag: item.tag,
               description: item.description,
@@ -3571,6 +3662,8 @@ export class MarketplaceComponent implements OnInit {
             categoryKey: item.category,
             name: item.name,
             variantCode: item.variantCode,
+            groupCode: (item as any).groupCode || 'apex-commerce',
+            groupName: (item as any).groupName || 'Apex Commerce Pro',
             htmlTemplate: item.htmlTemplate,
             cssStyles: item.cssStyles,
             jsScript: item.jsScript,
