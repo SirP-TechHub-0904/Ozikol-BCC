@@ -13,7 +13,14 @@ export class ApiService {
 
   private getHeaders(body?: any): HttpHeaders {
     const token = localStorage.getItem('access_token');
-    const tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain');
+    let tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain');
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (!tenantKey && hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const parts = hostname.split('.');
+      tenantKey = parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])
+        ? parts[0]
+        : hostname;
+    }
 
     let headers = new HttpHeaders();
 
@@ -28,6 +35,9 @@ export class ApiService {
 
     if (tenantKey) {
       headers = headers.set('X-Tenant-Key', tenantKey);
+    }
+    if (hostname) {
+      headers = headers.set('X-Tenant-Domain', hostname);
     }
 
     return headers;

@@ -27,10 +27,21 @@ export class AuthInterceptor implements HttpInterceptor {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    if (tenantKey) {
-      headers['X-Tenant-Key'] = tenantKey;
-    } else if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      headers['X-Tenant-Key'] = hostname;
+    let resolvedTenantKey = tenantKey;
+    if (!resolvedTenantKey && hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const parts = hostname.split('.');
+      if (parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0])) {
+        resolvedTenantKey = parts[0];
+      } else {
+        resolvedTenantKey = hostname;
+      }
+    }
+
+    if (resolvedTenantKey) {
+      headers['X-Tenant-Key'] = resolvedTenantKey;
+    }
+    if (hostname) {
+      headers['X-Tenant-Domain'] = hostname;
     }
     if (trustToken) {
       headers['X-Device-Trust-Token'] = trustToken;

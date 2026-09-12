@@ -23,7 +23,8 @@ public class TenantScopeMiddleware
         if (path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase))
+            path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
         {
             await _next(httpContext);
             return;
@@ -42,34 +43,67 @@ public class TenantScopeMiddleware
         string apiUrl = "Default";
         string websiteUrl = "Default";
         string targetDb = "Unknown";
-        string tenantKey = resolvedTenantKey ?? "(Default Fallback)";
+        string? targetLookup = resolvedTenantKey ?? CleanIdentifier(origin) ?? CleanIdentifier(host);
 
+        CachedTenantEntry? match = null;
         if (tenantProvider is TenantProvider tp)
         {
             var cachedTenants = tp.GetAllCachedTenants();
-            var searchKey = (resolvedTenantKey ?? host).ToLowerInvariant();
+            match = TenantProvider.FindMatchingTenant(cachedTenants, targetLookup);
 
-            var match = cachedTenants.FirstOrDefault(t => t.IsActive && (
-                t.TenantKey.Equals(searchKey, StringComparison.OrdinalIgnoreCase) ||
-                t.PrimaryDomain.Equals(searchKey, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrEmpty(t.CustomDomain) && t.CustomDomain.Equals(searchKey, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(resolvedTenantKey) && t.TenantKey.Equals(resolvedTenantKey, StringComparison.OrdinalIgnoreCase))
-            ));
-
-            if (match != null)
+            // On cache miss, immediately refresh from Master DB to capture newly onboarded tenants
+            if (match == null && !string.IsNullOrEmpty(targetLookup) && !IsSystemDomain(targetLookup))
             {
-                tenantKey = match.TenantKey;
-                orgName = match.OrganizationName;
-                primaryDomain = match.PrimaryDomain;
-                customDomain = match.CustomDomain ?? "(None)";
-                apiUrl = match.ApiUrl ?? "(Default)";
-                websiteUrl = match.WebsiteUrl ?? "(Default)";
-                targetDb = match.DatabaseName;
+                cachedTenants = tp.RefreshCachedTenants();
+                match = TenantProvider.FindMatchingTenant(cachedTenants, targetLookup);
             }
         }
 
+        // 2. Fail-Safe: If an explicit tenant domain or subdomain was requested but does not exist in Master Catalog,
+        // STOP the pipeline immediately and return 404. Never silently fall back to another company's database!
+        if (match == null && !string.IsNullOrEmpty(targetLookup) && !IsSystemDomain(targetLookup))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("========================================================================");
+            Console.WriteLine($"[MASTER ROUTING ERROR] {method} {path}");
+            Console.WriteLine($"  * Incoming Host URL : {host}");
+            Console.WriteLine($"  * Origin / Referer  : {(string.IsNullOrEmpty(origin) ? "(Direct)" : origin)}");
+            Console.WriteLine($"  * Requested Target  : {targetLookup}");
+            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active tenant matching this domain/subdomain)");
+            Console.WriteLine("========================================================================");
+            Console.ResetColor();
+
+            httpContext.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            httpContext.Response.ContentType = "application/json";
+            await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                statusCode = 404,
+                error = "TenantNotFound",
+                message = $"The workspace '{targetLookup}' does not exist or has not been activated. Please check your domain or register a new workspace.",
+                timestamp = DateTime.UtcNow
+            }));
+            return;
+        }
+
+        string tenantKey = match?.TenantKey ?? resolvedTenantKey ?? "(Default)";
+        if (match != null)
+        {
+            tenantKey = match.TenantKey;
+            orgName = match.OrganizationName;
+            primaryDomain = match.PrimaryDomain;
+            customDomain = match.CustomDomain ?? "(None)";
+            apiUrl = match.ApiUrl ?? "(Default)";
+            websiteUrl = match.WebsiteUrl ?? "(Default)";
+            targetDb = match.DatabaseName;
+        }
+
         IDisposable? scope = null;
-        if (!string.IsNullOrEmpty(resolvedTenantKey))
+        if (match != null)
+        {
+            // Bind scope directly to the matched TenantKey
+            scope = tenantProvider.BeginScope(match.TenantKey);
+        }
+        else if (!string.IsNullOrEmpty(resolvedTenantKey))
         {
             scope = tenantProvider.BeginScope(resolvedTenantKey);
         }
@@ -79,7 +113,7 @@ public class TenantScopeMiddleware
             var connStr = tenantProvider.ConnectionString;
             if (targetDb == "Unknown") targetDb = ExtractDbName(connStr);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("========================================================================");
             Console.WriteLine($"[MASTER ROUTING & DOMAIN CHECK] {method} {path}");
             Console.WriteLine($"  * Incoming Host URL : {host}");
@@ -100,6 +134,16 @@ public class TenantScopeMiddleware
         {
             scope?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Checks if a hostname or token is a reserved local system word rather than a sovereign tenant.
+    /// </summary>
+    private static bool IsSystemDomain(string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val)) return true;
+        var lower = val.Trim().ToLowerInvariant().Split(':')[0];
+        return lower == "localhost" || lower == "127.0.0.1" || lower == "www" || lower == "api" || lower == "central" || lower == "admin";
     }
 
     private static string ExtractDbName(string? connStr)
