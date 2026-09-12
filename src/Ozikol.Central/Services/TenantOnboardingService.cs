@@ -120,6 +120,13 @@ public class TenantOnboardingService : ITenantOnboardingService
     {
         if (string.IsNullOrWhiteSpace(tenantKey)) return false;
         var cleanKey = tenantKey.Trim().ToLowerInvariant();
+
+        // Reject system reserved keywords (portal, admin, superadmin, api, etc.)
+        if (ReservedWorkspaceNames.IsReserved(cleanKey))
+        {
+            return false;
+        }
+
         return !await _masterCatalogDbContext.MasterTenantCatalogs
             .AnyAsync(t => t.TenantKey == cleanKey, cancellationToken);
     }
@@ -186,7 +193,17 @@ public class TenantOnboardingService : ITenantOnboardingService
         var primaryDomain = $"{cleanKey}.localhost:4200";
         var cleanReferralCode = string.IsNullOrWhiteSpace(request.ReferredBy) ? null : request.ReferredBy.Trim().ToUpperInvariant();
 
-        // 1. Validate Uniqueness
+        // 1. Validate Not Reserved
+        if (ReservedWorkspaceNames.IsReserved(cleanKey))
+        {
+            return new TenantOnboardingResult
+            {
+                Success = false,
+                Message = $"Workspace address '{cleanKey}' is reserved by the platform and cannot be registered. Please select another workspace name."
+            };
+        }
+
+        // 2. Validate Uniqueness
         bool keyTaken = await _masterCatalogDbContext.MasterTenantCatalogs
             .AnyAsync(t => t.TenantKey == cleanKey || t.PrimaryDomain == primaryDomain, cancellationToken);
 

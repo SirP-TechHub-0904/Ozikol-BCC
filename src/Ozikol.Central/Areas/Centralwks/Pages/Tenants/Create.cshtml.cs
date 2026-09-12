@@ -55,6 +55,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
 
             var cleanKey = Input.TenantKey.Trim().ToLowerInvariant();
+            if (ReservedWorkspaceNames.IsReserved(cleanKey))
+            {
+                ModelState.AddModelError("Input.TenantKey", $"The tenant key '{cleanKey}' is reserved by the system and cannot be assigned to an organization.");
+                return Page();
+            }
+
             var isAvailable = await _onboardingService.IsTenantKeyAvailableAsync(cleanKey);
             if (!isAvailable)
             {
