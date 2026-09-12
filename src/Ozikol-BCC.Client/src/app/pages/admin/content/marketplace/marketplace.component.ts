@@ -1641,13 +1641,13 @@ export class MarketplaceComponent implements OnInit {
     // -------------------------------------------------------------
     {
       id: 'menu-01',
-      name: 'Classic Corporate Navbar',
+      name: 'Classic Light Corporate Navbar',
       category: 'menu',
       variantCode: 'Menu_Classic',
       badge: 'Popular',
       tag: 'corporate',
-      description: 'Standard corporate left logo, centered navigation links, and right Get Started CTA button with mobile hamburger drawer.',
-      thumbnailGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+      description: 'Clean light corporate navbar with brand logo, centered navigation links, and right Get Started CTA button.',
+      thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
       previewIcon: 'menu',
       previewSubtitle: 'Header Navigation',
       previewTitle: 'Acme Enterprise Solutions',
@@ -1889,15 +1889,15 @@ export class MarketplaceComponent implements OnInit {
     // -------------------------------------------------------------
     {
       id: 'hero-01',
-      name: 'Split Product Hero Showcase',
+      name: 'Modern Light Split Hero',
       category: 'hero',
       variantCode: 'Hero_SplitProduct',
       badge: 'Popular',
       tag: 'modern',
-      description: 'Left bold headline, subtitle, and dual action buttons + Right interactive product dashboard card.',
-      thumbnailGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+      description: 'Left headline, subtitle, and dual action buttons + Right clean light interactive product dashboard card.',
+      thumbnailGradient: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
       previewIcon: 'space_dashboard',
-      previewSubtitle: 'Product Hero',
+      previewSubtitle: 'Light Product Hero',
       previewTitle: 'Next-Gen Operations Management',
       previewBody: 'Supercharge your team productivity with real-time analytics and governance tools.',
       htmlTemplate: `
@@ -1923,18 +1923,21 @@ export class MarketplaceComponent implements OnInit {
         </section>
       `,
       cssStyles: `
-        .oz-hero-split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 70px 40px; background: #0f172a; color: #fff; align-items: center; }
-        .oz-hero-pill { background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); }
-        .oz-hero-h1 { font-size: 32px; font-weight: 900; line-height: 1.25; margin: 14px 0; color: #ffffff; }
-        .oz-hero-p { font-size: 14px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
-        .oz-hero-btns { display: flex; gap: 14px; }
-        .oz-btn-pri { background: #0050e5; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; }
-        .oz-btn-sec { background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; border: 1px solid rgba(255,255,255,0.15); }
-        .oz-mockup-window { background: #1e293b; border-radius: 12px; border: 1.5px solid #334155; padding: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-        .oz-window-head { display: flex; gap: 6px; margin-bottom: 12px; }
-        .oz-window-head span { width: 10px; height: 10px; border-radius: 50%; background: #475569; }
-        .oz-chart-mock { height: 120px; background: linear-gradient(180deg, rgba(56,189,248,0.2) 0%, rgba(56,189,248,0) 100%); border-bottom: 2px solid #38bdf8; border-radius: 6px; margin-top: 10px; }
-        @media(max-width: 768px) { .oz-hero-split { grid-template-columns: 1fr; } }
+        .oz-hero-split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; padding: 72px 48px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; align-items: center; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
+        .oz-hero-pill { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; border: 1px solid #bfdbfe; display: inline-block; letter-spacing: 0.04em; }
+        .oz-hero-h1 { font-size: 36px; font-weight: 900; line-height: 1.2; margin: 16px 0; color: #0f172a; letter-spacing: -0.02em; }
+        .oz-hero-p { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 28px; }
+        .oz-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+        .oz-btn-pri { background: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); transition: background 0.15s ease; }
+        .oz-btn-pri:hover { background: #1d4ed8; }
+        .oz-btn-sec { background: #ffffff; color: #334155; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; border: 1.5px solid #cbd5e1; transition: all 0.15s ease; }
+        .oz-btn-sec:hover { background: #f8fafc; border-color: #94a3b8; }
+        .oz-mockup-window { background: #ffffff; border-radius: 12px; border: 1.5px solid #e2e8f0; padding: 20px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }
+        .oz-window-head { display: flex; gap: 6px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+        .oz-window-head span { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+        .oz-stat-bar { font-size: 13px; color: #334155; margin-bottom: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .oz-chart-mock { height: 130px; background: linear-gradient(180deg, rgba(37,99,235,0.12) 0%, rgba(37,99,235,0.01) 100%); border-bottom: 2px solid #2563eb; border-radius: 6px; }
+        @media(max-width: 850px) { .oz-hero-split { grid-template-columns: 1fr; padding: 48px 24px; } }
       `
     },
     {
@@ -2240,14 +2243,14 @@ export class MarketplaceComponent implements OnInit {
     // -------------------------------------------------------------
     {
       id: 'footer-01',
-      name: '4-Column Corporate Footer',
+      name: 'Clean Light Corporate Footer',
       category: 'footer',
       variantCode: 'Footer_Corporate4Col',
       tag: 'corporate',
-      description: '4-column corporate footer with brand biography, quick links, solutions, and newsletter.',
-      thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      description: '4-column clean light corporate footer with brand biography, quick links, solutions, and newsletter.',
+      thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       previewIcon: 'table_rows',
-      previewSubtitle: 'Mega Footer',
+      previewSubtitle: 'Light Footer',
       previewTitle: '4-Column Multi-Menu',
       previewBody: 'Company Bio • Platform • Solutions • Legal & Newsletter',
       htmlTemplate: `
@@ -2255,8 +2258,8 @@ export class MarketplaceComponent implements OnInit {
           <div class="oz-foot-grid">
             <div class="oz-foot-brand-col">
               <a href="#" class="oz-brand-link">
-                <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-light.svg"
-                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'38\\' height=\\'38\\' rx=\\'9\\' fill=\\'%2338BDF8\\'/><path d=\\'M13 25V13L25 25V13\\' stroke=\\'%230F172A\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'48\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'16\\' font-weight=\\'800\\' fill=\\'%23FFFFFF\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%2338BDF8\\'>.BCC</tspan></text></svg>'"
+                <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
+                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'38\\' height=\\'38\\' rx=\\'9\\' fill=\\'%232563EB\\'/><path d=\\'M13 25V13L25 25V13\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'48\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'16\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%232563EB\\'>.BCC</tspan></text></svg>'"
                      alt="Brand Logo" class="oz-brand-logo-img" style="margin-bottom: 14px;" />
               </a>
               <p>The enterprise platform for governance, member collaboration, and digital identity.</p>
@@ -2277,13 +2280,13 @@ export class MarketplaceComponent implements OnInit {
         </footer>
       `,
       cssStyles: `
-        .oz-foot-4col { background: #0f172a; color: #94a3b8; padding: 50px 40px; font-family: Inter, sans-serif; font-size: 12.5px; }
+        .oz-foot-4col { background: #f8fafc; color: #475569; padding: 50px 40px; font-family: Inter, sans-serif; font-size: 12.5px; border-top: 1px solid #e2e8f0; }
         .oz-foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 30px; max-width: 1100px; margin: 0 auto; }
-        .oz-foot-brand-col p { line-height: 1.6; }
+        .oz-foot-brand-col p { line-height: 1.6; color: #64748b; }
         .oz-brand-link { display: inline-flex; align-items: center; text-decoration: none; }
         .oz-brand-logo-img { height: 32px; max-height: 38px; width: auto; object-fit: contain; display: block; }
-        .oz-foot-grid h4 { color: #fff; margin-bottom: 12px; font-size: 14px; }
-        .oz-foot-grid p { line-height: 1.6; }
+        .oz-foot-grid h4 { color: #0f172a; margin-bottom: 12px; font-size: 14px; font-weight: 800; }
+        .oz-foot-grid p { line-height: 1.6; color: #64748b; }
         @media(max-width: 768px) { .oz-foot-grid { grid-template-columns: 1fr 1fr; } }
       `
     },

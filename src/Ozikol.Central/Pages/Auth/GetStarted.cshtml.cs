@@ -280,7 +280,7 @@ namespace Ozikol.Central.Pages
             {
                 OrganizationName = Input.OrganizationName.Trim(),
                 WorkspaceSlug = Input.WorkspaceSlug,
-                WebsiteUrl = $"http://{result.PrimaryDomain}",
+                WebsiteUrl = $"https://{result.PrimaryDomain}",
                 LoginUrl = result.RedirectUrl,
                 AdminEmail = Input.WorkEmail.Trim().ToLowerInvariant(),
                 ProvisionedUtc = DateTime.UtcNow

@@ -1494,13 +1494,13 @@ export interface CodeInjectionTag {
 
     /* Active Theme Blueprint Banner */
     .theme-blueprint-card {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
       border-radius: 14px;
       padding: 20px 24px;
       margin-bottom: 20px;
-      color: #ffffff;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
-      border: 1px solid #334155;
+      color: #0f172a;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
     }
     .blueprint-header {
       display: flex;
@@ -1517,27 +1517,27 @@ export interface CodeInjectionTag {
     }
     .blueprint-icon {
       font-size: 22px;
-      color: #38bdf8;
+      color: #2563eb;
     }
     .blueprint-title {
       font-size: 15px;
       font-weight: 800;
       margin: 0;
-      color: #f8fafc;
+      color: #0f172a;
       letter-spacing: -0.01em;
     }
     .blueprint-sub {
       font-size: 11.5px;
-      color: #94a3b8;
+      color: #64748b;
     }
     .blueprint-stats {
       display: flex;
       align-items: center;
     }
     .blueprint-stat-pill {
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
       padding: 4px 12px;
       border-radius: 20px;
       font-size: 11.5px;
@@ -1557,8 +1557,8 @@ export interface CodeInjectionTag {
       .blueprint-pipeline { grid-template-columns: 1fr; }
     }
     .pipeline-slot {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
       border-radius: 8px;
       padding: 8px 10px;
       display: flex;
@@ -1569,37 +1569,39 @@ export interface CodeInjectionTag {
       min-width: 0;
     }
     .pipeline-slot.slot-active {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.08);
+      border-color: #2563eb;
+      background: #f8fafc;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
     }
     .pipeline-slot.slot-empty {
       border-style: dashed;
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: #cbd5e1;
+      background: #f8fafc;
     }
     .slot-badge {
       font-size: 8.5px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #94a3b8;
+      color: #64748b;
     }
     .slot-icon-wrap {
       width: 24px;
       height: 24px;
       border-radius: 5px;
-      background: rgba(255, 255, 255, 0.08);
+      background: #eff6ff;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #38bdf8;
+      color: #2563eb;
     }
     .slot-icon-wrap .material-symbols-outlined { font-size: 14px; }
     .slot-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-    .slot-role { font-size: 9.5px; color: #94a3b8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-role { font-size: 9.5px; color: #64748b; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .slot-name {
       font-size: 11px;
       font-weight: 700;
-      color: #f8fafc;
+      color: #0f172a;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1611,27 +1613,28 @@ export interface CodeInjectionTag {
       justify-content: flex-end;
     }
     .btn-slot-preview {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: #38bdf8;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
       border-radius: 4px;
       padding: 2px 6px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
     }
-    .btn-slot-preview:hover { background: #38bdf8; color: #0f172a; }
+    .btn-slot-preview:hover { background: #2563eb; color: #ffffff; }
     .btn-slot-preview .material-symbols-outlined { font-size: 13px; }
     .btn-slot-add {
-      color: #94a3b8;
+      color: #64748b;
       font-size: 10px;
       font-weight: 700;
       text-decoration: none;
       padding: 2px 5px;
       border-radius: 4px;
-      background: rgba(255, 255, 255, 0.05);
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
     }
-    .btn-slot-add:hover { color: #ffffff; background: rgba(255, 255, 255, 0.15); }
+    .btn-slot-add:hover { color: #2563eb; background: #eff6ff; }
 
     /* Toolbar */
     .templates-toolbar {
@@ -1824,11 +1827,12 @@ export interface CodeInjectionTag {
 
     /* Stylized Wireframe Mock */
     .wireframe-mock-box {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
       padding: 10px 12px;
       backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
     }
     .wireframe-header-line {
       display: flex;
@@ -1836,19 +1840,20 @@ export interface CodeInjectionTag {
       gap: 4px;
       margin-bottom: 8px;
       padding-bottom: 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid #f1f5f9;
     }
     .wire-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
+      background: #cbd5e1;
     }
     .wire-title-pill {
       font-family: monospace;
       font-size: 10px;
-      color: #93c5fd;
+      color: #2563eb;
       margin-left: auto;
+      font-weight: 700;
     }
     .wireframe-body {
       display: flex;
@@ -1858,17 +1863,17 @@ export interface CodeInjectionTag {
     .wire-icon-wrap {
       width: 32px;
       height: 32px;
-      background: rgba(255, 255, 255, 0.1);
+      background: #eff6ff;
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #38bdf8;
+      color: #2563eb;
     }
     .wire-icon-wrap .material-symbols-outlined { font-size: 18px; }
     .wire-text-col { display: flex; flex-direction: column; }
-    .wire-sub { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
-    .wire-h { font-size: 12px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+    .wire-sub { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .wire-h { font-size: 12px; color: #0f172a; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
     /* Card Content */
     .card-body {
@@ -4101,6 +4106,9 @@ export class MyTemplatesComponent implements OnInit {
     });
   }
 
+  /**
+   * Loads installed templates from local storage or defaults, auto-migrating legacy dark templates.
+   */
   loadInstalledTemplates(): void {
     const stored = localStorage.getItem('oz_installed_templates');
     const storedMenu = localStorage.getItem('oz_active_menu_id');
@@ -4119,7 +4127,16 @@ export class MyTemplatesComponent implements OnInit {
     if (storedBreadcrumb) this.activeBreadcrumbId = storedBreadcrumb;
     if (storedEcommerce) this.activeEcommerceId = storedEcommerce;
 
-    if (stored) {
+    const v2MigrationKey = 'oz_installed_templates_v2_light';
+    const isV2Migrated = localStorage.getItem(v2MigrationKey);
+    const hasLegacyDark = stored && (stored.includes('#0f172a') || stored.includes('#090d16') || stored.includes('Hero_DarkGlow') || stored.includes('Menu_DarkGlass'));
+
+    if (!isV2Migrated || hasLegacyDark || !stored) {
+      // Clean migration: replace outdated dark starter templates with clean light templates
+      this.installedTemplates = this.getInitialInstalledTemplates();
+      this.saveInstalledTemplates();
+      localStorage.setItem(v2MigrationKey, 'true');
+    } else {
       try {
         this.installedTemplates = JSON.parse(stored);
         const menuObj = this.installedTemplates.find(t => t.category === 'menu');
@@ -4137,11 +4154,9 @@ export class MyTemplatesComponent implements OnInit {
         const ecomObj = this.installedTemplates.find(t => t.category === 'ecommerce');
         if (ecomObj && !storedEcommerce) this.activeEcommerceId = ecomObj.id;
       } catch (e) {
-        this.installedTemplates = [];
+        this.installedTemplates = this.getInitialInstalledTemplates();
+        this.saveInstalledTemplates();
       }
-    } else {
-      this.installedTemplates = this.getInitialInstalledTemplates();
-      this.saveInstalledTemplates();
     }
     this.applyFilters();
 
@@ -4172,7 +4187,7 @@ export class MyTemplatesComponent implements OnInit {
                 variantCode: apiT.variantCode,
                 tag: 'custom',
                 description: 'Installed template blueprint from Master catalog.',
-                thumbnailGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
                 previewIcon: 'widgets',
                 previewSubtitle: apiT.categoryKey,
                 previewTitle: apiT.name,
@@ -4702,249 +4717,323 @@ export class MyTemplatesComponent implements OnInit {
     return [
       {
         id: 'menu-01',
-        name: 'Classic Corporate Navbar',
+        name: 'Classic Light Navbar',
         category: 'menu',
         variantCode: 'Menu_Classic',
         badge: 'Popular',
         tag: 'corporate',
-        description: 'Standard corporate left logo, centered navigation links, and right Get Started CTA button.',
-        thumbnailGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        description: 'Clean light corporate navbar with brand logo, centered navigation links, and right Get Started CTA button.',
+        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
         previewIcon: 'menu',
-        previewSubtitle: 'Header Navigation',
+        previewSubtitle: 'Light Navbar',
         previewTitle: 'Acme Enterprise Solutions',
         previewBody: 'Features • Solutions • Pricing • Company • Contact',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <nav class="oz-nav-classic">
-            <div class="oz-nav-brand-row">
-              <a href="#" class="oz-brand-link">
-                <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
-                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'38\\' height=\\'38\\' rx=\\'9\\' fill=\\'%230050E5\\'/><path d=\\'M13 25V13L25 25V13\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'48\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'16\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%230050E5\\'>.BCC</tspan></text></svg>'"
-                     alt="Brand Logo" class="oz-brand-logo-img" />
-              </a>
-              <button type="button" class="oz-mobile-toggle" onclick="this.closest('.oz-nav-classic').classList.toggle('oz-menu-open')">
-                <span class="oz-toggle-bar"></span>
-                <span class="oz-toggle-bar"></span>
-                <span class="oz-toggle-bar"></span>
-              </button>
-            </div>
-            <div class="oz-nav-links">
-              <a href="#">Overview</a><a href="#">Solutions</a><a href="#">Products</a><a href="#">Pricing</a><a href="#">Contact</a>
-            </div>
-            <div class="oz-nav-cta">
-              <a href="#" class="oz-btn-nav">Get Started</a>
-            </div>
-          </nav>
+          <header class="oz-nav-header {{ CustomClass }}">
+            <nav class="oz-nav-classic">
+              <div class="oz-nav-brand-row">
+                <a href="/" class="oz-brand-link">
+                  <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
+                       onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'36\\' height=\\'36\\' rx=\\'8\\' fill=\\'%232563EB\\'/><path d=\\'M12 24V12L24 24V12\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'46\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'15\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%232563EB\\'>.BCC</tspan></text></svg>'"
+                       alt="{{ BrandName }}" class="oz-brand-logo-img" />
+                </a>
+                <button type="button" class="oz-mobile-toggle" onclick="this.closest('.oz-nav-classic').classList.toggle('oz-menu-open')">
+                  <span class="oz-toggle-bar"></span>
+                  <span class="oz-toggle-bar"></span>
+                  <span class="oz-toggle-bar"></span>
+                </button>
+              </div>
+              <div class="oz-nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#features">Features</a>
+                <a href="#solutions">Solutions</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#contact">Contact</a>
+              </div>
+              <div class="oz-nav-cta">
+                <a href="{{ ButtonLink }}" class="oz-btn-nav">{{ ButtonText }}</a>
+              </div>
+            </nav>
+          </header>
         `,
         cssStyles: `
-          .oz-nav-classic { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; background: #ffffff; border-bottom: 1px solid #e2e8f0; font-family: Inter, sans-serif; position: relative; }
+          .oz-nav-header { width: 100%; background: #ffffff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+          .oz-nav-classic { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; }
           .oz-nav-brand-row { display: flex; justify-content: space-between; align-items: center; }
           .oz-brand-link { display: inline-flex; align-items: center; text-decoration: none; }
-          .oz-brand-logo-img { height: 36px; max-height: 38px; width: auto; object-fit: contain; display: block; }
+          .oz-brand-logo-img { height: 34px; max-height: 38px; width: auto; object-fit: contain; display: block; }
           .oz-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 6px; flex-direction: column; gap: 5px; }
           .oz-toggle-bar { display: block; width: 22px; height: 2px; background: #0f172a; border-radius: 2px; }
-          .oz-nav-links { display: flex; gap: 24px; }
-          .oz-nav-links a { color: #475569; text-decoration: none; font-size: 13.5px; font-weight: 600; }
-          .oz-nav-links a:hover { color: #0050e5; }
-          .oz-btn-nav { background: #0050e5; color: #fff; padding: 8px 16px; border-radius: 7px; text-decoration: none; font-size: 13px; font-weight: 700; display: inline-block; }
+          .oz-nav-links { display: flex; gap: 28px; }
+          .oz-nav-links a { color: #334155; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.15s ease; }
+          .oz-nav-links a:hover { color: #2563eb; }
+          .oz-btn-nav { background: #2563eb; color: #ffffff; padding: 9px 18px; border-radius: 8px; text-decoration: none; font-size: 13.5px; font-weight: 700; display: inline-block; transition: background 0.15s ease; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
+          .oz-btn-nav:hover { background: #1d4ed8; }
 
-          @media(max-width: 768px), (max-width: 100%) {
-            .viewport-mobile .oz-nav-classic { flex-direction: column; align-items: stretch; padding: 16px 20px; }
+          @media(max-width: 768px) {
+            .viewport-mobile .oz-nav-classic, .oz-nav-classic.oz-menu-open { flex-direction: column; align-items: stretch; padding: 14px 18px; }
             .viewport-mobile .oz-nav-brand-row { width: 100%; }
             .viewport-mobile .oz-mobile-toggle { display: flex; }
-            .viewport-mobile .oz-nav-links { display: flex; flex-direction: column; gap: 12px; padding: 16px 0 10px 0; border-top: 1px solid #f1f5f9; margin-top: 14px; }
-            .viewport-mobile .oz-nav-cta { width: 100%; margin-top: 8px; }
+            .viewport-mobile .oz-nav-links { display: none; flex-direction: column; gap: 14px; padding: 16px 0 10px 0; border-top: 1px solid #f1f5f9; margin-top: 12px; }
+            .oz-nav-classic.oz-menu-open .oz-nav-links { display: flex; }
+            .viewport-mobile .oz-nav-cta { display: none; width: 100%; margin-top: 8px; }
+            .oz-nav-classic.oz-menu-open .oz-nav-cta { display: block; }
             .viewport-mobile .oz-btn-nav { display: block; text-align: center; }
           }
         `
       },
       {
         id: 'hero-01',
-        name: 'Split Product Showcase with CTA',
+        name: 'Modern Light Hero with Card Preview',
         category: 'hero',
         variantCode: 'Hero_SplitProduct',
         badge: 'Popular',
         tag: 'modern',
-        description: 'High-conversion split hero with left bold typography, value proposition chips, dual action buttons, and right 3D card showcase.',
-        thumbnailGradient: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+        description: 'Clean light split hero with left bold typography, value proposition chips, dual action buttons, and right elevated showcase card.',
+        thumbnailGradient: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)',
         previewIcon: 'view_carousel',
-        previewSubtitle: 'Split Screen Hero',
+        previewSubtitle: 'Modern Light Hero',
         previewTitle: 'Next-Gen Business Governance',
         previewBody: 'Empower committee leadership with automated financial controls.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <section class="oz-hero-split">
-            <div class="oz-hero-content">
-              <span class="oz-pill">✦ NEXT-GEN GOVERNANCE PLATFORM</span>
-              <h1 class="oz-hero-h1">The Operating System for Modern Organizations</h1>
-              <p class="oz-hero-lead">Automate financial dues, manage committees, verify voter ballots, and streamline membership workflows in one centralized hub.</p>
-              <div class="oz-hero-btns">
-                <a href="#" class="oz-btn-primary">Start Free Trial →</a>
-                <a href="#" class="oz-btn-ghost">Watch 2-Min Demo</a>
-              </div>
-            </div>
-            <div class="oz-hero-media">
-              <div class="oz-mock-card">
-                <div class="oz-card-stat">
-                  <span class="oz-stat-num">$1.4M+</span>
-                  <span class="oz-stat-lbl">Processed Dues</span>
+          <section class="oz-hero-light {{ CustomClass }}">
+            <div class="oz-hero-container">
+              <div class="oz-hero-content">
+                <span class="oz-pill-badge">✦ {{ MiniTitle }}</span>
+                <h1 class="oz-hero-title">{{ Title }}</h1>
+                <p class="oz-hero-lead">{{ Description }}</p>
+                <div class="oz-hero-actions">
+                  <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }} →</a>
+                  <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
                 </div>
-                <div class="oz-card-graph"></div>
+                <div class="oz-hero-trust-row">
+                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> Instant Setup</span>
+                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> Bank-Grade Security</span>
+                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> 99.9% Uptime</span>
+                </div>
+              </div>
+              <div class="oz-hero-media">
+                <div class="oz-elevated-card">
+                  <div class="oz-card-top-bar">
+                    <div class="oz-card-dots">
+                      <span class="dot dot-red"></span>
+                      <span class="dot dot-amber"></span>
+                      <span class="dot dot-green"></span>
+                    </div>
+                    <span class="oz-card-domain">workspace.verified</span>
+                  </div>
+                  <div class="oz-card-stat-box">
+                    <span class="oz-stat-label">Executive Metrics</span>
+                    <span class="oz-stat-value">$1,450,000+</span>
+                    <span class="oz-stat-delta">+24.8% Active Growth</span>
+                  </div>
+                  <div class="oz-card-preview-strip">
+                    <div class="oz-strip-item">
+                      <span class="oz-strip-title">Platform Status</span>
+                      <span class="oz-strip-tag">Operational</span>
+                    </div>
+                    <div class="oz-strip-item">
+                      <span class="oz-strip-title">Data Sovereignty</span>
+                      <span class="oz-strip-tag">Isolated DB</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
         `,
         cssStyles: `
-          .oz-hero-split { display: flex; align-items: center; justify-content: space-between; padding: 70px 48px; background: #0f172a; color: #ffffff; font-family: Inter, sans-serif; gap: 40px; }
-          .oz-hero-content { flex: 1; max-width: 580px; }
-          .oz-pill { background: rgba(79, 70, 229, 0.3); color: #818cf8; padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 800; display: inline-block; margin-bottom: 16px; border: 1px solid rgba(129, 140, 248, 0.3); }
-          .oz-hero-h1 { font-size: 38px; font-weight: 900; line-height: 1.15; margin: 0 0 16px 0; letter-spacing: -0.02em; }
-          .oz-hero-lead { font-size: 15px; color: #94a3b8; line-height: 1.6; margin: 0 0 28px 0; }
-          .oz-hero-btns { display: flex; gap: 14px; }
-          .oz-btn-primary { background: #0050e5; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13.5px; }
-          .oz-btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 12px 22px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13.5px; }
-          .oz-hero-media { flex: 1; display: flex; justify-content: center; }
-          .oz-mock-card { width: 100%; max-width: 380px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
-          .oz-stat-num { font-size: 32px; font-weight: 900; color: #38bdf8; display: block; }
-          .oz-stat-lbl { font-size: 13px; color: #94a3b8; }
-          .oz-card-graph { height: 70px; margin-top: 20px; background: linear-gradient(90deg, rgba(56, 189, 248, 0.2), rgba(79, 70, 229, 0.4)); border-radius: 8px; border: 1px dashed rgba(56, 189, 248, 0.4); }
+          .oz-hero-light { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 80px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
+          .oz-hero-container { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 50px; }
+          .oz-hero-content { flex: 1.1; max-width: 600px; }
+          .oz-pill-badge { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 800; display: inline-block; margin-bottom: 18px; letter-spacing: 0.04em; }
+          .oz-hero-title { font-size: 42px; font-weight: 900; line-height: 1.15; color: #0f172a; margin: 0 0 16px 0; letter-spacing: -0.025em; }
+          .oz-hero-lead { font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 30px 0; }
+          .oz-hero-actions { display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
+          .oz-btn-primary { background: #2563eb; color: #ffffff; padding: 13px 26px; border-radius: 9px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block; transition: background 0.15s ease; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+          .oz-btn-primary:hover { background: #1d4ed8; }
+          .oz-btn-secondary { background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; padding: 13px 24px; border-radius: 9px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block; transition: all 0.15s ease; }
+          .oz-btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+          .oz-hero-trust-row { display: flex; gap: 20px; font-size: 12.5px; color: #64748b; font-weight: 600; flex-wrap: wrap; }
+          .oz-trust-item { display: flex; align-items: center; gap: 5px; }
+          .oz-trust-check { color: #10b981; font-weight: 800; }
+          .oz-hero-media { flex: 0.9; display: flex; justify-content: center; }
+          .oz-elevated-card { width: 100%; max-width: 420px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); }
+          .oz-card-top-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; }
+          .oz-card-dots { display: flex; gap: 6px; }
+          .dot { width: 10px; height: 10px; border-radius: 50%; display: block; }
+          .dot-red { background: #fca5a5; }
+          .dot-amber { background: #fde68a; }
+          .dot-green { background: #86efac; }
+          .oz-card-domain { font-size: 11px; font-family: monospace; color: #94a3b8; font-weight: 600; }
+          .oz-card-stat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+          .oz-stat-label { font-size: 11.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
+          .oz-stat-value { font-size: 32px; font-weight: 900; color: #0f172a; display: block; letter-spacing: -0.02em; }
+          .oz-stat-delta { font-size: 12px; color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+          .oz-card-preview-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+          .oz-strip-item { background: #f1f5f9; padding: 10px 12px; border-radius: 8px; }
+          .oz-strip-title { font-size: 10.5px; color: #64748b; font-weight: 600; display: block; }
+          .oz-strip-tag { font-size: 12px; color: #0f172a; font-weight: 800; display: block; margin-top: 2px; }
 
-          @media(max-width: 768px), (max-width: 100%) {
-            .viewport-mobile .oz-hero-split { flex-direction: column; padding: 40px 20px; text-align: center; }
-            .viewport-mobile .oz-hero-btns { flex-direction: column; }
-            .viewport-mobile .oz-hero-h1 { font-size: 26px; }
+          @media(max-width: 900px) {
+            .viewport-mobile .oz-hero-container, .oz-hero-container { flex-direction: column; text-align: center; }
+            .oz-hero-content { max-width: 100%; }
+            .oz-hero-title { font-size: 30px; }
+            .oz-hero-actions { justify-content: center; }
+            .oz-hero-trust-row { justify-content: center; }
+            .oz-hero-media { width: 100%; }
           }
         `
       },
       {
         id: 'body-01',
-        name: '3-Column Modern Feature Grid',
+        name: '3-Column Light Feature Grid',
         category: 'body',
         variantCode: 'Body_FeatureGrid3',
         badge: 'Popular',
         tag: 'modern',
-        description: '3-Column card matrix highlighting primary platform pillars with modern hover lifts and border accents.',
-        thumbnailGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+        description: '3-Column clean card matrix highlighting primary platform pillars with modern light cards, subtle borders, and pastel badges.',
+        thumbnailGradient: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)',
         previewIcon: 'view_quilt',
-        previewSubtitle: '3-Column Cards',
+        previewSubtitle: 'Light Feature Grid',
         previewTitle: 'Engineered for Performance & Scale',
         previewBody: 'Real-time sync, zero trust security, and automated multi-tenant provisioning.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <section class="oz-feat3">
-            <div class="oz-feat-head">
-              <span class="oz-pill-sub">CORE CAPABILITIES</span>
-              <h2>Engineered for Performance & Scale</h2>
-              <p>Experience enterprise reliability, real-time socket events, and bank-grade data sovereignty.</p>
-            </div>
-            <div class="oz-feat3-grid">
-              <div class="oz-feat3-card">
-                <div class="oz-feat-icon">⚡</div>
-                <h3>Real-Time Sync</h3>
-                <p>Instantaneous SignalR WebSocket state propagation across all devices with zero polling latency.</p>
+          <section class="oz-feat-light {{ CustomClass }}">
+            <div class="oz-feat-container">
+              <div class="oz-feat-header">
+                <span class="oz-feat-badge">{{ MiniTitle }}</span>
+                <h2 class="oz-feat-title">{{ Title }}</h2>
+                <p class="oz-feat-lead">{{ Description }}</p>
               </div>
-              <div class="oz-feat3-card">
-                <div class="oz-feat-icon">🛡️</div>
-                <h3>Granular RBAC</h3>
-                <p>Fine-grained permission matrices for committee chairs, financial auditors, and general members.</p>
-              </div>
-              <div class="oz-feat3-card">
-                <div class="oz-feat-icon">☁️</div>
-                <h3>Cloud Vault</h3>
-                <p>Fully compliant Cloudinary digital asset streaming and secure document vaults.</p>
+              <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                  <div class="oz-card-icon-pill">⚡</div>
+                  <h3 class="oz-card-title">Real-Time Sync</h3>
+                  <p class="oz-card-desc">Instantaneous SignalR WebSocket state propagation across all devices with zero polling latency.</p>
+                </div>
+                <div class="oz-feat-card">
+                  <div class="oz-card-icon-pill">🛡️</div>
+                  <h3 class="oz-card-title">Granular RBAC</h3>
+                  <p class="oz-card-desc">Fine-grained permission matrices for committee chairs, financial auditors, and general members.</p>
+                </div>
+                <div class="oz-feat-card">
+                  <div class="oz-card-icon-pill">☁️</div>
+                  <h3 class="oz-card-title">Cloud Vault</h3>
+                  <p class="oz-card-desc">Fully compliant Cloudinary digital asset streaming and secure document vaults.</p>
+                </div>
               </div>
             </div>
           </section>
         `,
         cssStyles: `
-          .oz-feat3 { padding: 80px 48px; background: #ffffff; font-family: Inter, sans-serif; }
-          .oz-feat-head { text-align: center; max-width: 650px; margin: 0 auto 50px auto; }
-          .oz-pill-sub { color: #0050e5; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; }
-          .oz-feat-head h2 { font-size: 32px; font-weight: 900; color: #0f172a; margin: 8px 0 12px 0; }
-          .oz-feat-head p { color: #64748b; font-size: 14.5px; line-height: 1.6; margin: 0; }
-          .oz-feat3-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; max-width: 1100px; margin: 0 auto; }
-          .oz-feat3-card { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 32px 24px; transition: transform 0.2s, border-color 0.2s; }
-          .oz-feat3-card:hover { transform: translateY(-4px); border-color: #0050e5; }
-          .oz-feat-icon { font-size: 32px; margin-bottom: 16px; }
-          .oz-feat3-card h3 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
-          .oz-feat3-card p { font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0; }
+          .oz-feat-light { padding: 80px 24px; background: #ffffff; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
+          .oz-feat-container { max-width: 1200px; margin: 0 auto; }
+          .oz-feat-header { text-align: center; max-width: 650px; margin: 0 auto 50px auto; }
+          .oz-feat-badge { color: #2563eb; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+          .oz-feat-title { font-size: 34px; font-weight: 900; color: #0f172a; margin: 8px 0 12px 0; letter-spacing: -0.02em; }
+          .oz-feat-lead { color: #64748b; font-size: 15px; line-height: 1.6; margin: 0; }
+          .oz-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+          .oz-feat-card { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 32px 24px; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+          .oz-feat-card:hover { transform: translateY(-4px); border-color: #2563eb; box-shadow: 0 12px 25px rgba(37,99,235,0.08); background: #ffffff; }
+          .oz-card-icon-pill { width: 48px; height: 48px; background: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 20px; color: #2563eb; border: 1px solid #dbeafe; }
+          .oz-card-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
+          .oz-card-desc { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0; }
 
-          @media(max-width: 768px), (max-width: 100%) {
-            .viewport-mobile .oz-feat3-grid { grid-template-columns: 1fr; }
-            .viewport-mobile .oz-feat3 { padding: 40px 20px; }
+          @media(max-width: 850px) {
+            .viewport-mobile .oz-feat-grid, .oz-feat-grid { grid-template-columns: 1fr; }
+            .oz-feat-light { padding: 50px 20px; }
           }
         `
       },
       {
         id: 'footer-01',
-        name: '4-Column Corporate Footer with Newsletter',
+        name: 'Clean Light Corporate Footer',
         category: 'footer',
         variantCode: 'Footer_4ColCorporate',
         badge: 'Popular',
         tag: 'corporate',
-        description: 'Comprehensive footer with brand overview, product links, company resources, legal disclaimers, and inline newsletter subscription.',
-        thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+        description: 'Clean light multi-column corporate footer with brand overview, product links, company resources, and inline newsletter subscription.',
+        thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         previewIcon: 'dock_to_bottom',
-        previewSubtitle: '4-Column Footer',
+        previewSubtitle: 'Light Footer',
         previewTitle: 'Acme Enterprise Corporation',
-        previewBody: 'Product, Solutions, Legal links and copyright bar.',
+        previewBody: 'Product, Solutions, Legal links, and copyright bar.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <footer class="oz-footer-4col">
-            <div class="oz-footer-top">
-              <div class="oz-foot-brand">
-                <a href="#" class="oz-brand-link">
-                  <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-light.svg"
-                       onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'38\\' height=\\'38\\' rx=\\'9\\' fill=\\'%2338BDF8\\'/><path d=\\'M13 25V13L25 25V13\\' stroke=\\'%230F172A\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'48\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'16\\' font-weight=\\'800\\' fill=\\'%23FFFFFF\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%2338BDF8\\'>.BCC</tspan></text></svg>'"
-                       alt="Brand Logo" class="oz-brand-logo-img" style="margin-bottom: 14px;" />
-                </a>
-                <p>Empowering leadership teams with automated governance, financial integrity, and member engagement.</p>
+          <footer class="oz-footer-light {{ CustomClass }}">
+            <div class="oz-foot-container">
+              <div class="oz-foot-top">
+                <div class="oz-foot-brand-col">
+                  <a href="/" class="oz-brand-link">
+                    <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
+                         onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'36\\' height=\\'36\\' rx=\\'8\\' fill=\\'%232563EB\\'/><path d=\\'M12 24V12L24 24V12\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'46\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'15\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%232563EB\\'>.BCC</tspan></text></svg>'"
+                         alt="{{ BrandName }}" class="oz-brand-logo-img" style="margin-bottom: 14px;" />
+                  </a>
+                  <p class="oz-foot-tagline">{{ Description }}</p>
+                </div>
+                <div class="oz-foot-links-col">
+                  <h4 class="oz-foot-col-title">Platform</h4>
+                  <a href="#">Solutions</a>
+                  <a href="#">Committees</a>
+                  <a href="#">E-Voting System</a>
+                  <a href="#">Financial Controls</a>
+                </div>
+                <div class="oz-foot-links-col">
+                  <h4 class="oz-foot-col-title">Organization</h4>
+                  <a href="#">About Us</a>
+                  <a href="#">Leadership</a>
+                  <a href="#">Security & Privacy</a>
+                  <a href="#">Help & Support</a>
+                </div>
+                <div class="oz-foot-newsletter-col">
+                  <h4 class="oz-foot-col-title">Stay Connected</h4>
+                  <p class="oz-newsletter-desc">Subscribe to our dispatch for organizational announcements.</p>
+                  <div class="oz-newsletter-form">
+                    <input type="email" placeholder="Enter your email..." class="oz-news-input" />
+                    <button type="button" class="oz-news-btn">Join</button>
+                  </div>
+                </div>
               </div>
-              <div class="oz-foot-col">
-                <h4>Solutions</h4>
-                <a href="#">Committees</a><a href="#">E-Voting</a><a href="#">Dues & Wallets</a><a href="#">Recruitment</a>
+              <div class="oz-foot-bottom">
+                <span class="oz-copy-text">{{ Copyright }}</span>
+                <div class="oz-powered-wrap">
+                  {{ PoweredBy }}
+                </div>
               </div>
-              <div class="oz-foot-col">
-                <h4>Company</h4>
-                <a href="#">About Us</a><a href="#">Leadership</a><a href="#">Careers</a><a href="#">Contact Support</a>
-              </div>
-              <div class="oz-foot-col">
-                <h4>Stay Updated</h4>
-                <p style="font-size: 12.5px; color: #94a3b8; margin: 0 0 10px 0;">Subscribe for platform updates.</p>
-                <div class="oz-foot-sub-box"><input type="email" placeholder="Enter email" /><button>Join</button></div>
-              </div>
-            </div>
-            <div class="oz-foot-bottom">
-              <span>© 2026 Workspace Corporation. All rights reserved.</span>
-              <div class="oz-foot-links"><a href="#">Privacy Policy</a><a href="#">Terms of Service</a><a href="#">Security</a></div>
             </div>
           </footer>
         `,
         cssStyles: `
-          .oz-footer-4col { background: #090d16; color: #cbd5e1; padding: 60px 48px 30px 48px; font-family: Inter, sans-serif; border-top: 1px solid #1e293b; }
-          .oz-footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; max-width: 1100px; margin: 0 auto 50px auto; }
-          .oz-brand-link { display: inline-flex; align-items: center; text-decoration: none; }
-          .oz-brand-logo-img { height: 32px; max-height: 38px; width: auto; object-fit: contain; display: block; }
-          .oz-foot-brand p { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-top: 12px; max-width: 280px; }
-          .oz-foot-col h4 { font-size: 13.5px; font-weight: 800; color: #fff; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-          .oz-foot-col a { display: block; color: #94a3b8; text-decoration: none; font-size: 13px; margin-bottom: 10px; transition: color 0.15s; }
-          .oz-foot-col a:hover { color: #38bdf8; }
-          .oz-foot-sub-box { display: flex; gap: 6px; }
-          .oz-foot-sub-box input { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #fff; flex: 1; }
-          .oz-foot-sub-box button { background: #0050e5; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
-          .oz-foot-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1e293b; padding-top: 24px; max-width: 1100px; margin: 0 auto; font-size: 12px; color: #64748b; }
-          .oz-foot-links { display: flex; gap: 20px; }
-          .oz-foot-links a { color: #64748b; text-decoration: none; }
-          .oz-foot-links a:hover { color: #cbd5e1; }
+          .oz-footer-light { background: #f8fafc; color: #475569; padding: 60px 24px 28px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; border-top: 1px solid #e2e8f0; }
+          .oz-foot-container { max-width: 1200px; margin: 0 auto; }
+          .oz-foot-top { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1.6fr; gap: 40px; margin-bottom: 48px; }
+          .oz-foot-brand-col .oz-brand-link { display: inline-flex; text-decoration: none; }
+          .oz-brand-logo-img { height: 32px; max-height: 36px; width: auto; object-fit: contain; display: block; }
+          .oz-foot-tagline { font-size: 13.5px; color: #64748b; line-height: 1.6; margin-top: 10px; max-width: 300px; }
+          .oz-foot-col-title { font-size: 13px; font-weight: 800; color: #0f172a; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .oz-foot-links-col a { display: block; color: #64748b; text-decoration: none; font-size: 13.5px; margin-bottom: 10px; transition: color 0.15s ease; }
+          .oz-foot-links-col a:hover { color: #2563eb; }
+          .oz-newsletter-desc { font-size: 13px; color: #64748b; margin: 0 0 12px 0; line-height: 1.5; }
+          .oz-newsletter-form { display: flex; gap: 8px; }
+          .oz-news-input { background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #0f172a; flex: 1; outline: none; }
+          .oz-news-input:focus { border-color: #2563eb; }
+          .oz-news-btn { background: #2563eb; color: #ffffff; border: none; border-radius: 8px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.15s ease; }
+          .oz-news-btn:hover { background: #1d4ed8; }
+          .oz-foot-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 24px; font-size: 12.5px; color: #64748b; flex-wrap: wrap; gap: 12px; }
+          .oz-powered-wrap a { color: #2563eb; font-weight: 700; text-decoration: none; }
 
-          @media(max-width: 768px), (max-width: 100%) {
-            .viewport-mobile .oz-footer-top { grid-template-columns: 1fr; gap: 30px; }
-            .viewport-mobile .oz-foot-bottom { flex-direction: column; gap: 14px; text-align: center; }
-            .viewport-mobile .oz-footer-4col { padding: 40px 20px; }
+          @media(max-width: 850px) {
+            .viewport-mobile .oz-foot-top, .oz-foot-top { grid-template-columns: 1fr; gap: 32px; }
+            .viewport-mobile .oz-foot-bottom, .oz-foot-bottom { flex-direction: column; text-align: center; }
+            .oz-footer-light { padding: 40px 20px; }
           }
         `
       }
