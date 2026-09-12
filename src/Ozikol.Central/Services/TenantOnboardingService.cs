@@ -1527,7 +1527,6 @@ public class TenantOnboardingService : ITenantOnboardingService
     </div>
     <div class=""border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted"">
       <div>&copy; {{ Year }} {{ BrandName }}. All rights reserved.</div>
-      <div>Powered by <a href=""https://ozikol.cloud"" target=""_blank"" rel=""noopener noreferrer"" class=""text-primary fw-bold text-decoration-none"">Ozikol</a>.</div>
     </div>
   </div>
 </footer>",

@@ -4339,6 +4339,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         if (newsletterObj && !storedNewsletter) this.activeNewsletterId = newsletterObj.id;
         const footerObj = this.installedTemplates.find(t => t.category === 'footer');
         if (footerObj && !storedFooter) this.activeFooterId = footerObj.id;
+        if (footerObj && footerObj.htmlTemplate.includes('Powered by')) {
+          footerObj.htmlTemplate = footerObj.htmlTemplate.replace(/\s*<div>Powered by[\s\S]*?<\/div>/gi, '');
+          this.saveInstalledTemplates();
+        }
         const blogObj = this.installedTemplates.find(t => t.category === 'blog');
         if (blogObj && !storedBlog) this.activeBlogId = blogObj.id;
         const breadcrumbObj = this.installedTemplates.find(t => t.category === 'breadcrumb');
@@ -4767,7 +4771,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return html.replace(/powered\s+by\s+(?:<a[^>]*>)?(?:[^<]+(?:<\/a>)?)?(\.|\s*)?/gi, `${standardCredit} `);
     }
 
-    // 2. If no powered-by line exists at all, inject an adaptive bottom strip right before </footer> or at the end
+    // 2. If the footer has a bottom row with justify-content-between, inject credit inside it on the right
+    if (/justify-content-between/i.test(html)) {
+      const match = html.match(/(<div[^>]*class=["'][^"']*justify-content-between[^"']*["'][^>]*>[\s\S]*?<div>[^<]*&copy;[\s\S]*?<\/div>)([\s\S]*?<\/div>)/i);
+      if (match) {
+        return html.replace(/(<div[^>]*class=["'][^"']*justify-content-between[^"']*["'][^>]*>[\s\S]*?<div>[^<]*&copy;[\s\S]*?<\/div>)([\s\S]*?<\/div>)/i, `$1\n      <div>${standardCredit}</div>$2`);
+      }
+    }
+
+    // 3. If no powered-by line exists at all, inject an adaptive bottom strip right before </footer> or at the end
     const strip = `\n<div class="ozikol-enforced-credit-bar" style="border-top: 1px solid rgba(150,150,150,0.15); padding: 14px 20px; text-align: center; font-size: 11.5px; opacity: 0.85; letter-spacing: 0.02em;">${standardCredit}</div>\n`;
 
     if (/<\/footer>/i.test(html)) {
@@ -6135,7 +6147,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     </div>
     <div class="border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted">
       <div>&copy; {{ Year }} {{ BrandName }}. All rights reserved.</div>
-      <div>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" class="text-primary fw-bold text-decoration-none">Ozikol</a>.</div>
     </div>
   </div>
 </footer>`,
