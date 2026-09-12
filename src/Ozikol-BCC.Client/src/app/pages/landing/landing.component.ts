@@ -1787,6 +1787,13 @@ export class LandingComponent implements OnInit {
                   document.head.appendChild(s);
                   child.remove();
                 } else {
+                  if (child.tagName === 'LINK') {
+                    const rel = (child.getAttribute('rel') || '').toLowerCase();
+                    if ((rel.includes('icon') || rel.includes('shortcut')) && !child.getAttribute('href')) {
+                      const fallback = this.brand?.companyIconUrl || this.brand?.companyLogoUrl || '/favicon.ico';
+                      child.setAttribute('href', fallback);
+                    }
+                  }
                   document.head.appendChild(child);
                 }
               }
@@ -1840,6 +1847,11 @@ export class LandingComponent implements OnInit {
           this.brand = { ...this.brand, ...res.data };
           if (this.brand.companyName) {
             document.title = `${this.brand.companyName} - Official Portal`;
+          }
+          const activeIcon = this.brand.companyIconUrl || this.brand.companyLogoUrl || '/favicon.ico';
+          const favicons = document.querySelectorAll("link[rel*='icon']");
+          if (favicons.length > 0) {
+            favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
           }
         }
       },

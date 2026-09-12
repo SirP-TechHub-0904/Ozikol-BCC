@@ -311,7 +311,10 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Retrieves all active code injection tags for public UI rendering,
         /// grouped by zone ("head", "body_open", "footer") and ordered by SortOrder ascending.
+        /// Resolves dynamic brand placeholders (FaviconUrl, LogoUrl, BrandName, CanonicalUrl)
+        /// with guaranteed fallbacks to prevent empty attribute references.
         /// </summary>
+        /// <returns>Grouped active code injection tags.</returns>
         [HttpGet("code-injections")]
         public async Task<IActionResult> GetPublicCodeInjections()
         {
@@ -320,6 +323,45 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderBy(t => t.SortOrder)
                 .ThenBy(t => t.CreatedAtUtc)
                 .ToListAsync();
+
+            // Resolve tenant brand settings to hydrate placeholders dynamically
+            var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brandName = !string.IsNullOrWhiteSpace(config?.CompanyName)
+                ? config.CompanyName
+                : (!string.IsNullOrWhiteSpace(config?.WebsiteTitle) ? config.WebsiteTitle : "Ozikol");
+            var faviconUrl = !string.IsNullOrWhiteSpace(config?.CompanyIconUrl)
+                ? config.CompanyIconUrl
+                : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : "/favicon.ico");
+            var logoUrl = !string.IsNullOrWhiteSpace(config?.CompanyLogoUrl)
+                ? config.CompanyLogoUrl
+                : faviconUrl;
+            var description = config?.CompanyDescription ?? string.Empty;
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            // Hydrate dynamic tokens so client receives valid URLs with zero empty hrefs
+            foreach (var tag in activeTags)
+            {
+                if (string.IsNullOrWhiteSpace(tag.Content)) continue;
+
+                var hydrated = tag.Content
+                    .Replace("{{ FaviconUrl }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Favicon }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ LogoUrl }}", logoUrl, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ BrandName }}", brandName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Title }}", brandName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ MetaDescription }}", description, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Description }}", description, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ CanonicalUrl }}", baseUrl, StringComparison.OrdinalIgnoreCase);
+
+                // Universal safety guard: replace empty href="" on shortcut icon / icon tags with fallback
+                hydrated = System.Text.RegularExpressions.Regex.Replace(
+                    hydrated,
+                    @"(<link[^>]*rel=[""'](?:shortcut icon|icon)[""'][^>]*href=[""'])\s*([""'])",
+                    $"$1{faviconUrl}$2",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                tag.Content = hydrated;
+            }
 
             var head = activeTags.Where(t => t.Zone.Equals("head", StringComparison.OrdinalIgnoreCase)).ToList();
             var bodyOpen = activeTags.Where(t => t.Zone.Equals("body_open", StringComparison.OrdinalIgnoreCase)).ToList();

@@ -358,6 +358,7 @@ END";
                 {
                     Id = Guid.NewGuid(),
                     CompanyName = request.OrganizationName,
+                    CompanyIconUrl = "/favicon.ico",
                     WebsiteTitle = request.OrganizationName,
                     DashboardTitle = $"{request.OrganizationName} Command Center",
                     TemplateLayoutKey = "standard",
