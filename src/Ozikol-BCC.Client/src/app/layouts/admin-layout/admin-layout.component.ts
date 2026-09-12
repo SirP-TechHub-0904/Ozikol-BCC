@@ -1587,15 +1587,18 @@ export class AdminLayoutComponent implements OnInit {
             localStorage.removeItem('tenant_logo');
           }
 
-          this.brandIconUrl = res.data.companyIconUrl || '';
-          if (res.data.companyIconUrl) {
-            localStorage.setItem('tenant_icon', res.data.companyIconUrl);
-            const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-            if (favicon) favicon.href = res.data.companyIconUrl;
+          const activeIcon = res.data.companyIconUrl || res.data.companyLogoUrl || '/favicon.ico';
+          this.brandIconUrl = activeIcon;
+          localStorage.setItem('tenant_icon', activeIcon);
+          const favicons = document.querySelectorAll("link[rel*='icon']");
+          if (favicons.length > 0) {
+            favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
           } else {
-            localStorage.removeItem('tenant_icon');
-            const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-            if (favicon) favicon.href = 'data:,';
+            const link = document.createElement('link');
+            link.rel = 'shortcut icon';
+            link.type = 'image/x-icon';
+            link.href = activeIcon;
+            document.head.appendChild(link);
           }
         }
       },

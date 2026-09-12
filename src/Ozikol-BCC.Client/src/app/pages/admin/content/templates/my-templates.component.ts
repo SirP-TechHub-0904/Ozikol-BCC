@@ -3550,6 +3550,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <meta name="twitter:site" content="@{{ BrandName }}" />
 
 <!-- Favicon & Web App Icons -->
+<link rel="shortcut icon" href="{{ FaviconUrl }}" type="image/x-icon" />
 <link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
 <link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
 <link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
@@ -3560,6 +3561,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Favicons, Web App Icons & Manifest (.ico, .png, .svg, Apple Touch)',
       icon: 'star',
       content: `<!-- Standard Web Favicons -->
+<link rel="shortcut icon" href="{{ FaviconUrl }}" type="image/x-icon" />
 <link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
 <link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
 <link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
@@ -3665,6 +3667,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <meta name="twitter:site" content="@{{ BrandName }}" />
 
 <!-- Favicon & Web App Icons -->
+<link rel="shortcut icon" href="{{ FaviconUrl }}" type="image/x-icon" />
 <link rel="icon" type="image/x-icon" href="{{ FaviconUrl }}" />
 <link rel="icon" type="image/png" sizes="32x32" href="{{ Icon32Url }}" />
 <link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
@@ -4729,7 +4732,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         let renderedItem = innerTemplate;
         const icon = (item.iconText && item.iconText.trim().length > 0)
           ? item.iconText.trim()
-          : ((item.icon && item.icon.trim().length > 0) ? item.icon.trim() : 'fa-solid fa-cube');
+          : ((item.icon && item.icon.trim().length > 0) ? item.icon.trim() : '');
 
         renderedItem = renderedItem.replace(/\{\{\s*IconText\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
@@ -4750,12 +4753,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-    output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || 'fa-solid fa-cube');
-    output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || 'fa-solid fa-cube');
-
-    // 2b. Universal safety fallback for empty icon tags
-    output = output.replace(/class=["']\s*fa-solid\s*["']/gi, 'class="fa-solid fa-cube"');
-    output = output.replace(/<i\s+class=["']\s*["']\s*><\/i>/gi, '<i class="fa-solid fa-cube"></i>');
+    output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
+    output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');
+    const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
+    output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
 
     // 3. Global Brand & Year placeholders (universal case-insensitive resolution)
     const brandName = ctx.BrandName || this.currentTenantBrandName || 'Organization Portal';

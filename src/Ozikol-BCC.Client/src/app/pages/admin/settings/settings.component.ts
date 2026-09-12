@@ -2922,14 +2922,17 @@ export class SettingsComponent implements OnInit {
         } else {
           localStorage.removeItem('tenant_logo');
         }
-        if (this.brand.companyIconUrl) {
-          localStorage.setItem('tenant_icon', this.brand.companyIconUrl);
-          const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-          if (favicon) favicon.href = this.brand.companyIconUrl;
+        const activeIcon = this.brand.companyIconUrl || this.brand.companyLogoUrl || '/favicon.ico';
+        localStorage.setItem('tenant_icon', activeIcon);
+        const favicons = document.querySelectorAll("link[rel*='icon']");
+        if (favicons.length > 0) {
+          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
         } else {
-          localStorage.removeItem('tenant_icon');
-          const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-          if (favicon) favicon.href = 'data:,';
+          const link = document.createElement('link');
+          link.rel = 'shortcut icon';
+          link.type = 'image/x-icon';
+          link.href = activeIcon;
+          document.head.appendChild(link);
         }
         window.dispatchEvent(new CustomEvent('brand_settings_updated'));
         this.toast.success('Corporate brand & visual assets saved successfully!');
