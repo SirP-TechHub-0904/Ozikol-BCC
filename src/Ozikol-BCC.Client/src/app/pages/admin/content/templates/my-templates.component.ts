@@ -975,12 +975,13 @@ export interface CodeInjectionTag {
               <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'home'" (click)="setPreviewPage('home')">Home</button>
               <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'about'" (click)="setPreviewPage('about')">About Us</button>
               <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'services'" (click)="setPreviewPage('services')">Services</button>
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'request-service'" (click)="setPreviewPage('request-service')">Request a Service</button>
               <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'blog'" (click)="setPreviewPage('blog')">News</button>
               <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'contact'" (click)="setPreviewPage('contact')">Contact</button>
             </div>
             <div class="preview-url-badge">
               <i class="fa-solid fa-lock text-success me-1"></i>
-              <span class="preview-url-text">https://acme.ozikol.com/{{ previewActivePageSlug === 'home' ? '' : previewActivePageSlug }}</span>
+              <span class="preview-url-text">https://{{ currentTenantSubdomain }}.ozikol.com/{{ previewActivePageSlug === 'home' ? '' : previewActivePageSlug }}</span>
             </div>
           </div>
 
@@ -3532,8 +3533,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   ];
 
   selectedGroup: string = 'all';
-  previewActivePageSlug: 'home' | 'about' | 'services' | 'blog' | 'contact' = 'home';
+  previewActivePageSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
   previewCartCount: number = 0;
+  currentTenantBrandName: string = localStorage.getItem('tenant_name') || localStorage.getItem('tenant_company_name') || 'Enterprise Workspace';
+  currentTenantSubdomain: string = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_subdomain') || 'portal';
 
   // Active Main Tab
   activeMainTab: 'vault' | 'head' | 'body_open' | 'footer' = 'vault';
@@ -3814,6 +3817,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.cleanupLeakedStyles();
     const savedView = localStorage.getItem('oz_templates_view_mode') as 'grid' | 'table';
     if (savedView) this.viewMode = savedView;
+
+    // Resolve active tenant business name and portal subdomain dynamically
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          const brandName = res.data.companyName || res.data.organizationDisplayName || res.data.siteTitle;
+          if (brandName) {
+            this.currentTenantBrandName = brandName;
+            localStorage.setItem('tenant_name', brandName);
+          }
+        }
+      },
+      error: () => {}
+    });
+
     this.loadInstalledTemplates();
     this.loadAllCodeInjections();
     this.loadAvailablePages();
@@ -3839,7 +3857,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       const href = (event.data.href || '').toLowerCase();
       const text = (event.data.text || '').toLowerCase();
 
-      if (href.includes('about') || text.includes('about')) {
+      if (href.includes('request') || text.includes('request')) {
+        this.setPreviewPage('request-service');
+        this.toast.info('Navigated to Request a Service in live preview.');
+      } else if (href.includes('about') || text.includes('about')) {
         this.setPreviewPage('about');
         this.toast.info('Navigated to About Us in live preview.');
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
@@ -3848,9 +3869,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
         this.setPreviewPage('blog');
         this.toast.info('Navigated to News & Insights in live preview.');
-      } else if (href.includes('contact') || text.includes('contact') || text.includes('request')) {
+      } else if (href.includes('contact') || text.includes('contact')) {
         this.setPreviewPage('contact');
-        this.toast.info('Navigated to Contact Us & Service Request in live preview.');
+        this.toast.info('Navigated to Contact Headquarters in live preview.');
       } else if (href.includes('home') || text.includes('home')) {
         this.setPreviewPage('home');
         this.toast.info('Navigated to Home in live preview.');
@@ -4809,7 +4830,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   // Full-Site Demo Modal & Multi-Page Engine
-  setPreviewPage(slug: 'home' | 'about' | 'services' | 'blog' | 'contact'): void {
+  setPreviewPage(slug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact'): void {
     this.previewActivePageSlug = slug;
     this.renderFullSitePreview();
   }
@@ -4884,6 +4905,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (faqBlock) activeBlocks.push({ block: faqBlock });
       if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (this.previewActivePageSlug === 'request-service') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: 'Request a Service & Consultation',
+            miniTitle: 'SERVICE INTAKE',
+            description: 'Submit your project specifications to initiate a formal strategic consultation with our enterprise advisory team.'
+          }
+        });
+      }
+      if (contactBlock) activeBlocks.push({ block: contactBlock });
+      const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
+      if (faqBlock) activeBlocks.push({ block: faqBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (this.previewActivePageSlug === 'blog') {
       if (menuBlock) activeBlocks.push({ block: menuBlock });
       if (breadcrumbBlock) {
@@ -4947,11 +4984,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         buttonText: this.previewContent.buttonText,
         buttonLink: this.previewContent.buttonLink,
         items: this.previewContent.items,
-        BrandName: 'Acme Enterprise Solutions',
+        BrandName: this.currentTenantBrandName,
         Year: new Date().getFullYear().toString()
       };
       let hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, ctx);
-      hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, 'Acme Enterprise Solutions');
+      hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, this.currentTenantBrandName);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*Year\s*\}\}/g, new Date().getFullYear().toString());
 
       if (b.category === 'menu') {
@@ -5031,7 +5068,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       const href = (anchor.getAttribute('href') || '').toLowerCase();
       const text = (anchor.textContent || '').toLowerCase();
 
-      if (href.includes('about') || text.includes('about')) {
+      if (href.includes('request') || text.includes('request')) {
+        this.setPreviewPage('request-service');
+        this.toast.info('Navigated to Request a Service in live preview.');
+      } else if (href.includes('about') || text.includes('about')) {
         this.setPreviewPage('about');
         this.toast.info('Navigated to About Us in live preview.');
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
@@ -5040,9 +5080,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
         this.setPreviewPage('blog');
         this.toast.info('Navigated to News & Insights in live preview.');
-      } else if (href.includes('contact') || text.includes('contact') || text.includes('request')) {
+      } else if (href.includes('contact') || text.includes('contact')) {
         this.setPreviewPage('contact');
-        this.toast.info('Navigated to Contact Us & Service Request in live preview.');
+        this.toast.info('Navigated to Contact Headquarters in live preview.');
       } else if (href.includes('home') || text.includes('home') || anchor.classList.contains('navbar-brand')) {
         this.setPreviewPage('home');
         this.toast.info('Navigated to Home in live preview.');
@@ -5164,7 +5204,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
         previewIcon: 'menu',
         previewSubtitle: 'Header Navigation',
-        previewTitle: 'Acme Enterprise Solutions',
+        previewTitle: 'Apex Corporate Pro',
         previewBody: 'Home • About • Services • News • Contact • Request a Service',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
@@ -5187,7 +5227,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#contact">Contact</a></li>
         </ul>
         <div class="d-flex align-items-center gap-3">
-          <a href="#contact" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+          <a href="#request-service" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
             <span>Request a Service</span>
             <span style="font-size: 16px;">→</span>
           </a>
@@ -5740,63 +5780,154 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         cssStyles: ``
       },
 
-      // 11. Contact Section
+      // 11. Contact & Service Intake Section
       {
         id: 'contact-01',
-        name: 'Split Contact Inquiries & Form',
+        name: 'Split Service Intake & Inquiries Form',
         category: 'contact',
         variantCode: 'Contact_SplitDetails',
-        badge: 'Support',
+        badge: 'Intake',
         tag: 'contact',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Left office location, phone, and support desk info + Right clean message submission form.',
+        groupCode: 'apex-corporate',
+        groupName: 'Apex Corporate Pro',
+        description: 'Left advisory scope, standards, and hotline info + Right structured 5-question service request intake form with interactive pills and instant confirmation.',
         thumbnailGradient: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
         previewIcon: 'contact_mail',
-        previewSubtitle: 'Help & Support',
-        previewTitle: 'We are here to assist you',
-        previewBody: 'Reach our administrative headquarters and help desk.',
+        previewSubtitle: 'Service Intake & Consultation',
+        previewTitle: 'Request a Tailored Enterprise Service',
+        previewBody: 'Structured project specifications, timeline, organization scale, and brief.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-<section class="py-5 bg-white border-bottom" id="contact">
+<section class="py-5 bg-light border-bottom" id="request-service">
   <div class="container py-4">
-    <div class="row g-5 align-items-center">
+    <div class="row g-5">
+      <!-- Left Column: Executive Consultation Scope & Hotline -->
       <div class="col-lg-5">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Contact Us</span>
-        <h2 class="fw-bold text-dark mt-2 mb-3">We are here to assist you.</h2>
-        <p class="text-muted mb-4">Have questions regarding your membership, billing, or platform integration? Reach out to our operational team.</p>
-        <div class="d-flex flex-column gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-location-dot"></i></div>
-            <div><div class="fw-bold text-dark small">Headquarters</div><div class="text-muted small">100 Enterprise Way, Global Suite 400</div></div>
-          </div>
-          <div class="d-flex align-items-center gap-3">
-            <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-phone"></i></div>
-            <div><div class="fw-bold text-dark small">Telephone</div><div class="text-muted small">+1 (800) 555-0199</div></div>
-          </div>
-          <div class="d-flex align-items-center gap-3">
-            <div class="rounded-3 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-envelope"></i></div>
-            <div><div class="fw-bold text-dark small">Support Desk</div><div class="text-muted small">support@ozikol.com</div></div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2">Service Consultation</span>
+        <h2 class="fw-bold text-dark mb-3">Request a Tailored Enterprise Service</h2>
+        <p class="text-muted mb-4 fs-6">Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.</p>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+          <h6 class="fw-bold text-dark text-uppercase small mb-3 tracking-wider text-primary">Engagement Standards</h6>
+          <div class="d-flex flex-column gap-3">
+            <div class="d-flex align-items-start gap-3">
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
+              <div><strong class="text-dark small d-block">Dedicated Solutions Lead</strong><span class="text-muted small">Direct engagement with an enterprise systems architect.</span></div>
+            </div>
+            <div class="d-flex align-items-start gap-3">
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
+              <div><strong class="text-dark small d-block">Feasibility &amp; Scope Assessment</strong><span class="text-muted small">Actionable roadmap, architectural fit, and resource modeling.</span></div>
+            </div>
+            <div class="d-flex align-items-start gap-3">
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px; height:32px;"><i class="fa-solid fa-check"></i></div>
+              <div><strong class="text-dark small d-block">Institutional Privacy &amp; NDA</strong><span class="text-muted small">Bank-grade data confidentiality and sovereign compliance guaranteed.</span></div>
+            </div>
           </div>
         </div>
+
+        <div class="d-flex flex-column gap-2 text-muted small">
+          <div class="d-flex align-items-center gap-2"><i class="fa-solid fa-phone text-primary"></i><span>Direct Hotline: +1 (800) 555-0199</span></div>
+          <div class="d-flex align-items-center gap-2"><i class="fa-solid fa-envelope text-primary"></i><span>Advisory Desk: advisory@{{ BrandName }}.com</span></div>
+        </div>
       </div>
+
+      <!-- Right Column: Interactive Questions & Request Form -->
       <div class="col-lg-7">
-        <div class="card border border-light-subtle rounded-4 p-4 p-lg-5 shadow-sm bg-light">
-          <h5 class="fw-bold text-dark mb-3">Send Us a Direct Message</h5>
-          <form class="row g-3">
-            <div class="col-md-6"><input type="text" class="form-control bg-white rounded-3" placeholder="Your Name" /></div>
-            <div class="col-md-6"><input type="email" class="form-control bg-white rounded-3" placeholder="Your Email" /></div>
-            <div class="col-12"><input type="text" class="form-control bg-white rounded-3" placeholder="Subject" /></div>
-            <div class="col-12"><textarea class="form-control bg-white rounded-3" rows="4" placeholder="How can we assist your organization?"></textarea></div>
-            <div class="col-12"><button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"><i class="fa-solid fa-paper-plane me-1"></i> Submit Message</button></div>
+        <div class="card border-0 rounded-4 p-4 p-lg-5 shadow-sm bg-white" id="ozServiceFormCard">
+          <h4 class="fw-bold text-dark mb-1">Service Request &amp; Project Intake</h4>
+          <p class="text-muted small mb-4">Please answer the questions below so we can pair you with the right specialist.</p>
+
+          <form id="ozServiceForm" onsubmit="event.preventDefault(); document.getElementById('ozServiceForm').style.display='none'; document.getElementById('ozServiceSuccess').style.display='block';">
+            <!-- Question 1: Service Area -->
+            <div class="mb-4">
+              <label class="form-label fw-bold text-dark small text-uppercase">1. What service or solution do you require?</label>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn active" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Strategic Consulting &amp; Advisory</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Digital Systems Modernization</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Directory &amp; Portal Governance</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn" onclick="this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');">Custom Enterprise Integration</button>
+              </div>
+            </div>
+
+            <!-- Question 2: Timeline & Scope -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-bold text-dark small text-uppercase">2. Estimated Timeline</label>
+                <select class="form-select bg-light border-0 rounded-3 py-2">
+                  <option selected>Immediate (Within 30 Days)</option>
+                  <option>1–3 Months</option>
+                  <option>Next Fiscal Quarter</option>
+                  <option>Exploratory / Feasibility Only</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold text-dark small text-uppercase">3. Organization Scale</label>
+                <select class="form-select bg-light border-0 rounded-3 py-2">
+                  <option selected>1–50 Members / Staff</option>
+                  <option>50–500 Enterprise Members</option>
+                  <option>500+ Large Institutional Body</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Question 4: Primary Contact Details -->
+            <div class="mb-4">
+              <label class="form-label fw-bold text-dark small text-uppercase">4. Your Organization &amp; Contact Details</label>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Your Full Name *" required />
+                </div>
+                <div class="col-md-6">
+                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Professional Title *" required />
+                </div>
+                <div class="col-md-6">
+                  <input type="text" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Organization / Institution Name *" required />
+                </div>
+                <div class="col-md-6">
+                  <input type="email" class="form-control bg-light border-0 rounded-3 py-2" placeholder="Official Business Email *" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 5: Project Brief -->
+            <div class="mb-4">
+              <label class="form-label fw-bold text-dark small text-uppercase">5. Project Brief &amp; Key Requirements</label>
+              <textarea class="form-control bg-light border-0 rounded-3 p-3" rows="4" placeholder="Describe your primary objectives, deliverables, existing pain points, or questions..."></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary rounded-pill px-5 py-3 fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+              <span>Submit Service Request</span>
+              <span style="font-size: 18px;">&rarr;</span>
+            </button>
           </form>
+
+          <!-- Interactive Success State -->
+          <div id="ozServiceSuccess" style="display: none;" class="text-center py-5">
+            <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; font-size: 28px;">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">Service Request Received!</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width: 480px;">Thank you for submitting your project specifications. Our lead advisory partner has been notified and will review your requirements and reach out within 1 business day.</p>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2 small" onclick="document.getElementById('ozServiceSuccess').style.display='none'; document.getElementById('ozServiceForm').style.display='block';">Submit Another Inquiry</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>`,
-        cssStyles: ``
+        cssStyles: `
+.oz-pill-btn {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+.oz-pill-btn.active, .oz-pill-btn:hover {
+  background-color: #0050e5 !important;
+  border-color: #0050e5 !important;
+  color: #ffffff !important;
+}`
       },
 
       // 12. Blog & News Articles Grid
@@ -5879,38 +6010,54 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         cssStyles: ``
       },
 
-      // 13. Breadcrumbs & Page Headers
+      // 13. Centered Background Image Breadcrumbs & Page Headers
       {
         id: 'crumb-01',
-        name: 'Clean Light Breadcrumb Header Banner',
+        name: 'Centered Background Image Breadcrumb Banner',
         category: 'breadcrumb',
         variantCode: 'Breadcrumb_PageHeader',
         badge: 'Header',
         tag: 'breadcrumb',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Inner-page top banner featuring page title, breadcrumb navigation trail, and verified status pill.',
-        thumbnailGradient: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+        groupCode: 'apex-corporate',
+        groupName: 'Apex Corporate Pro',
+        description: 'Inner-page hero banner with corporate background photography, dark overlay scrim, centered title, and centered breadcrumb path to Home.',
+        thumbnailGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         previewIcon: 'linear_scale',
-        previewSubtitle: 'Page Header',
-        previewTitle: 'Clean Light Breadcrumb Header Banner',
-        previewBody: 'Home / {{ PageTitle }} • Verified Page',
+        previewSubtitle: 'Centered Page Header',
+        previewTitle: 'Centered Page Header Banner',
+        previewBody: 'Home / {{ PageTitle }} • Centered corporate banner',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-<section class="py-4 bg-light border-bottom">
-  <div class="container">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb mb-2 small">
-        <li class="breadcrumb-item"><a href="#home" class="text-decoration-none text-muted">Home</a></li>
-        <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">{{ Title }}</li>
+<section class="oz-breadcrumb-hero py-5 text-center position-relative overflow-hidden">
+  <div class="oz-breadcrumb-overlay position-absolute top-0 start-0 w-100 h-100"></div>
+  <div class="container position-relative py-lg-4" style="z-index: 2;">
+    <nav aria-label="breadcrumb" class="d-flex justify-content-center mb-2">
+      <ol class="breadcrumb justify-content-center align-items-center mb-0 small">
+        <li class="breadcrumb-item"><a href="#home" class="text-white text-opacity-75 text-decoration-none">Home</a></li>
+        <li class="breadcrumb-item text-white text-opacity-50">/</li>
+        <li class="breadcrumb-item active text-white fw-bold" aria-current="page">{{ Title }}</li>
       </ol>
     </nav>
-    <h1 class="h3 fw-bold text-dark mb-1">{{ Title }}</h1>
-    <p class="text-muted small mb-0">{{ Description }}</p>
+    <h1 class="display-5 fw-bold text-white mb-2">{{ Title }}</h1>
+    <p class="text-white text-opacity-75 lead fs-6 mx-auto mb-0" style="max-width: 650px;">{{ Description }}</p>
   </div>
 </section>`,
-        cssStyles: ``
+        cssStyles: `
+.oz-breadcrumb-hero {
+  background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center center / cover no-repeat;
+  position: relative;
+}
+.oz-breadcrumb-overlay {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(15, 23, 42, 0.88) 100%);
+}
+.oz-breadcrumb-hero .breadcrumb-item + .breadcrumb-item::before {
+  display: none !important;
+}
+.oz-breadcrumb-hero .breadcrumb-item a:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}`
       },
 
       // 14. Corporate Footer
@@ -5921,14 +6068,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         variantCode: 'Footer_4ColCorporate',
         badge: 'Popular',
         tag: 'corporate',
-        groupCode: 'apex-commerce',
-        groupName: 'Apex Commerce Pro',
-        description: 'Clean light multi-column corporate footer with brand overview, product links, company resources, and inline newsletter subscription.',
+        groupCode: 'apex-corporate',
+        groupName: 'Apex Corporate Pro',
+        description: 'Clean light multi-column corporate footer with brand overview, services links, company resources, and inline newsletter subscription.',
         thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         previewIcon: 'dock_to_bottom',
         previewSubtitle: 'Light Footer',
-        previewTitle: 'Acme Enterprise Corporation',
-        previewBody: 'Product, Solutions, Legal links, and copyright bar.',
+        previewTitle: 'Apex Corporate Footer',
+        previewBody: 'Services, Solutions, Legal links, and copyright bar.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
@@ -5937,10 +6084,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     <div class="row g-4 mb-5">
       <div class="col-lg-4">
         <div class="d-flex align-items-center gap-2 mb-3">
-          <span class="badge bg-primary rounded-3 p-2 text-white"><i class="fa-solid fa-cube"></i></span>
           <span class="fw-bold text-dark fs-5">{{ BrandName }}</span>
         </div>
-        <p class="small text-muted max-w-300">The sovereign digital platform engineered for organizational governance, member collaboration, and integrated commerce.</p>
+        <p class="small text-muted max-w-300">The sovereign digital platform engineered for organizational governance, member collaboration, and integrated operations.</p>
         <div class="d-flex gap-2 text-secondary">
           <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-linkedin-in"></i></a>
           <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-x-twitter"></i></a>
@@ -5948,9 +6094,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         </div>
       </div>
       <div class="col-6 col-lg-2">
-        <h6 class="fw-bold text-dark text-uppercase small mb-3">Platform</h6>
+        <h6 class="fw-bold text-dark text-uppercase small mb-3">Services</h6>
         <ul class="list-unstyled small d-flex flex-column gap-2">
-          <li><a href="#shop" class="text-decoration-none text-muted">Online Store</a></li>
+          <li><a href="#services" class="text-decoration-none text-muted">Services &amp; Advisory</a></li>
           <li><a href="#about" class="text-decoration-none text-muted">Governance</a></li>
           <li><a href="#about" class="text-decoration-none text-muted">E-Voting</a></li>
           <li><a href="#about" class="text-decoration-none text-muted">Member IDs</a></li>
@@ -5962,7 +6108,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           <li><a href="#about" class="text-decoration-none text-muted">About Us</a></li>
           <li><a href="#blog" class="text-decoration-none text-muted">Leadership</a></li>
           <li><a href="#blog" class="text-decoration-none text-muted">Security</a></li>
-          <li><a href="#contact" class="text-decoration-none text-muted">Help Desk</a></li>
+          <li><a href="#request-service" class="text-decoration-none text-muted">Request a Service</a></li>
         </ul>
       </div>
       <div class="col-lg-4">
