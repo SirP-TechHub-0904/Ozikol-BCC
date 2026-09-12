@@ -28,7 +28,7 @@ import { ApiService } from '../../../core/services/api.service';
         </div>
 
         <!-- Form -->
-        <form (ngSubmit)="onLogin()" class="login-form">
+        <form (ngSubmit)="onLogin()" method="post" action="javascript:void(0);" class="login-form">
           <div class="form-group">
             <label for="email">Email Address</label>
             <div class="input-wrapper">
@@ -1072,6 +1072,23 @@ export class LoginComponent implements OnInit {
     if (data.email) localStorage.setItem('user_email', data.email);
     if (data.roles && Array.isArray(data.roles)) {
       localStorage.setItem('user_roles', JSON.stringify(data.roles));
+    }
+    this.promptBrowserSavePassword();
+  }
+
+  /**
+   * Instructs the browser (Chrome, Edge, Safari) native Credential Manager
+   * to prompt the user to save or update their password.
+   */
+  private promptBrowserSavePassword(): void {
+    if (typeof window !== 'undefined' && 'PasswordCredential' in window && navigator.credentials && this.email && this.password) {
+      try {
+        const cred = new (window as any).PasswordCredential({
+          id: this.email,
+          password: this.password
+        });
+        navigator.credentials.store(cred).catch(() => {});
+      } catch (e) {}
     }
   }
 
