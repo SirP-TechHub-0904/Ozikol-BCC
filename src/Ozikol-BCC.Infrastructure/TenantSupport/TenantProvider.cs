@@ -41,55 +41,62 @@ public class TenantProvider : ITenantProvider
     {
         get
         {
-            // 1. Direct connection string override
+            // 1. Direct connection string override (e.g. during integration tests or direct migrations)
             if (!string.IsNullOrWhiteSpace(CurrentTenant) && (CurrentTenant.Contains("Server=", StringComparison.OrdinalIgnoreCase) || CurrentTenant.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)))
             {
                 return CurrentTenant;
             }
 
-            // 2. Fetch all tenants from in-memory cache (or load from Master DB if cache expired)
+            // 2. Fetch all tenants from in-memory cache
             var tenants = GetAllCachedTenants();
 
             // 3. Match against CurrentTenant if a scope is active
             if (!string.IsNullOrWhiteSpace(CurrentTenant))
             {
-                var search = CurrentTenant.Trim().ToLowerInvariant();
-                var match = tenants.FirstOrDefault(t => t.IsActive && (
-                    t.TenantKey.Equals(search, StringComparison.OrdinalIgnoreCase) ||
-                    t.PrimaryDomain.Equals(search, StringComparison.OrdinalIgnoreCase) ||
-                    (!string.IsNullOrEmpty(t.CustomDomain) && t.CustomDomain.Equals(search, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrEmpty(t.ApiUrl) && t.ApiUrl.ToLowerInvariant().Contains(search)) ||
-                    (!string.IsNullOrEmpty(t.WebsiteUrl) && t.WebsiteUrl.ToLowerInvariant().Contains(search))
-                ));
+                var match = FindMatchingTenant(tenants, CurrentTenant);
+
+                // On cache miss, attempt a single live refresh from Master DB (e.g. brand-new tenant onboarding)
+                if (match == null)
+                {
+                    tenants = RefreshCachedTenants();
+                    match = FindMatchingTenant(tenants, CurrentTenant);
+                }
 
                 if (match != null && !string.IsNullOrEmpty(match.ConnectionString))
                 {
                     return match.ConnectionString;
                 }
 
-                // Fallback to static config
+                // Fallback to static config if explicitly configured for this name
                 if (_staticTenantConnections.TryGetValue(CurrentTenant, out var staticConn) && !string.IsNullOrEmpty(staticConn))
                 {
                     return staticConn;
                 }
+
+                // Strict multi-tenant security: Never connect to another tenant's database when an active tenant is requested but missing
+                throw new InvalidOperationException($"[TenantResolution] No active tenant matching '{CurrentTenant}' could be resolved in the Master Catalog. Connection to an unauthorized fallback database is strictly forbidden.");
             }
 
-            // 4. Default Fallback: First active tenant from cache (prevents running tenant queries on Master DB)
-            var firstActive = tenants.FirstOrDefault(t => t.IsActive && !string.IsNullOrEmpty(t.ConnectionString));
-            if (firstActive != null)
-            {
-                return firstActive.ConnectionString;
-            }
-
+            // 4. Default host connection string when NO tenant scope is active (e.g. system/background jobs)
             if (_staticTenantConnections.Values.Any())
             {
                 return _staticTenantConnections.Values.First();
             }
 
-            return _defaultConnectionString;
+            if (!string.IsNullOrEmpty(_defaultConnectionString))
+            {
+                return _defaultConnectionString;
+            }
+
+            throw new InvalidOperationException("[TenantResolution] No active tenant scope is set, and no default connection string is configured.");
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TenantProvider"/> class.
+    /// </summary>
+    /// <param name="tenantConfigurationOptions">Static tenant options from configuration.</param>
+    /// <param name="serviceProvider">Dependency injection service provider.</param>
     public TenantProvider(
         IOptions<TenantConfigurationOptions> tenantConfigurationOptions,
         IServiceProvider serviceProvider)
@@ -103,6 +110,10 @@ public class TenantProvider : ITenantProvider
         _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
     }
 
+    /// <summary>
+    /// Retrieves all active tenant entries from fast in-memory cache, or loads from Master Catalog DB if expired.
+    /// </summary>
+    /// <returns>A list of cached tenant entries.</returns>
     public List<CachedTenantEntry> GetAllCachedTenants()
     {
         if (_memoryCache != null && _memoryCache.TryGetValue<List<CachedTenantEntry>>(CacheKey, out var cachedList) && cachedList != null)
@@ -110,6 +121,16 @@ public class TenantProvider : ITenantProvider
             return cachedList;
         }
 
+        return RefreshCachedTenants();
+    }
+
+    /// <summary>
+    /// Actively refreshes the in-memory cache of tenants by reading directly from MasterCatalogDbContext.
+    /// Invoked automatically on cache miss when a new tenant was recently registered.
+    /// </summary>
+    /// <returns>The freshly loaded list of active cached tenants.</returns>
+    public List<CachedTenantEntry> RefreshCachedTenants()
+    {
         var loaded = LoadTenantsFromMasterDb();
         if (loaded.Count > 0 && _memoryCache != null)
         {
@@ -121,6 +142,79 @@ public class TenantProvider : ITenantProvider
         }
 
         return loaded;
+    }
+
+    /// <summary>
+    /// Performs subdomain-first, port-agnostic matching against cached tenants.
+    /// Handles subdomain extraction ('cocacola.localhost:4200' -> 'cocacola'),
+    /// primary domains, and custom domains.
+    /// </summary>
+    /// <param name="tenants">The candidate list of cached tenants.</param>
+    /// <param name="searchKey">The search key, origin, hostname, or tenant identifier.</param>
+    /// <returns>The matching <see cref="CachedTenantEntry"/>, or null if not found.</returns>
+    public static CachedTenantEntry? FindMatchingTenant(IEnumerable<CachedTenantEntry> tenants, string? searchKey)
+    {
+        if (string.IsNullOrWhiteSpace(searchKey)) return null;
+
+        var clean = searchKey.Trim().ToLowerInvariant()
+            .Replace("https://", "")
+            .Replace("http://", "")
+            .Replace("www.", "")
+            .Split('/')[0];
+
+        // Strip port (e.g. 'cocacola.localhost:4200' -> 'cocacola.localhost')
+        var hostWithoutPort = clean.Split(':')[0];
+
+        // Extract subdomain if present
+        string? subdomain = null;
+        if (hostWithoutPort.Contains('.'))
+        {
+            var parts = hostWithoutPort.Split('.');
+            if (parts.Length >= 2)
+            {
+                var candidate = parts[0];
+                if (!candidate.Equals("localhost", StringComparison.OrdinalIgnoreCase) &&
+                    !candidate.Equals("127", StringComparison.OrdinalIgnoreCase) &&
+                    !candidate.Equals("www", StringComparison.OrdinalIgnoreCase) &&
+                    !candidate.Equals("api", StringComparison.OrdinalIgnoreCase) &&
+                    !candidate.Equals("admin", StringComparison.OrdinalIgnoreCase) &&
+                    !candidate.Equals("central", StringComparison.OrdinalIgnoreCase))
+                {
+                    subdomain = candidate;
+                }
+            }
+        }
+
+        // 1. Direct TenantKey match (e.g., 'cocacola')
+        var match = tenants.FirstOrDefault(t => t.IsActive && (
+            t.TenantKey.Equals(clean, StringComparison.OrdinalIgnoreCase) ||
+            t.TenantKey.Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(subdomain) && t.TenantKey.Equals(subdomain, StringComparison.OrdinalIgnoreCase))
+        ));
+        if (match != null) return match;
+
+        // 2. PrimaryDomain match (port-agnostic, e.g. 'cocacola.localhost:4200' vs 'cocacola.localhost')
+        match = tenants.FirstOrDefault(t => t.IsActive && (
+            t.PrimaryDomain.Equals(clean, StringComparison.OrdinalIgnoreCase) ||
+            t.PrimaryDomain.Split(':')[0].Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(subdomain) && t.PrimaryDomain.Split(':')[0].StartsWith(subdomain + ".", StringComparison.OrdinalIgnoreCase))
+        ));
+        if (match != null) return match;
+
+        // 3. CustomDomain match (port-agnostic, e.g. 'portal.cocacola.com')
+        match = tenants.FirstOrDefault(t => t.IsActive && !string.IsNullOrEmpty(t.CustomDomain) && (
+            t.CustomDomain.Equals(clean, StringComparison.OrdinalIgnoreCase) ||
+            t.CustomDomain.Split(':')[0].Equals(hostWithoutPort, StringComparison.OrdinalIgnoreCase)
+        ));
+        if (match != null) return match;
+
+        // 4. Fallback URL substrings
+        match = tenants.FirstOrDefault(t => t.IsActive && (
+            (!string.IsNullOrEmpty(t.WebsiteUrl) && t.WebsiteUrl.ToLowerInvariant().Contains(hostWithoutPort)) ||
+            (!string.IsNullOrEmpty(t.ApiUrl) && t.ApiUrl.ToLowerInvariant().Contains(hostWithoutPort))
+        ));
+
+        return match;
     }
 
     private List<CachedTenantEntry> LoadTenantsFromMasterDb()
