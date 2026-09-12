@@ -236,11 +236,33 @@ function handleSlugInput(val) {
     checkSlugAvailability(val);
 }
 
+const RESERVED_SLUGS = new Set([
+    'admin', 'administrator', 'superadmin', 'supadmin', 'root', 'sysadmin', 'system',
+    'manager', 'moderator', 'security', 'host', 'master', 'central', 'portal',
+    'console', 'dashboard', 'api', 'apis', 'gateway', 'graphql', 'rest', 'webhook',
+    'webhooks', 'cdn', 'dns', 'ns', 'ns1', 'ns2', 'mail', 'email', 'smtp', 'imap',
+    'pop', 'ftp', 'ssh', 'ssl', 'cert', 'certs', 'status', 'health', 'monitor', 'ping',
+    'metrics', 'auth', 'oauth', 'sso', 'login', 'signin', 'signup', 'logout', 'register',
+    'onboarding', 'account', 'accounts', 'billing', 'pay', 'payment', 'payments',
+    'checkout', 'cart', 'internal', 'dev', 'development', 'staging', 'test', 'prod',
+    'production', 'sandbox', 'ozikol', 'ozikol-bcc', 'ozikolcloud', 'ozikol-cloud',
+    'support', 'help', 'helpdesk', 'docs', 'documentation', 'legal', 'terms', 'privacy',
+    'compliance', 'about', 'contact', 'marketplace', 'store', 'shop', 'localhost',
+    '127', 'local', 'null', 'undefined', 'default', 'public', 'private', 'static',
+    'assets', 'media', 'www', 'web', 'app'
+]);
+
 function checkSlugAvailability(slug) {
     clearTimeout(slugDebounceTimer);
     const feedback = document.getElementById('slugFeedback');
     if (!slug || slug.length < 3) {
         feedback.innerHTML = '<span style="color: #64748b;">Enter at least 3 characters.</span>';
+        return;
+    }
+
+    const clean = slug.toLowerCase().trim();
+    if (RESERVED_SLUGS.has(clean)) {
+        feedback.innerHTML = '<span style="color: #ef4444; font-weight: 600;">✗ This workspace address is reserved by the system and cannot be used.</span>';
         return;
     }
 

@@ -180,6 +180,16 @@ namespace Ozikol.Central.Pages
                 return new JsonResult(new { available = false, message = "Workspace address must be at least 3 characters.", slug = cleanSlug });
             }
 
+            if (ReservedWorkspaceNames.IsReserved(cleanSlug))
+            {
+                return new JsonResult(new
+                {
+                    available = false,
+                    slug = cleanSlug,
+                    message = "This workspace address is reserved by the system and cannot be used."
+                });
+            }
+
             bool isAvailable = await _onboardingService.IsTenantKeyAvailableAsync(cleanSlug);
             return new JsonResult(new
             {
@@ -207,6 +217,14 @@ namespace Ozikol.Central.Pages
 
             if (!ModelState.IsValid)
             {
+                return ReturnValidationFailure();
+            }
+
+            // Verify slug is not reserved
+            if (ReservedWorkspaceNames.IsReserved(Input.WorkspaceSlug))
+            {
+                ModelState.AddModelError(nameof(Input.WorkspaceSlug), "This workspace address is reserved by the system. Please choose another address.");
+                ErrorMessage = "The workspace address you selected is reserved by the system. Please choose another address.";
                 return ReturnValidationFailure();
             }
 
