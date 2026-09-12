@@ -14,6 +14,8 @@ export interface InstalledTemplateItem {
   variantCode: string;
   badge?: string;
   tag: string;
+  groupCode?: string;
+  groupName?: string;
   description: string;
   thumbnailGradient: string;
   previewIcon: string;
@@ -294,6 +296,32 @@ export interface CodeInjectionTag {
           </div>
         </div>
 
+        <!-- Theme Suite Filter Bar -->
+        <div class="theme-suite-filter-bar">
+          <div class="suite-filter-label">
+            <span class="material-symbols-outlined suite-icon">inventory_2</span>
+            <span>Theme Suite:</span>
+          </div>
+          <div class="suite-chips">
+            <button
+              type="button"
+              class="suite-chip"
+              [class.active]="selectedGroup === 'all'"
+              (click)="selectedGroup = 'all'; applyFilters()"
+            >
+              All Suites
+            </button>
+            <button
+              type="button"
+              class="suite-chip"
+              [class.active]="selectedGroup === 'apex-commerce'"
+              (click)="selectedGroup = 'apex-commerce'; applyFilters()"
+            >
+              <i class="fa-solid fa-cube me-1 text-primary"></i> Apex Commerce Pro
+            </button>
+          </div>
+        </div>
+
         <div class="category-filter-chips">
           <button
             type="button"
@@ -359,7 +387,13 @@ export interface CodeInjectionTag {
             <!-- Card Content Body -->
             <div class="card-body">
               <div class="card-title-row">
-                <h3 class="card-title">{{ item.name }}</h3>
+                <div class="title-with-suite-badge">
+                  <h3 class="card-title">{{ item.name }}</h3>
+                  <span class="theme-suite-badge">
+                    <span class="material-symbols-outlined suite-badge-icon">inventory_2</span>
+                    {{ item.groupName || 'Apex Commerce Pro' }}
+                  </span>
+                </div>
                 <span class="badge-tag" *ngIf="item.badge">{{ item.badge }}</span>
               </div>
               <p class="card-desc">{{ item.description }}</p>
@@ -879,7 +913,7 @@ export interface CodeInjectionTag {
         <!-- Footer -->
         <div class="preview-modal-footer">
           <span class="footer-hint">
-            💡 This is a live preview rendering the exact scoped HTML and CSS bundle.
+            <i class="fa-solid fa-lightbulb text-warning me-1"></i> This is a live preview rendering the exact scoped HTML and CSS bundle.
           </span>
           <div class="preview-footer-btns">
             <!-- Active Singleton Badge -->
@@ -926,10 +960,35 @@ export interface CodeInjectionTag {
           <div class="full-demo-title-wrap">
             <span class="material-symbols-outlined full-demo-icon">public</span>
             <div>
-              <h3 class="full-demo-title">Simulated Full-Site Live Theme Demo</h3>
+              <h3 class="full-demo-title">Simulated Multi-Page Live Theme Demo</h3>
               <span class="full-demo-subtitle">
-                All installed template layers assembled into a seamless responsive web experience.
+                Assemble and test your website's home and inner pages interactively.
               </span>
+            </div>
+          </div>
+
+          <!-- Page Switcher Tabs -->
+          <div class="demo-page-nav-bar">
+            <div class="demo-page-tabs">
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'home'" (click)="setPreviewPage('home')">
+                <i class="fa-solid fa-house me-1"></i> Home
+              </button>
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'shop'" (click)="setPreviewPage('shop')">
+                <i class="fa-solid fa-bag-shopping me-1"></i> Shop
+              </button>
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'about'" (click)="setPreviewPage('about')">
+                <i class="fa-solid fa-circle-info me-1"></i> About
+              </button>
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'blog'" (click)="setPreviewPage('blog')">
+                <i class="fa-solid fa-newspaper me-1"></i> Blog
+              </button>
+              <button type="button" class="demo-page-tab" [class.active]="previewActivePageSlug === 'contact'" (click)="setPreviewPage('contact')">
+                <i class="fa-solid fa-envelope me-1"></i> Contact
+              </button>
+            </div>
+            <div class="preview-url-badge">
+              <i class="fa-solid fa-lock text-success me-1"></i>
+              <span class="preview-url-text">https://acme.ozikol.com/{{ previewActivePageSlug === 'home' ? '' : previewActivePageSlug }}</span>
             </div>
           </div>
 
@@ -974,7 +1033,7 @@ export interface CodeInjectionTag {
         <!-- Footer -->
         <div class="full-demo-footer">
           <span class="demo-count-info">
-            ✨ Simulated website composed of {{ getFullDemoBlockCount() }} modular installed blocks.
+            <i class="fa-solid fa-layer-group text-primary me-1"></i> Simulated website composed of {{ getFullDemoBlockCount() }} modular installed blocks.
           </span>
           <div class="demo-footer-btns">
             <a routerLink="/content/console" (click)="closeFullSiteDemoModal()" class="btn btn-primary">
@@ -1111,13 +1170,13 @@ export interface CodeInjectionTag {
             <div class="form-group" *ngIf="tagForm.tagType === 'meta_tag'">
               <label class="form-lbl">META TAG &amp; ICON PRESET TEMPLATE (DROPDOWN)</label>
               <select [(ngModel)]="selectedMetaPreset" class="form-ctrl" (change)="onMetaPresetChanged()">
-                <option value="full_suite">🌟 Comprehensive SEO, Social &amp; Icons Suite (All-In-One)</option>
-                <option value="favicons_icons">🎨 Favicons, Web App Icons &amp; Manifest (.ico, .png, .svg)</option>
-                <option value="open_graph">🌐 Open Graph Protocol Suite (Facebook, LinkedIn, Discord)</option>
-                <option value="twitter">🐦 Twitter / X Card Suite (Large Summary Image)</option>
-                <option value="seo_core">🔍 Search Engine Crawlers &amp; Canonical (Google, Bing, Robots)</option>
-                <option value="mobile_pwa">📱 Mobile PWA &amp; Theme Color (Viewport, Theme Color)</option>
-                <option value="custom">⚙️ Custom Meta Tag (Add Mine Myself)</option>
+                <option value="full_suite">Comprehensive SEO, Social &amp; Icons Suite (All-In-One)</option>
+                <option value="favicons_icons">Favicons, Web App Icons &amp; Manifest (.ico, .png, .svg)</option>
+                <option value="open_graph">Open Graph Protocol Suite (Facebook, LinkedIn, Discord)</option>
+                <option value="twitter">Twitter / X Card Suite (Large Summary Image)</option>
+                <option value="seo_core">Search Engine Crawlers &amp; Canonical (Google, Bing, Robots)</option>
+                <option value="mobile_pwa">Mobile PWA &amp; Theme Color (Viewport, Theme Color)</option>
+                <option value="custom">Custom Meta Tag (Manual Entry)</option>
               </select>
             </div>
 
@@ -1236,7 +1295,7 @@ export interface CodeInjectionTag {
           <div class="form-group" style="margin-top: 10px;">
             <div class="lbl-with-note">
               <label class="form-lbl">TAG / SCRIPT CODE CONTENT *</label>
-              <span class="note-pill">⚡ Auto-generated sample boilerplate with placeholders. Customize as needed!</span>
+              <span class="note-pill"><i class="fa-solid fa-bolt text-warning me-1"></i> Auto-generated sample boilerplate with placeholders. Customize as needed!</span>
             </div>
             <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
           </div>
@@ -1730,6 +1789,51 @@ export interface CodeInjectionTag {
     }
     .toggle-btn .material-symbols-outlined { font-size: 16px; }
 
+    /* Theme Suite Filter Bar */
+    .theme-suite-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+    }
+    .suite-filter-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .suite-icon { font-size: 16px; color: #2563eb; }
+    .suite-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .suite-chip {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+    .suite-chip:hover {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .suite-chip.active {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+    }
+
     .category-filter-chips {
       display: flex;
       flex-wrap: wrap;
@@ -1893,6 +1997,26 @@ export interface CodeInjectionTag {
       align-items: flex-start;
       margin-bottom: 6px;
     }
+    .title-with-suite-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .theme-suite-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      width: fit-content;
+    }
+    .suite-badge-icon { font-size: 12px; }
     .card-title {
       font-size: 14px;
       font-weight: 800;
@@ -2229,6 +2353,59 @@ export interface CodeInjectionTag {
     }
     .preview-modal-name, .full-demo-title, .assign-title { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }
     .preview-modal-sub, .full-demo-subtitle, .assign-sub { font-size: 11.5px; color: #64748b; font-weight: 600; }
+
+    .demo-page-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .demo-page-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .demo-page-tab {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+    .demo-page-tab:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .demo-page-tab.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+    .preview-url-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      font-size: 11.5px;
+      font-family: monospace;
+      color: #334155;
+    }
 
     .viewport-toggle-group {
       display: flex;
@@ -3349,8 +3526,12 @@ export class MyTemplatesComponent implements OnInit {
     { id: 'contact', name: 'Contact', icon: 'contact_mail' },
     { id: 'blog', name: 'Blogs', icon: 'newspaper' },
     { id: 'ecommerce', name: 'E-Commerce', icon: 'shopping_bag' },
-    { id: 'breadcrumb', name: 'Breadcrumbs', icon: 'linear_scale' }
+    { id: 'breadcrumb', name: 'Breadcrumbs & Page Headers', icon: 'linear_scale' }
   ];
+
+  selectedGroup: string = 'all';
+  previewActivePageSlug: 'home' | 'shop' | 'about' | 'blog' | 'contact' = 'home';
+  previewCartCount: number = 0;
 
   // Active Main Tab
   activeMainTab: 'vault' | 'head' | 'body_open' | 'footer' = 'vault';
@@ -4132,15 +4313,23 @@ export class MyTemplatesComponent implements OnInit {
     if (storedBreadcrumb) this.activeBreadcrumbId = storedBreadcrumb;
     if (storedEcommerce) this.activeEcommerceId = storedEcommerce;
 
-    const v2MigrationKey = 'oz_installed_templates_v2_light';
-    const isV2Migrated = localStorage.getItem(v2MigrationKey);
-    const hasLegacyDark = stored && (stored.includes('#0f172a') || stored.includes('#090d16') || stored.includes('Hero_DarkGlow') || stored.includes('Menu_DarkGlass'));
+    const v4MigrationKey = 'oz_installed_templates_v4_apex';
+    const isV4Migrated = localStorage.getItem(v4MigrationKey);
+    let parsedCount = 0;
+    try {
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsedCount = Array.isArray(parsed) ? parsed.length : 0;
+      }
+    } catch (e) {}
 
-    if (!isV2Migrated || hasLegacyDark || !stored) {
-      // Clean migration: replace outdated dark starter templates with clean light templates
+    const shouldMigrate = !isV4Migrated || !stored || parsedCount < 14 || (stored && (!stored.includes('Apex Commerce Pro') || stored.includes('Hero_DarkGlow') || stored.includes('Menu_DarkGlass')));
+
+    if (shouldMigrate) {
+      // Clean migration: populate all 14 turnkey Bootstrap 5 + Font Awesome 6 light templates
       this.installedTemplates = this.getInitialInstalledTemplates();
       this.saveInstalledTemplates();
-      localStorage.setItem(v2MigrationKey, 'true');
+      localStorage.setItem(v4MigrationKey, 'true');
     } else {
       try {
         this.installedTemplates = JSON.parse(stored);
@@ -4191,6 +4380,8 @@ export class MyTemplatesComponent implements OnInit {
                 category: apiT.categoryKey,
                 variantCode: apiT.variantCode,
                 tag: 'custom',
+                groupCode: 'apex-commerce',
+                groupName: 'Apex Commerce Pro',
                 description: 'Installed template blueprint from Master catalog.',
                 thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
                 previewIcon: 'widgets',
@@ -4351,12 +4542,16 @@ export class MyTemplatesComponent implements OnInit {
     if (this.selectedCategory !== 'all') {
       list = list.filter(t => t.category === this.selectedCategory);
     }
+    if (this.selectedGroup !== 'all') {
+      list = list.filter(t => (t.groupCode || 'apex-commerce') === this.selectedGroup);
+    }
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       list = list.filter(t =>
         t.name.toLowerCase().includes(q) ||
         t.variantCode.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q)
+        t.description.toLowerCase().includes(q) ||
+        (t.groupName && t.groupName.toLowerCase().includes(q))
       );
     }
     this.filteredTemplates = list;
@@ -4553,49 +4748,152 @@ export class MyTemplatesComponent implements OnInit {
     if (styleEl) styleEl.textContent = '';
   }
 
-  // Full-Site Demo Modal
+  // Full-Site Demo Modal & Multi-Page Engine
+  setPreviewPage(slug: 'home' | 'shop' | 'about' | 'blog' | 'contact'): void {
+    this.previewActivePageSlug = slug;
+    this.renderFullSitePreview();
+  }
+
   openFullSiteDemoModal(): void {
     this.fullDemoViewport = 'desktop';
+    this.previewActivePageSlug = 'home';
+    this.showFullSiteDemoModal = true;
+    this.renderFullSitePreview();
+  }
 
+  renderFullSitePreview(): void {
     const menuBlock = this.getActiveMenu();
     const heroBlock = this.getActiveHero();
     const allBodyBlocks = this.getAllBodyBlocks();
     const newsBlock = this.getActiveNewsletter();
     const footerBlock = this.getActiveFooter();
 
-    const activeBlocks: InstalledTemplateItem[] = [];
-    if (menuBlock) activeBlocks.push(menuBlock);
-    if (heroBlock) activeBlocks.push(heroBlock);
-    activeBlocks.push(...allBodyBlocks);
-    if (newsBlock) activeBlocks.push(newsBlock);
-    if (footerBlock) activeBlocks.push(footerBlock);
+    const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
+    const ecomBlock = this.installedTemplates.find(t => t.category === 'ecommerce') || this.installedTemplates.find(t => t.variantCode === 'Ecom_ProductGrid');
+    const blogBlock = this.installedTemplates.find(t => t.category === 'blog') || this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3');
+    const contactBlock = this.installedTemplates.find(t => t.category === 'contact') || this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails');
+
+    let activeBlocks: { block: InstalledTemplateItem, contextOverride?: any }[] = [];
+
+    if (this.previewActivePageSlug === 'home') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (heroBlock) activeBlocks.push({ block: heroBlock });
+      allBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
+      if (newsBlock) activeBlocks.push({ block: newsBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (this.previewActivePageSlug === 'shop') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: 'Official Storefront & Merchandise',
+            miniTitle: 'CAMPUS STORE',
+            description: 'Browse authentic organizational gear, certified credentials, and executive accessories.'
+          }
+        });
+      }
+      if (ecomBlock) activeBlocks.push({ block: ecomBlock });
+      if (newsBlock) activeBlocks.push({ block: newsBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (this.previewActivePageSlug === 'about') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: 'About Our Organization',
+            miniTitle: 'MISSION & LEADERSHIP',
+            description: 'Founded on sovereign data principles, dedicated to member advancement and institutional excellence.'
+          }
+        });
+      }
+      const featureBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FeatureGrid3') || allBodyBlocks[0];
+      const metricBlock = allBodyBlocks.find(b => b.variantCode === 'Body_MetricsCounter');
+      const testBlock = allBodyBlocks.find(b => b.variantCode === 'Body_Testimonials');
+      const ctaBlock = allBodyBlocks.find(b => b.variantCode === 'Body_CtaBanner');
+      if (featureBlock) activeBlocks.push({ block: featureBlock });
+      if (metricBlock) activeBlocks.push({ block: metricBlock });
+      if (testBlock) activeBlocks.push({ block: testBlock });
+      if (ctaBlock) activeBlocks.push({ block: ctaBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (this.previewActivePageSlug === 'blog') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: 'Newsroom & Insights',
+            miniTitle: 'DISPATCHES',
+            description: 'Read the latest updates, event reports, policy releases, and organizational announcements.'
+          }
+        });
+      }
+      if (blogBlock) activeBlocks.push({ block: blogBlock });
+      if (newsBlock) activeBlocks.push({ block: newsBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (this.previewActivePageSlug === 'contact') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: 'Contact Administrative Headquarters',
+            miniTitle: 'HELP & SUPPORT',
+            description: 'Reach our executive secretariat, membership registrar, and technical support team.'
+          }
+        });
+      }
+      if (contactBlock) activeBlocks.push({ block: contactBlock });
+      const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
+      if (faqBlock) activeBlocks.push({ block: faqBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    }
 
     let combinedStyles = `
-      /* Demo Canvas Navigation Sample-Only Styles */
-      .full-demo-canvas-wrapper nav a,
-      .full-demo-canvas-wrapper .oz-nav-classic a,
-      .full-demo-canvas-wrapper .oz-nav-links a,
-      .full-demo-canvas-wrapper .oz-btn-nav,
-      .full-demo-canvas-wrapper nav button,
-      .full-demo-canvas-wrapper .oz-brand-link {
-        pointer-events: none !important;
-        cursor: default !important;
-        user-select: none !important;
+      @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
+      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+      .full-demo-canvas-wrapper {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        background: #ffffff;
+      }
+      .full-demo-canvas-wrapper a {
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .full-demo-canvas-wrapper button {
+        cursor: pointer;
       }
     `;
+
     let combinedHtml = '';
 
-    activeBlocks.forEach(b => {
-      combinedStyles += `\n/* Block: ${b.name} (${b.variantCode}) */\n${b.cssStyles}\n`;
-      const hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, {
-        title: b.previewTitle || b.name,
-        miniTitle: b.previewSubtitle?.toUpperCase() || b.category.toUpperCase(),
-        description: b.previewBody || b.description,
+    activeBlocks.forEach(({ block: b, contextOverride }) => {
+      combinedStyles += `\n/* Block: ${b.name} (${b.variantCode}) */\n${b.cssStyles || ''}\n`;
+      let ctx = {
+        title: contextOverride?.title || b.previewTitle || b.name,
+        miniTitle: contextOverride?.miniTitle || b.previewSubtitle?.toUpperCase() || b.category.toUpperCase(),
+        description: contextOverride?.description || b.previewBody || b.description,
         imageUrl: this.previewContent.imageUrl,
         buttonText: this.previewContent.buttonText,
         buttonLink: this.previewContent.buttonLink,
-        items: this.previewContent.items
-      });
+        items: this.previewContent.items,
+        BrandName: 'Acme Enterprise Solutions',
+        Year: new Date().getFullYear().toString()
+      };
+      let hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, ctx);
+      hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, 'Acme Enterprise Solutions');
+      hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*Year\s*\}\}/g, new Date().getFullYear().toString());
+
+      if (b.category === 'menu') {
+        hydratedBlockHtml = hydratedBlockHtml.replace(
+          /badge rounded-pill bg-primary">0<\/span>/g,
+          `badge rounded-pill bg-primary">${this.previewCartCount}</span>`
+        );
+      }
+
       combinedHtml += `\n<!-- Section: ${b.name} (${b.category}) -->\n${hydratedBlockHtml}\n`;
     });
 
@@ -4608,8 +4906,6 @@ export class MyTemplatesComponent implements OnInit {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = combinedStyles;
-
-    this.showFullSiteDemoModal = true;
   }
 
   getFullDemoBlockCount(): number {
@@ -4624,11 +4920,42 @@ export class MyTemplatesComponent implements OnInit {
 
   onPreviewCanvasClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    const anchor = target?.closest('a');
-    const button = target?.closest('button');
-    if (anchor || button) {
+    const anchor = target?.closest('a') as HTMLAnchorElement | null;
+    const button = target?.closest('button') as HTMLButtonElement | null;
+
+    if (anchor) {
       event.preventDefault();
       event.stopPropagation();
+      const href = (anchor.getAttribute('href') || '').toLowerCase();
+      const text = (anchor.textContent || '').toLowerCase();
+
+      if (href.includes('shop') || text.includes('shop') || text.includes('store') || text.includes('merchandise')) {
+        this.setPreviewPage('shop');
+        this.toast.info('Navigated to Storefront in live preview.');
+      } else if (href.includes('about') || text.includes('about') || text.includes('leadership')) {
+        this.setPreviewPage('about');
+        this.toast.info('Navigated to About Us in live preview.');
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+        this.setPreviewPage('blog');
+        this.toast.info('Navigated to Newsroom in live preview.');
+      } else if (href.includes('contact') || text.includes('contact') || text.includes('support')) {
+        this.setPreviewPage('contact');
+        this.toast.info('Navigated to Contact Us in live preview.');
+      } else if (href.includes('home') || text.includes('home') || anchor.classList.contains('navbar-brand')) {
+        this.setPreviewPage('home');
+        this.toast.info('Navigated to Home in live preview.');
+      }
+    } else if (button) {
+      const btnText = (button.textContent || '').toLowerCase();
+      if (btnText.includes('add') || btnText.includes('cart') || button.classList.contains('btn-primary')) {
+        if (btnText.includes('add') || btnText.includes('cart')) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.previewCartCount++;
+          this.toast.success(`Item added to cart! (${this.previewCartCount} items in cart)`);
+          this.renderFullSitePreview();
+        }
+      }
     }
   }
 
@@ -4720,243 +5047,765 @@ export class MyTemplatesComponent implements OnInit {
 
   private getInitialInstalledTemplates(): InstalledTemplateItem[] {
     return [
+      // 1. Navigation / Menu
       {
         id: 'menu-01',
-        name: 'Classic Light Navbar',
+        name: 'Classic Light Corporate Navbar',
         category: 'menu',
         variantCode: 'Menu_Classic',
         badge: 'Popular',
         tag: 'corporate',
-        description: 'Clean light corporate navbar with brand logo, centered navigation links, and right Get Started CTA button.',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Clean light corporate navbar with brand logo, centered navigation links, search trigger, cart counter badge, and Get Started CTA.',
         thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
         previewIcon: 'menu',
-        previewSubtitle: 'Light Navbar',
+        previewSubtitle: 'Header Navigation',
         previewTitle: 'Acme Enterprise Solutions',
-        previewBody: 'Features • Solutions • Pricing • Company • Contact',
+        previewBody: 'Home • Shop • About • Blog • Contact',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <header class="oz-nav-header {{ CustomClass }}">
-            <nav class="oz-nav-classic">
-              <div class="oz-nav-brand-row">
-                <a href="/" class="oz-brand-link">
-                  <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
-                       onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'36\\' height=\\'36\\' rx=\\'8\\' fill=\\'%232563EB\\'/><path d=\\'M12 24V12L24 24V12\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'46\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'15\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%232563EB\\'>.BCC</tspan></text></svg>'"
-                       alt="{{ BrandName }}" class="oz-brand-logo-img" />
-                </a>
-                <button type="button" class="oz-mobile-toggle" onclick="this.closest('.oz-nav-classic').classList.toggle('oz-menu-open')">
-                  <span class="oz-toggle-bar"></span>
-                  <span class="oz-toggle-bar"></span>
-                  <span class="oz-toggle-bar"></span>
-                </button>
-              </div>
-              <div class="oz-nav-links">
-                <a href="#overview">Overview</a>
-                <a href="#features">Features</a>
-                <a href="#solutions">Solutions</a>
-                <a href="#pricing">Pricing</a>
-                <a href="#contact">Contact</a>
-              </div>
-              <div class="oz-nav-cta">
-                <a href="{{ ButtonLink }}" class="oz-btn-nav">{{ ButtonText }}</a>
-              </div>
-            </nav>
-          </header>
-        `,
-        cssStyles: `
-          .oz-nav-header { width: 100%; background: #ffffff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-          .oz-nav-classic { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; }
-          .oz-nav-brand-row { display: flex; justify-content: space-between; align-items: center; }
-          .oz-brand-link { display: inline-flex; align-items: center; text-decoration: none; }
-          .oz-brand-logo-img { height: 34px; max-height: 38px; width: auto; object-fit: contain; display: block; }
-          .oz-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 6px; flex-direction: column; gap: 5px; }
-          .oz-toggle-bar { display: block; width: 22px; height: 2px; background: #0f172a; border-radius: 2px; }
-          .oz-nav-links { display: flex; gap: 28px; }
-          .oz-nav-links a { color: #334155; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.15s ease; }
-          .oz-nav-links a:hover { color: #2563eb; }
-          .oz-btn-nav { background: #2563eb; color: #ffffff; padding: 9px 18px; border-radius: 8px; text-decoration: none; font-size: 13.5px; font-weight: 700; display: inline-block; transition: background 0.15s ease; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
-          .oz-btn-nav:hover { background: #1d4ed8; }
-
-          @media(max-width: 768px) {
-            .viewport-mobile .oz-nav-classic, .oz-nav-classic.oz-menu-open { flex-direction: column; align-items: stretch; padding: 14px 18px; }
-            .viewport-mobile .oz-nav-brand-row { width: 100%; }
-            .viewport-mobile .oz-mobile-toggle { display: flex; }
-            .viewport-mobile .oz-nav-links { display: none; flex-direction: column; gap: 14px; padding: 16px 0 10px 0; border-top: 1px solid #f1f5f9; margin-top: 12px; }
-            .oz-nav-classic.oz-menu-open .oz-nav-links { display: flex; }
-            .viewport-mobile .oz-nav-cta { display: none; width: 100%; margin-top: 8px; }
-            .oz-nav-classic.oz-menu-open .oz-nav-cta { display: block; }
-            .viewport-mobile .oz-btn-nav { display: block; text-align: center; }
-          }
-        `
+<header class="oz-nav-header shadow-sm">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom py-3">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#home">
+        <span class="badge bg-primary rounded-3 p-2 text-white"><i class="fa-solid fa-cube fs-5"></i></span>
+        <span class="fw-bold text-dark fs-5 tracking-tight">{{ BrandName }}</span>
+      </a>
+      <button class="navbar-toggler border-0 shadow-none" type="button" onclick="this.closest('nav').querySelector('.collapse').classList.toggle('show')">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="ozNavMain">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-3">
+          <li class="nav-item"><a class="nav-link fw-semibold text-secondary active" href="#home"><i class="fa-solid fa-house me-1 text-primary"></i> Home</a></li>
+          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#shop"><i class="fa-solid fa-bag-shopping me-1 text-primary"></i> Shop</a></li>
+          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#about"><i class="fa-solid fa-circle-info me-1 text-primary"></i> About</a></li>
+          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#blog"><i class="fa-solid fa-newspaper me-1 text-primary"></i> Blog</a></li>
+          <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="#contact"><i class="fa-solid fa-envelope me-1 text-primary"></i> Contact</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-3">
+          <a href="#shop" class="btn btn-light position-relative border rounded-pill px-3 py-2 text-secondary">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
+          </a>
+          <a href="/auth/login" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
+            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Get Started
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>`,
+        cssStyles: `.oz-nav-header .nav-link:hover { color: #2563eb !important; }`
       },
+
+      // 2. Hero Unit
       {
         id: 'hero-01',
-        name: 'Modern Light Hero with Card Preview',
+        name: 'Modern Light Split Hero',
         category: 'hero',
         variantCode: 'Hero_SplitProduct',
         badge: 'Popular',
         tag: 'modern',
-        description: 'Clean light split hero with left bold typography, value proposition chips, dual action buttons, and right elevated showcase card.',
-        thumbnailGradient: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)',
-        previewIcon: 'view_carousel',
-        previewSubtitle: 'Modern Light Hero',
-        previewTitle: 'Next-Gen Business Governance',
-        previewBody: 'Empower committee leadership with automated financial controls.',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Left bold headline, subtitle chips, dual action buttons + Right interactive live product dashboard telemetry card.',
+        thumbnailGradient: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+        previewIcon: 'space_dashboard',
+        previewSubtitle: 'Light Product Hero',
+        previewTitle: 'Streamline your entire organizational workflow',
+        previewBody: 'Manage members, execute e-voting, track telemetry, and automate transactions in one platform.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <section class="oz-hero-light {{ CustomClass }}">
-            <div class="oz-hero-container">
-              <div class="oz-hero-content">
-                <span class="oz-pill-badge">✦ {{ MiniTitle }}</span>
-                <h1 class="oz-hero-title">{{ Title }}</h1>
-                <p class="oz-hero-lead">{{ Description }}</p>
-                <div class="oz-hero-actions">
-                  <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }} →</a>
-                  <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
-                </div>
-                <div class="oz-hero-trust-row">
-                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> Instant Setup</span>
-                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> Bank-Grade Security</span>
-                  <span class="oz-trust-item"><span class="oz-trust-check">✓</span> 99.9% Uptime</span>
-                </div>
-              </div>
-              <div class="oz-hero-media">
-                <div class="oz-elevated-card">
-                  <div class="oz-card-top-bar">
-                    <div class="oz-card-dots">
-                      <span class="dot dot-red"></span>
-                      <span class="dot dot-amber"></span>
-                      <span class="dot dot-green"></span>
-                    </div>
-                    <span class="oz-card-domain">workspace.verified</span>
-                  </div>
-                  <div class="oz-card-stat-box">
-                    <span class="oz-stat-label">Executive Metrics</span>
-                    <span class="oz-stat-value">$1,450,000+</span>
-                    <span class="oz-stat-delta">+24.8% Active Growth</span>
-                  </div>
-                  <div class="oz-card-preview-strip">
-                    <div class="oz-strip-item">
-                      <span class="oz-strip-title">Platform Status</span>
-                      <span class="oz-strip-tag">Operational</span>
-                    </div>
-                    <div class="oz-strip-item">
-                      <span class="oz-strip-title">Data Sovereignty</span>
-                      <span class="oz-strip-tag">Isolated DB</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+<section class="py-5 bg-light border-bottom">
+  <div class="container py-lg-4">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3">
+          <i class="fa-solid fa-bolt"></i>
+          <span class="small fw-bold text-uppercase">Enterprise Suite v2.5</span>
+        </div>
+        <h1 class="display-5 fw-bolder text-dark mb-3 lh-sm">Streamline your entire organizational workflow.</h1>
+        <p class="lead text-muted mb-4 fs-6">Manage members, execute secure e-voting, track real-time analytics, and automate transactions in one sovereign platform.</p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="#shop" class="btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm">
+            <i class="fa-solid fa-rocket me-2"></i> Explore Storefront
+          </a>
+          <a href="#about" class="btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white">
+            <i class="fa-solid fa-play me-2 text-primary"></i> Watch Demo
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border border-light-subtle shadow rounded-4 overflow-hidden p-3 bg-white">
+          <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
+            <div class="d-flex gap-2">
+              <span class="badge bg-danger rounded-circle p-1"></span>
+              <span class="badge bg-warning rounded-circle p-1"></span>
+              <span class="badge bg-success rounded-circle p-1"></span>
             </div>
-          </section>
-        `,
-        cssStyles: `
-          .oz-hero-light { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 80px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
-          .oz-hero-container { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 50px; }
-          .oz-hero-content { flex: 1.1; max-width: 600px; }
-          .oz-pill-badge { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 800; display: inline-block; margin-bottom: 18px; letter-spacing: 0.04em; }
-          .oz-hero-title { font-size: 42px; font-weight: 900; line-height: 1.15; color: #0f172a; margin: 0 0 16px 0; letter-spacing: -0.025em; }
-          .oz-hero-lead { font-size: 16px; color: #475569; line-height: 1.6; margin: 0 0 30px 0; }
-          .oz-hero-actions { display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
-          .oz-btn-primary { background: #2563eb; color: #ffffff; padding: 13px 26px; border-radius: 9px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block; transition: background 0.15s ease; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
-          .oz-btn-primary:hover { background: #1d4ed8; }
-          .oz-btn-secondary { background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; padding: 13px 24px; border-radius: 9px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block; transition: all 0.15s ease; }
-          .oz-btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
-          .oz-hero-trust-row { display: flex; gap: 20px; font-size: 12.5px; color: #64748b; font-weight: 600; flex-wrap: wrap; }
-          .oz-trust-item { display: flex; align-items: center; gap: 5px; }
-          .oz-trust-check { color: #10b981; font-weight: 800; }
-          .oz-hero-media { flex: 0.9; display: flex; justify-content: center; }
-          .oz-elevated-card { width: 100%; max-width: 420px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); }
-          .oz-card-top-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; }
-          .oz-card-dots { display: flex; gap: 6px; }
-          .dot { width: 10px; height: 10px; border-radius: 50%; display: block; }
-          .dot-red { background: #fca5a5; }
-          .dot-amber { background: #fde68a; }
-          .dot-green { background: #86efac; }
-          .oz-card-domain { font-size: 11px; font-family: monospace; color: #94a3b8; font-weight: 600; }
-          .oz-card-stat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
-          .oz-stat-label { font-size: 11.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
-          .oz-stat-value { font-size: 32px; font-weight: 900; color: #0f172a; display: block; letter-spacing: -0.02em; }
-          .oz-stat-delta { font-size: 12px; color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
-          .oz-card-preview-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-          .oz-strip-item { background: #f1f5f9; padding: 10px 12px; border-radius: 8px; }
-          .oz-strip-title { font-size: 10.5px; color: #64748b; font-weight: 600; display: block; }
-          .oz-strip-tag { font-size: 12px; color: #0f172a; font-weight: 800; display: block; margin-top: 2px; }
-
-          @media(max-width: 900px) {
-            .viewport-mobile .oz-hero-container, .oz-hero-container { flex-direction: column; text-align: center; }
-            .oz-hero-content { max-width: 100%; }
-            .oz-hero-title { font-size: 30px; }
-            .oz-hero-actions { justify-content: center; }
-            .oz-hero-trust-row { justify-content: center; }
-            .oz-hero-media { width: 100%; }
-          }
-        `
+            <span class="small text-muted fw-bold"><i class="fa-solid fa-chart-pie me-1 text-primary"></i> Live Telemetry</span>
+          </div>
+          <div class="row g-2 text-center">
+            <div class="col-6"><div class="p-3 rounded-3 bg-light border"><div class="h4 fw-bold text-dark mb-0">24.5k</div><small class="text-muted">Active Members</small></div></div>
+            <div class="col-6"><div class="p-3 rounded-3 bg-light border"><div class="h4 fw-bold text-success mb-0">99.9%</div><small class="text-muted">Uptime SLA</small></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
       },
+
+      // 3. Body Section 1 - 3-Column Core Capabilities Grid
       {
         id: 'body-01',
-        name: '3-Column Light Feature Grid',
+        name: '3-Column Modern Feature Grid',
         category: 'body',
         variantCode: 'Body_FeatureGrid3',
-        badge: 'Popular',
+        badge: 'Core Section',
         tag: 'modern',
-        description: '3-Column clean card matrix highlighting primary platform pillars with modern light cards, subtle borders, and pastel badges.',
-        thumbnailGradient: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)',
-        previewIcon: 'view_quilt',
-        previewSubtitle: 'Light Feature Grid',
-        previewTitle: 'Engineered for Performance & Scale',
-        previewBody: 'Real-time sync, zero trust security, and automated multi-tenant provisioning.',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: '3-column feature cards with pastel icon badges, hover elevation, and clean corporate value propositions.',
+        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+        previewIcon: 'grid_view',
+        previewSubtitle: 'Core Capabilities',
+        previewTitle: 'Engineered for Maximum Impact',
+        previewBody: 'Essential infrastructure designed for seamless organizational execution and rapid growth.',
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <section class="oz-feat-light {{ CustomClass }}">
-            <div class="oz-feat-container">
-              <div class="oz-feat-header">
-                <span class="oz-feat-badge">{{ MiniTitle }}</span>
-                <h2 class="oz-feat-title">{{ Title }}</h2>
-                <p class="oz-feat-lead">{{ Description }}</p>
-              </div>
-              <div class="oz-feat-grid">
-                <div class="oz-feat-card">
-                  <div class="oz-card-icon-pill">⚡</div>
-                  <h3 class="oz-card-title">Real-Time Sync</h3>
-                  <p class="oz-card-desc">Instantaneous SignalR WebSocket state propagation across all devices with zero polling latency.</p>
-                </div>
-                <div class="oz-feat-card">
-                  <div class="oz-card-icon-pill">🛡️</div>
-                  <h3 class="oz-card-title">Granular RBAC</h3>
-                  <p class="oz-card-desc">Fine-grained permission matrices for committee chairs, financial auditors, and general members.</p>
-                </div>
-                <div class="oz-feat-card">
-                  <div class="oz-card-icon-pill">☁️</div>
-                  <h3 class="oz-card-title">Cloud Vault</h3>
-                  <p class="oz-card-desc">Fully compliant Cloudinary digital asset streaming and secure document vaults.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        `,
-        cssStyles: `
-          .oz-feat-light { padding: 80px 24px; background: #ffffff; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
-          .oz-feat-container { max-width: 1200px; margin: 0 auto; }
-          .oz-feat-header { text-align: center; max-width: 650px; margin: 0 auto 50px auto; }
-          .oz-feat-badge { color: #2563eb; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-          .oz-feat-title { font-size: 34px; font-weight: 900; color: #0f172a; margin: 8px 0 12px 0; letter-spacing: -0.02em; }
-          .oz-feat-lead { color: #64748b; font-size: 15px; line-height: 1.6; margin: 0; }
-          .oz-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-          .oz-feat-card { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 32px 24px; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
-          .oz-feat-card:hover { transform: translateY(-4px); border-color: #2563eb; box-shadow: 0 12px 25px rgba(37,99,235,0.08); background: #ffffff; }
-          .oz-card-icon-pill { width: 48px; height: 48px; background: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 20px; color: #2563eb; border: 1px solid #dbeafe; }
-          .oz-card-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
-          .oz-card-desc { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0; }
-
-          @media(max-width: 850px) {
-            .viewport-mobile .oz-feat-grid, .oz-feat-grid { grid-template-columns: 1fr; }
-            .oz-feat-light { padding: 50px 20px; }
-          }
-        `
+<section class="py-5 bg-white border-bottom">
+  <div class="container py-4">
+    <div class="text-center max-w-700 mx-auto mb-5">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Core Capabilities</span>
+      <h2 class="fw-bold text-dark mt-2 mb-3">Engineered for Maximum Impact</h2>
+      <p class="text-muted">Essential infrastructure designed for seamless organizational execution and rapid growth.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
+          <div class="rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+            <i class="fa-solid fa-shield-halved fs-4"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Identity & Access</h5>
+          <p class="text-muted small mb-0">Granular role-based security matrix, session controls, and multi-factor authorization safeguards.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
+          <div class="rounded-3 bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+            <i class="fa-solid fa-comments fs-4"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Collaboration Hub</h5>
+          <p class="text-muted small mb-0">Unified communication channels, real-time dispatches, and organizational announcements.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm">
+          <div class="rounded-3 bg-info-subtle text-info d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+            <i class="fa-solid fa-check-to-slot fs-4"></i>
+          </div>
+          <h5 class="fw-bold text-dark">E-Voting & Polls</h5>
+          <p class="text-muted small mb-0">Tamper-proof real-time electoral polling with instant ballot auditing and verified participation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
       },
+
+      // 4. Body Section 2 - Featured Product / Deal Spotlight
+      {
+        id: 'body-02',
+        name: 'Product Spotlight & Deal Banner',
+        category: 'body',
+        variantCode: 'Body_ProductShowcase',
+        badge: 'Merchandise',
+        tag: 'storefront',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Horizontal split featuring product overview, discount badge, pricing tags, and order CTA button.',
+        thumbnailGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+        previewIcon: 'local_offer',
+        previewSubtitle: 'Storefront Deal',
+        previewTitle: 'Executive Signature Folio & Smart Badge',
+        previewBody: 'Handcrafted vegan leather document suite paired with contactless NFC credentials.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-light border-bottom">
+  <div class="container py-4">
+    <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden p-4 p-lg-5 bg-white">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+          <span class="badge bg-danger rounded-pill px-3 py-1 mb-3"><i class="fa-solid fa-fire me-1"></i> Featured Spotlight</span>
+          <h3 class="fw-bolder text-dark mb-2">Executive Signature Folio & Smart Badge</h3>
+          <p class="text-muted mb-4">Handcrafted vegan leather document suite paired with contactless NFC credentials for seamless campus admission.</p>
+          <div class="d-flex align-items-baseline gap-3 mb-4">
+            <span class="h3 fw-bold text-primary mb-0">$89.00</span>
+            <span class="text-muted text-decoration-line-through">$120.00</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Save 25%</span>
+          </div>
+          <div class="d-flex gap-3">
+            <a href="#shop" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"><i class="fa-solid fa-cart-plus me-1"></i> Order Now</a>
+            <a href="#shop" class="btn btn-outline-secondary rounded-pill px-4 py-2"><i class="fa-solid fa-eye me-1"></i> Details</a>
+          </div>
+        </div>
+        <div class="col-lg-6 text-center">
+          <div class="p-4 rounded-4 bg-light d-inline-flex flex-column align-items-center justify-content-center w-100" style="min-height: 240px;">
+            <i class="fa-solid fa-box-open text-primary display-2 mb-3 opacity-75"></i>
+            <span class="fw-semibold text-dark">Official Merchandise Collection</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 5. Body Section 3 - Metrics & Stat Counters
+      {
+        id: 'body-03',
+        name: '4-Column Metric Counter Bar',
+        category: 'body',
+        variantCode: 'Body_MetricsCounter',
+        badge: 'Proof',
+        tag: 'corporate',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: '4-column metric statistics row displaying organizational milestones, uptime, verified members, and support SLA.',
+        thumbnailGradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+        previewIcon: 'bar_chart',
+        previewSubtitle: 'Verified Telemetry',
+        previewTitle: '12,500+ Active Verified Members',
+        previewBody: '99.98% System Reliability • 45+ Chapters • 24/7 Support',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-white border-bottom">
+  <div class="container py-3">
+    <div class="row g-4 text-center">
+      <div class="col-6 col-md-3">
+        <div class="p-3">
+          <i class="fa-solid fa-users text-primary fs-2 mb-2"></i>
+          <div class="display-6 fw-bold text-dark">12,500+</div>
+          <div class="small text-muted fw-semibold text-uppercase">Verified Members</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="p-3">
+          <i class="fa-solid fa-server text-success fs-2 mb-2"></i>
+          <div class="display-6 fw-bold text-dark">99.98%</div>
+          <div class="small text-muted fw-semibold text-uppercase">System Reliability</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="p-3">
+          <i class="fa-solid fa-earth-americas text-info fs-2 mb-2"></i>
+          <div class="display-6 fw-bold text-dark">45+</div>
+          <div class="small text-muted fw-semibold text-uppercase">Global Chapters</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="p-3">
+          <i class="fa-solid fa-headset text-warning fs-2 mb-2"></i>
+          <div class="display-6 fw-bold text-dark">24/7</div>
+          <div class="small text-muted fw-semibold text-uppercase">Priority Support</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 6. Body Section 4 - Testimonials & Reviews
+      {
+        id: 'body-04',
+        name: '3-Card Social Proof & Testimonials',
+        category: 'body',
+        variantCode: 'Body_Testimonials',
+        badge: 'Reviews',
+        tag: 'social-proof',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: '3 customer endorsement cards featuring 5-star review ratings, quotes, user avatars, and organization titles.',
+        thumbnailGradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
+        previewIcon: 'rate_review',
+        previewSubtitle: 'Testimonials',
+        previewTitle: 'Trusted by Organizations Worldwide',
+        previewBody: 'Hear directly from leaders who rely on our portal for everyday operational governance.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-light border-bottom">
+  <div class="container py-4">
+    <div class="text-center max-w-700 mx-auto mb-5">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Member Testimonials</span>
+      <h2 class="fw-bold text-dark mt-2 mb-3">Trusted by Organizations Worldwide</h2>
+      <p class="text-muted">Hear directly from leaders who rely on our portal for everyday operational governance.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
+          <div class="text-warning mb-3">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p class="text-secondary mb-4 fst-italic">"The e-voting and committee management modules saved our annual general meeting over 40 hours of manual reconciliation."</p>
+          <div class="d-flex align-items-center gap-3 mt-auto">
+            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">SA</div>
+            <div>
+              <div class="fw-bold text-dark small">Dr. Sarah Adams</div>
+              <div class="text-muted small">Executive Secretary</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
+          <div class="text-warning mb-3">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p class="text-secondary mb-4 fst-italic">"The sovereign multi-tenant architecture gives our compliance officers absolute peace of mind regarding member data sovereignty."</p>
+          <div class="d-flex align-items-center gap-3 mt-auto">
+            <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">MK</div>
+            <div>
+              <div class="fw-bold text-dark small">Marcus Kim</div>
+              <div class="text-muted small">Director of Governance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white">
+          <div class="text-warning mb-3">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p class="text-secondary mb-4 fst-italic">"Our integrated merchandise storefront paid for our entire portal subscription within the first 60 days of launch."</p>
+          <div class="d-flex align-items-center gap-3 mt-auto">
+            <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold" style="width:42px; height:42px;">EL</div>
+            <div>
+              <div class="fw-bold text-dark small">Elena Rostova</div>
+              <div class="text-muted small">Treasurer & Finance Chair</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 7. Body Section 5 - Interactive FAQ Accordion
+      {
+        id: 'body-05',
+        name: 'Collapsible FAQ Accordion',
+        category: 'body',
+        variantCode: 'Body_FaqAccordion',
+        badge: 'FAQ',
+        tag: 'support',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Interactive FAQ accordion with clean question rows, smooth collapse toggle, and supportive answers.',
+        thumbnailGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
+        previewIcon: 'help',
+        previewSubtitle: 'Q&A Support',
+        previewTitle: 'Frequently Asked Questions',
+        previewBody: 'Common answers regarding tenant membership, data security, and portal operations.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-white border-bottom">
+  <div class="container py-4">
+    <div class="text-center max-w-700 mx-auto mb-5">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Questions & Answers</span>
+      <h2 class="fw-bold text-dark mt-2 mb-3">Frequently Asked Questions</h2>
+      <p class="text-muted">Common answers regarding tenant membership, data security, and portal operations.</p>
+    </div>
+    <div class="max-w-800 mx-auto">
+      <div class="accordion" id="ozFaqAccordion">
+        <div class="accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm">
+          <h2 class="accordion-header">
+            <button class="accordion-button fw-bold text-dark bg-light" type="button" onclick="this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')">
+              <i class="fa-solid fa-circle-question text-primary me-2"></i> How is member voter privacy protected during e-voting?
+            </button>
+          </h2>
+          <div class="accordion-collapse collapse show">
+            <div class="accordion-body text-secondary small">
+              All ballot votes are cryptographically blinded using modern cryptographic hashes, guaranteeing voter anonymity while ensuring mathematical proof of legitimate eligibility.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed fw-bold text-dark bg-light" type="button" onclick="this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')">
+              <i class="fa-solid fa-circle-question text-primary me-2"></i> Can our organization add custom domain names?
+            </button>
+          </h2>
+          <div class="accordion-collapse collapse">
+            <div class="accordion-body text-secondary small">
+              Yes, organizations can easily bind custom domains with automated SSL provisioning from the Administrative Settings console.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 8. Body Section 6 - High-Conversion CTA Banner
+      {
+        id: 'body-06',
+        name: 'Gradient Action CTA Ribbon',
+        category: 'body',
+        variantCode: 'Body_CtaBanner',
+        badge: 'Conversion',
+        tag: 'cta',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Vibrant action banner with royal blue gradient background, heading, value prop text, and dual join buttons.',
+        thumbnailGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+        previewIcon: 'campaign',
+        previewSubtitle: 'Action Ribbon',
+        previewTitle: 'Ready to Transform Your Organization?',
+        previewBody: 'Join thousands of members enjoying seamless digital governance, online storefronts, and automated records.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-light border-bottom">
+  <div class="container py-3">
+    <div class="card border-0 rounded-4 p-5 text-center text-white shadow" style="background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);">
+      <h2 class="display-6 fw-bold mb-3">Ready to Transform Your Organization?</h2>
+      <p class="lead opacity-90 max-w-600 mx-auto mb-4 fs-6">Join thousands of members enjoying seamless digital governance, online storefronts, and automated records.</p>
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="/auth/login" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow">
+          <i class="fa-solid fa-user-plus me-1"></i> Join Workspace
+        </a>
+        <a href="#contact" class="btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold">
+          <i class="fa-solid fa-headset me-1"></i> Talk to Support
+        </a>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 9. E-Commerce Storefront Grid
+      {
+        id: 'ecom-01',
+        name: 'Clean Light Storefront Product Grid',
+        category: 'ecommerce',
+        variantCode: 'Ecom_ProductGrid',
+        badge: 'Storefront',
+        tag: 'ecommerce',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: '4-column storefront catalog with category filter pills, stock badges, price tags, and Add to Cart action.',
+        thumbnailGradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+        previewIcon: 'shopping_bag',
+        previewSubtitle: 'Product Catalog',
+        previewTitle: 'Official Merchandise Collection',
+        previewBody: 'Apparel, NFC Credentials, Leather Folios, and Executive Accessories.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-white border-bottom" id="shop">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+      <div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Official Store</span>
+        <h2 class="fw-bold text-dark mt-2 mb-0">Featured Merchandise</h2>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary rounded-pill px-3">All</button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Apparel</button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Hardware</button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Badges</button>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
+          <div class="p-4 bg-light text-center"><i class="fa-solid fa-shirt text-secondary display-4"></i></div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">In Stock</span>
+            <h6 class="fw-bold text-dark mb-1">Signature Member Hoodie</h6>
+            <p class="text-muted small mb-3">Heavyweight organic fleece with embroidered crest.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <span class="fw-bold text-primary fs-5">$55.00</span>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
+          <div class="p-4 bg-light text-center"><i class="fa-solid fa-id-card text-secondary display-4"></i></div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Official</span>
+            <h6 class="fw-bold text-dark mb-1">Smart NFC Badge Holder</h6>
+            <p class="text-muted small mb-3">Contactless titanium credential clip with lanyard.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <span class="fw-bold text-primary fs-5">$24.00</span>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
+          <div class="p-4 bg-light text-center"><i class="fa-solid fa-briefcase text-secondary display-4"></i></div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Hot</span>
+            <h6 class="fw-bold text-dark mb-1">Executive Leather Folio</h6>
+            <p class="text-muted small mb-3">Document portfolio with pen loop and brass zippers.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <span class="fw-bold text-primary fs-5">$75.00</span>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm">
+          <div class="p-4 bg-light text-center"><i class="fa-solid fa-mug-hot text-secondary display-4"></i></div>
+          <div class="card-body d-flex flex-column">
+            <span class="badge bg-secondary-subtle text-secondary w-auto align-self-start mb-2">Accessory</span>
+            <h6 class="fw-bold text-dark mb-1">Ceramic Travel Tumbler</h6>
+            <p class="text-muted small mb-3">Double-wall insulated 16oz thermal beverage cup.</p>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              <span class="fw-bold text-primary fs-5">$18.00</span>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-cart-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 10. Newsletter Section
+      {
+        id: 'news-01',
+        name: 'Clean Light Newsletter Dispatch',
+        category: 'newsletter',
+        variantCode: 'News_MinimalBar',
+        badge: 'Engagement',
+        tag: 'newsletter',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Centered subscription box with email input, join button, and privacy reassurance note.',
+        thumbnailGradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+        previewIcon: 'mark_email_read',
+        previewSubtitle: 'Weekly Dispatch',
+        previewTitle: 'Stay Informed with Weekly Dispatches',
+        previewBody: 'Subscribe to receive vital organizational announcements and community updates.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-light border-bottom">
+  <div class="container py-3">
+    <div class="card border border-light-subtle rounded-4 p-4 p-lg-5 bg-white text-center shadow-sm max-w-800 mx-auto">
+      <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:60px; height:60px;">
+        <i class="fa-solid fa-envelope-open-text fs-3"></i>
+      </div>
+      <h3 class="fw-bold text-dark mb-2">Stay Informed with Weekly Dispatches</h3>
+      <p class="text-muted small mb-4 max-w-500 mx-auto">Subscribe to receive vital organizational announcements, governance updates, and community highlights directly in your inbox.</p>
+      <form class="d-flex flex-column flex-sm-row gap-2 max-w-500 mx-auto w-100">
+        <input type="email" class="form-control rounded-pill px-3 py-2 border-secondary-subtle" placeholder="Enter your email address..." required />
+        <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold text-nowrap">
+          <i class="fa-solid fa-paper-plane me-1"></i> Subscribe
+        </button>
+      </form>
+      <small class="text-muted mt-3 d-block"><i class="fa-solid fa-lock me-1"></i> Zero spam. Unsubscribe at any time.</small>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 11. Contact Section
+      {
+        id: 'contact-01',
+        name: 'Split Contact Inquiries & Form',
+        category: 'contact',
+        variantCode: 'Contact_SplitDetails',
+        badge: 'Support',
+        tag: 'contact',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Left office location, phone, and support desk info + Right clean message submission form.',
+        thumbnailGradient: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+        previewIcon: 'contact_mail',
+        previewSubtitle: 'Help & Support',
+        previewTitle: 'We are here to assist you',
+        previewBody: 'Reach our administrative headquarters and help desk.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-white border-bottom" id="contact">
+  <div class="container py-4">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-5">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Contact Us</span>
+        <h2 class="fw-bold text-dark mt-2 mb-3">We are here to assist you.</h2>
+        <p class="text-muted mb-4">Have questions regarding your membership, billing, or platform integration? Reach out to our operational team.</p>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-location-dot"></i></div>
+            <div><div class="fw-bold text-dark small">Headquarters</div><div class="text-muted small">100 Enterprise Way, Global Suite 400</div></div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-phone"></i></div>
+            <div><div class="fw-bold text-dark small">Telephone</div><div class="text-muted small">+1 (800) 555-0199</div></div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width:44px; height:44px;"><i class="fa-solid fa-envelope"></i></div>
+            <div><div class="fw-bold text-dark small">Support Desk</div><div class="text-muted small">support@ozikol.com</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="card border border-light-subtle rounded-4 p-4 p-lg-5 shadow-sm bg-light">
+          <h5 class="fw-bold text-dark mb-3">Send Us a Direct Message</h5>
+          <form class="row g-3">
+            <div class="col-md-6"><input type="text" class="form-control bg-white rounded-3" placeholder="Your Name" /></div>
+            <div class="col-md-6"><input type="email" class="form-control bg-white rounded-3" placeholder="Your Email" /></div>
+            <div class="col-12"><input type="text" class="form-control bg-white rounded-3" placeholder="Subject" /></div>
+            <div class="col-12"><textarea class="form-control bg-white rounded-3" rows="4" placeholder="How can we assist your organization?"></textarea></div>
+            <div class="col-12"><button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"><i class="fa-solid fa-paper-plane me-1"></i> Submit Message</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 12. Blog & News Articles Grid
+      {
+        id: 'blog-01',
+        name: '3-Column News & Articles Showcase',
+        category: 'blog',
+        variantCode: 'Blog_CardGrid3',
+        badge: 'Articles',
+        tag: 'blog',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: '3 article cards with category tags, publication dates, read time, and executive insights.',
+        thumbnailGradient: 'linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)',
+        previewIcon: 'article',
+        previewSubtitle: 'News & Insights',
+        previewTitle: 'Latest Insights & Announcements',
+        previewBody: 'E-Voting governance, sovereign data retention, and storefront revenue models.',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-5 bg-light border-bottom" id="blog">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3">
+      <div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold">Newsroom</span>
+        <h2 class="fw-bold text-dark mt-2 mb-0">Latest Insights & Announcements</h2>
+      </div>
+      <a href="#blog" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"><i class="fa-solid fa-arrow-right me-1"></i> View All Articles</a>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
+          <div class="p-4 bg-primary-subtle text-center text-primary"><i class="fa-solid fa-landmark display-4"></i></div>
+          <div class="card-body">
+            <span class="badge bg-light text-secondary border mb-2">Governance</span>
+            <h5 class="fw-bold text-dark">Modernizing Annual General Meetings with E-Voting</h5>
+            <p class="text-muted small">How sovereign distributed voting algorithms safeguard quorums and record keeping.</p>
+            <div class="small text-muted"><i class="fa-solid fa-calendar me-1"></i> Sep 10, 2026 • 4 min read</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
+          <div class="p-4 bg-success-subtle text-center text-success"><i class="fa-solid fa-shield-halved display-4"></i></div>
+          <div class="card-body">
+            <span class="badge bg-light text-secondary border mb-2">Security</span>
+            <h5 class="fw-bold text-dark">Sovereign Data Retention and Multi-Tenancy</h5>
+            <p class="text-muted small">Why dedicated database isolation provides superior regulatory compliance.</p>
+            <div class="small text-muted"><i class="fa-solid fa-calendar me-1"></i> Sep 04, 2026 • 5 min read</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white">
+          <div class="p-4 bg-info-subtle text-center text-info"><i class="fa-solid fa-store display-4"></i></div>
+          <div class="card-body">
+            <span class="badge bg-light text-secondary border mb-2">Storefront</span>
+            <h5 class="fw-bold text-dark">Generating Sustainable Non-Dues Revenue</h5>
+            <p class="text-muted small">Leveraging embedded member storefronts for official merchandise and training courses.</p>
+            <div class="small text-muted"><i class="fa-solid fa-calendar me-1"></i> Aug 28, 2026 • 3 min read</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 13. Breadcrumbs & Page Headers
+      {
+        id: 'crumb-01',
+        name: 'Clean Light Breadcrumb Header Banner',
+        category: 'breadcrumb',
+        variantCode: 'Breadcrumb_PageHeader',
+        badge: 'Header',
+        tag: 'breadcrumb',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
+        description: 'Inner-page top banner featuring page title, breadcrumb navigation trail, and verified status pill.',
+        thumbnailGradient: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+        previewIcon: 'linear_scale',
+        previewSubtitle: 'Page Header',
+        previewTitle: 'Clean Light Breadcrumb Header Banner',
+        previewBody: 'Home / {{ PageTitle }} • Verified Page',
+        version: '1.0.0',
+        installedUtc: new Date().toISOString(),
+        htmlTemplate: `
+<section class="py-4 bg-light border-bottom">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2 small">
+        <li class="breadcrumb-item"><a href="#home" class="text-decoration-none text-muted"><i class="fa-solid fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">{{ Title }}</li>
+      </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h1 class="h3 fw-bold text-dark mb-1">{{ Title }}</h1>
+        <p class="text-muted small mb-0">{{ Description }}</p>
+      </div>
+      <span class="badge bg-white text-secondary border px-3 py-2 rounded-pill small shadow-sm">
+        <i class="fa-solid fa-circle-check text-success me-1"></i> Verified Page
+      </span>
+    </div>
+  </div>
+</section>`,
+        cssStyles: ``
+      },
+
+      // 14. Corporate Footer
       {
         id: 'footer-01',
         name: 'Clean Light Corporate Footer',
@@ -4964,6 +5813,8 @@ export class MyTemplatesComponent implements OnInit {
         variantCode: 'Footer_4ColCorporate',
         badge: 'Popular',
         tag: 'corporate',
+        groupCode: 'apex-commerce',
+        groupName: 'Apex Commerce Pro',
         description: 'Clean light multi-column corporate footer with brand overview, product links, company resources, and inline newsletter subscription.',
         thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         previewIcon: 'dock_to_bottom',
@@ -4973,74 +5824,55 @@ export class MyTemplatesComponent implements OnInit {
         version: '1.0.0',
         installedUtc: new Date().toISOString(),
         htmlTemplate: `
-          <footer class="oz-footer-light {{ CustomClass }}">
-            <div class="oz-foot-container">
-              <div class="oz-foot-top">
-                <div class="oz-foot-brand-col">
-                  <a href="/" class="oz-brand-link">
-                    <img src="https://res.cloudinary.com/dsmclttal/image/upload/v1718000000/branding/brand-logo-dark.svg"
-                         onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 160 40\\' fill=\\'none\\'><rect width=\\'36\\' height=\\'36\\' rx=\\'8\\' fill=\\'%232563EB\\'/><path d=\\'M12 24V12L24 24V12\\' stroke=\\'white\\' stroke-width=\\'3\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'/><text x=\\'46\\' y=\\'25\\' font-family=\\'system-ui, -apple-system, sans-serif\\' font-size=\\'15\\' font-weight=\\'800\\' fill=\\'%230F172A\\' letter-spacing=\\'0.5\\'>OZIKOL<tspan fill=\\'%232563EB\\'>.BCC</tspan></text></svg>'"
-                         alt="{{ BrandName }}" class="oz-brand-logo-img" style="margin-bottom: 14px;" />
-                  </a>
-                  <p class="oz-foot-tagline">{{ Description }}</p>
-                </div>
-                <div class="oz-foot-links-col">
-                  <h4 class="oz-foot-col-title">Platform</h4>
-                  <a href="#">Solutions</a>
-                  <a href="#">Committees</a>
-                  <a href="#">E-Voting System</a>
-                  <a href="#">Financial Controls</a>
-                </div>
-                <div class="oz-foot-links-col">
-                  <h4 class="oz-foot-col-title">Organization</h4>
-                  <a href="#">About Us</a>
-                  <a href="#">Leadership</a>
-                  <a href="#">Security & Privacy</a>
-                  <a href="#">Help & Support</a>
-                </div>
-                <div class="oz-foot-newsletter-col">
-                  <h4 class="oz-foot-col-title">Stay Connected</h4>
-                  <p class="oz-newsletter-desc">Subscribe to our dispatch for organizational announcements.</p>
-                  <div class="oz-newsletter-form">
-                    <input type="email" placeholder="Enter your email..." class="oz-news-input" />
-                    <button type="button" class="oz-news-btn">Join</button>
-                  </div>
-                </div>
-              </div>
-              <div class="oz-foot-bottom">
-                <span class="oz-copy-text">{{ Copyright }}</span>
-                <div class="oz-powered-wrap">
-                  {{ PoweredBy }}
-                </div>
-              </div>
-            </div>
-          </footer>
-        `,
-        cssStyles: `
-          .oz-footer-light { background: #f8fafc; color: #475569; padding: 60px 24px 28px 24px; font-family: Inter, system-ui, -apple-system, sans-serif; border-top: 1px solid #e2e8f0; }
-          .oz-foot-container { max-width: 1200px; margin: 0 auto; }
-          .oz-foot-top { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1.6fr; gap: 40px; margin-bottom: 48px; }
-          .oz-foot-brand-col .oz-brand-link { display: inline-flex; text-decoration: none; }
-          .oz-brand-logo-img { height: 32px; max-height: 36px; width: auto; object-fit: contain; display: block; }
-          .oz-foot-tagline { font-size: 13.5px; color: #64748b; line-height: 1.6; margin-top: 10px; max-width: 300px; }
-          .oz-foot-col-title { font-size: 13px; font-weight: 800; color: #0f172a; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-          .oz-foot-links-col a { display: block; color: #64748b; text-decoration: none; font-size: 13.5px; margin-bottom: 10px; transition: color 0.15s ease; }
-          .oz-foot-links-col a:hover { color: #2563eb; }
-          .oz-newsletter-desc { font-size: 13px; color: #64748b; margin: 0 0 12px 0; line-height: 1.5; }
-          .oz-newsletter-form { display: flex; gap: 8px; }
-          .oz-news-input { background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #0f172a; flex: 1; outline: none; }
-          .oz-news-input:focus { border-color: #2563eb; }
-          .oz-news-btn { background: #2563eb; color: #ffffff; border: none; border-radius: 8px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.15s ease; }
-          .oz-news-btn:hover { background: #1d4ed8; }
-          .oz-foot-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 24px; font-size: 12.5px; color: #64748b; flex-wrap: wrap; gap: 12px; }
-          .oz-powered-wrap a { color: #2563eb; font-weight: 700; text-decoration: none; }
-
-          @media(max-width: 850px) {
-            .viewport-mobile .oz-foot-top, .oz-foot-top { grid-template-columns: 1fr; gap: 32px; }
-            .viewport-mobile .oz-foot-bottom, .oz-foot-bottom { flex-direction: column; text-align: center; }
-            .oz-footer-light { padding: 40px 20px; }
-          }
-        `
+<footer class="bg-light border-top py-5 text-secondary">
+  <div class="container">
+    <div class="row g-4 mb-5">
+      <div class="col-lg-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge bg-primary rounded-3 p-2 text-white"><i class="fa-solid fa-cube"></i></span>
+          <span class="fw-bold text-dark fs-5">{{ BrandName }}</span>
+        </div>
+        <p class="small text-muted max-w-300">The sovereign digital platform engineered for organizational governance, member collaboration, and integrated commerce.</p>
+        <div class="d-flex gap-2 text-secondary">
+          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" class="btn btn-sm btn-white border rounded-circle text-secondary"><i class="fa-brands fa-facebook-f"></i></a>
+        </div>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6 class="fw-bold text-dark text-uppercase small mb-3">Platform</h6>
+        <ul class="list-unstyled small d-flex flex-column gap-2">
+          <li><a href="#shop" class="text-decoration-none text-muted">Online Store</a></li>
+          <li><a href="#about" class="text-decoration-none text-muted">Governance</a></li>
+          <li><a href="#about" class="text-decoration-none text-muted">E-Voting</a></li>
+          <li><a href="#about" class="text-decoration-none text-muted">Member IDs</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h6 class="fw-bold text-dark text-uppercase small mb-3">Organization</h6>
+        <ul class="list-unstyled small d-flex flex-column gap-2">
+          <li><a href="#about" class="text-decoration-none text-muted">About Us</a></li>
+          <li><a href="#blog" class="text-decoration-none text-muted">Leadership</a></li>
+          <li><a href="#blog" class="text-decoration-none text-muted">Security</a></li>
+          <li><a href="#contact" class="text-decoration-none text-muted">Help Desk</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-4">
+        <h6 class="fw-bold text-dark text-uppercase small mb-3">Stay Connected</h6>
+        <p class="small text-muted">Subscribe to our weekly dispatch for community updates and announcements.</p>
+        <div class="input-group input-group-sm">
+          <input type="email" class="form-control bg-white rounded-start-pill px-3" placeholder="Your email address..." />
+          <button class="btn btn-primary rounded-end-pill px-3 fw-bold" type="button">Join</button>
+        </div>
+      </div>
+    </div>
+    <div class="border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted">
+      <div>&copy; {{ Year }} {{ BrandName }}. All rights reserved.</div>
+      <div>Powered by <a href="https://ozikol.com" class="text-primary fw-bold text-decoration-none">Ozikol Sovereignty Suite</a></div>
+    </div>
+  </div>
+</footer>`,
+        cssStyles: ``
       }
     ];
   }
