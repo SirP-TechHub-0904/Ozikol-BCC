@@ -4564,6 +4564,15 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("CurrencySymbol")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomCloudinaryApiKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CustomCloudinaryApiSecret")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CustomCloudinaryCloudName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CustomMenuTop")
                         .HasColumnType("nvarchar(max)");
 
@@ -4769,6 +4778,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("UseCustomMenuTop")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseCustomStorage")
                         .HasColumnType("bit");
 
                     b.Property<bool>("UseNormalLogoInLogin")
