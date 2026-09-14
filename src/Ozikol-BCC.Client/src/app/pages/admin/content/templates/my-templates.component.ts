@@ -804,7 +804,89 @@ export interface CodeInjectionTag {
           </div>
 
           <div class="content-editor-body">
-            <div class="custom-tpl-form-grid">
+            <!-- FOOTER-SPECIFIC CONTENT EDITOR -->
+            <div class="custom-tpl-form-grid" *ngIf="activePreviewItem?.category === 'footer'">
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'BRAND NAME ({{ BrandName }})'"></label>
+                <input type="text" [(ngModel)]="previewFooterContent.brandName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Acme Global" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'SUPPORT EMAIL ({{ Email }})'"></label>
+                <input type="email" [(ngModel)]="previewFooterContent.email" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="contact@organization.com" />
+              </div>
+
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'FOOTER DESCRIPTION / SUMMARY ({{ Description }})'"></label>
+                <textarea [(ngModel)]="previewFooterContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Empowering modern organizations..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'CONTACT PHONE ({{ Phone }})'"></label>
+                <input type="text" [(ngModel)]="previewFooterContent.phone" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="+1 (555) 019-2834" />
+              </div>
+
+              <!-- Footer Columns & Page Links -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'FOOTER COLUMNS & PAGE LINKS ({{#each CategoryPages}} & {{#each FooterCategories}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addFooterCategory()">+ Add Column</button>
+                </div>
+
+                <div class="subitems-list">
+                  <div class="subitem-card-row mb-3" *ngFor="let col of previewFooterContent.categories; let cIdx = index" style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                      <span class="subitem-badge">Col #{{ cIdx + 1 }}</span>
+                      <input type="text" [(ngModel)]="col.name" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="max-width: 180px;" placeholder="Category (e.g. Services)" title="Identifier matching CategoryPages 'Name'" />
+                      <input type="text" [(ngModel)]="col.displayTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Column Title (e.g. Solutions)" />
+                      <button type="button" class="btn-del-subitem" (click)="removeFooterCategory(cIdx)" title="Remove Column">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+
+                    <!-- Inner Page Links -->
+                    <div style="margin-left: 24px; padding-left: 12px; border-left: 2px solid #e2e8f0;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">Page Links in this Column:</span>
+                        <button type="button" class="btn-add-subitem" style="padding: 2px 8px; font-size: 11px;" (click)="addFooterCategoryPage(cIdx)">+ Add Link</button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; gap: 8px; align-items: center;" *ngFor="let p of col.pages; let pIdx = index">
+                          <input type="text" [(ngModel)]="p.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Link Title" />
+                          <input type="text" [(ngModel)]="p.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="/route or #anchor" />
+                          <button type="button" class="btn-del-subitem" (click)="removeFooterCategoryPage(cIdx, pIdx)" title="Remove Link">
+                            <span class="material-symbols-outlined">close</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Legal Pages -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'LEGAL COMPLIANCE PAGES ({{#each LegalPages}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addFooterLegalPage()">+ Add Policy Link</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row" *ngFor="let lp of previewFooterContent.legalPages; let lIdx = index">
+                    <span class="subitem-badge">#{{ lIdx + 1 }}</span>
+                    <div class="subitem-inputs">
+                      <input type="text" [(ngModel)]="lp.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Policy Title" />
+                      <input type="text" [(ngModel)]="lp.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/policy-slug" />
+                    </div>
+                    <button type="button" class="btn-del-subitem" (click)="removeFooterLegalPage(lIdx)" title="Remove Policy">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STANDARD SECTION CONTENT EDITOR (FOR HERO, BODY, ETC.) -->
+            <div class="custom-tpl-form-grid" *ngIf="activePreviewItem?.category !== 'footer'">
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Empowering Modern Organizations" />
@@ -3710,6 +3792,51 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ]
   };
 
+  // Dedicated Footer Sample Content Replacements
+  previewFooterContent: {
+    brandName: string;
+    description: string;
+    email: string;
+    phone: string;
+    categories: Array<{
+      name: string;
+      displayTitle?: string;
+      pages: Array<{ title: string; url: string }>;
+    }>;
+    legalPages: Array<{ title: string; url: string }>;
+  } = {
+    brandName: 'Organization Portal',
+    description: 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
+    email: 'contact@organization.com',
+    phone: '+1 (555) 019-2834',
+    categories: [
+      {
+        name: 'Services',
+        displayTitle: 'Solutions',
+        pages: [
+          { title: 'Strategic Consulting', url: '/strategic-advisory' },
+          { title: 'Systems Modernization', url: '/systems-modernization' },
+          { title: 'Performance & Scale', url: '/performance-scale' },
+          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+        ]
+      },
+      {
+        name: 'Company',
+        displayTitle: 'Company',
+        pages: [
+          { title: 'About Us', url: '/about' },
+          { title: 'Request a Service', url: '/request-service' },
+          { title: 'Contact Us', url: '/contact' }
+        ]
+      }
+    ],
+    legalPages: [
+      { title: 'Privacy Policy', url: '/privacy-policy' },
+      { title: 'Terms & Conditions', url: '/terms-and-conditions' },
+      { title: 'Cookie Policy', url: '/cookie-policy' }
+    ]
+  };
+
   // Full-Site Demo Modal
   showFullSiteDemoModal: boolean = false;
   fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
@@ -4604,6 +4731,47 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } catch (e) {}
     }
 
+    if (item.category === 'footer') {
+      let defaultFooterData: any = null;
+      if (item.defaultContentJson) {
+        try {
+          defaultFooterData = JSON.parse(item.defaultContentJson);
+        } catch(e) {}
+      }
+      this.previewFooterContent = {
+        brandName: defaultFooterData?.brandName || this.currentTenantBrandName || 'Organization Portal',
+        description: defaultFooterData?.description || item.description || 'Empowering modern organizations with strategic solutions.',
+        email: defaultFooterData?.email || 'contact@organization.com',
+        phone: defaultFooterData?.phone || '+1 (555) 019-2834',
+        categories: (defaultFooterData?.categories && Array.isArray(defaultFooterData.categories)) ? defaultFooterData.categories : [
+          {
+            name: 'Services',
+            displayTitle: 'Solutions',
+            pages: [
+              { title: 'Strategic Consulting', url: '/strategic-advisory' },
+              { title: 'Systems Modernization', url: '/systems-modernization' },
+              { title: 'Performance & Scale', url: '/performance-scale' },
+              { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+            ]
+          },
+          {
+            name: 'Company',
+            displayTitle: 'Company',
+            pages: [
+              { title: 'About Us', url: '/about' },
+              { title: 'Request a Service', url: '/request-service' },
+              { title: 'Contact Us', url: '/contact' }
+            ]
+          }
+        ],
+        legalPages: (defaultFooterData?.legalPages && Array.isArray(defaultFooterData.legalPages)) ? defaultFooterData.legalPages : [
+          { title: 'Privacy Policy', url: '/privacy-policy' },
+          { title: 'Terms & Conditions', url: '/terms-and-conditions' },
+          { title: 'Cookie Policy', url: '/cookie-policy' }
+        ]
+      };
+    }
+
     if (!hydratedFromBlueprint) {
       if (item.previewTitle) this.previewContent.title = item.previewTitle;
       else if (item.name) this.previewContent.title = item.name;
@@ -4620,7 +4788,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   updateSinglePreviewHtml(): void {
     if (!this.activePreviewItem) return;
-    let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, this.previewContent);
+    const dataContext = (this.activePreviewItem.category === 'footer')
+      ? { ...this.previewContent, ...this.previewFooterContent }
+      : this.previewContent;
+    let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
     if (this.activePreviewItem.category === 'footer') {
       hydrated = this.enforceOzikolCredit(hydrated);
     }
@@ -4672,6 +4843,68 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return;
     }
     this.previewContent.items.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  // Footer Category Column Actions
+  addFooterCategory(): void {
+    const nextIdx = this.previewFooterContent.categories.length + 1;
+    this.previewFooterContent.categories.push({
+      name: `Category ${nextIdx}`,
+      displayTitle: `Column ${nextIdx}`,
+      pages: [
+        { title: `Link ${nextIdx}.1`, url: '#' }
+      ]
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeFooterCategory(index: number): void {
+    if (this.previewFooterContent.categories.length <= 1) {
+      this.toast.warning('Keep at least one category column for the footer preview.');
+      return;
+    }
+    this.previewFooterContent.categories.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  addFooterCategoryPage(catIndex: number): void {
+    const cat = this.previewFooterContent.categories[catIndex];
+    if (!cat) return;
+    const nextIdx = cat.pages.length + 1;
+    cat.pages.push({
+      title: `New Link ${nextIdx}`,
+      url: '#'
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeFooterCategoryPage(catIndex: number, pageIndex: number): void {
+    const cat = this.previewFooterContent.categories[catIndex];
+    if (!cat) return;
+    if (cat.pages.length <= 1) {
+      this.toast.warning('Keep at least one link in this column.');
+      return;
+    }
+    cat.pages.splice(pageIndex, 1);
+    this.onPreviewContentChange();
+  }
+
+  addFooterLegalPage(): void {
+    const nextIdx = this.previewFooterContent.legalPages.length + 1;
+    this.previewFooterContent.legalPages.push({
+      title: `Policy ${nextIdx}`,
+      url: '#'
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeFooterLegalPage(index: number): void {
+    if (this.previewFooterContent.legalPages.length <= 1) {
+      this.toast.warning('Keep at least one legal policy link.');
+      return;
+    }
+    this.previewFooterContent.legalPages.splice(index, 1);
     this.onPreviewContentChange();
   }
 
@@ -4746,7 +4979,118 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }).join('\n');
     });
 
-    // 2. Scalar placeholders
+    // 2. Loop over {{#each CategoryPages "Name"}}...{{/each}}
+    const catPagesRegex = /\{\{#each\s+CategoryPages\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(catPagesRegex, (_match, catName, innerTemplate) => {
+      let pages: any[] = [];
+      const normalized = (catName || '').toLowerCase().trim();
+
+      const categories = ctx.categories || this.previewFooterContent.categories;
+      const found = categories?.find((c: any) =>
+        (c.name && c.name.toLowerCase() === normalized) ||
+        (c.displayTitle && c.displayTitle.toLowerCase() === normalized)
+      );
+
+      if (found?.pages && found.pages.length > 0) {
+        pages = found.pages;
+      } else if (normalized.includes('service') || normalized.includes('solution')) {
+        pages = [
+          { title: 'Strategic Consulting', url: '/strategic-advisory' },
+          { title: 'Systems Modernization', url: '/systems-modernization' },
+          { title: 'Performance & Scale', url: '/performance-scale' },
+          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+        ];
+      } else if (normalized.includes('company') || normalized.includes('about')) {
+        pages = [
+          { title: 'About Us', url: '/about' },
+          { title: 'Leadership & Team', url: '/about' },
+          { title: 'Insights & News', url: '/blog' },
+          { title: 'Request a Service', url: '/request-service' }
+        ];
+      }
+
+      return pages.map((p: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 3. Loop over {{#each FooterCategories}}...{{/each}}
+    const footerCatsRegex = /\{\{#each\s+FooterCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(footerCatsRegex, (_match, innerTemplate) => {
+      const groups = ctx.categories || this.previewFooterContent.categories;
+      return groups.map((g: any) => {
+        let colHtml = innerTemplate;
+        colHtml = colHtml.replace(/\{\{\s*(?:DisplayTitle|Title|CategoryTitle)\s*\}\}/gi, g.displayTitle || g.name || 'Column');
+
+        const pagesLoopRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        colHtml = colHtml.replace(pagesLoopRegex, (_pMatch: string, pTemplate: string) => {
+          const pages = g.pages || [];
+          return pages.map((p: any) => {
+            let pRendered = pTemplate;
+            pRendered = pRendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+            pRendered = pRendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+            return pRendered;
+          }).join('\n');
+        });
+
+        return colHtml;
+      }).join('\n');
+    });
+
+    // 4. Loop over {{#each LegalPages}}...{{/each}}
+    const legalRegex = /\{\{#each\s+LegalPages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(legalRegex, (_match, innerTemplate) => {
+      const legals = ctx.legalPages || this.previewFooterContent.legalPages;
+      return legals.map((lp: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, lp.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, lp.url || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 5. Loop over {{#each SocialLinks}}...{{/each}}
+    const socialRegex = /\{\{#each\s+SocialLinks\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(socialRegex, (_match, innerTemplate) => {
+      const socials = [
+        { platform: 'LinkedIn', url: 'https://linkedin.com', iconClass: 'fa-brands fa-linkedin-in' },
+        { platform: 'Twitter / X', url: 'https://x.com', iconClass: 'fa-brands fa-x-twitter' },
+        { platform: 'Facebook', url: 'https://facebook.com', iconClass: 'fa-brands fa-facebook-f' },
+        { platform: 'Instagram', url: 'https://instagram.com', iconClass: 'fa-brands fa-instagram' },
+        { platform: 'YouTube', url: 'https://youtube.com', iconClass: 'fa-brands fa-youtube' }
+      ];
+
+      return socials.map((s: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, s.platform);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, s.url);
+        rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, s.iconClass);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
+    const formRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
+    output = output.replace(formRegex, (_match: string, formKey?: string) => {
+      const key = formKey || 'FormEmbed';
+      const isNewsletter = /newsletter|subscribe/i.test(key);
+
+      if (isNewsletter) {
+        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
+          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Join</button>
+        </form>`;
+      }
+
+      return `<div class="oz-form-embed-preview p-2 border rounded bg-white text-center small text-muted">
+        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong>
+      </div>`;
+    });
+
+    // 7. Scalar placeholders
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
     output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
@@ -4758,11 +5102,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
 
-    // 3. Global Brand & Year placeholders (universal case-insensitive resolution)
-    const brandName = ctx.BrandName || this.currentTenantBrandName || 'Organization Portal';
-    const year = ctx.Year || new Date().getFullYear().toString();
+    // Legal URLs
+    output = output.replace(/\{\{\s*PrivacyUrl\s*\}\}/gi, '/privacy-policy');
+    output = output.replace(/\{\{\s*TermsUrl\s*\}\}/gi, '/terms-and-conditions');
+    output = output.replace(/\{\{\s*CookiesUrl\s*\}\}/gi, '/cookie-policy');
+
+    // Corporate Identity Fields
+    const brandName = ctx.BrandName || ctx.brandName || this.currentTenantBrandName || 'Organization Portal';
+    const currentYear = ctx.Year || new Date().getFullYear().toString();
     output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
-    output = output.replace(/\{\{\s*Year\s*\}\}/gi, year);
+    output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
+    output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@organization.com');
+    output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (555) 019-2834');
+    output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Administrative Headquarters');
+    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `&copy; ${currentYear} ${brandName}. All rights reserved.`);
+    output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
 
     return output;
   }
@@ -4981,7 +5335,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     activeBlocks.forEach(({ block: b, contextOverride }) => {
       combinedStyles += `\n/* Block: ${b.name} (${b.variantCode}) */\n${b.cssStyles || ''}\n`;
-      let ctx = {
+      let ctx: any = {
         title: contextOverride?.title || b.previewTitle || b.name,
         miniTitle: contextOverride?.miniTitle || b.previewSubtitle?.toUpperCase() || b.category.toUpperCase(),
         description: contextOverride?.description || b.previewBody || b.description,
@@ -4992,6 +5346,29 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         BrandName: this.currentTenantBrandName,
         Year: new Date().getFullYear().toString()
       };
+
+      if (b.category === 'footer') {
+        ctx = {
+          ...ctx,
+          categories: this.previewFooterContent.categories,
+          legalPages: this.previewFooterContent.legalPages,
+          email: this.previewFooterContent.email,
+          phone: this.previewFooterContent.phone,
+          brandName: this.previewFooterContent.brandName || this.currentTenantBrandName
+        };
+
+        if (b.defaultContentJson) {
+          try {
+            const parsed = JSON.parse(b.defaultContentJson);
+            if (parsed?.categories) ctx.categories = parsed.categories;
+            if (parsed?.legalPages) ctx.legalPages = parsed.legalPages;
+            if (parsed?.email) ctx.email = parsed.email;
+            if (parsed?.phone) ctx.phone = parsed.phone;
+            if (parsed?.description) ctx.description = parsed.description;
+          } catch (e) {}
+        }
+      }
+
       let hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, ctx);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, this.currentTenantBrandName);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*Year\s*\}\}/g, new Date().getFullYear().toString());

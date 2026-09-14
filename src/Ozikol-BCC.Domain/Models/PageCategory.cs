@@ -37,6 +37,21 @@ namespace Ozikol_BCC.Domain.Models
         public int MenuSortOrder { get; set; }
 
         /// <summary>
+        /// Toggle visibility as a column header in the website footer.
+        /// When true, child WebPages with ShowInFooter = true will be rendered under this category column.
+        /// </summary>
+        [Display(Name = "Show In Footer")]
+        public bool ShowInFooter { get; set; } = true;
+
+        /// <summary>
+        /// Custom display title to use when displayed as a footer column header.
+        /// If left empty, the footer column will default to Title.
+        /// </summary>
+        [MaxLength(150)]
+        [Display(Name = "Footer Display Title")]
+        public string? FooterDisplayTitle { get; set; }
+
+        /// <summary>
         /// Determines where on the home page this category's children are sorted from.
         /// </summary>
         [Display(Name = "Home Sort From")]

@@ -85,6 +85,13 @@ namespace Ozikol_BCC.Domain.Models
         public bool ShowInFooter { get; set; }
 
         /// <summary>
+        /// Flags this page as an official legal compliance document (e.g., Privacy Policy, Terms &amp; Conditions, Cookie Policy).
+        /// Legal documents are surfaced to {{#each LegalPages}} and legal tokens in footer bottom bars.
+        /// </summary>
+        [Display(Name = "Is Legal Document")]
+        public bool IsLegal { get; set; } = false;
+
+        /// <summary>
         /// Toggle to use a custom URL route instead of the default ID-based route.
         /// </summary>
         [Display(Name = "Enable Direct Url")]

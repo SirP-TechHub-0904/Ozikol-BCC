@@ -1519,6 +1519,116 @@ namespace Ozikol_BCC.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Resolves dynamic metadata for the Template Editor Token Ribbon:
+        /// real published forms, menu dropdowns, footer column groups, legal compliance pages, and brand settings.
+        /// </summary>
+        /// <returns>Structured token metadata for live one-click token insertion.</returns>
+        [HttpGet("templates/editor-tokens")]
+        public async Task<IActionResult> GetTemplateEditorTokens()
+        {
+            try
+            {
+                // 1. Published Forms
+                var forms = await _context.PageForms
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .OrderBy(f => f.Title)
+                    .Select(f => new
+                    {
+                        key = f.FormKey,
+                        title = f.Title,
+                        description = f.Description,
+                        submitText = f.SubmitButtonText
+                    })
+                    .ToListAsync();
+
+                // 2. Menu Dropdown Categories
+                var rawCategories = await _context.PageCategories
+                    .AsNoTracking()
+                    .Where(c => c.Publish)
+                    .Include(c => c.WebPages)
+                    .OrderBy(c => c.MenuSortOrder)
+                    .ToListAsync();
+
+                var dropdowns = rawCategories.Select(c => new
+                {
+                    id = c.Id,
+                    title = c.Title,
+                    footerTitle = c.FooterDisplayTitle ?? c.Title,
+                    showInFooter = c.ShowInFooter,
+                    pages = (c.WebPages ?? new List<WebPage>())
+                        .Where(p => p.Publish)
+                        .OrderBy(p => p.SortOrder)
+                        .Select(p => new
+                        {
+                            id = p.Id,
+                            title = p.Title,
+                            slug = p.DirectUrl,
+                            url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                            showInFooter = p.ShowInFooter,
+                            showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
+                        })
+                        .ToList()
+                }).ToList();
+
+                // 3. Footer Groups (Categories specifically enabled for the footer)
+                var footerGroups = dropdowns
+                    .Where(d => d.showInFooter)
+                    .Select(d => new
+                    {
+                        id = d.id,
+                        name = d.title,
+                        displayTitle = d.footerTitle,
+                        pages = d.pages.Where(p => p.showInFooter).ToList()
+                    })
+                    .ToList();
+
+                // 4. Legal Compliance Pages
+                var legalPages = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.IsLegal && p.Publish)
+                    .OrderBy(p => p.SortOrder)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        title = p.Title,
+                        slug = p.DirectUrl,
+                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                    })
+                    .ToListAsync();
+
+                // 5. Tenant Brand Settings
+                var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+                var brand = new
+                {
+                    name = config?.CompanyName ?? "Organization Portal",
+                    tagline = config?.CompanyDescription ?? string.Empty,
+                    email = config?.EmailOne ?? string.Empty,
+                    phone = config?.PhoneOne ?? string.Empty,
+                    address = config?.AddressOne ?? string.Empty,
+                    facebook = config?.FacebookPage ?? string.Empty,
+                    twitter = config?.TwitterPage ?? string.Empty,
+                    instagram = config?.InstagramPage ?? string.Empty,
+                    youtube = config?.YoutubeChannel ?? string.Empty,
+                    tiktok = config?.TiktokPage ?? string.Empty
+                };
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    publishedForms = forms,
+                    menuDropdowns = dropdowns,
+                    footerGroups = footerGroups,
+                    legalPages = legalPages,
+                    brand = brand
+                }, "Template editor tokens loaded successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to load template editor tokens: {ex.Message}"));
+            }
+        }
+
         // ==========================================
         // 14. 3-ZONE CODE INJECTION (HEAD, BODY OPEN, FOOTER)
         // ==========================================
