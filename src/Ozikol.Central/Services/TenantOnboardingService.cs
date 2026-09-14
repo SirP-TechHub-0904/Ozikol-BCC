@@ -1151,7 +1151,7 @@ public class TenantOnboardingService : ITenantOnboardingService
   <nav class=""navbar navbar-expand-lg navbar-light py-3"">
     <div class=""container"">
       <a class=""navbar-brand d-flex align-items-center gap-2"" href=""/"">
-        <span class=""fw-bolder text-dark fs-4 tracking-tight"">{{ BrandName }}</span>
+        {{ BrandIdentity }}
       </a>
       <button class=""navbar-toggler border-0 shadow-none"" type=""button"" onclick=""this.closest('nav').querySelector('.collapse').classList.toggle('show')"">
         <span class=""navbar-toggler-icon""></span>
@@ -1174,9 +1174,8 @@ public class TenantOnboardingService : ITenantOnboardingService
         </ul>
         <div class=""d-flex align-items-center gap-2"">
           {{#each MenuCtaButtons}}
-            <a href=""{{ Url }}"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
-              <span>{{ Title }}</span>
-              <span style=""font-size: 16px;"">→</span>
+            <a href=""{{ Url }}"" class=""btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm"">
+              {{ Title }}
             </a>
           {{/each}}
         </div>

@@ -1631,6 +1631,8 @@ namespace Ozikol_BCC.Api.Controllers
                 var brand = new
                 {
                     name = config?.CompanyName ?? "Organization Portal",
+                    logoUrl = config?.CompanyLogoUrl ?? string.Empty,
+                    whiteLogoUrl = config?.CompanyWhiteLogoUrl ?? string.Empty,
                     tagline = config?.CompanyDescription ?? string.Empty,
                     email = config?.EmailOne ?? string.Empty,
                     phone = config?.PhoneOne ?? string.Empty,

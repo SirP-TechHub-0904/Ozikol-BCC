@@ -455,6 +455,13 @@ export interface TokenDoc {
               <!-- Category: MENUS & DROP DOWNS -->
               <ng-container *ngIf="activeTokenCategory === 'navigation'">
                 <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
+                    <span class="material-symbols-outlined chip-icon">storefront</span>
+                    <span [innerText]="'+ {{ BrandIdentity }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('BrandIdentity', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('BrandIdentity', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-repeater" (click)="insertMainMenuItemsLoopAtCursor()" title="Inserts loop for top menu pages">
                     <span class="material-symbols-outlined chip-icon">link</span>
                     <span>+ Main Menu Items Loop</span>
@@ -3706,6 +3713,13 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       cmsPath: 'Admin Console > Forms & Surveys > Forms',
       example: '{{ Form "Contact_Us" }}'
     },
+    BrandIdentity: {
+      name: 'Brand Logo or Name',
+      token: '{{ BrandIdentity }}',
+      description: 'Renders uploaded brand logo image if present; automatically falls back to business name text if no logo exists.',
+      cmsPath: 'Admin Console > Settings > Tenant Brand Settings > Company Logo',
+      example: '<a class="navbar-brand" href="/">{{ BrandIdentity }}</a>'
+    },
     BrandName: {
       name: 'Brand Name',
       token: '{{ BrandName }}',
@@ -3945,88 +3959,51 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       codePrefix: 'MENU',
       name: 'Menu / Nav',
       icon: 'menu',
-      tagline: 'Sticky frosted glass navbar with brand logo, nav links loop, and direct action button',
-      defaultName: 'Apex Glassmorphism Sticky Navbar',
-      html: `<header class="oz-nav-header {{ CustomClass }}">
-  <div class="oz-nav-container">
-    <a href="/" class="oz-nav-brand">
-      <span class="oz-brand-icon material-symbols-outlined">dataset</span>
-      <span class="oz-brand-text">{{ BrandName }}</span>
-    </a>
-
-    <nav class="oz-nav-links">
-      {{#each PageSectionLists}}
-      <a href="{{ ButtonLink }}" class="oz-nav-link">{{ Title }}</a>
-      {{/each}}
-    </nav>
-
-    <div class="oz-nav-cta">
-      <a href="{{ ButtonLink }}" class="oz-btn-nav">{{ ButtonText }}</a>
+      tagline: 'Sticky light corporate navbar with dynamic logo/brand identity, dropdowns, and CTA buttons',
+      defaultName: 'Classic Light Corporate Navbar',
+      html: `<header class="oz-nav-header sticky-top bg-white border-bottom shadow-sm {{ CustomClass }}">
+  <nav class="navbar navbar-expand-lg navbar-light py-3">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        {{ BrandIdentity }}
+      </a>
+      <button class="navbar-toggler border-0 shadow-none" type="button" onclick="this.closest('nav').querySelector('.collapse').classList.toggle('show')">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="ozNavMain">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-3">
+          {{#each MainMenuItems}}
+            <li class="nav-item"><a class="nav-link fw-semibold text-secondary" href="{{ Url }}">{{ Title }}</a></li>
+          {{/each}}
+          {{#each MenuDropdowns}}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle fw-semibold text-secondary" href="#" role="button" data-bs-toggle="dropdown">{{ Title }}</a>
+              <ul class="dropdown-menu border-0 shadow-sm rounded-3 py-2">
+                {{#each Pages}}
+                  <li><a class="dropdown-item small py-2 px-3 fw-medium" href="{{ Url }}">{{ Title }}</a></li>
+                {{/each}}
+              </ul>
+            </li>
+          {{/each}}
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          {{#each MenuCtaButtons}}
+            <a href="{{ Url }}" class="btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm">
+              {{ Title }}
+            </a>
+          {{/each}}
+        </div>
+      </div>
     </div>
-  </div>
+  </nav>
 </header>`,
-      css: `.oz-nav-header {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e2e8f0;
-  padding: 16px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-.oz-nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-.oz-nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: #0f172a;
-  font-weight: 800;
-  font-size: 18px;
-}
-.oz-brand-icon { color: #0050e5; font-size: 26px; }
-.oz-nav-links { display: flex; align-items: center; gap: 24px; }
-.oz-nav-link {
-  color: #475569;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: color 0.15s ease;
-}
-.oz-nav-link:hover { color: #0050e5; }
-.oz-btn-nav {
-  background: #0050e5;
-  color: #ffffff;
-  padding: 9px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-block;
-  transition: 0.2s;
-  white-space: nowrap;
-}
-.oz-btn-nav:hover { background: #0041ba; }
-@media (max-width: 768px) {
-  .oz-nav-header { padding: 12px 16px; }
-  .oz-nav-container { flex-wrap: wrap; justify-content: space-between; }
-  .oz-nav-links { order: 3; width: 100%; justify-content: center; gap: 14px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
-}
-@media (max-width: 480px) {
-  .oz-nav-container { flex-direction: column; align-items: stretch; text-align: center; gap: 12px; }
-  .oz-nav-brand { justify-content: center; }
-  .oz-nav-links { flex-wrap: wrap; gap: 10px; }
-  .oz-nav-cta { text-align: center; }
-  .oz-btn-nav { width: 100%; box-sizing: border-box; }
-}`,
+      css: `.oz-nav-header { background-color: #ffffff !important; }
+.oz-nav-header .navbar-brand { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; }
+.oz-nav-header .nav-link { font-size: 14.5px; font-weight: 600; color: #475569 !important; padding: 8px 4px !important; transition: color 0.15s ease; }
+.oz-nav-header .nav-link:hover, .oz-nav-header .nav-link.active { color: #0050e5 !important; }
+.oz-nav-header .btn-primary { background-color: #0050e5; border-color: #0050e5; font-size: 13.5px; }
+.oz-nav-header .btn-primary:hover { background-color: #003bb5; border-color: #003bb5; }
+.oz-nav-header .navbar-brand-logo { max-height: 40px; width: auto; object-fit: contain; }`,
       sampleContent: {
         brandName: 'Acme Global',
         buttonText: 'Console Sign In',
@@ -5862,7 +5839,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         ? this.editorTokens.menuCtaButtons
         : [
             { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-            { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
+            { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
           ];
       return ctas.map((cta: any, idx: number) => {
         let rendered = innerTemplate;
@@ -5870,6 +5847,47 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
         rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
         return rendered;
+      }).join('\n');
+    });
+
+    // 0c. Menu Dropdowns Loop ({{#each MenuDropdowns}}...{{/each}}) with nested ({{#each Pages}}...{{/each}})
+    const menuDropdownsRegex = /\{\{#each\s+MenuDropdowns\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(menuDropdownsRegex, (_match: string, outerTemplate: string) => {
+      const dropdowns = (this.editorTokens.menuDropdowns && this.editorTokens.menuDropdowns.length > 0)
+        ? this.editorTokens.menuDropdowns
+        : (ctx.menuDropdowns && ctx.menuDropdowns.length > 0)
+          ? ctx.menuDropdowns
+          : [
+              {
+                title: 'Services',
+                pages: [
+                  { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
+                  { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
+                  { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+                ]
+              }
+            ];
+
+      return dropdowns.map((dd: any, ddIdx: number) => {
+        let renderedDd = outerTemplate;
+        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
+
+        // Render nested {{#each Pages}}
+        const pagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        renderedDd = renderedDd.replace(pagesRegex, (_pMatch: string, pageTemplate: string) => {
+          const pages = dd.pages || [];
+          if (!Array.isArray(pages) || pages.length === 0) return '';
+          return pages.map((page: any) => {
+            let renderedPage = pageTemplate;
+            renderedPage = renderedPage.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
+            renderedPage = renderedPage.replace(/\{\{\s*Url\s*\}\}/gi, page.url || page.slug || '#');
+            return renderedPage;
+          }).join('\n');
+        });
+
+        return renderedDd;
       }).join('\n');
     });
 
@@ -6339,13 +6357,25 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
     // Brand & Identity with Fixed Powered By
     const currentYear = new Date().getFullYear().toString();
+    const brandName = ctx.brandName || this.editorTokens.brand?.name || 'Acme Global';
+    const logoUrl = ctx.logoUrl || this.editorTokens.brand?.logoUrl || '';
+    const brandIdentityHtml = (logoUrl && logoUrl.trim().length > 0)
+      ? `<img src="${logoUrl}" alt="${brandName}" class="navbar-brand-logo" style="max-height: 40px; width: auto; object-fit: contain;" />`
+      : `<span class="fw-bolder text-dark fs-4 tracking-tight">${brandName}</span>`;
+
+    output = output.replace(/\{\{\s*(?:BrandIdentity|BrandLogoOrName)\s*\}\}/gi, brandIdentityHtml);
+    output = output.replace(/\{\{\s*LogoUrl\s*\}\}/gi, logoUrl);
     output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
-    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Acme Global');
-    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} Acme Global. All rights reserved.`);
+    output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
+    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} ${brandName}. All rights reserved.`);
     output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || '<a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Powered by Ozikol</a>');
     output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@acme-global.com');
     output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (800) 555-0199');
     output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Enterprise Blvd, Silicon Valley');
+
+    // Clean up any remaining unhandled {{#each ...}} loops and leftover {{ Token }} placeholders to prevent visual leakage
+    output = output.replace(/\{\{#each[\s\S]*?\{\{\/each\}\}/gi, '');
+    output = output.replace(/\{\{[#\/]?[\w\s\.\,\-\_]+\}\}/g, '');
 
     return output;
   }

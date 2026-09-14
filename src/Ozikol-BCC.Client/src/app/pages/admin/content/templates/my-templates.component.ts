@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -812,7 +812,16 @@ export interface CodeInjectionTag {
               </div>
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'LOGO IMAGE URL ({{ LogoUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewMenuContent.logoUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/assets/images/logo.png" />
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" [(ngModel)]="previewMenuContent.logoUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="https://... (or leave empty to show text business name)" />
+                  <button *ngIf="previewMenuContent.logoUrl" type="button" class="btn btn-outline" style="white-space: nowrap; padding: 4px 10px; font-size: 11.5px;" (click)="previewMenuContent.logoUrl = ''; onPreviewContentChange()" title="Clear logo to test business name text fallback">Clear Logo</button>
+                </div>
+              </div>
+
+              <!-- Brand Identity Explanatory Tip -->
+              <div class="form-group full-width" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #475569;">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                <strong>Logo-First Fallback:</strong> <code [innerText]="'{{ BrandIdentity }}'"></code> automatically renders the uploaded logo image if Logo URL is present. If null or empty, it seamlessly displays the business name text without leaving broken image tags.
               </div>
 
               <!-- Top Navigation Links -->
@@ -831,6 +840,42 @@ export interface CodeInjectionTag {
                     <button type="button" class="btn-del-subitem" (click)="removeTopMenuItem(idx)" title="Remove item">
                       <span class="material-symbols-outlined">delete</span>
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dropdown Menus with Nested Pages -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'DROPDOWN MENUS ({{#each MenuDropdowns}} with nested {{#each Pages}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addMenuDropdown()">+ Add Dropdown Menu</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row mb-3" *ngFor="let dd of previewMenuContent.dropdowns; let ddIdx = index" style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                      <span class="subitem-badge">Dropdown #{{ ddIdx + 1 }}</span>
+                      <input type="text" [(ngModel)]="dd.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Dropdown Title (e.g. Services, Solutions)" />
+                      <button type="button" class="btn-del-subitem" (click)="removeMenuDropdown(ddIdx)" title="Remove Dropdown">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+
+                    <!-- Inner Child Pages -->
+                    <div style="margin-left: 24px; padding-left: 12px; border-left: 2px solid #e2e8f0;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">Dropdown Sub-Links:</span>
+                        <button type="button" class="btn-add-subitem" style="padding: 2px 8px; font-size: 11px;" (click)="addMenuDropdownPage(ddIdx)">+ Add Sub-Link</button>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; gap: 8px; align-items: center;" *ngFor="let p of dd.pages; let pIdx = index">
+                          <input type="text" [(ngModel)]="p.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Sub-Link Title (e.g. Commercial Cleaning)" />
+                          <input type="text" [(ngModel)]="p.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="/services/commercial-cleaning" />
+                          <button type="button" class="btn-del-subitem" (click)="removeMenuDropdownPage(ddIdx, pIdx)" title="Remove Link">
+                            <span class="material-symbols-outlined">close</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1048,19 +1093,126 @@ export interface CodeInjectionTag {
           </div>
         </div>
 
-        <!-- Mode 2: HTML Source Code -->
+        <!-- Mode 2: HTML Source Code with Interactive Token Ribbon Bar -->
         <div *ngIf="previewModalTab === 'html'" class="code-view-container">
           <div class="code-view-toolbar">
             <div class="code-badge-title">
               <span class="material-symbols-outlined">code</span>
               <span>HTML Template Markup</span>
+              <span *ngIf="activePreviewItem?.category" class="badge-category-tag font-mono text-uppercase">
+                {{ activePreviewItem.category }}
+              </span>
             </div>
-            <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.htmlTemplate, 'HTML')">
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy HTML</span>
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save HTML modifications to this installed template">
+                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
+                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
+                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
+              </button>
+              <a routerLink="/content/console/templates/create" class="btn-open-studio" title="Open full studio editor">
+                <span class="material-symbols-outlined">open_in_new</span>
+                <span>Open Full Studio</span>
+              </a>
+              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.htmlTemplate, 'HTML')">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span>Copy HTML</span>
+              </button>
+            </div>
           </div>
-          <pre class="code-block-pre"><code class="code-content">{{ activePreviewItem.htmlTemplate }}</code></pre>
+
+          <!-- Interactive Token Ribbon Bar for Rapid Insertion -->
+          <div class="modal-token-ribbon">
+            <span class="ribbon-label">
+              <span class="material-symbols-outlined">data_object</span>
+              <span>Insert Tokens:</span>
+            </span>
+
+            <!-- Menu Category Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category === 'menu'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
+                  <span class="material-symbols-outlined chip-icon">storefront</span>
+                  <span [innerText]="'+ {{ BrandIdentity }}'"></span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandIdentity', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandIdentity', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ LogoUrl }}')" [innerText]="'+ {{ LogoUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LogoUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LogoUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertMainMenuItemsLoopAtModalCursor()" title="Inserts loop for top menu pages">
+                  <span class="material-symbols-outlined chip-icon">link</span>
+                  <span>+ Main Menu Items Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MainMenuItems', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MainMenuItems', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertMenuDropdownsLoopAtModalCursor()" title="Inserts dropdown navigation with nested child pages">
+                  <span class="material-symbols-outlined chip-icon">account_tree</span>
+                  <span>+ Dropdowns Loop (with nested Pages)</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuDropdowns', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuDropdowns', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertMenuCtaButtonsLoopAtModalCursor()" title="Inserts dynamic CTA buttons from IsMenuCTA pages">
+                  <span class="material-symbols-outlined chip-icon">smart_button</span>
+                  <span>+ Menu CTA Buttons Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CustomClass', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CustomClass', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+
+            <!-- Other Categories Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category !== 'menu'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ImageUrl', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CustomClass', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CustomClass', $event)"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+          </div>
+
+          <!-- Real-Time Interactive Template Editor -->
+          <textarea
+            #modalHtmlEditor
+            class="modal-code-textarea"
+            [(ngModel)]="activePreviewItem.htmlTemplate"
+            (ngModelChange)="onModalHtmlChange()"
+            spellcheck="false"
+            placeholder="Edit HTML template source..."
+          ></textarea>
         </div>
 
         <!-- Mode 3: Scoped CSS Stylesheet -->
@@ -1133,6 +1285,39 @@ export interface CodeInjectionTag {
             </button>
 
             <button type="button" class="btn btn-outline" (click)="closeSinglePreviewModal()">Close</button>
+          </div>
+        </div>
+
+        <!-- Floating Token Documentation Popover -->
+        <div
+          class="token-doc-popover"
+          *ngIf="activeTokenDoc"
+          [style.top.px]="popoverTop"
+          [style.left.px]="popoverLeft"
+          (mouseenter)="cancelPopoverLeaveTimer()"
+          (mouseleave)="hideTokenDocModal()"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="popover-header">
+            <div class="popover-title-row">
+              <span class="material-symbols-outlined popover-icon">info</span>
+              <span class="popover-token-code" [innerText]="activeTokenDoc.token"></span>
+            </div>
+            <button type="button" class="popover-close-btn" (click)="closeTokenDoc()">✕</button>
+          </div>
+          <div class="popover-body">
+            <div class="popover-field">
+              <label class="popover-label">Purpose</label>
+              <p class="popover-value">{{ activeTokenDoc.description }}</p>
+            </div>
+            <div class="popover-field">
+              <label class="popover-label">Managed In CMS</label>
+              <p class="popover-value font-mono-subtle">{{ activeTokenDoc.cmsPath }}</p>
+            </div>
+            <div class="popover-field" *ngIf="activeTokenDoc.example">
+              <label class="popover-label">Syntax Example</label>
+              <pre class="popover-code"><code>{{ activeTokenDoc.example }}</code></pre>
+            </div>
           </div>
         </div>
       </div>
@@ -2715,6 +2900,197 @@ export interface CodeInjectionTag {
     }
     .empty-code-icon { font-size: 44px; margin-bottom: 12px; color: #475569; }
 
+    /* Modal Token Ribbon Bar & Real-Time Code Editor */
+    .badge-category-tag {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .modal-token-ribbon {
+      background: #0b1120;
+      border-bottom: 1px solid #1e293b;
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .ribbon-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+    .ribbon-label span.material-symbols-outlined { font-size: 14px; color: #38bdf8; }
+    .modal-code-textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 440px;
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 18px 20px;
+      border: none;
+      outline: none;
+      resize: none;
+      box-sizing: border-box;
+    }
+    .modal-code-textarea:focus {
+      box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35);
+    }
+    .btn-save-template-code {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 6px;
+      background: #10b981;
+      border: 1px solid #059669;
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-save-template-code:hover:not(:disabled) {
+      background: #059669;
+    }
+    .btn-save-template-code:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-open-studio {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #818cf8;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-open-studio:hover {
+      background: #6366f1;
+      color: #ffffff;
+    }
+    .token-chip-wrap {
+      display: inline-flex;
+      align-items: stretch;
+      margin-right: 4px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .token-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+    .token-chip:hover { filter: brightness(1.2); }
+    .token-chip.chip-core { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .token-chip.chip-media { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .token-chip.chip-repeater { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .token-chip.chip-accent { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .token-info-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      background: rgba(0, 0, 0, 0.3);
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .token-info-icon-btn:hover { color: #f8fafc; background: rgba(255, 255, 255, 0.15); }
+    .token-info-icon-btn span { font-size: 13px; }
+    .token-doc-popover {
+      position: fixed;
+      z-index: 10500;
+      width: 360px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      padding: 14px 16px;
+      color: #f1f5f9;
+      font-size: 12.5px;
+      animation: fadeInPopover 0.15s ease-out;
+    }
+    .popover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 6px;
+    }
+    .popover-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .popover-icon { font-size: 16px; color: #38bdf8; }
+    .popover-token-code { font-family: 'Fira Code', monospace; font-weight: 700; color: #38bdf8; font-size: 12px; }
+    .popover-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .popover-close-btn:hover { color: #ffffff; }
+    .popover-field { margin-bottom: 8px; }
+    .popover-label {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .popover-value { margin: 0; color: #cbd5e1; font-size: 12px; line-height: 1.4; }
+    .font-mono-subtle { font-family: monospace; color: #93c5fd; font-size: 11px; }
+    .popover-code {
+      margin: 4px 0 0 0;
+      padding: 6px 10px;
+      background: #020617;
+      border-radius: 4px;
+      color: #a7f3d0;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      overflow-x: auto;
+    }
+    @keyframes fadeInPopover {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .preview-modal-footer, .full-demo-footer, .assign-modal-footer {
       display: flex;
       justify-content: space-between;
@@ -3942,19 +4318,150 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   };
 
   // Dedicated Menu Sample Content Replacements
-  previewMenuContent = {
+  previewMenuContent: {
+    brandName: string;
+    logoUrl: string;
+    topMenuItems: Array<{ title: string; url: string }>;
+    dropdowns: Array<{ title: string; pages: Array<{ title: string; url: string }> }>;
+    menuCtaButtons: Array<{ title: string; url: string; customClass: string }>;
+  } = {
     brandName: 'Acme Global',
-    logoUrl: '/assets/images/logo.png',
+    logoUrl: '',
     topMenuItems: [
       { title: 'Home', url: '/' },
       { title: 'About Us', url: '/about' },
       { title: 'Blog', url: '/blog' },
       { title: 'Contact', url: '/contact' }
     ],
+    dropdowns: [
+      {
+        title: 'Services',
+        pages: [
+          { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
+          { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
+          { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+        ]
+      }
+    ],
     menuCtaButtons: [
       { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-      { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
+      { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
     ]
+  };
+
+  // Interactive Modal Code Editor Reference & Saving State
+  @ViewChild('modalHtmlEditor') modalHtmlEditorRef?: ElementRef<HTMLTextAreaElement>;
+  savingTemplateHtml: boolean = false;
+
+  // Live Database Tokens (Brand, Menus, Dropdowns, CTAs, Forms, Legal)
+  editorTokens: any = {
+    brand: {},
+    topMenuItems: [],
+    menuDropdowns: [],
+    menuCtaButtons: [],
+    footerCategories: [],
+    legalPages: [],
+    forms: []
+  };
+
+  // Floating Token Documentation Popover State
+  activeTokenDoc: any = null;
+  popoverTop: number = 0;
+  popoverLeft: number = 0;
+  popoverLeaveTimer: any = null;
+
+  tokenDocMap: Record<string, { name: string; token: string; description: string; cmsPath: string; example?: string }> = {
+    BrandIdentity: {
+      name: 'Brand Logo or Name',
+      token: '{{ BrandIdentity }}',
+      description: 'Renders uploaded brand logo image if present; automatically falls back to business name text if no logo exists.',
+      cmsPath: 'Admin Console > Settings > Tenant Brand Settings > Company Logo',
+      example: '<a class="navbar-brand" href="/">{{ BrandIdentity }}</a>'
+    },
+    BrandName: {
+      name: 'Brand Name',
+      token: '{{ BrandName }}',
+      description: 'Tenant organization brand name.',
+      cmsPath: 'Admin Console > Settings > General / Branding',
+      example: '<span>{{ BrandName }}</span>'
+    },
+    LogoUrl: {
+      name: 'Logo Image URL',
+      token: '{{ LogoUrl }}',
+      description: 'Direct absolute or relative URL to the uploaded company logo.',
+      cmsPath: 'Admin Console > Settings > Tenant Brand Settings',
+      example: '<img src="{{ LogoUrl }}" alt="Logo" />'
+    },
+    MainMenuItems: {
+      name: 'Main Menu Items Loop',
+      token: '{{#each MainMenuItems}}...{{/each}}',
+      description: 'Iterates through published top-level navigation pages with {{ Title }} and {{ Url }}.',
+      cmsPath: 'Admin Console > Content Console > Pages (IsPublished = true)',
+      example: '{{#each MainMenuItems}}<li class="nav-item"><a class="nav-link" href="{{ Url }}">{{ Title }}</a></li>{{/each}}'
+    },
+    MenuDropdowns: {
+      name: 'Menu Dropdowns Loop',
+      token: '{{#each MenuDropdowns}}...{{/each}}',
+      description: 'Iterates multi-level categories and their child pages using nested {{#each Pages}}.',
+      cmsPath: 'Admin Console > Content Console > Page Categories & Pages',
+      example: '{{#each MenuDropdowns}}<div class="dropdown"><button>{{ Title }}</button><ul class="dropdown-menu">{{#each Pages}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}</ul></div>{{/each}}'
+    },
+    MenuCtaButtons: {
+      name: 'Menu CTA Buttons Loop',
+      token: '{{#each MenuCtaButtons}}...{{/each}}',
+      description: 'Dynamic header call-to-action buttons configured on published pages with IsMenuCTA enabled.',
+      cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Show as Menu CTA"',
+      example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn {{ CustomClass }}">{{ Title }}</a>{{/each}}'
+    },
+    Title: {
+      name: 'Section Heading',
+      token: '{{ Title }}',
+      description: 'Primary headline of the section or page.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Heading',
+      example: '<h1>{{ Title }}</h1>'
+    },
+    MiniTitle: {
+      name: 'Eyebrow / Sub-heading',
+      token: '{{ MiniTitle }}',
+      description: 'Small badge or category eyebrow displayed above main heading.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Eyebrow',
+      example: '<span class="badge">{{ MiniTitle }}</span>'
+    },
+    Description: {
+      name: 'Narrative Body',
+      token: '{{ Description }}',
+      description: 'Summary narrative or introductory body copy.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Description',
+      example: '<p>{{ Description }}</p>'
+    },
+    ImageUrl: {
+      name: 'Primary Media Image',
+      token: '{{ ImageUrl }}',
+      description: 'High-resolution graphic or banner visual.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Featured Image',
+      example: '<img src="{{ ImageUrl }}" alt="{{ Title }}" />'
+    },
+    ButtonText: {
+      name: 'Primary Action Text',
+      token: '{{ ButtonText }}',
+      description: 'Label text for primary call to action.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Text',
+      example: '<a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>'
+    },
+    ButtonLink: {
+      name: 'Primary Action Destination',
+      token: '{{ ButtonLink }}',
+      description: 'Route, hash, or external URL destination.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Link',
+      example: '<a href="{{ ButtonLink }}">{{ ButtonText }}</a>'
+    },
+    CustomClass: {
+      name: 'Custom CSS Styling Class',
+      token: '{{ CustomClass }}',
+      description: 'Optional custom CSS class assigned to the section.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Advanced CSS Class',
+      example: '<div class="custom-section {{ CustomClass }}">'
+    }
   };
 
   // Dedicated Blog Sample Content Replacements
@@ -4060,6 +4567,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.loadInstalledTemplates();
     this.loadAllCodeInjections();
     this.loadAvailablePages();
+    this.loadEditorTokens();
   }
 
   ngOnDestroy(): void {
@@ -4933,6 +5441,40 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       };
     }
 
+    if (item.category === 'menu') {
+      const brand = this.editorTokens?.brand;
+      this.previewMenuContent = {
+        brandName: brand?.name || this.currentTenantBrandName || 'Acme Global',
+        logoUrl: brand?.logoUrl || '',
+        topMenuItems: (this.editorTokens?.topMenuItems && this.editorTokens.topMenuItems.length > 0)
+          ? JSON.parse(JSON.stringify(this.editorTokens.topMenuItems))
+          : [
+              { title: 'Home', url: '/' },
+              { title: 'About Us', url: '/about' },
+              { title: 'Blog', url: '/blog' },
+              { title: 'Contact', url: '/contact' }
+            ],
+        dropdowns: (this.editorTokens?.menuDropdowns && this.editorTokens.menuDropdowns.length > 0)
+          ? JSON.parse(JSON.stringify(this.editorTokens.menuDropdowns))
+          : [
+              {
+                title: 'Services',
+                pages: [
+                  { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
+                  { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
+                  { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+                ]
+              }
+            ],
+        menuCtaButtons: (this.editorTokens?.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
+          ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons))
+          : [
+              { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
+              { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+            ]
+      };
+    }
+
     if (!hydratedFromBlueprint) {
       if (item.previewTitle) this.previewContent.title = item.previewTitle;
       else if (item.name) this.previewContent.title = item.name;
@@ -5110,6 +5652,205 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.onPreviewContentChange();
   }
 
+  // Menu Dropdown Menus Actions
+  addMenuDropdown(): void {
+    const nextIdx = (this.previewMenuContent.dropdowns?.length || 0) + 1;
+    if (!this.previewMenuContent.dropdowns) this.previewMenuContent.dropdowns = [];
+    this.previewMenuContent.dropdowns.push({
+      title: `Dropdown Menu ${nextIdx}`,
+      pages: [
+        { title: `Child Link ${nextIdx}.1`, url: '#' },
+        { title: `Child Link ${nextIdx}.2`, url: '#' }
+      ]
+    });
+    this.onPreviewContentChange();
+    this.toast.success(`Added Dropdown #${nextIdx}`);
+  }
+
+  removeMenuDropdown(index: number): void {
+    if (this.previewMenuContent.dropdowns?.length <= 1) {
+      this.toast.warning('Keep at least one dropdown menu for preview.');
+      return;
+    }
+    this.previewMenuContent.dropdowns.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  addMenuDropdownPage(ddIndex: number): void {
+    const dd = this.previewMenuContent.dropdowns?.[ddIndex];
+    if (!dd) return;
+    const nextIdx = dd.pages.length + 1;
+    dd.pages.push({
+      title: `Sub-Link ${nextIdx}`,
+      url: '#'
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeMenuDropdownPage(ddIndex: number, pageIndex: number): void {
+    const dd = this.previewMenuContent.dropdowns?.[ddIndex];
+    if (!dd) return;
+    if (dd.pages.length <= 1) {
+      this.toast.warning('Keep at least one sub-link in this dropdown.');
+      return;
+    }
+    dd.pages.splice(pageIndex, 1);
+    this.onPreviewContentChange();
+  }
+
+  // Live Token Fetching
+  loadEditorTokens(): void {
+    this.api.get<any>('ContentApi/templates/editor-tokens').subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.editorTokens = res.data;
+          if (res.data.brand?.name) {
+            this.currentTenantBrandName = res.data.brand.name;
+          }
+        }
+      },
+      error: (err) => console.warn('Could not load editor tokens:', err)
+    });
+  }
+
+  // Modal Code Editor Token Ribbon Insertion
+  insertTokenAtModalCursor(token: string): void {
+    if (!this.activePreviewItem) return;
+    const textarea = this.modalHtmlEditorRef?.nativeElement;
+    if (!textarea) {
+      this.activePreviewItem.htmlTemplate = (this.activePreviewItem.htmlTemplate || '') + token;
+      this.onModalHtmlChange();
+      return;
+    }
+    const start = textarea.selectionStart ?? this.activePreviewItem.htmlTemplate.length;
+    const end = textarea.selectionEnd ?? start;
+    const current = this.activePreviewItem.htmlTemplate || '';
+    this.activePreviewItem.htmlTemplate = current.substring(0, start) + token + current.substring(end);
+    this.onModalHtmlChange();
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + token.length, start + token.length);
+    }, 0);
+  }
+
+  insertMainMenuItemsLoopAtModalCursor(): void {
+    const loopSnippet = `{{#each MainMenuItems}}
+<li class="nav-item">
+  <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+</li>
+{{/each}}`;
+    this.insertTokenAtModalCursor(loopSnippet);
+  }
+
+  insertMenuDropdownsLoopAtModalCursor(): void {
+    const loopSnippet = `{{#each MenuDropdowns}}
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    {{ Title }}
+  </a>
+  <ul class="dropdown-menu shadow-sm border-0 py-2">
+    {{#each Pages}}
+    <li><a class="dropdown-item py-2 px-3 fw-medium" href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</li>
+{{/each}}`;
+    this.insertTokenAtModalCursor(loopSnippet);
+  }
+
+  insertMenuCtaButtonsLoopAtModalCursor(): void {
+    const loopSnippet = `{{#each MenuCtaButtons}}
+<a href="{{ Url }}" class="btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm">{{ Title }}</a>
+{{/each}}`;
+    this.insertTokenAtModalCursor(loopSnippet);
+  }
+
+  showTokenDocModal(tKey: string, event: MouseEvent): void {
+    this.cancelPopoverLeaveTimer();
+    const doc = this.tokenDocMap[tKey];
+    if (!doc) return;
+    this.activeTokenDoc = doc;
+
+    const target = event.currentTarget as HTMLElement;
+    if (target && target.getBoundingClientRect) {
+      const rect = target.getBoundingClientRect();
+      let top = rect.bottom + 8;
+      let left = rect.left;
+
+      const popoverWidth = 360;
+      if (left + popoverWidth > window.innerWidth - 20) {
+        left = window.innerWidth - popoverWidth - 20;
+      }
+      if (left < 20) left = 20;
+
+      this.popoverTop = top;
+      this.popoverLeft = left;
+    }
+  }
+
+  hideTokenDocModal(): void {
+    this.cancelPopoverLeaveTimer();
+    this.popoverLeaveTimer = setTimeout(() => {
+      this.closeTokenDoc();
+    }, 280);
+  }
+
+  toggleTokenDocModal(tKey: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.activeTokenDoc && this.activeTokenDoc.token.includes(tKey)) {
+      this.closeTokenDoc();
+    } else {
+      this.showTokenDocModal(tKey, event);
+    }
+  }
+
+  closeTokenDoc(): void {
+    this.activeTokenDoc = null;
+    this.cancelPopoverLeaveTimer();
+  }
+
+  cancelPopoverLeaveTimer(): void {
+    if (this.popoverLeaveTimer) {
+      clearTimeout(this.popoverLeaveTimer);
+      this.popoverLeaveTimer = null;
+    }
+  }
+
+  onModalHtmlChange(): void {
+    this.updateSinglePreviewHtml();
+  }
+
+  saveTemplateHtml(): void {
+    if (!this.activePreviewItem) return;
+    this.savingTemplateHtml = true;
+
+    const payload = {
+      name: this.activePreviewItem.name,
+      categoryKey: this.activePreviewItem.category,
+      variantCode: this.activePreviewItem.variantCode,
+      templateKey: this.activePreviewItem.id || this.activePreviewItem.variantCode,
+      htmlTemplate: this.activePreviewItem.htmlTemplate,
+      cssStyles: this.activePreviewItem.cssStyles,
+      jsScript: this.activePreviewItem.jsScript,
+      defaultContentJson: this.activePreviewItem.defaultContentJson,
+      installedVersion: this.activePreviewItem.version || '1.0.0'
+    };
+
+    this.api.post<any>('ContentApi/templates/custom', payload).subscribe({
+      next: (_res: any) => {
+        this.savingTemplateHtml = false;
+        this.activePreviewItem!.isCustomized = true;
+        this.toast.success(`Template '${this.activePreviewItem!.name}' changes saved successfully!`);
+        this.updateSinglePreviewHtml();
+      },
+      error: (err: any) => {
+        this.savingTemplateHtml = false;
+        const errMsg = err?.error?.message || 'Failed to save template changes.';
+        this.toast.error(errMsg);
+      }
+    });
+  }
+
   addBlogArticle(): void {
     const nextIdx = this.previewBlogContent.articles.length + 1;
     this.previewBlogContent.articles.push({
@@ -5201,16 +5942,53 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     // 0b. Loop over {{#each MenuCtaButtons}}...{{/each}}
     const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
-      const ctas = ctx.menuCtaButtons || this.previewMenuContent.menuCtaButtons || [
+      const ctas = ctx.menuCtaButtons || this.previewMenuContent.menuCtaButtons || (this.editorTokens?.menuCtaButtons?.length ? this.editorTokens.menuCtaButtons : [
         { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-        { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
-      ];
+        { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+      ]);
       return ctas.map((cta: any, idx: number) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
         rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
         rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
         return rendered;
+      }).join('\n');
+    });
+
+    // 0c. Loop over {{#each MenuDropdowns}}...{{/each}} with nested {{#each Pages}}
+    const menuDropdownsRegex = /\{\{#each\s+MenuDropdowns\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(menuDropdownsRegex, (_match, outerTemplate) => {
+      const dropdowns = ctx.dropdowns || this.previewMenuContent.dropdowns || (this.editorTokens?.menuDropdowns?.length ? this.editorTokens.menuDropdowns : [
+        {
+          title: 'Services',
+          pages: [
+            { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
+            { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
+            { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+          ]
+        }
+      ]);
+
+      return dropdowns.map((dd: any, ddIdx: number) => {
+        let renderedDd = outerTemplate;
+        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
+
+        // Render nested {{#each Pages}}
+        const pagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        renderedDd = renderedDd.replace(pagesRegex, (_pMatch: string, pageTemplate: string) => {
+          const pages = dd.pages || [];
+          if (!Array.isArray(pages) || pages.length === 0) return '';
+          return pages.map((page: any) => {
+            let renderedPage = pageTemplate;
+            renderedPage = renderedPage.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
+            renderedPage = renderedPage.replace(/\{\{\s*Url\s*\}\}/gi, page.url || page.slug || '#');
+            return renderedPage;
+          }).join('\n');
+        });
+
+        return renderedDd;
       }).join('\n');
     });
 
@@ -5493,8 +6271,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(/\{\{\s*TermsUrl\s*\}\}/gi, '/terms-and-conditions');
     output = output.replace(/\{\{\s*CookiesUrl\s*\}\}/gi, '/cookie-policy');
 
-    // Corporate Identity Fields
-    const brandName = ctx.BrandName || ctx.brandName || this.currentTenantBrandName || 'Organization Portal';
+    // Corporate Identity Fields (Logo-First with Business Name fallback)
+    const brandName = ctx.BrandName || ctx.brandName || this.currentTenantBrandName || this.editorTokens?.brand?.name || 'Organization Portal';
+    const logoUrl = ctx.LogoUrl || ctx.logoUrl || this.editorTokens?.brand?.logoUrl || '';
+    const brandIdentityHtml = (logoUrl && logoUrl.trim().length > 0)
+      ? `<img src="${logoUrl}" alt="${brandName}" class="navbar-brand-logo" style="max-height: 40px; width: auto; object-fit: contain;" />`
+      : `<span class="fw-bolder text-dark fs-4 tracking-tight">${brandName}</span>`;
+
+    output = output.replace(/\{\{\s*(?:BrandIdentity|BrandLogoOrName)\s*\}\}/gi, brandIdentityHtml);
+    output = output.replace(/\{\{\s*LogoUrl\s*\}\}/gi, logoUrl);
     const currentYear = ctx.Year || new Date().getFullYear().toString();
     output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
     output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
@@ -5503,6 +6288,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Administrative Headquarters');
     output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `&copy; ${currentYear} ${brandName}. All rights reserved.`);
     output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
+
+    // Clean up any remaining unhandled {{#each ...}} loops and leftover {{ Token }} placeholders to prevent visual leakage
+    output = output.replace(/\{\{#each[\s\S]*?\{\{\/each\}\}/gi, '');
+    output = output.replace(/\{\{[#\/]?[\w\s\.\,\-\_]+\}\}/g, '');
 
     return output;
   }
