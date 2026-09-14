@@ -4635,11 +4635,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     text: 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
     buttonText: 'Explore Solutions',
     buttonLink: '/services',
-    videoButtonText: 'Watch Video',
-    videoLink: '/request-service',
-    url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
-    secondUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
-    youtubeVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    videoButtonText: '',
+    videoLink: '',
+    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+    secondUrl: '',
+    youtubeVideo: ''
   };
 
   // Interactive Modal Code Editor Reference & Saving State
@@ -5750,16 +5750,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         } catch (e) {}
       }
       this.previewHeroContent = {
-        title: defaultHeroData?.title || item.previewTitle || item.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
-        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.badgeText || item.previewSubtitle || 'OFFICIAL PORTAL',
-        text: defaultHeroData?.text || defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
-        buttonText: defaultHeroData?.buttonText || 'Explore Solutions',
-        buttonLink: defaultHeroData?.buttonLink || '/services',
-        videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.secondaryButtonText || 'Watch Video',
-        videoLink: defaultHeroData?.videoLink || defaultHeroData?.secondaryButtonLink || '/request-service',
-        url: defaultHeroData?.url || defaultHeroData?.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
-        secondUrl: defaultHeroData?.secondUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
-        youtubeVideo: defaultHeroData?.youtubeVideo || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+        title: defaultHeroData?.title || defaultHeroData?.Title || item.previewTitle || item.name || 'Innovating the Future of Community Empowerment',
+        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || defaultHeroData?.badgeText || item.previewSubtitle || 'OFFICIAL PORTAL',
+        text: defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
+        buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || 'Explore Solutions',
+        buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '/services',
+        videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
+        videoLink: defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
+        url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+        secondUrl: defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
+        youtubeVideo: defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
       };
     }
 
@@ -6857,16 +6857,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   resetPreviewContent(): void {
     if (this.activePreviewItem?.category === 'hero') {
       this.previewHeroContent = {
-        title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
+        title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Innovating the Future of Community Empowerment',
         miniTitle: 'OFFICIAL PORTAL',
         text: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
         buttonText: 'Explore Solutions',
         buttonLink: '/services',
-        videoButtonText: 'Watch Video',
-        videoLink: '/request-service',
+        videoButtonText: '',
+        videoLink: '',
         url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
-        secondUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
-        youtubeVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+        secondUrl: '',
+        youtubeVideo: ''
       };
       this.onPreviewContentChange();
       this.toast.info('Hero slider sample content restored to defaults.');
@@ -7262,7 +7262,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       <p>Our hybrid persistence layer splits the master tenant catalog from individual tenant SQL databases, ensuring that noisy neighbors never impact cross-tenant performance.</p>
     `);
 
-    // 7. Scalar placeholders & Slider model tokens
+    // 6g. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
+    const ifRegex = /\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/gi;
+    output = output.replace(ifRegex, (_match, prop, ifBody, elseBody) => {
+      const p = prop.trim();
+      const key = Object.keys(ctx).find(k => k.toLowerCase() === p.toLowerCase());
+      const val = key ? ctx[key] : undefined;
+      const isTruthy = (val !== null && val !== undefined && val !== false && val !== '' && (typeof val !== 'string' || val.trim().length > 0));
+      return isTruthy ? ifBody : (elseBody || '');
+    });
+
+    const unlessRegex = /\{\{#unless\s+([\w\.]+)\}\}([\s\S]*?)\{\{\/unless\}\}/gi;
+    output = output.replace(unlessRegex, (_match, prop, body) => {
+      const p = prop.trim();
+      const key = Object.keys(ctx).find(k => k.toLowerCase() === p.toLowerCase());
+      const val = key ? ctx[key] : undefined;
+      const isFalsy = (val === null || val === undefined || val === false || val === '' || (typeof val === 'string' && val.trim().length === 0));
+      return isFalsy ? body : '';
+    });
+
+    // 7. Scalar placeholders & Slider model tokens (leave unused fields blank)
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
     output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || '');
@@ -7273,14 +7292,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || 'Watch Video');
-    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '#');
-    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || ctx.videoButtonText || 'Watch Video');
-    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || ctx.videoLink || '#');
+    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || '');
+    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '');
+    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || ctx.videoButtonText || '');
+    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || ctx.videoLink || '');
     output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.text || ctx.description || '');
     output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.url || ctx.imageUrl || '');
     output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
-    output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || 'OFFICIAL PORTAL');
+    output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || '');
     output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
     output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');
     const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
