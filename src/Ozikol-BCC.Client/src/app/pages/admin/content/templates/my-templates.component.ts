@@ -803,27 +803,131 @@ export interface CodeInjectionTag {
             </div>
           </div>
 
-          <div class="content-editor-body">
+          <div class="content-editor-body" [ngSwitch]="activePreviewItem?.category">
+            <!-- MENU CATEGORY -->
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'menu'">
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'BRAND NAME ({{ BrandName }})'"></label>
+                <input type="text" [(ngModel)]="previewMenuContent.brandName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Acme Global" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'LOGO IMAGE URL ({{ LogoUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewMenuContent.logoUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/assets/images/logo.png" />
+              </div>
+
+              <!-- Top Navigation Links -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'TOP NAVIGATION LINKS ({{#each MainMenuItems}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addTopMenuItem()">+ Add Nav Link</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row" *ngFor="let item of previewMenuContent.topMenuItems; let idx = index">
+                    <span class="subitem-badge">#{{ idx + 1 }}</span>
+                    <div class="subitem-inputs">
+                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Link Title" />
+                      <input type="text" [(ngModel)]="item.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/slug or #anchor" />
+                    </div>
+                    <button type="button" class="btn-del-subitem" (click)="removeTopMenuItem(idx)" title="Remove item">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Header CTA Action Buttons -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'HEADER CTA BUTTONS ({{#each MenuCtaButtons}} — dynamically populated from pages where IsMenuCTA is enabled)'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addMenuCtaButton()">+ Add CTA Button</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row" *ngFor="let cta of previewMenuContent.menuCtaButtons; let cIdx = index">
+                    <span class="subitem-badge">#{{ cIdx + 1 }}</span>
+                    <div class="subitem-inputs">
+                      <input type="text" [(ngModel)]="cta.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Button Text (e.g. Request a Service)" />
+                      <input type="text" [(ngModel)]="cta.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/target-page" />
+                      <input type="text" [(ngModel)]="cta.customClass" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="max-width: 170px;" placeholder="btn-primary" />
+                    </div>
+                    <button type="button" class="btn-del-subitem" (click)="removeMenuCtaButton(cIdx)" title="Remove CTA">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOG & ARTICLES CATEGORY -->
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'blog'">
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'SECTION TITLE ({{ Title }})'"></label>
+                <input type="text" [(ngModel)]="previewBlogContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Platform Insights & Case Studies" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
+                <input type="text" [(ngModel)]="previewBlogContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. LATEST KNOWLEDGE" />
+              </div>
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
+                <textarea [(ngModel)]="previewBlogContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'VIEW ALL BUTTON TEXT ({{ ButtonText }})'"></label>
+                <input type="text" [(ngModel)]="previewBlogContent.viewAllButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Browse All Articles →" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'VIEW ALL BUTTON LINK ({{ ButtonLink }})'"></label>
+                <input type="text" [(ngModel)]="previewBlogContent.viewAllButtonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/blog" />
+              </div>
+
+              <!-- Blog Articles Repeater -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'BLOG ARTICLES GRID ({{#each Articles}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addBlogArticle()">+ Add Article</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row mb-2" *ngFor="let art of previewBlogContent.articles; let aIdx = index" style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                      <span class="subitem-badge">#{{ aIdx + 1 }}</span>
+                      <input type="text" [(ngModel)]="art.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
+                      <input type="text" [(ngModel)]="art.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Category" />
+                      <button type="button" class="btn-del-subitem" (click)="removeBlogArticle(aIdx)" title="Remove Article">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                      <input type="text" [(ngModel)]="art.summary" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Short summary..." />
+                      <input type="text" [(ngModel)]="art.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Cover Image URL" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOG DETAIL CATEGORY -->
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'blog_detail'">
+              <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 16px;">
+                <h5 style="margin: 0 0 6px 0; color: #0050e5; font-size: 14px; font-weight: 700;">
+                  <i class="fa-solid fa-file-lines me-2"></i>Dynamic Blog Article Detail Template
+                </h5>
+                <p style="margin: 0; font-size: 12.5px; color: #475569; line-height: 1.5;">
+                  This template renders individual blog posts dynamically from your CMS database. Real article content is managed under <strong>Blog &rarr; Articles</strong>. Sidebar widgets dynamically pull from <strong>RecentArticles</strong>, <strong>BlogCategories</strong>, and <strong>ArticleTags</strong>.
+                </p>
+              </div>
+            </div>
+
             <!-- FOOTER-SPECIFIC CONTENT EDITOR -->
-            <div class="custom-tpl-form-grid" *ngIf="activePreviewItem?.category === 'footer'">
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'footer'">
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'BRAND NAME ({{ BrandName }})'"></label>
                 <input type="text" [(ngModel)]="previewFooterContent.brandName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Acme Global" />
               </div>
 
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'SUPPORT EMAIL ({{ Email }})'"></label>
-                <input type="email" [(ngModel)]="previewFooterContent.email" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="contact@organization.com" />
-              </div>
-
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'FOOTER DESCRIPTION / SUMMARY ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewFooterContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Empowering modern organizations..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'CONTACT PHONE ({{ Phone }})'"></label>
-                <input type="text" [(ngModel)]="previewFooterContent.phone" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="+1 (555) 019-2834" />
+              <!-- Note: Email, phone, and address are directly edited in HTML without placeholders -->
+              <div class="form-group full-width" style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #64748b;">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                <strong>Direct HTML Philosophy:</strong> Email, phone numbers, office addresses, and narrative descriptions are typed directly into the footer HTML source (not placeholder variables), providing zero layout friction.
               </div>
 
               <!-- Footer Columns & Page Links -->
@@ -885,8 +989,8 @@ export interface CodeInjectionTag {
               </div>
             </div>
 
-            <!-- STANDARD SECTION CONTENT EDITOR (FOR HERO, BODY, ETC.) -->
-            <div class="custom-tpl-form-grid" *ngIf="activePreviewItem?.category !== 'footer'">
+            <!-- DEFAULT SECTION CONTENT EDITOR (FOR HERO, BODY, ECOMMERCE, ETC.) -->
+            <div class="custom-tpl-form-grid" *ngSwitchDefault>
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Empowering Modern Organizations" />
@@ -3837,6 +3941,63 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ]
   };
 
+  // Dedicated Menu Sample Content Replacements
+  previewMenuContent = {
+    brandName: 'Acme Global',
+    logoUrl: '/assets/images/logo.png',
+    topMenuItems: [
+      { title: 'Home', url: '/' },
+      { title: 'About Us', url: '/about' },
+      { title: 'Blog', url: '/blog' },
+      { title: 'Contact', url: '/contact' }
+    ],
+    menuCtaButtons: [
+      { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
+      { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
+    ]
+  };
+
+  // Dedicated Blog Sample Content Replacements
+  previewBlogContent = {
+    title: 'Platform Insights & Case Studies',
+    miniTitle: 'LATEST KNOWLEDGE',
+    description: 'Deep dives, architectural benchmarks, and best practices curated by our systems engineering team.',
+    viewAllButtonText: 'Browse All Articles →',
+    viewAllButtonLink: '/blog',
+    articles: [
+      {
+        title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+        summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+        coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+        category: 'Engineering & Architecture',
+        authorName: 'Alex Rivera',
+        authorRole: 'Chief Architect',
+        publishedDate: 'Sep 12, 2026',
+        url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems'
+      },
+      {
+        title: 'The Shift to Zero-Downtime Migration Pipelines',
+        summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+        coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+        category: 'DevOps & Reliability',
+        authorName: 'Sarah Chen',
+        authorRole: 'Head of Infrastructure',
+        publishedDate: 'Sep 08, 2026',
+        url: '/blog/zero-downtime-migration-pipelines'
+      },
+      {
+        title: 'Next-Gen Identity & Granular Role Governance',
+        summary: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
+        coverImageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
+        category: 'Cybersecurity',
+        authorName: 'Marcus Vance',
+        authorRole: 'Security Lead',
+        publishedDate: 'Aug 29, 2026',
+        url: '/blog/next-gen-identity-governance'
+      }
+    ]
+  };
+
   // Full-Site Demo Modal
   showFullSiteDemoModal: boolean = false;
   fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
@@ -4790,6 +4951,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (!this.activePreviewItem) return;
     const dataContext = (this.activePreviewItem.category === 'footer')
       ? { ...this.previewContent, ...this.previewFooterContent }
+      : (this.activePreviewItem.category === 'menu')
+      ? { ...this.previewContent, ...this.previewMenuContent }
+      : (this.activePreviewItem.category === 'blog' || this.activePreviewItem.category === 'blog_detail')
+      ? { ...this.previewContent, ...this.previewBlogContent }
       : this.previewContent;
     let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
     if (this.activePreviewItem.category === 'footer') {
@@ -4908,6 +5073,67 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.onPreviewContentChange();
   }
 
+  addTopMenuItem(): void {
+    const nextIdx = this.previewMenuContent.topMenuItems.length + 1;
+    this.previewMenuContent.topMenuItems.push({
+      title: `Navigation Link ${nextIdx}`,
+      url: `/page-${nextIdx}`
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeTopMenuItem(index: number): void {
+    if (this.previewMenuContent.topMenuItems.length <= 1) {
+      this.toast.warning('Keep at least one navigation link.');
+      return;
+    }
+    this.previewMenuContent.topMenuItems.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  addMenuCtaButton(): void {
+    const nextIdx = this.previewMenuContent.menuCtaButtons.length + 1;
+    this.previewMenuContent.menuCtaButtons.push({
+      title: `Action CTA ${nextIdx}`,
+      url: `/action-${nextIdx}`,
+      customClass: 'btn-primary'
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeMenuCtaButton(index: number): void {
+    if (this.previewMenuContent.menuCtaButtons.length <= 1) {
+      this.toast.warning('Keep at least one CTA button.');
+      return;
+    }
+    this.previewMenuContent.menuCtaButtons.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  addBlogArticle(): void {
+    const nextIdx = this.previewBlogContent.articles.length + 1;
+    this.previewBlogContent.articles.push({
+      title: `Enterprise Case Study #${nextIdx}`,
+      summary: 'Comprehensive analysis on infrastructure modernization and real-time transaction processing.',
+      coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+      category: 'Case Studies',
+      authorName: 'Alex Rivera',
+      authorRole: 'Chief Architect',
+      publishedDate: 'Sep 2026',
+      url: '#'
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeBlogArticle(index: number): void {
+    if (this.previewBlogContent.articles.length <= 1) {
+      this.toast.warning('Keep at least one article.');
+      return;
+    }
+    this.previewBlogContent.articles.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
   resetPreviewContent(): void {
     if (this.activePreviewItem?.defaultContentJson) {
       try {
@@ -4954,6 +5180,39 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const ctx = data || this.previewContent;
 
     let output = rawHtml;
+
+    // 0a. Loop over {{#each MainMenuItems}}...{{/each}}
+    const mainMenuItemsRegex = /\{\{#each\s+MainMenuItems\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(mainMenuItemsRegex, (_match, innerTemplate) => {
+      const items = ctx.topMenuItems || this.previewMenuContent.topMenuItems || [
+        { title: 'Home', url: '/' },
+        { title: 'About Us', url: '/about' },
+        { title: 'Blog', url: '/blog' },
+        { title: 'Contact', url: '/contact' }
+      ];
+      return items.map((item: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, item.url || item.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 0b. Loop over {{#each MenuCtaButtons}}...{{/each}}
+    const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
+      const ctas = ctx.menuCtaButtons || this.previewMenuContent.menuCtaButtons || [
+        { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
+        { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
+      ];
+      return ctas.map((cta: any, idx: number) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
+        rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
+        return rendered;
+      }).join('\n');
+    });
 
     // 1. Loop over {{#each PageSectionLists}}...{{/each}}
     const eachRegex = /\{\{#each\s+PageSectionLists\}\}([\s\S]*?)\{\{\/each\}\}/gi;
@@ -5009,6 +5268,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         ];
       }
 
+      return pages.map((p: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 2b. Loop over {{#each TaggedPages "TagName"}}...{{/each}}
+    const taggedPagesRegex = /\{\{#each\s+TaggedPages\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(taggedPagesRegex, (_match, tag, innerTemplate) => {
+      const normalized = (tag || '').toLowerCase().trim();
+      let pages: any[] = [];
+      if (this.availablePages && Array.isArray(this.availablePages)) {
+        pages = this.availablePages.filter((p: any) =>
+          p.tags && p.tags.toLowerCase().includes(normalized)
+        );
+      }
+      if (pages.length === 0) {
+        pages = [
+          { title: `${tag} Resource 1`, url: '#' },
+          { title: `${tag} Resource 2`, url: '#' }
+        ];
+      }
       return pages.map((p: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
@@ -5089,6 +5372,109 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong>
       </div>`;
     });
+
+    // 6b. Articles Loop ({{#each Articles}}...{{/each}})
+    const articlesRegex = /\{\{#each\s+Articles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(articlesRegex, (_match, innerTemplate) => {
+      const articles = ctx.articles || this.previewBlogContent.articles || [
+        {
+          title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+          summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+          category: 'Engineering & Architecture',
+          authorName: 'Alex Rivera',
+          authorRole: 'Chief Architect',
+          publishedDate: 'Sep 12, 2026',
+          url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems'
+        },
+        {
+          title: 'The Shift to Zero-Downtime Migration Pipelines',
+          summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+          category: 'DevOps & Reliability',
+          authorName: 'Sarah Chen',
+          authorRole: 'Head of Infrastructure',
+          publishedDate: 'Sep 08, 2026',
+          url: '/blog/zero-downtime-migration-pipelines'
+        }
+      ];
+
+      return articles.map((art: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title);
+        rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, art.summary);
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, art.coverImageUrl);
+        rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category);
+        rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName);
+        rendered = rendered.replace(/\{\{\s*AuthorRole\s*\}\}/gi, art.authorRole);
+        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, art.publishedDate);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, art.url || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6c. RecentArticles Loop ({{#each RecentArticles}}...{{/each}})
+    const recentArticlesRegex = /\{\{#each\s+RecentArticles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(recentArticlesRegex, (_match, innerTemplate) => {
+      const recents = [
+        { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', publishedDate: 'Sep 12, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems' },
+        { title: 'The Shift to Zero-Downtime Migration Pipelines', publishedDate: 'Sep 08, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=300&auto=format&fit=crop&q=80', url: '/blog/zero-downtime-migration-pipelines' }
+      ];
+      return recents.map((r: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title);
+        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, r.publishedDate);
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, r.coverImageUrl);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, r.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6d. BlogCategories Loop ({{#each BlogCategories}}...{{/each}})
+    const blogCatsRegex = /\{\{#each\s+BlogCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(blogCatsRegex, (_match, innerTemplate) => {
+      const cats = [
+        { name: 'Engineering & Architecture', postCount: 14, url: '/blog?category=engineering' },
+        { name: 'DevOps & Reliability', postCount: 9, url: '/blog?category=devops' },
+        { name: 'Cybersecurity', postCount: 7, url: '/blog?category=cybersecurity' }
+      ];
+      return cats.map((c: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:Name|Title|CategoryTitle)\s*\}\}/gi, c.name);
+        rendered = rendered.replace(/\{\{\s*PostCount\s*\}\}/gi, String(c.postCount));
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, c.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6e. ArticleTags Loop ({{#each ArticleTags}}...{{/each}})
+    const tagsRegex = /\{\{#each\s+ArticleTags\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(tagsRegex, (_match, innerTemplate) => {
+      const tags = [
+        { name: 'Multi-Tenancy', url: '/blog?tag=multi-tenancy' },
+        { name: 'Cloud Architecture', url: '/blog?tag=cloud-architecture' },
+        { name: 'DevOps', url: '/blog?tag=devops' }
+      ];
+      return tags.map((t: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:Name|Tag|Title)\s*\}\}/gi, t.name);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, t.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6f. Article Detail Scalars ({{ Article.Title }}, {{ Article.Body }}, etc.)
+    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, 'Architecting Resilient Multi-Tenant Cloud Ecosystems');
+    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, 'Engineering & Architecture');
+    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, 'September 12, 2026');
+    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, 'Alex Rivera');
+    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, 'Chief Architect & Head of Platform Engineering');
+    output = output.replace(/\{\{\s*Article\.CoverImageUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80');
+    output = output.replace(/\{\{\s*Article\.Summary\s*\}\}/gi, 'A comprehensive guide on building scalable, isolated, multi-tenant cloud ecosystems with robust zero-trust policies.');
+    output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, `
+      <p class="lead">Modern enterprise cloud systems require strict multi-tenant isolation, ultra-fast database scaling, and zero-compromise security models.</p>
+      <p>Our hybrid persistence layer splits the master tenant catalog from individual tenant SQL databases, ensuring that noisy neighbors never impact cross-tenant performance.</p>
+    `);
 
     // 7. Scalar placeholders
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');

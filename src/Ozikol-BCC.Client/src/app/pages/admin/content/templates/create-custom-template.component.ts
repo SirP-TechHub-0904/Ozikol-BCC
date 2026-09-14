@@ -49,6 +49,17 @@ interface CategoryPreset {
 }
 
 /**
+ * Interface representing metadata and contextual help documentation for CMS template tokens.
+ */
+export interface TokenDoc {
+  name: string;
+  token: string;
+  description: string;
+  cmsPath: string;
+  example: string;
+}
+
+/**
  * Dedicated full-width studio page for creating custom CMS section templates.
  * Features 100% width code editors, mock content drawer below, dynamic system category presets,
  * precision cursor token insertion, and a live interactive preview modal.
@@ -255,6 +266,15 @@ interface CategoryPreset {
                 <button
                   type="button"
                   class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'blog'"
+                  (click)="activeTokenCategory = 'blog'"
+                >
+                  <span class="material-symbols-outlined icon-micro">newspaper</span>
+                  <span>Blog & Articles</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
                   [class.active]="activeTokenCategory === 'legal'"
                   (click)="activeTokenCategory = 'legal'"
                 >
@@ -277,172 +297,426 @@ interface CategoryPreset {
             <div class="token-chips-flow">
               <!-- Category: CORE (PageSection) -->
               <ng-container *ngIf="activeTokenCategory === 'core'">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'" title="Inserts section headline title"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'" title="Inserts eyebrow / sub-badge token"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'" title="Inserts short narrative description token"></button>
-                <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ FullDescription }}')" [innerText]="'+ {{ FullDescription }}'" title="Inserts Summernote rich HTML full description token"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Qoute }}')" [innerText]="'+ {{ Qoute }}'" title="Inserts blockquote highlight token"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'" title="Inserts primary CTA button text"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'" title="Inserts primary CTA button target link"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'+ {{ DirectUrl }}'" title="Inserts custom direct route URL"></button>
-                <button type="button" class="token-chip chip-core chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Title', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Title', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MiniTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MiniTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Description', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Description', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ FullDescription }}')" [innerText]="'+ {{ FullDescription }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FullDescription', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FullDescription', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Qoute }}')" [innerText]="'+ {{ Qoute }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Qoute', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Qoute', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ButtonText', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ButtonText', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ButtonLink', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ButtonLink', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'+ {{ DirectUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('DirectUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('DirectUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: MEDIA & STYLE -->
               <ng-container *ngIf="activeTokenCategory === 'media'">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'" title="Inserts primary hero / background image URL"></button>
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ SecondImageUrl }}')" [innerText]="'+ {{ SecondImageUrl }}'" title="Inserts secondary overlay image URL"></button>
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ VideoUrl }}')" [innerText]="'+ {{ VideoUrl }}'" title="Inserts hosted MP4/WebM video file URL"></button>
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ YoutubeUrlLink }}')" [innerText]="'+ {{ YoutubeUrlLink }}'" title="Inserts external YouTube embed URL"></button>
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ BackgroundColor }}')" [innerText]="'+ {{ BackgroundColor }}'" title="Inserts section background color or theme token"></button>
-                <button type="button" class="token-chip chip-media chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ImageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ImageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ SecondImageUrl }}')" [innerText]="'+ {{ SecondImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('SecondImageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('SecondImageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ VideoUrl }}')" [innerText]="'+ {{ VideoUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('VideoUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('VideoUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ YoutubeUrlLink }}')" [innerText]="'+ {{ YoutubeUrlLink }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('YoutubeUrlLink', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('YoutubeUrlLink', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ BackgroundColor }}')" [innerText]="'+ {{ BackgroundColor }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('BackgroundColor', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('BackgroundColor', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: REPEATER (PageSectionLists) -->
               <ng-container *ngIf="activeTokenCategory === 'sectionlist'">
-                <button type="button" class="token-chip chip-repeater" (click)="insertRepeaterLoopAtCursor()" title="Inserts entire structured repeater loop for card lists">
-                  <span class="material-symbols-outlined chip-icon">repeat</span>
-                  <span>+ Card Loop (PageSectionLists)</span>
-                </button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertRepeaterLoopAtCursor()">
+                    <span class="material-symbols-outlined chip-icon">repeat</span>
+                    <span>+ Card Loop (PageSectionLists)</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageSectionLists', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageSectionLists', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">Card Tokens:</span>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'" title="Card heading"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'{{ MiniTitle }}'" title="Card subtitle or badge"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SubTitle }}')" [innerText]="'{{ SubTitle }}'" title="Alternative card subtitle"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'{{ Description }}'" title="Card body description"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ MoreDescription }}')" [innerText]="'{{ MoreDescription }}'" title="Card extended details copy"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Icon }}')" [innerText]="'{{ Icon }}'" title="Card icon name (Material symbol)"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ IconText }}')" [innerText]="'{{ IconText }}'" title="Card icon class (FontAwesome / Bootstrap)"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'{{ ImageUrl }}'" title="Card thumbnail photo URL"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ VideoUrl }}')" [innerText]="'{{ VideoUrl }}'" title="Card video URL"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'{{ ButtonText }}'" title="Card button label"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'{{ ButtonLink }}'" title="Card button destination link"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'{{ DirectUrl }}'" title="Card direct route"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SortOrder }}')" [innerText]="'{{ SortOrder }}'" title="Card numeric sort order"></button>
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Title', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Title', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ MiniTitle }}')" [innerText]="'{{ MiniTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MiniTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MiniTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SubTitle }}')" [innerText]="'{{ SubTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('SubTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('SubTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Description }}')" [innerText]="'{{ Description }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Description', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Description', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Icon }}')" [innerText]="'{{ Icon }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Icon', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Icon', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ IconText }}')" [innerText]="'{{ IconText }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('IconText', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('IconText', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ImageUrl }}')" [innerText]="'{{ ImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ImageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ImageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonText }}')" [innerText]="'{{ ButtonText }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ButtonText', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ButtonText', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'{{ ButtonLink }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ButtonLink', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ButtonLink', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: FAQ & CATEGORIES -->
               <ng-container *ngIf="activeTokenCategory === 'faq'">
-                <button type="button" class="token-chip chip-repeater" (click)="insertFaqCategoryLoopAtCursor()" title="Inserts category-grouped accordion FAQ loop">
-                  <span class="material-symbols-outlined chip-icon">folder_open</span>
-                  <span>+ FAQ Category Accordion Loop</span>
-                </button>
-                <button type="button" class="token-chip chip-repeater" (click)="insertFlatFaqLoopAtCursor()" title="Inserts flat FAQ question & answer list">
-                  <span class="material-symbols-outlined chip-icon">quiz</span>
-                  <span>+ Flat FAQ Loop</span>
-                </button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertFaqCategoryLoopAtCursor()">
+                    <span class="material-symbols-outlined chip-icon">folder_open</span>
+                    <span>+ FAQ Category Accordion Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FaqCategories', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FaqCategories', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertFlatFaqLoopAtCursor()">
+                    <span class="material-symbols-outlined chip-icon">quiz</span>
+                    <span>+ Flat FAQ Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FAQs', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FAQs', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">FAQ Tokens:</span>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'" title="FAQ Category heading"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Question }}')" [innerText]="'{{ Question }}'" title="FAQ Question text"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Answer }}')" [innerText]="'{{ Answer }}'" title="FAQ Answer text/HTML"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Message }}')" [innerText]="'{{ Message }}'" title="Alternative answer token"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ SortOrder }}')" [innerText]="'{{ SortOrder }}'" title="FAQ sort order"></button>
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Question }}')" [innerText]="'{{ Question }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Question', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Question', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Answer }}')" [innerText]="'{{ Answer }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Answer', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Answer', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: MENUS & DROP DOWNS -->
               <ng-container *ngIf="activeTokenCategory === 'navigation'">
-                <button type="button" class="token-chip chip-repeater" (click)="insertNestedMenuLoopAtCursor()" title="Inserts 2-level cascading flyout dropdown navigation">
-                  <span class="material-symbols-outlined chip-icon">account_tree</span>
-                  <span>+ 2-Level Nested Dropdown Loop</span>
-                </button>
-                <button type="button" class="token-chip chip-repeater" (click)="insertMegaMenuLoopAtCursor()" title="Inserts multi-column mega menu with categories, sub-items and page cards">
-                  <span class="material-symbols-outlined chip-icon">grid_view</span>
-                  <span>+ Mega Menu Grid Loop</span>
-                </button>
-                <button type="button" class="token-chip chip-repeater" (click)="insertFlatNavbarLoopAtCursor()" title="Inserts standard single-dropdown top navbar">
-                  <span class="material-symbols-outlined chip-icon">menu</span>
-                  <span>+ Flat Navbar Loop</span>
-                </button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertMainMenuItemsLoopAtCursor()" title="Inserts loop for top menu pages">
+                    <span class="material-symbols-outlined chip-icon">link</span>
+                    <span>+ Main Menu Items Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MainMenuItems', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MainMenuItems', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertMenuCtaButtonsLoopAtCursor()" title="Inserts dynamic CTA buttons from IsMenuCTA pages">
+                    <span class="material-symbols-outlined chip-icon">smart_button</span>
+                    <span>+ Menu CTA Buttons Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MenuCtaButtons', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertNestedMenuLoopAtCursor()" title="Inserts 2-level cascading flyout dropdown navigation">
+                    <span class="material-symbols-outlined chip-icon">account_tree</span>
+                    <span>+ 2-Level Nested Dropdown Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MenuDropdowns', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MenuDropdowns', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertFlatNavbarLoopAtCursor()" title="Inserts standard single-dropdown top navbar">
+                    <span class="material-symbols-outlined chip-icon">menu</span>
+                    <span>+ Flat Navbar Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MenuDropdowns', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MenuDropdowns', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <ng-container *ngIf="editorTokens.menuCtaButtons?.length">
+                  <span class="sn-sep"></span>
+                  <span class="ribbon-tag">Header CTAs:</span>
+                  <span class="token-chip-wrap" *ngFor="let cta of editorTokens.menuCtaButtons">
+                    <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('<a href=&quot;' + cta.url + '&quot; class=&quot;btn btn-primary&quot;>' + cta.title + '</a>')" [title]="'Inserts CTA button for ' + cta.title">
+                      <span class="material-symbols-outlined chip-icon">ads_click</span>
+                      <span>CTA: {{ cta.title }}</span>
+                    </button>
+                    <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MenuCtaButtons', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                  </span>
+                </ng-container>
                 <ng-container *ngIf="editorTokens.menuDropdowns?.length">
                   <span class="sn-sep"></span>
                   <span class="ribbon-tag">Published Dropdowns:</span>
-                  <button *ngFor="let dd of editorTokens.menuDropdowns" type="button" class="token-chip chip-repeater" (click)="insertMenuDropdownAtCursor(dd.title)" [title]="'Inserts ' + dd.title + ' dropdown with child links'">
-                    <span class="material-symbols-outlined chip-icon">arrow_drop_down_circle</span>
-                    <span>+ Dropdown: {{ dd.title }}</span>
-                  </button>
+                  <span class="token-chip-wrap" *ngFor="let dd of editorTokens.menuDropdowns">
+                    <button type="button" class="token-chip chip-repeater" (click)="insertMenuDropdownAtCursor(dd.title)" [title]="'Inserts ' + dd.title + ' dropdown with child links'">
+                      <span class="material-symbols-outlined chip-icon">arrow_drop_down_circle</span>
+                      <span>+ Dropdown: {{ dd.title }}</span>
+                    </button>
+                    <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('MenuDropdowns', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('MenuDropdowns', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                  </span>
                 </ng-container>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">Menu Tokens:</span>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'" title="Category or Dropdown title"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Icon }}')" [innerText]="'{{ Icon }}'" title="Category icon symbol"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageTitle }}')" [innerText]="'{{ PageTitle }}'" title="WebPage link title"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'" title="WebPage route URL"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageDescription }}')" [innerText]="'{{ PageDescription }}'" title="Page excerpt for mega menu cards"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageImage }}')" [innerText]="'{{ PageImage }}'" title="Page thumbnail image for mega menu cards"></button>
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageTitle }}')" [innerText]="'{{ PageTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: FOOTER COLUMNS -->
               <ng-container *ngIf="activeTokenCategory === 'footer'">
-                <button type="button" class="token-chip chip-repeater" (click)="insertFooterCategoriesLoopAtCursor()" title="Inserts dynamic loop rendering all enabled footer category columns">
-                  <span class="material-symbols-outlined chip-icon">view_column</span>
-                  <span>+ All Footer Categories Loop</span>
-                </button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertFooterCategoriesLoopAtCursor()" title="Inserts dynamic loop rendering all enabled footer category columns">
+                    <span class="material-symbols-outlined chip-icon">view_column</span>
+                    <span>+ All Footer Categories Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FooterCategories', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FooterCategories', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertTaggedPagesLoopAtCursor('QuickLinks')" title="Inserts pages matching a tag name">
+                    <span class="material-symbols-outlined chip-icon">label</span>
+                    <span>+ Tagged Pages Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('TaggedPages', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('TaggedPages', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
                 <ng-container *ngIf="editorTokens.footerGroups?.length">
                   <span class="sn-sep"></span>
                   <span class="ribbon-tag">Footer Columns:</span>
-                  <button *ngFor="let fg of editorTokens.footerGroups" type="button" class="token-chip chip-repeater" (click)="insertCategoryPagesLoopAtCursor(fg.name)" [title]="'Inserts ' + (fg.displayTitle || fg.name) + ' column with active page links'">
-                    <span class="material-symbols-outlined chip-icon">folder</span>
-                    <span>+ Column: {{ fg.displayTitle || fg.name }}</span>
-                  </button>
+                  <span class="token-chip-wrap" *ngFor="let fg of editorTokens.footerGroups">
+                    <button type="button" class="token-chip chip-repeater" (click)="insertCategoryPagesLoopAtCursor(fg.name)" [title]="'Inserts ' + (fg.displayTitle || fg.name) + ' column with active page links'">
+                      <span class="material-symbols-outlined chip-icon">folder</span>
+                      <span>+ Column: {{ fg.displayTitle || fg.name }}</span>
+                    </button>
+                    <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryPages', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryPages', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                  </span>
                 </ng-container>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">Column Tokens:</span>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Url }}')" [innerText]="'{{ Url }}'"></button>
-                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Title', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Title', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Url }}')" [innerText]="'{{ Url }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: FORMS & EMBEDS -->
               <ng-container *ngIf="activeTokenCategory === 'forms'">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ FormEmbed }}')" [innerText]="'+ {{ FormEmbed }}'" title="Inserts generic dynamic form placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ FormEmbed }}')" [innerText]="'+ {{ FormEmbed }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FormEmbed', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FormEmbed', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
                 <ng-container *ngIf="editorTokens.publishedForms?.length">
                   <span class="sn-sep"></span>
                   <span class="ribbon-tag">Published Dynamic Forms:</span>
-                  <button *ngFor="let f of editorTokens.publishedForms" type="button" class="token-chip chip-repeater" (click)="insertFormEmbedAtCursor(f.key)" [title]="'Inserts published form ' + f.title">
-                    <span class="material-symbols-outlined chip-icon">dynamic_form</span>
-                    <span>+ Form: {{ f.title }}</span>
-                  </button>
+                  <span class="token-chip-wrap" *ngFor="let f of editorTokens.publishedForms">
+                    <button type="button" class="token-chip chip-repeater" (click)="insertFormEmbedAtCursor(f.key)" [title]="'Inserts published form ' + f.title">
+                      <span class="material-symbols-outlined chip-icon">dynamic_form</span>
+                      <span>+ Form: {{ f.title }}</span>
+                    </button>
+                    <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('FormEmbed', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('FormEmbed', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                  </span>
                 </ng-container>
+              </ng-container>
+
+              <!-- Category: BLOG & ARTICLES -->
+              <ng-container *ngIf="activeTokenCategory === 'blog'">
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertArticlesLoopAtCursor()" title="Inserts responsive article card grid loop">
+                    <span class="material-symbols-outlined chip-icon">grid_view</span>
+                    <span [innerText]="'+ Articles Loop ({{#each Articles}})'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Articles', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Articles', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertRecentArticlesLoopAtCursor()" title="Inserts sidebar recent articles loop">
+                    <span class="material-symbols-outlined chip-icon">schedule</span>
+                    <span>+ Recent Articles Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('RecentArticles', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('RecentArticles', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogCategoriesLoopAtCursor()" title="Inserts blog category filter links loop">
+                    <span class="material-symbols-outlined chip-icon">category</span>
+                    <span>+ Blog Categories Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('BlogCategories', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('BlogCategories', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">Article Detail Tokens:</span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Article.Title }}')" [innerText]="'+ {{ Article.Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Article.Summary }}')" [innerText]="'+ {{ Article.Summary }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleSummary', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleSummary', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ Article.Body }}')" [innerText]="'+ {{ Article.Body }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleBody', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleBody', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ Article.CoverImageUrl }}')" [innerText]="'+ {{ Article.CoverImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleCover', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleCover', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Article.PublishedDate }}')" [innerText]="'+ {{ Article.PublishedDate }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleDate', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleDate', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Article.AuthorName }}')" [innerText]="'+ {{ Article.AuthorName }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleAuthor', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleAuthor', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Article.Category }}')" [innerText]="'+ {{ Article.Category }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ArticleCategory', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ArticleCategory', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: LEGAL COMPLIANCE -->
               <ng-container *ngIf="activeTokenCategory === 'legal'">
-                <button type="button" class="token-chip chip-repeater" (click)="insertLegalPagesLoopAtCursor()" title="Inserts loop across all legal compliance pages">
-                  <span class="material-symbols-outlined chip-icon">policy</span>
-                  <span [innerText]="'+ All Legal Pages Loop ({{#each LegalPages}})'"></span>
-                </button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertLegalPagesLoopAtCursor()">
+                    <span class="material-symbols-outlined chip-icon">policy</span>
+                    <span [innerText]="'+ All Legal Pages Loop ({{#each LegalPages}})'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LegalPages', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LegalPages', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
                 <ng-container *ngIf="editorTokens.legalPages?.length">
                   <span class="sn-sep"></span>
                   <span class="ribbon-tag">Compliance Pages:</span>
-                  <button *ngFor="let lp of editorTokens.legalPages" type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('<a href=&quot;' + lp.url + '&quot;>' + lp.title + '</a>')" [title]="'Inserts link to ' + lp.title">
-                    <span>+ {{ lp.title }}</span>
-                  </button>
+                  <span class="token-chip-wrap" *ngFor="let lp of editorTokens.legalPages">
+                    <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('<a href=&quot;' + lp.url + '&quot;>' + lp.title + '</a>')" [title]="'Inserts link to ' + lp.title">
+                      <span>+ {{ lp.title }}</span>
+                    </button>
+                    <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LegalPages', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LegalPages', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                  </span>
                 </ng-container>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">Legal Tokens:</span>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ PrivacyUrl }}')" [innerText]="'+ {{ PrivacyUrl }}'"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ TermsUrl }}')" [innerText]="'+ {{ TermsUrl }}'"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ CookiesUrl }}')" [innerText]="'+ {{ CookiesUrl }}'"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ PrivacyUrl }}')" [innerText]="'+ {{ PrivacyUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PrivacyUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PrivacyUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ TermsUrl }}')" [innerText]="'+ {{ TermsUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('TermsUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('TermsUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ CookiesUrl }}')" [innerText]="'+ {{ CookiesUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CookiesUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CookiesUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: BRAND & IDENTITY -->
               <ng-container *ngIf="activeTokenCategory === 'identity'">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'" title="Inserts tenant brand name"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Copyright }}')" [innerText]="'+ {{ Copyright }}'" title="Inserts corporate copyright string"></button>
-                <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ PoweredBy }}')" [innerText]="'+ {{ PoweredBy }}'" title="Inserts Powered by Ozikol badge link"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Email }}')" [innerText]="'+ {{ Email }}'" title="Inserts corporate contact email"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Phone }}')" [innerText]="'+ {{ Phone }}'" title="Inserts corporate telephone number"></button>
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Address }}')" [innerText]="'+ {{ Address }}'" title="Inserts corporate headquarters address"></button>
-                <button type="button" class="token-chip chip-repeater" (click)="insertSocialLinksLoopAtCursor()" title="Inserts responsive social media links">
-                  <span class="material-symbols-outlined chip-icon">share</span>
-                  <span [innerText]="'+ Social Media Links'"></span>
-                </button>
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('BrandName', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('BrandName', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Copyright }}')" [innerText]="'+ {{ Copyright }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Copyright', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Copyright', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core chip-rich" (click)="insertTokenAtCursor('{{ PoweredBy }}')" [innerText]="'+ {{ PoweredBy }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PoweredBy', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PoweredBy', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Email }}')" [innerText]="'+ {{ Email }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Email', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Email', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Phone }}')" [innerText]="'+ {{ Phone }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Phone', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Phone', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Address }}')" [innerText]="'+ {{ Address }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Address', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Address', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertSocialLinksLoopAtCursor()">
+                    <span class="material-symbols-outlined chip-icon">share</span>
+                    <span [innerText]="'+ Social Media Links'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('SocialLinks', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('SocialLinks', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
             </div>
           </div>
@@ -1429,6 +1703,45 @@ interface CategoryPreset {
           </div>
         </div>
       </div>
+
+      <!-- Interactive Contextual Token Info Popover / Mobile Sheet -->
+      <div
+        class="token-info-popover"
+        *ngIf="activeTokenDoc"
+        [style.top.px]="popoverTop"
+        [style.left.px]="popoverLeft"
+        (mouseenter)="cancelPopoverLeaveTimer()"
+        (mouseleave)="hideTokenDocOnLeave()"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="popover-header">
+          <div class="popover-title-row">
+            <span class="material-symbols-outlined popover-icon">info</span>
+            <code class="popover-token-badge">{{ activeTokenDoc.token }}</code>
+          </div>
+          <button type="button" class="btn-close-popover" (click)="closeTokenDoc()" title="Close details">✕</button>
+        </div>
+        <div class="popover-body">
+          <p class="popover-desc">{{ activeTokenDoc.description }}</p>
+          <div class="popover-cms-box">
+            <div class="cms-label-row">
+              <span class="material-symbols-outlined cms-icon">admin_panel_settings</span>
+              <strong>CMS Configuration Location:</strong>
+            </div>
+            <div class="cms-path-breadcrumb">{{ activeTokenDoc.cmsPath }}</div>
+          </div>
+          <div class="popover-example-box">
+            <span class="example-label">Rendered HTML Output Example:</span>
+            <pre class="example-code"><code>{{ activeTokenDoc.example }}</code></pre>
+          </div>
+        </div>
+        <div class="popover-footer">
+          <button type="button" class="btn-insert-popover" (click)="insertTokenAtCursor(activeTokenDoc.token); closeTokenDoc()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Insert Token</span>
+          </button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -1735,6 +2048,196 @@ interface CategoryPreset {
       border: 1px solid transparent;
       transition: all 0.15s ease;
       white-space: nowrap;
+    }
+    .token-chip-wrap {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      border-radius: 6px;
+      overflow: visible;
+    }
+    .token-chip-wrap .token-chip {
+      border-radius: 6px 0 0 6px !important;
+      border-right: none !important;
+    }
+    .token-info-icon-btn {
+      width: 22px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-left: 1px dashed rgba(0, 0, 0, 0.12);
+      border-radius: 0 6px 6px 0;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+    .token-info-icon-btn:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .token-info-icon-btn .material-symbols-outlined {
+      font-size: 13px;
+    }
+
+    /* Contextual Token Info Popover */
+    .token-info-popover {
+      position: fixed;
+      z-index: 9999;
+      width: 380px;
+      max-width: 90vw;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(0, 0, 0, 0.06);
+      border: 1.5px solid #cbd5e1;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popoverFadeIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .popover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .popover-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .popover-icon {
+      color: #0050e5;
+      font-size: 20px;
+    }
+    .popover-token-badge {
+      font-family: monospace;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 2px 8px;
+      border-radius: 5px;
+      border: 1px solid #bfdbfe;
+    }
+    .btn-close-popover {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .btn-close-popover:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .popover-desc {
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.5;
+      margin: 0 0 12px 0;
+    }
+    .popover-cms-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .cms-label-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .cms-icon {
+      font-size: 15px;
+      color: #0050e5;
+    }
+    .cms-path-breadcrumb {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0050e5;
+      background: #eef2ff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      border: 1px solid #c7d2fe;
+    }
+    .popover-example-box {
+      margin-bottom: 14px;
+    }
+    .example-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .example-code {
+      margin: 0;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 11.5px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .popover-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-insert-popover {
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 6px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-insert-popover:hover {
+      background: #0041ba;
+    }
+    .btn-insert-popover .material-symbols-outlined { font-size: 16px; }
+    @media (max-width: 600px) {
+      .token-info-popover {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 16px 16px 0 0 !important;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25) !important;
+        border-bottom: none !important;
+      }
     }
     .chip-core {
       background: #eff6ff;
@@ -2914,7 +3417,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   // Editor and Preview State
   activeEditorTab: 'html' | 'css' | 'js' = 'html';
-  activeTokenCategory: 'core' | 'media' | 'sectionlist' | 'faq' | 'navigation' | 'footer' | 'forms' | 'legal' | 'identity' = 'core';
+  activeTokenCategory: 'core' | 'media' | 'sectionlist' | 'faq' | 'navigation' | 'footer' | 'forms' | 'blog' | 'legal' | 'identity' = 'core';
   activeMockTab: 'scalars' | 'rich' | 'media' | 'cards' | 'faqs' | 'menu' | 'identity' = 'scalars';
   savingTemplate: boolean = false;
   showPreviewModal: boolean = false;
@@ -2922,16 +3425,422 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   safeHydratedHtml: SafeHtml = '';
   showRawHtmlEditor: boolean = false;
 
+  // Active Token Info Contextual Popover
+  activeTokenDoc: TokenDoc | null = null;
+  popoverTop: number = 100;
+  popoverLeft: number = 100;
+  popoverLeaveTimer: any = null;
+
+  // Comprehensive Token Documentation Directory
+  tokenDocMap: Record<string, TokenDoc> = {
+    Title: {
+      name: 'Title',
+      token: '{{ Title }}',
+      description: 'Primary headline title for the section, card, or blog article.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Title',
+      example: '<h1>{{ Title }}</h1>'
+    },
+    MiniTitle: {
+      name: 'Mini Title / Eyebrow',
+      token: '{{ MiniTitle }}',
+      description: 'Eyebrow subtitle or accent pill displayed above the primary headline.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Mini Title',
+      example: '<span class="badge">{{ MiniTitle }}</span>'
+    },
+    SubTitle: {
+      name: 'Sub Title',
+      token: '{{ SubTitle }}',
+      description: 'Secondary subtitle or price tag on card items.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Section Lists > Sub Title',
+      example: '<span class="price">{{ SubTitle }}</span>'
+    },
+    Description: {
+      name: 'Description',
+      token: '{{ Description }}',
+      description: 'Short narrative description or introductory overview text.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Description',
+      example: '<p class="lead">{{ Description }}</p>'
+    },
+    FullDescription: {
+      name: 'Full Description (Rich HTML)',
+      token: '{{ FullDescription }}',
+      description: 'Rich HTML formatted content generated by the Summernote WYSIWYG editor.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Full Description',
+      example: '<div class="rich-body">{{ FullDescription }}</div>'
+    },
+    MoreDescription: {
+      name: 'More Description',
+      token: '{{ MoreDescription }}',
+      description: 'Extended descriptive copy on repeatable card items.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Section Lists > More Description',
+      example: '<p class="details">{{ MoreDescription }}</p>'
+    },
+    Qoute: {
+      name: 'Quote / Highlight',
+      token: '{{ Qoute }}',
+      description: 'Featured quotation or client testimonial text block.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Quote',
+      example: '<blockquote>{{ Qoute }}</blockquote>'
+    },
+    ButtonText: {
+      name: 'Button Text',
+      token: '{{ ButtonText }}',
+      description: 'Text label for the primary call-to-action button.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Text',
+      example: '<a href="{{ ButtonLink }}" class="btn">{{ ButtonText }}</a>'
+    },
+    ButtonLink: {
+      name: 'Button Link',
+      token: '{{ ButtonLink }}',
+      description: 'Destination URL or internal route for the primary action button.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Link',
+      example: '<a href="{{ ButtonLink }}">Explore More</a>'
+    },
+    SecondaryButtonText: {
+      name: 'Secondary Button Text',
+      token: '{{ SecondaryButtonText }}',
+      description: 'Label for the secondary action button in hero banners.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Text',
+      example: '<a href="{{ SecondaryButtonLink }}" class="btn-outline">{{ SecondaryButtonText }}</a>'
+    },
+    SecondaryButtonLink: {
+      name: 'Secondary Button Link',
+      token: '{{ SecondaryButtonLink }}',
+      description: 'Destination URL for the secondary hero button.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Link',
+      example: '<a href="{{ SecondaryButtonLink }}">Read Documentation</a>'
+    },
+    DirectUrl: {
+      name: 'Direct URL',
+      token: '{{ DirectUrl }}',
+      description: 'Custom direct route path for navigation redirects.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Direct URL',
+      example: '<a href="{{ DirectUrl }}">Direct Link</a>'
+    },
+    CustomClass: {
+      name: 'Custom CSS Class',
+      token: '{{ CustomClass }}',
+      description: 'Optional custom CSS class name applied directly to the section wrapper.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Custom Class',
+      example: '<section class="my-block {{ CustomClass }}">'
+    },
+    ImageUrl: {
+      name: 'Primary Image URL',
+      token: '{{ ImageUrl }}',
+      description: 'Primary banner, hero photo, or card thumbnail image URL.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Image URL',
+      example: '<img src="{{ ImageUrl }}" alt="{{ Title }}" />'
+    },
+    SecondImageUrl: {
+      name: 'Secondary Image URL',
+      token: '{{ SecondImageUrl }}',
+      description: 'Secondary illustration or background overlay image URL.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Image URL',
+      example: '<img src="{{ SecondImageUrl }}" class="shape-overlay" />'
+    },
+    VideoUrl: {
+      name: 'Hosted Video URL',
+      token: '{{ VideoUrl }}',
+      description: 'Direct link to an MP4 or WebM video file.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Video URL',
+      example: '<video src="{{ VideoUrl }}" autoplay muted loop></video>'
+    },
+    YoutubeUrlLink: {
+      name: 'YouTube Embed Link',
+      token: '{{ YoutubeUrlLink }}',
+      description: 'External YouTube video embed URL.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > YouTube Link',
+      example: '<iframe src="{{ YoutubeUrlLink }}"></iframe>'
+    },
+    BackgroundColor: {
+      name: 'Background Color',
+      token: '{{ BackgroundColor }}',
+      description: 'HEX or RGB color value for styling the section backdrop.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Background Color',
+      example: '<section style="background: {{ BackgroundColor }}">'
+    },
+    PageSectionLists: {
+      name: 'Card Loop (PageSectionLists)',
+      token: '{{#each PageSectionLists}}',
+      description: 'Loops through repeatable card items, feature highlights, or slide rows.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Section Lists',
+      example: '{{#each PageSectionLists}}\n  <div class="card"><h4>{{ Title }}</h4><p>{{ Description }}</p></div>\n{{/each}}'
+    },
+    Icon: {
+      name: 'Material Icon Symbol',
+      token: '{{ Icon }}',
+      description: 'Google Material Symbols icon ligature name (e.g. verified, hub, star).',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Section Lists > Icon',
+      example: '<span class="material-symbols-outlined">{{ Icon }}</span>'
+    },
+    IconText: {
+      name: 'FontAwesome / Bootstrap Icon',
+      token: '{{ IconText }}',
+      description: 'FontAwesome or Bootstrap icon class string (e.g. fa-solid fa-rocket).',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Section Lists > Icon Text',
+      example: '<i class="{{ IconText }}"></i>'
+    },
+    FaqCategories: {
+      name: 'FAQ Category Accordions Loop',
+      token: '{{#each FaqCategories}}',
+      description: 'Nested loop grouping FAQs into categorized accordion blocks.',
+      cmsPath: 'Admin Console > FAQs > Categories & FAQs',
+      example: '{{#each FaqCategories}}\n  <h3>{{ CategoryTitle }}</h3>\n  {{#each FAQs}}\n    <details><summary>{{ Question }}</summary><p>{{ Answer }}</p></details>\n  {{/each}}\n{{/each}}'
+    },
+    FAQs: {
+      name: 'Flat FAQ Loop',
+      token: '{{#each FAQs}}',
+      description: 'Loops through all active FAQ questions and answers in a flat list.',
+      cmsPath: 'Admin Console > FAQs',
+      example: '{{#each FAQs}}\n  <div class="faq-item"><strong>{{ Question }}</strong><p>{{ Answer }}</p></div>\n{{/each}}'
+    },
+    CategoryTitle: {
+      name: 'Category Title',
+      token: '{{ CategoryTitle }}',
+      description: 'Title of the knowledge category or navigation dropdown column.',
+      cmsPath: 'Admin Console > FAQs / Menus & Navigation',
+      example: '<h4 class="cat-title">{{ CategoryTitle }}</h4>'
+    },
+    Question: {
+      name: 'FAQ Question',
+      token: '{{ Question }}',
+      description: 'The FAQ question headline text.',
+      cmsPath: 'Admin Console > FAQs > Question',
+      example: '<strong>{{ Question }}</strong>'
+    },
+    Answer: {
+      name: 'FAQ Answer',
+      token: '{{ Answer }}',
+      description: 'Detailed answer or response text/HTML for the FAQ item.',
+      cmsPath: 'Admin Console > FAQs > Answer',
+      example: '<p>{{ Answer }}</p>'
+    },
+    MainMenuItems: {
+      name: 'Main Menu Items Loop',
+      token: '{{#each MainMenuItems}}',
+      description: 'Loops through published WebPages that have "Show In Top Menu" enabled.',
+      cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Show In Top Menu"',
+      example: '{{#each MainMenuItems}}\n  <li class="nav-item"><a class="nav-link" href="{{ Url }}">{{ Title }}</a></li>\n{{/each}}'
+    },
+    MenuDropdowns: {
+      name: 'Menu Dropdowns Loop',
+      token: '{{#each MenuDropdowns}}',
+      description: 'Loops through multi-level navigation dropdown groups and their child pages.',
+      cmsPath: 'Admin Console > Menus & Navigation',
+      example: '{{#each MenuDropdowns}}\n  <li class="dropdown"><a href="#">{{ Title }}</a>\n    <ul>{{#each Pages}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}</ul>\n  </li>\n{{/each}}'
+    },
+    MenuCtaButtons: {
+      name: 'Menu CTA Buttons Loop',
+      token: '{{#each MenuCtaButtons}}',
+      description: 'Loops through published WebPages flagged with "Display as Header CTA Button" (IsMenuCTA). Render multiple action buttons (e.g. Sign In, Request a Service).',
+      cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Display as Header CTA Button" (IsMenuCTA)',
+      example: '{{#each MenuCtaButtons}}\n  <a href="{{ Url }}" class="btn btn-primary rounded-pill px-3">{{ Title }}</a>\n{{/each}}'
+    },
+    PageTitle: {
+      name: 'Page Title',
+      token: '{{ PageTitle }}',
+      description: 'Title of the published WebPage in a navigation dropdown or mega menu card.',
+      cmsPath: 'Admin Console > Web Pages > Title',
+      example: '<span>{{ PageTitle }}</span>'
+    },
+    PageUrl: {
+      name: 'Page Route URL',
+      token: '{{ PageUrl }}',
+      description: 'Clean routing path for the published WebPage.',
+      cmsPath: 'Admin Console > Web Pages > Slug',
+      example: '<a href="{{ PageUrl }}">Link</a>'
+    },
+    FooterCategories: {
+      name: 'All Footer Categories Loop',
+      token: '{{#each FooterCategories}}',
+      description: 'Loops through all enabled multi-column footer groups and their child links.',
+      cmsPath: 'Admin Console > Menus & Navigation / Footer Groups',
+      example: '{{#each FooterCategories}}\n  <div class="col"><h4>{{ Title }}</h4><ul>{{#each Pages}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}</ul></div>\n{{/each}}'
+    },
+    CategoryPages: {
+      name: 'Category Pages Loop',
+      token: '{{#each CategoryPages "Name"}}',
+      description: 'Loops through all published pages assigned to a designated category name.',
+      cmsPath: 'Admin Console > Web Pages > Page Category',
+      example: '{{#each CategoryPages "Services"}}\n  <li><a href="{{ Url }}">{{ Title }}</a></li>\n{{/each}}'
+    },
+    TaggedPages: {
+      name: 'Tagged Pages Loop',
+      token: '{{#each TaggedPages "Tag"}}',
+      description: 'Loops through published pages matching a designated tag (e.g. QuickLinks, Featured).',
+      cmsPath: 'Admin Console > Web Pages > Edit Page > Tags',
+      example: '{{#each TaggedPages "QuickLinks"}}\n  <li><a href="{{ Url }}">{{ Title }}</a></li>\n{{/each}}'
+    },
+    LegalPages: {
+      name: 'Legal Compliance Pages Loop',
+      token: '{{#each LegalPages}}',
+      description: 'Loops through published legal policies (Privacy Policy, Terms of Service, Cookie Policy).',
+      cmsPath: 'Admin Console > Web Pages > Category = "Legal"',
+      example: '{{#each LegalPages}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}'
+    },
+    PrivacyUrl: {
+      name: 'Privacy Policy URL',
+      token: '{{ PrivacyUrl }}',
+      description: 'Direct route to the published Privacy Policy page.',
+      cmsPath: 'Admin Console > Web Pages > Legal Pages',
+      example: '<a href="{{ PrivacyUrl }}">Privacy Policy</a>'
+    },
+    TermsUrl: {
+      name: 'Terms & Conditions URL',
+      token: '{{ TermsUrl }}',
+      description: 'Direct route to the published Terms & Conditions page.',
+      cmsPath: 'Admin Console > Web Pages > Legal Pages',
+      example: '<a href="{{ TermsUrl }}">Terms of Service</a>'
+    },
+    CookiesUrl: {
+      name: 'Cookie Policy URL',
+      token: '{{ CookiesUrl }}',
+      description: 'Direct route to the published Cookie Policy page.',
+      cmsPath: 'Admin Console > Web Pages > Legal Pages',
+      example: '<a href="{{ CookiesUrl }}">Cookie Policy</a>'
+    },
+    FormEmbed: {
+      name: 'Dynamic Form Embed',
+      token: '{{ Form "Key" }}',
+      description: 'Embeds an interactive dynamic form created in the CMS Forms module.',
+      cmsPath: 'Admin Console > Forms & Surveys > Forms',
+      example: '{{ Form "Contact_Us" }}'
+    },
+    BrandName: {
+      name: 'Brand Name',
+      token: '{{ BrandName }}',
+      description: 'Tenant organization brand name.',
+      cmsPath: 'Admin Console > Settings > General / Branding',
+      example: '<span>{{ BrandName }}</span>'
+    },
+    Copyright: {
+      name: 'Copyright Notice',
+      token: '{{ Copyright }}',
+      description: 'Corporate copyright string with current year.',
+      cmsPath: 'Admin Console > Settings > Branding > Copyright',
+      example: '<p>{{ Copyright }}</p>'
+    },
+    PoweredBy: {
+      name: 'Powered By Credit',
+      token: '{{ PoweredBy }}',
+      description: 'Platform credit link for Ozikol.',
+      cmsPath: 'System Enforced',
+      example: '<span>{{ PoweredBy }}</span>'
+    },
+    Email: {
+      name: 'Corporate Email',
+      token: '{{ Email }}',
+      description: 'Tenant contact email address. In footers, you can also type your email directly in HTML.',
+      cmsPath: 'Admin Console > Settings > General',
+      example: '<a href="mailto:{{ Email }}">{{ Email }}</a>'
+    },
+    Phone: {
+      name: 'Corporate Phone',
+      token: '{{ Phone }}',
+      description: 'Tenant contact telephone number. In footers, you can also type your phone directly in HTML.',
+      cmsPath: 'Admin Console > Settings > General',
+      example: '<a href="tel:{{ Phone }}">{{ Phone }}</a>'
+    },
+    Address: {
+      name: 'Corporate Address',
+      token: '{{ Address }}',
+      description: 'Tenant headquarters address. In footers, you can also type your address directly in HTML.',
+      cmsPath: 'Admin Console > Settings > General',
+      example: '<address>{{ Address }}</address>'
+    },
+    SocialLinks: {
+      name: 'Social Media Links (HTML)',
+      token: '<!-- Social Links -->',
+      description: 'Direct HTML social icons and profile links. Type URLs directly into the template HTML.',
+      cmsPath: 'Direct in Template HTML',
+      example: '<a href="https://linkedin.com/company/your-brand"><i class="fa-brands fa-linkedin-in"></i></a>'
+    },
+    Articles: {
+      name: 'Articles Feed Loop',
+      token: '{{#each Articles}}',
+      description: 'Loops through published blog posts with covers, categories, authors, and dates.',
+      cmsPath: 'Admin Console > Blog & Content > Articles',
+      example: '{{#each Articles}}\n  <div class="card"><img src="{{ CoverImageUrl }}" /><h3><a href="{{ Url }}">{{ Title }}</a></h3><p>{{ Summary }}</p></div>\n{{/each}}'
+    },
+    ArticleTitle: {
+      name: 'Article Title',
+      token: '{{ Article.Title }}',
+      description: 'Headline title of the single blog post on an article detail page.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Title',
+      example: '<h1>{{ Article.Title }}</h1>'
+    },
+    ArticleSummary: {
+      name: 'Article Summary',
+      token: '{{ Article.Summary }}',
+      description: 'Introductory summary or excerpt of the blog post.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Summary',
+      example: '<p class="lead">{{ Article.Summary }}</p>'
+    },
+    ArticleBody: {
+      name: 'Article Body (Rich HTML)',
+      token: '{{ Article.Body }}',
+      description: 'Full rich HTML article body content formatted via editor.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Content',
+      example: '<div class="article-content">{{ Article.Body }}</div>'
+    },
+    ArticleCover: {
+      name: 'Article Cover Image',
+      token: '{{ Article.CoverImageUrl }}',
+      description: 'Primary banner / hero cover image URL for the article.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Cover Image',
+      example: '<img src="{{ Article.CoverImageUrl }}" alt="{{ Article.Title }}" />'
+    },
+    ArticleDate: {
+      name: 'Article Publish Date',
+      token: '{{ Article.PublishedDate }}',
+      description: 'Formatted publication date string (e.g. Sep 14, 2026).',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Publish Date',
+      example: '<time>{{ Article.PublishedDate }}</time>'
+    },
+    ArticleAuthor: {
+      name: 'Article Author Name',
+      token: '{{ Article.AuthorName }}',
+      description: 'Author name associated with the article.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Author',
+      example: '<span>By {{ Article.AuthorName }}</span>'
+    },
+    ArticleCategory: {
+      name: 'Article Category',
+      token: '{{ Article.Category }}',
+      description: 'Primary category tag for the article.',
+      cmsPath: 'Admin Console > Blog & Content > Articles > Category',
+      example: '<span class="badge">{{ Article.Category }}</span>'
+    },
+    RecentArticles: {
+      name: 'Recent Articles Loop',
+      token: '{{#each RecentArticles}}',
+      description: 'Sidebar widget loop listing the most recent published blog posts.',
+      cmsPath: 'Admin Console > Blog & Content > Articles',
+      example: '{{#each RecentArticles}}\n  <li><a href="{{ Url }}">{{ Title }}</a></li>\n{{/each}}'
+    },
+    BlogCategories: {
+      name: 'Blog Categories Loop',
+      token: '{{#each BlogCategories}}',
+      description: 'Sidebar widget loop listing blog categories with article counts.',
+      cmsPath: 'Admin Console > Blog & Content > Categories',
+      example: '{{#each BlogCategories}}\n  <a href="/blog?category={{ Slug }}">{{ Name }} ({{ Count }})</a>\n{{/each}}'
+    }
+  };
+
   // Live Database Editor Tokens
   editorTokens: {
     publishedForms: any[];
     menuDropdowns: any[];
+    menuCtaButtons: any[];
+    topMenuItems: any[];
     footerGroups: any[];
     legalPages: any[];
     brand: any;
   } = {
     publishedForms: [],
     menuDropdowns: [],
+    menuCtaButtons: [],
+    topMenuItems: [],
     footerGroups: [],
     legalPages: [],
     brand: null
@@ -3875,6 +4784,213 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         { label: 'Copyright Notice', token: '{{ Copyright }}' },
         { label: 'Powered by Ozikol', token: '{{ PoweredBy }}' }
       ]
+    },
+    {
+      id: 'blog',
+      codePrefix: 'BLOG',
+      name: 'Blog / Articles Grid',
+      icon: 'newspaper',
+      tagline: 'Modern responsive article cards with cover photos, categories, author metadata, and read more links',
+      defaultName: 'Apex 3-Column Blog Card Grid',
+      html: `<section class="oz-blog-section {{ CustomClass }}">
+  <div class="oz-blog-container">
+    <div class="oz-blog-header">
+      <span class="oz-blog-badge">{{ MiniTitle }}</span>
+      <h2 class="oz-blog-title">{{ Title }}</h2>
+      <p class="oz-blog-desc">{{ Description }}</p>
+    </div>
+
+    <div class="oz-blog-grid">
+      {{#each Articles}}
+      <article class="oz-blog-card">
+        <div class="oz-blog-img-wrap">
+          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-blog-cover" />
+          <span class="oz-blog-cat-pill">{{ Category }}</span>
+        </div>
+        <div class="oz-blog-card-body">
+          <div class="oz-blog-meta">
+            <span class="oz-meta-date">{{ PublishedDate }}</span>
+            <span class="oz-meta-author">By {{ AuthorName }}</span>
+          </div>
+          <h3 class="oz-article-headline">
+            <a href="{{ Url }}">{{ Title }}</a>
+          </h3>
+          <p class="oz-article-excerpt">{{ Summary }}</p>
+          <a href="{{ Url }}" class="oz-read-more">Read Article &rarr;</a>
+        </div>
+      </article>
+      {{/each}}
+    </div>
+  </div>
+</section>`,
+      css: `.oz-blog-section { padding: 72px 24px; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.oz-blog-container { max-width: 1200px; margin: 0 auto; }
+.oz-blog-header { text-align: center; margin-bottom: 48px; }
+.oz-blog-badge { display: inline-block; background: #eef2ff; color: #0050e5; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 16px; margin-bottom: 12px; }
+.oz-blog-title { font-size: 34px; font-weight: 900; color: #0f172a; margin: 0 0 12px 0; letter-spacing: -0.02em; }
+.oz-blog-desc { font-size: 15px; color: #64748b; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+.oz-blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px; }
+.oz-blog-card { background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s ease; }
+.oz-blog-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0, 80, 229, 0.08); border-color: #cbd5e1; }
+.oz-blog-img-wrap { position: relative; height: 200px; overflow: hidden; background: #f1f5f9; }
+.oz-blog-cover { width: 100%; height: 100%; object-fit: cover; }
+.oz-blog-cat-pill { position: absolute; top: 12px; left: 12px; background: #0050e5; color: #ffffff; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 6px; }
+.oz-blog-card-body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
+.oz-blog-meta { display: flex; gap: 14px; font-size: 12px; color: #64748b; margin-bottom: 12px; }
+.oz-article-headline { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; line-height: 1.4; }
+.oz-article-headline a { color: #0f172a; text-decoration: none; }
+.oz-article-headline a:hover { color: #0050e5; }
+.oz-article-excerpt { font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 18px 0; flex: 1; }
+.oz-read-more { font-size: 13px; font-weight: 700; color: #0050e5; text-decoration: none; }
+@media (max-width: 768px) {
+  .oz-blog-section { padding: 48px 16px; }
+  .oz-blog-title { font-size: 26px; }
+  .oz-blog-grid { grid-template-columns: 1fr; }
+}`,
+      sampleContent: {
+        title: 'Insights, Guides & Industry Analysis',
+        miniTitle: 'CORPORATE JOURNAL',
+        description: 'Explore engineering perspectives, platform announcements, and best practices.',
+        buttonText: 'View All Articles',
+        buttonLink: '/blog',
+        items: []
+      }
+    },
+    {
+      id: 'blog_detail',
+      codePrefix: 'ARTICLE',
+      name: 'Blog Article Detail',
+      icon: 'article',
+      tagline: 'Single article detail with author meta, rich body, and 4-widget sticky sidebar',
+      defaultName: 'Apex Article Detail With Sticky Sidebar',
+      html: `<article class="oz-article-detail-section {{ CustomClass }}">
+  <div class="oz-article-detail-container">
+    <div class="oz-article-main-content">
+      <header class="oz-article-header">
+        <div class="oz-article-badge-row">
+          <span class="oz-article-cat-badge">{{ Article.Category }}</span>
+          <time class="oz-article-date">{{ Article.PublishedDate }}</time>
+        </div>
+        <h1 class="oz-article-title">{{ Article.Title }}</h1>
+        <div class="oz-author-card-top">
+          <div class="oz-author-avatar-box">
+            <span class="material-symbols-outlined">person</span>
+          </div>
+          <div>
+            <strong class="oz-author-name">{{ Article.AuthorName }}</strong>
+            <span class="oz-author-role">{{ Article.AuthorRole }}</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="oz-article-cover-frame">
+        <img src="{{ Article.CoverImageUrl }}" alt="{{ Article.Title }}" class="oz-article-cover-img" />
+      </div>
+
+      <div class="oz-article-body-rich">
+        {{ Article.Body }}
+      </div>
+
+      <footer class="oz-article-footer">
+        <div class="oz-article-tags-wrap">
+          <span class="oz-tags-label">Tags:</span>
+          {{#each ArticleTags}}
+          <span class="oz-tag-pill">#{{ Name }}</span>
+          {{/each}}
+        </div>
+      </footer>
+    </div>
+
+    <aside class="oz-article-sidebar">
+      <div class="oz-sidebar-widget search-widget">
+        <h4 class="oz-widget-title">Search Articles</h4>
+        <form action="/blog" method="get" class="oz-search-form">
+          <div class="input-group">
+            <input type="text" name="q" class="form-control oz-search-input" placeholder="Search keywords..." />
+            <button class="btn btn-primary oz-search-btn" type="submit">Search</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="oz-sidebar-widget recent-widget">
+        <h4 class="oz-widget-title">Recent Articles</h4>
+        <ul class="oz-recent-list">
+          {{#each RecentArticles}}
+          <li class="oz-recent-item">
+            <a href="{{ Url }}" class="oz-recent-link">{{ Title }}</a>
+            <span class="oz-recent-date">{{ PublishedDate }}</span>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+
+      <div class="oz-sidebar-widget categories-widget">
+        <h4 class="oz-widget-title">Categories</h4>
+        <div class="oz-categories-pills">
+          {{#each BlogCategories}}
+          <a href="/blog?category={{ Slug }}" class="oz-category-pill">
+            <span>{{ Name }}</span>
+            <span class="oz-cat-count">{{ Count }}</span>
+          </a>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="oz-sidebar-widget newsletter-widget">
+        <h4 class="oz-widget-title">Stay Updated</h4>
+        <p class="oz-widget-desc">Get the latest platform releases delivered directly to your inbox.</p>
+        {{ Form "Newsletter_Subscribe" }}
+      </div>
+    </aside>
+  </div>
+</article>`,
+      css: `.oz-article-detail-section { padding: 60px 24px 80px 24px; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.oz-article-detail-container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr; gap: 48px; align-items: start; }
+.oz-article-header { margin-bottom: 24px; }
+.oz-article-badge-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.oz-article-cat-badge { background: #eef2ff; color: #0050e5; font-size: 11.5px; font-weight: 800; padding: 4px 12px; border-radius: 6px; }
+.oz-article-date { font-size: 13px; color: #64748b; }
+.oz-article-title { font-size: 38px; font-weight: 900; line-height: 1.2; color: #0f172a; margin: 0 0 20px 0; }
+.oz-author-card-top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
+.oz-author-avatar-box { width: 40px; height: 40px; border-radius: 50%; background: #0050e5; color: #ffffff; display: flex; align-items: center; justify-content: center; }
+.oz-author-name { display: block; font-size: 14px; font-weight: 800; color: #0f172a; }
+.oz-author-role { font-size: 12px; color: #64748b; }
+.oz-article-cover-frame { margin: 24px 0 32px 0; border-radius: 14px; overflow: hidden; max-height: 440px; }
+.oz-article-cover-img { width: 100%; height: 100%; object-fit: cover; }
+.oz-article-body-rich { font-size: 16px; line-height: 1.8; color: #334155; }
+.oz-article-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+.oz-article-tags-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.oz-tags-label { font-size: 13px; font-weight: 700; color: #64748b; }
+.oz-tag-pill { font-size: 12px; font-weight: 700; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; }
+.oz-article-sidebar { display: flex; flex-direction: column; gap: 28px; position: sticky; top: 90px; }
+.oz-sidebar-widget { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 22px; }
+.oz-widget-title { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0 0 14px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+.oz-search-form .input-group { display: flex; }
+.oz-search-input { border-radius: 8px 0 0 8px !important; border: 1.5px solid #cbd5e1; border-right: none; font-size: 13px; }
+.oz-search-btn { border-radius: 0 8px 8px 0 !important; }
+.oz-recent-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.oz-recent-link { font-size: 13.5px; font-weight: 700; color: #0f172a; text-decoration: none; }
+.oz-recent-date { font-size: 11.5px; color: #94a3b8; display: block; }
+.oz-categories-pills { display: flex; flex-direction: column; gap: 8px; }
+.oz-category-pill { display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; color: #334155; text-decoration: none; }
+.oz-category-pill:hover { border-color: #0050e5; color: #0050e5; background: #eef2ff; }
+.oz-cat-count { font-size: 11px; font-weight: 800; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #64748b; }
+.oz-widget-desc { font-size: 12.5px; color: #64748b; margin: 0 0 14px 0; }
+@media (max-width: 900px) {
+  .oz-article-detail-container { grid-template-columns: 1fr; gap: 36px; }
+  .oz-article-sidebar { position: static; }
+}`,
+      sampleContent: {
+        article: {
+          title: 'Scaling Distributed Cloud Ingestion With Zero Latency Tolerances',
+          category: 'Platform Architecture',
+          publishedDate: 'September 14, 2026',
+          authorName: 'Dr. Evelyn Vance',
+          authorRole: 'Chief Systems Architect',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+          body: `<p>Modern distributed systems face unprecedented challenges when balancing high availability against strict sub-millisecond execution constraints. In this comprehensive architecture deep-dive, we examine our edge packet mesh and how decentralized consensus protocols prevent cascading failovers across multi-cloud footprints.</p><h2>Understanding Mesh Topology</h2><p>Rather than funneling client connections through a centralized proxy cluster, our edge nodes coordinate routing tables dynamically using cryptographic telemetry envelopes.</p>`
+        }
+      }
     }
   ];
 
@@ -4351,6 +5467,162 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   }
 
   /**
+   * Inserts loop across published WebPages flagged as top menu items.
+   */
+  insertMainMenuItemsLoopAtCursor(): void {
+    const loopBlock = `\n<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+  {{#each MainMenuItems}}
+  <li class="nav-item">
+    <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+  </li>
+  {{/each}}
+</ul>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts loop across published WebPages flagged as IsMenuCTA = true.
+   */
+  insertMenuCtaButtonsLoopAtCursor(): void {
+    const loopBlock = `\n<div class="d-flex align-items-center gap-2">
+  {{#each MenuCtaButtons}}
+  <a href="{{ Url }}" class="btn btn-sm btn-primary rounded-pill px-3">{{ Title }}</a>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts tagged pages loop by tag name.
+   */
+  insertTaggedPagesLoopAtCursor(tagName: string = 'QuickLinks'): void {
+    const loopBlock = `\n<ul class="oz-tagged-pages-list">
+  {{#each TaggedPages "${tagName}"}}
+  <li><a href="{{ Url }}">{{ Title }}</a></li>
+  {{/each}}
+</ul>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts articles card grid loop for blog templates.
+   */
+  insertArticlesLoopAtCursor(): void {
+    const loopBlock = `\n<div class="row g-4">
+  {{#each Articles}}
+  <div class="col-md-4">
+    <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+      <img src="{{ CoverImageUrl }}" class="card-img-top" alt="{{ Title }}" style="height: 200px; object-fit: cover;" />
+      <div class="card-body p-4 d-flex flex-column">
+        <span class="badge bg-primary-subtle text-primary mb-2 align-self-start">{{ Category }}</span>
+        <h5 class="card-title fw-bold"><a href="{{ Url }}" class="text-dark text-decoration-none">{{ Title }}</a></h5>
+        <p class="card-text text-muted small flex-grow-1">{{ Summary }}</p>
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top small text-muted">
+          <span>{{ PublishedDate }}</span>
+          <span>By {{ AuthorName }}</span>
+        </div>
+      </div>
+    </article>
+  </div>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts sidebar recent articles loop.
+   */
+  insertRecentArticlesLoopAtCursor(): void {
+    const loopBlock = `\n<ul class="list-unstyled d-flex flex-column gap-3">
+  {{#each RecentArticles}}
+  <li class="border-bottom pb-2">
+    <a href="{{ Url }}" class="fw-bold text-dark text-decoration-none d-block">{{ Title }}</a>
+    <small class="text-muted">{{ PublishedDate }}</small>
+  </li>
+  {{/each}}
+</ul>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts sidebar blog categories filter loop.
+   */
+  insertBlogCategoriesLoopAtCursor(): void {
+    const loopBlock = `\n<div class="d-flex flex-column gap-2">
+  {{#each BlogCategories}}
+  <a href="/blog?category={{ Slug }}" class="d-flex justify-content-between align-items-center p-2 rounded text-decoration-none bg-light text-dark">
+    <span>{{ Name }}</span>
+    <span class="badge bg-secondary rounded-pill">{{ Count }}</span>
+  </a>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Displays the contextual token documentation popover near the clicked/hovered trigger element.
+   */
+  showTokenDoc(tKey: string, event: MouseEvent): void {
+    this.cancelPopoverLeaveTimer();
+    const doc = this.tokenDocMap[tKey];
+    if (!doc) return;
+    this.activeTokenDoc = doc;
+
+    const target = event.currentTarget as HTMLElement;
+    if (target && target.getBoundingClientRect) {
+      const rect = target.getBoundingClientRect();
+      let top = rect.bottom + 8;
+      let left = rect.left;
+
+      const popoverWidth = 380;
+      if (left + popoverWidth > window.innerWidth - 20) {
+        left = window.innerWidth - popoverWidth - 20;
+      }
+      if (left < 10) left = 10;
+
+      if (top + 340 > window.innerHeight && rect.top > 350) {
+        top = rect.top - 330;
+      }
+
+      this.popoverTop = Math.max(10, top);
+      this.popoverLeft = Math.max(10, left);
+    }
+  }
+
+  /**
+   * Toggles the token documentation popover for mobile tap or persistent desktop pin.
+   */
+  toggleTokenDoc(tKey: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.activeTokenDoc?.token === this.tokenDocMap[tKey]?.token) {
+      this.closeTokenDoc();
+    } else {
+      this.showTokenDoc(tKey, event);
+    }
+  }
+
+  /**
+   * Closes the popover after a brief delay when mouse leaves the trigger.
+   */
+  hideTokenDocOnLeave(): void {
+    this.cancelPopoverLeaveTimer();
+    this.popoverLeaveTimer = setTimeout(() => {
+      this.closeTokenDoc();
+    }, 280);
+  }
+
+  cancelPopoverLeaveTimer(): void {
+    if (this.popoverLeaveTimer) {
+      clearTimeout(this.popoverLeaveTimer);
+      this.popoverLeaveTimer = null;
+    }
+  }
+
+  closeTokenDoc(): void {
+    this.activeTokenDoc = null;
+  }
+
+  /**
    * FAQ Mock Manager: Adds a new FAQ category block.
    */
   addSampleFaqCategory(): void {
@@ -4564,6 +5836,43 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     let output = rawHtml;
     const ctx = this.sampleContent;
 
+    // 0a. Top Menu Items Loop ({{#each MainMenuItems}}...{{/each}})
+    const mainMenuItemsRegex = /\{\{#each\s+MainMenuItems\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(mainMenuItemsRegex, (_match: string, innerTemplate: string) => {
+      const items = (this.editorTokens.topMenuItems && this.editorTokens.topMenuItems.length > 0)
+        ? this.editorTokens.topMenuItems
+        : [
+            { title: 'Home', url: '/' },
+            { title: 'About Us', url: '/about' },
+            { title: 'Blog', url: '/blog' },
+            { title: 'Contact', url: '/contact' }
+          ];
+      return items.map((item: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, item.url || item.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 0b. Menu CTA Buttons Loop ({{#each MenuCtaButtons}}...{{/each}})
+    const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(menuCtaRegex, (_match: string, innerTemplate: string) => {
+      const ctas = (this.editorTokens.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
+        ? this.editorTokens.menuCtaButtons
+        : [
+            { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
+            { title: 'Request a Service →', url: '/request-service', customClass: 'btn-primary' }
+          ];
+      return ctas.map((cta: any, idx: number) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
+        rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
+        return rendered;
+      }).join('\n');
+    });
+
     // 1. NavigationMenu / PageCategories Loop (Multi-level cascading dropdowns & Mega Menus)
     const navMenuRegex = /\{\{#each\s+(?:NavigationMenu|PageCategories)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(navMenuRegex, (_match: string, outerTemplate: string) => {
@@ -4741,6 +6050,31 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       }).join('\n');
     });
 
+    // 5b. TaggedPages Loop (e.g. {{#each TaggedPages "FooterCol1"}} or {{#each TaggedPages "Important"}})
+    const taggedPagesRegex = /\{\{#each\s+TaggedPages\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(taggedPagesRegex, (_match: string, tag: string, innerTemplate: string) => {
+      const normalized = (tag || '').toLowerCase().trim();
+      let pages: any[] = [];
+      const editorTokensAny = this.editorTokens as any;
+      if (editorTokensAny.pages && Array.isArray(editorTokensAny.pages)) {
+        pages = editorTokensAny.pages.filter((p: any) =>
+          p.tags && p.tags.toLowerCase().includes(normalized)
+        );
+      }
+      if (pages.length === 0) {
+        pages = [
+          { title: `${tag} Page 1`, url: '#' },
+          { title: `${tag} Page 2`, url: '#' }
+        ];
+      }
+      return pages.map((p: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
     // 6. FooterCategories Loop ({{#each FooterCategories}}...{{/each}})
     const footerCatsRegex = /\{\{#each\s+FooterCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(footerCatsRegex, (_match: string, innerTemplate: string) => {
@@ -4853,6 +6187,128 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong> (Rendered dynamically)
       </div>`;
     });
+
+    // 9b. Articles Loop ({{#each Articles}}...{{/each}})
+    const articlesRegex = /\{\{#each\s+Articles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(articlesRegex, (_match: string, innerTemplate: string) => {
+      const articles = [
+        {
+          title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+          summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+          category: 'Engineering & Architecture',
+          authorName: 'Alex Rivera',
+          authorRole: 'Chief Architect',
+          publishedDate: 'Sep 12, 2026',
+          url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems'
+        },
+        {
+          title: 'The Shift to Zero-Downtime Migration Pipelines',
+          summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+          category: 'DevOps & Reliability',
+          authorName: 'Sarah Chen',
+          authorRole: 'Head of Infrastructure',
+          publishedDate: 'Sep 08, 2026',
+          url: '/blog/zero-downtime-migration-pipelines'
+        },
+        {
+          title: 'Next-Gen Identity & Granular Role Governance',
+          summary: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
+          category: 'Cybersecurity',
+          authorName: 'Marcus Vance',
+          authorRole: 'Security Lead',
+          publishedDate: 'Aug 29, 2026',
+          url: '/blog/next-gen-identity-governance'
+        }
+      ];
+
+      return articles.map((art: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title);
+        rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, art.summary);
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, art.coverImageUrl);
+        rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category);
+        rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName);
+        rendered = rendered.replace(/\{\{\s*AuthorRole\s*\}\}/gi, art.authorRole);
+        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, art.publishedDate);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, art.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 9c. RecentArticles Loop ({{#each RecentArticles}}...{{/each}})
+    const recentArticlesRegex = /\{\{#each\s+RecentArticles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(recentArticlesRegex, (_match: string, innerTemplate: string) => {
+      const recents = [
+        { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', publishedDate: 'Sep 12, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems' },
+        { title: 'The Shift to Zero-Downtime Migration Pipelines', publishedDate: 'Sep 08, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=300&auto=format&fit=crop&q=80', url: '/blog/zero-downtime-migration-pipelines' },
+        { title: 'Next-Gen Identity & Granular Role Governance', publishedDate: 'Aug 29, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=300&auto=format&fit=crop&q=80', url: '/blog/next-gen-identity-governance' }
+      ];
+      return recents.map((r: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title);
+        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, r.publishedDate);
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, r.coverImageUrl);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, r.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 9d. BlogCategories Loop ({{#each BlogCategories}}...{{/each}})
+    const blogCatsRegex = /\{\{#each\s+BlogCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(blogCatsRegex, (_match: string, innerTemplate: string) => {
+      const cats = [
+        { name: 'Engineering & Architecture', postCount: 14, url: '/blog?category=engineering' },
+        { name: 'DevOps & Reliability', postCount: 9, url: '/blog?category=devops' },
+        { name: 'Cybersecurity', postCount: 7, url: '/blog?category=cybersecurity' },
+        { name: 'Product Updates', postCount: 5, url: '/blog?category=product' }
+      ];
+      return cats.map((c: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:Name|Title|CategoryTitle)\s*\}\}/gi, c.name);
+        rendered = rendered.replace(/\{\{\s*PostCount\s*\}\}/gi, String(c.postCount));
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, c.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 9e. ArticleTags Loop ({{#each ArticleTags}}...{{/each}})
+    const tagsRegex = /\{\{#each\s+ArticleTags\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(tagsRegex, (_match: string, innerTemplate: string) => {
+      const tags = [
+        { name: 'Multi-Tenancy', url: '/blog?tag=multi-tenancy' },
+        { name: 'Cloud Architecture', url: '/blog?tag=cloud-architecture' },
+        { name: 'Database Scalability', url: '/blog?tag=database-scalability' },
+        { name: 'DevOps', url: '/blog?tag=devops' }
+      ];
+      return tags.map((t: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:Name|Tag|Title)\s*\}\}/gi, t.name);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, t.url);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 9f. Article Detail Scalars ({{ Article.Title }}, {{ Article.Body }}, etc.)
+    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, 'Architecting Resilient Multi-Tenant Cloud Ecosystems');
+    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, 'Engineering & Architecture');
+    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, 'September 12, 2026');
+    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, 'Alex Rivera');
+    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, 'Chief Architect & Head of Platform Engineering');
+    output = output.replace(/\{\{\s*Article\.CoverImageUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80');
+    output = output.replace(/\{\{\s*Article\.Summary\s*\}\}/gi, 'A comprehensive guide on building scalable, isolated, multi-tenant cloud ecosystems with robust zero-trust policies.');
+    output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, `
+      <p class="lead">Modern enterprise cloud systems require strict multi-tenant isolation, ultra-fast database scaling, and zero-compromise security models. In this architectural breakdown, we unpack the fundamental patterns that power resilient multi-tenant clusters.</p>
+      <h3>1. Schema Partitioning vs Catalog Sharding</h3>
+      <p>When engineering for thousands of concurrent enterprise tenants, tenant routing at the application layer becomes a primary bottleneck if not properly isolated. Our hybrid persistence layer splits the master tenant catalog from individual tenant SQL databases, ensuring that noisy neighbors never impact cross-tenant performance.</p>
+      <blockquote class="p-3 border-start border-4 border-primary bg-light rounded my-3">
+        "True multitenancy is not just about sharing resources; it is about guaranteeing tenant autonomy, compliance boundaries, and rapid recovery under stress."
+      </blockquote>
+      <h3>2. Real-Time Event Synchronization</h3>
+      <p>Decentralized messaging pipelines allow tenant settings, telemetry, and security events to propagate across microservices in sub-millisecond latencies, preserving full transaction integrity.</p>
+    `);
 
     // 10. Scalar Field Placeholders (PageSection, Media, Styles, Legal URLs & Identity)
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');

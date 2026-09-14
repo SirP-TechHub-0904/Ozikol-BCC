@@ -92,6 +92,13 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsLegal { get; set; } = false;
 
         /// <summary>
+        /// Flags this page as an official Call-to-Action button in website navigation menus (navbars).
+        /// Multiple pages can have this enabled. When true, surfaced to {{#each MenuCtaButtons}} in menu templates.
+        /// </summary>
+        [Display(Name = "Is Menu CTA Button")]
+        public bool IsMenuCTA { get; set; } = false;
+
+        /// <summary>
         /// Toggle to use a custom URL route instead of the default ID-based route.
         /// </summary>
         [Display(Name = "Enable Direct Url")]
