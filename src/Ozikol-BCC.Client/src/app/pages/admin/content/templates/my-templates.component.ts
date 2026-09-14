@@ -835,7 +835,7 @@ export interface CodeInjectionTag {
             </div>
           </div>
 
-          <div class="content-editor-body" [ngSwitch]="activePreviewItem?.category">
+          <div class="content-editor-body" [ngSwitch]="activePreviewItem.category">
             <!-- MENU CATEGORY -->
             <div class="custom-tpl-form-grid" *ngSwitchCase="'menu'">
               <div class="form-group">
@@ -928,6 +928,65 @@ export interface CodeInjectionTag {
                     <button type="button" class="btn-del-subitem" (click)="removeMenuCtaButton(cIdx)" title="Remove CTA">
                       <span class="material-symbols-outlined">delete</span>
                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- HERO CATEGORY -->
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'hero'">
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'EYEBROW / BADGE TEXT ({{ MiniTitle }} / {{ BadgeText }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.badgeText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. ENTERPRISE ECOSYSTEM v2.5" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'HERO MEDIA IMAGE URL ({{ ImageUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
+              </div>
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'MAIN HEADLINE ({{ Title }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="Headline..." />
+              </div>
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'VALUE PROPOSITION / NARRATIVE ({{ Description }})'"></label>
+                <textarea [(ngModel)]="previewHeroContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Compelling hero narrative..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Explore Solutions" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'PRIMARY BUTTON LINK ({{ ButtonLink }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/services or /pricing" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'SECONDARY BUTTON TEXT ({{ SecondaryButtonText }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.secondaryButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Request a Service" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'SECONDARY BUTTON LINK ({{ SecondaryButtonLink }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.secondaryButtonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/request-service or /contact" />
+              </div>
+
+              <!-- 3-Column Proof Metrics Bar Inputs -->
+              <div class="form-group full-width" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;">
+                <label class="form-lbl mb-2" style="color: #0f172a; font-weight: 700;" [innerText]="'PROOF METRICS & STATS ({{ MetricNumber1 }}, {{ MetricLabel1 }}, etc.)'">
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span class="subitem-badge mb-1">Metric #1</span>
+                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber1" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="99.9%" />
+                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel1" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Uptime SLA" />
+                  </div>
+                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span class="subitem-badge mb-1">Metric #2</span>
+                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber2" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="2,500+" />
+                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel2" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Active Deployments" />
+                  </div>
+                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <span class="subitem-badge mb-1">Metric #3</span>
+                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber3" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="24/7" />
+                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel3" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Dedicated Support" />
                   </div>
                 </div>
               </div>
@@ -1147,7 +1206,7 @@ export interface CodeInjectionTag {
                 <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
                 <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
               </button>
-              <a [routerLink]="['/content/console/templates/create']" [queryParams]="{ editCode: activePreviewItem?.variantCode, category: activePreviewItem?.category }" class="btn-open-studio" title="Open full studio editor">
+              <a [routerLink]="['/content/console/templates/create']" [queryParams]="{ editCode: activePreviewItem.variantCode, category: activePreviewItem.category }" class="btn-open-studio" title="Open full studio editor">
                 <span class="material-symbols-outlined">open_in_new</span>
                 <span>Open Full Studio</span>
               </a>
@@ -1205,8 +1264,62 @@ export interface CodeInjectionTag {
               </span>
             </ng-container>
 
+            <!-- Hero Category Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category === 'hero'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonText }}')" [innerText]="'+ {{ SecondaryButtonText }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonLink }}')" [innerText]="'+ {{ SecondaryButtonLink }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ImageUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertHeroProofMetricsSnippetAtModalCursor()" title="Inserts 3-column stats and reliability metrics bar">
+                  <span class="material-symbols-outlined chip-icon">analytics</span>
+                  <span>+ Proof Metrics Bar</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('HeroProofMetrics', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('HeroProofMetrics', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertHeroDualCtaSnippetAtModalCursor()" title="Inserts dual action button pair">
+                  <span class="material-symbols-outlined chip-icon">smart_button</span>
+                  <span>+ Dual Action Buttons</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+
             <!-- Other Categories Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category !== 'menu'">
+            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero'">
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>
@@ -4516,6 +4629,45 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ]
   };
 
+  /** Dedicated Hero Sample Content Replacements (strictly isolated from menu & footer) */
+  previewHeroContent: {
+    badgeText: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    buttonText: string;
+    buttonLink: string;
+    secondaryButtonText: string;
+    secondaryButtonLink: string;
+    imageUrl: string;
+    backgroundImageUrl: string;
+    videoUrl: string;
+    metricNumber1: string;
+    metricLabel1: string;
+    metricNumber2: string;
+    metricLabel2: string;
+    metricNumber3: string;
+    metricLabel3: string;
+  } = {
+    badgeText: 'ENTERPRISE ECOSYSTEM v2.5',
+    title: 'Next-Generation Infrastructure for Forward-Thinking Organizations',
+    subtitle: 'Unified Operational Command',
+    description: 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
+    buttonText: 'Explore Solutions',
+    buttonLink: '/services',
+    secondaryButtonText: 'Request a Service',
+    secondaryButtonLink: '/request-service',
+    imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
+    backgroundImageUrl: '',
+    videoUrl: '',
+    metricNumber1: '99.9%',
+    metricLabel1: 'Uptime SLA',
+    metricNumber2: '2,500+',
+    metricLabel2: 'Active Deployments',
+    metricNumber3: '24/7',
+    metricLabel3: 'Dedicated Support'
+  };
+
   // Interactive Modal Code Editor Reference & Saving State
   @ViewChild('modalHtmlEditor') modalHtmlEditorRef?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('monacoHtmlContainer') monacoHtmlContainer?: ElementRef<HTMLDivElement>;
@@ -4630,6 +4782,34 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Route, hash, or external URL destination.',
       cmsPath: 'Admin Console > Web Pages > Page Sections > Button Link',
       example: '<a href="{{ ButtonLink }}">{{ ButtonText }}</a>'
+    },
+    SecondaryButtonText: {
+      name: 'Secondary Action Text',
+      token: '{{ SecondaryButtonText }}',
+      description: 'Text label for the secondary call-to-action button (e.g. "Request a Service", "Watch Demo").',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Text',
+      example: '<a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>'
+    },
+    SecondaryButtonLink: {
+      name: 'Secondary Action Destination',
+      token: '{{ SecondaryButtonLink }}',
+      description: 'Target page route for secondary action (e.g. /request-service, /contact, /about).',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Link',
+      example: '<a href="{{ SecondaryButtonLink }}">{{ SecondaryButtonText }}</a>'
+    },
+    BadgeText: {
+      name: 'Hero Eyebrow / Pill Badge',
+      token: '{{ BadgeText }}',
+      description: 'Floating badge or eyebrow category pill displayed prominently above the hero headline.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Eyebrow Badge',
+      example: '<span class="oz-hero-badge">{{ BadgeText }}</span>'
+    },
+    HeroProofMetrics: {
+      name: 'Proof Metrics Bar',
+      token: '{{ MetricNumber1 }}, {{ MetricLabel1 }}',
+      description: 'Key quantifiable metrics, reliability SLA, and active deployment stats.',
+      cmsPath: 'Admin Console > Web Pages > Page Sections > Custom Content',
+      example: '<strong>{{ MetricNumber1 }}</strong> <span>{{ MetricLabel1 }}</span>'
     }
   };
 
@@ -5574,6 +5754,34 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } catch (e) {}
     }
 
+    if (item.category === 'hero') {
+      let defaultHeroData: any = null;
+      if (item.defaultContentJson) {
+        try {
+          defaultHeroData = JSON.parse(item.defaultContentJson);
+        } catch (e) {}
+      }
+      this.previewHeroContent = {
+        badgeText: defaultHeroData?.badgeText || defaultHeroData?.miniTitle || item.previewSubtitle || 'ENTERPRISE ECOSYSTEM v2.5',
+        title: defaultHeroData?.title || item.previewTitle || item.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
+        subtitle: defaultHeroData?.subtitle || 'Unified Operational Command',
+        description: defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry.',
+        buttonText: defaultHeroData?.buttonText || 'Explore Solutions',
+        buttonLink: defaultHeroData?.buttonLink || '/services',
+        secondaryButtonText: defaultHeroData?.secondaryButtonText || 'Request a Service',
+        secondaryButtonLink: defaultHeroData?.secondaryButtonLink || '/request-service',
+        imageUrl: defaultHeroData?.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
+        backgroundImageUrl: defaultHeroData?.backgroundImageUrl || '',
+        videoUrl: defaultHeroData?.videoUrl || '',
+        metricNumber1: defaultHeroData?.metricNumber1 || '99.9%',
+        metricLabel1: defaultHeroData?.metricLabel1 || 'Uptime SLA',
+        metricNumber2: defaultHeroData?.metricNumber2 || '2,500+',
+        metricLabel2: defaultHeroData?.metricLabel2 || 'Active Deployments',
+        metricNumber3: defaultHeroData?.metricNumber3 || '24/7',
+        metricLabel3: defaultHeroData?.metricLabel3 || 'Dedicated Support'
+      };
+    }
+
     if (item.category === 'footer') {
       let defaultFooterData: any = null;
       if (item.defaultContentJson) {
@@ -5701,6 +5909,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         ? { ...this.previewContent, ...this.previewFooterContent }
         : (this.activePreviewItem.category === 'menu')
         ? { ...this.previewContent, ...this.previewMenuContent }
+        : (this.activePreviewItem.category === 'hero')
+        ? { ...this.previewContent, ...this.previewHeroContent }
         : (this.activePreviewItem.category === 'blog' || this.activePreviewItem.category === 'blog_detail')
         ? { ...this.previewContent, ...this.previewBlogContent }
         : this.previewContent;
@@ -6483,6 +6693,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Inserts a standardized 3-column proof metrics and reliability statistics snippet at the active editor cursor.
+   */
+  insertHeroProofMetricsSnippetAtModalCursor(): void {
+    const metricsSnippet = `<div class="oz-hero-metrics-bar d-flex gap-4 pt-3 mt-2 border-top border-secondary border-opacity-25">
+  <div class="oz-metric-col">
+    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber1 }}</div>
+    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel1 }}</div>
+  </div>
+  <div class="oz-metric-col">
+    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber2 }}</div>
+    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel2 }}</div>
+  </div>
+  <div class="oz-metric-col">
+    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber3 }}</div>
+    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel3 }}</div>
+  </div>
+</div>`;
+    this.insertTokenAtModalCursor(metricsSnippet);
+  }
+
+  /**
+   * Inserts a standardized dual call-to-action button pair (primary + secondary) at the active editor cursor.
+   */
+  insertHeroDualCtaSnippetAtModalCursor(): void {
+    const ctaSnippet = `<div class="oz-hero-actions d-flex gap-3 flex-wrap align-items-center">
+  <a href="{{ ButtonLink }}" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">{{ ButtonText }}</a>
+  <a href="{{ SecondaryButtonLink }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold">{{ SecondaryButtonText }}</a>
+</div>`;
+    this.insertTokenAtModalCursor(ctaSnippet);
+  }
+
+  /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
    * @param template The raw HTML template string.
@@ -6653,6 +6895,31 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   resetPreviewContent(): void {
+    if (this.activePreviewItem?.category === 'hero') {
+      this.previewHeroContent = {
+        badgeText: 'ENTERPRISE ECOSYSTEM v2.5',
+        title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
+        subtitle: 'Unified Operational Command',
+        description: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
+        buttonText: 'Explore Solutions',
+        buttonLink: '/services',
+        secondaryButtonText: 'Request a Service',
+        secondaryButtonLink: '/request-service',
+        imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
+        backgroundImageUrl: '',
+        videoUrl: '',
+        metricNumber1: '99.9%',
+        metricLabel1: 'Uptime SLA',
+        metricNumber2: '2,500+',
+        metricLabel2: 'Active Deployments',
+        metricNumber3: '24/7',
+        metricLabel3: 'Dedicated Support'
+      };
+      this.onPreviewContentChange();
+      this.toast.info('Hero sample content restored to enterprise defaults.');
+      return;
+    }
+
     if (this.activePreviewItem?.defaultContentJson) {
       try {
         const parsed = JSON.parse(this.activePreviewItem.defaultContentJson);
@@ -7054,6 +7321,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
 
+    // Hero Actions, Badges & Proof Metrics
+    output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.badgeText || ctx.miniTitle || 'ENTERPRISE ECOSYSTEM');
+    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || 'Request a Service');
+    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || '/request-service');
+    output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.description || '');
+    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.backgroundImageUrl || '');
+    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*MetricNumber1\s*\}\}/gi, ctx.metricNumber1 || '99.9%');
+    output = output.replace(/\{\{\s*MetricLabel1\s*\}\}/gi, ctx.metricLabel1 || 'Uptime SLA');
+    output = output.replace(/\{\{\s*MetricNumber2\s*\}\}/gi, ctx.metricNumber2 || '2,500+');
+    output = output.replace(/\{\{\s*MetricLabel2\s*\}\}/gi, ctx.metricLabel2 || 'Active Deployments');
+    output = output.replace(/\{\{\s*MetricNumber3\s*\}\}/gi, ctx.metricNumber3 || '24/7');
+    output = output.replace(/\{\{\s*MetricLabel3\s*\}\}/gi, ctx.metricLabel3 || 'Dedicated Support');
+
     // Legal URLs
     output = output.replace(/\{\{\s*PrivacyUrl\s*\}\}/gi, '/privacy-policy');
     output = output.replace(/\{\{\s*TermsUrl\s*\}\}/gi, '/terms-and-conditions');
@@ -7330,6 +7611,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         } else {
           ctx = { ...ctx, ...this.previewMenuContent };
         }
+      } else if (b.category === 'hero') {
+        ctx = {
+          ...ctx,
+          ...this.previewHeroContent,
+          title: contextOverride?.title || this.previewHeroContent.title || b.previewTitle || b.name,
+          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.badgeText || b.previewSubtitle?.toUpperCase() || 'ENTERPRISE ECOSYSTEM',
+          badgeText: this.previewHeroContent.badgeText,
+          description: contextOverride?.description || this.previewHeroContent.description || b.previewBody || b.description,
+          buttonText: this.previewHeroContent.buttonText,
+          buttonLink: this.previewHeroContent.buttonLink,
+          secondaryButtonText: this.previewHeroContent.secondaryButtonText,
+          secondaryButtonLink: this.previewHeroContent.secondaryButtonLink,
+          imageUrl: this.previewHeroContent.imageUrl,
+          metricNumber1: this.previewHeroContent.metricNumber1,
+          metricLabel1: this.previewHeroContent.metricLabel1,
+          metricNumber2: this.previewHeroContent.metricNumber2,
+          metricLabel2: this.previewHeroContent.metricLabel2,
+          metricNumber3: this.previewHeroContent.metricNumber3,
+          metricLabel3: this.previewHeroContent.metricLabel3
+        };
       } else if (b.category === 'footer') {
         ctx = {
           ...ctx,
