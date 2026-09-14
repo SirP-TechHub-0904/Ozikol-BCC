@@ -49,6 +49,9 @@ import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.compo
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
 import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
+import { FormsListComponent } from './pages/admin/content/forms/forms-list.component';
+import { FormBuilderComponent } from './pages/admin/content/forms/form-builder.component';
+import { FormSubmissionsComponent } from './pages/admin/content/forms/form-submissions.component';
 import { WebPagesComponent } from './pages/admin/content/web-pages.component';
 import { WebPageDetailsComponent } from './pages/admin/content/web-page-details.component';
 import { WebPageEditComponent } from './pages/admin/content/web-page-edit.component';
@@ -189,7 +192,12 @@ export const routes: Routes = [
       { path: 'identity/console/policies', component: IdentityPoliciesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },
 
-      // 5. CMS Studio Suite, My Templates, & UI Marketplace (Console Only)
+      // 5. CMS Studio Suite, Manage Forms, My Templates, & UI Marketplace (Console Only)
+      { path: 'content/console/forms', component: FormsListComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/forms/create', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/forms/edit/:id', component: FormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/forms/:formKey/submissions', component: FormSubmissionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
       { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates', component: MyTemplatesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/templates', redirectTo: 'content/console/templates', pathMatch: 'full' },

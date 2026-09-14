@@ -650,8 +650,167 @@ public class TenantOnboardingService : ITenantOnboardingService
             // 8. Seed Complete Turnkey Theme Suite (All 9 Categories, 6 Body Sections, Font Awesome Icons, Bootstrap 5)
             await SeedDefaultInstalledTemplatesAsync(dbContext, request.OrganizationName, cancellationToken);
 
+            // 9. Seed Standard CMS Forms (Contact Us, Newsletter, Service Request & Intake)
+            await SeedDefaultPageFormsAsync(dbContext, cancellationToken);
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Seeds foundational CMS PageForms into the tenant database, including Contact Us,
+    /// Newsletter Subscription, and the interactive Service Request &amp; Project Intake form.
+    /// </summary>
+    /// <param name="dbContext">The tenant's dedicated DashboardDbContext instance.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>A Task representing the asynchronous operation.</returns>
+    private static async Task SeedDefaultPageFormsAsync(DashboardDbContext dbContext, CancellationToken cancellationToken)
+    {
+        if (await dbContext.PageForms.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var contactForm = new PageForm
+        {
+            Id = Guid.NewGuid(),
+            Title = "Contact Us",
+            FormKey = "contact-us",
+            Description = "Send our team a direct message and we will respond promptly.",
+            SubmitButtonText = "Send Message",
+            SuccessMessage = "Thank you! Your message has been received. Our team will get back to you shortly.",
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+            Fields = new List<PageFormField>
+            {
+                new() { Id = Guid.NewGuid(), FieldKey = "full_name", Label = "Full Name", Placeholder = "Your Full Name *", FieldType = "text", IsRequired = true, SortOrder = 1, GridWidth = "col-md-6" },
+                new() { Id = Guid.NewGuid(), FieldKey = "email", Label = "Email Address", Placeholder = "name@company.com *", FieldType = "email", IsRequired = true, SortOrder = 2, GridWidth = "col-md-6" },
+                new() { Id = Guid.NewGuid(), FieldKey = "phone", Label = "Phone Number", Placeholder = "+1 (555) 000-0000", FieldType = "phone", IsRequired = false, SortOrder = 3, GridWidth = "col-md-6" },
+                new() { Id = Guid.NewGuid(), FieldKey = "subject", Label = "Subject", Placeholder = "How can we help?", FieldType = "text", IsRequired = false, SortOrder = 4, GridWidth = "col-md-6" },
+                new() { Id = Guid.NewGuid(), FieldKey = "message", Label = "Your Message", Placeholder = "Please describe your inquiry or requirements in detail...", FieldType = "textarea", IsRequired = true, SortOrder = 5, GridWidth = "col-md-12" }
+            }
+        };
+
+        var newsletterForm = new PageForm
+        {
+            Id = Guid.NewGuid(),
+            Title = "Newsletter Subscription",
+            FormKey = "newsletter",
+            Description = "Subscribe to our periodic industry insights, corporate bulletins, and platform updates.",
+            SubmitButtonText = "Subscribe",
+            SuccessMessage = "Thank you for subscribing! You have been added to our priority announcement list.",
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+            Fields = new List<PageFormField>
+            {
+                new() { Id = Guid.NewGuid(), FieldKey = "email", Label = "Email Address", Placeholder = "Enter your official email address...", FieldType = "email", IsRequired = true, SortOrder = 1, GridWidth = "col-md-12" }
+            }
+        };
+
+        var serviceRequestForm = new PageForm
+        {
+            Id = Guid.NewGuid(),
+            Title = "Service Request & Project Intake",
+            FormKey = "service-request",
+            Description = "Please answer the questions below so we can pair you with the right specialist.",
+            SubmitButtonText = "Submit Service Request",
+            SuccessMessage = "Thank you! Your service request has been received. A dedicated specialist will contact you within 1 business day.",
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+            Fields = new List<PageFormField>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "service_required",
+                    Label = "1. What service or solution do you require?",
+                    FieldType = "pill_select",
+                    OptionsJson = "[\"Strategic Consulting & Advisory\", \"Digital Systems Modernization\", \"Directory & Portal Governance\", \"Custom Enterprise Integration\"]",
+                    IsRequired = true,
+                    SortOrder = 1,
+                    GridWidth = "col-md-12"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "timeline",
+                    Label = "2. Estimated Timeline",
+                    FieldType = "dropdown",
+                    OptionsJson = "[\"Immediate (Within 30 Days)\", \"1–3 Months\", \"Next Fiscal Quarter\", \"Exploratory / Feasibility Only\"]",
+                    IsRequired = true,
+                    SortOrder = 2,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "organization_scale",
+                    Label = "3. Organization Scale",
+                    FieldType = "dropdown",
+                    OptionsJson = "[\"1–50 Members / Staff\", \"50–500 Enterprise Members\", \"500+ Large Institutional Body\"]",
+                    IsRequired = true,
+                    SortOrder = 3,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "full_name",
+                    Label = "Full Name",
+                    Placeholder = "Your Full Name *",
+                    FieldType = "text",
+                    IsRequired = true,
+                    SortOrder = 4,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "professional_title",
+                    Label = "Professional Title",
+                    Placeholder = "Professional Title *",
+                    FieldType = "text",
+                    IsRequired = false,
+                    SortOrder = 5,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "organization_name",
+                    Label = "Organization / Institution Name",
+                    Placeholder = "Organization / Institution Name *",
+                    FieldType = "text",
+                    IsRequired = false,
+                    SortOrder = 6,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "email",
+                    Label = "Official Business Email",
+                    Placeholder = "Official Business Email *",
+                    FieldType = "email",
+                    IsRequired = true,
+                    SortOrder = 7,
+                    GridWidth = "col-md-6"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "project_brief",
+                    Label = "5. Project Brief & Key Requirements",
+                    Placeholder = "Describe your primary objectives, deliverables, existing pain points, or questions...",
+                    FieldType = "textarea",
+                    IsRequired = false,
+                    SortOrder = 8,
+                    GridWidth = "col-md-12"
+                }
+            }
+        };
+
+        dbContext.PageForms.AddRange(contactForm, newsletterForm, serviceRequestForm);
     }
 
     /// <summary>

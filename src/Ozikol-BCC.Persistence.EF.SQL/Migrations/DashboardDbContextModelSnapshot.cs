@@ -5101,6 +5101,154 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("PageCategories");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FormKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NotificationEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("SubmitButtonText")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SuccessMessage")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormKey")
+                        .IsUnique();
+
+                    b.ToTable("PageForms");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageFormField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GridWidth")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("HelpText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("PageFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Placeholder")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageFormId");
+
+                    b.ToTable("PageFormFields");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageFormSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdminNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DataJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("PageFormId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourcePageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PageFormId");
+
+                    b.ToTable("PageFormSubmissions");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7063,6 +7211,28 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageFormField", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.PageForm", "PageForm")
+                        .WithMany("Fields")
+                        .HasForeignKey("PageFormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PageForm");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageFormSubmission", b =>
+                {
+                    b.HasOne("Ozikol_BCC.Domain.Models.PageForm", "PageForm")
+                        .WithMany("Submissions")
+                        .HasForeignKey("PageFormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PageForm");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>
                 {
                     b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
@@ -7342,6 +7512,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("WebPages");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageForm", b =>
+                {
+                    b.Navigation("Fields");
+
+                    b.Navigation("Submissions");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>

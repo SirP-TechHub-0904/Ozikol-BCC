@@ -178,7 +178,43 @@ interface PinnedItem {
                   </button>
                 </div>
               </li>
+
+              <!-- Forms & Leads Inquiries Dropdown Index -->
+              <li class="sub-nav-divider">
+                <span class="sub-divider-text">Form Inquiries & Leads</span>
+              </li>
+              <li *ngFor="let formItem of sidebarForms">
+                <div class="sub-nav-wrapper">
+                  <a [routerLink]="['/content/console/forms', formItem.formKey, 'submissions']"
+                     [class.active]="currentRoute.includes('/content/console/forms/' + formItem.formKey + '/submissions')"
+                     class="sub-nav-item">
+                    <span class="sub-nav-content">
+                      <span class="material-symbols-outlined sub-icon">inbox</span>
+                      {{ formItem.title }}
+                      <span *ngIf="formItem.newSubmissions > 0" class="badge-sub-new">+{{ formItem.newSubmissions }}</span>
+                    </span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms/' + formItem.formKey + '/submissions')"
+                          (click)="togglePin(formItem.title + ' Leads', '/content/console/forms/' + formItem.formKey + '/submissions', 'inbox')"
+                          [title]="isPinned('/content/console/forms/' + formItem.formKey + '/submissions') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/content/console/forms/' + formItem.formKey + '/submissions') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
             </ul>
+          </div>
+
+          <!-- Manage Forms Standalone Menu Item (Directly Before My Templates) -->
+          <div class="nav-item">
+            <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">dynamic_form</span>
+                <span>Manage Forms</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Manage Forms', '/content/console/forms', 'dynamic_form'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
           </div>
 
           <!-- My Installed Templates Standalone Menu Item -->
@@ -1340,6 +1376,10 @@ interface PinnedItem {
     .modal-body h4 { margin: 0 0 10px; color: var(--md-sys-color-on-surface); font-size: 15px; font-weight: 700; }
     .modal-body ul { padding-left: 20px; margin: 12px 0 0; }
     .modal-body li { margin-bottom: 8px; }
+
+    .sub-nav-divider { padding: 8px 16px 4px; list-style: none; }
+    .sub-divider-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
+    .badge-sub-new { background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
   `]
 })
 export class AdminLayoutComponent implements OnInit {
@@ -1386,6 +1426,12 @@ export class AdminLayoutComponent implements OnInit {
   pinnedItems: PinnedItem[] = [];
   notificationFeed: any[] = [];
   unreadNotifCount = 0;
+
+  sidebarForms: any[] = [
+    { title: 'Contact Us', formKey: 'contact-us', newSubmissions: 0 },
+    { title: 'Service Requests', formKey: 'service-request', newSubmissions: 0 },
+    { title: 'Newsletter', formKey: 'newsletter', newSubmissions: 0 }
+  ];
 
   openMenus: { [key: string]: boolean } = {};
   activeDropdown: string | null = null;
@@ -1435,10 +1481,32 @@ export class AdminLayoutComponent implements OnInit {
 
     this.loadTenantInfo();
     this.loadNotificationFeed();
+    this.loadSidebarForms();
 
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
       this.loadTenantInfo();
+    });
+
+    // Listen for dynamic forms changes from Manage Forms suite
+    window.addEventListener('forms_updated', () => {
+      this.loadSidebarForms();
+    });
+  }
+
+  loadSidebarForms(): void {
+    this.api.get<any>('PageFormsApi').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && Array.isArray(res.data) && res.data.length > 0) {
+          this.sidebarForms = res.data.map((f: any) => ({
+            id: f.id,
+            title: f.title,
+            formKey: f.formKey,
+            newSubmissions: f.newSubmissions || 0
+          }));
+        }
+      },
+      error: () => {}
     });
   }
 
@@ -1511,7 +1579,10 @@ export class AdminLayoutComponent implements OnInit {
     if (this.currentRoute.startsWith('/content/console/marketplace') ||
         this.currentRoute.startsWith('/admin/marketplace') ||
         this.currentRoute.startsWith('/content/console/templates') ||
-        this.currentRoute.startsWith('/admin/templates')) {
+        this.currentRoute.startsWith('/admin/templates') ||
+        this.currentRoute === '/content/console/forms' ||
+        this.currentRoute === '/content/console/forms/create' ||
+        this.currentRoute.startsWith('/content/console/forms/edit/')) {
       return false;
     }
     return this.currentRoute.startsWith('/content/console') ||
@@ -1727,6 +1798,8 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/notifications')) { tabTitle = 'Notifications'; tabIcon = 'notifications'; }
     else if (url.includes('/dashboard/workspace')) { tabTitle = 'Workspace Home'; tabIcon = 'space_dashboard'; }
     else if (url.includes('/dashboard/console') || url.includes('/admin/dashboard')) { tabTitle = 'Dashboard'; tabIcon = 'dashboard'; }
+    else if (url.includes('/content/console/forms') && url.includes('/submissions')) { tabTitle = 'Form Leads'; tabIcon = 'inbox'; }
+    else if (url.includes('/content/console/forms')) { tabTitle = 'Manage Forms'; tabIcon = 'dynamic_form'; }
     else if (url.includes('/content/console/marketplace') || url.includes('/admin/marketplace')) { tabTitle = 'UI Marketplace'; tabIcon = 'widgets'; }
     else if (url.includes('/content/console/templates') || url.includes('/admin/templates')) { tabTitle = 'My Templates'; tabIcon = 'layers'; }
     else if (url.includes('/content/console') || url.includes('/admin/content')) { tabTitle = 'CMS Studio'; tabIcon = 'dynamic_feed'; }

@@ -71,6 +71,11 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<WebPageViewLog> WebPageViewLogs { get; set; }
     public DbSet<SiteCodeInjectionTag> SiteCodeInjectionTags { get; set; } = null!;
 
+    // --- CMS: Dynamic Page Forms & Lead Submissions ---
+    public DbSet<PageForm> PageForms { get; set; } = null!;
+    public DbSet<PageFormField> PageFormFields { get; set; } = null!;
+    public DbSet<PageFormSubmission> PageFormSubmissions { get; set; } = null!;
+
     // Legacy website/content tables retained by the same tenant database.
     public DbSet<PostModal> PostModal { get; set; }
 
@@ -458,13 +463,20 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         foreach (var fk in cascadeFKs)
         {
             // Preserve default cascade delete behavior for internal ASP.NET Identity entity mappings
-            if (fk.DeclaringEntityType.ClrType.Namespace?.StartsWith("Microsoft.AspNetCore.Identity") == true)
+            if (fk.DeclaringEntityType.ClrType.Namespace?.StartsWith("Microsoft.AspNetCore.Identity") == true
+                || fk.DeclaringEntityType.ClrType == typeof(PageFormField)
+                || fk.DeclaringEntityType.ClrType == typeof(PageFormSubmission))
             {
                 continue;
             }
 
             fk.DeleteBehavior = DeleteBehavior.Restrict;
         }
+
+        // --- CMS Dynamic Page Forms Unique Index ---
+        modelBuilder.Entity<PageForm>()
+            .HasIndex(f => f.FormKey)
+            .IsUnique();
 
         // ConfigureCustomer(modelBuilder);
     }
