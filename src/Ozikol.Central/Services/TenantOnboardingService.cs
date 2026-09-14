@@ -1174,7 +1174,7 @@ public class TenantOnboardingService : ITenantOnboardingService
         </ul>
         <div class=""d-flex align-items-center gap-2"">
           {{#each MenuCtaButtons}}
-            <a href=""{{ Url }}"" class=""btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm"">
+            <a href=""{{ Url }}"" class=""btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm"">
               {{ Title }}
             </a>
           {{/each}}
