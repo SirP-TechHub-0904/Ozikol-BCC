@@ -4838,7 +4838,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
     const blogBlock = this.installedTemplates.find(t => t.category === 'blog') || this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3');
-    const contactBlock = this.installedTemplates.find(t => t.category === 'contact') || this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails');
+    const contactBlock = this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails') || this.installedTemplates.find(t => t.category === 'contact');
+    const requestServiceBlock = this.installedTemplates.find(t => t.variantCode === 'Body_RequestService');
 
     let activeBlocks: { block: InstalledTemplateItem, contextOverride?: any }[] = [];
 
@@ -4904,7 +4905,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           }
         });
       }
-      if (contactBlock) activeBlocks.push({ block: contactBlock });
+      if (requestServiceBlock) {
+        activeBlocks.push({ block: requestServiceBlock });
+      } else if (contactBlock) {
+        activeBlocks.push({ block: contactBlock });
+      }
       const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
       if (faqBlock) activeBlocks.push({ block: faqBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });

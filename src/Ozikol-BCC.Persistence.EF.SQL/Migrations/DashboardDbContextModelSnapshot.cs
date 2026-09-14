@@ -5291,6 +5291,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("FixedAfterFooter")
                         .HasColumnType("bit");
 
+                    b.Property<string>("FormKey")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("FullDescription")
                         .HasColumnType("nvarchar(max)");
 
@@ -5323,6 +5326,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<string>("MiniTitle")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("PageFormId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("PageSortOrder")
                         .HasColumnType("int");
@@ -5367,6 +5373,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PageFormId");
 
                     b.HasIndex("WebPageId");
 
@@ -7235,9 +7243,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.PageSection", b =>
                 {
+                    b.HasOne("Ozikol_BCC.Domain.Models.PageForm", "PageForm")
+                        .WithMany()
+                        .HasForeignKey("PageFormId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Ozikol_BCC.Domain.Models.WebPage", "WebPage")
                         .WithMany("PageSections")
                         .HasForeignKey("WebPageId");
+
+                    b.Navigation("PageForm");
 
                     b.Navigation("WebPage");
                 });

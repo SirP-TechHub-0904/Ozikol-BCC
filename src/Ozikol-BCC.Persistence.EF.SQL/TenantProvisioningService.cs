@@ -382,7 +382,7 @@ END";
                 });
             }
 
-            // 5. Seed Default Web Pages (Home, About, Contact, Services)
+            // 5. Seed Default Web Pages (Home, About Us, Services, Request Service, Contact Us)
             if (!await dbContext.WebPages.AnyAsync(cancellationToken))
             {
                 var homePage = new WebPage
@@ -409,6 +409,30 @@ END";
                     SortOrder = 2
                 };
 
+                var servicesPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Services",
+                    DirectUrl = "services",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 3
+                };
+
+                var requestServicePage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Request a Service",
+                    DirectUrl = "request-service",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 4
+                };
+
                 var contactPage = new WebPage
                 {
                     Id = Guid.NewGuid(),
@@ -418,10 +442,10 @@ END";
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 3
+                    SortOrder = 5
                 };
 
-                dbContext.WebPages.AddRange(homePage, aboutPage, contactPage);
+                dbContext.WebPages.AddRange(homePage, aboutPage, servicesPage, requestServicePage, contactPage);
             }
 
             // 6. Seed Default Hero Slider

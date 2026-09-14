@@ -416,6 +416,8 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var query = _context.PageSections
                 .Include(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                .Include(s => s.PageForm)
+                    .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .AsQueryable();
 
             if (webPageId.HasValue)
@@ -437,6 +439,8 @@ namespace Ozikol_BCC.Api.Controllers
             var section = await _context.PageSections
                 .Include(s => s.WebPage)
                 .Include(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
+                .Include(s => s.PageForm)
+                    .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (section == null) return NotFound(ApiResponse<object>.FailureResponse("Section not found."));
@@ -447,6 +451,8 @@ namespace Ozikol_BCC.Api.Controllers
         public async Task<IActionResult> CreateSection([FromBody] PageSection section)
         {
             section.Id = Guid.NewGuid();
+            if (section.WebPageId == Guid.Empty) section.WebPageId = null;
+            if (section.PageFormId == Guid.Empty) section.PageFormId = null;
             _context.PageSections.Add(section);
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(section, "Page section created successfully."));
@@ -489,6 +495,8 @@ namespace Ozikol_BCC.Api.Controllers
             existing.RibonCustomDisplayTitle = updated.RibonCustomDisplayTitle;
             existing.RibonSortOrder = updated.RibonSortOrder;
             existing.WebPageId = updated.WebPageId == Guid.Empty ? null : updated.WebPageId;
+            existing.PageFormId = updated.PageFormId == Guid.Empty ? null : updated.PageFormId;
+            existing.FormKey = updated.FormKey;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Section updated successfully."));

@@ -229,6 +229,21 @@ namespace Ozikol_BCC.Domain.Models
         /// Navigation property for all repeatable sub-items (e.g., list of services, core values) inside this block.
         /// </summary>
         public ICollection<PageSectionList>? PageSectionLists { get; set; }
+
+        /// <summary>
+        /// Optional attached dynamic PageForm identifier.
+        /// </summary>
+        public Guid? PageFormId { get; set; }
+
+        /// <summary>
+        /// Navigation property to the embedded dynamic PageForm.
+        /// </summary>
+        public PageForm? PageForm { get; set; }
+
+        /// <summary>
+        /// Direct programmatic fallback form key (e.g. "service-request", "contact-us", "newsletter").
+        /// </summary>
+        public string? FormKey { get; set; }
     }
 }
 
