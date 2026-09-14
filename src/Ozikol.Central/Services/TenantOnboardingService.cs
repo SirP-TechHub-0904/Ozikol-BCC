@@ -1939,11 +1939,11 @@ public class TenantOnboardingService : ITenantOnboardingService
           <div><i class=""fa-solid fa-phone me-2 text-primary""></i>{{ Phone }}</div>
         </div>
         <div class=""d-flex gap-2 text-secondary"">
-          {{#each SocialLinks}}
-            <a href=""{{ Url }}"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""{{ Platform }}"">
-              <i class=""{{ IconClass }}""></i>
-            </a>
-          {{/each}}
+          <a href=""https://facebook.com"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""Facebook""><i class=""fa-brands fa-facebook-f""></i></a>
+          <a href=""https://x.com"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""Twitter / X""><i class=""fa-brands fa-x-twitter""></i></a>
+          <a href=""https://linkedin.com"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""LinkedIn""><i class=""fa-brands fa-linkedin-in""></i></a>
+          <a href=""https://instagram.com"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""Instagram""><i class=""fa-brands fa-instagram""></i></a>
+          <a href=""https://youtube.com"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""YouTube""><i class=""fa-brands fa-youtube""></i></a>
         </div>
       </div>
       <div class=""col-6 col-lg-2"">

@@ -438,9 +438,9 @@ interface CategoryPreset {
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Email }}')" [innerText]="'+ {{ Email }}'" title="Inserts corporate contact email"></button>
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Phone }}')" [innerText]="'+ {{ Phone }}'" title="Inserts corporate telephone number"></button>
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Address }}')" [innerText]="'+ {{ Address }}'" title="Inserts corporate headquarters address"></button>
-                <button type="button" class="token-chip chip-repeater" (click)="insertSocialLinksLoopAtCursor()" title="Inserts responsive social media links loop">
+                <button type="button" class="token-chip chip-repeater" (click)="insertSocialLinksLoopAtCursor()" title="Inserts responsive social media links">
                   <span class="material-symbols-outlined chip-icon">share</span>
-                  <span [innerText]="'+ Social Links Loop ({{#each SocialLinks}})'"></span>
+                  <span [innerText]="'+ Social Media Links'"></span>
                 </button>
                 <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
               </ng-container>
@@ -4337,15 +4337,15 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Inserts responsive social media links loop.
+   * Inserts responsive social media links block.
    */
   insertSocialLinksLoopAtCursor(): void {
-    const loopBlock = `\n<div class="oz-social-links">
-  {{#each SocialLinks}}
-  <a href="{{ Url }}" class="oz-social-btn" target="_blank" title="{{ Platform }}">
-    <i class="{{ IconClass }}"></i>
-  </a>
-  {{/each}}
+    const loopBlock = `\n<div class="d-flex gap-2 text-secondary">
+  <a href="https://facebook.com" class="btn btn-sm btn-white border rounded-circle text-secondary" target="_blank" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+  <a href="https://x.com" class="btn btn-sm btn-white border rounded-circle text-secondary" target="_blank" title="Twitter / X"><i class="fa-brands fa-x-twitter"></i></a>
+  <a href="https://linkedin.com" class="btn btn-sm btn-white border rounded-circle text-secondary" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+  <a href="https://instagram.com" class="btn btn-sm btn-white border rounded-circle text-secondary" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+  <a href="https://youtube.com" class="btn btn-sm btn-white border rounded-circle text-secondary" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
 </div>\n`;
     this.insertTokenAtCursor(loopBlock);
   }
