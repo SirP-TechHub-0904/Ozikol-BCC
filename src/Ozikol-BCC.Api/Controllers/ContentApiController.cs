@@ -1598,6 +1598,34 @@ namespace Ozikol_BCC.Api.Controllers
                     })
                     .ToListAsync();
 
+                // 4b. Menu CTA Action Buttons (IsMenuCTA == true)
+                var menuCtaButtons = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.IsMenuCTA && p.Publish)
+                    .OrderBy(p => p.SortOrder)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        title = p.Title,
+                        slug = p.DirectUrl,
+                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                    })
+                    .ToListAsync();
+
+                // 4c. Top-Level Main Menu Items (ShowInMainMenu == true)
+                var topMenuItems = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.ShowInMainMenu && p.Publish)
+                    .OrderBy(p => p.SortOrder)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        title = p.Title,
+                        slug = p.DirectUrl,
+                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                    })
+                    .ToListAsync();
+
                 // 5. Tenant Brand Settings
                 var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
                 var brand = new
@@ -1618,6 +1646,8 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     publishedForms = forms,
                     menuDropdowns = dropdowns,
+                    topMenuItems = topMenuItems,
+                    menuCtaButtons = menuCtaButtons,
                     footerGroups = footerGroups,
                     legalPages = legalPages,
                     brand = brand

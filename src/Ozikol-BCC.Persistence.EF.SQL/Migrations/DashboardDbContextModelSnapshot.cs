@@ -5940,6 +5940,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("IsLegal")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsMenuCTA")
+                        .HasColumnType("bit");
+
                     b.Property<Guid?>("MainPageId")
                         .HasColumnType("uniqueidentifier");
 

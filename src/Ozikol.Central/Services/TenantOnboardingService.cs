@@ -728,7 +728,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 4
+                    SortOrder = 4,
+                    IsMenuCTA = true
                 };
                 dbContext.WebPages.Add(requestServicePage);
             }
@@ -1149,25 +1150,35 @@ public class TenantOnboardingService : ITenantOnboardingService
 <header class=""oz-nav-header sticky-top bg-white border-bottom shadow-sm"">
   <nav class=""navbar navbar-expand-lg navbar-light py-3"">
     <div class=""container"">
-      <a class=""navbar-brand d-flex align-items-center gap-2"" href=""#home"">
+      <a class=""navbar-brand d-flex align-items-center gap-2"" href=""/"">
         <span class=""fw-bolder text-dark fs-4 tracking-tight"">{{ BrandName }}</span>
       </a>
       <button class=""navbar-toggler border-0 shadow-none"" type=""button"" onclick=""this.closest('nav').querySelector('.collapse').classList.toggle('show')"">
         <span class=""navbar-toggler-icon""></span>
       </button>
       <div class=""collapse navbar-collapse"" id=""ozNavMain"">
-        <ul class=""navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4"">
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-dark active"" href=""#home"">Home</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#about"">About</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#services"">Services</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#blog"">News</a></li>
-          <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""#contact"">Contact</a></li>
+        <ul class=""navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-3"">
+          {{#each MainMenuItems}}
+            <li class=""nav-item""><a class=""nav-link fw-semibold text-secondary"" href=""{{ Url }}"">{{ Title }}</a></li>
+          {{/each}}
+          {{#each MenuDropdowns}}
+            <li class=""nav-item dropdown"">
+              <a class=""nav-link dropdown-toggle fw-semibold text-secondary"" href=""#"" role=""button"" data-bs-toggle=""dropdown"">{{ Title }}</a>
+              <ul class=""dropdown-menu border-0 shadow-sm rounded-3 py-2"">
+                {{#each Pages}}
+                  <li><a class=""dropdown-item small py-2 px-3 fw-medium"" href=""{{ Url }}"">{{ Title }}</a></li>
+                {{/each}}
+              </ul>
+            </li>
+          {{/each}}
         </ul>
-        <div class=""d-flex align-items-center gap-3"">
-          <a href=""#request-service"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
-            <span>Request a Service</span>
-            <span style=""font-size: 16px;"">→</span>
-          </a>
+        <div class=""d-flex align-items-center gap-2"">
+          {{#each MenuCtaButtons}}
+            <a href=""{{ Url }}"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
+              <span>{{ Title }}</span>
+              <span style=""font-size: 16px;"">→</span>
+            </a>
+          {{/each}}
         </div>
       </div>
     </div>
@@ -1814,60 +1825,169 @@ public class TenantOnboardingService : ITenantOnboardingService
   <div class=""container py-4"">
     <div class=""d-flex justify-content-between align-items-end mb-5 flex-wrap gap-3"">
       <div>
-        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Newsroom</span>
-        <h2 class=""fw-bold text-dark mt-2 mb-0"">Latest Insights & Announcements</h2>
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">{{ MiniTitle }}</span>
+        <h2 class=""fw-bold text-dark mb-0"">{{ Title }}</h2>
       </div>
-      <a href=""#blog"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"">View All Articles →</a>
+      <div>
+        <a href=""{{ ButtonLink }}"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold small"">
+          <span>{{ ButtonText }}</span>
+          <span class=""ms-1"">→</span>
+        </a>
+      </div>
     </div>
     <div class=""row g-4"">
-      <div class=""col-md-4"">
-        <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <img src=""https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80"" 
-               alt=""Corporate Architecture & Strategy"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
-          <div class=""card-body d-flex flex-column"">
-            <span class=""badge bg-light text-primary border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Strategy</span>
-            <h5 class=""fw-bold text-dark mb-2"">Accelerating Enterprise Transformation in 2026</h5>
-            <p class=""text-muted small mb-4"">How modern organizations align people, processes, and technology for sustainable long-term growth.</p>
-            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
-              <span>Sep 10, 2026</span>
-              <span class=""fw-semibold text-primary"">Read Article →</span>
+      {{#each Articles}}
+        <div class=""col-md-4"">
+          <div class=""card border-0 rounded-4 overflow-hidden shadow-sm bg-white h-100 d-flex flex-column"">
+            <div class=""position-relative"">
+              <img src=""{{ CoverImageUrl }}"" alt=""{{ Title }}"" class=""card-img-top object-fit-cover"" style=""height: 220px;"" />
+              <span class=""badge bg-white text-dark shadow-sm position-absolute top-0 start-0 m-3 px-3 py-1 rounded-pill small fw-bold"">{{ Category }}</span>
+            </div>
+            <div class=""card-body p-4 d-flex flex-column flex-grow-1"">
+              <span class=""text-muted small mb-2 d-block""><i class=""fa-regular fa-calendar me-1""></i>{{ PublishedDate }}</span>
+              <h5 class=""fw-bold text-dark mb-2 line-clamp-2"">{{ Title }}</h5>
+              <p class=""text-muted small mb-4 line-clamp-3"">{{ Excerpt }}</p>
+              <div class=""mt-auto"">
+                <a href=""{{ Url }}"" class=""text-primary fw-bold small text-decoration-none d-inline-flex align-items-center gap-1"">
+                  <span>Read Article</span>
+                  <span>→</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <img src=""https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"" 
-               alt=""Data Protection & Cyber Security"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
-          <div class=""card-body d-flex flex-column"">
-            <span class=""badge bg-light text-success border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Security</span>
-            <h5 class=""fw-bold text-dark mb-2"">Modern Data Protection &amp; Governance Standards</h5>
-            <p class=""text-muted small mb-4"">Best practices for maintaining data privacy, regulatory compliance, and robust risk management.</p>
-            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
-              <span>Sep 04, 2026</span>
-              <span class=""fw-semibold text-primary"">Read Article →</span>
-            </div>
+      {{/each}}
+    </div>
+  </div>
+</section>",
+                CssStyles = @""
+            },
+
+            // 12b. Single Article Blog Detail with Sticky Sidebar
+            new()
+            {
+                Id = Guid.NewGuid(),
+                TemplateKey = "Blog_ArticleDetail",
+                CategoryKey = "blog",
+                Name = "Single Article with Sticky Sidebar & Widgets",
+                VariantCode = "Blog_ArticleDetail",
+                InstalledVersion = "1.0.0",
+                IsActive = true,
+                InstalledUtc = DateTime.UtcNow,
+                HtmlTemplate = @"
+<article class=""py-5 bg-white"" id=""blog-detail"">
+  <div class=""container py-3"">
+    <!-- Breadcrumb Header -->
+    <nav class=""mb-4"" aria-label=""breadcrumb"">
+      <ol class=""breadcrumb small"">
+        <li class=""breadcrumb-item""><a href=""/"" class=""text-decoration-none"">Home</a></li>
+        <li class=""breadcrumb-item""><a href=""/blog"" class=""text-decoration-none"">News &amp; Insights</a></li>
+        <li class=""breadcrumb-item active text-truncate"" style=""max-width: 320px;"">{{ Article.Title }}</li>
+      </ol>
+    </nav>
+
+    <div class=""row g-5"">
+      <!-- Left Column (8 cols): Main Article Content -->
+      <div class=""col-lg-8"">
+        <div class=""mb-3"">
+          <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill fw-bold text-uppercase"">{{ Article.Category }}</span>
+          <span class=""text-muted small ms-2""><i class=""fa-regular fa-calendar me-1""></i>{{ Article.PublishedDate }}</span>
+          <span class=""text-muted small ms-3""><i class=""fa-regular fa-clock me-1""></i>{{ Article.ReadTime }}</span>
+        </div>
+
+        <h1 class=""fw-bold text-dark display-5 mb-4"">{{ Article.Title }}</h1>
+
+        <!-- Featured Image -->
+        <div class=""rounded-4 overflow-hidden shadow-sm mb-4"">
+          <img src=""{{ Article.CoverImageUrl }}"" alt=""{{ Article.Title }}"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 460px;"" />
+        </div>
+
+        <!-- Article Rich-Text Content Body -->
+        <div class=""article-body-content fs-5 text-secondary lh-lg mb-5"">
+          {{ Article.Body }}
+        </div>
+
+        <!-- Article Tags & Social Share Strip -->
+        <div class=""border-top border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5"">
+          <div class=""d-flex align-items-center gap-2"">
+            <span class=""fw-bold text-dark small"">Tagged:</span>
+            {{#each Article.Tags}}
+              <span class=""badge bg-light text-dark border"">{{ this }}</span>
+            {{/each}}
+          </div>
+          <div class=""d-flex align-items-center gap-2"">
+            <span class=""small text-muted fw-semibold"">Share:</span>
+            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-facebook-f""></i></a>
+            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-x-twitter""></i></a>
+            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-linkedin-in""></i></a>
+          </div>
+        </div>
+
+        <!-- Author Bio Card -->
+        <div class=""card border-0 bg-light rounded-4 p-4 d-flex flex-row gap-3 align-items-center"">
+          <img src=""{{ Article.AuthorAvatarUrl }}"" alt=""{{ Article.AuthorName }}"" class=""rounded-circle object-fit-cover"" style=""width: 64px; height: 64px;"" />
+          <div>
+            <h6 class=""fw-bold text-dark mb-1"">Written by {{ Article.AuthorName }}</h6>
+            <p class=""text-muted small mb-0"">{{ Article.AuthorBio }}</p>
           </div>
         </div>
       </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 border border-light-subtle rounded-4 overflow-hidden shadow-sm bg-white"">
-          <img src=""https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=800&q=80"" 
-               alt=""Executive Meeting & Operations"" class=""w-100 object-fit-cover"" style=""height: 180px;"" />
-          <div class=""card-body d-flex flex-column"">
-            <span class=""badge bg-light text-info border border-light-subtle w-auto align-self-start mb-2 fw-bold"">Operations</span>
-            <h5 class=""fw-bold text-dark mb-2"">Scaling Operational Efficiency Across Distributed Teams</h5>
-            <p class=""text-muted small mb-4"">Proven strategies for streamlining workflows and unifying communications across business units.</p>
-            <div class=""small text-muted mt-auto pt-2 border-top d-flex justify-content-between"">
-              <span>Aug 28, 2026</span>
-              <span class=""fw-semibold text-primary"">Read Article →</span>
+
+      <!-- Right Column (4 cols): Sticky Sidebar -->
+      <div class=""col-lg-4"">
+        <div class=""d-flex flex-column gap-4 sticky-top"" style=""top: 100px;"">
+          <!-- Widget 1: Search Form (submits GET request to /blog?q=...) -->
+          <div class=""card border border-light-subtle rounded-4 p-4 shadow-sm bg-white"">
+            <h6 class=""fw-bold text-dark mb-3"">Search Insights</h6>
+            <form action=""/blog"" method=""get"">
+              <div class=""input-group"">
+                <input type=""text"" name=""q"" class=""form-control bg-light border-0"" placeholder=""Search keywords..."" required />
+                <button type=""submit"" class=""btn btn-primary"" title=""Search""><i class=""fa-solid fa-magnifying-glass""></i></button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Widget 2: Recent Articles Loop -->
+          <div class=""card border border-light-subtle rounded-4 p-4 shadow-sm bg-white"">
+            <h6 class=""fw-bold text-dark mb-3"">Recent Dispatches</h6>
+            <div class=""d-flex flex-column gap-3"">
+              {{#each RecentArticles}}
+                <div class=""d-flex gap-3 align-items-center"">
+                  <img src=""{{ CoverImageUrl }}"" alt=""{{ Title }}"" class=""rounded-3 object-fit-cover flex-shrink-0"" style=""width: 60px; height: 60px;"" />
+                  <div>
+                    <small class=""text-muted d-block"" style=""font-size: 11px;"">{{ PublishedDate }}</small>
+                    <a href=""{{ Url }}"" class=""fw-bold text-dark small text-decoration-none line-clamp-2"">{{ Title }}</a>
+                  </div>
+                </div>
+              {{/each}}
             </div>
+          </div>
+
+          <!-- Widget 3: Categories with Live Article Count -->
+          <div class=""card border border-light-subtle rounded-4 p-4 shadow-sm bg-white"">
+            <h6 class=""fw-bold text-dark mb-3"">Topics &amp; Categories</h6>
+            <ul class=""list-unstyled mb-0 d-flex flex-column gap-2 small"">
+              {{#each BlogCategories}}
+                <li class=""d-flex justify-content-between align-items-center"">
+                  <a href=""{{ Url }}"" class=""text-decoration-none text-secondary"">{{ Name }}</a>
+                  <span class=""badge bg-light text-muted border"">{{ PostCount }}</span>
+                </li>
+              {{/each}}
+            </ul>
+          </div>
+
+          <!-- Widget 4: Newsletter Box -->
+          <div class=""card border-0 rounded-4 p-4 text-center text-white shadow-sm"" style=""background: linear-gradient(135deg, #0050e5, #002b80);"">
+            <i class=""fa-solid fa-envelope-open-text fs-2 mb-2""></i>
+            <h6 class=""fw-bold mb-1"">Stay In The Loop</h6>
+            <p class=""small text-white-50 mb-3"">Receive weekly editorial briefs and executive announcements.</p>
+            {{ Form ""Newsletter_Subscribe"" }}
           </div>
         </div>
       </div>
     </div>
   </div>
-</section>",
+</article>",
                 CssStyles = @""
             },
 
