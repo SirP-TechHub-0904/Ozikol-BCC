@@ -232,7 +232,34 @@ interface CategoryPreset {
                   (click)="activeTokenCategory = 'navigation'"
                 >
                   <span class="material-symbols-outlined icon-micro">menu_book</span>
-                  <span>Menus & Mega Menu</span>
+                  <span>Menus & Dropdowns</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'footer'"
+                  (click)="activeTokenCategory = 'footer'"
+                >
+                  <span class="material-symbols-outlined icon-micro">dock_to_bottom</span>
+                  <span>Footer Columns</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'forms'"
+                  (click)="activeTokenCategory = 'forms'"
+                >
+                  <span class="material-symbols-outlined icon-micro">dynamic_form</span>
+                  <span>Forms & Embeds</span>
+                </button>
+                <button
+                  type="button"
+                  class="tcat-tab"
+                  [class.active]="activeTokenCategory === 'legal'"
+                  (click)="activeTokenCategory = 'legal'"
+                >
+                  <span class="material-symbols-outlined icon-micro">policy</span>
+                  <span>Legal Compliance</span>
                 </button>
                 <button
                   type="button"
@@ -241,7 +268,7 @@ interface CategoryPreset {
                   (click)="activeTokenCategory = 'identity'"
                 >
                   <span class="material-symbols-outlined icon-micro">corporate_fare</span>
-                  <span>Brand & Identity</span>
+                  <span>Brand & Social</span>
                 </button>
               </div>
             </div>
@@ -315,7 +342,7 @@ interface CategoryPreset {
                 <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
               </ng-container>
 
-              <!-- Category: MENUS & MEGA MENUS -->
+              <!-- Category: MENUS & DROP DOWNS -->
               <ng-container *ngIf="activeTokenCategory === 'navigation'">
                 <button type="button" class="token-chip chip-repeater" (click)="insertNestedMenuLoopAtCursor()" title="Inserts 2-level cascading flyout dropdown navigation">
                   <span class="material-symbols-outlined chip-icon">account_tree</span>
@@ -329,6 +356,14 @@ interface CategoryPreset {
                   <span class="material-symbols-outlined chip-icon">menu</span>
                   <span>+ Flat Navbar Loop</span>
                 </button>
+                <ng-container *ngIf="editorTokens.menuDropdowns?.length">
+                  <span class="sn-sep"></span>
+                  <span class="ribbon-tag">Published Dropdowns:</span>
+                  <button *ngFor="let dd of editorTokens.menuDropdowns" type="button" class="token-chip chip-repeater" (click)="insertMenuDropdownAtCursor(dd.title)" [title]="'Inserts ' + dd.title + ' dropdown with child links'">
+                    <span class="material-symbols-outlined chip-icon">arrow_drop_down_circle</span>
+                    <span>+ Dropdown: {{ dd.title }}</span>
+                  </button>
+                </ng-container>
                 <span class="sn-sep"></span>
                 <span class="ribbon-tag">Menu Tokens:</span>
                 <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ CategoryTitle }}')" [innerText]="'{{ CategoryTitle }}'" title="Category or Dropdown title"></button>
@@ -340,6 +375,61 @@ interface CategoryPreset {
                 <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
               </ng-container>
 
+              <!-- Category: FOOTER COLUMNS -->
+              <ng-container *ngIf="activeTokenCategory === 'footer'">
+                <button type="button" class="token-chip chip-repeater" (click)="insertFooterCategoriesLoopAtCursor()" title="Inserts dynamic loop rendering all enabled footer category columns">
+                  <span class="material-symbols-outlined chip-icon">view_column</span>
+                  <span>+ All Footer Categories Loop</span>
+                </button>
+                <ng-container *ngIf="editorTokens.footerGroups?.length">
+                  <span class="sn-sep"></span>
+                  <span class="ribbon-tag">Footer Columns:</span>
+                  <button *ngFor="let fg of editorTokens.footerGroups" type="button" class="token-chip chip-repeater" (click)="insertCategoryPagesLoopAtCursor(fg.name)" [title]="'Inserts ' + (fg.displayTitle || fg.name) + ' column with active page links'">
+                    <span class="material-symbols-outlined chip-icon">folder</span>
+                    <span>+ Column: {{ fg.displayTitle || fg.name }}</span>
+                  </button>
+                </ng-container>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">Column Tokens:</span>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Title }}')" [innerText]="'{{ Title }}'"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Url }}')" [innerText]="'{{ Url }}'"></button>
+                <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
+                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
+              </ng-container>
+
+              <!-- Category: FORMS & EMBEDS -->
+              <ng-container *ngIf="activeTokenCategory === 'forms'">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ FormEmbed }}')" [innerText]="'+ {{ FormEmbed }}'" title="Inserts generic dynamic form placeholder"></button>
+                <ng-container *ngIf="editorTokens.publishedForms?.length">
+                  <span class="sn-sep"></span>
+                  <span class="ribbon-tag">Published Dynamic Forms:</span>
+                  <button *ngFor="let f of editorTokens.publishedForms" type="button" class="token-chip chip-repeater" (click)="insertFormEmbedAtCursor(f.key)" [title]="'Inserts published form ' + f.title">
+                    <span class="material-symbols-outlined chip-icon">dynamic_form</span>
+                    <span>+ Form: {{ f.title }}</span>
+                  </button>
+                </ng-container>
+              </ng-container>
+
+              <!-- Category: LEGAL COMPLIANCE -->
+              <ng-container *ngIf="activeTokenCategory === 'legal'">
+                <button type="button" class="token-chip chip-repeater" (click)="insertLegalPagesLoopAtCursor()" title="Inserts loop across all legal compliance pages">
+                  <span class="material-symbols-outlined chip-icon">policy</span>
+                  <span [innerText]="'+ All Legal Pages Loop ({{#each LegalPages}})'"></span>
+                </button>
+                <ng-container *ngIf="editorTokens.legalPages?.length">
+                  <span class="sn-sep"></span>
+                  <span class="ribbon-tag">Compliance Pages:</span>
+                  <button *ngFor="let lp of editorTokens.legalPages" type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('<a href=&quot;' + lp.url + '&quot;>' + lp.title + '</a>')" [title]="'Inserts link to ' + lp.title">
+                    <span>+ {{ lp.title }}</span>
+                  </button>
+                </ng-container>
+                <span class="sn-sep"></span>
+                <span class="ribbon-tag">Legal Tokens:</span>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ PrivacyUrl }}')" [innerText]="'+ {{ PrivacyUrl }}'"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ TermsUrl }}')" [innerText]="'+ {{ TermsUrl }}'"></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ CookiesUrl }}')" [innerText]="'+ {{ CookiesUrl }}'"></button>
+              </ng-container>
+
               <!-- Category: BRAND & IDENTITY -->
               <ng-container *ngIf="activeTokenCategory === 'identity'">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'" title="Inserts tenant brand name"></button>
@@ -348,6 +438,10 @@ interface CategoryPreset {
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Email }}')" [innerText]="'+ {{ Email }}'" title="Inserts corporate contact email"></button>
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Phone }}')" [innerText]="'+ {{ Phone }}'" title="Inserts corporate telephone number"></button>
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ Address }}')" [innerText]="'+ {{ Address }}'" title="Inserts corporate headquarters address"></button>
+                <button type="button" class="token-chip chip-repeater" (click)="insertSocialLinksLoopAtCursor()" title="Inserts responsive social media links loop">
+                  <span class="material-symbols-outlined chip-icon">share</span>
+                  <span [innerText]="'+ Social Links Loop ({{#each SocialLinks}})'"></span>
+                </button>
                 <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder"></button>
               </ng-container>
             </div>
@@ -2820,13 +2914,28 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   // Editor and Preview State
   activeEditorTab: 'html' | 'css' | 'js' = 'html';
-  activeTokenCategory: 'core' | 'media' | 'sectionlist' | 'faq' | 'navigation' | 'identity' = 'core';
+  activeTokenCategory: 'core' | 'media' | 'sectionlist' | 'faq' | 'navigation' | 'footer' | 'forms' | 'legal' | 'identity' = 'core';
   activeMockTab: 'scalars' | 'rich' | 'media' | 'cards' | 'faqs' | 'menu' | 'identity' = 'scalars';
   savingTemplate: boolean = false;
   showPreviewModal: boolean = false;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeHydratedHtml: SafeHtml = '';
   showRawHtmlEditor: boolean = false;
+
+  // Live Database Editor Tokens
+  editorTokens: {
+    publishedForms: any[];
+    menuDropdowns: any[];
+    footerGroups: any[];
+    legalPages: any[];
+    brand: any;
+  } = {
+    publishedForms: [],
+    menuDropdowns: [],
+    footerGroups: [],
+    legalPages: [],
+    brand: null
+  };
 
   // Sample Content Inspector State
   sampleContent: any = {
@@ -3790,7 +3899,29 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.resolveTenantInfo();
+    this.loadEditorTokens();
     this.onCategoryChange(false);
+  }
+
+  /**
+   * Fetches real published forms, menu dropdowns, footer categories, and legal pages from the tenant DB.
+   */
+  loadEditorTokens(): void {
+    this.api.get<any>('ContentApi/templates/editor-tokens').subscribe({
+      next: (res: any) => {
+        if (res?.data) {
+          this.editorTokens = res.data;
+          if (res.data.brand) {
+            this.sampleContent.brandName = res.data.brand.name || this.sampleContent.brandName;
+            this.sampleContent.email = res.data.brand.email || this.sampleContent.email;
+            this.sampleContent.phone = res.data.brand.phone || this.sampleContent.phone;
+            this.sampleContent.address = res.data.brand.address || this.sampleContent.address;
+          }
+          this.updatePreviewSimulation();
+        }
+      },
+      error: (err) => console.warn('Could not load editor tokens:', err)
+    });
   }
 
   ngAfterViewInit(): void {
@@ -4149,6 +4280,89 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   }
 
   /**
+   * Inserts complete loop across all enabled footer categories.
+   */
+  insertFooterCategoriesLoopAtCursor(): void {
+    const loopBlock = `\n{{#each FooterCategories}}
+<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">{{ Title }}</h4>
+  <ul class="oz-footer-col-links">
+    {{#each Pages}}
+    <li><a href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>
+{{/each}}\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts category child pages loop by name (e.g. Services or Company).
+   */
+  insertCategoryPagesLoopAtCursor(categoryName: string): void {
+    const loopBlock = `\n<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">${categoryName}</h4>
+  <ul class="oz-footer-col-links">
+    {{#each CategoryPages "${categoryName}"}}
+    <li><a href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts navbar dropdown item with CategoryPages loop.
+   */
+  insertMenuDropdownAtCursor(dropdownTitle: string): void {
+    const loopBlock = `\n<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    ${dropdownTitle}
+  </a>
+  <ul class="dropdown-menu">
+    {{#each CategoryPages "${dropdownTitle}"}}
+    <li><a class="dropdown-item" href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</li>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts dynamic form embed token.
+   */
+  insertFormEmbedAtCursor(formKey?: string): void {
+    const token = formKey ? `{{ Form "${formKey}" }}` : `{{ FormEmbed }}`;
+    this.insertTokenAtCursor(token);
+  }
+
+  /**
+   * Inserts all legal pages loop.
+   */
+  insertLegalPagesLoopAtCursor(): void {
+    const loopBlock = `\n<div class="oz-legal-links">
+  {{#each LegalPages}}
+  <a href="{{ Url }}">{{ Title }}</a>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Inserts responsive social media links loop.
+   */
+  insertSocialLinksLoopAtCursor(): void {
+    const loopBlock = `\n<div class="oz-social-links">
+  {{#each SocialLinks}}
+  <a href="{{ Url }}" class="oz-social-btn" target="_blank" title="{{ Platform }}">
+    <i class="{{ IconClass }}"></i>
+  </a>
+  {{/each}}
+</div>\n`;
+    this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
    * FAQ Mock Manager: Adds a new FAQ category block.
    */
   addSampleFaqCategory(): void {
@@ -4495,7 +4709,164 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       }).join('\n');
     });
 
-    // 5. Scalar Field Placeholders (PageSection, Media, Styles & Identity)
+    // 5. CategoryPages by Name (e.g. {{#each CategoryPages "Services"}} or {{#each CategoryPages "Company"}})
+    const catPagesRegex = /\{\{#each\s+CategoryPages\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(catPagesRegex, (_match: string, catName: string, innerTemplate: string) => {
+      let pages: any[] = [];
+      const normalized = (catName || '').toLowerCase().trim();
+
+      const fg = this.editorTokens.footerGroups?.find((g: any) =>
+        (g.name && g.name.toLowerCase() === normalized) ||
+        (g.displayTitle && g.displayTitle.toLowerCase() === normalized)
+      );
+      if (fg?.pages && fg.pages.length > 0) {
+        pages = fg.pages;
+      } else {
+        const md = this.editorTokens.menuDropdowns?.find((d: any) =>
+          (d.title && d.title.toLowerCase() === normalized) ||
+          (d.footerTitle && d.footerTitle.toLowerCase() === normalized)
+        );
+        if (md?.pages && md.pages.length > 0) {
+          pages = md.pages;
+        } else if (normalized.includes('service') || normalized.includes('solution')) {
+          pages = [
+            { title: 'Strategic Consulting', url: '/strategic-advisory' },
+            { title: 'Systems Modernization', url: '/systems-modernization' },
+            { title: 'Performance & Scale', url: '/performance-scale' },
+            { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+          ];
+        } else if (normalized.includes('company') || normalized.includes('about')) {
+          pages = [
+            { title: 'About Us', url: '/about' },
+            { title: 'Leadership & Team', url: '/about' },
+            { title: 'Insights & News', url: '/blog' },
+            { title: 'Request a Service', url: '/request-service' }
+          ];
+        }
+      }
+
+      return pages.map((p: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 6. FooterCategories Loop ({{#each FooterCategories}}...{{/each}})
+    const footerCatsRegex = /\{\{#each\s+FooterCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(footerCatsRegex, (_match: string, innerTemplate: string) => {
+      const groups = (this.editorTokens.footerGroups && this.editorTokens.footerGroups.length > 0)
+        ? this.editorTokens.footerGroups
+        : [
+            {
+              name: 'Services',
+              displayTitle: 'Solutions',
+              pages: [
+                { title: 'Strategic Consulting', url: '/strategic-advisory' },
+                { title: 'Systems Modernization', url: '/systems-modernization' },
+                { title: 'Performance & Scale', url: '/performance-scale' },
+                { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+              ]
+            },
+            {
+              name: 'Company',
+              displayTitle: 'Company',
+              pages: [
+                { title: 'About Us', url: '/about' },
+                { title: 'Request a Service', url: '/request-service' },
+                { title: 'Contact Us', url: '/contact' }
+              ]
+            }
+          ];
+
+      return groups.map((g: any) => {
+        let colHtml = innerTemplate;
+        colHtml = colHtml.replace(/\{\{\s*(?:DisplayTitle|Title|CategoryTitle)\s*\}\}/gi, g.displayTitle || g.name || 'Column');
+
+        const pagesLoopRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        colHtml = colHtml.replace(pagesLoopRegex, (_pMatch: string, pTemplate: string) => {
+          const pages = g.pages || [];
+          return pages.map((p: any) => {
+            let pRendered = pTemplate;
+            pRendered = pRendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
+            pRendered = pRendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+            return pRendered;
+          }).join('\n');
+        });
+
+        return colHtml;
+      }).join('\n');
+    });
+
+    // 7. LegalPages Loop ({{#each LegalPages}}...{{/each}})
+    const legalRegex = /\{\{#each\s+LegalPages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(legalRegex, (_match: string, innerTemplate: string) => {
+      const legals = (this.editorTokens.legalPages && this.editorTokens.legalPages.length > 0)
+        ? this.editorTokens.legalPages
+        : [
+            { title: 'Privacy Policy', url: '/privacy-policy' },
+            { title: 'Terms & Conditions', url: '/terms-and-conditions' },
+            { title: 'Cookie Policy', url: '/cookie-policy' }
+          ];
+
+      return legals.map((lp: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, lp.title || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, lp.url || '#');
+        return rendered;
+      }).join('\n');
+    });
+
+    // 8. SocialLinks Loop ({{#each SocialLinks}}...{{/each}})
+    const socialRegex = /\{\{#each\s+SocialLinks\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(socialRegex, (_match: string, innerTemplate: string) => {
+      const socials = [
+        { platform: 'LinkedIn', url: 'https://linkedin.com', iconClass: 'fa-brands fa-linkedin-in' },
+        { platform: 'Twitter / X', url: 'https://x.com', iconClass: 'fa-brands fa-x-twitter' },
+        { platform: 'Facebook', url: 'https://facebook.com', iconClass: 'fa-brands fa-facebook-f' },
+        { platform: 'Instagram', url: 'https://instagram.com', iconClass: 'fa-brands fa-instagram' },
+        { platform: 'YouTube', url: 'https://youtube.com', iconClass: 'fa-brands fa-youtube' }
+      ];
+
+      return socials.map((s: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, s.platform);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, s.url);
+        rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, s.iconClass);
+        return rendered;
+      }).join('\n');
+    });
+
+    // 9. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
+    const formRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
+    output = output.replace(formRegex, (_match: string, formKey?: string) => {
+      const key = formKey || 'FormEmbed';
+      const isNewsletter = /newsletter|subscribe/i.test(key);
+      const isContact = /contact|inquiry/i.test(key);
+
+      if (isNewsletter) {
+        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
+          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
+        </form>`;
+      }
+
+      if (isContact) {
+        return `<form class="oz-dynamic-form oz-form-contact d-flex flex-column gap-2" onsubmit="event.preventDefault();">
+          <input type="text" class="form-control form-control-sm" placeholder="Your Full Name" required />
+          <input type="email" class="form-control form-control-sm" placeholder="Your Work Email" required />
+          <textarea class="form-control form-control-sm" rows="3" placeholder="How can we assist you?"></textarea>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold">Send Message</button>
+        </form>`;
+      }
+
+      return `<div class="oz-form-embed-preview p-3 border rounded bg-light text-center small text-muted">
+        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong> (Rendered dynamically)
+      </div>`;
+    });
+
+    // 10. Scalar Field Placeholders (PageSection, Media, Styles, Legal URLs & Identity)
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
     output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
@@ -4506,6 +4877,11 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || '');
     output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || '#');
     output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '#');
+
+    // Legal URLs
+    output = output.replace(/\{\{\s*PrivacyUrl\s*\}\}/gi, '/privacy-policy');
+    output = output.replace(/\{\{\s*TermsUrl\s*\}\}/gi, '/terms-and-conditions');
+    output = output.replace(/\{\{\s*CookiesUrl\s*\}\}/gi, '/cookie-policy');
 
     // Custom CSS Class
     output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, (ctx.customClass || '').trim());
@@ -4518,9 +4894,11 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     output = output.replace(/\{\{\s*YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || '');
 
     // Brand & Identity with Fixed Powered By
+    const currentYear = new Date().getFullYear().toString();
+    output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
     output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Acme Global');
-    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || '© 2026 Acme Global. All rights reserved.');
-    output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || '<a href="https://ozikol.com" target="_blank" rel="noopener noreferrer">Powered by <strong>Ozikol</strong></a>');
+    output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} Acme Global. All rights reserved.`);
+    output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || '<a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Powered by Ozikol</a>');
     output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@acme-global.com');
     output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (800) 555-0199');
     output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Enterprise Blvd, Silicon Valley');

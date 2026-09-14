@@ -5076,6 +5076,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FooterDisplayTitle")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<int>("HomeSortFrom")
                         .HasColumnType("int");
 
@@ -5089,6 +5093,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("Publish")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowInFooter")
                         .HasColumnType("bit");
 
                     b.Property<string>("Title")
@@ -5929,6 +5936,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsLegal")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("MainPageId")
                         .HasColumnType("uniqueidentifier");

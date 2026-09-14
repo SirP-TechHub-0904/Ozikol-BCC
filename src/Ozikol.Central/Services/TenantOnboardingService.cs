@@ -556,7 +556,39 @@ public class TenantOnboardingService : ITenantOnboardingService
                 });
             }
 
-            // 5. Seed Default Web Pages (Home, About Us, Services, Contact Us)
+            // 5a. Seed Categories for Dropdown Menus and Footer Columns
+            var servicesCategory = await dbContext.PageCategories.FirstOrDefaultAsync(c => c.Title == "Services", cancellationToken);
+            if (servicesCategory == null)
+            {
+                servicesCategory = new PageCategory
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Services",
+                    FooterDisplayTitle = "Solutions",
+                    MenuSortOrder = 3,
+                    ShowInFooter = true,
+                    Publish = true
+                };
+                dbContext.PageCategories.Add(servicesCategory);
+            }
+
+            var companyCategory = await dbContext.PageCategories.FirstOrDefaultAsync(c => c.Title == "Company", cancellationToken);
+            if (companyCategory == null)
+            {
+                companyCategory = new PageCategory
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Company",
+                    FooterDisplayTitle = "Company",
+                    MenuSortOrder = 4,
+                    ShowInFooter = true,
+                    Publish = true
+                };
+                dbContext.PageCategories.Add(companyCategory);
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5b. Seed Default Web Pages (Home, About Us, Services, Request a Service, Contact Us)
             var homePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "home", cancellationToken);
             if (homePage == null)
             {
@@ -582,6 +614,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "About Us",
                     DirectUrl = "about",
+                    PageCategoryId = companyCategory.Id,
                     ShowInMainMenu = true,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
@@ -599,6 +632,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "Services",
                     DirectUrl = "services",
+                    PageCategoryId = servicesCategory.Id,
                     ShowInMainMenu = true,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
@@ -606,6 +640,79 @@ public class TenantOnboardingService : ITenantOnboardingService
                     SortOrder = 3
                 };
                 dbContext.WebPages.Add(servicesPage);
+            }
+
+            // Seed 4 Child Services under the Services Category for Dropdown Menu & Footer Column
+            var service1 = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "strategic-advisory", cancellationToken);
+            if (service1 == null)
+            {
+                service1 = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Strategic Consulting",
+                    DirectUrl = "strategic-advisory",
+                    PageCategoryId = servicesCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 10
+                };
+                dbContext.WebPages.Add(service1);
+            }
+
+            var service2 = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "systems-modernization", cancellationToken);
+            if (service2 == null)
+            {
+                service2 = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Systems Modernization",
+                    DirectUrl = "systems-modernization",
+                    PageCategoryId = servicesCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 11
+                };
+                dbContext.WebPages.Add(service2);
+            }
+
+            var service3 = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "performance-scale", cancellationToken);
+            if (service3 == null)
+            {
+                service3 = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Performance & Scale",
+                    DirectUrl = "performance-scale",
+                    PageCategoryId = servicesCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 12
+                };
+                dbContext.WebPages.Add(service3);
+            }
+
+            var service4 = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "enterprise-governance", cancellationToken);
+            if (service4 == null)
+            {
+                service4 = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Enterprise Advisory",
+                    DirectUrl = "enterprise-governance",
+                    PageCategoryId = servicesCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 13
+                };
+                dbContext.WebPages.Add(service4);
             }
 
             var requestServicePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "request-service", cancellationToken);
@@ -616,6 +723,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "Request a Service",
                     DirectUrl = "request-service",
+                    PageCategoryId = companyCategory.Id,
                     ShowInMainMenu = true,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
@@ -633,6 +741,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "Contact Us",
                     DirectUrl = "contact",
+                    PageCategoryId = companyCategory.Id,
                     ShowInMainMenu = true,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
@@ -640,6 +749,61 @@ public class TenantOnboardingService : ITenantOnboardingService
                     SortOrder = 5
                 };
                 dbContext.WebPages.Add(contactPage);
+            }
+
+            // 5c. Seed 3 Turnkey Legal Compliance WebPages (Privacy Policy, Terms & Conditions, Cookie Policy)
+            var privacyPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "privacy-policy", cancellationToken);
+            if (privacyPage == null)
+            {
+                privacyPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Privacy Policy",
+                    DirectUrl = "privacy-policy",
+                    IsLegal = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 20
+                };
+                dbContext.WebPages.Add(privacyPage);
+            }
+
+            var termsPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "terms-and-conditions", cancellationToken);
+            if (termsPage == null)
+            {
+                termsPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Terms & Conditions",
+                    DirectUrl = "terms-and-conditions",
+                    IsLegal = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 21
+                };
+                dbContext.WebPages.Add(termsPage);
+            }
+
+            var cookiePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "cookie-policy", cancellationToken);
+            if (cookiePage == null)
+            {
+                cookiePage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Cookie Policy",
+                    DirectUrl = "cookie-policy",
+                    IsLegal = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 22
+                };
+                dbContext.WebPages.Add(cookiePage);
             }
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -1885,46 +2049,54 @@ public class TenantOnboardingService : ITenantOnboardingService
         <div class=""d-flex align-items-center gap-2 mb-3"">
           <span class=""fw-bold text-dark fs-5"">{{ BrandName }}</span>
         </div>
-        <p class=""small text-muted max-w-300"">Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.</p>
+        <p class=""small text-muted max-w-300"">{{ Description }}</p>
+        <div class=""small text-muted mb-3 d-flex flex-column gap-1"">
+          <div><i class=""fa-solid fa-envelope me-2 text-primary""></i>{{ Email }}</div>
+          <div><i class=""fa-solid fa-phone me-2 text-primary""></i>{{ Phone }}</div>
+        </div>
         <div class=""d-flex gap-2 text-secondary"">
-          <a href=""#"" class=""btn btn-sm btn-white border rounded-circle text-secondary""><i class=""fa-brands fa-linkedin-in""></i></a>
-          <a href=""#"" class=""btn btn-sm btn-white border rounded-circle text-secondary""><i class=""fa-brands fa-x-twitter""></i></a>
-          <a href=""#"" class=""btn btn-sm btn-white border rounded-circle text-secondary""><i class=""fa-brands fa-facebook-f""></i></a>
+          {{#each SocialLinks}}
+            <a href=""{{ Url }}"" class=""btn btn-sm btn-white border rounded-circle text-secondary"" target=""_blank"" title=""{{ Platform }}"">
+              <i class=""{{ IconClass }}""></i>
+            </a>
+          {{/each}}
         </div>
       </div>
       <div class=""col-6 col-lg-2"">
         <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Solutions</h6>
         <ul class=""list-unstyled small d-flex flex-column gap-2"">
-          <li><a href=""#services"" class=""text-decoration-none text-muted"">Strategic Consulting</a></li>
-          <li><a href=""#services"" class=""text-decoration-none text-muted"">Systems Modernization</a></li>
-          <li><a href=""#services"" class=""text-decoration-none text-muted"">Performance &amp; Scale</a></li>
-          <li><a href=""#services"" class=""text-decoration-none text-muted"">Enterprise Advisory</a></li>
+          {{#each CategoryPages ""Services""}}
+            <li><a href=""{{ Url }}"" class=""text-decoration-none text-muted"">{{ Title }}</a></li>
+          {{/each}}
         </ul>
       </div>
       <div class=""col-6 col-lg-2"">
         <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Company</h6>
         <ul class=""list-unstyled small d-flex flex-column gap-2"">
-          <li><a href=""#about"" class=""text-decoration-none text-muted"">About Us</a></li>
-          <li><a href=""#about"" class=""text-decoration-none text-muted"">Leadership &amp; Team</a></li>
-          <li><a href=""#blog"" class=""text-decoration-none text-muted"">Insights &amp; News</a></li>
-          <li><a href=""#request-service"" class=""text-decoration-none text-muted"">Request a Service</a></li>
+          {{#each CategoryPages ""Company""}}
+            <li><a href=""{{ Url }}"" class=""text-decoration-none text-muted"">{{ Title }}</a></li>
+          {{/each}}
         </ul>
       </div>
       <div class=""col-lg-4"">
         <h6 class=""fw-bold text-dark text-uppercase small mb-3"">Stay Connected</h6>
         <p class=""small text-muted"">Subscribe to our newsletter for executive insights, market updates, and announcements.</p>
-        <div class=""input-group input-group-sm"">
-          <input type=""email"" class=""form-control bg-white rounded-start-pill px-3"" placeholder=""Your email address..."" />
-          <button class=""btn btn-primary rounded-end-pill px-3 fw-bold"" type=""button"">Join</button>
-        </div>
+        {{ Form ""Newsletter_Subscribe"" }}
       </div>
     </div>
-    <div class=""border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-2 small text-muted"">
-      <div>&copy; {{ Year }} {{ BrandName }}. All rights reserved.</div>
+    <div class=""border-top pt-4 d-flex justify-content-between align-items-center flex-wrap gap-3 small text-muted"">
+      <div>{{ Copyright }}</div>
+      <div class=""d-flex gap-3"">
+        {{#each LegalPages}}
+          <a href=""{{ Url }}"" class=""text-decoration-none text-muted"">{{ Title }}</a>
+        {{/each}}
+      </div>
+      <div>{{ PoweredBy }}</div>
     </div>
   </div>
 </footer>",
-                CssStyles = @""
+                CssStyles = @"",
+                DefaultContentJson = @"{""title"":""Clean Light Corporate Footer"",""description"":""Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations."",""email"":""contact@organization.com"",""phone"":""+1 (555) 019-2834"",""categories"":[{""name"":""Services"",""displayTitle"":""Solutions"",""pages"":[{""title"":""Strategic Consulting"",""url"":""/strategic-advisory""},{""title"":""Systems Modernization"",""url"":""/systems-modernization""},{""title"":""Performance & Scale"",""url"":""/performance-scale""},{""title"":""Enterprise Advisory"",""url"":""/enterprise-governance""}]},{""name"":""Company"",""displayTitle"":""Company"",""pages"":[{""title"":""About Us"",""url"":""/about""},{""title"":""Request a Service"",""url"":""/request-service""},{""title"":""Contact Us"",""url"":""/contact""}]}],""legalPages"":[{""title"":""Privacy Policy"",""url"":""/privacy-policy""},{""title"":""Terms & Conditions"",""url"":""/terms-and-conditions""},{""title"":""Cookie Policy"",""url"":""/cookie-policy""}]}"
             }
         };
 
