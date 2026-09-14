@@ -774,39 +774,40 @@ export interface CodeInjectionTag {
           <button type="button" class="btn-close-modal" (click)="closeSinglePreviewModal()">✕</button>
         </div>
 
+        <!-- Page View Simulation Bar (active for menu templates in visual preview mode) -->
+        <div class="page-sim-toolbar" *ngIf="previewModalTab === 'preview' && activePreviewItem?.category === 'menu'">
+          <div class="sim-brand-badge">
+            <span class="material-symbols-outlined fs-6">web</span>
+            <span>Page Simulation:</span>
+          </div>
+          <div class="sim-pills-wrap">
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'isolated'" (click)="setModalPreviewPage('isolated')">
+              <span class="material-symbols-outlined fs-6">crop_free</span>
+              <span>Isolated Navbar</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'home'" (click)="setModalPreviewPage('home')">
+              <span>Home Page</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'about'" (click)="setModalPreviewPage('about')">
+              <span>About Us</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'services'" (click)="setModalPreviewPage('services')">
+              <span>Services</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'request-service'" (click)="setModalPreviewPage('request-service')">
+              <span>Request a Service</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'contact'" (click)="setModalPreviewPage('contact')">
+              <span>Contact Us</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog'" (click)="setModalPreviewPage('blog')">
+              <span>Blog</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Mode 1: Rendered Visual Canvas -->
         <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
-          <!-- Page View Simulation Bar (active for menu templates) -->
-          <div class="page-sim-toolbar" *ngIf="activePreviewItem?.category === 'menu'">
-            <div class="sim-brand-badge">
-              <span class="material-symbols-outlined fs-6">web</span>
-              <span>Page Simulation:</span>
-            </div>
-            <div class="sim-pills-wrap">
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'isolated'" (click)="setModalPreviewPage('isolated')">
-                <span class="material-symbols-outlined fs-6">crop_free</span>
-                <span>Isolated Navbar</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'home'" (click)="setModalPreviewPage('home')">
-                <span>Home Page</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'about'" (click)="setModalPreviewPage('about')">
-                <span>About Us</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'services'" (click)="setModalPreviewPage('services')">
-                <span>Services</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'request-service'" (click)="setModalPreviewPage('request-service')">
-                <span>Request a Service</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'contact'" (click)="setModalPreviewPage('contact')">
-                <span>Contact Us</span>
-              </button>
-              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog'" (click)="setModalPreviewPage('blog')">
-                <span>Blog</span>
-              </button>
-            </div>
-          </div>
           <div class="preview-canvas-wrapper">
             <iframe class="full-demo-iframe" [srcdoc]="safeSinglePreviewSrcDoc" title="Single Template Visual Preview"></iframe>
           </div>
@@ -2710,10 +2711,13 @@ export interface CodeInjectionTag {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px 18px;
+      padding: 10px 24px;
       background: #f8fafc;
       border-bottom: 1.5px solid #e2e8f0;
       flex-wrap: wrap;
+      width: 100%;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
     .sim-brand-badge {
       display: flex;
@@ -2825,7 +2829,7 @@ export interface CodeInjectionTag {
     }
     .preview-canvas-wrapper, .full-demo-canvas-wrapper {
       width: 100%;
-      max-width: 1200px;
+      max-width: 100%;
       background: #ffffff;
       border-radius: 12px;
       overflow: hidden;
@@ -4661,8 +4665,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   onIframeMessage(event: MessageEvent): void {
     if (!event.data || typeof event.data !== 'object') return;
     if (event.data.type === 'DEMO_NAV') {
-      const href = (event.data.href || '').toLowerCase();
-      const text = (event.data.text || '').toLowerCase();
+      const href = (event.data.href || '').trim().toLowerCase();
+      const text = (event.data.text || '').trim().toLowerCase();
+      if (!href || href === '#' || href.startsWith('javascript:')) return;
       let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
 
       if (href.includes('request') || text.includes('request')) {
@@ -5632,17 +5637,64 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background: #ffffff;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+    .dropdown-menu.show {
+      display: block !important;
+    }
     ${combinedStyles}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('click', function(e) {
-      var a = e.target.closest('a');
-      if (a) {
+      // 1. Dropdown Toggle Click Handler
+      var dropdownToggle = e.target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]');
+      if (dropdownToggle) {
         e.preventDefault();
-        window.parent.postMessage({ type: 'DEMO_NAV', href: a.getAttribute('href') || '', text: a.textContent || '' }, '*');
+        e.stopPropagation();
+        var parentDropdown = dropdownToggle.closest('.dropdown');
+        var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
+        if (menu) {
+          var isAlreadyOpen = menu.classList.contains('show');
+          // Close any open dropdowns first
+          document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+            m.classList.remove('show');
+            var prev = m.previousElementSibling;
+            if (prev && prev.classList.contains('dropdown-toggle')) {
+              prev.setAttribute('aria-expanded', 'false');
+            }
+          });
+          if (!isAlreadyOpen) {
+            menu.classList.add('show');
+            dropdownToggle.setAttribute('aria-expanded', 'true');
+          }
+        }
         return;
       }
+
+      // 2. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown-menu')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+          m.classList.remove('show');
+          var prev = m.previousElementSibling;
+          if (prev && prev.classList.contains('dropdown-toggle')) {
+            prev.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // 3. Regular Navigation Links
+      var a = e.target.closest('a');
+      if (a) {
+        var href = (a.getAttribute('href') || '').trim();
+        if (!href || href === '#' || href.startsWith('javascript:')) {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+        window.parent.postMessage({ type: 'DEMO_NAV', href: href, text: a.textContent || '' }, '*');
+        return;
+      }
+
+      // 4. Cart / Add Buttons
       var btn = e.target.closest('button, .btn');
       if (btn) {
         var txt = (btn.textContent || '').toLowerCase();
@@ -6844,17 +6896,64 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background: #ffffff;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+    .dropdown-menu.show {
+      display: block !important;
+    }
     ${combinedStyles}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('click', function(e) {
-      var a = e.target.closest('a');
-      if (a) {
+      // 1. Dropdown Toggle Click Handler
+      var dropdownToggle = e.target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]');
+      if (dropdownToggle) {
         e.preventDefault();
-        window.parent.postMessage({ type: 'DEMO_NAV', href: a.getAttribute('href') || '', text: a.textContent || '' }, '*');
+        e.stopPropagation();
+        var parentDropdown = dropdownToggle.closest('.dropdown');
+        var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
+        if (menu) {
+          var isAlreadyOpen = menu.classList.contains('show');
+          // Close any open dropdowns first
+          document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+            m.classList.remove('show');
+            var prev = m.previousElementSibling;
+            if (prev && prev.classList.contains('dropdown-toggle')) {
+              prev.setAttribute('aria-expanded', 'false');
+            }
+          });
+          if (!isAlreadyOpen) {
+            menu.classList.add('show');
+            dropdownToggle.setAttribute('aria-expanded', 'true');
+          }
+        }
         return;
       }
+
+      // 2. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown-menu')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+          m.classList.remove('show');
+          var prev = m.previousElementSibling;
+          if (prev && prev.classList.contains('dropdown-toggle')) {
+            prev.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // 3. Regular Navigation Links
+      var a = e.target.closest('a');
+      if (a) {
+        var href = (a.getAttribute('href') || '').trim();
+        if (!href || href === '#' || href.startsWith('javascript:')) {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+        window.parent.postMessage({ type: 'DEMO_NAV', href: href, text: a.textContent || '' }, '*');
+        return;
+      }
+
+      // 4. Cart / Add Buttons
       var btn = e.target.closest('button, .btn');
       if (btn) {
         var txt = (btn.textContent || '').toLowerCase();
