@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiService } from '../../../../core/services/api.service';
@@ -81,17 +81,17 @@ export interface TokenDoc {
               <span class="sep">/</span>
               <a routerLink="/content/console/templates">My Templates</a>
               <span class="sep">/</span>
-              <span class="current">Create Custom Section</span>
+              <span class="current">{{ isEditMode ? 'Edit Section Blueprint' : 'Create Custom Section' }}</span>
             </div>
 
             <div class="title-with-icon">
               <div class="header-icon-box">
-                <span class="material-symbols-outlined">add_circle</span>
+                <span class="material-symbols-outlined">{{ isEditMode ? 'edit_note' : 'add_circle' }}</span>
               </div>
               <div class="title-text-wrap">
-                <h1 class="page-title">Create Custom Section Template</h1>
+                <h1 class="page-title">{{ isEditMode ? ('Edit Section: ' + templateName) : 'Create Custom Section Template' }}</h1>
                 <p class="page-subtitle">
-                  Design bespoke section markup with dynamic CMS tokens, scoped styles, and realistic customer simulation.
+                  {{ isEditMode ? 'Modify section markup, tokens, and scoped CSS directly in the studio with live instant simulation.' : 'Design bespoke section markup with dynamic CMS tokens, scoped styles, and realistic customer simulation.' }}
                 </p>
               </div>
             </div>
@@ -118,7 +118,7 @@ export interface TokenDoc {
               [disabled]="savingTemplate"
             >
               <span class="material-symbols-outlined btn-icon">{{ savingTemplate ? 'hourglass_empty' : 'save' }}</span>
-              <span>{{ savingTemplate ? 'Saving to Vault...' : 'Save to Template Vault' }}</span>
+              <span>{{ savingTemplate ? 'Saving...' : (isEditMode ? 'Update Custom Section' : 'Save to Template Vault') }}</span>
             </button>
           </div>
         </div>
@@ -329,10 +329,6 @@ export interface TokenDoc {
                   <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ DirectUrl }}')" [innerText]="'+ {{ DirectUrl }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('DirectUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('DirectUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
               </ng-container>
 
               <!-- Category: MEDIA & STYLE -->
@@ -356,10 +352,6 @@ export interface TokenDoc {
                 <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-media" (click)="insertTokenAtCursor('{{ BackgroundColor }}')" [innerText]="'+ {{ BackgroundColor }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('BackgroundColor', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('BackgroundColor', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-media chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
@@ -410,10 +402,6 @@ export interface TokenDoc {
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ ButtonLink }}')" [innerText]="'{{ ButtonLink }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('ButtonLink', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('ButtonLink', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
               </ng-container>
 
               <!-- Category: FAQ & CATEGORIES -->
@@ -445,10 +433,6 @@ export interface TokenDoc {
                 <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ Answer }}')" [innerText]="'{{ Answer }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('Answer', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('Answer', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
@@ -525,10 +509,6 @@ export interface TokenDoc {
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
               </ng-container>
 
               <!-- Category: FOOTER COLUMNS -->
@@ -571,10 +551,6 @@ export interface TokenDoc {
                 <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
@@ -719,10 +695,6 @@ export interface TokenDoc {
                     <span [innerText]="'+ Social Media Links'"></span>
                   </button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('SocialLinks', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('SocialLinks', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-accent" (click)="insertTokenAtCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CustomClass', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CustomClass', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
             </div>
@@ -1150,22 +1122,7 @@ export interface TokenDoc {
               </div>
             </div>
 
-            <div class="inspector-form-grid-2" style="margin-top: 14px;">
-              <div class="form-group">
-                <label class="field-label">
-                  <span>Custom CSS Class (Critical)</span>
-                  <code [innerText]="'{{ CustomClass }}'"></code>
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="sampleContent.customClass"
-                  (ngModelChange)="updatePreviewSimulation()"
-                  class="form-control inspector-input"
-                  placeholder="e.g. oz-glass-card shadow-xl rounded-2xl"
-                />
-              </div>
-
-              <div class="form-group">
+              <div class="form-group" style="margin-top: 14px;">
                 <label class="field-label">
                   <span>Background Color / Theme Token</span>
                   <code [innerText]="'{{ BackgroundColor }}'"></code>
@@ -1187,7 +1144,6 @@ export interface TokenDoc {
                 </div>
               </div>
             </div>
-          </div>
 
           <!-- TAB 4: CARDS REPEATER (PageSectionLists) -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'cards'">
@@ -3241,9 +3197,10 @@ export interface TokenDoc {
     .preview-modal-dialog {
       background: #ffffff;
       border-radius: 16px;
-      width: 100%;
-      max-width: 1240px;
-      max-height: 90vh;
+      width: 98vw;
+      max-width: 1720px;
+      height: 95vh;
+      max-height: 95vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -3410,6 +3367,8 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   @ViewChild('richTextEditor') richTextEditorRef?: ElementRef<HTMLDivElement>;
 
   // Form Metadata
+  isEditMode: boolean = false;
+  editCode: string = '';
   templateName: string = '';
   selectedCategory: string = 'hero';
   variantCode: string = '';
@@ -3523,13 +3482,6 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       description: 'Custom direct route path for navigation redirects.',
       cmsPath: 'Admin Console > Web Pages > Page Sections > Direct URL',
       example: '<a href="{{ DirectUrl }}">Direct Link</a>'
-    },
-    CustomClass: {
-      name: 'Custom CSS Class',
-      token: '{{ CustomClass }}',
-      description: 'Optional custom CSS class name applied directly to the section wrapper.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Custom Class',
-      example: '<section class="my-block {{ CustomClass }}">'
     },
     ImageUrl: {
       name: 'Primary Image URL',
@@ -3872,7 +3824,6 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     secondaryButtonText: '',
     secondaryButtonLink: '',
     directUrl: '#',
-    customClass: '',
     backgroundColor: '#ffffff',
     imageUrl: '',
     secondImageUrl: '',
@@ -3961,7 +3912,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'menu',
       tagline: 'Sticky light corporate navbar with dynamic logo/brand identity, dropdowns, and CTA buttons',
       defaultName: 'Classic Light Corporate Navbar',
-      html: `<header class="oz-nav-header sticky-top bg-white border-bottom shadow-sm {{ CustomClass }}">
+      html: `<header class="oz-nav-header sticky-top bg-white border-bottom shadow-sm">
   <nav class="navbar navbar-expand-lg navbar-light py-3">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center gap-2" href="/">
@@ -3988,7 +3939,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
         </ul>
         <div class="d-flex align-items-center gap-2">
           {{#each MenuCtaButtons}}
-            <a href="{{ Url }}" class="btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm">
+            <a href="{{ Url }}" class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">
               {{ Title }}
             </a>
           {{/each}}
@@ -4030,7 +3981,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'view_carousel',
       tagline: 'High-impact landing hero with bold headline, dual CTAs, badge, and graphic layout',
       defaultName: 'Quantum Split Showcase Hero',
-      html: `<section class="oz-hero-section {{ CustomClass }}">
+      html: `<section class="oz-hero-section">
   <div class="oz-hero-container">
     <div class="oz-hero-content">
       <span class="oz-hero-badge">{{ MiniTitle }}</span>
@@ -4162,7 +4113,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'view_quilt',
       tagline: 'Multi-column responsive grid with icon badges, feature cards, and narrative copy',
       defaultName: 'Nexus Tri-Card Features Grid',
-      html: `<section class="oz-features-section {{ CustomClass }}">
+      html: `<section class="oz-features-section">
   <div class="oz-features-header">
     <span class="oz-sub-badge">{{ MiniTitle }}</span>
     <h2 class="oz-features-title">{{ Title }}</h2>
@@ -4278,7 +4229,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'quiz',
       tagline: 'Collapsible interactive accordion list grouped by knowledge categories',
       defaultName: 'Apex Interactive FAQ Accordion',
-      html: `<section class="oz-faq-section {{ CustomClass }}">
+      html: `<section class="oz-faq-section">
   <div class="oz-faq-container">
     <div class="oz-faq-header">
       <span class="oz-faq-badge">{{ MiniTitle }}</span>
@@ -4395,7 +4346,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'linear_scale',
       tagline: 'Infinite horizontal ticker ribbon with enterprise logos, client badges, or metrics',
       defaultName: 'Velocity Infinite Logo Marquee',
-      html: `<section class="oz-marquee-section {{ CustomClass }}">
+      html: `<section class="oz-marquee-section">
   <div class="oz-marquee-header">
     <span class="oz-marquee-title">{{ Title }}</span>
   </div>
@@ -4456,7 +4407,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   .oz-marquee-track { gap: 18px; }
   .oz-marquee-item { padding: 8px 14px; font-size: 12px; gap: 6px; }
   .oz-m-icon { font-size: 17px; }
-}`,
+} `,
       sampleContent: {
         title: 'TRUSTED BY GLOBAL ENTERPRISES & FAST-GROWING TEAMS',
         miniTitle: '',
@@ -4480,7 +4431,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'contact_mail',
       tagline: 'Split layout with company contact points and styled responsive message form',
       defaultName: 'Beacon Enterprise Contact & Booking',
-      html: `<section class="oz-contact-section {{ CustomClass }}">
+      html: `<section class="oz-contact-section">
   <div class="oz-contact-container">
     <div class="oz-contact-info">
       <span class="oz-sub-badge">{{ MiniTitle }}</span>
@@ -4647,7 +4598,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'dock_to_bottom',
       tagline: 'Multi-column corporate footer with links, brand info, and copyright bar',
       defaultName: 'Sovereign Enterprise Clean Footer',
-      html: `<footer class="oz-site-footer {{ CustomClass }}">
+      html: `<footer class="oz-site-footer">
   <div class="oz-footer-container">
     <div class="oz-footer-brand-col">
       <h3 class="oz-footer-brand">{{ BrandName }}</h3>
@@ -4769,7 +4720,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'newspaper',
       tagline: 'Modern responsive article cards with cover photos, categories, author metadata, and read more links',
       defaultName: 'Apex 3-Column Blog Card Grid',
-      html: `<section class="oz-blog-section {{ CustomClass }}">
+      html: `<section class="oz-blog-section">
   <div class="oz-blog-container">
     <div class="oz-blog-header">
       <span class="oz-blog-badge">{{ MiniTitle }}</span>
@@ -4840,7 +4791,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       icon: 'article',
       tagline: 'Single article detail with author meta, rich body, and 4-widget sticky sidebar',
       defaultName: 'Apex Article Detail With Sticky Sidebar',
-      html: `<article class="oz-article-detail-section {{ CustomClass }}">
+      html: `<article class="oz-article-detail-section">
   <div class="oz-article-detail-container">
     <div class="oz-article-main-content">
       <header class="oz-article-header">
@@ -4973,6 +4924,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private sanitizer: DomSanitizer,
     private toast: ToastService,
     private api: ApiService
@@ -4981,7 +4933,135 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.resolveTenantInfo();
     this.loadEditorTokens();
-    this.onCategoryChange(false);
+
+    this.route.queryParams.subscribe(params => {
+      const editCode = params['editCode'];
+      const category = params['category'];
+      if (editCode) {
+        this.isEditMode = true;
+        this.editCode = editCode;
+        this.loadTemplateForEditing(editCode, category);
+      } else {
+        this.onCategoryChange(false);
+      }
+    });
+  }
+
+  /**
+   * Loads an installed template for editing in the studio by its variant code or template key.
+   * @param code Variant code, template key, or database ID
+   * @param categoryHint Optional category hint from query params
+   */
+  loadTemplateForEditing(code: string, categoryHint?: string): void {
+    this.api.get<any>('ContentApi/templates/installed').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          const item = res.data.find((t: any) =>
+            (t.variantCode && t.variantCode.toLowerCase() === code.toLowerCase()) ||
+            (t.templateKey && t.templateKey.toLowerCase() === code.toLowerCase()) ||
+            (t.id && t.id.toLowerCase() === code.toLowerCase())
+          );
+          if (item) {
+            this.templateName = item.name || this.templateName;
+            this.description = item.description || this.description;
+            this.variantCode = item.variantCode || item.templateKey || code;
+            const cat = (item.categoryKey || categoryHint || 'hero').toLowerCase();
+            this.selectedCategory = cat;
+            this.htmlTemplate = item.htmlTemplate || '';
+            this.cssStyles = item.cssStyles || '';
+            this.jsScript = item.jsScript || '';
+
+            // If defaultContentJson is present, parse and merge into sampleContent
+            if (item.defaultContentJson) {
+              try {
+                const parsed = JSON.parse(item.defaultContentJson);
+                this.sampleContent = { ...this.sampleContent, ...parsed };
+              } catch (e) {
+                console.warn('Could not parse defaultContentJson:', e);
+              }
+            } else {
+              // Populate sample content from preset if applicable
+              const preset = this.categoryPresets.find(c => c.id === cat);
+              if (preset) {
+                this.sampleContent = JSON.parse(JSON.stringify(preset.sampleContent));
+              }
+            }
+
+            this.updatePreviewSimulation();
+            setTimeout(() => this.syncRichEditorFromModel(), 0);
+            this.toast.info(`Loaded template "${this.templateName}" for editing.`);
+            return;
+          }
+        }
+        this.toast.warning(`Template with code "${code}" could not be found.`);
+        this.onCategoryChange(false);
+      },
+      error: (err) => {
+        console.error('Error fetching template for editing:', err);
+        this.toast.error('Failed to load template for editing.');
+        this.onCategoryChange(false);
+      }
+    });
+  }
+
+  /**
+   * Helper that replaces Handlebars {{#each BlockName}} ... {{/each}} blocks while respecting
+   * nested {{#each ...}} ... {{/each}} depth.
+   * @param template Full template string
+   * @param blockName Name of the block to match
+   * @param replacer Function called with the inner content of the balanced block
+   * @returns Hydrated string with balanced block replaced
+   */
+  replaceBalancedBlock(template: string, blockName: string, replacer: (innerContent: string) => string): string {
+    const openTagPattern = new RegExp(`\\{\\{#each\\s+${blockName}\\b[^}]*\\}\\}`, 'i');
+    let result = '';
+    let remaining = template;
+
+    while (true) {
+      const match = remaining.match(openTagPattern);
+      if (!match || match.index === undefined) {
+        result += remaining;
+        break;
+      }
+
+      const startIndex = match.index;
+      result += remaining.slice(0, startIndex);
+      const contentStart = startIndex + match[0].length;
+      let depth = 1;
+      let pos = contentStart;
+
+      while (pos < remaining.length && depth > 0) {
+        const nextOpen = remaining.indexOf('{{#each', pos);
+        const nextClose = remaining.indexOf('{{/each}}', pos);
+
+        if (nextClose === -1) {
+          break; // Unclosed block
+        }
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+          depth++;
+          pos = nextOpen + '{{#each'.length;
+        } else {
+          depth--;
+          if (depth === 0) {
+            const innerContent = remaining.substring(contentStart, nextClose);
+            result += replacer(innerContent);
+            remaining = remaining.substring(nextClose + '{{/each}}'.length);
+            break;
+          } else {
+            pos = nextClose + '{{/each}}'.length;
+          }
+        }
+      }
+
+      if (depth > 0) {
+        // Fallback for unclosed block
+        result += remaining.substring(startIndex);
+        break;
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -5838,21 +5918,20 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       const ctas = (this.editorTokens.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
         ? this.editorTokens.menuCtaButtons
         : [
-            { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-            { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+            { title: 'Sign In', url: '/login' },
+            { title: 'Request a Service', url: '/request-service' }
           ];
-      return ctas.map((cta: any, idx: number) => {
+      return ctas.map((cta: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
         rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
-        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, '');
         return rendered;
       }).join('\n');
     });
 
     // 0c. Menu Dropdowns Loop ({{#each MenuDropdowns}}...{{/each}}) with nested ({{#each Pages}}...{{/each}})
-    const menuDropdownsRegex = /\{\{#each\s+MenuDropdowns\}\}([\s\S]*?)\{\{\/each\}\}/gi;
-    output = output.replace(menuDropdownsRegex, (_match: string, outerTemplate: string) => {
+    output = this.replaceBalancedBlock(output, 'MenuDropdowns', (outerTemplate) => {
       const dropdowns = (this.editorTokens.menuDropdowns && this.editorTokens.menuDropdowns.length > 0)
         ? this.editorTokens.menuDropdowns
         : (ctx.menuDropdowns && ctx.menuDropdowns.length > 0)
@@ -5865,16 +5944,23 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
                   { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
                   { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
                 ]
+              },
+              {
+                title: 'Company',
+                pages: [
+                  { title: 'About Us', url: '/about' },
+                  { title: 'Request a Service', url: '/request-service' },
+                  { title: 'Contact Us', url: '/contact' }
+                ]
               }
             ];
 
+      if (!Array.isArray(dropdowns) || dropdowns.length === 0) return '';
+
       return dropdowns.map((dd: any, ddIdx: number) => {
         let renderedDd = outerTemplate;
-        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
-        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
-        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
 
-        // Render nested {{#each Pages}}
+        // FIRST resolve nested {{#each Pages}} so child {{ Title }} is NOT replaced by parent category title
         const pagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
         renderedDd = renderedDd.replace(pagesRegex, (_pMatch: string, pageTemplate: string) => {
           const pages = dd.pages || [];
@@ -5886,6 +5972,11 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
             return renderedPage;
           }).join('\n');
         });
+
+        // THEN resolve category-level tokens
+        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
+        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
 
         return renderedDd;
       }).join('\n');
@@ -6122,8 +6213,8 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
       return groups.map((g: any) => {
         let colHtml = innerTemplate;
-        colHtml = colHtml.replace(/\{\{\s*(?:DisplayTitle|Title|CategoryTitle)\s*\}\}/gi, g.displayTitle || g.name || 'Column');
 
+        // FIRST resolve nested {{#each Pages}} so child {{ Title }} is NOT replaced by parent category title
         const pagesLoopRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
         colHtml = colHtml.replace(pagesLoopRegex, (_pMatch: string, pTemplate: string) => {
           const pages = g.pages || [];
@@ -6134,6 +6225,8 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
             return pRendered;
           }).join('\n');
         });
+
+        colHtml = colHtml.replace(/\{\{\s*(?:DisplayTitle|Title|CategoryTitle)\s*\}\}/gi, g.displayTitle || g.name || 'Column');
 
         return colHtml;
       }).join('\n');
@@ -6346,7 +6439,7 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     output = output.replace(/\{\{\s*CookiesUrl\s*\}\}/gi, '/cookie-policy');
 
     // Custom CSS Class
-    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, (ctx.customClass || '').trim());
+    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, '');
 
     // Media & Styles
     output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || 'transparent');
@@ -6452,7 +6545,10 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
           defaultContentJson: payload.defaultContentJson
         };
 
-        this.toast.success(`Custom template '${newTemplate.name}' saved to your vault!`);
+        const successMsg = this.isEditMode
+          ? `Template '${newTemplate.name}' updated in your vault!`
+          : `Custom template '${newTemplate.name}' saved to your vault!`;
+        this.toast.success(successMsg);
         this.router.navigate(['/content/console/templates']);
       },
       error: () => {

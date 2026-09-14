@@ -776,6 +776,37 @@ export interface CodeInjectionTag {
 
         <!-- Mode 1: Rendered Visual Canvas -->
         <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
+          <!-- Page View Simulation Bar (active for menu templates) -->
+          <div class="page-sim-toolbar" *ngIf="activePreviewItem?.category === 'menu'">
+            <div class="sim-brand-badge">
+              <span class="material-symbols-outlined fs-6">web</span>
+              <span>Page Simulation:</span>
+            </div>
+            <div class="sim-pills-wrap">
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'isolated'" (click)="setModalPreviewPage('isolated')">
+                <span class="material-symbols-outlined fs-6">crop_free</span>
+                <span>Isolated Navbar</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'home'" (click)="setModalPreviewPage('home')">
+                <span>Home Page</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'about'" (click)="setModalPreviewPage('about')">
+                <span>About Us</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'services'" (click)="setModalPreviewPage('services')">
+                <span>Services</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'request-service'" (click)="setModalPreviewPage('request-service')">
+                <span>Request a Service</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'contact'" (click)="setModalPreviewPage('contact')">
+                <span>Contact Us</span>
+              </button>
+              <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog'" (click)="setModalPreviewPage('blog')">
+                <span>Blog</span>
+              </button>
+            </div>
+          </div>
           <div class="preview-canvas-wrapper">
             <iframe class="full-demo-iframe" [srcdoc]="safeSinglePreviewSrcDoc" title="Single Template Visual Preview"></iframe>
           </div>
@@ -892,7 +923,6 @@ export interface CodeInjectionTag {
                     <div class="subitem-inputs">
                       <input type="text" [(ngModel)]="cta.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Button Text (e.g. Request a Service)" />
                       <input type="text" [(ngModel)]="cta.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/target-page" />
-                      <input type="text" [(ngModel)]="cta.customClass" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="max-width: 170px;" placeholder="btn-primary" />
                     </div>
                     <button type="button" class="btn-del-subitem" (click)="removeMenuCtaButton(cIdx)" title="Remove CTA">
                       <span class="material-symbols-outlined">delete</span>
@@ -1109,7 +1139,7 @@ export interface CodeInjectionTag {
                 <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
                 <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
               </button>
-              <a routerLink="/content/console/templates/create" class="btn-open-studio" title="Open full studio editor">
+              <a [routerLink]="['/content/console/templates/create']" [queryParams]="{ editCode: activePreviewItem?.variantCode, category: activePreviewItem?.category }" class="btn-open-studio" title="Open full studio editor">
                 <span class="material-symbols-outlined">open_in_new</span>
                 <span>Open Full Studio</span>
               </a>
@@ -1165,10 +1195,6 @@ export interface CodeInjectionTag {
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CustomClass', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CustomClass', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
             </ng-container>
 
             <!-- Other Categories Ribbon -->
@@ -1196,10 +1222,6 @@ export interface CodeInjectionTag {
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-accent" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CustomClass', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CustomClass', $event)"><span class="material-symbols-outlined">info</span></button>
               </span>
             </ng-container>
           </div>
@@ -2679,9 +2701,59 @@ export interface CodeInjectionTag {
       from { transform: translateY(20px) scale(0.98); opacity: 0; }
       to { transform: translateY(0) scale(1); opacity: 1; }
     }
-    .preview-modal-card { width: 95%; max-width: 1280px; height: 90vh; }
+    .preview-modal-card { width: 98vw; max-width: 1720px; height: 95vh; margin: auto; }
     .full-demo-modal-card { width: 98%; max-width: 1400px; height: 94vh; }
     .assign-modal-card { width: 100%; max-width: 520px; }
+
+    /* Page Simulation Toolbar (Menu Preview) */
+    .page-sim-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 18px;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .sim-brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sim-pills-wrap {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .sim-pill-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .sim-pill-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .sim-pill-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 80, 229, 0.25);
+    }
 
     .preview-modal-header, .full-demo-header, .assign-modal-header {
       padding: 16px 24px;
@@ -4254,6 +4326,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   activePreviewItem: InstalledTemplateItem | null = null;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   previewModalTab: 'preview' | 'content' | 'html' | 'css' | 'js' = 'preview';
+  modalPreviewPageSlug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' = 'isolated';
   safeSinglePreviewHtml: SafeHtml = '';
   safeSinglePreviewSrcDoc: SafeHtml | string = '';
 
@@ -4323,7 +4396,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     logoUrl: string;
     topMenuItems: Array<{ title: string; url: string }>;
     dropdowns: Array<{ title: string; pages: Array<{ title: string; url: string }> }>;
-    menuCtaButtons: Array<{ title: string; url: string; customClass: string }>;
+    menuCtaButtons: Array<{ title: string; url: string }>;
   } = {
     brandName: 'Acme Global',
     logoUrl: '',
@@ -4341,11 +4414,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
           { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
         ]
+      },
+      {
+        title: 'Company',
+        pages: [
+          { title: 'About Us', url: '/about' },
+          { title: 'Request a Service', url: '/request-service' },
+          { title: 'Contact Us', url: '/contact' }
+        ]
       }
     ],
     menuCtaButtons: [
-      { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-      { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+      { title: 'Sign In', url: '/login' },
+      { title: 'Request a Service', url: '/request-service' }
     ]
   };
 
@@ -4411,7 +4492,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       token: '{{#each MenuCtaButtons}}...{{/each}}',
       description: 'Dynamic header call-to-action buttons configured on published pages with IsMenuCTA enabled.',
       cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Show as Menu CTA"',
-      example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn {{ CustomClass }}">{{ Title }}</a>{{/each}}'
+      example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn btn-primary">{{ Title }}</a>{{/each}}'
     },
     Title: {
       name: 'Section Heading',
@@ -4454,13 +4535,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Route, hash, or external URL destination.',
       cmsPath: 'Admin Console > Web Pages > Page Sections > Button Link',
       example: '<a href="{{ ButtonLink }}">{{ ButtonText }}</a>'
-    },
-    CustomClass: {
-      name: 'Custom CSS Styling Class',
-      token: '{{ CustomClass }}',
-      description: 'Optional custom CSS class assigned to the section.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Advanced CSS Class',
-      example: '<div class="custom-section {{ CustomClass }}">'
     }
   };
 
@@ -4589,25 +4663,28 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (event.data.type === 'DEMO_NAV') {
       const href = (event.data.href || '').toLowerCase();
       const text = (event.data.text || '').toLowerCase();
+      let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
 
       if (href.includes('request') || text.includes('request')) {
-        this.setPreviewPage('request-service');
-        this.toast.info('Navigated to Request a Service in live preview.');
+        targetSlug = 'request-service';
       } else if (href.includes('about') || text.includes('about')) {
-        this.setPreviewPage('about');
-        this.toast.info('Navigated to About Us in live preview.');
+        targetSlug = 'about';
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
-        this.setPreviewPage('services');
-        this.toast.info('Navigated to Services & Solutions in live preview.');
+        targetSlug = 'services';
       } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
-        this.setPreviewPage('blog');
-        this.toast.info('Navigated to News & Insights in live preview.');
+        targetSlug = 'blog';
       } else if (href.includes('contact') || text.includes('contact')) {
-        this.setPreviewPage('contact');
-        this.toast.info('Navigated to Contact Headquarters in live preview.');
+        targetSlug = 'contact';
       } else if (href.includes('home') || text.includes('home')) {
-        this.setPreviewPage('home');
-        this.toast.info('Navigated to Home in live preview.');
+        targetSlug = 'home';
+      }
+
+      if (this.showSinglePreviewModal && this.activePreviewItem?.category === 'menu') {
+        this.setModalPreviewPage(targetSlug);
+        this.toast.info(`Switched preview simulation to ${targetSlug.replace('-', ' ').toUpperCase()} page.`);
+      } else {
+        this.setPreviewPage(targetSlug);
+        this.toast.info(`Navigated to ${targetSlug.replace('-', ' ').toUpperCase()} in live preview.`);
       }
     }
   }
@@ -5464,13 +5541,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
                   { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
                   { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
                 ]
+              },
+              {
+                title: 'Company',
+                pages: [
+                  { title: 'About Us', url: '/about' },
+                  { title: 'Request a Service', url: '/request-service' },
+                  { title: 'Contact Us', url: '/contact' }
+                ]
               }
             ],
         menuCtaButtons: (this.editorTokens?.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
-          ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons))
+          ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons)).map((b: any) => ({ title: b.title, url: b.url }))
           : [
-              { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-              { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+              { title: 'Sign In', url: '/login' },
+              { title: 'Request a Service', url: '/request-service' }
             ]
       };
     }
@@ -5485,24 +5570,51 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
     }
 
+    this.modalPreviewPageSlug = 'isolated';
     this.updateSinglePreviewHtml();
     this.showSinglePreviewModal = true;
   }
 
+  /**
+   * Sets the active page preview simulation inside the Single Preview Modal for Menu components.
+   * @param slug Target page slug or 'isolated' for standalone navigation bar.
+   */
+  setModalPreviewPage(slug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog'): void {
+    this.modalPreviewPageSlug = slug;
+    this.updateSinglePreviewHtml();
+  }
+
   updateSinglePreviewHtml(): void {
     if (!this.activePreviewItem) return;
-    const dataContext = (this.activePreviewItem.category === 'footer')
-      ? { ...this.previewContent, ...this.previewFooterContent }
-      : (this.activePreviewItem.category === 'menu')
-      ? { ...this.previewContent, ...this.previewMenuContent }
-      : (this.activePreviewItem.category === 'blog' || this.activePreviewItem.category === 'blog_detail')
-      ? { ...this.previewContent, ...this.previewBlogContent }
-      : this.previewContent;
-    let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
-    if (this.activePreviewItem.category === 'footer') {
-      hydrated = this.enforceOzikolCredit(hydrated);
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+    let combinedJs = '';
+
+    if (this.activePreviewItem.category === 'menu' && this.modalPreviewPageSlug !== 'isolated') {
+      const dataContext = { ...this.previewContent, ...this.previewMenuContent };
+      const sim = this.composePageSimulation(this.modalPreviewPageSlug, this.activePreviewItem, dataContext);
+      combinedStyles = sim.combinedStyles;
+      combinedHtml = sim.combinedHtml;
+      combinedJs = sim.combinedJs;
+    } else {
+      const dataContext = (this.activePreviewItem.category === 'footer')
+        ? { ...this.previewContent, ...this.previewFooterContent }
+        : (this.activePreviewItem.category === 'menu')
+        ? { ...this.previewContent, ...this.previewMenuContent }
+        : (this.activePreviewItem.category === 'blog' || this.activePreviewItem.category === 'blog_detail')
+        ? { ...this.previewContent, ...this.previewBlogContent }
+        : this.previewContent;
+      let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
+      if (this.activePreviewItem.category === 'footer') {
+        hydrated = this.enforceOzikolCredit(hydrated);
+      }
+      combinedStyles = this.activePreviewItem.cssStyles || '';
+      combinedHtml = hydrated;
+      combinedJs = this.activePreviewItem.jsScript || '';
     }
-    const combined = `<style>${this.activePreviewItem.cssStyles}</style>\n${hydrated}`;
+
+    const combined = `<style>${combinedStyles}</style>\n${combinedHtml}`;
     this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
 
     const singleIframeDoc = `<!DOCTYPE html>
@@ -5520,11 +5632,31 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background: #ffffff;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-    ${this.activePreviewItem.cssStyles || ''}
+    ${combinedStyles}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('click', function(e) {
+      var a = e.target.closest('a');
+      if (a) {
+        e.preventDefault();
+        window.parent.postMessage({ type: 'DEMO_NAV', href: a.getAttribute('href') || '', text: a.textContent || '' }, '*');
+        return;
+      }
+      var btn = e.target.closest('button, .btn');
+      if (btn) {
+        var txt = (btn.textContent || '').toLowerCase();
+        if (txt.includes('cart') || txt.includes('add')) {
+          e.preventDefault();
+          window.parent.postMessage({ type: 'DEMO_CART' }, '*');
+        }
+      }
+    });
+  <\/script>
 </head>
 <body>
-  ${hydrated}
+  ${combinedHtml}
+  ${combinedJs ? `\n  <script>\n    ${combinedJs}\n  <\/script>` : ''}
 </body>
 </html>`;
     this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
@@ -5637,8 +5769,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const nextIdx = this.previewMenuContent.menuCtaButtons.length + 1;
     this.previewMenuContent.menuCtaButtons.push({
       title: `Action CTA ${nextIdx}`,
-      url: `/action-${nextIdx}`,
-      customClass: 'btn-primary'
+      url: `/action-${nextIdx}`
     });
     this.onPreviewContentChange();
   }
@@ -5760,9 +5891,69 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   insertMenuCtaButtonsLoopAtModalCursor(): void {
     const loopSnippet = `{{#each MenuCtaButtons}}
-<a href="{{ Url }}" class="btn {{ CustomClass }} rounded-pill px-3 py-2 fw-semibold shadow-sm">{{ Title }}</a>
+<a href="{{ Url }}" class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">{{ Title }}</a>
 {{/each}}`;
     this.insertTokenAtModalCursor(loopSnippet);
+  }
+
+  /**
+   * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
+   * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
+   * @param template The raw HTML template string.
+   * @param blockName The target block name (e.g. 'MenuDropdowns').
+   * @param replacer Callback receiving the true balanced inner template string.
+   * @returns The transformed HTML string.
+   */
+  replaceBalancedBlock(template: string, blockName: string, replacer: (inner: string) => string): string {
+    if (!template) return '';
+    const openPattern = new RegExp(`\\{\\{#each\\s+${blockName}\\}\\}`, 'i');
+    let result = '';
+    let remaining = template;
+
+    while (true) {
+      const match = remaining.match(openPattern);
+      if (!match || match.index === undefined) {
+        result += remaining;
+        break;
+      }
+
+      const startIndex = match.index;
+      result += remaining.slice(0, startIndex);
+      const contentStart = startIndex + match[0].length;
+      let depth = 1;
+      let pos = contentStart;
+
+      while (pos < remaining.length && depth > 0) {
+        const nextOpen = remaining.indexOf('{{#each', pos);
+        const nextClose = remaining.indexOf('{{/each}}', pos);
+
+        if (nextClose === -1) {
+          break; // Unclosed block
+        }
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+          depth++;
+          pos = nextOpen + '{{#each'.length;
+        } else {
+          depth--;
+          if (depth === 0) {
+            const innerContent = remaining.substring(contentStart, nextClose);
+            result += replacer(innerContent);
+            remaining = remaining.substring(nextClose + '{{/each}}'.length);
+            break;
+          }
+          pos = nextClose + '{{/each}}'.length;
+        }
+      }
+
+      if (depth > 0) {
+        // Unclosed fallback
+        result += remaining.slice(startIndex, contentStart);
+        remaining = remaining.substring(contentStart);
+      }
+    }
+
+    return result;
   }
 
   showTokenDocModal(tKey: string, event: MouseEvent): void {
@@ -5943,21 +6134,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
       const ctas = ctx.menuCtaButtons || this.previewMenuContent.menuCtaButtons || (this.editorTokens?.menuCtaButtons?.length ? this.editorTokens.menuCtaButtons : [
-        { title: 'Sign In', url: '/login', customClass: 'btn-outline-secondary' },
-        { title: 'Request a Service', url: '/request-service', customClass: 'btn-primary' }
+        { title: 'Sign In', url: '/login' },
+        { title: 'Request a Service', url: '/request-service' }
       ]);
-      return ctas.map((cta: any, idx: number) => {
+      return ctas.map((cta: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*(?:ButtonText|Title)\s*\}\}/gi, cta.title || '');
         rendered = rendered.replace(/\{\{\s*(?:ButtonLink|Url)\s*\}\}/gi, cta.url || '#');
-        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cta.customClass || (idx === 0 ? 'btn-outline-secondary' : 'btn-primary'));
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, '');
         return rendered;
       }).join('\n');
     });
 
-    // 0c. Loop over {{#each MenuDropdowns}}...{{/each}} with nested {{#each Pages}}
-    const menuDropdownsRegex = /\{\{#each\s+MenuDropdowns\}\}([\s\S]*?)\{\{\/each\}\}/gi;
-    output = output.replace(menuDropdownsRegex, (_match, outerTemplate) => {
+    // 0c. Loop over {{#each MenuDropdowns}}...{{/each}} with nested {{#each Pages}} using balanced block parsing
+    output = this.replaceBalancedBlock(output, 'MenuDropdowns', (outerTemplate) => {
       const dropdowns = ctx.dropdowns || this.previewMenuContent.dropdowns || (this.editorTokens?.menuDropdowns?.length ? this.editorTokens.menuDropdowns : [
         {
           title: 'Services',
@@ -5966,16 +6156,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
             { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
           ]
+        },
+        {
+          title: 'Company',
+          pages: [
+            { title: 'About Us', url: '/about' },
+            { title: 'Request a Service', url: '/request-service' },
+            { title: 'Contact Us', url: '/contact' }
+          ]
         }
       ]);
 
+      if (!Array.isArray(dropdowns) || dropdowns.length === 0) return '';
+
       return dropdowns.map((dd: any, ddIdx: number) => {
         let renderedDd = outerTemplate;
-        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
-        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || 'Services');
-        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
 
-        // Render nested {{#each Pages}}
+        // FIRST resolve nested {{#each Pages}} so child {{ Title }} is NOT replaced by parent category title
         const pagesRegex = /\{\{#each\s+Pages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
         renderedDd = renderedDd.replace(pagesRegex, (_pMatch: string, pageTemplate: string) => {
           const pages = dd.pages || [];
@@ -5987,6 +6184,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             return renderedPage;
           }).join('\n');
         });
+
+        // THEN resolve parent dropdown tokens on outer element
+        renderedDd = renderedDd.replace(/\{\{\s*CategoryName\s*\}\}/gi, dd.title || dd.categoryName || `Menu ${ddIdx + 1}`);
+        renderedDd = renderedDd.replace(/\{\{\s*Title\s*\}\}/gi, dd.title || dd.categoryName || `Menu ${ddIdx + 1}`);
+        renderedDd = renderedDd.replace(/\{\{\s*Index\s*\}\}/gi, (ddIdx + 1).toString());
 
         return renderedDd;
       }).join('\n');
@@ -6358,8 +6560,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.renderFullSitePreview();
   }
 
-  renderFullSitePreview(): void {
-    const menuBlock = this.getActiveMenu();
+  /**
+   * Composes a complete simulated page containing Menu, Hero/Breadcrumbs, Body sections, Blog/Contact/Request-Service, and Footer.
+   * Enables 100% sample-content fidelity and live navigation simulation across all pages.
+   * @param pageSlug The target route slug ('home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog').
+   * @param menuBlockOverride Optional menu template item to override the active installed menu (used in modal preview).
+   * @param menuContextOverride Optional menu data context to override sample data.
+   * @returns An object containing combined CSS styles and combined HTML markup.
+   */
+  composePageSimulation(
+    pageSlug: 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog',
+    menuBlockOverride?: InstalledTemplateItem,
+    menuContextOverride?: any
+  ): { combinedStyles: string; combinedHtml: string; combinedJs: string } {
+    const menuBlock = menuBlockOverride || this.getActiveMenu();
     const heroBlock = this.getActiveHero();
     const allBodyBlocks = this.getAllBodyBlocks();
     const newsBlock = this.getActiveNewsletter();
@@ -6370,17 +6584,17 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const contactBlock = this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails') || this.installedTemplates.find(t => t.category === 'contact');
     const requestServiceBlock = this.installedTemplates.find(t => t.variantCode === 'Body_RequestService');
 
-    let activeBlocks: { block: InstalledTemplateItem, contextOverride?: any }[] = [];
+    let activeBlocks: { block: InstalledTemplateItem; contextOverride?: any }[] = [];
 
-    if (this.previewActivePageSlug === 'home') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    if (pageSlug === 'home') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (heroBlock) activeBlocks.push({ block: heroBlock });
       allBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
       if (blogBlock) activeBlocks.push({ block: blogBlock });
       if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (this.previewActivePageSlug === 'about') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    } else if (pageSlug === 'about') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
@@ -6400,8 +6614,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (testBlock) activeBlocks.push({ block: testBlock });
       if (ctaBlock) activeBlocks.push({ block: ctaBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (this.previewActivePageSlug === 'services') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    } else if (pageSlug === 'services') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
@@ -6422,8 +6636,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (faqBlock) activeBlocks.push({ block: faqBlock });
       if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (this.previewActivePageSlug === 'request-service') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    } else if (pageSlug === 'request-service') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
@@ -6442,8 +6656,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
       if (faqBlock) activeBlocks.push({ block: faqBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (this.previewActivePageSlug === 'blog') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    } else if (pageSlug === 'blog') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
@@ -6457,8 +6671,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (blogBlock) activeBlocks.push({ block: blogBlock });
       if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (this.previewActivePageSlug === 'contact') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock });
+    } else if (pageSlug === 'contact') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
@@ -6507,6 +6721,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     `;
 
     let combinedHtml = '';
+    let combinedJs = '';
 
     activeBlocks.forEach(({ block: b, contextOverride }) => {
       combinedStyles += `\n/* Block: ${b.name} (${b.variantCode}) */\n${b.cssStyles || ''}\n`;
@@ -6522,7 +6737,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         Year: new Date().getFullYear().toString()
       };
 
-      if (b.category === 'footer') {
+      if (b.category === 'menu') {
+        if (contextOverride) {
+          ctx = { ...ctx, ...contextOverride };
+        } else {
+          ctx = { ...ctx, ...this.previewMenuContent };
+        }
+      } else if (b.category === 'footer') {
         ctx = {
           ...ctx,
           categories: this.previewFooterContent.categories,
@@ -6555,7 +6776,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         );
 
         // Dynamically synchronize active navbar link highlighting with the current page slug
-        const activeSlug = this.previewActivePageSlug; // 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact'
+        const activeSlug = pageSlug;
 
         // 1. Strip hardcoded active / text-dark classes from all nav-links
         hydratedBlockHtml = hydratedBlockHtml
@@ -6590,8 +6811,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         hydratedBlockHtml = this.enforceOzikolCredit(hydratedBlockHtml);
       }
 
+      if (b.jsScript && b.jsScript.trim()) {
+        combinedJs += `\n/* Section: ${b.name} (${b.category}) */\n${b.jsScript}\n`;
+      }
+
       combinedHtml += `\n<!-- Section: ${b.name} (${b.category}) -->\n${hydratedBlockHtml}\n`;
     });
+
+    return { combinedStyles, combinedHtml, combinedJs };
+  }
+
+  renderFullSitePreview(): void {
+    const sim = this.composePageSimulation(this.previewActivePageSlug);
+    const combinedStyles = sim.combinedStyles;
+    const combinedHtml = sim.combinedHtml;
+    const combinedJs = sim.combinedJs;
 
     this.safeFullDemoHtml = this.sanitizer.bypassSecurityTrustHtml(`<style>${combinedStyles}</style>\n${combinedHtml}`);
 
@@ -6612,6 +6846,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
     ${combinedStyles}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('click', function(e) {
       var a = e.target.closest('a');
@@ -6633,6 +6868,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 </head>
 <body>
   ${combinedHtml}
+  ${combinedJs ? `\n  <script>\n    ${combinedJs}\n  <\/script>` : ''}
 </body>
 </html>`;
 
