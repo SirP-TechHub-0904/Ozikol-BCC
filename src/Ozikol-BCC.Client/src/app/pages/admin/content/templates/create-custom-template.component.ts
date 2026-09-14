@@ -3627,21 +3627,9 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
     </div>
 
     <div class="oz-contact-card">
-      <form class="oz-contact-form" onsubmit="event.preventDefault();">
-        <div class="oz-form-row">
-          <label>Your Full Name</label>
-          <input type="text" class="oz-form-ctrl" placeholder="Alex Morgan" />
-        </div>
-        <div class="oz-form-row">
-          <label>Work Email</label>
-          <input type="email" class="oz-form-ctrl" placeholder="alex@company.com" />
-        </div>
-        <div class="oz-form-row">
-          <label>Your Inquiry</label>
-          <textarea rows="4" class="oz-form-ctrl" placeholder="Tell us about your project requirements..."></textarea>
-        </div>
-        <button type="submit" class="oz-btn-submit">{{ ButtonText }}</button>
-      </form>
+      <h4 style="font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #0f172a;">Send Us a Direct Message</h4>
+      <p style="font-size: 13.5px; color: #64748b; margin-bottom: 18px;">Please complete the form below. We typically respond promptly.</p>
+      {{ Form "Contact_Us" }}
     </div>
   </div>
 </section>`,
