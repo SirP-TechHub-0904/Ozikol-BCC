@@ -697,7 +697,7 @@ export interface CodeInjectionTag {
               type="button"
               class="modal-mode-tab-btn"
               [class.active]="previewModalTab === 'preview'"
-              (click)="previewModalTab = 'preview'"
+              (click)="setPreviewModalTab('preview')"
             >
               <span class="material-symbols-outlined">visibility</span>
               <span>Preview</span>
@@ -706,7 +706,7 @@ export interface CodeInjectionTag {
               type="button"
               class="modal-mode-tab-btn"
               [class.active]="previewModalTab === 'content'"
-              (click)="previewModalTab = 'content'"
+              (click)="setPreviewModalTab('content')"
             >
               <span class="material-symbols-outlined">edit_note</span>
               <span>Sample Content</span>
@@ -715,7 +715,7 @@ export interface CodeInjectionTag {
               type="button"
               class="modal-mode-tab-btn"
               [class.active]="previewModalTab === 'html'"
-              (click)="previewModalTab = 'html'"
+              (click)="setPreviewModalTab('html')"
             >
               <span class="material-symbols-outlined">html</span>
               <span>HTML</span>
@@ -724,7 +724,7 @@ export interface CodeInjectionTag {
               type="button"
               class="modal-mode-tab-btn"
               [class.active]="previewModalTab === 'css'"
-              (click)="previewModalTab = 'css'"
+              (click)="setPreviewModalTab('css')"
             >
               <span class="material-symbols-outlined">css</span>
               <span>CSS</span>
@@ -733,7 +733,7 @@ export interface CodeInjectionTag {
               type="button"
               class="modal-mode-tab-btn"
               [class.active]="previewModalTab === 'js'"
-              (click)="previewModalTab = 'js'"
+              (click)="setPreviewModalTab('js')"
             >
               <span class="material-symbols-outlined">javascript</span>
               <span>JS</span>
@@ -828,7 +828,7 @@ export interface CodeInjectionTag {
                 <span class="material-symbols-outlined">restart_alt</span>
                 <span>Reset Defaults</span>
               </button>
-              <button type="button" class="btn btn-primary" (click)="previewModalTab = 'preview'">
+              <button type="button" class="btn btn-primary" (click)="setPreviewModalTab('preview')">
                 <span class="material-symbols-outlined">visibility</span>
                 <span>Return to Preview</span>
               </button>
@@ -1227,15 +1227,23 @@ export interface CodeInjectionTag {
             </ng-container>
           </div>
 
-          <!-- Real-Time Interactive Template Editor -->
-          <textarea
-            #modalHtmlEditor
-            class="modal-code-textarea"
-            [(ngModel)]="activePreviewItem.htmlTemplate"
-            (ngModelChange)="onModalHtmlChange()"
-            spellcheck="false"
-            placeholder="Edit HTML template source..."
-          ></textarea>
+          <!-- Real-Time Interactive Template Editor with Monaco Code Folding -->
+          <div class="monaco-host-wrap">
+            <div *ngIf="loadingMonaco" class="monaco-loading-overlay">
+              <span class="spinner-border spinner-border-sm text-info me-2"></span>
+              <span>Loading Monaco editor with code folding...</span>
+            </div>
+            <div #monacoHtmlContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
+            <textarea
+              *ngIf="!monacoReady && !loadingMonaco"
+              #modalHtmlEditor
+              class="modal-code-textarea"
+              [(ngModel)]="activePreviewItem.htmlTemplate"
+              (ngModelChange)="onModalHtmlChange()"
+              spellcheck="false"
+              placeholder="Edit HTML template source..."
+            ></textarea>
+          </div>
         </div>
 
         <!-- Mode 3: Scoped CSS Stylesheet -->
@@ -1250,7 +1258,10 @@ export interface CodeInjectionTag {
               <span>Copy CSS</span>
             </button>
           </div>
-          <pre class="code-block-pre"><code class="code-content">{{ activePreviewItem.cssStyles }}</code></pre>
+          <div class="monaco-host-wrap">
+            <div #monacoCssContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
+            <pre *ngIf="!monacoReady" class="code-block-pre"><code class="code-content">{{ activePreviewItem.cssStyles }}</code></pre>
+          </div>
         </div>
 
         <!-- Mode 4: JavaScript Logic -->
@@ -1265,7 +1276,10 @@ export interface CodeInjectionTag {
               <span>Copy JS</span>
             </button>
           </div>
-          <pre class="code-block-pre" *ngIf="activePreviewItem.jsScript"><code class="code-content">{{ activePreviewItem.jsScript }}</code></pre>
+          <div class="monaco-host-wrap" *ngIf="activePreviewItem.jsScript">
+            <div #monacoJsContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
+            <pre *ngIf="!monacoReady" class="code-block-pre"><code class="code-content">{{ activePreviewItem.jsScript }}</code></pre>
+          </div>
           <div class="code-empty-state" *ngIf="!activePreviewItem.jsScript">
             <span class="material-symbols-outlined empty-code-icon">data_object</span>
             <p>This template is pure HTML/CSS and does not require an external JavaScript bundle.</p>
@@ -3013,6 +3027,38 @@ export interface CodeInjectionTag {
     .modal-code-textarea:focus {
       box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35);
     }
+    .monaco-host-wrap {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 460px;
+      position: relative;
+      background: #1e1e1e;
+      display: flex;
+      flex-direction: column;
+    }
+    .monaco-editor-canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 460px;
+    }
+    .monaco-loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #1e1e1e;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+      gap: 10px;
+    }
     .btn-save-template-code {
       display: inline-flex;
       align-items: center;
@@ -4422,6 +4468,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   // Interactive Modal Code Editor Reference & Saving State
   @ViewChild('modalHtmlEditor') modalHtmlEditorRef?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('monacoHtmlContainer') monacoHtmlContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('monacoCssContainer') monacoCssContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('monacoJsContainer') monacoJsContainer?: ElementRef<HTMLDivElement>;
+
+  monacoInstanceHtml?: any;
+  monacoInstanceCss?: any;
+  monacoInstanceJs?: any;
+  loadingMonaco: boolean = false;
+  monacoReady: boolean = false;
   savingTemplateHtml: boolean = false;
 
   // Live Database Tokens (Brand, Menus, Dropdowns, CTAs, Forms, Legal)
@@ -4636,6 +4691,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupLeakedStyles();
+    this.disposeMonacoEditors();
   }
 
   private cleanupLeakedStyles(): void {
@@ -5561,6 +5617,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
     }
 
+    this.previewModalTab = 'preview';
+    this.disposeMonacoEditors();
     this.modalPreviewPageSlug = 'isolated';
     this.updateSinglePreviewHtml();
     this.showSinglePreviewModal = true;
@@ -5899,9 +5957,259 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Switches the active preview modal tab, initializing or refreshing Monaco Editor instances as needed.
+   * @param tab The selected preview modal tab.
+   */
+  setPreviewModalTab(tab: 'preview' | 'content' | 'html' | 'css' | 'js'): void {
+    this.previewModalTab = tab;
+    if (tab === 'html') {
+      this.initMonacoHtmlEditor();
+    } else if (tab === 'css') {
+      this.initMonacoCssEditor();
+    } else if (tab === 'js') {
+      this.initMonacoJsEditor();
+    }
+  }
+
+  /**
+   * Dynamically loads the Monaco Editor AMD loader script from CDN.
+   * Once loaded, configures Monaco AMD paths and resolves with the global monaco object.
+   * @returns A promise resolving to the monaco namespace.
+   */
+  loadMonaco(): Promise<any> {
+    if ((window as any).monaco) {
+      return Promise.resolve((window as any).monaco);
+    }
+    return new Promise((resolve, reject) => {
+      const scriptId = 'monaco-amd-loader-script';
+      let script = document.getElementById(scriptId) as HTMLScriptElement;
+
+      const onAmdLoaded = () => {
+        const amdRequire = (window as any).require;
+        if (!amdRequire) {
+          reject(new Error('Monaco AMD loader require function not available.'));
+          return;
+        }
+        amdRequire.config({
+          paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }
+        });
+        amdRequire(['vs/editor/editor.main'], () => {
+          if ((window as any).monaco) {
+            resolve((window as any).monaco);
+          } else {
+            reject(new Error('Monaco namespace failed to initialize.'));
+          }
+        });
+      };
+
+      if (!script) {
+        script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js';
+        script.onload = () => onAmdLoaded();
+        script.onerror = (err) => reject(err);
+        document.head.appendChild(script);
+      } else {
+        if ((window as any).require) {
+          onAmdLoaded();
+        } else {
+          script.addEventListener('load', () => onAmdLoaded());
+        }
+      }
+    });
+  }
+
+  /**
+   * Initializes or updates the Monaco Editor instance for editing HTML templates with code folding.
+   */
+  initMonacoHtmlEditor(): void {
+    if (!this.activePreviewItem) return;
+    this.loadingMonaco = !this.monacoReady;
+
+    setTimeout(() => {
+      const container = this.monacoHtmlContainer?.nativeElement;
+      if (!container) return;
+
+      this.loadMonaco().then((monaco) => {
+        this.loadingMonaco = false;
+        this.monacoReady = true;
+
+        if (this.monacoInstanceHtml) {
+          const currentVal = this.monacoInstanceHtml.getValue();
+          const targetVal = this.activePreviewItem?.htmlTemplate || '';
+          if (currentVal !== targetVal) {
+            this.monacoInstanceHtml.setValue(targetVal);
+          }
+          this.monacoInstanceHtml.layout();
+          return;
+        }
+
+        this.monacoInstanceHtml = monaco.editor.create(container, {
+          value: this.activePreviewItem?.htmlTemplate || '',
+          language: 'html',
+          theme: 'vs-dark',
+          automaticLayout: true,
+          folding: true,
+          foldingStrategy: 'auto',
+          showFoldingControls: 'always',
+          matchBrackets: 'always',
+          autoClosingBrackets: 'always',
+          autoClosingQuotes: 'always',
+          lineNumbers: 'on',
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          fontSize: 13,
+          fontFamily: "'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace",
+          renderWhitespace: 'selection',
+          tabSize: 2
+        });
+
+        this.monacoInstanceHtml.onDidChangeModelContent(() => {
+          const val = this.monacoInstanceHtml.getValue();
+          if (this.activePreviewItem && this.activePreviewItem.htmlTemplate !== val) {
+            this.activePreviewItem.htmlTemplate = val;
+            this.onModalHtmlChange();
+          }
+        });
+      }).catch((err) => {
+        console.warn('Monaco failed to load from CDN, falling back to textarea editor:', err);
+        this.loadingMonaco = false;
+        this.monacoReady = false;
+      });
+    }, 60);
+  }
+
+  /**
+   * Initializes or updates the Monaco Editor instance for inspecting scoped CSS with code folding.
+   */
+  initMonacoCssEditor(): void {
+    if (!this.activePreviewItem) return;
+    setTimeout(() => {
+      const container = this.monacoCssContainer?.nativeElement;
+      if (!container) return;
+
+      this.loadMonaco().then((monaco) => {
+        this.monacoReady = true;
+        if (this.monacoInstanceCss) {
+          this.monacoInstanceCss.setValue(this.activePreviewItem?.cssStyles || '');
+          this.monacoInstanceCss.layout();
+          return;
+        }
+
+        this.monacoInstanceCss = monaco.editor.create(container, {
+          value: this.activePreviewItem?.cssStyles || '',
+          language: 'css',
+          theme: 'vs-dark',
+          readOnly: false,
+          automaticLayout: true,
+          folding: true,
+          foldingStrategy: 'auto',
+          showFoldingControls: 'always',
+          lineNumbers: 'on',
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          fontSize: 13,
+          fontFamily: "'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace",
+          tabSize: 2
+        });
+
+        this.monacoInstanceCss.onDidChangeModelContent(() => {
+          const val = this.monacoInstanceCss.getValue();
+          if (this.activePreviewItem && this.activePreviewItem.cssStyles !== val) {
+            this.activePreviewItem.cssStyles = val;
+            this.updateSinglePreviewHtml();
+          }
+        });
+      }).catch((err) => {
+        console.warn('Monaco CSS editor load error:', err);
+      });
+    }, 60);
+  }
+
+  /**
+   * Initializes or updates the Monaco Editor instance for inspecting JavaScript logic with code folding.
+   */
+  initMonacoJsEditor(): void {
+    if (!this.activePreviewItem || !this.activePreviewItem.jsScript) return;
+    setTimeout(() => {
+      const container = this.monacoJsContainer?.nativeElement;
+      if (!container) return;
+
+      this.loadMonaco().then((monaco) => {
+        this.monacoReady = true;
+        if (this.monacoInstanceJs) {
+          this.monacoInstanceJs.setValue(this.activePreviewItem?.jsScript || '');
+          this.monacoInstanceJs.layout();
+          return;
+        }
+
+        this.monacoInstanceJs = monaco.editor.create(container, {
+          value: this.activePreviewItem?.jsScript || '',
+          language: 'javascript',
+          theme: 'vs-dark',
+          readOnly: false,
+          automaticLayout: true,
+          folding: true,
+          foldingStrategy: 'auto',
+          showFoldingControls: 'always',
+          lineNumbers: 'on',
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          fontSize: 13,
+          fontFamily: "'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace",
+          tabSize: 2
+        });
+
+        this.monacoInstanceJs.onDidChangeModelContent(() => {
+          const val = this.monacoInstanceJs.getValue();
+          if (this.activePreviewItem && this.activePreviewItem.jsScript !== val) {
+            this.activePreviewItem.jsScript = val;
+            this.updateSinglePreviewHtml();
+          }
+        });
+      }).catch((err) => {
+        console.warn('Monaco JS editor load error:', err);
+      });
+    }, 60);
+  }
+
+  /**
+   * Disposes of all active Monaco editor instances to release DOM and worker memory.
+   */
+  disposeMonacoEditors(): void {
+    if (this.monacoInstanceHtml) {
+      this.monacoInstanceHtml.dispose();
+      this.monacoInstanceHtml = null;
+    }
+    if (this.monacoInstanceCss) {
+      this.monacoInstanceCss.dispose();
+      this.monacoInstanceCss = null;
+    }
+    if (this.monacoInstanceJs) {
+      this.monacoInstanceJs.dispose();
+      this.monacoInstanceJs = null;
+    }
+  }
+
   // Modal Code Editor Token Ribbon Insertion
   insertTokenAtModalCursor(token: string): void {
     if (!this.activePreviewItem) return;
+
+    if (this.monacoInstanceHtml) {
+      const selection = this.monacoInstanceHtml.getSelection();
+      const op = { range: selection, text: token, forceMoveMarkers: true };
+      this.monacoInstanceHtml.executeEdits('token-insert', [op]);
+      this.monacoInstanceHtml.focus();
+      const val = this.monacoInstanceHtml.getValue();
+      this.activePreviewItem.htmlTemplate = val;
+      this.onModalHtmlChange();
+      return;
+    }
+
     const textarea = this.modalHtmlEditorRef?.nativeElement;
     if (!textarea) {
       this.activePreviewItem.htmlTemplate = (this.activePreviewItem.htmlTemplate || '') + token;
@@ -6600,6 +6908,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.safeSinglePreviewSrcDoc = '';
     const styleEl = document.getElementById('oz-template-single-preview-css');
     if (styleEl) styleEl.remove();
+    this.disposeMonacoEditors();
   }
 
   // Full-Site Demo Modal & Multi-Page Engine
