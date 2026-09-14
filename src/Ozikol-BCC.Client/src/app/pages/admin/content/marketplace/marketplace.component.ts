@@ -1935,36 +1935,33 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
             <p class="oz-hero-p">{{ Text }}</p>
             <div class="oz-hero-btns">
               <a href="{{ ButtonLink }}" class="oz-btn-pri">{{ ButtonText }}</a>
+              {{#if VideoButtonText}}
               <a href="{{ VideoLink }}" class="oz-btn-sec"><i class="fa-solid fa-play me-1"></i> {{ VideoButtonText }}</a>
+              {{/if}}
             </div>
           </div>
           <div class="oz-hero-right">
-            <div class="oz-mockup-window">
-              <div class="oz-window-head"><span></span><span></span><span></span></div>
-              <div class="oz-window-body">
-                <img src="{{ Url }}" alt="{{ Title }}" class="oz-hero-featured-img" onerror="this.style.display='none'" />
-                <img src="{{ SecondUrl }}" alt="Overlay" class="oz-hero-sec-img" onerror="this.style.display='none'" />
-              </div>
-            </div>
+            <img src="{{ Url }}" alt="{{ Title }}" class="oz-hero-main-img" onerror="this.style.display='none'" />
+            {{#if SecondUrl}}
+            <img src="{{ SecondUrl }}" alt="Secondary Graphic" class="oz-hero-sec-img" onerror="this.style.display='none'" />
+            {{/if}}
           </div>
         </section>
       `,
       cssStyles: `
-        .oz-hero-split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; padding: 72px 48px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; align-items: center; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
+        .oz-hero-split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; padding: 80px 48px; background: radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 45%), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; align-items: center; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
         .oz-hero-pill { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; border: 1px solid #bfdbfe; display: inline-block; letter-spacing: 0.04em; }
-        .oz-hero-h1 { font-size: 36px; font-weight: 900; line-height: 1.2; margin: 16px 0; color: #0f172a; letter-spacing: -0.02em; }
-        .oz-hero-p { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 28px; }
+        .oz-hero-h1 { font-size: 40px; font-weight: 900; line-height: 1.2; margin: 16px 0; color: #0f172a; letter-spacing: -0.02em; }
+        .oz-hero-p { font-size: 16px; color: #475569; line-height: 1.6; margin-bottom: 28px; }
         .oz-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
-        .oz-btn-pri { background: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); transition: background 0.15s ease; display: inline-flex; align-items: center; justify-content: center; }
+        .oz-btn-pri { background: #2563eb; color: #ffffff; padding: 13px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); transition: background 0.15s ease; display: inline-flex; align-items: center; justify-content: center; }
         .oz-btn-pri:hover { background: #1d4ed8; }
-        .oz-btn-sec { background: #ffffff; color: #334155; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; border: 1.5px solid #cbd5e1; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .oz-btn-sec { background: #ffffff; color: #334155; padding: 13px 22px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; border: 1.5px solid #cbd5e1; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .oz-btn-sec:hover { background: #f8fafc; border-color: #94a3b8; }
-        .oz-mockup-window { background: #ffffff; border-radius: 12px; border: 1.5px solid #e2e8f0; padding: 20px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }
-        .oz-window-head { display: flex; gap: 6px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
-        .oz-window-head span { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
-        .oz-hero-featured-img { width: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
-        .oz-hero-sec-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; }
-        @media(max-width: 850px) { .oz-hero-split { grid-template-columns: 1fr; padding: 48px 24px; } }
+        .oz-hero-right { position: relative; display: flex; align-items: center; justify-content: center; }
+        .oz-hero-main-img { width: 100%; max-height: 420px; object-fit: cover; border-radius: 16px; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05); }
+        .oz-hero-sec-img { position: absolute; bottom: -20px; left: -20px; width: 50%; max-height: 180px; object-fit: cover; border-radius: 12px; box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.18); border: 3px solid #ffffff; }
+        @media(max-width: 850px) { .oz-hero-split { grid-template-columns: 1fr; padding: 48px 24px; } .oz-hero-sec-img { position: static; width: 100%; margin-top: 14px; } }
       `
     },
     {

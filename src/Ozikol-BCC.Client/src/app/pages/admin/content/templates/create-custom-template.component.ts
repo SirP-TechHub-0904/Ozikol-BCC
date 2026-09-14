@@ -3998,45 +3998,46 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   </div>
 </section>`,
       css: `.oz-hero-section {
-  padding: 80px 24px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 84px 24px;
+  background: radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 45%), linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
+  border-bottom: 1px solid #e2e8f0;
 }
 .oz-hero-container {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.15fr 0.85fr;
   gap: 48px;
   align-items: center;
 }
 .oz-hero-badge {
   display: inline-block;
-  background: rgba(0, 80, 229, 0.25);
-  color: #60a5fa;
-  border: 1px solid rgba(96, 165, 250, 0.3);
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.8px;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .oz-hero-title {
   font-size: 42px;
   font-weight: 900;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
   margin: 0 0 16px 0;
-  color: #ffffff;
+  color: #0f172a;
   word-break: break-word;
 }
 .oz-hero-desc {
   font-size: 16px;
-  line-height: 1.6;
-  color: #94a3b8;
+  line-height: 1.65;
+  color: #475569;
   margin: 0 0 32px 0;
 }
 .oz-hero-actions {
@@ -4045,36 +4046,36 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   flex-wrap: wrap;
 }
 .oz-btn-primary {
-  background: #0050e5;
+  background: #2563eb;
   color: #ffffff;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 13px 26px;
+  border-radius: 10px;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
   transition: 0.2s;
   display: inline-block;
 }
-.oz-btn-primary:hover { background: #0041ba; transform: translateY(-1px); }
+.oz-btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
 .oz-btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  padding: 12px 24px;
-  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 13px 22px;
+  border-radius: 10px;
   font-weight: 700;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1.5px solid #cbd5e1;
   transition: 0.2s;
   display: inline-block;
 }
-.oz-btn-secondary:hover { background: rgba(255, 255, 255, 0.18); }
-.oz-hero-media { text-align: center; }
+.oz-btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+.oz-hero-media { display: flex; align-items: center; justify-content: center; }
 .oz-hero-img {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
   border-radius: 16px;
-  box-shadow: 0 16px 36px rgba(0,0,0,0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05);
 }
 @media (max-width: 900px) {
   .oz-hero-section { padding: 60px 20px; }
