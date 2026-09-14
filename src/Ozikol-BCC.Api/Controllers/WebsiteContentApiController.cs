@@ -374,5 +374,141 @@ namespace Ozikol_BCC.Api.Controllers
                 footer
             }, "Active code injection tags retrieved."));
         }
+
+        // ==========================================
+        // 9. PUBLIC PAGE FORMS & DYNAMIC SUBMISSIONS
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves the public schema and field definitions of an active website form by its key.
+        /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
+        /// </summary>
+        /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "newsletter", "service-request").</param>
+        /// <returns>Form schema and ordered interactive fields.</returns>
+        [HttpGet("forms/{formKey}")]
+        public async Task<IActionResult> GetPublicFormByKey(string formKey)
+        {
+            if (string.IsNullOrWhiteSpace(formKey))
+            {
+                return BadRequest(ApiResponse.FailureResponse("Form key is required."));
+            }
+
+            var cleanKey = formKey.Trim().ToLowerInvariant();
+            var form = await _context.PageForms
+                .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
+
+            if (form == null)
+            {
+                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+            }
+
+            var publicForm = new
+            {
+                form.Id,
+                form.Title,
+                form.FormKey,
+                form.Description,
+                form.SubmitButtonText,
+                form.SuccessMessage,
+                Fields = form.Fields.OrderBy(fl => fl.SortOrder).Select(fl => new
+                {
+                    fl.Id,
+                    fl.FieldKey,
+                    fl.Label,
+                    fl.Placeholder,
+                    fl.FieldType,
+                    fl.OptionsJson,
+                    fl.IsRequired,
+                    fl.SortOrder,
+                    fl.GridWidth,
+                    fl.HelpText
+                })
+            };
+
+            return Ok(ApiResponse<object>.SuccessResponse(publicForm, "Form schema retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Submits visitor input to an active dynamic website form.
+        /// Validates required fields, stores the payload, captures visitor telemetry, and returns the custom success message.
+        /// </summary>
+        /// <param name="formKey">The programmatic key of the form to submit to.</param>
+        /// <param name="payload">Visitor submitted key-value data and optional referral/source URL.</param>
+        /// <returns>Confirmation and custom form success message.</returns>
+        [HttpPost("forms/{formKey}/submit")]
+        public async Task<IActionResult> SubmitPublicForm(string formKey, [FromBody] PublicFormSubmissionPayload payload)
+        {
+            if (string.IsNullOrWhiteSpace(formKey))
+            {
+                return BadRequest(ApiResponse.FailureResponse("Form key is required."));
+            }
+
+            var cleanKey = formKey.Trim().ToLowerInvariant();
+            var form = await _context.PageForms
+                .Include(f => f.Fields)
+                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
+
+            if (form == null)
+            {
+                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+            }
+
+            var data = payload?.Data ?? new Dictionary<string, object>();
+
+            // Validate all required fields
+            var missingRequiredFields = new List<string>();
+            foreach (var field in form.Fields.Where(f => f.IsRequired))
+            {
+                if (!data.TryGetValue(field.FieldKey, out var val) || val == null || string.IsNullOrWhiteSpace(val.ToString()))
+                {
+                    missingRequiredFields.Add(field.Label);
+                }
+            }
+
+            if (missingRequiredFields.Count > 0)
+            {
+                return BadRequest(ApiResponse.FailureResponse(
+                    $"Please fill in all required fields: {string.Join(", ", missingRequiredFields)}"));
+            }
+
+            var submission = new PageFormSubmission
+            {
+                Id = Guid.NewGuid(),
+                PageFormId = form.Id,
+                DataJson = System.Text.Json.JsonSerializer.Serialize(data),
+                SourcePageUrl = payload?.SourcePageUrl?.Trim(),
+                Status = "New",
+                SubmittedAtUtc = DateTime.UtcNow,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString()
+            };
+
+            _context.PageFormSubmissions.Add(submission);
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                submissionId = submission.Id,
+                message = form.SuccessMessage
+            }, form.SuccessMessage));
+        }
+    }
+
+    /// <summary>
+    /// Payload DTO for public dynamic form submissions.
+    /// </summary>
+    public class PublicFormSubmissionPayload
+    {
+        /// <summary>
+        /// Dynamic field key-value pairs submitted by the visitor.
+        /// </summary>
+        public Dictionary<string, object>? Data { get; set; }
+
+        /// <summary>
+        /// Optional public website URL or path where the submission originated.
+        /// </summary>
+        public string? SourcePageUrl { get; set; }
     }
 }

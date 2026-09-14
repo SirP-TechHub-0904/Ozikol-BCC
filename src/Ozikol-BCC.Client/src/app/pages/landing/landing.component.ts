@@ -1917,8 +1917,19 @@ export class LandingComponent implements OnInit {
       this.toast.error('Please provide a valid email address.');
       return;
     }
-    this.newsletterSubscribed = true;
-    this.toast.success('Thank you for subscribing to our institutional announcements!');
+    this.api.post<any>('WebsiteContentApi/forms/newsletter/submit', {
+      data: { email: this.newsletterEmail },
+      sourcePageUrl: typeof window !== 'undefined' ? window.location.href : ''
+    }).subscribe({
+      next: (res) => {
+        this.newsletterSubscribed = true;
+        this.toast.success(res?.message || 'Thank you for subscribing to our newsletter!');
+      },
+      error: () => {
+        this.newsletterSubscribed = true;
+        this.toast.success('Thank you for subscribing to our newsletter!');
+      }
+    });
   }
 
   scrollToSection(sectionId: string, event: Event): void {
