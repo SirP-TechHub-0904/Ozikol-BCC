@@ -1133,6 +1133,13 @@ export interface CodeInjectionTag {
               <span *ngIf="activePreviewItem?.category" class="badge-category-tag font-mono text-uppercase">
                 {{ activePreviewItem.category }}
               </span>
+              <div class="editor-syntax-legend" ngNonBindable>
+                <span class="syntax-chip chip-tag" title="HTML Tags (div, nav, header, a, etc.)">&lt;div&gt;</span>
+                <span class="syntax-chip chip-class" title="Class Attributes & CSS Selectors">class="hero-title"</span>
+                <span class="syntax-chip chip-token" title="Dynamic CMS Data Placeholders">&#123;&#123; BrandIdentity &#125;&#125;</span>
+                <span class="syntax-chip chip-block" title="Template Loops & Conditional Blocks">&#123;&#123;#each ...&#125;&#125;</span>
+                <span class="syntax-chip chip-content" title="Normal Content & Plain Text">Normal Content</span>
+              </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save HTML modifications to this installed template">
@@ -2931,6 +2938,49 @@ export interface CodeInjectionTag {
       color: #38bdf8;
     }
     .code-badge-title span { font-size: 16px; }
+    .editor-syntax-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 12px;
+      padding-left: 12px;
+      border-left: 1px solid #334155;
+    }
+    .syntax-chip {
+      font-family: 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      line-height: 1.25;
+      user-select: none;
+      letter-spacing: 0.02em;
+    }
+    .syntax-chip.chip-tag {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .syntax-chip.chip-class {
+      background: rgba(52, 211, 153, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .syntax-chip.chip-token {
+      background: rgba(232, 121, 249, 0.12);
+      color: #e879f9;
+      border: 1px solid rgba(232, 121, 249, 0.4);
+    }
+    .syntax-chip.chip-block {
+      background: rgba(244, 63, 94, 0.12);
+      color: #f43f5e;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+    .syntax-chip.chip-content {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
     .btn-copy-code {
       display: inline-flex;
       align-items: center;
@@ -5973,12 +6023,184 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Registers custom Monarch syntax tokenization rules and theme styling for Monaco Editor.
+   * Deliberately differentiates:
+   * 1. HTML Tags / Divs in vibrant Electric Cyan (#38bdf8, bold)
+   * 2. Class attributes in Violet (#c084fc) and class values in Bright Emerald Green (#34d399, bold)
+   * 3. Placeholders in Neon Fuchsia (#e879f9) and Rose loop blocks (#f43f5e)
+   * 4. Normal content / plain text in Crisp White (#ffffff)
+   * 5. Other attributes in Amber (#fbbf24) and Coral (#fb923c)
+   * @param monaco The global monaco instance loaded via AMD.
+   */
+  private registerOzikolMonacoLanguageAndTheme(monaco: any): void {
+    if (!monaco || (monaco as any).__ozikolThemeRegistered) return;
+    (monaco as any).__ozikolThemeRegistered = true;
+
+    try {
+      // 1. Set custom Monarch tokens provider for 'html' to isolate tags, classes, placeholders, and normal content
+      monaco.languages.setMonarchTokensProvider('html', {
+        defaultToken: '',
+        tokenPostfix: '.html',
+        ignoreCase: true,
+        tokenizer: {
+          root: [
+            // Handlebars template comments: {{!-- ... --}} or {{! ... }}
+            [/\{\{!--[\s\S]*?--\}\}/, 'comment.block'],
+            [/\{\{!.*?\}\}/, 'comment.doc'],
+            [/<!--/, 'comment', '@comment'],
+
+            // Handlebars template loop/conditional blocks: {{#each ...}}, {{/each}}, {{#if ...}}, {{/if}}, {{else}}
+            [/\{\{\s*[#\/^][\w\s\.\-_]+\}\}/, 'custom-placeholder-block'],
+            [/\{\{\s*else\s*\}\}/, 'custom-placeholder-block'],
+
+            // Handlebars variable placeholders: {{ BrandIdentity }}, {{ Url }}, {{ Title }}
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+
+            // Doctype
+            [/<!DOCTYPE/i, 'metatag', '@doctype'],
+
+            // HTML Opening and Closing Tags (<div, </div, <header, </header, etc.)
+            [/(<\/)([a-zA-Z][\w\-]*)/, ['custom-tag-delimiter', { token: 'custom-tag-name', next: '@tag' }]],
+            [/(<)([a-zA-Z][\w\-]*)/, ['custom-tag-delimiter', { token: 'custom-tag-name', next: '@tag' }]],
+
+            // Tag delimiter
+            [/</, 'custom-tag-delimiter'],
+
+            // Normal content / plain text between tags
+            [/[^<{]+/, 'custom-content'],
+            [/\{/, 'custom-content']
+          ],
+
+          doctype: [
+            [/[^>]+/, 'metatag.content'],
+            [/>/, 'metatag', '@pop']
+          ],
+
+          comment: [
+            [/-->/, 'comment', '@pop'],
+            [/[^-]+/, 'comment'],
+            [/./, 'comment']
+          ],
+
+          tag: [
+            // Tag self-close or close: > or />
+            [/\/?>/, 'custom-tag-delimiter', '@pop'],
+
+            // Handlebars placeholders inside tag attributes
+            [/\{\{\s*[#\/^][\w\s\.\-_]+\}\}/, 'custom-placeholder-block'],
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+
+            // Class attributes: class="..." or class='...'
+            [/(class)(\s*=\s*)(")/i, ['custom-attr-class', 'custom-tag-delimiter', { token: 'custom-class-quote', next: '@classValueDouble' }]],
+            [/(class)(\s*=\s*)(')/i, ['custom-attr-class', 'custom-tag-delimiter', { token: 'custom-class-quote', next: '@classValueSingle' }]],
+
+            // Other attribute names: id="...", href="...", data-*="..."
+            [/([a-zA-Z\-:]+)(\s*=\s*)(")/, ['custom-attr-name', 'custom-tag-delimiter', { token: 'custom-attr-quote', next: '@attrValueDouble' }]],
+            [/([a-zA-Z\-:]+)(\s*=\s*)(')/, ['custom-attr-name', 'custom-tag-delimiter', { token: 'custom-attr-quote', next: '@attrValueSingle' }]],
+
+            // Boolean or standalone attributes
+            [/[\w\-]+/, 'custom-attr-name'],
+
+            // Delimiters
+            [/=/, 'custom-tag-delimiter'],
+
+            // Whitespace
+            [/[ \t\r\n]+/, '']
+          ],
+
+          classValueDouble: [
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+            [/[^"{}]+/, 'custom-class-value'],
+            [/"/, 'custom-class-quote', '@pop']
+          ],
+
+          classValueSingle: [
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+            [/[^'{}]+/, 'custom-class-value'],
+            [/'/, 'custom-class-quote', '@pop']
+          ],
+
+          attrValueDouble: [
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+            [/[^"{}]+/, 'custom-attr-value'],
+            [/"/, 'custom-attr-quote', '@pop']
+          ],
+
+          attrValueSingle: [
+            [/\{\{\s*[\w\s\.\-_]+\}\}/, 'custom-placeholder-token'],
+            [/[^'{}]+/, 'custom-attr-value'],
+            [/'/, 'custom-attr-quote', '@pop']
+          ]
+        }
+      });
+
+      // 2. Define custom theme with rich color separation
+      monaco.editor.defineTheme('ozikol-studio-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          // 1. Tags / Divs: Vibrant Electric Cyan Blue
+          { token: 'custom-tag-name', foreground: '38bdf8', fontStyle: 'bold' },
+          { token: 'tag', foreground: '38bdf8', fontStyle: 'bold' },
+          { token: 'tag.html', foreground: '38bdf8', fontStyle: 'bold' },
+
+          // 2. Classes: Violet Attribute & Vivid Emerald Class Names
+          { token: 'custom-attr-class', foreground: 'c084fc', fontStyle: 'bold' },
+          { token: 'custom-class-value', foreground: '34d399', fontStyle: 'bold' },
+          { token: 'custom-class-quote', foreground: '6ee7b7' },
+
+          // Other standard attributes: Amber & Coral
+          { token: 'custom-attr-name', foreground: 'fbbf24' },
+          { token: 'attribute.name', foreground: 'fbbf24' },
+          { token: 'custom-attr-value', foreground: 'fb923c' },
+          { token: 'attribute.value', foreground: 'fb923c' },
+          { token: 'custom-attr-quote', foreground: 'fcd34d' },
+
+          // 3. Placeholders: High-Contrast Neon Fuchsia & Rose Loop Blocks
+          { token: 'custom-placeholder-token', foreground: 'e879f9', fontStyle: 'bold' },
+          { token: 'custom-placeholder-block', foreground: 'f43f5e', fontStyle: 'bold' },
+
+          // 4. Normal Content: Crisp Bright Pure White
+          { token: 'custom-content', foreground: 'ffffff' },
+
+          // Delimiters: Cool Slate
+          { token: 'custom-tag-delimiter', foreground: '94a3b8' },
+          { token: 'delimiter', foreground: '94a3b8' },
+          { token: 'delimiter.html', foreground: '94a3b8' },
+
+          // Comments: Muted Slate Italic
+          { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
+          { token: 'comment.block', foreground: '64748b', fontStyle: 'italic' },
+          { token: 'comment.doc', foreground: '64748b', fontStyle: 'italic' }
+        ],
+        colors: {
+          'editor.background': '#090d16',
+          'editor.foreground': '#ffffff',
+          'editorLineNumber.foreground': '#475569',
+          'editorLineNumber.activeForeground': '#38bdf8',
+          'editorCursor.foreground': '#38bdf8',
+          'editor.selectionBackground': '#1e293b',
+          'editor.inactiveSelectionBackground': '#0f172a',
+          'editorIndentGuide.background': '#1e293b',
+          'editorIndentGuide.activeBackground': '#334155',
+          'editorGutter.foldingControlForeground': '#38bdf8'
+        }
+      });
+
+      monaco.editor.setTheme('ozikol-studio-dark');
+    } catch (e) {
+      console.warn('Could not customize Monaco tokens or theme:', e);
+    }
+  }
+
+  /**
    * Dynamically loads the Monaco Editor AMD loader script from CDN.
-   * Once loaded, configures Monaco AMD paths and resolves with the global monaco object.
+   * Once loaded, configures Monaco AMD paths, registers the Ozikol studio theme, and resolves with the global monaco object.
    * @returns A promise resolving to the monaco namespace.
    */
   loadMonaco(): Promise<any> {
     if ((window as any).monaco) {
+      this.registerOzikolMonacoLanguageAndTheme((window as any).monaco);
       return Promise.resolve((window as any).monaco);
     }
     return new Promise((resolve, reject) => {
@@ -5996,6 +6218,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         });
         amdRequire(['vs/editor/editor.main'], () => {
           if ((window as any).monaco) {
+            this.registerOzikolMonacoLanguageAndTheme((window as any).monaco);
             resolve((window as any).monaco);
           } else {
             reject(new Error('Monaco namespace failed to initialize.'));
@@ -6048,7 +6271,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.monacoInstanceHtml = monaco.editor.create(container, {
           value: this.activePreviewItem?.htmlTemplate || '',
           language: 'html',
-          theme: 'vs-dark',
+          theme: 'ozikol-studio-dark',
           automaticLayout: true,
           folding: true,
           foldingStrategy: 'auto',
@@ -6101,7 +6324,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.monacoInstanceCss = monaco.editor.create(container, {
           value: this.activePreviewItem?.cssStyles || '',
           language: 'css',
-          theme: 'vs-dark',
+          theme: 'ozikol-studio-dark',
           readOnly: false,
           automaticLayout: true,
           folding: true,
@@ -6149,7 +6372,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.monacoInstanceJs = monaco.editor.create(container, {
           value: this.activePreviewItem?.jsScript || '',
           language: 'javascript',
-          theme: 'vs-dark',
+          theme: 'ozikol-studio-dark',
           readOnly: false,
           automaticLayout: true,
           folding: true,
