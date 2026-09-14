@@ -1626,7 +1626,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             {
                 Id = Guid.NewGuid(),
                 TemplateKey = "News_MinimalBar",
-                CategoryKey = "newsletter",
+                CategoryKey = "body",
                 Name = "Clean Light Newsletter Dispatch",
                 VariantCode = "News_MinimalBar",
                 InstalledVersion = "1.0.0",
@@ -1639,14 +1639,11 @@ public class TenantOnboardingService : ITenantOnboardingService
       <div class=""rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mx-auto mb-3"" style=""width:60px; height:60px;"">
         <i class=""fa-solid fa-envelope-open-text fs-3""></i>
       </div>
-      <h3 class=""fw-bold text-dark mb-2"">Stay Informed with Weekly Dispatches</h3>
-      <p class=""text-muted small mb-4 max-w-500 mx-auto"">Subscribe to receive vital organizational announcements, governance updates, and community highlights directly in your inbox.</p>
-      <form class=""d-flex flex-column flex-sm-row gap-2 max-w-500 mx-auto w-100"">
-        <input type=""email"" class=""form-control rounded-pill px-3 py-2 border-secondary-subtle"" placeholder=""Enter your email address..."" required />
-        <button type=""button"" class=""btn btn-primary rounded-pill px-4 py-2 fw-bold text-nowrap"">
-          <i class=""fa-solid fa-paper-plane me-1""></i> Subscribe
-        </button>
-      </form>
+      <h3 class=""fw-bold text-dark mb-2"">{{ Title }}</h3>
+      <p class=""text-muted small mb-4 max-w-500 mx-auto"">{{ Description }}</p>
+      <div class=""max-w-500 mx-auto w-100"">
+        {{ Form ""Newsletter_Subscribe"" }}
+      </div>
       <small class=""text-muted mt-3 d-block""><i class=""fa-solid fa-lock me-1""></i> Zero spam. Unsubscribe at any time.</small>
     </div>
   </div>
@@ -1659,7 +1656,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             {
                 Id = Guid.NewGuid(),
                 TemplateKey = "Contact_SplitDetails",
-                CategoryKey = "contact",
+                CategoryKey = "body",
                 Name = "Clean Contact Us & Office Inquiries Form",
                 VariantCode = "Contact_SplitDetails",
                 InstalledVersion = "1.0.0",
@@ -1671,9 +1668,9 @@ public class TenantOnboardingService : ITenantOnboardingService
     <div class=""row g-5"">
       <!-- Left Column: Official Contact Directory & Office Information -->
       <div class=""col-lg-5"">
-        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">Get In Touch</span>
-        <h2 class=""fw-bold text-dark mb-3"">Contact Our Team</h2>
-        <p class=""text-muted mb-4 fs-6"">Have questions regarding our services, partnerships, or operational support? Reach out directly to our administrative desk or send us a message.</p>
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">{{ MiniTitle }}</span>
+        <h2 class=""fw-bold text-dark mb-3"">{{ Title }}</h2>
+        <p class=""text-muted mb-4 fs-6"">{{ Description }}</p>
 
         <div class=""d-flex flex-column gap-3 mb-4"">
           <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
@@ -1682,7 +1679,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             </div>
             <div>
               <strong class=""text-dark small d-block"">Corporate Office</strong>
-              <span class=""text-muted small"">100 Enterprise Way, Suite 400, Financial District</span>
+              <span class=""text-muted small"">{{ Address }}</span>
             </div>
           </div>
 
@@ -1692,7 +1689,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             </div>
             <div>
               <strong class=""text-dark small d-block"">Telephone Hotline</strong>
-              <span class=""text-muted small"">+1 (800) 555-0199 / Direct Support</span>
+              <span class=""text-muted small"">{{ Phone }}</span>
             </div>
           </div>
 
@@ -1702,7 +1699,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             </div>
             <div>
               <strong class=""text-dark small d-block"">Official Inquiry Desk</strong>
-              <span class=""text-muted small"">contact@{{ BrandName }}.com</span>
+              <span class=""text-muted small"">{{ Email }}</span>
             </div>
           </div>
 
@@ -1718,51 +1715,12 @@ public class TenantOnboardingService : ITenantOnboardingService
         </div>
       </div>
 
-      <!-- Right Column: Clean General Contact Form -->
+      <!-- Right Column: Dynamic Form Container -->
       <div class=""col-lg-7"">
         <div class=""card border-0 rounded-4 p-4 p-lg-5 shadow-sm bg-white"" id=""ozContactFormCard"">
           <h4 class=""fw-bold text-dark mb-1"">Send Us a Direct Message</h4>
-          <p class=""text-muted small mb-4"">Please complete the form below. We typically respond within one business day.</p>
-
-          <form id=""ozContactForm"" onsubmit=""event.preventDefault(); document.getElementById('ozContactForm').style.display='none'; document.getElementById('ozContactSuccess').style.display='block';"">
-            <div class=""row g-3 mb-3"">
-              <div class=""col-md-6"">
-                <label class=""form-label fw-semibold text-dark small"">Full Name <span class=""text-danger"">*</span></label>
-                <input type=""text"" name=""full_name"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""Your Full Name"" required />
-              </div>
-              <div class=""col-md-6"">
-                <label class=""form-label fw-semibold text-dark small"">Email Address <span class=""text-danger"">*</span></label>
-                <input type=""email"" name=""email"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""name@company.com"" required />
-              </div>
-              <div class=""col-md-6"">
-                <label class=""form-label fw-semibold text-dark small"">Phone Number</label>
-                <input type=""tel"" name=""phone"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""+1 (555) 000-0000"" />
-              </div>
-              <div class=""col-md-6"">
-                <label class=""form-label fw-semibold text-dark small"">Subject</label>
-                <input type=""text"" name=""subject"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""How can we help you?"" />
-              </div>
-              <div class=""col-12"">
-                <label class=""form-label fw-semibold text-dark small"">Your Message <span class=""text-danger"">*</span></label>
-                <textarea name=""message"" class=""form-control bg-light border-0 rounded-3 p-3"" rows=""5"" placeholder=""Please describe your inquiry or question in detail..."" required></textarea>
-              </div>
-            </div>
-
-            <button type=""submit"" class=""btn btn-primary rounded-pill px-5 py-3 fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2"">
-              <span>Send Message</span>
-              <span style=""font-size: 18px;"">→</span>
-            </button>
-          </form>
-
-          <!-- Interactive Success State -->
-          <div id=""ozContactSuccess"" style=""display: none;"" class=""text-center py-5"">
-            <div class=""rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 64px; height: 64px; font-size: 28px;"">
-              <i class=""fa-solid fa-circle-check""></i>
-            </div>
-            <h4 class=""fw-bold text-dark mb-2"">Message Sent Successfully!</h4>
-            <p class=""text-muted mx-auto mb-4"" style=""max-width: 460px;"">Thank you for contacting us. Your message has been routed to our client communications desk, and a representative will follow up with you promptly.</p>
-            <button type=""button"" class=""btn btn-outline-secondary rounded-pill px-4 py-2 small"" onclick=""document.getElementById('ozContactSuccess').style.display='none'; document.getElementById('ozContactForm').style.display='block';"">Send Another Message</button>
-          </div>
+          <p class=""text-muted small mb-4"">Please complete the form below. We typically respond promptly.</p>
+          {{ Form ""Contact_Us"" }}
         </div>
       </div>
     </div>
@@ -1816,86 +1774,12 @@ public class TenantOnboardingService : ITenantOnboardingService
         </div>
       </div>
 
-      <!-- Right Column: Interactive Questions & Request Form -->
+      <!-- Right Column: Dynamic Form Container -->
       <div class=""col-lg-7"">
         <div class=""card border-0 rounded-4 p-4 p-lg-5 shadow-sm bg-white"" id=""ozServiceFormCard"">
           <h4 class=""fw-bold text-dark mb-1"">Service Request &amp; Project Intake</h4>
-          <p class=""text-muted small mb-4"">Please answer the questions below so we can pair you with the right specialist.</p>
-
-          <form id=""ozServiceForm"" onsubmit=""event.preventDefault(); document.getElementById('ozServiceForm').style.display='none'; document.getElementById('ozServiceSuccess').style.display='block';"">
-            <!-- Question 1: Service Area -->
-            <div class=""mb-4"">
-              <label class=""form-label fw-bold text-dark small text-uppercase"">1. What service or solution do you require?</label>
-              <div class=""d-flex flex-wrap gap-2"">
-                <button type=""button"" class=""btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn active"" onclick=""this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');"">Strategic Consulting &amp; Advisory</button>
-                <button type=""button"" class=""btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn"" onclick=""this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');"">Digital Systems Modernization</button>
-                <button type=""button"" class=""btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn"" onclick=""this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');"">Directory &amp; Portal Governance</button>
-                <button type=""button"" class=""btn btn-outline-primary btn-sm rounded-pill px-3 py-2 oz-pill-btn"" onclick=""this.parentElement.querySelectorAll('.oz-pill-btn').forEach(b => b.classList.remove('active', 'btn-primary')); this.classList.add('active', 'btn-primary');"">Custom Enterprise Integration</button>
-              </div>
-            </div>
-
-            <!-- Question 2: Timeline & Scope -->
-            <div class=""row g-3 mb-4"">
-              <div class=""col-md-6"">
-                <label class=""form-label fw-bold text-dark small text-uppercase"">2. Estimated Timeline</label>
-                <select class=""form-select bg-light border-0 rounded-3 py-2"">
-                  <option selected>Immediate (Within 30 Days)</option>
-                  <option>1–3 Months</option>
-                  <option>Next Fiscal Quarter</option>
-                  <option>Exploratory / Feasibility Only</option>
-                </select>
-              </div>
-              <div class=""col-md-6"">
-                <label class=""form-label fw-bold text-dark small text-uppercase"">3. Organization Scale</label>
-                <select class=""form-select bg-light border-0 rounded-3 py-2"">
-                  <option selected>1–50 Members / Staff</option>
-                  <option>50–500 Enterprise Members</option>
-                  <option>500+ Large Institutional Body</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Question 4: Primary Contact Details -->
-            <div class=""mb-4"">
-              <label class=""form-label fw-bold text-dark small text-uppercase"">4. Your Organization &amp; Contact Details</label>
-              <div class=""row g-3"">
-                <div class=""col-md-6"">
-                  <input type=""text"" class=""form-control bg-light border-0 rounded-3 py-2"" placeholder=""Your Full Name *"" required />
-                </div>
-                <div class=""col-md-6"">
-                  <input type=""text"" class=""form-control bg-light border-0 rounded-3 py-2"" placeholder=""Professional Title *"" required />
-                </div>
-                <div class=""col-md-6"">
-                  <input type=""text"" class=""form-control bg-light border-0 rounded-3 py-2"" placeholder=""Organization / Institution Name *"" required />
-                </div>
-                <div class=""col-md-6"">
-                  <input type=""email"" class=""form-control bg-light border-0 rounded-3 py-2"" placeholder=""Official Business Email *"" required />
-                </div>
-              </div>
-            </div>
-
-            <!-- Question 5: Project Brief -->
-            <div class=""mb-4"">
-              <label class=""form-label fw-bold text-dark small text-uppercase"">5. Project Brief &amp; Key Requirements</label>
-              <textarea class=""form-control bg-light border-0 rounded-3 p-3"" rows=""4"" placeholder=""Describe your primary objectives, deliverables, existing pain points, or questions...""></textarea>
-            </div>
-
-            <!-- Submit Button -->
-            <button type=""submit"" class=""btn btn-primary rounded-pill px-5 py-3 fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2"">
-              <span>Submit Service Request</span>
-              <span style=""font-size: 18px;"">→</span>
-            </button>
-          </form>
-
-          <!-- Interactive Success State -->
-          <div id=""ozServiceSuccess"" style=""display: none;"" class=""text-center py-5"">
-            <div class=""rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 64px; height: 64px; font-size: 28px;"">
-              <i class=""fa-solid fa-circle-check""></i>
-            </div>
-            <h4 class=""fw-bold text-dark mb-2"">Service Request Received!</h4>
-            <p class=""text-muted mx-auto mb-4"" style=""max-width: 480px;"">Thank you for submitting your project specifications. Our lead advisory partner has been notified and will review your requirements and reach out within 1 business day.</p>
-            <button type=""button"" class=""btn btn-outline-secondary rounded-pill px-4 py-2 small"" onclick=""document.getElementById('ozServiceSuccess').style.display='none'; document.getElementById('ozServiceForm').style.display='block';"">Submit Another Inquiry</button>
-          </div>
+          <p class=""text-muted small mb-4"">Please complete the form below so we can pair you with the right specialist.</p>
+          {{ Form ""Service_Request"" }}
         </div>
       </div>
     </div>
