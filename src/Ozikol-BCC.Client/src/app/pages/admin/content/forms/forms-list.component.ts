@@ -141,7 +141,6 @@ import { ToastService } from '../../../../core/services/toast.service';
                     <span class="form-name">{{ form.title }}</span>
                     <div class="form-tags">
                       <span class="code-badge" title="Form programmatic key">key: {{ form.formKey }}</span>
-                      <span *ngIf="isTurnkey(form.formKey)" class="badge-turnkey">Turnkey System Form</span>
                     </div>
                     <p class="form-desc" *ngIf="form.description">{{ form.description }}</p>
                   </div>
@@ -330,10 +329,6 @@ import { ToastService } from '../../../../core/services/toast.service';
       font-family: monospace; font-size: 11px; background: #f1f5f9;
       color: #334155; padding: 2px 8px; border-radius: 6px;
     }
-    .badge-turnkey {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      background: #eff6ff; color: #0050e5; padding: 2px 6px; border-radius: 4px;
-    }
     .form-desc { font-size: 12px; color: #64748b; margin: 4px 0 0; }
 
     .notification-cell { font-size: 12px; }
@@ -489,10 +484,6 @@ export class FormsListComponent implements OnInit {
 
       return matchesSearch && matchesStatus;
     });
-  }
-
-  isTurnkey(key: string): boolean {
-    return ['contact-us', 'newsletter', 'service-request'].includes(key?.toLowerCase());
   }
 
   confirmDelete(form: PageFormItem): void {
