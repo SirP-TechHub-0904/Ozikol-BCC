@@ -2836,20 +2836,6 @@ export interface CodeInjectionTag {
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
       transition: max-width 0.3s ease;
     }
-    .preview-canvas-wrapper nav a,
-    .full-demo-canvas-wrapper nav a,
-    .preview-canvas-wrapper .oz-nav-links a,
-    .full-demo-canvas-wrapper .oz-nav-links a,
-    .preview-canvas-wrapper .oz-btn-nav,
-    .full-demo-canvas-wrapper .oz-btn-nav,
-    .preview-canvas-wrapper nav button,
-    .full-demo-canvas-wrapper nav button,
-    .preview-canvas-wrapper .oz-brand-link,
-    .full-demo-canvas-wrapper .oz-brand-link {
-      pointer-events: none !important;
-      cursor: default !important;
-      user-select: none !important;
-    }
     .preview-modal-body.viewport-mobile .preview-canvas-wrapper,
     .full-demo-body.viewport-mobile .full-demo-canvas-wrapper {
       max-width: 375px;
@@ -5637,8 +5623,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background: #ffffff;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+    .dropdown {
+      position: relative !important;
+    }
     .dropdown-menu.show {
       display: block !important;
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      z-index: 9999 !important;
+      min-width: 13rem !important;
+      margin-top: 4px !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      background-color: #ffffff !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    }
+    .dropdown-item {
+      cursor: pointer;
     }
     ${combinedStyles}
   </style>
@@ -5657,13 +5659,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           // Close any open dropdowns first
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            var prev = m.previousElementSibling;
-            if (prev && prev.classList.contains('dropdown-toggle')) {
-              prev.setAttribute('aria-expanded', 'false');
-            }
+            m.removeAttribute('data-bs-popper');
+          });
+          document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+            t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
+            menu.setAttribute('data-bs-popper', 'static');
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
@@ -5674,10 +5677,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (!e.target.closest('.dropdown-menu')) {
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          var prev = m.previousElementSibling;
-          if (prev && prev.classList.contains('dropdown-toggle')) {
-            prev.setAttribute('aria-expanded', 'false');
-          }
+          m.removeAttribute('data-bs-popper');
+        });
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+          t.setAttribute('aria-expanded', 'false');
         });
       }
 
@@ -6896,8 +6899,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background: #ffffff;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+    .dropdown {
+      position: relative !important;
+    }
     .dropdown-menu.show {
       display: block !important;
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      z-index: 9999 !important;
+      min-width: 13rem !important;
+      margin-top: 4px !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      background-color: #ffffff !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    }
+    .dropdown-item {
+      cursor: pointer;
     }
     ${combinedStyles}
   </style>
@@ -6916,13 +6935,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           // Close any open dropdowns first
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            var prev = m.previousElementSibling;
-            if (prev && prev.classList.contains('dropdown-toggle')) {
-              prev.setAttribute('aria-expanded', 'false');
-            }
+            m.removeAttribute('data-bs-popper');
+          });
+          document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+            t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
+            menu.setAttribute('data-bs-popper', 'static');
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
@@ -6933,10 +6953,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (!e.target.closest('.dropdown-menu')) {
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          var prev = m.previousElementSibling;
-          if (prev && prev.classList.contains('dropdown-toggle')) {
-            prev.setAttribute('aria-expanded', 'false');
-          }
+          m.removeAttribute('data-bs-popper');
+        });
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+          t.setAttribute('aria-expanded', 'false');
         });
       }
 
