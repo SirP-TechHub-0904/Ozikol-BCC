@@ -64,6 +64,9 @@ namespace Ozikol_BCC.Api.Controllers
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                    .ThenInclude(s => s.PageForm)
+                        .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
 
             if (page == null)
@@ -88,6 +91,9 @@ namespace Ozikol_BCC.Api.Controllers
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                    .ThenInclude(s => s.PageForm)
+                        .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .FirstOrDefaultAsync(p => p.Publish && p.Id == id);
 
             if (page == null)
@@ -129,6 +135,8 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var query = _context.PageSections
                 .Include(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                .Include(s => s.PageForm)
+                    .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .Where(s => !s.Disable)
                 .AsQueryable();
 

@@ -213,6 +213,31 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
+          <!-- Dynamic Page Form Attachment -->
+          <div class="cms-card">
+            <div class="card-header-bar">
+              <div>
+                <h3>Attach Dynamic Page Form</h3>
+                <p class="card-sub" style="margin:0; font-size:12px; color:#64748b;">Connect an interactive inquiry, intake, or newsletter form to this section.</p>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>DYNAMIC FORM</label>
+              <select [(ngModel)]="section.pageFormId" (ngModelChange)="onFormSelected($event)" class="form-control">
+                <option [ngValue]="null">-- None (No Dynamic Form) --</option>
+                <option *ngFor="let f of availableForms" [ngValue]="f.id">
+                  {{ f.title }} ({{ f.formKey }}) [{{ f.fieldCount || f.fields?.length || 0 }} fields]
+                </option>
+              </select>
+              <small class="help-text">Responses appear under <a routerLink="/admin/content/forms" target="_blank" style="color: #0050e5; font-weight: 600;">Manage Forms</a>.</small>
+            </div>
+
+            <div class="form-group" style="margin-top:12px;">
+              <label>DIRECT FORM KEY</label>
+              <input type="text" [(ngModel)]="section.formKey" class="form-control" placeholder="e.g. contact-us, service-request, newsletter">
+            </div>
+          </div>
+
           <!-- Placement & Sorting -->
           <div class="cms-card">
             <div class="card-header-bar">
@@ -383,6 +408,7 @@ export class PageSectionEditComponent implements OnInit {
   section: any = null;
   installedTemplates: any[] = [];
   allPages: any[] = [];
+  availableForms: any[] = [];
   loading = false;
   uploadingPrimary = false;
   uploadingSecondary = false;
@@ -403,6 +429,29 @@ export class PageSectionEditComponent implements OnInit {
       this.loadSection();
     }
     this.loadInstalledTemplates();
+    this.loadForms();
+  }
+
+  loadForms(): void {
+    this.api.get<any>('PageFormsApi').subscribe({
+      next: (res) => {
+        if (res?.data && Array.isArray(res.data)) {
+          this.availableForms = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  onFormSelected(formId: string | null): void {
+    if (!formId) {
+      this.section.formKey = '';
+      return;
+    }
+    const found = this.availableForms.find(f => f.id === formId);
+    if (found) {
+      this.section.formKey = found.formKey;
+    }
   }
 
   loadInstalledTemplates(): void {

@@ -473,10 +473,16 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             fk.DeleteBehavior = DeleteBehavior.Restrict;
         }
 
-        // --- CMS Dynamic Page Forms Unique Index ---
+        // --- CMS Dynamic Page Forms Unique Index & PageSection Relationship ---
         modelBuilder.Entity<PageForm>()
             .HasIndex(f => f.FormKey)
             .IsUnique();
+
+        modelBuilder.Entity<PageSection>()
+            .HasOne(s => s.PageForm)
+            .WithMany()
+            .HasForeignKey(s => s.PageFormId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // ConfigureCustomer(modelBuilder);
     }

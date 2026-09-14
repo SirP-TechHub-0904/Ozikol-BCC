@@ -608,6 +608,23 @@ public class TenantOnboardingService : ITenantOnboardingService
                 dbContext.WebPages.Add(servicesPage);
             }
 
+            var requestServicePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "request-service", cancellationToken);
+            if (requestServicePage == null)
+            {
+                requestServicePage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Request a Service",
+                    DirectUrl = "request-service",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 4
+                };
+                dbContext.WebPages.Add(requestServicePage);
+            }
+
             var contactPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "contact", cancellationToken);
             if (contactPage == null)
             {
@@ -620,14 +637,18 @@ public class TenantOnboardingService : ITenantOnboardingService
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 4
+                    SortOrder = 5
                 };
                 dbContext.WebPages.Add(contactPage);
             }
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5b. Seed Structured Page Sections & Repeatable Child Lists
-            await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, servicesPage, contactPage, cancellationToken);
+            // 5b. Seed Standard CMS Dynamic Forms (Contact Us, Newsletter, Service Request & Intake)
+            await SeedDefaultPageFormsAsync(dbContext, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5c. Seed Structured Page Sections & Repeatable Child Lists
+            await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, servicesPage, requestServicePage, contactPage, cancellationToken);
 
             // 6. Seed Default Hero Slider
             if (!await dbContext.Sliders.AnyAsync(cancellationToken))
@@ -647,11 +668,8 @@ public class TenantOnboardingService : ITenantOnboardingService
             // 7. Seed Default Global Code Injections (Bootstrap 5.3 CSS/JS & Font Awesome 6)
             await SeedDefaultCodeInjectionsAsync(dbContext, cancellationToken);
 
-            // 8. Seed Complete Turnkey Theme Suite (All 9 Categories, 6 Body Sections, Font Awesome Icons, Bootstrap 5)
+            // 8. Seed Complete Turnkey Theme Suite (All 9 Categories, 7 Body Sections, Font Awesome Icons, Bootstrap 5)
             await SeedDefaultInstalledTemplatesAsync(dbContext, request.OrganizationName, cancellationToken);
-
-            // 9. Seed Standard CMS Forms (Contact Us, Newsletter, Service Request & Intake)
-            await SeedDefaultPageFormsAsync(dbContext, cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
         }
@@ -1472,14 +1490,131 @@ public class TenantOnboardingService : ITenantOnboardingService
                 CssStyles = @""
             },
 
-            // 11. Contact & Service Intake Section
+            // 11. Clean Contact Us & Office Inquiry Form
             new()
             {
                 Id = Guid.NewGuid(),
                 TemplateKey = "Contact_SplitDetails",
                 CategoryKey = "contact",
-                Name = "Split Service Intake & Inquiries Form",
+                Name = "Clean Contact Us & Office Inquiries Form",
                 VariantCode = "Contact_SplitDetails",
+                InstalledVersion = "1.0.0",
+                IsActive = true,
+                InstalledUtc = DateTime.UtcNow,
+                HtmlTemplate = @"
+<section class=""py-5 bg-light border-bottom"" id=""contact"">
+  <div class=""container py-4"">
+    <div class=""row g-5"">
+      <!-- Left Column: Official Contact Directory & Office Information -->
+      <div class=""col-lg-5"">
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">Get In Touch</span>
+        <h2 class=""fw-bold text-dark mb-3"">Contact Our Team</h2>
+        <p class=""text-muted mb-4 fs-6"">Have questions regarding our services, partnerships, or operational support? Reach out directly to our administrative desk or send us a message.</p>
+
+        <div class=""d-flex flex-column gap-3 mb-4"">
+          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+              <i class=""fa-solid fa-location-dot""></i>
+            </div>
+            <div>
+              <strong class=""text-dark small d-block"">Corporate Office</strong>
+              <span class=""text-muted small"">100 Enterprise Way, Suite 400, Financial District</span>
+            </div>
+          </div>
+
+          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+              <i class=""fa-solid fa-phone""></i>
+            </div>
+            <div>
+              <strong class=""text-dark small d-block"">Telephone Hotline</strong>
+              <span class=""text-muted small"">+1 (800) 555-0199 / Direct Support</span>
+            </div>
+          </div>
+
+          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+              <i class=""fa-solid fa-envelope""></i>
+            </div>
+            <div>
+              <strong class=""text-dark small d-block"">Official Inquiry Desk</strong>
+              <span class=""text-muted small"">contact@{{ BrandName }}.com</span>
+            </div>
+          </div>
+
+          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+              <i class=""fa-solid fa-clock""></i>
+            </div>
+            <div>
+              <strong class=""text-dark small d-block"">Business Hours</strong>
+              <span class=""text-muted small"">Monday – Friday: 8:30 AM – 5:30 PM (LST)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Clean General Contact Form -->
+      <div class=""col-lg-7"">
+        <div class=""card border-0 rounded-4 p-4 p-lg-5 shadow-sm bg-white"" id=""ozContactFormCard"">
+          <h4 class=""fw-bold text-dark mb-1"">Send Us a Direct Message</h4>
+          <p class=""text-muted small mb-4"">Please complete the form below. We typically respond within one business day.</p>
+
+          <form id=""ozContactForm"" onsubmit=""event.preventDefault(); document.getElementById('ozContactForm').style.display='none'; document.getElementById('ozContactSuccess').style.display='block';"">
+            <div class=""row g-3 mb-3"">
+              <div class=""col-md-6"">
+                <label class=""form-label fw-semibold text-dark small"">Full Name <span class=""text-danger"">*</span></label>
+                <input type=""text"" name=""full_name"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""Your Full Name"" required />
+              </div>
+              <div class=""col-md-6"">
+                <label class=""form-label fw-semibold text-dark small"">Email Address <span class=""text-danger"">*</span></label>
+                <input type=""email"" name=""email"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""name@company.com"" required />
+              </div>
+              <div class=""col-md-6"">
+                <label class=""form-label fw-semibold text-dark small"">Phone Number</label>
+                <input type=""tel"" name=""phone"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""+1 (555) 000-0000"" />
+              </div>
+              <div class=""col-md-6"">
+                <label class=""form-label fw-semibold text-dark small"">Subject</label>
+                <input type=""text"" name=""subject"" class=""form-control bg-light border-0 rounded-3 py-2 px-3"" placeholder=""How can we help you?"" />
+              </div>
+              <div class=""col-12"">
+                <label class=""form-label fw-semibold text-dark small"">Your Message <span class=""text-danger"">*</span></label>
+                <textarea name=""message"" class=""form-control bg-light border-0 rounded-3 p-3"" rows=""5"" placeholder=""Please describe your inquiry or question in detail..."" required></textarea>
+              </div>
+            </div>
+
+            <button type=""submit"" class=""btn btn-primary rounded-pill px-5 py-3 fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center gap-2"">
+              <span>Send Message</span>
+              <span style=""font-size: 18px;"">→</span>
+            </button>
+          </form>
+
+          <!-- Interactive Success State -->
+          <div id=""ozContactSuccess"" style=""display: none;"" class=""text-center py-5"">
+            <div class=""rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 64px; height: 64px; font-size: 28px;"">
+              <i class=""fa-solid fa-circle-check""></i>
+            </div>
+            <h4 class=""fw-bold text-dark mb-2"">Message Sent Successfully!</h4>
+            <p class=""text-muted mx-auto mb-4"" style=""max-width: 460px;"">Thank you for contacting us. Your message has been routed to our client communications desk, and a representative will follow up with you promptly.</p>
+            <button type=""button"" class=""btn btn-outline-secondary rounded-pill px-4 py-2 small"" onclick=""document.getElementById('ozContactSuccess').style.display='none'; document.getElementById('ozContactForm').style.display='block';"">Send Another Message</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>",
+                CssStyles = @""
+            },
+
+            // 11b. Dedicated Service Request & Project Intake Section
+            new()
+            {
+                Id = Guid.NewGuid(),
+                TemplateKey = "Body_RequestService",
+                CategoryKey = "body",
+                Name = "Dedicated Service Request & Project Intake",
+                VariantCode = "Body_RequestService",
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
@@ -1885,7 +2020,7 @@ public class TenantOnboardingService : ITenantOnboardingService
     }
 
     /// <summary>
-    /// Seeds structured PageSection and PageSectionList entities across Home, Services, About Us, and Contact Us web pages.
+    /// Seeds structured PageSection and PageSectionList entities across Home, Services, About Us, Request Service, and Contact Us web pages.
     /// </summary>
     private static async Task SeedDefaultPageSectionsAsync(
         DashboardDbContext dbContext,
@@ -1895,6 +2030,7 @@ public class TenantOnboardingService : ITenantOnboardingService
         WebPage homePage,
         WebPage aboutPage,
         WebPage servicesPage,
+        WebPage requestServicePage,
         WebPage contactPage,
         CancellationToken cancellationToken)
     {
@@ -1902,6 +2038,11 @@ public class TenantOnboardingService : ITenantOnboardingService
         {
             return;
         }
+
+        // Retrieve seeded dynamic PageForms
+        var contactForm = await dbContext.PageForms.FirstOrDefaultAsync(f => f.FormKey == "contact-us", cancellationToken);
+        var serviceRequestForm = await dbContext.PageForms.FirstOrDefaultAsync(f => f.FormKey == "service-request", cancellationToken);
+        var newsletterForm = await dbContext.PageForms.FirstOrDefaultAsync(f => f.FormKey == "newsletter", cancellationToken);
 
         var sections = new List<PageSection>();
 
@@ -2195,6 +2336,22 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
         sections.Add(contactChannels);
 
+        var contactFormSection = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = contactPage.Id,
+            TemplateKey = "Contact_SplitDetails",
+            Title = "Send Us a Direct Message",
+            MiniTitle = "GET IN TOUCH",
+            Description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
+            DirectUrl = "contact-form",
+            ShowInHome = false,
+            PageSortOrder = 3,
+            PageFormId = contactForm?.Id,
+            FormKey = "contact-us"
+        };
+        sections.Add(contactFormSection);
+
         var contactCta = new PageSection
         {
             Id = Guid.NewGuid(),
@@ -2207,9 +2364,60 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonLink = $"mailto:{request.AdminEmail}",
             DirectUrl = "contact-cta",
             ShowInHome = false,
-            PageSortOrder = 3
+            PageSortOrder = 4
         };
         sections.Add(contactCta);
+
+        // 5. REQUEST A SERVICE PAGE SECTIONS
+        var requestHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = requestServicePage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = "Initiate a Project or Service Request",
+            MiniTitle = $"ENGAGE WITH {abbreviation}",
+            Description = "Submit your organization's specifications, service requirements, and desired timeline for a dedicated solution assessment.",
+            ButtonText = "Start Intake Below",
+            ButtonLink = "#request-service",
+            DirectUrl = "request-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(requestHero);
+
+        var requestIntakeSection = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = requestServicePage.Id,
+            TemplateKey = "Body_RequestService",
+            Title = "Request a Tailored Enterprise Service",
+            MiniTitle = "SERVICE CONSULTATION",
+            Description = "Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.",
+            DirectUrl = "request-service",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageFormId = serviceRequestForm?.Id,
+            FormKey = "service-request"
+        };
+        sections.Add(requestIntakeSection);
+
+        // 6. PRE-FOOTER NEWSLETTER DISPATCH
+        var newsletterSection = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            TemplateKey = "News_MinimalBar",
+            Title = "Stay Informed with Weekly Dispatches",
+            MiniTitle = "NEWSLETTER",
+            Description = "Subscribe to our periodic industry insights, corporate bulletins, and platform updates.",
+            DirectUrl = "newsletter-bar",
+            ShowInHome = true,
+            FixedAfterFooter = true,
+            HomePageSortOrder = 6,
+            PageSortOrder = 99,
+            PageFormId = newsletterForm?.Id,
+            FormKey = "newsletter"
+        };
+        sections.Add(newsletterSection);
 
         dbContext.PageSections.AddRange(sections);
         await dbContext.SaveChangesAsync(cancellationToken);
