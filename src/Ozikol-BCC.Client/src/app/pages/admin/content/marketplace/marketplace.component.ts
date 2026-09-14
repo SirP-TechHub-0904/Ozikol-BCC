@@ -1932,37 +1932,18 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
           <div class="oz-hero-left">
             <span class="oz-hero-pill"><i class="fa-solid fa-bolt text-warning me-1"></i> {{ MiniTitle }}</span>
             <h1 class="oz-hero-h1">{{ Title }}</h1>
-            <p class="oz-hero-p">{{ Description }}</p>
+            <p class="oz-hero-p">{{ Text }}</p>
             <div class="oz-hero-btns">
               <a href="{{ ButtonLink }}" class="oz-btn-pri">{{ ButtonText }}</a>
-              <a href="{{ SecondaryButtonLink }}" class="oz-btn-sec">{{ SecondaryButtonText }}</a>
-            </div>
-            <div class="oz-hero-metrics">
-              <div class="oz-metric-item">
-                <span class="oz-metric-num">{{ MetricNumber1 }}</span>
-                <span class="oz-metric-lbl">{{ MetricLabel1 }}</span>
-              </div>
-              <div class="oz-metric-divider"></div>
-              <div class="oz-metric-item">
-                <span class="oz-metric-num">{{ MetricNumber2 }}</span>
-                <span class="oz-metric-lbl">{{ MetricLabel2 }}</span>
-              </div>
-              <div class="oz-metric-divider"></div>
-              <div class="oz-metric-item">
-                <span class="oz-metric-num">{{ MetricNumber3 }}</span>
-                <span class="oz-metric-lbl">{{ MetricLabel3 }}</span>
-              </div>
+              <a href="{{ VideoLink }}" class="oz-btn-sec"><i class="fa-solid fa-play me-1"></i> {{ VideoButtonText }}</a>
             </div>
           </div>
           <div class="oz-hero-right">
             <div class="oz-mockup-window">
               <div class="oz-window-head"><span></span><span></span><span></span></div>
               <div class="oz-window-body">
-                <div class="oz-stat-bar"><strong>Status:</strong> Active Enterprise <i class="fa-solid fa-circle text-success ms-1" style="font-size:8px;"></i> Online</div>
-                <div class="oz-hero-featured-wrap">
-                  <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-hero-featured-img" onerror="this.parentElement.classList.add('no-img');" />
-                  <div class="oz-chart-mock"></div>
-                </div>
+                <img src="{{ Url }}" alt="{{ Title }}" class="oz-hero-featured-img" onerror="this.style.display='none'" />
+                <img src="{{ SecondUrl }}" alt="Overlay" class="oz-hero-sec-img" onerror="this.style.display='none'" />
               </div>
             </div>
           </div>
@@ -1972,25 +1953,17 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
         .oz-hero-split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; padding: 72px 48px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; align-items: center; font-family: Inter, system-ui, -apple-system, sans-serif; border-bottom: 1px solid #e2e8f0; }
         .oz-hero-pill { background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; border: 1px solid #bfdbfe; display: inline-block; letter-spacing: 0.04em; }
         .oz-hero-h1 { font-size: 36px; font-weight: 900; line-height: 1.2; margin: 16px 0; color: #0f172a; letter-spacing: -0.02em; }
-        .oz-hero-p { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 24px; }
-        .oz-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+        .oz-hero-p { font-size: 15px; color: #475569; line-height: 1.6; margin-bottom: 28px; }
+        .oz-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
         .oz-btn-pri { background: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); transition: background 0.15s ease; display: inline-flex; align-items: center; justify-content: center; }
         .oz-btn-pri:hover { background: #1d4ed8; }
-        .oz-btn-sec { background: #ffffff; color: #334155; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; border: 1.5px solid #cbd5e1; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; }
+        .oz-btn-sec { background: #ffffff; color: #334155; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; border: 1.5px solid #cbd5e1; transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .oz-btn-sec:hover { background: #f8fafc; border-color: #94a3b8; }
-        .oz-hero-metrics { display: flex; align-items: center; gap: 18px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
-        .oz-metric-item { display: flex; flex-direction: column; }
-        .oz-metric-num { font-size: 20px; font-weight: 900; color: #0f172a; }
-        .oz-metric-lbl { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-        .oz-metric-divider { width: 1px; height: 32px; background: #cbd5e1; }
         .oz-mockup-window { background: #ffffff; border-radius: 12px; border: 1.5px solid #e2e8f0; padding: 20px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }
         .oz-window-head { display: flex; gap: 6px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
         .oz-window-head span { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
-        .oz-stat-bar { font-size: 13px; color: #334155; margin-bottom: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .oz-hero-featured-wrap { border-radius: 8px; overflow: hidden; position: relative; }
-        .oz-hero-featured-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
-        .oz-hero-featured-wrap.no-img .oz-hero-featured-img { display: none; }
-        .oz-chart-mock { height: 100px; background: linear-gradient(180deg, rgba(37,99,235,0.12) 0%, rgba(37,99,235,0.01) 100%); border-bottom: 2px solid #2563eb; border-radius: 6px; }
+        .oz-hero-featured-img { width: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+        .oz-hero-sec-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; }
         @media(max-width: 850px) { .oz-hero-split { grid-template-columns: 1fr; padding: 48px 24px; } }
       `
     },
@@ -2002,43 +1975,33 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       groupCode: 'apex-commerce',
       groupName: 'Apex Commerce Pro',
       tag: 'dark',
-      description: 'Dark cinematic full-width hero unit with glowing badge, play video button, and proof metrics.',
+      description: 'Dark cinematic full-width hero unit with glowing badge, play video button, and responsive layout.',
       thumbnailGradient: 'linear-gradient(135deg, #475569 0%, #0f172a 100%)',
       previewIcon: 'smart_display',
       previewSubtitle: 'Cinematic Hero',
       previewTitle: 'Experience High Performance',
       previewBody: 'Full-bleed atmospheric hero with video play trigger',
       htmlTemplate: `
-        <section class="oz-hero-video">
-          <span class="oz-badge-glow"><i class="fa-solid fa-star me-1"></i> {{ BadgeText }}</span>
+        <section class="oz-hero-video" style="background-image: linear-gradient(rgba(15,23,42,0.85), rgba(15,23,42,0.95)), url('{{ Url }}'); background-size: cover; background-position: center;">
+          <span class="oz-badge-glow"><i class="fa-solid fa-star me-1"></i> {{ MiniTitle }}</span>
           <h1 class="oz-video-h1">{{ Title }}</h1>
-          <p class="oz-video-sub">{{ Description }}</p>
+          <p class="oz-video-sub">{{ Text }}</p>
           <div class="oz-video-action">
-            <a href="{{ ButtonLink }}" class="oz-play-btn"><i class="fa-solid fa-circle-play me-1"></i> {{ ButtonText }}</a>
-            <a href="{{ SecondaryButtonLink }}" class="oz-video-sec-btn">{{ SecondaryButtonText }}</a>
-          </div>
-          <div class="oz-video-metrics">
-            <div class="oz-vid-stat"><strong>{{ MetricNumber1 }}</strong> <span>{{ MetricLabel1 }}</span></div>
-            <span class="oz-dot">•</span>
-            <div class="oz-vid-stat"><strong>{{ MetricNumber2 }}</strong> <span>{{ MetricLabel2 }}</span></div>
-            <span class="oz-dot">•</span>
-            <div class="oz-vid-stat"><strong>{{ MetricNumber3 }}</strong> <span>{{ MetricLabel3 }}</span></div>
+            <a href="{{ ButtonLink }}" class="oz-play-btn">{{ ButtonText }}</a>
+            <a href="{{ VideoLink }}" class="oz-video-sec-btn"><i class="fa-solid fa-circle-play me-1"></i> {{ VideoButtonText }}</a>
           </div>
         </section>
       `,
       cssStyles: `
-        .oz-hero-video { padding: 90px 40px; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); text-align: center; color: #fff; font-family: Inter, sans-serif; }
+        .oz-hero-video { padding: 90px 40px; text-align: center; color: #fff; font-family: Inter, sans-serif; background-color: #0f172a; }
         .oz-badge-glow { background: #4338ca; color: #e0e7ff; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; display: inline-block; }
         .oz-video-h1 { font-size: 36px; font-weight: 900; max-width: 750px; margin: 18px auto; line-height: 1.25; }
         .oz-video-sub { font-size: 14.5px; color: #94a3b8; max-width: 600px; margin: 0 auto 28px; line-height: 1.5; }
-        .oz-video-action { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
+        .oz-video-action { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
         .oz-play-btn { display: inline-flex; align-items: center; gap: 8px; background: #ffffff; color: #0f172a; padding: 12px 28px; border-radius: 50px; font-weight: 800; font-size: 14px; text-decoration: none; transition: transform 0.15s ease; }
         .oz-play-btn:hover { transform: scale(1.03); color: #0f172a; }
         .oz-video-sec-btn { display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.12); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3); padding: 12px 24px; border-radius: 50px; font-weight: 700; font-size: 14px; text-decoration: none; backdrop-filter: blur(8px); transition: background 0.15s ease; }
         .oz-video-sec-btn:hover { background: rgba(255, 255, 255, 0.22); color: #fff; }
-        .oz-video-metrics { display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; color: #94a3b8; font-size: 13px; }
-        .oz-vid-stat strong { color: #f8fafc; font-size: 15px; }
-        .oz-dot { color: #4338ca; }
       `
     },
     {
@@ -2049,28 +2012,23 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       groupCode: 'apex-commerce',
       groupName: 'Apex Commerce Pro',
       tag: 'corporate',
-      description: 'Clean typography with animated gradient text, pill tag, and quick email signup input.',
+      description: 'Clean typography with animated gradient text, pill tag, and action buttons.',
       thumbnailGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       previewIcon: 'format_align_center',
       previewSubtitle: 'Minimal Hero',
       previewTitle: 'Simplicity Meets Speed',
-      previewBody: 'Light clean centered layout with 1-click email invitation capture',
+      previewBody: 'Light clean centered layout with primary button and video link',
       htmlTemplate: `
         <section class="oz-hero-minimal">
           <span class="oz-mini-badge">{{ MiniTitle }}</span>
           <h1 class="oz-mini-h1">{{ Title }}</h1>
-          <p class="oz-mini-p">{{ Description }}</p>
-          <div class="oz-mini-form">
-            <input type="email" placeholder="Enter your work email..." />
+          <p class="oz-mini-p">{{ Text }}</p>
+          <div class="oz-mini-actions">
             <a href="{{ ButtonLink }}" class="oz-mini-btn">{{ ButtonText }}</a>
+            <a href="{{ VideoLink }}" class="oz-mini-sec-btn"><i class="fa-solid fa-play me-1"></i> {{ VideoButtonText }}</a>
           </div>
-          <div class="oz-mini-subtext">
-            <a href="{{ SecondaryButtonLink }}" class="oz-mini-link">{{ SecondaryButtonText }}</a>
-          </div>
-          <div class="oz-mini-metrics">
-            <span><strong>{{ MetricNumber1 }}</strong> {{ MetricLabel1 }}</span>
-            <span class="oz-dot">•</span>
-            <span><strong>{{ MetricNumber2 }}</strong> {{ MetricLabel2 }}</span>
+          <div class="oz-mini-visual">
+            <img src="{{ Url }}" alt="{{ Title }}" class="oz-mini-img" onerror="this.style.display='none'" />
           </div>
         </section>
       `,
@@ -2079,13 +2037,10 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
         .oz-mini-badge { color: #0050e5; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; display: inline-block; }
         .oz-mini-h1 { font-size: 36px; font-weight: 900; color: #0f172a; margin: 14px auto; max-width: 680px; line-height: 1.25; }
         .oz-mini-p { font-size: 15px; color: #64748b; margin-bottom: 26px; max-width: 580px; margin-left: auto; margin-right: auto; line-height: 1.5; }
-        .oz-mini-form { display: flex; justify-content: center; gap: 8px; max-width: 460px; margin: 0 auto 14px; }
-        .oz-mini-form input { flex: 1; padding: 12px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; }
-        .oz-mini-btn { background: #0050e5; color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; display: inline-flex; align-items: center; }
-        .oz-mini-subtext { font-size: 12.5px; color: #64748b; margin-bottom: 24px; }
-        .oz-mini-link { color: #0050e5; text-decoration: underline; font-weight: 600; }
-        .oz-mini-metrics { display: flex; justify-content: center; align-items: center; gap: 14px; color: #64748b; font-size: 12.5px; }
-        .oz-mini-metrics strong { color: #0f172a; }
+        .oz-mini-actions { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
+        .oz-mini-btn { background: #0050e5; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; display: inline-flex; align-items: center; }
+        .oz-mini-sec-btn { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13.5px; display: inline-flex; align-items: center; }
+        .oz-mini-img { max-width: 720px; width: 100%; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin: 0 auto; }
       `
     },
     {
@@ -2105,28 +2060,18 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       htmlTemplate: `
         <section class="oz-hero-ecom">
           <div class="oz-ecom-left">
-            <span class="oz-ecom-badge"><i class="fa-solid fa-fire me-1"></i> {{ BadgeText }}</span>
+            <span class="oz-ecom-badge"><i class="fa-solid fa-fire me-1"></i> {{ MiniTitle }}</span>
             <h1 class="oz-ecom-title">{{ Title }}</h1>
-            <p class="oz-ecom-sub">{{ Description }}</p>
+            <p class="oz-ecom-sub">{{ Text }}</p>
             <div class="oz-ecom-btns">
               <a href="{{ ButtonLink }}" class="oz-ecom-btn">{{ ButtonText }}</a>
-              <a href="{{ SecondaryButtonLink }}" class="oz-ecom-sec-btn">{{ SecondaryButtonText }}</a>
-            </div>
-            <div class="oz-ecom-stats">
-              <span><strong>{{ MetricNumber1 }}</strong> {{ MetricLabel1 }}</span>
-              <span>•</span>
-              <span><strong>{{ MetricNumber2 }}</strong> {{ MetricLabel2 }}</span>
+              <a href="{{ VideoLink }}" class="oz-ecom-sec-btn">{{ VideoButtonText }}</a>
             </div>
           </div>
           <div class="oz-ecom-right">
             <div class="oz-product-hero-card">
-              <span class="oz-sale-tag">{{ MetricNumber3 }}</span>
-              <div class="oz-prod-img-wrap">
-                <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-prod-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-                <div class="oz-prod-mock-img" style="display:none;"><i class="fa-solid fa-box-open fa-2x text-primary"></i></div>
-              </div>
-              <h4>Executive Collection</h4>
-              <div class="oz-prod-price"><del>$120.00</del> <strong>$72.00</strong></div>
+              <img src="{{ Url }}" alt="{{ Title }}" class="oz-prod-img" onerror="this.style.display='none'" />
+              <img src="{{ SecondUrl }}" alt="Secondary Graphic" class="oz-prod-sec-img" onerror="this.style.display='none'" />
             </div>
           </div>
         </section>
@@ -2139,15 +2084,9 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
         .oz-ecom-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
         .oz-ecom-btn { background: #ea580c; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; }
         .oz-ecom-sec-btn { background: #ffffff; color: #7c2d12; border: 1.5px solid #fed7aa; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; }
-        .oz-ecom-stats { font-size: 12.5px; color: #9a3412; display: flex; gap: 10px; align-items: center; }
-        .oz-ecom-stats strong { color: #7c2d12; }
         .oz-product-hero-card { background: #fff; padding: 24px; border-radius: 12px; text-align: center; border: 1.5px solid #fed7aa; box-shadow: 0 10px 25px rgba(234, 88, 12, 0.1); position: relative; }
-        .oz-sale-tag { position: absolute; top: 12px; right: 12px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; }
-        .oz-prod-img-wrap { min-height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-        .oz-prod-img { max-width: 100%; max-height: 140px; object-fit: contain; border-radius: 8px; }
-        .oz-prod-mock-img { font-size: 60px; }
-        .oz-prod-price { margin-top: 6px; font-size: 16px; color: #ea580c; }
-        .oz-prod-price del { color: #94a3b8; font-size: 13px; margin-right: 6px; }
+        .oz-prod-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 8px; }
+        .oz-prod-sec-img { max-width: 100%; max-height: 140px; object-fit: contain; border-radius: 8px; margin-top: 10px; }
         @media(max-width: 850px) { .oz-hero-ecom { grid-template-columns: 1fr; padding: 40px 24px; } }
       `
     },

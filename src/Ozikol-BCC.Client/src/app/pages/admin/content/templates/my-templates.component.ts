@@ -933,62 +933,47 @@ export interface CodeInjectionTag {
               </div>
             </div>
 
-            <!-- HERO CATEGORY -->
+            <!-- HERO CATEGORY (SLIDER MODEL) -->
             <div class="custom-tpl-form-grid" *ngSwitchCase="'hero'">
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'EYEBROW / BADGE TEXT ({{ MiniTitle }} / {{ BadgeText }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.badgeText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. ENTERPRISE ECOSYSTEM v2.5" />
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'SLIDER MAIN HEADLINE ({{ Title }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Innovating the Future of Community Empowerment" />
               </div>
               <div class="form-group">
-                <label class="form-lbl" [innerText]="'HERO MEDIA IMAGE URL ({{ ImageUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
+                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. OFFICIAL PORTAL" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'PRIMARY SLIDE IMAGE URL ({{ Url }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://res.cloudinary.com/... or https://images.unsplash.com/..." />
               </div>
               <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'MAIN HEADLINE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="Headline..." />
-              </div>
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'VALUE PROPOSITION / NARRATIVE ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewHeroContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Compelling hero narrative..."></textarea>
+                <label class="form-lbl" [innerText]="'SLIDE TEXT / SUMMARY ({{ Text }})'"></label>
+                <textarea [(ngModel)]="previewHeroContent.text" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Brief supportive summary..."></textarea>
               </div>
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Explore Solutions" />
+                <input type="text" [(ngModel)]="previewHeroContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Learn More" />
               </div>
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'PRIMARY BUTTON LINK ({{ ButtonLink }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/services or /pricing" />
+                <input type="text" [(ngModel)]="previewHeroContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/services or https://..." />
               </div>
               <div class="form-group">
-                <label class="form-lbl" [innerText]="'SECONDARY BUTTON TEXT ({{ SecondaryButtonText }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.secondaryButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Request a Service" />
+                <label class="form-lbl" [innerText]="'VIDEO BUTTON TEXT ({{ VideoButtonText }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.videoButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Watch Video" />
               </div>
               <div class="form-group">
-                <label class="form-lbl" [innerText]="'SECONDARY BUTTON LINK ({{ SecondaryButtonLink }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.secondaryButtonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/request-service or /contact" />
+                <label class="form-lbl" [innerText]="'POPUP VIDEO LINK ({{ VideoLink }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.videoLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://youtube.com/watch?v=..." />
               </div>
-
-              <!-- 3-Column Proof Metrics Bar Inputs -->
-              <div class="form-group full-width" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;">
-                <label class="form-lbl mb-2" style="color: #0f172a; font-weight: 700;" [innerText]="'PROOF METRICS & STATS ({{ MetricNumber1 }}, {{ MetricLabel1 }}, etc.)'">
-                </label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span class="subitem-badge mb-1">Metric #1</span>
-                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber1" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="99.9%" />
-                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel1" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Uptime SLA" />
-                  </div>
-                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span class="subitem-badge mb-1">Metric #2</span>
-                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber2" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="2,500+" />
-                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel2" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Active Deployments" />
-                  </div>
-                  <div style="background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <span class="subitem-badge mb-1">Metric #3</span>
-                    <input type="text" [(ngModel)]="previewHeroContent.metricNumber3" (ngModelChange)="onPreviewContentChange()" class="form-ctrl mb-1 font-mono fw-bold" placeholder="24/7" />
-                    <input type="text" [(ngModel)]="previewHeroContent.metricLabel3" (ngModelChange)="onPreviewContentChange()" class="form-ctrl small" placeholder="Dedicated Support" />
-                  </div>
-                </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'SECONDARY IMAGE URL ({{ SecondUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.secondUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://... (optional overlapping graphic)" />
+              </div>
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeVideo }})'"></label>
+                <input type="text" [(ngModel)]="previewHeroContent.youtubeVideo" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
               </div>
             </div>
 
@@ -1264,7 +1249,7 @@ export interface CodeInjectionTag {
               </span>
             </ng-container>
 
-            <!-- Hero Category Ribbon -->
+            <!-- Hero Category Ribbon (Slider Model) -->
             <ng-container *ngIf="activePreviewItem?.category === 'hero'">
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
@@ -1275,8 +1260,8 @@ export interface CodeInjectionTag {
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Text }}')" [innerText]="'+ {{ Text }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Text', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Text', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
@@ -1287,34 +1272,31 @@ export interface CodeInjectionTag {
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonText }}')" [innerText]="'+ {{ SecondaryButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ VideoButtonText }}')" [innerText]="'+ {{ VideoButtonText }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonLink }}')" [innerText]="'+ {{ SecondaryButtonLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ VideoLink }}')" [innerText]="'+ {{ VideoLink }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ImageUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ Url }}')" [innerText]="'+ {{ Url }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Url', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Url', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ SecondUrl }}')" [innerText]="'+ {{ SecondUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertHeroProofMetricsSnippetAtModalCursor()" title="Inserts 3-column stats and reliability metrics bar">
-                  <span class="material-symbols-outlined chip-icon">analytics</span>
-                  <span>+ Proof Metrics Bar</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('HeroProofMetrics', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('HeroProofMetrics', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ YoutubeVideo }}')" [innerText]="'+ {{ YoutubeVideo }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('YoutubeVideo', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('YoutubeVideo', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-repeater" (click)="insertHeroDualCtaSnippetAtModalCursor()" title="Inserts dual action button pair">
                   <span class="material-symbols-outlined chip-icon">smart_button</span>
                   <span>+ Dual Action Buttons</span>
                 </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
             </ng-container>
 
@@ -4631,41 +4613,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /** Dedicated Hero Sample Content Replacements (strictly isolated from menu & footer) */
   previewHeroContent: {
-    badgeText: string;
     title: string;
-    subtitle: string;
-    description: string;
+    miniTitle: string;
+    text: string;
     buttonText: string;
     buttonLink: string;
-    secondaryButtonText: string;
-    secondaryButtonLink: string;
-    imageUrl: string;
-    backgroundImageUrl: string;
-    videoUrl: string;
-    metricNumber1: string;
-    metricLabel1: string;
-    metricNumber2: string;
-    metricLabel2: string;
-    metricNumber3: string;
-    metricLabel3: string;
+    videoButtonText: string;
+    videoLink: string;
+    url: string;
+    secondUrl: string;
+    youtubeVideo: string;
+    // Backward compatibility aliases
+    description?: string;
+    imageUrl?: string;
+    badgeText?: string;
+    secondaryButtonText?: string;
+    secondaryButtonLink?: string;
   } = {
-    badgeText: 'ENTERPRISE ECOSYSTEM v2.5',
     title: 'Next-Generation Infrastructure for Forward-Thinking Organizations',
-    subtitle: 'Unified Operational Command',
-    description: 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
+    miniTitle: 'OFFICIAL PORTAL',
+    text: 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
     buttonText: 'Explore Solutions',
     buttonLink: '/services',
-    secondaryButtonText: 'Request a Service',
-    secondaryButtonLink: '/request-service',
-    imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
-    backgroundImageUrl: '',
-    videoUrl: '',
-    metricNumber1: '99.9%',
-    metricLabel1: 'Uptime SLA',
-    metricNumber2: '2,500+',
-    metricLabel2: 'Active Deployments',
-    metricNumber3: '24/7',
-    metricLabel3: 'Dedicated Support'
+    videoButtonText: 'Watch Video',
+    videoLink: '/request-service',
+    url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
+    secondUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+    youtubeVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
   };
 
   // Interactive Modal Code Editor Reference & Saving State
@@ -4742,74 +4716,88 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn btn-primary">{{ Title }}</a>{{/each}}'
     },
     Title: {
-      name: 'Section Heading',
+      name: 'Headline / Title',
       token: '{{ Title }}',
-      description: 'Primary headline of the section or page.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Heading',
+      description: 'Primary headline of the slider or section.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Headline',
       example: '<h1>{{ Title }}</h1>'
     },
     MiniTitle: {
-      name: 'Eyebrow / Sub-heading',
+      name: 'Mini Title / Eyebrow',
       token: '{{ MiniTitle }}',
-      description: 'Small badge or category eyebrow displayed above main heading.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Eyebrow',
+      description: 'Sub-tag or eyebrow pill badge displayed above main headline.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Mini Title',
       example: '<span class="badge">{{ MiniTitle }}</span>'
     },
+    Text: {
+      name: 'Slide Text / Summary',
+      token: '{{ Text }}',
+      description: 'Supportive summary narrative or descriptive text.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Slide Text',
+      example: '<p>{{ Text }}</p>'
+    },
     Description: {
-      name: 'Narrative Body',
+      name: 'Description (Alias to Text)',
       token: '{{ Description }}',
       description: 'Summary narrative or introductory body copy.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Description',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Slide Text',
       example: '<p>{{ Description }}</p>'
-    },
-    ImageUrl: {
-      name: 'Primary Media Image',
-      token: '{{ ImageUrl }}',
-      description: 'High-resolution graphic or banner visual.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Featured Image',
-      example: '<img src="{{ ImageUrl }}" alt="{{ Title }}" />'
     },
     ButtonText: {
       name: 'Primary Action Text',
       token: '{{ ButtonText }}',
       description: 'Label text for primary call to action.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Text',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Button Text',
       example: '<a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>'
     },
     ButtonLink: {
       name: 'Primary Action Destination',
       token: '{{ ButtonLink }}',
       description: 'Route, hash, or external URL destination.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Button Link',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Button Link',
       example: '<a href="{{ ButtonLink }}">{{ ButtonText }}</a>'
     },
-    SecondaryButtonText: {
-      name: 'Secondary Action Text',
-      token: '{{ SecondaryButtonText }}',
-      description: 'Text label for the secondary call-to-action button (e.g. "Request a Service", "Watch Demo").',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Text',
-      example: '<a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>'
+    VideoButtonText: {
+      name: 'Video Button Text',
+      token: '{{ VideoButtonText }}',
+      description: 'Text label for secondary/video trigger button.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Video Button Text',
+      example: '<a href="{{ VideoLink }}" class="oz-btn-sec">{{ VideoButtonText }}</a>'
     },
-    SecondaryButtonLink: {
-      name: 'Secondary Action Destination',
-      token: '{{ SecondaryButtonLink }}',
-      description: 'Target page route for secondary action (e.g. /request-service, /contact, /about).',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Secondary Button Link',
-      example: '<a href="{{ SecondaryButtonLink }}">{{ SecondaryButtonText }}</a>'
+    VideoLink: {
+      name: 'Video Popup Link',
+      token: '{{ VideoLink }}',
+      description: 'Target popup video URL or destination route.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Popup Video Link',
+      example: '<a href="{{ VideoLink }}">{{ VideoButtonText }}</a>'
     },
-    BadgeText: {
-      name: 'Hero Eyebrow / Pill Badge',
-      token: '{{ BadgeText }}',
-      description: 'Floating badge or eyebrow category pill displayed prominently above the hero headline.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Eyebrow Badge',
-      example: '<span class="oz-hero-badge">{{ BadgeText }}</span>'
+    Url: {
+      name: 'Primary Slide Image URL',
+      token: '{{ Url }}',
+      description: 'High-resolution primary slide background or feature graphic.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Primary Slide Image',
+      example: '<img src="{{ Url }}" alt="{{ Title }}" />'
     },
-    HeroProofMetrics: {
-      name: 'Proof Metrics Bar',
-      token: '{{ MetricNumber1 }}, {{ MetricLabel1 }}',
-      description: 'Key quantifiable metrics, reliability SLA, and active deployment stats.',
-      cmsPath: 'Admin Console > Web Pages > Page Sections > Custom Content',
-      example: '<strong>{{ MetricNumber1 }}</strong> <span>{{ MetricLabel1 }}</span>'
+    ImageUrl: {
+      name: 'Image URL (Alias to Url)',
+      token: '{{ ImageUrl }}',
+      description: 'Slide visual or banner background graphic.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Primary Slide Image',
+      example: '<img src="{{ ImageUrl }}" alt="{{ Title }}" />'
+    },
+    SecondUrl: {
+      name: 'Secondary Image URL',
+      token: '{{ SecondUrl }}',
+      description: 'Secondary overlapping visual asset for split mockups or floating cards.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > Second Image',
+      example: '<img src="{{ SecondUrl }}" />'
+    },
+    YoutubeVideo: {
+      name: 'YouTube Video Embed Link',
+      token: '{{ YoutubeVideo }}',
+      description: 'YouTube embed URL for background or modal video playback.',
+      cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > YouTube Video',
+      example: '<iframe src="{{ YoutubeVideo }}"></iframe>'
     }
   };
 
@@ -5762,23 +5750,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         } catch (e) {}
       }
       this.previewHeroContent = {
-        badgeText: defaultHeroData?.badgeText || defaultHeroData?.miniTitle || item.previewSubtitle || 'ENTERPRISE ECOSYSTEM v2.5',
         title: defaultHeroData?.title || item.previewTitle || item.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
-        subtitle: defaultHeroData?.subtitle || 'Unified Operational Command',
-        description: defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry.',
+        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.badgeText || item.previewSubtitle || 'OFFICIAL PORTAL',
+        text: defaultHeroData?.text || defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
         buttonText: defaultHeroData?.buttonText || 'Explore Solutions',
         buttonLink: defaultHeroData?.buttonLink || '/services',
-        secondaryButtonText: defaultHeroData?.secondaryButtonText || 'Request a Service',
-        secondaryButtonLink: defaultHeroData?.secondaryButtonLink || '/request-service',
-        imageUrl: defaultHeroData?.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
-        backgroundImageUrl: defaultHeroData?.backgroundImageUrl || '',
-        videoUrl: defaultHeroData?.videoUrl || '',
-        metricNumber1: defaultHeroData?.metricNumber1 || '99.9%',
-        metricLabel1: defaultHeroData?.metricLabel1 || 'Uptime SLA',
-        metricNumber2: defaultHeroData?.metricNumber2 || '2,500+',
-        metricLabel2: defaultHeroData?.metricLabel2 || 'Active Deployments',
-        metricNumber3: defaultHeroData?.metricNumber3 || '24/7',
-        metricLabel3: defaultHeroData?.metricLabel3 || 'Dedicated Support'
+        videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.secondaryButtonText || 'Watch Video',
+        videoLink: defaultHeroData?.videoLink || defaultHeroData?.secondaryButtonLink || '/request-service',
+        url: defaultHeroData?.url || defaultHeroData?.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
+        secondUrl: defaultHeroData?.secondUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+        youtubeVideo: defaultHeroData?.youtubeVideo || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
       };
     }
 
@@ -6693,33 +6674,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Inserts a standardized 3-column proof metrics and reliability statistics snippet at the active editor cursor.
-   */
-  insertHeroProofMetricsSnippetAtModalCursor(): void {
-    const metricsSnippet = `<div class="oz-hero-metrics-bar d-flex gap-4 pt-3 mt-2 border-top border-secondary border-opacity-25">
-  <div class="oz-metric-col">
-    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber1 }}</div>
-    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel1 }}</div>
-  </div>
-  <div class="oz-metric-col">
-    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber2 }}</div>
-    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel2 }}</div>
-  </div>
-  <div class="oz-metric-col">
-    <div class="h4 fw-bold text-primary mb-0">{{ MetricNumber3 }}</div>
-    <div class="small text-muted text-uppercase fw-semibold" style="font-size: 11px;">{{ MetricLabel3 }}</div>
-  </div>
-</div>`;
-    this.insertTokenAtModalCursor(metricsSnippet);
-  }
-
-  /**
-   * Inserts a standardized dual call-to-action button pair (primary + secondary) at the active editor cursor.
+   * Inserts a standardized dual call-to-action button pair (primary button + video popup button) at the active editor cursor.
    */
   insertHeroDualCtaSnippetAtModalCursor(): void {
     const ctaSnippet = `<div class="oz-hero-actions d-flex gap-3 flex-wrap align-items-center">
   <a href="{{ ButtonLink }}" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">{{ ButtonText }}</a>
-  <a href="{{ SecondaryButtonLink }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold">{{ SecondaryButtonText }}</a>
+  <a href="{{ VideoLink }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold"><i class="fa-solid fa-play me-1"></i> {{ VideoButtonText }}</a>
 </div>`;
     this.insertTokenAtModalCursor(ctaSnippet);
   }
@@ -6897,26 +6857,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   resetPreviewContent(): void {
     if (this.activePreviewItem?.category === 'hero') {
       this.previewHeroContent = {
-        badgeText: 'ENTERPRISE ECOSYSTEM v2.5',
         title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Next-Generation Infrastructure for Forward-Thinking Organizations',
-        subtitle: 'Unified Operational Command',
-        description: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
+        miniTitle: 'OFFICIAL PORTAL',
+        text: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
         buttonText: 'Explore Solutions',
         buttonLink: '/services',
-        secondaryButtonText: 'Request a Service',
-        secondaryButtonLink: '/request-service',
-        imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1000&auto=format&fit=crop&q=80',
-        backgroundImageUrl: '',
-        videoUrl: '',
-        metricNumber1: '99.9%',
-        metricLabel1: 'Uptime SLA',
-        metricNumber2: '2,500+',
-        metricLabel2: 'Active Deployments',
-        metricNumber3: '24/7',
-        metricLabel3: 'Dedicated Support'
+        videoButtonText: 'Watch Video',
+        videoLink: '/request-service',
+        url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+        secondUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+        youtubeVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
       };
       this.onPreviewContentChange();
-      this.toast.info('Hero sample content restored to enterprise defaults.');
+      this.toast.info('Hero slider sample content restored to defaults.');
       return;
     }
 
@@ -7309,31 +7262,29 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       <p>Our hybrid persistence layer splits the master tenant catalog from individual tenant SQL databases, ensuring that noisy neighbors never impact cross-tenant performance.</p>
     `);
 
-    // 7. Scalar placeholders
+    // 7. Scalar placeholders & Slider model tokens
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
-    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
-    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || '');
+    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.text || '');
+    output = output.replace(/\{\{\s*Url\s*\}\}/gi, ctx.url || ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.url || '');
+    output = output.replace(/\{\{\s*SecondUrl\s*\}\}/gi, ctx.secondUrl || '');
+    output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
+    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || 'Watch Video');
+    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '#');
+    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || ctx.videoButtonText || 'Watch Video');
+    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || ctx.videoLink || '#');
+    output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.text || ctx.description || '');
+    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.url || ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || 'OFFICIAL PORTAL');
     output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
     output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');
     const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
-
-    // Hero Actions, Badges & Proof Metrics
-    output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.badgeText || ctx.miniTitle || 'ENTERPRISE ECOSYSTEM');
-    output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || 'Request a Service');
-    output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || '/request-service');
-    output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.description || '');
-    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.backgroundImageUrl || '');
-    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || '');
-    output = output.replace(/\{\{\s*MetricNumber1\s*\}\}/gi, ctx.metricNumber1 || '99.9%');
-    output = output.replace(/\{\{\s*MetricLabel1\s*\}\}/gi, ctx.metricLabel1 || 'Uptime SLA');
-    output = output.replace(/\{\{\s*MetricNumber2\s*\}\}/gi, ctx.metricNumber2 || '2,500+');
-    output = output.replace(/\{\{\s*MetricLabel2\s*\}\}/gi, ctx.metricLabel2 || 'Active Deployments');
-    output = output.replace(/\{\{\s*MetricNumber3\s*\}\}/gi, ctx.metricNumber3 || '24/7');
-    output = output.replace(/\{\{\s*MetricLabel3\s*\}\}/gi, ctx.metricLabel3 || 'Dedicated Support');
 
     // Legal URLs
     output = output.replace(/\{\{\s*PrivacyUrl\s*\}\}/gi, '/privacy-policy');
@@ -7616,20 +7567,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           ...ctx,
           ...this.previewHeroContent,
           title: contextOverride?.title || this.previewHeroContent.title || b.previewTitle || b.name,
-          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.badgeText || b.previewSubtitle?.toUpperCase() || 'ENTERPRISE ECOSYSTEM',
-          badgeText: this.previewHeroContent.badgeText,
-          description: contextOverride?.description || this.previewHeroContent.description || b.previewBody || b.description,
+          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.miniTitle || b.previewSubtitle?.toUpperCase() || 'OFFICIAL PORTAL',
+          text: contextOverride?.description || this.previewHeroContent.text || b.previewBody || b.description,
           buttonText: this.previewHeroContent.buttonText,
           buttonLink: this.previewHeroContent.buttonLink,
-          secondaryButtonText: this.previewHeroContent.secondaryButtonText,
-          secondaryButtonLink: this.previewHeroContent.secondaryButtonLink,
-          imageUrl: this.previewHeroContent.imageUrl,
-          metricNumber1: this.previewHeroContent.metricNumber1,
-          metricLabel1: this.previewHeroContent.metricLabel1,
-          metricNumber2: this.previewHeroContent.metricNumber2,
-          metricLabel2: this.previewHeroContent.metricLabel2,
-          metricNumber3: this.previewHeroContent.metricNumber3,
-          metricLabel3: this.previewHeroContent.metricLabel3
+          videoButtonText: this.previewHeroContent.videoButtonText,
+          videoLink: this.previewHeroContent.videoLink,
+          url: this.previewHeroContent.url,
+          secondUrl: this.previewHeroContent.secondUrl,
+          youtubeVideo: this.previewHeroContent.youtubeVideo
         };
       } else if (b.category === 'footer') {
         ctx = {
