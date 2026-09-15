@@ -179,26 +179,48 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 1. Loop over {{#each PageSectionLists}}...{{/each}}
-    const eachRegex = /\{\{#each\s+PageSectionLists\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    // 1. Loop over {{#each PageSectionLists}}...{{/each}} (also accepts Items or SectionLists)
+    const eachRegex = /\{\{#each\s+(?:PageSectionLists|Items|SectionLists)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(eachRegex, (_match, innerTemplate) => {
-      if (!ctx.items || !Array.isArray(ctx.items) || ctx.items.length === 0) {
+      const items = ctx.pageSectionLists || ctx.items || ctx.sectionLists || [];
+      if (!Array.isArray(items) || items.length === 0) {
         return '';
       }
-      return ctx.items.map((item: any, idx: number) => {
+      return items.map((item: any, idx: number) => {
         let renderedItem = innerTemplate;
         const icon = (item.iconText && item.iconText.trim().length > 0)
           ? item.iconText.trim()
           : ((item.icon && item.icon.trim().length > 0) ? item.icon.trim() : '');
 
+        // Resolve inner Handlebars conditionals
+        const isFirst = idx === 0;
+        const isLast = idx === items.length - 1;
+
+        renderedItem = renderedItem.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => isFirst ? content : '');
+        renderedItem = renderedItem.replace(/\{\{#unless\s+@first\}\}([\s\S]*?)\{\{\/unless\}\}/gi, (_m: string, content: string) => !isFirst ? content : '');
+        renderedItem = renderedItem.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => isLast ? content : '');
+        renderedItem = renderedItem.replace(/\{\{#if\s+IconText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (icon ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+ImageUrl\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.imageUrl ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+MiniTitle\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.miniTitle ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+ButtonText\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.buttonText ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+MoreDescription\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.moreDescription ? content : ''));
+        renderedItem = renderedItem.replace(/\{\{#if\s+Description\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m: string, content: string) => (item.description ? content : ''));
+
+        // Replace item-level tokens
         renderedItem = renderedItem.replace(/\{\{\s*IconText\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
-        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || ctx.miniTitle || '');
+        renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || '');
         renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || ctx.imageUrl || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || ctx.buttonText || '');
-        renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || ctx.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
+        renderedItem = renderedItem.replace(/\{\{\s*ButtonLink\s*\}\}/gi, item.buttonLink || '#');
+        renderedItem = renderedItem.replace(/\{\{\s*DirectUrl\s*\}\}/gi, item.directUrl || '');
+        renderedItem = renderedItem.replace(/\{\{\s*SortOrder\s*\}\}/gi, (item.sortOrder !== undefined ? item.sortOrder : idx + 1).toString());
+        renderedItem = renderedItem.replace(/\{\{\s*Index\s*\}\}/gi, (idx + 1).toString());
+
         return renderedItem;
       }).join('\n');
     });
@@ -627,25 +649,85 @@ export class TemplateHydrationService {
       return isFalsy ? body : '';
     });
 
-    // 7. Scalar placeholders & Slider model tokens (leave unused fields blank)
+    // 6i. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
+    const bodyFormRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
+    output = output.replace(bodyFormRegex, (_match: string, formKey?: string) => {
+      const key = formKey || ctx.formKey || 'FormEmbed';
+      const isNewsletter = /newsletter|subscribe/i.test(key);
+      const isContact = /contact|inquiry/i.test(key);
+      const isService = /service|request/i.test(key);
+
+      if (isNewsletter) {
+        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
+          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
+        </form>`;
+      }
+
+      if (isContact) {
+        return `<form class="oz-dynamic-form oz-form-contact d-flex flex-column gap-3" onsubmit="event.preventDefault();">
+          <div class="row g-2">
+            <div class="col-md-6"><input type="text" class="form-control" placeholder="Your Full Name" required /></div>
+            <div class="col-md-6"><input type="email" class="form-control" placeholder="Your Work Email" required /></div>
+          </div>
+          <input type="text" class="form-control" placeholder="Subject / Department" />
+          <textarea class="form-control" rows="3" placeholder="How can we assist your organization?" required></textarea>
+          <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Send Message →</button>
+        </form>`;
+      }
+
+      if (isService) {
+        return `<form class="oz-dynamic-form oz-form-service d-flex flex-column gap-3" onsubmit="event.preventDefault();">
+          <div class="row g-2">
+            <div class="col-md-6"><input type="text" class="form-control" placeholder="Organization / Company" required /></div>
+            <div class="col-md-6"><input type="text" class="form-control" placeholder="Contact Lead Name" required /></div>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6"><input type="email" class="form-control" placeholder="Work Email Address" required /></div>
+            <div class="col-md-6"><input type="tel" class="form-control" placeholder="Phone Number" /></div>
+          </div>
+          <select class="form-select">
+            <option selected>Select Advisory / Solution Scope...</option>
+            <option>Enterprise Cloud Architecture</option>
+            <option>Systems Modernization & Scalability</option>
+            <option>Security & Compliance Frameworks</option>
+            <option>Other Strategic Consultation</option>
+          </select>
+          <textarea class="form-control" rows="3" placeholder="Brief project scope or target timeline..."></textarea>
+          <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Submit Service Request →</button>
+        </form>`;
+      }
+
+      return `<div class="oz-form-embed-preview p-3 border rounded bg-light text-center small text-muted">
+        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong> (Rendered dynamically)
+      </div>`;
+    });
+
+    // 7. Scalar placeholders & PageSection model tokens (leave unused fields blank)
     output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || opts.previewBlogContent?.title || '');
     output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || opts.previewBlogContent?.miniTitle || '');
     output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || opts.previewBlogContent?.description || '');
     output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.text || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
+    output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
+    output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
+    output = output.replace(/\{\{\s*DirectUrl\s*\}\}/gi, ctx.directUrl || '');
     output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || ctx.viewAllButtonText || opts.previewBlogContent?.buttonText || opts.previewBlogContent?.viewAllButtonText || '');
     output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || ctx.viewAllButtonLink || opts.previewBlogContent?.buttonLink || opts.previewBlogContent?.viewAllButtonLink || '#');
-    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.url || '');
-    output = output.replace(/\{\{\s*SecondUrl\s*\}\}/gi, ctx.secondUrl || '');
-    output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
-    output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');
-    output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || '#');
-    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || '');
-    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '');
     output = output.replace(/\{\{\s*SecondaryButtonText\s*\}\}/gi, ctx.secondaryButtonText || ctx.videoButtonText || '');
     output = output.replace(/\{\{\s*SecondaryButtonLink\s*\}\}/gi, ctx.secondaryButtonLink || ctx.videoLink || '');
+    output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.url || '');
+    output = output.replace(/\{\{\s*SecondImageUrl\s*\}\}/gi, ctx.secondImageUrl || ctx.secondUrl || '');
+    output = output.replace(/\{\{\s*SecondUrl\s*\}\}/gi, ctx.secondUrl || ctx.secondImageUrl || '');
+    output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.youtubeUrlLink || ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*YoutubeUrlLink\s*\}\}/gi, ctx.youtubeUrlLink || ctx.youtubeVideo || ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.videoUrl || ctx.youtubeVideo || '');
+    output = output.replace(/\{\{\s*VideoButtonText\s*\}\}/gi, ctx.videoButtonText || ctx.secondaryButtonText || '');
+    output = output.replace(/\{\{\s*VideoLink\s*\}\}/gi, ctx.videoLink || ctx.secondaryButtonLink || '');
     output = output.replace(/\{\{\s*Subtitle\s*\}\}/gi, ctx.subtitle || ctx.text || ctx.description || '');
-    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.url || ctx.imageUrl || '');
-    output = output.replace(/\{\{\s*VideoUrl\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
+    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, ctx.backgroundImageUrl || ctx.url || ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || '');
+    output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
     output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || '');
     output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
     output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');

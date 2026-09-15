@@ -300,17 +300,63 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   safeSinglePreviewSrcDoc: SafeHtml | string = '';
 
   // Interactive Test / Sample Content Replacements
-  previewContent = {
+  previewContent: {
+    title: string;
+    miniTitle: string;
+    description: string;
+    fullDescription: string;
+    imageUrl: string;
+    secondImageUrl: string;
+    buttonText: string;
+    buttonLink: string;
+    secondaryButtonText: string;
+    secondaryButtonLink: string;
+    directUrl: string;
+    youtubeUrlLink: string;
+    quote: string;
+    email: string;
+    phone: string;
+    address: string;
+    workingHours: string;
+    formKey: string;
+    customClass: string;
+    backgroundColor: string;
+    items: Array<{
+      title: string;
+      miniTitle?: string;
+      description: string;
+      moreDescription?: string;
+      iconText?: string;
+      imageUrl?: string;
+      buttonText?: string;
+      buttonLink?: string;
+      sortOrder?: number;
+    }>;
+  } = {
     title: 'Empowering Modern Organizations',
     miniTitle: 'NEXT-GENERATION PLATFORM',
     description: 'Streamline administrative workflows, automate financial governance, and deliver seamless digital experiences across sovereign systems.',
+    fullDescription: 'Our platform delivers military-grade data protection coupled with intuitive operational dashboards designed to elevate administrative efficiency across the entire ecosystem.',
     imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+    secondImageUrl: '',
     buttonText: 'Explore Platform Solutions →',
     buttonLink: '#',
+    secondaryButtonText: 'Download Architecture Brief',
+    secondaryButtonLink: '#',
+    directUrl: '',
+    youtubeUrlLink: '',
+    quote: '',
+    email: 'contact@organization.com',
+    phone: '+1 (555) 019-2834',
+    address: '100 Innovation Parkway, Suite 400, Tech City, TC 94105',
+    workingHours: 'Monday - Friday: 8:00 AM - 6:00 PM',
+    formKey: 'Contact_Us',
+    customClass: '',
+    backgroundColor: '',
     items: [
-      { title: 'Real-Time Sync', description: 'Instantaneous WebSocket state propagation across all connected devices with zero polling latency.' },
-      { title: 'Granular Governance', description: 'Fine-grained permission matrices, committee chair controls, and audit verification.' },
-      { title: 'Cloud Asset Vault', description: 'High-performance media streaming and document management for all organization tiers.' }
+      { title: 'Real-Time Sync', miniTitle: 'WEBSOCKET', description: 'Instantaneous WebSocket state propagation across all connected devices with zero polling latency.', moreDescription: 'Sub-millisecond transmission', iconText: 'sync', buttonText: 'Learn More', buttonLink: '#', sortOrder: 1 },
+      { title: 'Granular Governance', miniTitle: 'SECURITY', description: 'Fine-grained permission matrices, committee chair controls, and audit verification.', moreDescription: 'RBAC and multi-factor authorization', iconText: 'verified_user', buttonText: 'Learn More', buttonLink: '#', sortOrder: 2 },
+      { title: 'Cloud Asset Vault', miniTitle: 'STORAGE', description: 'High-performance media streaming and document management for all organization tiers.', moreDescription: 'Infinite CDN asset scale', iconText: 'cloud_done', buttonText: 'Learn More', buttonLink: '#', sortOrder: 3 }
     ]
   };
 
@@ -782,6 +828,48 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'URL of the high-resolution hero/banner background image.',
       cmsPath: 'Admin Console > Content Console > Pages > Featured Image / Banner',
       example: 'style="background-image: url(\'{{ BackgroundImageUrl }}\');"'
+    },
+    PageSectionLists: {
+      name: 'Page Section Lists / Repeatable Cards Loop',
+      token: '{{#each PageSectionLists}}...{{/each}}',
+      description: 'Iterates through child items, feature cards, testimonials, metric counters, or accordion items assigned to this page section.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Sections > Child Items',
+      example: '{{#each PageSectionLists}}<div class="card"><h4>{{ Title }}</h4><p>{{ Description }}</p></div>{{/each}}'
+    },
+    FullDescription: {
+      name: 'Full Extended Description',
+      token: '{{ FullDescription }}',
+      description: 'Detailed secondary paragraph or narrative copy for split-section templates.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Sections > Full Description',
+      example: '<div class="full-desc">{{ FullDescription }}</div>'
+    },
+    SecondaryButtonText: {
+      name: 'Secondary Action Button Text',
+      token: '{{ SecondaryButtonText }}',
+      description: 'Label text for secondary action or download button.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Sections > Secondary Button Text',
+      example: '<a href="{{ SecondaryButtonLink }}" class="btn btn-outline-primary">{{ SecondaryButtonText }}</a>'
+    },
+    SecondaryButtonLink: {
+      name: 'Secondary Action Button Link',
+      token: '{{ SecondaryButtonLink }}',
+      description: 'Destination URL for secondary action button.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Sections > Secondary Button Link',
+      example: '<a href="{{ SecondaryButtonLink }}">{{ SecondaryButtonText }}</a>'
+    },
+    IconText: {
+      name: 'Item Material Icon / Icon Class',
+      token: '{{ IconText }}',
+      description: 'Material Symbols glyph name (e.g. verified_user, sync, rocket) or FontAwesome class for the card item.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Section Items > Icon Text',
+      example: '<i class="material-symbols-outlined">{{ IconText }}</i>'
+    },
+    MoreDescription: {
+      name: 'Item Extra Description / Footnote',
+      token: '{{ MoreDescription }}',
+      description: 'Secondary supportive footnote, metric benchmark, or subtitle for the list card item.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Section Items > More Description',
+      example: '<small class="text-muted">{{ MoreDescription }}</small>'
     }
   };
 
@@ -1790,14 +1878,40 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       try {
         const parsed = JSON.parse(item.defaultContentJson);
         if (parsed && typeof parsed === 'object') {
-          if (parsed.title) this.previewContent.title = parsed.title;
-          if (parsed.miniTitle) this.previewContent.miniTitle = parsed.miniTitle;
-          if (parsed.description) this.previewContent.description = parsed.description;
-          if (parsed.imageUrl) this.previewContent.imageUrl = parsed.imageUrl;
-          if (parsed.buttonText) this.previewContent.buttonText = parsed.buttonText;
-          if (parsed.buttonLink) this.previewContent.buttonLink = parsed.buttonLink;
-          if (parsed.items && Array.isArray(parsed.items) && parsed.items.length > 0) {
-            this.previewContent.items = parsed.items;
+          if (parsed.title || parsed.Title) this.previewContent.title = parsed.title || parsed.Title;
+          if (parsed.miniTitle || parsed.MiniTitle) this.previewContent.miniTitle = parsed.miniTitle || parsed.MiniTitle;
+          if (parsed.description || parsed.Description) this.previewContent.description = parsed.description || parsed.Description;
+          if (parsed.fullDescription || parsed.FullDescription) this.previewContent.fullDescription = parsed.fullDescription || parsed.FullDescription;
+          if (parsed.imageUrl || parsed.ImageUrl) this.previewContent.imageUrl = parsed.imageUrl || parsed.ImageUrl;
+          if (parsed.secondImageUrl || parsed.SecondImageUrl) this.previewContent.secondImageUrl = parsed.secondImageUrl || parsed.SecondImageUrl;
+          if (parsed.buttonText || parsed.ButtonText) this.previewContent.buttonText = parsed.buttonText || parsed.ButtonText;
+          if (parsed.buttonLink || parsed.ButtonLink) this.previewContent.buttonLink = parsed.buttonLink || parsed.ButtonLink;
+          if (parsed.secondaryButtonText || parsed.SecondaryButtonText) this.previewContent.secondaryButtonText = parsed.secondaryButtonText || parsed.SecondaryButtonText;
+          if (parsed.secondaryButtonLink || parsed.SecondaryButtonLink) this.previewContent.secondaryButtonLink = parsed.secondaryButtonLink || parsed.SecondaryButtonLink;
+          if (parsed.directUrl || parsed.DirectUrl) this.previewContent.directUrl = parsed.directUrl || parsed.DirectUrl;
+          if (parsed.youtubeUrlLink || parsed.YoutubeUrlLink) this.previewContent.youtubeUrlLink = parsed.youtubeUrlLink || parsed.YoutubeUrlLink;
+          if (parsed.quote || parsed.Quote) this.previewContent.quote = parsed.quote || parsed.Quote;
+          if (parsed.email || parsed.Email) this.previewContent.email = parsed.email || parsed.Email;
+          if (parsed.phone || parsed.Phone) this.previewContent.phone = parsed.phone || parsed.Phone;
+          if (parsed.address || parsed.Address) this.previewContent.address = parsed.address || parsed.Address;
+          if (parsed.workingHours || parsed.WorkingHours) this.previewContent.workingHours = parsed.workingHours || parsed.WorkingHours;
+          if (parsed.formKey || parsed.FormKey) this.previewContent.formKey = parsed.formKey || parsed.FormKey;
+          if (parsed.customClass || parsed.CustomClass) this.previewContent.customClass = parsed.customClass || parsed.CustomClass;
+          if (parsed.backgroundColor || parsed.BackgroundColor) this.previewContent.backgroundColor = parsed.backgroundColor || parsed.BackgroundColor;
+
+          const rawItems = parsed.pageSectionLists || parsed.PageSectionLists || parsed.items || parsed.Items || parsed.sectionLists || parsed.SectionLists;
+          if (Array.isArray(rawItems) && rawItems.length > 0) {
+            this.previewContent.items = rawItems.map((it: any, idx: number) => ({
+              title: it.title || it.Title || '',
+              miniTitle: it.miniTitle || it.MiniTitle || '',
+              description: it.description || it.Description || '',
+              moreDescription: it.moreDescription || it.MoreDescription || '',
+              iconText: it.iconText || it.IconText || '',
+              imageUrl: it.imageUrl || it.ImageUrl || '',
+              buttonText: it.buttonText || it.ButtonText || '',
+              buttonLink: it.buttonLink || it.ButtonLink || '',
+              sortOrder: it.sortOrder || it.SortOrder || (idx + 1)
+            }));
           }
           hydratedFromBlueprint = true;
         }
@@ -1987,7 +2101,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             trailItems: this.previewBreadcrumbContent.trailItems,
             backgroundImageUrl: this.previewBreadcrumbContent.backgroundImageUrl
           }
-        : this.previewContent;
+        : {
+            ...this.previewContent,
+            pageSectionLists: this.previewContent.items,
+            PageSectionLists: this.previewContent.items,
+            items: this.previewContent.items,
+            Items: this.previewContent.items,
+            sectionLists: this.previewContent.items,
+            SectionLists: this.previewContent.items
+          };
       let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
       if (this.activePreviewItem.category === 'footer') {
         hydrated = this.enforceOzikolCredit(hydrated);
@@ -2145,7 +2267,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const nextIdx = this.previewContent.items.length + 1;
     this.previewContent.items.push({
       title: `Feature Pillar ${nextIdx}`,
-      description: 'Comprehensive capability designed to streamline leadership operations.'
+      miniTitle: `FEATURE ${nextIdx}`,
+      description: 'Comprehensive capability designed to streamline leadership operations.',
+      moreDescription: 'Engineered for high-throughput institutional performance.',
+      iconText: 'verified_user',
+      buttonText: 'Learn More',
+      buttonLink: '#',
+      imageUrl: '',
+      sortOrder: nextIdx
     });
     this.onPreviewContentChange();
     this.toast.success(`Added Card #${nextIdx} to preview list.`);
@@ -2864,6 +2993,43 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Inserts a standardized, responsive PageSectionLists loop snippet into the HTML template.
+   */
+  insertPageSectionListsLoopSnippet(): void {
+    const snippet = `<div class="row g-4">
+  {{#each PageSectionLists}}
+  <div class="col-md-4">
+    <div class="card h-100 p-4 border-0 shadow-sm rounded-4">
+      {{#if IconText}}
+      <div class="oz-feature-icon-box mb-3">
+        <i class="material-symbols-outlined">{{ IconText }}</i>
+      </div>
+      {{/if}}
+      {{#if MiniTitle}}
+      <span class="badge bg-primary-subtle text-primary mb-2">{{ MiniTitle }}</span>
+      {{/if}}
+      <h3 class="h5 fw-bold mb-2">{{ Title }}</h3>
+      <p class="text-muted mb-0">{{ Description }}</p>
+      {{#if ButtonText}}
+      <div class="mt-3">
+        <a href="{{ ButtonLink }}" class="btn btn-sm btn-outline-primary">{{ ButtonText }}</a>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+  {{/each}}
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a dynamic embedded form token (e.g. Newsletter, Contact, Service Request) into the HTML template.
+   */
+  insertBodyFormSnippet(formKey: string): void {
+    this.insertTokenAtModalCursor(`{{ Form "${formKey}" }}`);
+  }
+
+  /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
    * @param template The raw HTML template string.
@@ -3150,17 +3316,44 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       try {
         const parsed = JSON.parse(this.activePreviewItem.defaultContentJson);
         if (parsed && typeof parsed === 'object') {
+          const rawItems = parsed.pageSectionLists || parsed.PageSectionLists || parsed.items || parsed.Items || parsed.sectionLists || parsed.SectionLists;
           this.previewContent = {
-            title: parsed.title || this.activePreviewItem.name,
-            miniTitle: parsed.miniTitle || '',
-            description: parsed.description || this.activePreviewItem.description,
-            imageUrl: parsed.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-            buttonText: parsed.buttonText || 'Explore Platform Solutions →',
-            buttonLink: parsed.buttonLink || '#',
-            items: (parsed.items && Array.isArray(parsed.items) && parsed.items.length > 0) ? parsed.items : [
-              { title: 'Real-Time Sync', description: 'Instantaneous WebSocket state propagation.' },
-              { title: 'Granular Governance', description: 'Fine-grained permission matrices.' }
-            ]
+            title: parsed.title || parsed.Title || this.activePreviewItem.name,
+            miniTitle: parsed.miniTitle || parsed.MiniTitle || '',
+            description: parsed.description || parsed.Description || this.activePreviewItem.description,
+            fullDescription: parsed.fullDescription || parsed.FullDescription || '',
+            imageUrl: parsed.imageUrl || parsed.ImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+            secondImageUrl: parsed.secondImageUrl || parsed.SecondImageUrl || '',
+            buttonText: parsed.buttonText || parsed.ButtonText || 'Explore Platform Solutions →',
+            buttonLink: parsed.buttonLink || parsed.ButtonLink || '#',
+            secondaryButtonText: parsed.secondaryButtonText || parsed.SecondaryButtonText || '',
+            secondaryButtonLink: parsed.secondaryButtonLink || parsed.SecondaryButtonLink || '',
+            directUrl: parsed.directUrl || parsed.DirectUrl || '',
+            youtubeUrlLink: parsed.youtubeUrlLink || parsed.YoutubeUrlLink || '',
+            quote: parsed.quote || parsed.Quote || '',
+            email: parsed.email || parsed.Email || 'contact@organization.com',
+            phone: parsed.phone || parsed.Phone || '+1 (555) 019-2834',
+            address: parsed.address || parsed.Address || '100 Innovation Parkway, Suite 400',
+            workingHours: parsed.workingHours || parsed.WorkingHours || 'Monday - Friday: 8:00 AM - 6:00 PM',
+            formKey: parsed.formKey || parsed.FormKey || 'Contact_Us',
+            customClass: parsed.customClass || parsed.CustomClass || '',
+            backgroundColor: parsed.backgroundColor || parsed.BackgroundColor || '',
+            items: (Array.isArray(rawItems) && rawItems.length > 0)
+              ? rawItems.map((it: any, idx: number) => ({
+                  title: it.title || it.Title || '',
+                  miniTitle: it.miniTitle || it.MiniTitle || '',
+                  description: it.description || it.Description || '',
+                  moreDescription: it.moreDescription || it.MoreDescription || '',
+                  iconText: it.iconText || it.IconText || '',
+                  imageUrl: it.imageUrl || it.ImageUrl || '',
+                  buttonText: it.buttonText || it.ButtonText || '',
+                  buttonLink: it.buttonLink || it.ButtonLink || '',
+                  sortOrder: it.sortOrder || it.SortOrder || (idx + 1)
+                }))
+              : [
+                  { title: 'Real-Time Sync', miniTitle: 'WEBSOCKET', description: 'Instantaneous WebSocket state propagation across all connected devices.', moreDescription: '', iconText: 'sync', buttonText: 'Learn More', buttonLink: '#', sortOrder: 1 },
+                  { title: 'Granular Governance', miniTitle: 'SECURITY', description: 'Fine-grained permission matrices, committee chair controls, and audit verification.', moreDescription: '', iconText: 'verified_user', buttonText: 'Learn More', buttonLink: '#', sortOrder: 2 }
+                ]
           };
           this.onPreviewContentChange();
           this.toast.info('Sample content restored to template blueprint defaults.');
@@ -3173,13 +3366,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Empowering Modern Enterprises',
       miniTitle: this.activePreviewItem?.previewSubtitle?.toUpperCase() || 'CORE BUSINESS CAPABILITIES',
       description: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Streamline business workflows, optimize operations, and deliver seamless client experiences.',
+      fullDescription: 'Our platform delivers military-grade data protection coupled with intuitive operational dashboards designed to elevate administrative efficiency across the entire ecosystem.',
       imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      secondImageUrl: '',
       buttonText: 'Explore Business Solutions →',
       buttonLink: '#',
+      secondaryButtonText: 'Download Architecture Brief',
+      secondaryButtonLink: '#',
+      directUrl: '',
+      youtubeUrlLink: '',
+      quote: '',
+      email: 'contact@organization.com',
+      phone: '+1 (555) 019-2834',
+      address: '100 Innovation Parkway, Suite 400, Tech City, TC 94105',
+      workingHours: 'Monday - Friday: 8:00 AM - 6:00 PM',
+      formKey: 'Contact_Us',
+      customClass: '',
+      backgroundColor: '',
       items: [
-        { title: 'Strategic Advisory', description: 'Tailored market insights and operational guidance to accelerate organizational growth.' },
-        { title: 'Data Security & Privacy', description: 'Industry-standard encryption, privacy protocols, and secure collaboration channels.' },
-        { title: 'Operational Efficiency', description: 'Modern automated workflows engineered to eliminate friction and elevate productivity.' }
+        { title: 'Strategic Advisory', miniTitle: 'STRATEGY', description: 'Tailored market insights and operational guidance to accelerate organizational growth.', moreDescription: 'Strategic alignment across all enterprise tiers', iconText: 'insights', buttonText: 'Learn More', buttonLink: '#', sortOrder: 1 },
+        { title: 'Data Security & Privacy', miniTitle: 'SECURITY', description: 'Industry-standard encryption, privacy protocols, and secure collaboration channels.', moreDescription: 'End-to-end cryptographic safeguards', iconText: 'verified_user', buttonText: 'Learn More', buttonLink: '#', sortOrder: 2 },
+        { title: 'Operational Efficiency', miniTitle: 'WORKFLOW', description: 'Modern automated workflows engineered to eliminate friction and elevate productivity.', moreDescription: 'Continuous throughput optimization', iconText: 'speed', buttonText: 'Learn More', buttonLink: '#', sortOrder: 3 }
       ]
     };
     this.onPreviewContentChange();

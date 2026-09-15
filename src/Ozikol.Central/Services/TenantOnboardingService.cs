@@ -1246,42 +1246,40 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Engineered for Maximum Impact",
+                    miniTitle = "Core Capabilities",
+                    description = "Essential infrastructure designed for seamless organizational execution and rapid growth.",
+                    items = new[]
+                    {
+                        new { title = "Data Security & Privacy", description = "Enterprise-grade encryption, role-based access management, and proactive compliance protection.", iconText = "fa-solid fa-shield-halved" },
+                        new { title = "Collaboration Hub", description = "Unified communication channels, real-time dispatches, and organizational announcements.", iconText = "fa-solid fa-comments" },
+                        new { title = "Operational Efficiency", description = "Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.", iconText = "fa-solid fa-bolt" }
+                    }
+                }),
                 HtmlTemplate = @"
-<section class=""py-5 bg-white border-bottom"">
+<section class=""py-5 bg-white border-bottom"" id=""features"">
   <div class=""container py-4"">
     <div class=""text-center max-w-700 mx-auto mb-5"">
-      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Core Capabilities</span>
-      <h2 class=""fw-bold text-dark mt-2 mb-3"">Engineered for Maximum Impact</h2>
-      <p class=""text-muted"">Essential infrastructure designed for seamless organizational execution and rapid growth.</p>
+      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">{{ MiniTitle }}</span>
+      <h2 class=""fw-bold text-dark mt-2 mb-3"">{{ Title }}</h2>
+      <p class=""text-muted"">{{ Description }}</p>
     </div>
     <div class=""row g-4"">
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm"">
-          <div class=""rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
-            <i class=""fa-solid fa-shield-halved fs-4""></i>
+      {{#each PageSectionLists}}
+        <div class=""col-md-4"">
+          <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm"">
+            {{#if IconText}}
+              <div class=""rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
+                <i class=""{{ IconText }} fs-4""></i>
+              </div>
+            {{/if}}
+            <h5 class=""fw-bold text-dark"">{{ Title }}</h5>
+            <p class=""text-muted small mb-0"">{{ Description }}</p>
           </div>
-          <h5 class=""fw-bold text-dark"">Data Security & Privacy</h5>
-          <p class=""text-muted small mb-0"">Enterprise-grade encryption, role-based access management, and proactive compliance protection.</p>
         </div>
-      </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm"">
-          <div class=""rounded-3 bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
-            <i class=""fa-solid fa-comments fs-4""></i>
-          </div>
-          <h5 class=""fw-bold text-dark"">Collaboration Hub</h5>
-          <p class=""text-muted small mb-0"">Unified communication channels, real-time dispatches, and organizational announcements.</p>
-        </div>
-      </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm"">
-          <div class=""rounded-3 bg-info-subtle text-info d-inline-flex align-items-center justify-content-center mb-3"" style=""width: 50px; height: 50px;"">
-            <i class=""fa-solid fa-bolt fs-4""></i>
-          </div>
-          <h5 class=""fw-bold text-dark"">Operational Efficiency</h5>
-          <p class=""text-muted small mb-0"">Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.</p>
-        </div>
-      </div>
+      {{/each}}
     </div>
   </div>
 </section>",
@@ -1299,38 +1297,47 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Built for Organizational Excellence & Long-Term Trust",
+                    miniTitle = "Our Mission & Standards",
+                    description = "We partner with forward-thinking enterprises, growing organizations, and industry leaders to streamline operations, enhance client service, and drive sustainable growth.",
+                    imageUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80",
+                    buttonText = "Learn More About Our Firm →",
+                    buttonLink = "#contact",
+                    items = new[]
+                    {
+                        new { title = "Strategic Planning & Execution", description = "Data-backed strategies, transparent execution, and dedicated accountability for every business milestone.", iconText = "fa-solid fa-check" },
+                        new { title = "Enterprise Data Protection", description = "Industry-standard encryption, secure cloud infrastructure, and strict client confidentiality standards.", iconText = "fa-solid fa-check" }
+                    }
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-white border-bottom"" id=""about"">
   <div class=""container py-4"">
     <div class=""row align-items-center g-5"">
       <div class=""col-lg-6"">
         <div class=""rounded-4 overflow-hidden shadow border border-light-subtle"">
-          <img src=""https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80"" 
-               alt=""Executive Collaboration Team"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 380px;"" />
+          <img src=""{{ ImageUrl }}"" 
+               alt=""{{ Title }}"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 380px;"" />
         </div>
       </div>
       <div class=""col-lg-6"">
-        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-3"">Our Mission & Standards</span>
-        <h2 class=""fw-bolder text-dark mb-3"">Built for Organizational Excellence & Long-Term Trust</h2>
-        <p class=""text-muted mb-4"">We partner with forward-thinking enterprises, growing organizations, and industry leaders to streamline operations, enhance client service, and drive sustainable growth.</p>
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-3"">{{ MiniTitle }}</span>
+        <h2 class=""fw-bolder text-dark mb-3"">{{ Title }}</h2>
+        <p class=""text-muted mb-4"">{{ Description }}</p>
         <div class=""d-flex flex-column gap-3 mb-4"">
-          <div class=""d-flex align-items-start gap-3"">
-            <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
-            <div>
-              <h6 class=""fw-bold text-dark mb-1"">Strategic Planning & Execution</h6>
-              <p class=""text-muted small mb-0"">Data-backed strategies, transparent execution, and dedicated accountability for every business milestone.</p>
+          {{#each PageSectionLists}}
+            <div class=""d-flex align-items-start gap-3"">
+              <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""{{ IconText }}""></i></span>
+              <div>
+                <h6 class=""fw-bold text-dark mb-1"">{{ Title }}</h6>
+                <p class=""text-muted small mb-0"">{{ Description }}</p>
+              </div>
             </div>
-          </div>
-          <div class=""d-flex align-items-start gap-3"">
-            <span class=""badge rounded-circle bg-primary-subtle text-primary p-2 mt-1""><i class=""fa-solid fa-check""></i></span>
-            <div>
-              <h6 class=""fw-bold text-dark mb-1"">Enterprise Data Protection</h6>
-              <p class=""text-muted small mb-0"">Industry-standard encryption, secure cloud infrastructure, and strict client confidentiality standards.</p>
-            </div>
-          </div>
+          {{/each}}
         </div>
-        <a href=""#contact"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"">
-          Learn More About Our Firm →
+        <a href=""{{ ButtonLink }}"" class=""btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold"">
+          {{ ButtonText }}
         </a>
       </div>
     </div>
@@ -1350,38 +1357,32 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Enterprise Reliability & Impact",
+                    miniTitle = "Key Metrics",
+                    description = "Demonstrable results and verified performance statistics across our platform ecosystem.",
+                    items = new[]
+                    {
+                        new { title = "12,500+", description = "Verified Members", iconText = "fa-solid fa-users text-primary" },
+                        new { title = "99.98%", description = "System Reliability", iconText = "fa-solid fa-server text-success" },
+                        new { title = "45+", description = "Global Chapters", iconText = "fa-solid fa-earth-americas text-info" },
+                        new { title = "24/7", description = "Priority Support", iconText = "fa-solid fa-headset text-warning" }
+                    }
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-white border-bottom"">
   <div class=""container py-3"">
     <div class=""row g-4 text-center"">
-      <div class=""col-6 col-md-3"">
-        <div class=""p-3"">
-          <i class=""fa-solid fa-users text-primary fs-2 mb-2""></i>
-          <div class=""display-6 fw-bold text-dark"">12,500+</div>
-          <div class=""small text-muted fw-semibold text-uppercase"">Verified Members</div>
+      {{#each PageSectionLists}}
+        <div class=""col-6 col-md-3"">
+          <div class=""p-3"">
+            <i class=""{{ IconText }} fs-2 mb-2""></i>
+            <div class=""display-6 fw-bold text-dark"">{{ Title }}</div>
+            <div class=""small text-muted fw-semibold text-uppercase"">{{ Description }}</div>
+          </div>
         </div>
-      </div>
-      <div class=""col-6 col-md-3"">
-        <div class=""p-3"">
-          <i class=""fa-solid fa-server text-success fs-2 mb-2""></i>
-          <div class=""display-6 fw-bold text-dark"">99.98%</div>
-          <div class=""small text-muted fw-semibold text-uppercase"">System Reliability</div>
-        </div>
-      </div>
-      <div class=""col-6 col-md-3"">
-        <div class=""p-3"">
-          <i class=""fa-solid fa-earth-americas text-info fs-2 mb-2""></i>
-          <div class=""display-6 fw-bold text-dark"">45+</div>
-          <div class=""small text-muted fw-semibold text-uppercase"">Global Chapters</div>
-        </div>
-      </div>
-      <div class=""col-6 col-md-3"">
-        <div class=""p-3"">
-          <i class=""fa-solid fa-headset text-warning fs-2 mb-2""></i>
-          <div class=""display-6 fw-bold text-dark"">24/7</div>
-          <div class=""small text-muted fw-semibold text-uppercase"">Priority Support</div>
-        </div>
-      </div>
+      {{/each}}
     </div>
   </div>
 </section>",
@@ -1399,60 +1400,48 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Trusted by Clients & Industry Leaders",
+                    miniTitle = "Client Testimonials",
+                    description = "Hear directly from businesses and partners who rely on our services for sustainable growth.",
+                    items = new[]
+                    {
+                        new { title = "Sarah Adams", miniTitle = "SA", description = "Working with our partners transformed our operational efficiency. Their team provided clear strategic direction and delivered outstanding results from day one.", moreDescription = "Chief Operating Officer", imageUrl = "" },
+                        new { title = "Marcus Kim", miniTitle = "MK", description = "Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner in scaling our business.", moreDescription = "Managing Director", imageUrl = "" },
+                        new { title = "Elena Rostova", miniTitle = "EL", description = "The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time and above benchmark.", moreDescription = "VP of Business Development", imageUrl = "" }
+                    }
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-4"">
     <div class=""text-center max-w-700 mx-auto mb-5"">
-      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Client Testimonials</span>
-      <h2 class=""fw-bold text-dark mt-2 mb-3"">Trusted by Clients &amp; Industry Leaders</h2>
-      <p class=""text-muted"">Hear directly from businesses and partners who rely on our services for sustainable growth.</p>
+      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">{{ MiniTitle }}</span>
+      <h2 class=""fw-bold text-dark mt-2 mb-3"">{{ Title }}</h2>
+      <p class=""text-muted"">{{ Description }}</p>
     </div>
     <div class=""row g-4"">
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white"">
-          <div class=""text-warning mb-3"">
-            <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
-          </div>
-          <p class=""text-secondary mb-4 fst-italic"">""Working with {{ BrandName }} transformed our operational efficiency. Their team provided clear strategic direction and delivered outstanding results from day one.""</p>
-          <div class=""d-flex align-items-center gap-3 mt-auto"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">SA</div>
-            <div>
-              <div class=""fw-bold text-dark small"">Sarah Adams</div>
-              <div class=""text-muted small"">Chief Operating Officer</div>
+      {{#each PageSectionLists}}
+        <div class=""col-md-4"">
+          <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white"">
+            <div class=""text-warning mb-3"">
+              <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
+            </div>
+            <p class=""text-secondary mb-4 fst-italic"">""{{ Description }}""</p>
+            <div class=""d-flex align-items-center gap-3 mt-auto"">
+              {{#if ImageUrl}}
+                <img src=""{{ ImageUrl }}"" alt=""{{ Title }}"" class=""rounded-circle object-fit-cover"" style=""width:42px; height:42px;"" />
+              {{else}}
+                <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">{{ MiniTitle }}</div>
+              {{/if}}
+              <div>
+                <div class=""fw-bold text-dark small"">{{ Title }}</div>
+                <div class=""text-muted small"">{{ MoreDescription }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white"">
-          <div class=""text-warning mb-3"">
-            <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
-          </div>
-          <p class=""text-secondary mb-4 fst-italic"">""Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner in scaling our business.""</p>
-          <div class=""d-flex align-items-center gap-3 mt-auto"">
-            <div class=""rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">MK</div>
-            <div>
-              <div class=""fw-bold text-dark small"">Marcus Kim</div>
-              <div class=""text-muted small"">Managing Director</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class=""col-md-4"">
-        <div class=""card h-100 p-4 border border-light-subtle rounded-4 shadow-sm bg-white"">
-          <div class=""text-warning mb-3"">
-            <i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i><i class=""fa-solid fa-star""></i>
-          </div>
-          <p class=""text-secondary mb-4 fst-italic"">""The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time and above benchmark.""</p>
-          <div class=""d-flex align-items-center gap-3 mt-auto"">
-            <div class=""rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold"" style=""width:42px; height:42px;"">EL</div>
-            <div>
-              <div class=""fw-bold text-dark small"">Elena Rostova</div>
-              <div class=""text-muted small"">VP of Business Development</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {{/each}}
     </div>
   </div>
 </section>",
@@ -1470,40 +1459,42 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Frequently Asked Questions",
+                    miniTitle = "Questions & Answers",
+                    description = "Helpful answers regarding our services, client engagements, and delivery process.",
+                    items = new[]
+                    {
+                        new { title = "How does our organization tailor its services to your business needs?", description = "We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements, then design a customized solution that aligns precisely with your business priorities." },
+                        new { title = "What kind of ongoing support and collaboration can you expect?", description = "Every client is paired with a dedicated account lead and receives regular milestone reviews, transparent progress reporting, and responsive technical and strategic support throughout our partnership." },
+                        new { title = "What are your standard compliance and data security standards?", description = "We enforce enterprise-grade AES-256 encryption, strict role-based authorization protocols, and SOC2-compliant handling across all platform transactions and customer records." }
+                    }
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-white border-bottom"">
   <div class=""container py-4"">
     <div class=""text-center max-w-700 mx-auto mb-5"">
-      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">Questions & Answers</span>
-      <h2 class=""fw-bold text-dark mt-2 mb-3"">Frequently Asked Questions</h2>
-      <p class=""text-muted"">Helpful answers regarding our services, client engagements, and delivery process.</p>
+      <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold"">{{ MiniTitle }}</span>
+      <h2 class=""fw-bold text-dark mt-2 mb-3"">{{ Title }}</h2>
+      <p class=""text-muted"">{{ Description }}</p>
     </div>
     <div class=""max-w-800 mx-auto"">
       <div class=""accordion"" id=""ozFaqAccordion"">
-        <div class=""accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm"">
-          <h2 class=""accordion-header"">
-            <button class=""accordion-button fw-bold text-dark bg-light"" type=""button"" onclick=""this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')"">
-              <i class=""fa-solid fa-circle-question text-primary me-2""></i> How does {{ BrandName }} tailor its services to our business needs?
-            </button>
-          </h2>
-          <div class=""accordion-collapse collapse show"">
-            <div class=""accordion-body text-secondary small"">
-              We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements, then design a customized solution that aligns precisely with your business priorities.
+        {{#each PageSectionLists}}
+          <div class=""accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm"">
+            <h2 class=""accordion-header"">
+              <button class=""accordion-button {{#unless @first}}collapsed{{/unless}} fw-bold text-dark bg-light"" type=""button"" onclick=""this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')"">
+                <i class=""fa-solid fa-circle-question text-primary me-2""></i> {{ Title }}
+              </button>
+            </h2>
+            <div class=""accordion-collapse collapse {{#if @first}}show{{/if}}"">
+              <div class=""accordion-body text-secondary small"">
+                {{ Description }}
+              </div>
             </div>
           </div>
-        </div>
-        <div class=""accordion-item border rounded-3 mb-3 overflow-hidden shadow-sm"">
-          <h2 class=""accordion-header"">
-            <button class=""accordion-button collapsed fw-bold text-dark bg-light"" type=""button"" onclick=""this.closest('.accordion-item').querySelector('.accordion-collapse').classList.toggle('show')"">
-              <i class=""fa-solid fa-circle-question text-primary me-2""></i> What kind of ongoing support and collaboration can we expect?
-            </button>
-          </h2>
-          <div class=""accordion-collapse collapse"">
-            <div class=""accordion-body text-secondary small"">
-              Every client is paired with a dedicated account lead and receives regular milestone reviews, transparent progress reporting, and responsive technical and strategic support throughout our partnership.
-            </div>
-          </div>
-        </div>
+        {{/each}}
       </div>
     </div>
   </div>
@@ -1522,18 +1513,27 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Ready to Elevate Your Business?",
+                    description = "Partner with our team to accelerate your operations, modernize systems, and achieve sustainable long-term growth.",
+                    buttonText = "Request a Consultation",
+                    buttonLink = "#request-service",
+                    secondaryButtonText = "Contact Our Team",
+                    secondaryButtonLink = "#contact"
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-3"">
     <div class=""card border-0 rounded-4 p-5 text-center text-white shadow"" style=""background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);"">
-      <h2 class=""display-6 fw-bold mb-3"">Ready to Elevate Your Business?</h2>
-      <p class=""lead opacity-90 max-w-600 mx-auto mb-4 fs-6"">Partner with our team to accelerate your operations, modernize systems, and achieve sustainable long-term growth.</p>
+      <h2 class=""display-6 fw-bold mb-3"">{{ Title }}</h2>
+      <p class=""lead opacity-90 max-w-600 mx-auto mb-4 fs-6"">{{ Description }}</p>
       <div class=""d-flex justify-content-center gap-3 flex-wrap"">
-        <a href=""#request-service"" class=""btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow"">
-          <i class=""fa-solid fa-arrow-right me-1""></i> Request a Consultation
+        <a href=""{{ ButtonLink }}"" class=""btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow"">
+          <i class=""fa-solid fa-arrow-right me-1""></i> {{ ButtonText }}
         </a>
-        <a href=""#contact"" class=""btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold"">
-          <i class=""fa-solid fa-envelope me-1""></i> Contact Our Team
+        <a href=""{{ SecondaryButtonLink }}"" class=""btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold"">
+          <i class=""fa-solid fa-envelope me-1""></i> {{ SecondaryButtonText }}
         </a>
       </div>
     </div>
@@ -1642,6 +1642,11 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Subscribe to Executive Insights",
+                    description = "Receive weekly briefings, technology advisories, and organization updates directly in your inbox."
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-3"">
@@ -1672,6 +1677,15 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Send Us a Direct Message",
+                    miniTitle = "Official Inquiries",
+                    description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
+                    address = "Administrative Headquarters, 742 Evergreen Terrace, Suite 500",
+                    phone = "+1 (800) 555-0199",
+                    email = "contact@organization.com"
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"" id=""contact"">
   <div class=""container py-4"">
@@ -1750,37 +1764,50 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Request a Tailored Enterprise Service",
+                    miniTitle = "Service Consultation",
+                    description = "Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.",
+                    phone = "+1 (800) 555-0199",
+                    email = "advisory@organization.com",
+                    items = new[]
+                    {
+                        new { title = "Dedicated Solutions Lead", description = "Direct engagement with an enterprise systems architect.", iconText = "fa-solid fa-check" },
+                        new { title = "Feasibility & Scope Assessment", description = "Actionable roadmap, architectural fit, and resource modeling.", iconText = "fa-solid fa-check" },
+                        new { title = "Client Confidentiality & NDA", description = "Strict confidentiality agreements and secure communication channels guaranteed.", iconText = "fa-solid fa-check" }
+                    }
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"" id=""request-service"">
   <div class=""container py-4"">
     <div class=""row g-5"">
       <!-- Left Column: Executive Consultation Scope & Hotline -->
       <div class=""col-lg-5"">
-        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">Service Consultation</span>
-        <h2 class=""fw-bold text-dark mb-3"">Request a Tailored Enterprise Service</h2>
-        <p class=""text-muted mb-4 fs-6"">Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.</p>
+        <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">{{ MiniTitle }}</span>
+        <h2 class=""fw-bold text-dark mb-3"">{{ Title }}</h2>
+        <p class=""text-muted mb-4 fs-6"">{{ Description }}</p>
 
         <div class=""card border-0 shadow-sm rounded-4 p-4 bg-white mb-4"">
           <h6 class=""fw-bold text-dark text-uppercase small mb-3 tracking-wider text-primary"">Engagement Standards</h6>
           <div class=""d-flex flex-column gap-3"">
-            <div class=""d-flex align-items-start gap-3"">
-              <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:32px; height:32px;""><i class=""fa-solid fa-check""></i></div>
-              <div><strong class=""text-dark small d-block"">Dedicated Solutions Lead</strong><span class=""text-muted small"">Direct engagement with an enterprise systems architect.</span></div>
-            </div>
-            <div class=""d-flex align-items-start gap-3"">
-              <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:32px; height:32px;""><i class=""fa-solid fa-check""></i></div>
-              <div><strong class=""text-dark small d-block"">Feasibility &amp; Scope Assessment</strong><span class=""text-muted small"">Actionable roadmap, architectural fit, and resource modeling.</span></div>
-            </div>
-            <div class=""d-flex align-items-start gap-3"">
-              <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:32px; height:32px;""><i class=""fa-solid fa-check""></i></div>
-              <div><strong class=""text-dark small d-block"">Client Confidentiality &amp; NDA</strong><span class=""text-muted small"">Strict confidentiality agreements and secure communication channels guaranteed.</span></div>
-            </div>
+            {{#each PageSectionLists}}
+              <div class=""d-flex align-items-start gap-3"">
+                <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:32px; height:32px;"">
+                  <i class=""{{ IconText }}""></i>
+                </div>
+                <div>
+                  <strong class=""text-dark small d-block"">{{ Title }}</strong>
+                  <span class=""text-muted small"">{{ Description }}</span>
+                </div>
+              </div>
+            {{/each}}
           </div>
         </div>
 
         <div class=""d-flex flex-column gap-2 text-muted small"">
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-phone text-primary""></i><span>Direct Hotline: +1 (800) 555-0199</span></div>
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-envelope text-primary""></i><span>Advisory Desk: advisory@{{ BrandName }}.com</span></div>
+          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-phone text-primary""></i><span>Direct Hotline: {{ Phone }}</span></div>
+          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-envelope text-primary""></i><span>Advisory Desk: {{ Email }}</span></div>
         </div>
       </div>
 
