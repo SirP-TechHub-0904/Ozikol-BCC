@@ -885,10 +885,10 @@
                   <input type="checkbox" id="enableSharePostCheck" [(ngModel)]="previewBlogDetailContent.enableSharePost" (ngModelChange)="onPreviewContentChange()" style="width: 18px; height: 18px; cursor: pointer;" />
                   <div ngNonBindable>
                     <label for="enableSharePostCheck" style="margin: 0; font-size: 13px; font-weight: 700; cursor: pointer; color: #1e293b;">
-                      Enable Social Media Share Strip (&#123;&#123;#if EnableSharePost&#125;&#125;)
+                      Enable Social Media Share Strip (&#123;&#123; PostShareStrip &#125;&#125;)
                     </label>
                     <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #64748b;">
-                      When enabled, dynamic share buttons (&#123;&#123;#each SocialShareLinks&#125;&#125;) for selected social channels are injected into the article footer.
+                      When enabled, dynamic share buttons for selected social channels are automatically injected into the &#123;&#123; PostShareStrip &#125;&#125; placeholder in the template HTML.
                     </p>
                   </div>
                   <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill small ms-auto">MIS / Blog Setting</span>
@@ -1363,11 +1363,11 @@
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BlogCategories', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BlogCategories', $event)" title="Topics Loop"><span class="material-symbols-outlined">info</span></button>
                 </span>
                 <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogSocialShareStripSnippet()" title="Inserts dynamic social share strip conditional block">
+                  <button type="button" class="token-chip chip-core" (click)="insertBlogSocialShareStripSnippet()" title="Inserts dynamic social share strip placeholder">
                     <span class="material-symbols-outlined chip-icon">share</span>
-                    <span>+ Social Share Strip</span>
+                    <span [innerText]="'+ {{ PostShareStrip }}'"></span>
                   </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('EnableSharePost', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('EnableSharePost', $event)" title="Share Post Settings"><span class="material-symbols-outlined">info</span></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PostShareStrip', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PostShareStrip', $event)" title="Share Post Settings"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
