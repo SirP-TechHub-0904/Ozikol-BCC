@@ -761,6 +761,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Iterates through enabled social share platforms with dynamic intent URLs ({{ ShareUrl }}, {{ Platform }}, {{ IconClass }}).',
       cmsPath: 'Admin Console > Settings > Blog Settings > Social Media Channels',
       example: '{{#each SocialShareLinks}}<a href="{{ ShareUrl }}" title="{{ Platform }}"><i class="{{ IconClass }}"></i></a>{{/each}}'
+    },
+    BreadcrumbTrail: {
+      name: 'Dynamic Breadcrumb Trail',
+      token: '{{ BreadcrumbTrail }}',
+      description: 'Auto-injected breadcrumb hierarchy trail matching the page structure and category.',
+      cmsPath: 'Admin Console > Content Console > Pages / Categories',
+      example: '{{ BreadcrumbTrail }}'
+    },
+    Breadcrumbs: {
+      name: 'Breadcrumbs Loop',
+      token: '{{#each BreadcrumbTrail}}...{{/each}}',
+      description: 'Iterates through breadcrumb trail nodes with dynamic properties ({{ Label }}, {{ Url }}, {{ IsActive }}).',
+      cmsPath: 'Admin Console > Content Console > Pages',
+      example: '{{#each BreadcrumbTrail}}<li><a href="{{ Url }}">{{ Label }}</a></li>{{/each}}'
+    },
+    BackgroundImageUrl: {
+      name: 'Banner Background Image',
+      token: '{{ BackgroundImageUrl }}',
+      description: 'URL of the high-resolution hero/banner background image.',
+      cmsPath: 'Admin Console > Content Console > Pages > Featured Image / Banner',
+      example: 'style="background-image: url(\'{{ BackgroundImageUrl }}\');"'
     }
   };
 
@@ -842,6 +863,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
     ],
     enableSharePost: true
+  };
+
+  // Dedicated Breadcrumb Sample Content Replacements
+  previewBreadcrumbContent = {
+    title: 'Enterprise Solutions & Insights',
+    miniTitle: 'MISSION & LEADERSHIP',
+    description: 'Discover how modern organizations accelerate digital workflows through hardened infrastructure.',
+    backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+    trailItems: [
+      { label: 'Home', url: '/', isActive: false },
+      { label: 'Capabilities', url: '/capabilities', isActive: false },
+      { label: 'Enterprise Solutions', url: '/capabilities/enterprise', isActive: true }
+    ]
   };
 
   // Full-Site Demo Modal
@@ -1874,6 +1908,28 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       };
     }
 
+    if (item.category === 'breadcrumb') {
+      let defaultBreadcrumbData: any = null;
+      if (item.defaultContentJson) {
+        try {
+          defaultBreadcrumbData = JSON.parse(item.defaultContentJson);
+        } catch (e) {}
+      }
+      this.previewBreadcrumbContent = {
+        title: defaultBreadcrumbData?.title || 'Enterprise Solutions & Insights',
+        miniTitle: defaultBreadcrumbData?.miniTitle || 'MISSION & LEADERSHIP',
+        description: defaultBreadcrumbData?.description || 'Discover how modern organizations accelerate digital workflows through hardened infrastructure.',
+        backgroundImageUrl: defaultBreadcrumbData?.backgroundImageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+        trailItems: (defaultBreadcrumbData?.trailItems && Array.isArray(defaultBreadcrumbData.trailItems))
+          ? defaultBreadcrumbData.trailItems
+          : [
+              { label: 'Home', url: '/', isActive: false },
+              { label: 'Capabilities', url: '/capabilities', isActive: false },
+              { label: 'Enterprise Solutions', url: '/capabilities/enterprise', isActive: true }
+            ]
+      };
+    }
+
     if (!hydratedFromBlueprint) {
       if (item.previewTitle) this.previewContent.title = item.previewTitle;
       else if (item.name) this.previewContent.title = item.name;
@@ -1922,6 +1978,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         ? (this.isBlogDetailTemplate()
             ? { ...this.previewContent, ...this.previewBlogDetailContent, article: this.previewBlogDetailContent }
             : { ...this.previewContent, ...this.previewBlogContent, articles: this.previewBlogContent.articles })
+        : (this.activePreviewItem.category === 'breadcrumb')
+        ? {
+            ...this.previewContent,
+            ...this.previewBreadcrumbContent,
+            breadcrumbTrail: this.previewBreadcrumbContent.trailItems,
+            breadcrumbs: this.previewBreadcrumbContent.trailItems,
+            trailItems: this.previewBreadcrumbContent.trailItems,
+            backgroundImageUrl: this.previewBreadcrumbContent.backgroundImageUrl
+          }
         : this.previewContent;
       let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
       if (this.activePreviewItem.category === 'footer') {
@@ -2753,6 +2818,52 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Adds a new trail node item to the breadcrumb sample content repeater.
+   */
+  addBreadcrumbTrailItem(): void {
+    this.previewBreadcrumbContent.trailItems.push({
+      label: 'New Page',
+      url: '/new-page',
+      isActive: false
+    });
+    this.onPreviewContentChange();
+  }
+
+  /**
+   * Removes a trail node item from the breadcrumb sample content repeater.
+   * @param index The array index to remove.
+   */
+  removeBreadcrumbTrailItem(index: number): void {
+    if (this.previewBreadcrumbContent.trailItems.length <= 1) return;
+    this.previewBreadcrumbContent.trailItems.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  /**
+   * Inserts the dynamic breadcrumb trail placeholder token into the HTML template.
+   */
+  insertBreadcrumbTrailSnippet(): void {
+    this.insertTokenAtModalCursor('{{ BreadcrumbTrail }}');
+  }
+
+  /**
+   * Inserts the dynamic breadcrumb loop block into the HTML template.
+   */
+  insertBreadcrumbsLoopSnippet(): void {
+    const snippet = `<ol class="breadcrumb justify-content-center align-items-center mb-0 small">
+  {{#each BreadcrumbTrail}}
+    {{#if IsActive}}
+      <li class="breadcrumb-item active text-white fw-bold" aria-current="page">{{ Label }}</li>
+    {{else}}
+      <li class="breadcrumb-item"><a href="{{ Url }}" class="text-white text-opacity-75 text-decoration-none">{{ Label }}</a></li>
+      <li class="breadcrumb-item text-white text-opacity-50">/</li>
+    {{/if}}
+  {{/each}}
+</ol>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
    * @param template The raw HTML template string.
@@ -2915,6 +3026,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   resetPreviewContent(): void {
+    if (this.activePreviewItem?.category === 'breadcrumb') {
+      this.previewBreadcrumbContent = {
+        title: 'Enterprise Solutions & Insights',
+        miniTitle: 'MISSION & LEADERSHIP',
+        description: 'Discover how modern organizations accelerate digital workflows through hardened infrastructure.',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+        trailItems: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: 'Capabilities', url: '/capabilities', isActive: false },
+          { label: 'Enterprise Solutions', url: '/capabilities/enterprise', isActive: true }
+        ]
+      };
+      this.onPreviewContentChange();
+      this.toast.info('Breadcrumb sample content restored to defaults.');
+      return;
+    }
+
     if (this.activePreviewItem?.category === 'blog') {
       if (this.isBlogDetailTemplate()) {
         this.previewBlogDetailContent = {
@@ -3345,6 +3473,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             articles: this.previewBlogContent.articles
           };
         }
+      } else if (b.category === 'breadcrumb') {
+        ctx = {
+          ...ctx,
+          ...this.previewBreadcrumbContent,
+          title: contextOverride?.title || this.previewBreadcrumbContent.title,
+          miniTitle: contextOverride?.miniTitle || this.previewBreadcrumbContent.miniTitle,
+          description: contextOverride?.description || this.previewBreadcrumbContent.description,
+          backgroundImageUrl: this.previewBreadcrumbContent.backgroundImageUrl,
+          breadcrumbTrail: [
+            { label: 'Home', url: '/', isActive: false },
+            { label: contextOverride?.title || 'Current Page', url: '#', isActive: true }
+          ]
+        };
       }
 
       let hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, ctx);

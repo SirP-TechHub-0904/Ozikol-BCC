@@ -1996,16 +1996,24 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    title = "Enterprise Solutions & Insights",
+                    description = "Discover how leading organizations accelerate growth through reliable, secure cloud architectures.",
+                    backgroundImageUrl = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80",
+                    trailItems = new[]
+                    {
+                        new { label = "Home", url = "/", isActive = false },
+                        new { label = "Capabilities", url = "/capabilities", isActive = false },
+                        new { label = "Enterprise Solutions", url = "/capabilities/enterprise", isActive = true }
+                    }
+                }),
                 HtmlTemplate = @"
-<section class=""oz-breadcrumb-hero py-5 text-center position-relative overflow-hidden"">
+<section class=""oz-breadcrumb-hero py-5 text-center position-relative overflow-hidden"" style=""background-image: url('{{ BackgroundImageUrl }}');"">
   <div class=""oz-breadcrumb-overlay position-absolute top-0 start-0 w-100 h-100""></div>
   <div class=""container position-relative py-lg-4"" style=""z-index: 2;"">
     <nav aria-label=""breadcrumb"" class=""d-flex justify-content-center mb-2"">
-      <ol class=""breadcrumb justify-content-center align-items-center mb-0 small"">
-        <li class=""breadcrumb-item""><a href=""#home"" class=""text-white text-opacity-75 text-decoration-none"">Home</a></li>
-        <li class=""breadcrumb-item text-white text-opacity-50"">/</li>
-        <li class=""breadcrumb-item active text-white fw-bold"" aria-current=""page"">{{ Title }}</li>
-      </ol>
+      {{ BreadcrumbTrail }}
     </nav>
     <h1 class=""display-5 fw-bold text-white mb-2"">{{ Title }}</h1>
     <p class=""text-white text-opacity-75 lead fs-6 mx-auto mb-0"" style=""max-width: 650px;"">{{ Description }}</p>
@@ -2013,7 +2021,9 @@ public class TenantOnboardingService : ITenantOnboardingService
 </section>",
                 CssStyles = @"
 .oz-breadcrumb-hero {
-  background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80') center center / cover no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
   position: relative;
 }
 .oz-breadcrumb-overlay {

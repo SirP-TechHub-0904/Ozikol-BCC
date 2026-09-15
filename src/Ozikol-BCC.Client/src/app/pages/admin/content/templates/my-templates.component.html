@@ -1064,6 +1064,61 @@
               </div>
             </div>
 
+            <!-- BREADCRUMB CATEGORY (BREADCRUMB & PAGE HEADERS) -->
+            <div class="custom-tpl-form-grid" *ngSwitchCase="'breadcrumb'">
+              <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 14px 16px;">
+                <h5 style="margin: 0 0 4px 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">
+                  <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">linear_scale</span>
+                  Breadcrumbs & Page Header Sample Content
+                </h5>
+                <p style="margin: 0; font-size: 12px; color: #475569;">
+                  Live adjustments here immediately update the preview iframe below, the breadcrumb trail hierarchy, and the banner background image.
+                </p>
+              </div>
+
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'PAGE MAIN TITLE ({{ Title }})'"></label>
+                <input type="text" [(ngModel)]="previewBreadcrumbContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Enterprise Solutions & Insights" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'EYEBROW / CATEGORY ({{ MiniTitle }})'"></label>
+                <input type="text" [(ngModel)]="previewBreadcrumbContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. MISSION & LEADERSHIP" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-lbl" [innerText]="'BACKGROUND IMAGE URL ({{ BackgroundImageUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewBreadcrumbContent.backgroundImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
+              </div>
+
+              <div class="form-group full-width">
+                <label class="form-lbl" [innerText]="'DESCRIPTION / SUBTITLE ({{ Description }})'"></label>
+                <textarea [(ngModel)]="previewBreadcrumbContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Supportive summary text..."></textarea>
+              </div>
+
+              <!-- Breadcrumb Trail Nodes Repeater -->
+              <div class="form-group full-width">
+                <div class="lbl-with-note">
+                  <label class="form-lbl" [innerText]="'BREADCRUMB TRAIL HIERARCHY ({{ BreadcrumbTrail }} / {{#each Breadcrumbs}})'"></label>
+                  <button type="button" class="btn-add-subitem" (click)="addBreadcrumbTrailItem()">+ Add Breadcrumb Node</button>
+                </div>
+                <div class="subitems-list">
+                  <div class="subitem-card-row" *ngFor="let node of previewBreadcrumbContent.trailItems; let nIdx = index" style="align-items: center; gap: 10px;">
+                    <span class="subitem-badge">#{{ nIdx + 1 }}</span>
+                    <input type="text" [(ngModel)]="node.label" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Node Label (e.g. Solutions)" />
+                    <input type="text" [(ngModel)]="node.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="/target-path" />
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap; cursor: pointer;">
+                      <input type="checkbox" [(ngModel)]="node.isActive" (ngModelChange)="onPreviewContentChange()" />
+                      Active (Current)
+                    </label>
+                    <button type="button" class="btn-del-subitem" (click)="removeBreadcrumbTrailItem(nIdx)" title="Remove Node" [disabled]="previewBreadcrumbContent.trailItems.length <= 1">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- DEFAULT SECTION CONTENT EDITOR (FOR HERO, BODY, ECOMMERCE, ETC.) -->
             <div class="custom-tpl-form-grid" *ngSwitchDefault>
               <div class="form-group">
@@ -1419,8 +1474,38 @@
               </ng-template>
             </ng-container>
 
+            <!-- Breadcrumbs & Page Header Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category === 'breadcrumb'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Page Title"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)" title="Description / Subtitle"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ BackgroundImageUrl }}')" [innerText]="'+ {{ BackgroundImageUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BackgroundImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BackgroundImageUrl', $event)" title="Banner Background Image URL"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertBreadcrumbTrailSnippet()" title="Inserts dynamic breadcrumb hierarchy trail placeholder">
+                  <span class="material-symbols-outlined chip-icon">linear_scale</span>
+                  <span [innerText]="'+ {{ BreadcrumbTrail }}'"></span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BreadcrumbTrail', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BreadcrumbTrail', $event)" title="Breadcrumb Trail"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertBreadcrumbsLoopSnippet()" title="Inserts customizable breadcrumbs loop with active styling">
+                  <span class="material-symbols-outlined chip-icon">repeat</span>
+                  <span>+ Breadcrumbs Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Breadcrumbs', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Breadcrumbs', $event)" title="Breadcrumbs Loop"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+
             <!-- Other Categories Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer' && activePreviewItem?.category !== 'blog'">
+            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer' && activePreviewItem?.category !== 'blog' && activePreviewItem?.category !== 'breadcrumb'">
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>
