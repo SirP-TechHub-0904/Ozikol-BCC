@@ -395,24 +395,6 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 6. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
-    const formRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
-    output = output.replace(formRegex, (_match: string, formKey?: string) => {
-      const key = formKey || 'FormEmbed';
-      const isNewsletter = /newsletter|subscribe/i.test(key);
-
-      if (isNewsletter) {
-        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
-          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
-          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Join</button>
-        </form>`;
-      }
-
-      return `<div class="oz-form-embed-preview p-2 border rounded bg-white text-center small text-muted">
-        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong>
-      </div>`;
-    });
-
     // 6b. Articles Loop ({{#each Articles}}...{{/each}})
     const articlesRegex = /\{\{#each\s+Articles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(articlesRegex, (_match, innerTemplate) => {
