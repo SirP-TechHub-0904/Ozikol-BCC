@@ -1,8 +1,0 @@
-@using MediatR
-@using Ozikol_BCC.Application.Queries.SliderQueries
-@inject IMediator Mediator
-@{
-    var sliderData = await Mediator.Send(new GetSliderAggregatedDataQuery());
-    var config = sliderData.ConfigSetting;
-}
-<img src="@ViewBag.ConfigSetting.CompanyLogoUrl" alt="@ViewBag.ConfigSetting.CompanyName" class="" style=" height: 30px; text-align: center; margin: 0 auto;">
