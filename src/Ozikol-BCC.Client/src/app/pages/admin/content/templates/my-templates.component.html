@@ -1186,8 +1186,60 @@
               </span>
             </ng-container>
 
+            <!-- Blog & Insights Category Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category === 'blog'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Showcase Title"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Category / Tag Badge"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertBlogArticlesLoopSnippet()" title="Loop published articles (Card Grid Showcase)">
+                  <span class="material-symbols-outlined chip-icon">newspaper</span>
+                  <span>+ Articles Grid Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Articles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Articles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ CoverImageUrl }}')" [innerText]="'+ {{ CoverImageUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CoverImageUrl', $event)" title="Featured Image"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ PublishedDate }}')" [innerText]="'+ {{ PublishedDate }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Excerpt }}')" [innerText]="'+ {{ Excerpt }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Excerpt', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Excerpt', $event)" title="Summary Excerpt"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertBlogRecentSidebarSnippet()" title="Loop recent dispatches for sidebars">
+                  <span class="material-symbols-outlined chip-icon">history</span>
+                  <span>+ Recent Articles Sidebar</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('RecentArticles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('RecentArticles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertBlogCategoriesSnippet()" title="Loop topics and categories with live article counts">
+                  <span class="material-symbols-outlined chip-icon">category</span>
+                  <span>+ Topics Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BlogCategories', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BlogCategories', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertBlogAuthorBioSnippet()" title="Author biography card with portrait">
+                  <span class="material-symbols-outlined chip-icon">person</span>
+                  <span>+ Author Bio Card</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_AuthorName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_AuthorName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+
             <!-- Other Categories Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer'">
+            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer' && activePreviewItem?.category !== 'blog'">
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>

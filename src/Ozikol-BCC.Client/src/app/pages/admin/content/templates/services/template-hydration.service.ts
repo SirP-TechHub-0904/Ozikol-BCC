@@ -395,36 +395,46 @@ export class TemplateHydrationService {
     output = output.replace(articlesRegex, (_match, innerTemplate) => {
       const articles = ctx.articles || opts.previewBlogContent?.articles || [
         {
-          title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
-          summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+          title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',
+          excerpt: 'Discover how modern organizations integrate resilient cloud patterns, zero-trust security postures, and dynamic automation pipelines.',
           coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
-          category: 'Engineering & Architecture',
-          authorName: 'Alex Rivera',
-          authorRole: 'Chief Architect',
-          publishedDate: 'Sep 12, 2026',
-          url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems'
+          category: 'Technology',
+          authorName: 'Dr. Jennifer Miller',
+          authorRole: 'Principal Cloud Strategist',
+          publishedDate: 'Sep 14, 2026',
+          url: '/blog/enterprise-scalability-hybrid-cloud'
         },
         {
-          title: 'The Shift to Zero-Downtime Migration Pipelines',
-          summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
-          coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
-          category: 'DevOps & Reliability',
-          authorName: 'Sarah Chen',
-          authorRole: 'Head of Infrastructure',
-          publishedDate: 'Sep 08, 2026',
-          url: '/blog/zero-downtime-migration-pipelines'
+          title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics',
+          excerpt: 'Strategic methodologies for reducing transit footprint while accelerating fulfillment predictability and inventory velocity.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+          category: 'Operations',
+          authorName: 'Marcus Vance',
+          authorRole: 'Logistics Director',
+          publishedDate: 'Sep 10, 2026',
+          url: '/blog/sustainable-commerce-supply-chain'
+        },
+        {
+          title: 'AI-Driven Workflow Orchestration and Customer Personalization',
+          excerpt: 'How cognitive machine learning agents streamline intake triage, automate ticket resolution, and elevate user satisfaction benchmarks.',
+          coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80',
+          category: 'Innovation',
+          authorName: 'Elena Rostova',
+          authorRole: 'AI Research Lead',
+          publishedDate: 'Sep 06, 2026',
+          url: '/blog/ai-driven-workflow-orchestration'
         }
       ];
 
       return articles.map((art: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title);
-        rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, art.summary);
+        rendered = rendered.replace(/\{\{\s*(?:Excerpt|Summary|Description)\s*\}\}/gi, art.excerpt || art.summary || '');
         rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, art.coverImageUrl);
         rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category);
         rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName);
         rendered = rendered.replace(/\{\{\s*AuthorRole\s*\}\}/gi, art.authorRole);
-        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, art.publishedDate);
+        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, art.publishedDate);
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, art.url || '#');
         return rendered;
       }).join('\n');
@@ -434,13 +444,14 @@ export class TemplateHydrationService {
     const recentArticlesRegex = /\{\{#each\s+RecentArticles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(recentArticlesRegex, (_match, innerTemplate) => {
       const recents = [
-        { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', publishedDate: 'Sep 12, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems' },
-        { title: 'The Shift to Zero-Downtime Migration Pipelines', publishedDate: 'Sep 08, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=300&auto=format&fit=crop&q=80', url: '/blog/zero-downtime-migration-pipelines' }
+        { title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture', publishedDate: 'Sep 14, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/enterprise-scalability-hybrid-cloud' },
+        { title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics', publishedDate: 'Sep 10, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80', url: '/blog/sustainable-commerce-supply-chain' },
+        { title: 'AI-Driven Workflow Orchestration and Customer Personalization', publishedDate: 'Sep 06, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&auto=format&fit=crop&q=80', url: '/blog/ai-driven-workflow-orchestration' }
       ];
       return recents.map((r: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title);
-        rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, r.publishedDate);
+        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, r.publishedDate);
         rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, r.coverImageUrl);
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, r.url);
         return rendered;
@@ -451,9 +462,11 @@ export class TemplateHydrationService {
     const blogCatsRegex = /\{\{#each\s+BlogCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(blogCatsRegex, (_match, innerTemplate) => {
       const cats = [
-        { name: 'Engineering & Architecture', postCount: 14, url: '/blog?category=engineering' },
-        { name: 'DevOps & Reliability', postCount: 9, url: '/blog?category=devops' },
-        { name: 'Cybersecurity', postCount: 7, url: '/blog?category=cybersecurity' }
+        { name: 'Technology & Cloud', postCount: 14, url: '/blog?category=technology' },
+        { name: 'Enterprise Strategy', postCount: 9, url: '/blog?category=strategy' },
+        { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
+        { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
+        { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
       ];
       return cats.map((c: any) => {
         let rendered = innerTemplate;
@@ -464,33 +477,35 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 6e. ArticleTags Loop ({{#each ArticleTags}}...{{/each}})
-    const tagsRegex = /\{\{#each\s+ArticleTags\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    // 6e. Article.Tags or ArticleTags Loop
+    const tagsRegex = /\{\{#each\s+(?:Article\.Tags|ArticleTags)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(tagsRegex, (_match, innerTemplate) => {
-      const tags = [
-        { name: 'Multi-Tenancy', url: '/blog?tag=multi-tenancy' },
-        { name: 'Cloud Architecture', url: '/blog?tag=cloud-architecture' },
-        { name: 'DevOps', url: '/blog?tag=devops' }
-      ];
-      return tags.map((t: any) => {
+      const tags = ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'];
+      return tags.map((t: string) => {
         let rendered = innerTemplate;
-        rendered = rendered.replace(/\{\{\s*(?:Name|Tag|Title)\s*\}\}/gi, t.name);
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, t.url);
+        rendered = rendered.replace(/\{\{\s*this\s*\}\}/gi, t);
+        rendered = rendered.replace(/\{\{\s*(?:Name|Tag|Title)\s*\}\}/gi, t);
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, `/blog?tag=${encodeURIComponent(t.toLowerCase())}`);
         return rendered;
       }).join('\n');
     });
 
     // 6f. Article Detail Scalars ({{ Article.Title }}, {{ Article.Body }}, etc.)
-    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, 'Architecting Resilient Multi-Tenant Cloud Ecosystems');
-    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, 'Engineering & Architecture');
-    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, 'September 12, 2026');
-    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, 'Alex Rivera');
-    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, 'Chief Architect & Head of Platform Engineering');
+    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture');
+    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, 'Technology & Cloud');
+    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, 'September 14, 2026');
+    output = output.replace(/\{\{\s*Article\.ReadTime\s*\}\}/gi, '5 min read');
+    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, 'Dr. Jennifer Miller');
+    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, 'Principal Cloud Strategist & Enterprise Systems Architect');
+    output = output.replace(/\{\{\s*Article\.AuthorBio\s*\}\}/gi, 'Principal Cloud Strategist and Enterprise Systems Architect with over 15 years leading high-availability transformations.');
+    output = output.replace(/\{\{\s*Article\.AuthorAvatarUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
     output = output.replace(/\{\{\s*Article\.CoverImageUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80');
-    output = output.replace(/\{\{\s*Article\.Summary\s*\}\}/gi, 'A comprehensive guide on building scalable, isolated, multi-tenant cloud ecosystems with robust zero-trust policies.');
+    output = output.replace(/\{\{\s*Article\.Summary\s*\}\}/gi, 'A comprehensive strategic roadmap for architecting resilient hybrid cloud environments capable of petabyte-scale throughput.');
     output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, `
-      <p class="lead">Modern enterprise cloud systems require strict multi-tenant isolation, ultra-fast database scaling, and zero-compromise security models.</p>
-      <p>Our hybrid persistence layer splits the master tenant catalog from individual tenant SQL databases, ensuring that noisy neighbors never impact cross-tenant performance.</p>
+      <p class="lead">In an era of relentless digital expansion, organizations are increasingly challenged to balance agility, resilience, and operational security.</p>
+      <p>Legacy architectures, once the bedrock of institutional workflows, now struggle to sustain the real-time processing demands of globally distributed systems. By transitioning toward unified hybrid cloud infrastructures, forward-thinking enterprises establish a modular foundation capable of horizontal scaling while preserving strict governance over proprietary data assets.</p>
+      <h4>Strategic Architectural Foundations</h4>
+      <p>A resilient multi-region deployment demands three non-negotiable pillars: programmatic infrastructure as code, continuous behavioral telemetries, and automated self-healing orchestration clusters.</p>
     `);
 
     // 6g. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
