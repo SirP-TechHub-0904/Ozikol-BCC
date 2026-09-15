@@ -1914,16 +1914,7 @@ public class TenantOnboardingService : ITenantOnboardingService
               <span class=""badge bg-light text-dark border"">{{ this }}</span>
             {{/each}}
           </div>
-          {{#if EnableSharePost}}
-            <div class=""d-flex align-items-center gap-2"">
-              <span class=""small text-muted fw-semibold"">Share:</span>
-              {{#each SocialShareLinks}}
-                <a href=""{{ ShareUrl }}"" target=""_blank"" rel=""noopener noreferrer"" class=""btn btn-sm btn-light border rounded-circle"" title=""Share on {{ Platform }}"">
-                  <i class=""{{ IconClass }}""></i>
-                </a>
-              {{/each}}
-            </div>
-          {{/if}}
+          {{ PostShareStrip }}
         </div>
 
         <!-- Author Bio Card -->

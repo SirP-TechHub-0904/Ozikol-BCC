@@ -741,6 +741,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       cmsPath: 'Admin Console > Content Console > Articles > Author Avatar',
       example: '<img src="{{ Article.AuthorAvatarUrl }}" alt="{{ Article.AuthorName }}" />'
     },
+    PostShareStrip: {
+      name: 'Dynamic Social Share Strip',
+      token: '{{ PostShareStrip }}',
+      description: 'Auto-injected social media share buttons strip. Configured and enabled via MIS / Blog Settings.',
+      cmsPath: 'Admin Console > Settings > Blog Settings > Enable Post Sharing',
+      example: '{{ PostShareStrip }}'
+    },
     EnableSharePost: {
       name: 'Enable Share Post Conditional',
       token: '{{#if EnableSharePost}}...{{/if}}',
@@ -2739,20 +2746,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Inserts a dynamic social share strip conditional block matching the MIS / Blog Settings configuration.
+   * Inserts the dynamic social share strip placeholder token matching the MIS / Blog Settings configuration.
    */
   insertBlogSocialShareStripSnippet(): void {
-    const snippet = `{{#if EnableSharePost}}
-  <div class="d-flex align-items-center gap-2">
-    <span class="small text-muted fw-semibold">Share:</span>
-    {{#each SocialShareLinks}}
-      <a href="{{ ShareUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border rounded-circle" title="Share on {{ Platform }}">
-        <i class="{{ IconClass }}"></i>
-      </a>
-    {{/each}}
-  </div>
-{{/if}}`;
-    this.insertTokenAtModalCursor(snippet);
+    this.insertTokenAtModalCursor('{{ PostShareStrip }}');
   }
 
   /**

@@ -493,20 +493,38 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 6e-2. Social Share Links Loop ({{#each SocialShareLinks}}...{{/each}})
+    // 6e-2. Social Share Links Loop & Dynamic Placeholder ({{ PostShareStrip }}, {{#each SocialShareLinks}}...{{/each}})
+    const currentUrl = artDetail.url || '/blog';
+    const encodedUrl = encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}${currentUrl}` : `https://ozikol.com${currentUrl}`);
+    const encodedTitle = encodeURIComponent(artDetail.title || 'Insight Post');
+
+    const platforms = artDetail.socialShareLinks || [
+      { platform: 'Facebook', shareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, iconClass: 'fa-brands fa-facebook-f' },
+      { platform: 'X (Twitter)', shareUrl: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`, iconClass: 'fa-brands fa-x-twitter' },
+      { platform: 'LinkedIn', shareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, iconClass: 'fa-brands fa-linkedin-in' },
+      { platform: 'WhatsApp', shareUrl: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`, iconClass: 'fa-brands fa-whatsapp' }
+    ];
+
+    const isShareEnabled = artDetail.enableSharePost !== false && (ctx as any).enableSharePost !== false;
+
+    // Single-token dynamic placeholder: {{ PostShareStrip }}, {{ SocialShareButtons }}, {{ SocialShareStrip }}
+    const shareStripMarkup = isShareEnabled
+      ? `<div class="d-flex align-items-center gap-2 social-share-strip">
+  <span class="small text-muted fw-semibold">Share:</span>
+  ${platforms.map((p: any) => `<a href="${p.shareUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border rounded-circle" title="Share on ${p.platform}"><i class="${p.iconClass}"></i></a>`).join('\n  ')}
+</div>`
+      : '';
+
+    output = output.replace(/\{\{\s*(?:PostShareStrip|SocialShareButtons|SocialShareStrip)\s*\}\}/gi, shareStripMarkup);
+
+    // Conditional Handlebars block: {{#if EnableSharePost}}...{{/if}}
+    const ifShareRegex = /\{\{#if\s+EnableSharePost\}\}([\s\S]*?)\{\{\/if\}\}/gi;
+    output = output.replace(ifShareRegex, (_match, innerContent) => {
+      return isShareEnabled ? innerContent : '';
+    });
+
     const socialShareRegex = /\{\{#each\s+SocialShareLinks\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(socialShareRegex, (_match, innerTemplate) => {
-      const currentUrl = artDetail.url || '/blog';
-      const encodedUrl = encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}${currentUrl}` : `https://ozikol.com${currentUrl}`);
-      const encodedTitle = encodeURIComponent(artDetail.title || 'Insight Post');
-
-      const platforms = artDetail.socialShareLinks || [
-        { platform: 'Facebook', shareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, iconClass: 'fa-brands fa-facebook-f' },
-        { platform: 'X (Twitter)', shareUrl: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`, iconClass: 'fa-brands fa-x-twitter' },
-        { platform: 'LinkedIn', shareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, iconClass: 'fa-brands fa-linkedin-in' },
-        { platform: 'WhatsApp', shareUrl: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`, iconClass: 'fa-brands fa-whatsapp' }
-      ];
-
       return platforms.map((p: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, p.platform || '');
