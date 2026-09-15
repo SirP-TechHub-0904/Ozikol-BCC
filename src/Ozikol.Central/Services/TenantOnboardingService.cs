@@ -7,6 +7,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Microsoft.Extensions.Configuration;
 
 namespace Ozikol.Central.Services;
 
@@ -91,6 +92,7 @@ public class TenantOnboardingService : ITenantOnboardingService
     private readonly IOptions<TenantConfigurationOptions> _tenantOptions;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<TenantOnboardingService> _logger;
+    private readonly IConfiguration _configuration;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TenantOnboardingService"/> class.
@@ -99,16 +101,21 @@ public class TenantOnboardingService : ITenantOnboardingService
     /// <param name="tenantOptions">Tenant configuration options containing default connection strings.</param>
     /// <param name="serviceProvider">Dependency injection service provider.</param>
     /// <param name="logger">Application logging facility.</param>
+    /// <param name="configuration">Application configuration for environment-driven settings.</param>
     public TenantOnboardingService(
         MasterCatalogDbContext masterCatalogDbContext,
         IOptions<TenantConfigurationOptions> tenantOptions,
         IServiceProvider serviceProvider,
-        ILogger<TenantOnboardingService> logger)
+        ILogger<TenantOnboardingService> logger,
+        IConfiguration configuration)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _tenantOptions = tenantOptions;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        // IConfiguration is required to resolve TenantSettings__BaseDomain from .env / environment variables.
+        // This drives the generated tenant URL (e.g. https://klothcity.ozikol.cloud vs localhost:4200).
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -191,7 +198,17 @@ public class TenantOnboardingService : ITenantOnboardingService
     public async Task<TenantOnboardingResult> OnboardNewTenantAsync(TenantOnboardingRequest request, CancellationToken cancellationToken = default)
     {
         var cleanKey = request.TenantKey.Trim().ToLowerInvariant().Replace(" ", "-");
-        var primaryDomain = $"{cleanKey}.localhost:4200";
+
+        // Resolve the base domain from environment configuration.
+        // On production VPS: set TenantSettings__BaseDomain=ozikol.cloud in .env
+        // On local dev: falls back to localhost:4200 so existing dev workflow is unchanged.
+        var baseDomain = _configuration["TenantSettings__BaseDomain"]
+                      ?? _configuration["TenantSettings:BaseDomain"]
+                      ?? "localhost:4200";
+
+        // Production generates: klothcity.ozikol.cloud
+        // Local dev generates:  klothcity.localhost:4200
+        var primaryDomain = $"{cleanKey}.{baseDomain}";
         var cleanReferralCode = string.IsNullOrWhiteSpace(request.ReferredBy) ? null : request.ReferredBy.Trim().ToUpperInvariant();
 
         // 1. Validate Not Reserved
