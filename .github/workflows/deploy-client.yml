@@ -8,7 +8,6 @@ name: Deploy Angular Client
 on:
   push:
     branches: [ master ]
-    # Only triggers when frontend Angular code changes
     paths:
       - 'src/Ozikol-BCC.Client/**'
 
@@ -30,22 +29,40 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'src/Ozikol-BCC.Client/package-lock.json'
 
-      # Install dependencies and build production bundle (AOT, minified, optimized)
+      # Install dependencies, build, and normalize dist folder
       - name: Install & Build Angular Production
         run: |
           cd src/Ozikol-BCC.Client
           npm ci
           npm run build -- --configuration production
+          
+          # Create normalized publish directory at repository root
+          mkdir -p ../../publish-client
+          
+          # Copy compiled output regardless of Angular's casing/browser folder
+          if [ -d "dist/Ozikol-BCC.Client/browser" ]; then
+            cp -r dist/Ozikol-BCC.Client/browser/* ../../publish-client/
+          elif [ -d "dist/Ozikol-BCC.Client" ]; then
+            cp -r dist/Ozikol-BCC.Client/* ../../publish-client/
+          elif [ -d "dist/ozikol-bcc-client/browser" ]; then
+            cp -r dist/ozikol-bcc-client/browser/* ../../publish-client/
+          elif [ -d "dist/ozikol-bcc-client" ]; then
+            cp -r dist/ozikol-bcc-client/* ../../publish-client/
+          else
+            cp -r dist/*/* ../../publish-client/
+          fi
+          
+          # List files to verify index.html is ready
+          ls -la ../../publish-client/
 
-      # Sync the compiled static distribution files directly to Nginx web root
+      # Sync the normalized static distribution files directly to Nginx web root
       - name: Sync Angular Dist to VPS
         uses: easingthemes/ssh-deploy@main
         with:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
-          # In Angular 17/18/19, compiled static files output to dist/Ozikol-BCC.Client/browser/
-          SOURCE: "src/Ozikol-BCC.Client/dist/Ozikol-BCC.Client/browser/"
+          SOURCE: "publish-client/"
           TARGET: "/var/www/client"
 
       # Ensure Nginx (www-data) has read access to the HTML/CSS/JS files
