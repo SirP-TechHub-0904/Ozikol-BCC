@@ -91,8 +91,20 @@
             </div>
           </div>
           <div class="blueprint-stats">
+            <div class="suite-adopt-controls" *ngIf="getAvailableSuites().length > 0">
+              <button
+                type="button"
+                class="btn-adopt-suite"
+                *ngFor="let suite of getAvailableSuites()"
+                (click)="adoptSuite(suite.code)"
+                [title]="'Adopt all core components from ' + suite.name"
+              >
+                <span class="material-symbols-outlined btn-icon">auto_fix_high</span>
+                <span>Adopt {{ suite.name }}</span>
+              </button>
+            </div>
             <span class="blueprint-stat-pill">
-              <strong>{{ getBlueprintFilledCount() }}</strong> / 6 Layers Configured
+              <strong>{{ getBlueprintFilledCount() }}</strong> / 5 Layers Configured
             </span>
           </div>
         </div>
@@ -152,27 +164,9 @@
             </div>
           </div>
 
-          <!-- Step 4: Newsletter -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveNewsletter()" [class.slot-empty]="!getActiveNewsletter()">
-            <div class="slot-badge">Layer 4</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">mail</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Lead / Newsletter</span>
-              <strong class="slot-name">{{ getActiveNewsletter()?.name || 'No Form Block' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveNewsletter()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveNewsletter()!)" title="Preview Newsletter">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveNewsletter()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Newsletter Forms">+ Add</a>
-            </div>
-          </div>
-
-          <!-- Step 5: Footer -->
+          <!-- Step 4: Footer -->
           <div class="pipeline-slot" [class.slot-active]="getActiveFooter()" [class.slot-empty]="!getActiveFooter()">
-            <div class="slot-badge">Layer 5</div>
+            <div class="slot-badge">Layer 4</div>
             <div class="slot-icon-wrap">
               <span class="material-symbols-outlined">dock_to_bottom</span>
             </div>
@@ -188,9 +182,9 @@
             </div>
           </div>
 
-          <!-- Step 6: Storefront Theme -->
+          <!-- Step 5: Storefront Theme -->
           <div class="pipeline-slot" [class.slot-active]="getActiveEcommerce()" [class.slot-empty]="!getActiveEcommerce()">
-            <div class="slot-badge">Store</div>
+            <div class="slot-badge">Layer 5</div>
             <div class="slot-icon-wrap">
               <span class="material-symbols-outlined">storefront</span>
             </div>
@@ -260,15 +254,16 @@
               [class.active]="selectedGroup === 'all'"
               (click)="selectedGroup = 'all'; applyFilters()"
             >
-              All Suites
+              All Suites ({{ installedTemplates.length }})
             </button>
             <button
               type="button"
               class="suite-chip"
-              [class.active]="selectedGroup === 'apex-commerce'"
-              (click)="selectedGroup = 'apex-commerce'; applyFilters()"
+              *ngFor="let suite of getAvailableSuites()"
+              [class.active]="selectedGroup === suite.code"
+              (click)="selectedGroup = suite.code; applyFilters()"
             >
-              <i class="fa-solid fa-cube me-1 text-primary"></i> Apex Commerce Pro
+              <i class="fa-solid fa-cube me-1 text-primary"></i> {{ suite.name }} ({{ suite.count }})
             </button>
           </div>
         </div>
