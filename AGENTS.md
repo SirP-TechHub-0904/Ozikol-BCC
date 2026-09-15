@@ -12,8 +12,12 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 
 ---
 
-## 2. Git Commit Standards
-* **Commit After Every Feature**: Upon completing a feature, milestone, or significant refactoring, create a clean Git commit.
+## 2. Git Branching & Commit Standards
+* **Separate Branches Mandatory**: Never commit directly to the `master` branch. Always create and work on a dedicated, descriptive branch before making changes or committing:
+  * Features: `feat/<feature-name>` or `feature/<feature-name>`
+  * Bug fixes: `fix/<bug-name>`
+  * Maintenance / refactoring / cleanup: `chore/<task-name>` or `refactor/<task-name>`
+* **Commit on Dedicated Branch**: Upon completing a feature, milestone, or significant refactoring, create clean Git commits on the active task branch.
 * **Descriptive Commit Messages**: Follow the Conventional Commits specification:
   * Format: `<type>(<scope>): <concise summary>` followed by a bulleted body explaining what changed and why.
   * Types: `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `chore:`.
