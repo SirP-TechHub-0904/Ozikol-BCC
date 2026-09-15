@@ -10,6 +10,7 @@ export interface TemplateHydrationOptions {
   previewMenuContent?: any;
   previewFooterContent?: any;
   previewBlogContent?: any;
+  previewBlogDetailContent?: any;
 }
 
 /**
@@ -428,32 +429,34 @@ export class TemplateHydrationService {
 
       return articles.map((art: any) => {
         let rendered = innerTemplate;
-        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title);
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title || '');
         rendered = rendered.replace(/\{\{\s*(?:Excerpt|Summary|Description)\s*\}\}/gi, art.excerpt || art.summary || '');
-        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, art.coverImageUrl);
-        rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category);
-        rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName);
-        rendered = rendered.replace(/\{\{\s*AuthorRole\s*\}\}/gi, art.authorRole);
-        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, art.publishedDate);
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, art.coverImageUrl || art.imageUrl || '');
+        rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category || 'General');
+        rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName || 'Staff Writer');
+        rendered = rendered.replace(/\{\{\s*AuthorRole\s*\}\}/gi, art.authorRole || '');
+        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, art.publishedDate || 'Recently');
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, art.url || '#');
         return rendered;
       }).join('\n');
     });
 
+    const artDetail = ctx.article || opts.previewBlogDetailContent || {};
+
     // 6c. RecentArticles Loop ({{#each RecentArticles}}...{{/each}})
     const recentArticlesRegex = /\{\{#each\s+RecentArticles\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(recentArticlesRegex, (_match, innerTemplate) => {
-      const recents = [
+      const recents = artDetail.recentArticles || [
         { title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture', publishedDate: 'Sep 14, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80', url: '/blog/enterprise-scalability-hybrid-cloud' },
         { title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics', publishedDate: 'Sep 10, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80', url: '/blog/sustainable-commerce-supply-chain' },
         { title: 'AI-Driven Workflow Orchestration and Customer Personalization', publishedDate: 'Sep 06, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&auto=format&fit=crop&q=80', url: '/blog/ai-driven-workflow-orchestration' }
       ];
       return recents.map((r: any) => {
         let rendered = innerTemplate;
-        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title);
-        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, r.publishedDate);
-        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, r.coverImageUrl);
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, r.url);
+        rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, r.title || '');
+        rendered = rendered.replace(/\{\{\s*(?:PublishedDate|Date)\s*\}\}/gi, r.publishedDate || '');
+        rendered = rendered.replace(/\{\{\s*(?:CoverImageUrl|ImageUrl)\s*\}\}/gi, r.coverImageUrl || r.imageUrl || '');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, r.url || '#');
         return rendered;
       }).join('\n');
     });
@@ -461,7 +464,7 @@ export class TemplateHydrationService {
     // 6d. BlogCategories Loop ({{#each BlogCategories}}...{{/each}})
     const blogCatsRegex = /\{\{#each\s+BlogCategories\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(blogCatsRegex, (_match, innerTemplate) => {
-      const cats = [
+      const cats = artDetail.categories || [
         { name: 'Technology & Cloud', postCount: 14, url: '/blog?category=technology' },
         { name: 'Enterprise Strategy', postCount: 9, url: '/blog?category=strategy' },
         { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
@@ -470,9 +473,9 @@ export class TemplateHydrationService {
       ];
       return cats.map((c: any) => {
         let rendered = innerTemplate;
-        rendered = rendered.replace(/\{\{\s*(?:Name|Title|CategoryTitle)\s*\}\}/gi, c.name);
-        rendered = rendered.replace(/\{\{\s*PostCount\s*\}\}/gi, String(c.postCount));
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, c.url);
+        rendered = rendered.replace(/\{\{\s*(?:Name|Title|CategoryTitle)\s*\}\}/gi, c.name || '');
+        rendered = rendered.replace(/\{\{\s*PostCount\s*\}\}/gi, String(c.postCount || 0));
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, c.url || '#');
         return rendered;
       }).join('\n');
     });
@@ -480,8 +483,8 @@ export class TemplateHydrationService {
     // 6e. Article.Tags or ArticleTags Loop
     const tagsRegex = /\{\{#each\s+(?:Article\.Tags|ArticleTags)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(tagsRegex, (_match, innerTemplate) => {
-      const tags = ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'];
-      return tags.map((t: string) => {
+      const rawTags = artDetail.tags || (artDetail.tagsInput ? artDetail.tagsInput.split(',').map((s: string) => s.trim()).filter(Boolean) : null) || ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'];
+      return rawTags.map((t: string) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*this\s*\}\}/gi, t);
         rendered = rendered.replace(/\{\{\s*(?:Name|Tag|Title)\s*\}\}/gi, t);
@@ -491,22 +494,35 @@ export class TemplateHydrationService {
     });
 
     // 6f. Article Detail Scalars ({{ Article.Title }}, {{ Article.Body }}, etc.)
-    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture');
-    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, 'Technology & Cloud');
-    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, 'September 14, 2026');
-    output = output.replace(/\{\{\s*Article\.ReadTime\s*\}\}/gi, '5 min read');
-    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, 'Dr. Jennifer Miller');
-    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, 'Principal Cloud Strategist & Enterprise Systems Architect');
-    output = output.replace(/\{\{\s*Article\.AuthorBio\s*\}\}/gi, 'Principal Cloud Strategist and Enterprise Systems Architect with over 15 years leading high-availability transformations.');
-    output = output.replace(/\{\{\s*Article\.AuthorAvatarUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80');
-    output = output.replace(/\{\{\s*Article\.CoverImageUrl\s*\}\}/gi, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80');
-    output = output.replace(/\{\{\s*Article\.Summary\s*\}\}/gi, 'A comprehensive strategic roadmap for architecting resilient hybrid cloud environments capable of petabyte-scale throughput.');
-    output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, `
+    const artTitle = artDetail.title || 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture';
+    const artCategory = artDetail.category || 'Technology & Cloud';
+    const artDate = artDetail.publishedDate || 'September 14, 2026';
+    const artReadTime = artDetail.readTime || '5 min read';
+    const artAuthorName = artDetail.authorName || 'Dr. Jennifer Miller';
+    const artAuthorRole = artDetail.authorRole || 'Principal Cloud Strategist & Enterprise Systems Architect';
+    const artAuthorBio = artDetail.authorBio || 'Principal Cloud Strategist and Enterprise Systems Architect with over 15 years leading high-availability transformations.';
+    const artAuthorAvatar = artDetail.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+    const artCover = artDetail.coverImageUrl || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80';
+    const artSummary = artDetail.summary || artDetail.excerpt || 'A comprehensive strategic roadmap for architecting resilient hybrid cloud environments capable of petabyte-scale throughput.';
+    const artBody = artDetail.body || `
       <p class="lead">In an era of relentless digital expansion, organizations are increasingly challenged to balance agility, resilience, and operational security.</p>
       <p>Legacy architectures, once the bedrock of institutional workflows, now struggle to sustain the real-time processing demands of globally distributed systems. By transitioning toward unified hybrid cloud infrastructures, forward-thinking enterprises establish a modular foundation capable of horizontal scaling while preserving strict governance over proprietary data assets.</p>
       <h4>Strategic Architectural Foundations</h4>
       <p>A resilient multi-region deployment demands three non-negotiable pillars: programmatic infrastructure as code, continuous behavioral telemetries, and automated self-healing orchestration clusters.</p>
-    `);
+    `;
+
+    output = output.replace(/\{\{\s*Article\.Title\s*\}\}/gi, artTitle);
+    output = output.replace(/\{\{\s*Article\.Category\s*\}\}/gi, artCategory);
+    output = output.replace(/\{\{\s*Article\.PublishedDate\s*\}\}/gi, artDate);
+    output = output.replace(/\{\{\s*Article\.ReadTime\s*\}\}/gi, artReadTime);
+    output = output.replace(/\{\{\s*Article\.AuthorName\s*\}\}/gi, artAuthorName);
+    output = output.replace(/\{\{\s*Article\.AuthorRole\s*\}\}/gi, artAuthorRole);
+    output = output.replace(/\{\{\s*Article\.AuthorBio\s*\}\}/gi, artAuthorBio);
+    output = output.replace(/\{\{\s*Article\.AuthorAvatarUrl\s*\}\}/gi, artAuthorAvatar);
+    output = output.replace(/\{\{\s*Article\.CoverImageUrl\s*\}\}/gi, artCover);
+    output = output.replace(/\{\{\s*(?:Article\.Summary|Article\.Excerpt)\s*\}\}/gi, artSummary);
+    output = output.replace(/\{\{\s*Article\.Url\s*\}\}/gi, artDetail.url || '/blog');
+    output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, artBody);
 
     // 6g. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
     const ifRegex = /\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/gi;
@@ -528,11 +544,12 @@ export class TemplateHydrationService {
     });
 
     // 7. Scalar placeholders & Slider model tokens (leave unused fields blank)
-    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
-    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || '');
-    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || '');
-    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.text || '');
-    output = output.replace(/\{\{\s*Url\s*\}\}/gi, ctx.url || ctx.imageUrl || '');
+    output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || opts.previewBlogContent?.title || '');
+    output = output.replace(/\{\{\s*MiniTitle\s*\}\}/gi, ctx.miniTitle || opts.previewBlogContent?.miniTitle || '');
+    output = output.replace(/\{\{\s*Text\s*\}\}/gi, ctx.text || ctx.description || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || ctx.text || opts.previewBlogContent?.description || '');
+    output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || ctx.viewAllButtonText || opts.previewBlogContent?.buttonText || opts.previewBlogContent?.viewAllButtonText || '');
+    output = output.replace(/\{\{\s*ButtonLink\s*\}\}/gi, ctx.buttonLink || ctx.viewAllButtonLink || opts.previewBlogContent?.buttonLink || opts.previewBlogContent?.viewAllButtonLink || '#');
     output = output.replace(/\{\{\s*ImageUrl\s*\}\}/gi, ctx.imageUrl || ctx.url || '');
     output = output.replace(/\{\{\s*SecondUrl\s*\}\}/gi, ctx.secondUrl || '');
     output = output.replace(/\{\{\s*YoutubeVideo\s*\}\}/gi, ctx.youtubeVideo || ctx.videoUrl || '');
