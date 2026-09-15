@@ -1,0 +1,66 @@
+# ===================================================================
+# CI/CD Workflow: Deploy Ozikol-BCC Backend API
+# Target: https://api-ozikol.ozikol.cloud & *.ozikol.cloud/api/ (VPS Port 5000)
+# ===================================================================
+
+name: Deploy Ozikol API
+
+on:
+  push:
+    branches: [ master ]
+    # Only triggers when files inside the API or shared backend libraries change
+    paths:
+      - 'src/Ozikol-BCC.Api/**'
+      - 'src/Ozikol-BCC.Domain/**'
+      - 'src/Ozikol-BCC.Persistence.EF.SQL/**'
+      - 'src/Ozikol-BCC.Application/**'
+
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup .NET 9 SDK
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Publish API project to a standalone output directory
+      - name: Publish Ozikol API
+        run: |
+          dotnet publish src/Ozikol-BCC.Api/Ozikol-BCC.Api.csproj -c Release -o ./publish-api
+
+      # Sync published DLLs over SSH (protecting VPS .env)
+      - name: Sync Files to VPS (Preserving .env)
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: ${{ secrets.VPS_USER }}
+          SOURCE: "publish-api/"
+          TARGET: "/var/www/api"
+          # Protect production secrets and keys from being overwritten
+          EXCLUDE: ".env, .env.*"
+
+      # Apply permissions and restart API daemon
+      - name: Set Permissions & Restart API Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            chown -R www-data:www-data /var/www/api
+            chmod -R 755 /var/www/api
+            chmod 600 /var/www/api/.env
+            
+            # Restart the API service (reads /var/www/api/.env on startup)
+            systemctl enable ozikol-api.service
+            systemctl restart ozikol-api.service
+            systemctl status ozikol-api.service --no-pager
