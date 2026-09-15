@@ -1,8 +1,0 @@
-@model string
-@* Modal body template: post this form from pages that manage user notes. *@
-<form method="post" asp-page-handler="AddNote" class="bcp-inline-form" data-tour="add-note-form">
-    <input type="hidden" name="ProfileId" value="@Model" />
-    <label class="bcp-field">Note<textarea class="bcp-input bcp-textarea" name="Note" required></textarea></label>
-    <label class="bcp-check"><input type="checkbox" name="IsPrivate" value="true" checked /> Private admin note</label>
-    <button class="console-btn primary" type="submit"><span class="material-symbols-outlined">add_notes</span>Add Note</button>
-</form>

@@ -1,0 +1,1 @@
+Never apply code changes without explicit user approval. Always present the diagnosis, the proposed diff/plan, and wait for the user to say "proceed", "go ahead", or similar before writing to any file.
