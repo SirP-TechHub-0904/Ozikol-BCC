@@ -740,6 +740,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Square avatar photograph of the author.',
       cmsPath: 'Admin Console > Content Console > Articles > Author Avatar',
       example: '<img src="{{ Article.AuthorAvatarUrl }}" alt="{{ Article.AuthorName }}" />'
+    },
+    EnableSharePost: {
+      name: 'Enable Share Post Conditional',
+      token: '{{#if EnableSharePost}}...{{/if}}',
+      description: 'Conditionally displays the social media share buttons strip. Configured via MIS / Blog Settings.',
+      cmsPath: 'Admin Console > Settings > Blog Settings > Enable Post Sharing',
+      example: '{{#if EnableSharePost}}<div class="share-strip">...</div>{{/if}}'
+    },
+    SocialShareLinks: {
+      name: 'Social Share Links Loop',
+      token: '{{#each SocialShareLinks}}...{{/each}}',
+      description: 'Iterates through enabled social share platforms with dynamic intent URLs ({{ ShareUrl }}, {{ Platform }}, {{ IconClass }}).',
+      cmsPath: 'Admin Console > Settings > Blog Settings > Social Media Channels',
+      example: '{{#each SocialShareLinks}}<a href="{{ ShareUrl }}" title="{{ Platform }}"><i class="{{ IconClass }}"></i></a>{{/each}}'
     }
   };
 
@@ -819,7 +833,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
       { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
       { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
-    ]
+    ],
+    enableSharePost: true
   };
 
   // Full-Site Demo Modal
@@ -2724,6 +2739,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Inserts a dynamic social share strip conditional block matching the MIS / Blog Settings configuration.
+   */
+  insertBlogSocialShareStripSnippet(): void {
+    const snippet = `{{#if EnableSharePost}}
+  <div class="d-flex align-items-center gap-2">
+    <span class="small text-muted fw-semibold">Share:</span>
+    {{#each SocialShareLinks}}
+      <a href="{{ ShareUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border rounded-circle" title="Share on {{ Platform }}">
+        <i class="{{ IconClass }}"></i>
+      </a>
+    {{/each}}
+  </div>
+{{/if}}`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
    * @param template The raw HTML template string.
@@ -2914,7 +2946,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
             { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
             { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
-          ]
+          ],
+          enableSharePost: true
         };
         this.onPreviewContentChange();
         this.toast.info('Blog article detail sample content restored to defaults.');

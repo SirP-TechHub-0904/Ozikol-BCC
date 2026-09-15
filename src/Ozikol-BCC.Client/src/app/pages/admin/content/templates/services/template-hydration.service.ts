@@ -493,6 +493,30 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
+    // 6e-2. Social Share Links Loop ({{#each SocialShareLinks}}...{{/each}})
+    const socialShareRegex = /\{\{#each\s+SocialShareLinks\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(socialShareRegex, (_match, innerTemplate) => {
+      const currentUrl = artDetail.url || '/blog';
+      const encodedUrl = encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}${currentUrl}` : `https://ozikol.com${currentUrl}`);
+      const encodedTitle = encodeURIComponent(artDetail.title || 'Insight Post');
+
+      const platforms = artDetail.socialShareLinks || [
+        { platform: 'Facebook', shareUrl: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, iconClass: 'fa-brands fa-facebook-f' },
+        { platform: 'X (Twitter)', shareUrl: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`, iconClass: 'fa-brands fa-x-twitter' },
+        { platform: 'LinkedIn', shareUrl: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, iconClass: 'fa-brands fa-linkedin-in' },
+        { platform: 'WhatsApp', shareUrl: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`, iconClass: 'fa-brands fa-whatsapp' }
+      ];
+
+      return platforms.map((p: any) => {
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, p.platform || '');
+        rendered = rendered.replace(/\{\{\s*ShareUrl\s*\}\}/gi, p.shareUrl || '#');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.shareUrl || '#');
+        rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, p.iconClass || '');
+        return rendered;
+      }).join('\n');
+    });
+
     // 6f. Article Detail Scalars ({{ Article.Title }}, {{ Article.Body }}, etc.)
     const artTitle = artDetail.title || 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture';
     const artCategory = artDetail.category || 'Technology & Cloud';
@@ -528,8 +552,9 @@ export class TemplateHydrationService {
     const ifRegex = /\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/gi;
     output = output.replace(ifRegex, (_match, prop, ifBody, elseBody) => {
       const p = prop.trim();
-      const key = Object.keys(ctx).find(k => k.toLowerCase() === p.toLowerCase());
-      const val = key ? ctx[key] : undefined;
+      const searchPool = { ...artDetail, ...ctx };
+      const key = Object.keys(searchPool).find(k => k.toLowerCase() === p.toLowerCase());
+      const val = key ? (searchPool as any)[key] : undefined;
       const isTruthy = (val !== null && val !== undefined && val !== false && val !== '' && (typeof val !== 'string' || val.trim().length > 0));
       return isTruthy ? ifBody : (elseBody || '');
     });
@@ -537,8 +562,9 @@ export class TemplateHydrationService {
     const unlessRegex = /\{\{#unless\s+([\w\.]+)\}\}([\s\S]*?)\{\{\/unless\}\}/gi;
     output = output.replace(unlessRegex, (_match, prop, body) => {
       const p = prop.trim();
-      const key = Object.keys(ctx).find(k => k.toLowerCase() === p.toLowerCase());
-      const val = key ? ctx[key] : undefined;
+      const searchPool = { ...artDetail, ...ctx };
+      const key = Object.keys(searchPool).find(k => k.toLowerCase() === p.toLowerCase());
+      const val = key ? (searchPool as any)[key] : undefined;
       const isFalsy = (val === null || val === undefined || val === false || val === '' || (typeof val === 'string' && val.trim().length === 0));
       return isFalsy ? body : '';
     });

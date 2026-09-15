@@ -1914,12 +1914,16 @@ public class TenantOnboardingService : ITenantOnboardingService
               <span class=""badge bg-light text-dark border"">{{ this }}</span>
             {{/each}}
           </div>
-          <div class=""d-flex align-items-center gap-2"">
-            <span class=""small text-muted fw-semibold"">Share:</span>
-            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-facebook-f""></i></a>
-            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-x-twitter""></i></a>
-            <a href=""#"" class=""btn btn-sm btn-light border rounded-circle""><i class=""fa-brands fa-linkedin-in""></i></a>
-          </div>
+          {{#if EnableSharePost}}
+            <div class=""d-flex align-items-center gap-2"">
+              <span class=""small text-muted fw-semibold"">Share:</span>
+              {{#each SocialShareLinks}}
+                <a href=""{{ ShareUrl }}"" target=""_blank"" rel=""noopener noreferrer"" class=""btn btn-sm btn-light border rounded-circle"" title=""Share on {{ Platform }}"">
+                  <i class=""{{ IconClass }}""></i>
+                </a>
+              {{/each}}
+            </div>
+          {{/if}}
         </div>
 
         <!-- Author Bio Card -->
