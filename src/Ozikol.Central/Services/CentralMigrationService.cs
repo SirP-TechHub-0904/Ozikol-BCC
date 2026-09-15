@@ -174,7 +174,7 @@ public class CentralMigrationService : ICentralMigrationService
             ?? string.Empty;
 
         var builder = new SqlConnectionStringBuilder(masterConnStr);
-        status.DatabaseName = string.IsNullOrWhiteSpace(builder.InitialCatalog) ? "Ozikol_MasterCatalogDb" : builder.InitialCatalog;
+        status.DatabaseName = string.IsNullOrWhiteSpace(builder.InitialCatalog) ? "CatalogDb" : builder.InitialCatalog;
         summary.DatabaseName = status.DatabaseName;
 
         try
