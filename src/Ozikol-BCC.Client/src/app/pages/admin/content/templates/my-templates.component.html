@@ -80,195 +80,84 @@
 
       <!-- Tab 1: Section Templates Vault Pane -->
       <div class="vault-tab-pane" *ngIf="activeMainTab === 'vault'">
-        <!-- Active Theme Blueprint Pipeline Banner -->
-        <div class="theme-blueprint-card" *ngIf="installedTemplates.length > 0">
-        <div class="blueprint-header">
-          <div class="blueprint-title-wrap">
-            <span class="material-symbols-outlined blueprint-icon">tune</span>
-            <div>
-              <h2 class="blueprint-title">Active Website Theme Blueprint</h2>
-              <span class="blueprint-sub">Visual assembly order for your public website layout</span>
+        <!-- Toolbar: Search, Filters & View Mode Switcher -->
+        <div class="templates-toolbar">
+          <div class="toolbar-top-row">
+            <div class="search-input-wrap">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                (input)="applyFilters()"
+                class="form-control templates-search"
+                placeholder="Search installed templates by title, variant code, or role..."
+              />
+              <button *ngIf="searchQuery" (click)="searchQuery = ''; applyFilters()" class="btn-clear-search">✕</button>
             </div>
-          </div>
-          <div class="blueprint-stats">
-            <div class="suite-adopt-controls" *ngIf="getAvailableSuites().length > 0">
+
+            <div class="view-mode-toggle">
               <button
                 type="button"
-                class="btn-adopt-suite"
+                class="toggle-btn"
+                [class.active]="viewMode === 'grid'"
+                (click)="setViewMode('grid')"
+                title="Visual Card Grid View"
+              >
+                <span class="material-symbols-outlined">grid_view</span>
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                class="toggle-btn"
+                [class.active]="viewMode === 'table'"
+                (click)="setViewMode('table')"
+                title="Compact Table Matrix View"
+              >
+                <span class="material-symbols-outlined">view_list</span>
+                <span>Table</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Theme Suite Filter Bar -->
+          <div class="theme-suite-filter-bar">
+            <div class="suite-filter-label">
+              <span class="material-symbols-outlined suite-icon">inventory_2</span>
+              <span>Theme Suite:</span>
+            </div>
+            <div class="suite-chips">
+              <button
+                type="button"
+                class="suite-chip"
+                [class.active]="selectedGroup === 'all'"
+                (click)="selectedGroup = 'all'; applyFilters()"
+              >
+                All Suites ({{ installedTemplates.length }})
+              </button>
+              <button
+                type="button"
+                class="suite-chip"
                 *ngFor="let suite of getAvailableSuites()"
-                (click)="adoptSuite(suite.code)"
-                [title]="'Adopt all core components from ' + suite.name"
+                [class.active]="selectedGroup === suite.code"
+                (click)="selectedGroup = suite.code; applyFilters()"
+              >
+                <i class="fa-solid fa-cube me-1 text-primary"></i> {{ suite.name }} ({{ suite.count }})
+              </button>
+            </div>
+            <div class="suite-adopt-actions ms-auto" *ngIf="selectedGroup !== 'all'">
+              <button
+                type="button"
+                class="btn-adopt-suite-inline"
+                (click)="adoptSuite(selectedGroup)"
+                title="Adopt all companion blocks from this suite"
               >
                 <span class="material-symbols-outlined btn-icon">auto_fix_high</span>
-                <span>Adopt {{ suite.name }}</span>
+                <span>Adopt Complete Suite</span>
               </button>
             </div>
-            <span class="blueprint-stat-pill">
-              <strong>{{ getBlueprintFilledCount() }}</strong> / 5 Layers Configured
-            </span>
-          </div>
-        </div>
-
-        <div class="blueprint-pipeline">
-          <!-- Step 1: Navbar -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveMenu()" [class.slot-empty]="!getActiveMenu()">
-            <div class="slot-badge">Layer 1</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">menu</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Navigation Menu</span>
-              <strong class="slot-name">{{ getActiveMenu()?.name || 'No Menu Installed' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveMenu()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveMenu()!)" title="Preview Active Menu">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveMenu()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Navbars">+ Add</a>
-            </div>
           </div>
 
-          <!-- Step 2: Hero -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveHero()" [class.slot-empty]="!getActiveHero()">
-            <div class="slot-badge">Layer 2</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">view_carousel</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Hero Showcase</span>
-              <strong class="slot-name">{{ getActiveHero()?.name || 'No Hero Installed' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveHero()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveHero()!)" title="Preview Hero Banner">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveHero()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Hero Banners">+ Add</a>
-            </div>
-          </div>
-
-          <!-- Step 3: Body Features -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveBody()" [class.slot-empty]="!getActiveBody()">
-            <div class="slot-badge">Layer 3</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">view_quilt</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Body Features</span>
-              <strong class="slot-name">{{ getActiveBody()?.name || 'No Feature Block' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveBody()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveBody()!)" title="Preview Feature Block">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveBody()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Feature Blocks">+ Add</a>
-            </div>
-          </div>
-
-          <!-- Step 4: Footer -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveFooter()" [class.slot-empty]="!getActiveFooter()">
-            <div class="slot-badge">Layer 4</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">dock_to_bottom</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Footer Bar</span>
-              <strong class="slot-name">{{ getActiveFooter()?.name || 'No Footer Installed' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveFooter()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveFooter()!)" title="Preview Footer">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveFooter()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Footers">+ Add</a>
-            </div>
-          </div>
-
-          <!-- Step 5: Storefront Theme -->
-          <div class="pipeline-slot" [class.slot-active]="getActiveEcommerce()" [class.slot-empty]="!getActiveEcommerce()">
-            <div class="slot-badge">Layer 5</div>
-            <div class="slot-icon-wrap">
-              <span class="material-symbols-outlined">storefront</span>
-            </div>
-            <div class="slot-info">
-              <span class="slot-role">Storefront Theme</span>
-              <strong class="slot-name">{{ getActiveEcommerce()?.name || 'No Storefront Suite' }}</strong>
-            </div>
-            <div class="slot-action">
-              <button *ngIf="getActiveEcommerce()" class="btn-slot-preview" (click)="openSinglePreviewModal(getActiveEcommerce()!)" title="Preview Storefront">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
-              <a *ngIf="!getActiveEcommerce()" routerLink="/content/console/marketplace" class="btn-slot-add" title="Browse Storefronts">+ Add</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Toolbar: Search, Filters & View Mode Switcher -->
-      <div class="templates-toolbar">
-        <div class="toolbar-top-row">
-          <div class="search-input-wrap">
-            <span class="material-symbols-outlined search-icon">search</span>
-            <input
-              type="text"
-              [(ngModel)]="searchQuery"
-              (input)="applyFilters()"
-              class="form-control templates-search"
-              placeholder="Search installed templates by title, variant code, or role..."
-            />
-            <button *ngIf="searchQuery" (click)="searchQuery = ''; applyFilters()" class="btn-clear-search">✕</button>
-          </div>
-
-          <div class="view-mode-toggle">
-            <button
-              type="button"
-              class="toggle-btn"
-              [class.active]="viewMode === 'grid'"
-              (click)="setViewMode('grid')"
-              title="Visual Card Grid View"
-            >
-              <span class="material-symbols-outlined">grid_view</span>
-              <span>Cards</span>
-            </button>
-            <button
-              type="button"
-              class="toggle-btn"
-              [class.active]="viewMode === 'table'"
-              (click)="setViewMode('table')"
-              title="Compact Table Matrix View"
-            >
-              <span class="material-symbols-outlined">view_list</span>
-              <span>Table</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Theme Suite Filter Bar -->
-        <div class="theme-suite-filter-bar">
-          <div class="suite-filter-label">
-            <span class="material-symbols-outlined suite-icon">inventory_2</span>
-            <span>Theme Suite:</span>
-          </div>
-          <div class="suite-chips">
-            <button
-              type="button"
-              class="suite-chip"
-              [class.active]="selectedGroup === 'all'"
-              (click)="selectedGroup = 'all'; applyFilters()"
-            >
-              All Suites ({{ installedTemplates.length }})
-            </button>
-            <button
-              type="button"
-              class="suite-chip"
-              *ngFor="let suite of getAvailableSuites()"
-              [class.active]="selectedGroup === suite.code"
-              (click)="selectedGroup = suite.code; applyFilters()"
-            >
-              <i class="fa-solid fa-cube me-1 text-primary"></i> {{ suite.name }} ({{ suite.count }})
-            </button>
-          </div>
-        </div>
-
-        <div class="category-filter-chips">
+          <div class="category-filter-chips">
           <button
             type="button"
             class="filter-chip"
