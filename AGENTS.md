@@ -12,12 +12,16 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 
 ---
 
-## 2. Git Branching & Commit Standards
-* **Separate Branches Mandatory**: Never commit directly to the `master` branch. Always create and work on a dedicated, descriptive branch before making changes or committing:
+## 2. Git Branching, Commit & Pull Request Standards
+* **Protected Master Branch**: Direct pushes and local merges to `master` are strictly prohibited by GitHub repository rules. Never run `git merge` into local `master` or attempt `git push origin master`.
+* **Separate Task Branches Mandatory**: Always create and work on a dedicated, descriptive branch before making changes or committing:
   * Features: `feat/<feature-name>` or `feature/<feature-name>`
   * Bug fixes: `fix/<bug-name>`
   * Maintenance / refactoring / cleanup: `chore/<task-name>` or `refactor/<task-name>`
-* **Commit on Dedicated Branch**: Upon completing a feature, milestone, or significant refactoring, create clean Git commits on the active task branch.
+  * Documentation: `docs/<topic>`
+* **Commit on Task Branch Only**: Create clean Git commits strictly on the active task branch.
+* **Pull Request Workflow (Mandatory)**: Deliver all changes by pushing the dedicated task branch to GitHub (`git push -u origin <branch-name>`) and instructing the user to review and merge via GitHub Pull Request.
+* **Local Master Synchronization**: Keep local `master` strictly clean and synchronized with `origin/master` (`git checkout master && git pull origin master`).
 * **Descriptive Commit Messages**: Follow the Conventional Commits specification:
   * Format: `<type>(<scope>): <concise summary>` followed by a bulleted body explaining what changed and why.
   * Types: `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `chore:`.

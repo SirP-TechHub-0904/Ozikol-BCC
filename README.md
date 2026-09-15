@@ -5,20 +5,26 @@ Ozikol Business Control Center (BCC) & Central Multi-Tenant Platform.
 
 ## Git Workflow & Branching Strategy
 
-> **IMPORTANT**: Never commit directly to the `master` branch. All changes, features, bug fixes, and maintenance tasks must be carried out on dedicated branches.
+> **IMPORTANT**: Direct pushes and local merges to `master` are strictly disabled. All features, fixes, and updates must be pushed on dedicated task branches and merged via **GitHub Pull Requests**.
 
 ### 1. Branch Naming Conventions
 Always create a descriptive branch off `master` before writing code or committing:
 * **Features**: `feat/<feature-name>` or `feature/<feature-name>`
   * Example: `feat/templates-page-section`
 * **Bug Fixes**: `fix/<bug-name>`
-  * Example: `fix/token-expiry-handling`
+  * Example: `fix/online-tenant-cors-api-url`
 * **Refactoring & Maintenance**: `refactor/<name>` or `chore/<name>`
   * Example: `chore/cleanup-python-scripts`
 * **Documentation**: `docs/<topic>`
   * Example: `docs/git-branching-guidelines`
 
-### 2. Commit Message Standards
+### 2. Pull Request & Deployment Workflow
+1. Work and commit strictly on your dedicated branch.
+2. Push your branch to GitHub: `git push -u origin <branch-name>`.
+3. Open a GitHub Pull Request into `master`.
+4. Review and merge the Pull Request on GitHub. GitHub Actions CI/CD workflows will automatically trigger to build and deploy the affected components (API, Client, Central) to the VPS.
+
+### 3. Commit Message Standards
 Follow the Conventional Commits specification:
 * **Format**: `<type>(<scope>): <concise summary>` followed by a bulleted body explaining what changed and why.
 * **Types**: `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `chore:`.
