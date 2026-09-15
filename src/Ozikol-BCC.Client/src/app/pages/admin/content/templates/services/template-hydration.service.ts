@@ -566,7 +566,47 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*Article\.Url\s*\}\}/gi, artDetail.url || '/blog');
     output = output.replace(/\{\{\s*Article\.Body\s*\}\}/gi, artBody);
 
-    // 6g. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
+    // 6g. Breadcrumb & Page Header Hydration ({{ BreadcrumbTrail }}, {{ BackgroundImageUrl }}, {{#each Breadcrumbs}})
+    const bcPool = { ...ctx, ...(ctx.breadcrumb || {}) };
+    const rawTrail = bcPool.breadcrumbTrail || bcPool.breadcrumbs || bcPool.trailItems || [
+      { label: 'Home', url: '/', isActive: false },
+      { label: 'Capabilities', url: '/capabilities', isActive: false },
+      { label: bcPool.title || 'Enterprise Solutions', url: '#', isActive: true }
+    ];
+
+    // Single-token dynamic placeholder: {{ BreadcrumbTrail }}
+    const breadcrumbTrailHtml = `<ol class="breadcrumb justify-content-center align-items-center mb-0 small">
+      ${rawTrail.map((item: any, idx: number) => {
+        const isLast = idx === rawTrail.length - 1 || item.isActive;
+        if (isLast) {
+          return `<li class="breadcrumb-item active text-white fw-bold" aria-current="page">${item.label || item.title || ''}</li>`;
+        } else {
+          return `<li class="breadcrumb-item"><a href="${item.url || '#'}" class="text-white text-opacity-75 text-decoration-none">${item.label || item.title || ''}</a></li>
+          <li class="breadcrumb-item text-white text-opacity-50">/</li>`;
+        }
+      }).join('\n      ')}
+    </ol>`;
+
+    output = output.replace(/\{\{\s*(?:BreadcrumbTrail|BreadcrumbsTrail|BreadcrumbLinks)\s*\}\}/gi, breadcrumbTrailHtml);
+
+    // Loop: {{#each BreadcrumbTrail}} or {{#each Breadcrumbs}} or {{#each BreadcrumbItems}}
+    const bcLoopRegex = /\{\{#each\s+(?:BreadcrumbTrail|Breadcrumbs|BreadcrumbItems)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    output = output.replace(bcLoopRegex, (_match, innerTemplate) => {
+      return rawTrail.map((b: any, bIdx: number) => {
+        const isLast = bIdx === rawTrail.length - 1 || b.isActive;
+        let rendered = innerTemplate;
+        rendered = rendered.replace(/\{\{\s*(?:Label|Title|Name)\s*\}\}/gi, b.label || b.title || '');
+        rendered = rendered.replace(/\{\{\s*(?:Url|Link)\s*\}\}/gi, b.url || '#');
+        rendered = rendered.replace(/\{\{\s*IsActive\s*\}\}/gi, isLast ? 'true' : 'false');
+        return rendered;
+      }).join('\n');
+    });
+
+    // BackgroundImageUrl scalar
+    const bgImage = bcPool.backgroundImageUrl || bcPool.imageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80';
+    output = output.replace(/\{\{\s*BackgroundImageUrl\s*\}\}/gi, bgImage);
+
+    // 6h. Handlebars {{#if Property}}...{{/if}} and {{#unless Property}}...{{/unless}} Conditionals
     const ifRegex = /\{\{#if\s+([\w\.]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/gi;
     output = output.replace(ifRegex, (_match, prop, ifBody, elseBody) => {
       const p = prop.trim();
