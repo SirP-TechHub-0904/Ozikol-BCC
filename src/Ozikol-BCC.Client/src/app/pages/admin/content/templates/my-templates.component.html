@@ -1124,48 +1124,50 @@
               <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 12px 16px;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                   <span class="material-symbols-outlined text-primary" style="font-size: 18px;">widgets</span>
-                  <h5 style="margin: 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">PageSection & PageSectionList Content Engine</h5>
+                  <h5 style="margin: 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">{{ activePreviewItem ? activePreviewItem.name : 'Body Section Content Engine' }}</h5>
                 </div>
                 <p style="margin: 0; font-size: 11.5px; color: #64748b; line-height: 1.4;">
-                  Configure section-level headlines, extended descriptions, CTAs, and repeatable list items. Fully synchronized with your CMS and database models.
+                  Configure section headlines, narratives, repeatable cards, and contact points tailored specifically for this section.
                 </p>
               </div>
 
-              <!-- Main Title & Eyebrow -->
-              <div class="form-group">
+              <!-- Main Title (Always present in all 9 body templates) -->
+              <div class="form-group" *ngIf="templateUses('Title')">
                 <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Empowering Modern Organizations" />
               </div>
 
-              <div class="form-group">
+              <!-- Mini Title / Eyebrow (Only shown if template uses MiniTitle) -->
+              <div class="form-group" *ngIf="templateUses('MiniTitle')">
                 <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. NEXT-GENERATION PLATFORM" />
               </div>
 
-              <!-- Primary & Extended Descriptions -->
-              <div class="form-group full-width">
+              <!-- Primary Description (Only shown if template uses Description) -->
+              <div class="form-group full-width" *ngIf="templateUses('Description')">
                 <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
                 <textarea [(ngModel)]="previewContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Primary overview narrative..."></textarea>
               </div>
 
-              <div class="form-group full-width">
+              <!-- Full Extended Description (Only shown if template uses FullDescription) -->
+              <div class="form-group full-width" *ngIf="templateUses('FullDescription')">
                 <label class="form-lbl" [innerText]="'FULL EXTENDED DESCRIPTION ({{ FullDescription }})'"></label>
-                <textarea [(ngModel)]="previewContent.fullDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Secondary extended narrative (used in split sections and mission overviews)..."></textarea>
+                <textarea [(ngModel)]="previewContent.fullDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Secondary extended narrative..."></textarea>
               </div>
 
-              <!-- Images -->
-              <div class="form-group">
+              <!-- Images (Only shown if template uses ImageUrl / SecondImageUrl) -->
+              <div class="form-group" *ngIf="templateUses('ImageUrl')">
                 <label class="form-lbl" [innerText]="'PRIMARY IMAGE URL ({{ ImageUrl }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('SecondImageUrl') || templateUses('SecondUrl')">
                 <label class="form-lbl" [innerText]="'SECONDARY IMAGE / OVERLAY URL ({{ SecondImageUrl }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.secondImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
               </div>
 
-              <!-- Action Buttons -->
-              <div class="form-group">
+              <!-- Action Buttons (Only shown if template uses ButtonText) -->
+              <div class="form-group" *ngIf="templateUses('ButtonText') || templateUses('ButtonLink')">
                 <div style="display: flex; gap: 10px;">
                   <div style="flex: 1;">
                     <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
@@ -1178,7 +1180,8 @@
                 </div>
               </div>
 
-              <div class="form-group">
+              <!-- Secondary Action Buttons (Only shown if template uses SecondaryButtonText) -->
+              <div class="form-group" *ngIf="templateUses('SecondaryButtonText') || templateUses('SecondaryButtonLink')">
                 <div style="display: flex; gap: 10px;">
                   <div style="flex: 1;">
                     <label class="form-lbl" [innerText]="'SECONDARY BUTTON TEXT ({{ SecondaryButtonText }})'"></label>
@@ -1191,46 +1194,46 @@
                 </div>
               </div>
 
-              <!-- Direct Link & YouTube Video -->
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'DIRECT URL LINK ({{ DirectUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.directUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://external-resource.com" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeUrlLink }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.youtubeUrlLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
-              </div>
-
-              <!-- Contact & Office Information -->
-              <div class="form-group">
+              <!-- Contact & Office Information (Only shown if template uses Email, Phone, Address, WorkingHours) -->
+              <div class="form-group" *ngIf="templateUses('Email')">
                 <label class="form-lbl" [innerText]="'CONTACT EMAIL ({{ Email }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.email" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="contact@organization.com" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('Phone')">
                 <label class="form-lbl" [innerText]="'PHONE NUMBER ({{ Phone }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.phone" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="+1 (555) 019-2834" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('Address')">
                 <label class="form-lbl" [innerText]="'OFFICE ADDRESS ({{ Address }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.address" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="100 Innovation Parkway, Suite 400" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('WorkingHours')">
                 <label class="form-lbl" [innerText]="'WORKING HOURS ({{ WorkingHours }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.workingHours" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Monday - Friday: 8:00 AM - 6:00 PM" />
               </div>
 
+              <!-- Direct Link & YouTube Video (Only shown if template uses them) -->
+              <div class="form-group" *ngIf="templateUses('DirectUrl')">
+                <label class="form-lbl" [innerText]="'DIRECT URL LINK ({{ DirectUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.directUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://external-resource.com" />
+              </div>
+
+              <div class="form-group" *ngIf="templateUses('YoutubeUrlLink') || templateUses('YoutubeVideo')">
+                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeUrlLink }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.youtubeUrlLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
+              </div>
+
               <!-- Repeatable Card Loop (PageSectionLists) -->
-              <div class="form-group full-width">
+              <div class="form-group full-width" *ngIf="templateUses('PageSectionLists')">
                 <div class="lbl-with-note">
                   <div>
-                    <label class="form-lbl" style="margin-bottom: 2px;">REPEATABLE CARDS / SUB-ITEMS (PageSectionLists Loop)</label>
-                    <span style="font-size: 11px; color: #64748b;">Powers 3-column feature grids, metric counters, testimonials, and FAQ accordion items.</span>
+                    <label class="form-lbl text-primary fw-bold" style="margin-bottom: 2px;">{{ getRepeatableSectionTitle() | uppercase }}</label>
+                    <span style="font-size: 11px; color: #64748b;">Live repeatable list items. Add, edit, or remove items to customize the layout.</span>
                   </div>
-                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add List Item</button>
+                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add Item</button>
                 </div>
 
                 <div class="subitems-list">
@@ -1239,7 +1242,7 @@
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="subitem-badge">#{{ i + 1 }}</span>
                         <span *ngIf="item.iconText" class="badge bg-light text-dark border d-inline-flex align-items-center gap-1" style="font-size: 11px; padding: 2px 8px;">
-                          <i class="material-symbols-outlined" style="font-size: 14px;">{{ item.iconText }}</i>
+                          <i [ngClass]="item.iconText.startsWith('fa-') ? item.iconText : 'material-symbols-outlined'" style="font-size: 14px;">{{ item.iconText.startsWith('fa-') ? '' : item.iconText }}</i>
                           <span>{{ item.iconText }}</span>
                         </span>
                         <span *ngIf="item.miniTitle" class="badge bg-primary-subtle text-primary" style="font-size: 10.5px;">{{ item.miniTitle }}</span>
@@ -1250,38 +1253,34 @@
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Icon Glyph / Class (IconText)</label>
-                        <input type="text" [(ngModel)]="item.iconText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. verified_user, sync, rocket" />
+                      <div *ngIf="templateUses('IconText') || templateUses('Icon')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Icon Glyph or Class (IconText)</label>
+                        <input type="text" [(ngModel)]="item.iconText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. fa-solid fa-check or verified_user" />
                       </div>
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Eyebrow / Subtitle / Metric Unit (MiniTitle)</label>
+                      <div *ngIf="templateUses('MiniTitle')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Eyebrow / Subtitle / Metric (MiniTitle)</label>
                         <input type="text" [(ngModel)]="item.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. 01, 99.9%, SECURITY" />
                       </div>
                     </div>
 
                     <div style="margin-bottom: 8px;">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Card Title / Headline (Title)</label>
-                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12.5px; font-weight: 600; height: 34px;" placeholder="Card Title or Question" />
+                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Headline / Title (Title)</label>
+                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12.5px; font-weight: 600; height: 34px;" placeholder="Item Title, Metric Number, or Question" />
                     </div>
 
-                    <div style="margin-bottom: 8px;">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Card Narrative / Answer (Description)</label>
-                      <textarea [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" style="font-size: 12px;" placeholder="Card description or FAQ answer..."></textarea>
+                    <div style="margin-bottom: 8px;" *ngIf="templateUses('Description')">
+                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Narrative / Details (Description)</label>
+                      <textarea [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" style="font-size: 12px;" placeholder="Item description, metric label, or FAQ answer..."></textarea>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Extra Detail / Footnote (MoreDescription)</label>
-                        <input type="text" [(ngModel)]="item.moreDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Verified by ISO audit" />
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" *ngIf="templateUses('MoreDescription') || templateUses('ButtonText')">
+                      <div *ngIf="templateUses('MoreDescription')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Role / Company / Extra (MoreDescription)</label>
+                        <input type="text" [(ngModel)]="item.moreDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Managing Director" />
                       </div>
-                      <div>
+                      <div *ngIf="templateUses('ButtonText')">
                         <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Button Text (ButtonText)</label>
                         <input type="text" [(ngModel)]="item.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Learn More" />
-                      </div>
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Button Link (ButtonLink)</label>
-                        <input type="text" [(ngModel)]="item.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="# or /service" />
                       </div>
                     </div>
                   </div>

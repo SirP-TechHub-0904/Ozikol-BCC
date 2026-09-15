@@ -1872,6 +1872,31 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.previewViewport = 'desktop';
     this.previewModalTab = 'preview';
 
+    // 1. Fully reset previewContent to clean blanks so unused properties from previous templates never leak
+    this.previewContent = {
+      title: '',
+      miniTitle: '',
+      description: '',
+      fullDescription: '',
+      imageUrl: '',
+      secondImageUrl: '',
+      buttonText: '',
+      buttonLink: '',
+      secondaryButtonText: '',
+      secondaryButtonLink: '',
+      directUrl: '',
+      youtubeUrlLink: '',
+      quote: '',
+      email: '',
+      phone: '',
+      address: '',
+      workingHours: '',
+      formKey: '',
+      customClass: '',
+      backgroundColor: '',
+      items: []
+    };
+
     // Populate initial sample content from template's unique DefaultContentJson if available
     let hydratedFromBlueprint = false;
     if (item.defaultContentJson) {
@@ -2044,14 +2069,55 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       };
     }
 
-    if (!hydratedFromBlueprint) {
+    if (!this.previewContent.title) {
       if (item.previewTitle) this.previewContent.title = item.previewTitle;
       else if (item.name) this.previewContent.title = item.name;
+    }
 
+    if (!this.previewContent.description) {
       if (item.previewBody) this.previewContent.description = item.previewBody;
       else if (item.description) this.previewContent.description = item.description;
+    }
 
-      if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+    if (!this.previewContent.miniTitle && item.previewSubtitle) {
+      this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+    }
+
+    // Ensure list items are populated if this section template uses PageSectionLists
+    if (this.previewContent.items.length === 0 && this.templateUses('PageSectionLists')) {
+      const v = (item.variantCode || item.name || '').toLowerCase();
+      if (v.includes('requestservice')) {
+        this.previewContent.items = [
+          { title: 'Dedicated Solutions Lead', description: 'Direct engagement with an enterprise systems architect.', iconText: 'fa-solid fa-check', sortOrder: 1 },
+          { title: 'Feasibility & Scope Assessment', description: 'Actionable roadmap, architectural fit, and resource modeling.', iconText: 'fa-solid fa-check', sortOrder: 2 },
+          { title: 'Client Confidentiality & NDA', description: 'Strict confidentiality agreements and secure communication channels guaranteed.', iconText: 'fa-solid fa-check', sortOrder: 3 }
+        ];
+      } else if (v.includes('metric') || v.includes('counter')) {
+        this.previewContent.items = [
+          { title: '12,500+', description: 'Verified Members', iconText: 'fa-solid fa-users text-primary', sortOrder: 1 },
+          { title: '99.98%', description: 'System Reliability', iconText: 'fa-solid fa-server text-success', sortOrder: 2 },
+          { title: '45+', description: 'Global Chapters', iconText: 'fa-solid fa-earth-americas text-info', sortOrder: 3 },
+          { title: '24/7', description: 'Priority Support', iconText: 'fa-solid fa-headset text-warning', sortOrder: 4 }
+        ];
+      } else if (v.includes('faq') || v.includes('accordion')) {
+        this.previewContent.items = [
+          { title: 'How does our organization tailor its services to your business needs?', description: 'We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements.', sortOrder: 1 },
+          { title: 'What kind of ongoing support and collaboration can you expect?', description: 'Every client is paired with a dedicated account lead and receives regular milestone reviews and responsive technical support.', sortOrder: 2 },
+          { title: 'What are your standard compliance and data security standards?', description: 'We enforce enterprise-grade AES-256 encryption, strict role-based authorization protocols, and SOC2-compliant handling.', sortOrder: 3 }
+        ];
+      } else if (v.includes('testimonial') || v.includes('review')) {
+        this.previewContent.items = [
+          { title: 'Sarah Adams', miniTitle: 'SA', description: 'Working with our partners transformed our operational efficiency. Their team delivered outstanding results from day one.', moreDescription: 'Chief Operating Officer', sortOrder: 1 },
+          { title: 'Marcus Kim', miniTitle: 'MK', description: 'Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner.', moreDescription: 'Managing Director', sortOrder: 2 },
+          { title: 'Elena Rostova', miniTitle: 'EL', description: 'The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time.', moreDescription: 'VP of Business Development', sortOrder: 3 }
+        ];
+      } else {
+        this.previewContent.items = [
+          { title: 'Data Security & Privacy', description: 'Enterprise-grade encryption, role-based access management, and proactive compliance protection.', iconText: 'fa-solid fa-shield-halved', sortOrder: 1 },
+          { title: 'Collaboration Hub', description: 'Unified communication channels, real-time dispatches, and organizational announcements.', iconText: 'fa-solid fa-comments', sortOrder: 2 },
+          { title: 'Operational Efficiency', description: 'Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.', iconText: 'fa-solid fa-bolt', sortOrder: 3 }
+        ];
+      }
     }
 
     this.previewModalTab = 'preview';
@@ -2233,6 +2299,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   onPreviewContentChange(): void {
     this.updateSinglePreviewHtml();
+  }
+
+  /**
+   * Checks whether the currently active template uses a specific placeholder or loop token.
+   * @param token The token or pattern to test (e.g. 'ButtonText', 'ImageUrl', 'PageSectionLists', 'Phone').
+   * @returns True if the active template HTML contains the token.
+   */
+  templateUses(token: string): boolean {
+    if (!this.activePreviewItem?.htmlTemplate) return false;
+    const t = this.activePreviewItem.htmlTemplate;
+    const regex = new RegExp(`\\{\\{\\s*(?:#each\\s+|#if\\s+|#unless\\s+)?(?:PageSectionLists\\.)?\\s*${token}\\b`, 'i');
+    return regex.test(t);
+  }
+
+  /**
+   * Returns a human-friendly label for the PageSectionLists repeater matching the active template variant.
+   * @returns Context-specific section title.
+   */
+  getRepeatableSectionTitle(): string {
+    const code = this.activePreviewItem?.variantCode || this.activePreviewItem?.name || '';
+    if (code.includes('RequestService')) return 'Engagement Standards / Deliverables';
+    if (code.includes('MetricsCounter') || code.includes('Counter') || code.includes('Metric')) return 'Key Performance Metrics & Stat Counters';
+    if (code.includes('Faq') || code.includes('Accordion')) return 'Frequently Asked Questions & Answers';
+    if (code.includes('Testimonial') || code.includes('Review')) return 'Client Testimonials & Ratings';
+    if (code.includes('FeatureGrid') || code.includes('Capability')) return 'Core Capabilities & Feature Cards';
+    if (code.includes('Mission') || code.includes('Split')) return 'Strategic Pillars & Standards';
+    return 'Repeatable Cards / Section List Items';
   }
 
   /**
