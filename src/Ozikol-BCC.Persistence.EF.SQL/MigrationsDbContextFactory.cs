@@ -38,7 +38,7 @@ public class MigrationsDbContextFactory : IDesignTimeDbContextFactory<DashboardD
             return fromEnvironment;
         }
 
-        var fromAppSettings = ReadTenantConnectionString(Path.Combine(root, "src", "Ozikol-BCC.Website", "appsettings.json"));
+        var fromAppSettings = ReadTenantConnectionString(Path.Combine(root, "src", "Ozikol-BCC.Api", "appsettings.json"));
         if (!string.IsNullOrWhiteSpace(fromAppSettings))
         {
             return fromAppSettings;

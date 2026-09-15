@@ -1,8 +1,0 @@
-@using MediatR
-@using Ozikol_BCC.Application.Queries.SliderQueries
-@inject IMediator Mediator
-@{
-    var sliderData = await Mediator.Send(new GetSliderAggregatedDataQuery());
-    var config = sliderData.ConfigSetting;
-}
-@ViewBag.ConfigSetting.CompanyName
