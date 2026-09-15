@@ -1300,8 +1300,59 @@ export interface CodeInjectionTag {
               </span>
             </ng-container>
 
+            <!-- Footer Category Ribbon -->
+            <ng-container *ngIf="activePreviewItem?.category === 'footer'">
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
+                  <span class="material-symbols-outlined chip-icon">storefront</span>
+                  <span [innerText]="'+ {{ BrandIdentity }}'"></span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandIdentity', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandIdentity', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ LogoUrl }}')" [innerText]="'+ {{ LogoUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LogoUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LogoUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Copyright }}')" [innerText]="'+ {{ Copyright }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Copyright', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Copyright', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertCategoryPagesLoopSnippet()" title="Loop published pages in a named category enabled for footer">
+                  <span class="material-symbols-outlined chip-icon">folder</span>
+                  <span>+ Category Pages Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CategoryPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CategoryPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertTaggedPagesLoopSnippet()" title="Loop published pages with a specific tag (ShowInFooter=true)">
+                  <span class="material-symbols-outlined chip-icon">sell</span>
+                  <span>+ Tagged Pages Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('TaggedPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('TaggedPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertLegalPagesLoopSnippet()" title="Loop published legal compliance documents (ShowInFooter=true)">
+                  <span class="material-symbols-outlined chip-icon">gavel</span>
+                  <span>+ Legal Pages Loop</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LegalPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LegalPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-form" (click)="insertFooterFormSnippet()" title="Embed an active published form (e.g. newsletter subscribe)">
+                  <span class="material-symbols-outlined chip-icon">dynamic_form</span>
+                  <span>+ Form Embed</span>
+                </button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+            </ng-container>
+
             <!-- Other Categories Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero'">
+            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer'">
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>
@@ -4798,6 +4849,41 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'YouTube embed URL for background or modal video playback.',
       cmsPath: 'Admin Console > Content Console > Sliders > Edit Slider > YouTube Video',
       example: '<iframe src="{{ YoutubeVideo }}"></iframe>'
+    },
+    Copyright: {
+      name: 'Copyright Notice',
+      token: '{{ Copyright }}',
+      description: 'Auto-generated copyright statement with current year and brand name.',
+      cmsPath: 'Admin Console > Settings > General / Branding',
+      example: '<p>{{ Copyright }}</p>'
+    },
+    CategoryPages: {
+      name: 'Category Pages Loop',
+      token: '{{#each CategoryPages "CategoryName"}}...{{/each}}',
+      description: 'Iterates through published pages assigned to a specific category where ShowInFooter is enabled.',
+      cmsPath: 'Admin Console > Content Console > Pages (ShowInFooter = true)',
+      example: '{{#each CategoryPages "Services"}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}'
+    },
+    TaggedPages: {
+      name: 'Tagged Pages Loop',
+      token: '{{#each TaggedPages "tag-name"}}...{{/each}}',
+      description: 'Iterates through published pages assigned a specific tag where ShowInFooter is enabled.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Page Tags',
+      example: '{{#each TaggedPages "quick-links"}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}'
+    },
+    LegalPages: {
+      name: 'Legal Pages Loop',
+      token: '{{#each LegalPages}}...{{/each}}',
+      description: 'Iterates through published legal compliance documents (Privacy Policy, Terms, etc.) where ShowInFooter is enabled.',
+      cmsPath: 'Admin Console > Content Console > Pages > Edit Page > Is Legal Document',
+      example: '{{#each LegalPages}}<li><a href="{{ Url }}">{{ Title }}</a></li>{{/each}}'
+    },
+    Form: {
+      name: 'Embedded Form',
+      token: '{{ Form "FormKey" }}',
+      description: 'Embeds an active published form component by key (e.g. newsletter subscribe or contact).',
+      cmsPath: 'Admin Console > Content Console > Forms',
+      example: '{{ Form "Newsletter_Subscribe" }}'
     }
   };
 
@@ -6199,10 +6285,32 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Switches the active preview modal tab, initializing or refreshing Monaco Editor instances as needed.
+   * Switches the active preview modal tab, releasing orphaned Monaco Editor instances as needed
+   * and initializing fresh editors when navigating to code tabs.
+   * Disposing instances when switching away prevents Angular's *ngIf from leaving stale DOM bindings.
    * @param tab The selected preview modal tab.
    */
   setPreviewModalTab(tab: 'preview' | 'content' | 'html' | 'css' | 'js'): void {
+    // Dispose orphaned Monaco editor instances when switching away from code tabs
+    if (this.previewModalTab === 'html' && tab !== 'html') {
+      if (this.monacoInstanceHtml) {
+        this.monacoInstanceHtml.dispose();
+        this.monacoInstanceHtml = null;
+      }
+    }
+    if (this.previewModalTab === 'css' && tab !== 'css') {
+      if (this.monacoInstanceCss) {
+        this.monacoInstanceCss.dispose();
+        this.monacoInstanceCss = null;
+      }
+    }
+    if (this.previewModalTab === 'js' && tab !== 'js') {
+      if (this.monacoInstanceJs) {
+        this.monacoInstanceJs.dispose();
+        this.monacoInstanceJs = null;
+      }
+    }
+
     this.previewModalTab = tab;
     if (tab === 'html') {
       this.initMonacoHtmlEditor();
@@ -6443,20 +6551,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       const container = this.monacoHtmlContainer?.nativeElement;
-      if (!container) return;
+      if (!container || !container.isConnected) return;
 
       this.loadMonaco().then((monaco) => {
         this.loadingMonaco = false;
         this.monacoReady = true;
 
         if (this.monacoInstanceHtml) {
-          const currentVal = this.monacoInstanceHtml.getValue();
-          const targetVal = this.activePreviewItem?.htmlTemplate || '';
-          if (currentVal !== targetVal) {
-            this.monacoInstanceHtml.setValue(targetVal);
+          const domNode = this.monacoInstanceHtml.getDomNode?.();
+          if (!domNode || !domNode.isConnected || domNode.parentElement !== container) {
+            this.monacoInstanceHtml.dispose();
+            this.monacoInstanceHtml = null;
+          } else {
+            const currentVal = this.monacoInstanceHtml.getValue();
+            const targetVal = this.activePreviewItem?.htmlTemplate || '';
+            if (currentVal !== targetVal) {
+              this.monacoInstanceHtml.setValue(targetVal);
+            }
+            this.monacoInstanceHtml.layout();
+            return;
           }
-          this.monacoInstanceHtml.layout();
-          return;
         }
 
         this.monacoInstanceHtml = monaco.editor.create(container, {
@@ -6502,14 +6616,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (!this.activePreviewItem) return;
     setTimeout(() => {
       const container = this.monacoCssContainer?.nativeElement;
-      if (!container) return;
+      if (!container || !container.isConnected) return;
 
       this.loadMonaco().then((monaco) => {
         this.monacoReady = true;
         if (this.monacoInstanceCss) {
-          this.monacoInstanceCss.setValue(this.activePreviewItem?.cssStyles || '');
-          this.monacoInstanceCss.layout();
-          return;
+          const domNode = this.monacoInstanceCss.getDomNode?.();
+          if (!domNode || !domNode.isConnected || domNode.parentElement !== container) {
+            this.monacoInstanceCss.dispose();
+            this.monacoInstanceCss = null;
+          } else {
+            this.monacoInstanceCss.setValue(this.activePreviewItem?.cssStyles || '');
+            this.monacoInstanceCss.layout();
+            return;
+          }
         }
 
         this.monacoInstanceCss = monaco.editor.create(container, {
@@ -6550,14 +6670,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (!this.activePreviewItem || !this.activePreviewItem.jsScript) return;
     setTimeout(() => {
       const container = this.monacoJsContainer?.nativeElement;
-      if (!container) return;
+      if (!container || !container.isConnected) return;
 
       this.loadMonaco().then((monaco) => {
         this.monacoReady = true;
         if (this.monacoInstanceJs) {
-          this.monacoInstanceJs.setValue(this.activePreviewItem?.jsScript || '');
-          this.monacoInstanceJs.layout();
-          return;
+          const domNode = this.monacoInstanceJs.getDomNode?.();
+          if (!domNode || !domNode.isConnected || domNode.parentElement !== container) {
+            this.monacoInstanceJs.dispose();
+            this.monacoInstanceJs = null;
+          } else {
+            this.monacoInstanceJs.setValue(this.activePreviewItem?.jsScript || '');
+            this.monacoInstanceJs.layout();
+            return;
+          }
         }
 
         this.monacoInstanceJs = monaco.editor.create(container, {
@@ -6682,6 +6808,85 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   <a href="{{ VideoLink }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold"><i class="fa-solid fa-play me-1"></i> {{ VideoButtonText }}</a>
 </div>`;
     this.insertTokenAtModalCursor(ctaSnippet);
+  }
+
+  /**
+   * Inserts a self-contained footer column iterating through published pages in a named category.
+   * Resolves the first available category name from loaded editor tokens or preview context,
+   * defaulting to "Services".
+   */
+  insertCategoryPagesLoopSnippet(): void {
+    let catName = 'Services';
+    if (this.editorTokens?.footerGroups && this.editorTokens.footerGroups.length > 0) {
+      const first = this.editorTokens.footerGroups[0];
+      if (first?.categoryName || first?.title) {
+        catName = first.categoryName || first.title || 'Services';
+      }
+    } else if (this.previewFooterContent?.categories && this.previewFooterContent.categories.length > 0) {
+      const first = this.previewFooterContent.categories[0];
+      if (first?.name || first?.displayTitle) {
+        catName = first.name || first.displayTitle || 'Services';
+      }
+    }
+
+    const snippet = `<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">${catName}</h4>
+  <ul class="oz-footer-col-links">
+    {{#each CategoryPages "${catName}"}}
+    <li><a href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a self-contained footer column iterating through published pages with a specific tag.
+   * Resolves the first active tag from loaded editor tokens if available, defaulting to "quick-links".
+   */
+  insertTaggedPagesLoopSnippet(): void {
+    let tagName = 'quick-links';
+    if (this.editorTokens?.taggedPages && this.editorTokens.taggedPages.length > 0) {
+      const first = this.editorTokens.taggedPages[0];
+      if (first?.tag) {
+        tagName = first.tag || 'quick-links';
+      }
+    }
+
+    const displayTitle = tagName.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const snippet = `<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">${displayTitle}</h4>
+  <ul class="oz-footer-col-links">
+    {{#each TaggedPages "${tagName}"}}
+    <li><a href="{{ Url }}">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a standardized legal documents loop snippet for compliance links (Privacy, Terms, Cookies).
+   */
+  insertLegalPagesLoopSnippet(): void {
+    const snippet = `<ul class="oz-footer-legal-links">
+  {{#each LegalPages}}
+  <li><a href="{{ Url }}">{{ Title }}</a></li>
+  {{/each}}
+</ul>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts an embedded form component snippet for the footer (e.g. newsletter subscribe).
+   */
+  insertFooterFormSnippet(): void {
+    const snippet = `<div class="oz-footer-newsletter">
+  <h4 class="oz-footer-col-title">Stay Connected</h4>
+  <p class="oz-footer-desc">Subscribe to our newsletter for the latest updates.</p>
+  {{ Form "Newsletter_Subscribe" }}
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
   }
 
   /**
@@ -7030,14 +7235,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       let pages: any[] = [];
       const normalized = (catName || '').toLowerCase().trim();
 
-      const categories = ctx.categories || this.previewFooterContent.categories;
+      const categories = ctx.categories || this.editorTokens?.footerGroups || this.previewFooterContent.categories;
       const found = categories?.find((c: any) =>
         (c.name && c.name.toLowerCase() === normalized) ||
-        (c.displayTitle && c.displayTitle.toLowerCase() === normalized)
+        (c.displayTitle && c.displayTitle.toLowerCase() === normalized) ||
+        (c.categoryName && c.categoryName.toLowerCase() === normalized) ||
+        (c.title && c.title.toLowerCase() === normalized)
       );
 
       if (found?.pages && found.pages.length > 0) {
-        pages = found.pages;
+        // Enforce strict visibility rules: must be published and enabled for footer display
+        pages = found.pages.filter((p: any) =>
+          (p.publish === undefined || p.publish === true) &&
+          (p.showInFooter === undefined || p.showInFooter === true)
+        );
+      } else if (this.availablePages && Array.isArray(this.availablePages)) {
+        pages = this.availablePages.filter((p: any) =>
+          p.publish !== false &&
+          p.showInFooter !== false &&
+          (p.pageCategory && p.pageCategory.toLowerCase().trim() === normalized)
+        );
       } else if (normalized.includes('service') || normalized.includes('solution')) {
         pages = [
           { title: 'Strategic Consulting', url: '/strategic-advisory' },
@@ -7067,17 +7284,36 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     output = output.replace(taggedPagesRegex, (_match, tag, innerTemplate) => {
       const normalized = (tag || '').toLowerCase().trim();
       let pages: any[] = [];
-      if (this.availablePages && Array.isArray(this.availablePages)) {
-        pages = this.availablePages.filter((p: any) =>
-          p.tags && p.tags.toLowerCase().includes(normalized)
-        );
+
+      // 1. Check live loaded tokens from GET /api/content/template-editor-tokens (already filtered by Publish && ShowInFooter)
+      if (this.editorTokens?.taggedPages && Array.isArray(this.editorTokens.taggedPages)) {
+        const found = this.editorTokens.taggedPages.find((g: any) => (g.tag || '').toLowerCase() === normalized);
+        if (found?.pages && Array.isArray(found.pages) && found.pages.length > 0) {
+          pages = found.pages;
+        }
       }
+
+      // 2. Fallback to availablePages with strict visibility enforcement
+      if (pages.length === 0 && this.availablePages && Array.isArray(this.availablePages)) {
+        pages = this.availablePages.filter((p: any) => {
+          const isPublished = p.publish !== false && p.isPublished !== false;
+          const isFooter = p.showInFooter !== false;
+          if (!isPublished || !isFooter || !p.tags) return false;
+
+          const tagsList = p.tags.toLowerCase().split(/[,;]/).map((t: string) => t.trim());
+          return tagsList.includes(normalized);
+        });
+      }
+
+      // 3. Fallback sample items for realistic preview display if tenant has no tagged pages yet
       if (pages.length === 0) {
+        const displayTag = tag ? (tag.charAt(0).toUpperCase() + tag.slice(1)) : 'Resource';
         pages = [
-          { title: `${tag} Resource 1`, url: '#' },
-          { title: `${tag} Resource 2`, url: '#' }
+          { title: `${displayTag} Overview`, url: '#' },
+          { title: `${displayTag} Documentation`, url: '#' }
         ];
       }
+
       return pages.map((p: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
@@ -7112,8 +7348,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     // 4. Loop over {{#each LegalPages}}...{{/each}}
     const legalRegex = /\{\{#each\s+LegalPages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(legalRegex, (_match, innerTemplate) => {
-      const legals = ctx.legalPages || this.previewFooterContent.legalPages;
-      return legals.map((lp: any) => {
+      let pages: any[] = [];
+      const legals = ctx.legalPages || this.editorTokens?.legalPages || this.previewFooterContent.legalPages;
+      if (legals && Array.isArray(legals) && legals.length > 0) {
+        pages = legals.filter((lp: any) =>
+          (lp.publish === undefined || lp.publish === true) &&
+          (lp.showInFooter === undefined || lp.showInFooter === true)
+        );
+      } else if (this.availablePages && Array.isArray(this.availablePages)) {
+        pages = this.availablePages.filter((p: any) =>
+          p.publish !== false &&
+          p.showInFooter !== false &&
+          p.isLegal === true
+        );
+      }
+
+      if (pages.length === 0) {
+        pages = [
+          { title: 'Privacy Policy', url: '/privacy-policy' },
+          { title: 'Terms of Service', url: '/terms-and-conditions' },
+          { title: 'Cookie Policy', url: '/cookie-policy' }
+        ];
+      }
+
+      return pages.map((lp: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, lp.title || '');
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, lp.url || '#');

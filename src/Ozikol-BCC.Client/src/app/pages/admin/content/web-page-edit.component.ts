@@ -227,6 +227,86 @@ import { ToastService } from '../../../core/services/toast.service';
                   <p>Displays in site footer links section.</p>
                 </div>
               </label>
+              <label class="toggle-card">
+                <input type="checkbox" [(ngModel)]="page.isLegal">
+                <div class="toggle-info">
+                  <strong>Is Legal Document</strong>
+                  <p [innerText]="'Surfaced to {{#each LegalPages}} and footer legal compliance tokens.'"></p>
+                </div>
+              </label>
+              <label class="toggle-card">
+                <input type="checkbox" [(ngModel)]="page.isMenuCTA">
+                <div class="toggle-info">
+                  <strong>Is Menu CTA Button</strong>
+                  <p>Highlighted as an action button in header navbars.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Page Tags & Custom Grouping -->
+          <div class="cms-card">
+            <div class="card-header-bar">
+              <h3>Page Tags & Custom Grouping</h3>
+            </div>
+            <p class="card-hint">
+              Assign custom tags to organize pages into custom footer columns (e.g. <code [innerText]="'{{#each TaggedPages &quot;quick-links&quot;}}'"></code>).
+            </p>
+
+            <!-- Active Chips -->
+            <div class="tags-chips-container" *ngIf="tagsList.length > 0">
+              <span class="tag-badge" *ngFor="let t of tagsList">
+                #{{ t }}
+                <button type="button" class="tag-remove-btn" (click)="removeTag(t)" title="Remove tag">
+                  <i class="fas fa-times"></i>
+                </button>
+              </span>
+            </div>
+
+            <!-- Tag Input + Suggestions -->
+            <div class="tag-input-wrapper">
+              <div class="tag-input-group">
+                <i class="fas fa-tag tag-icon"></i>
+                <input
+                  type="text"
+                  [(ngModel)]="newTagInput"
+                  (keydown.enter)="addTag($event)"
+                  (keydown.comma)="addTag($event)"
+                  (input)="filterTags()"
+                  placeholder="Type tag & press Enter (e.g. quick-links)..."
+                  class="tag-text-input"
+                />
+                <button type="button" class="btn-add-tag" (click)="addTag($event)" [disabled]="!newTagInput.trim()">
+                  <i class="fas fa-plus"></i> Add
+                </button>
+              </div>
+
+              <!-- Autocomplete Dropdown -->
+              <div class="tag-autocomplete-dropdown" *ngIf="filteredTags.length > 0">
+                <div
+                  class="tag-autocomplete-item"
+                  *ngFor="let suggestion of filteredTags"
+                  (click)="selectTag(suggestion)"
+                >
+                  <i class="fas fa-hashtag"></i>
+                  <span>{{ suggestion }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Existing Tenant Tags Quick-Pick -->
+            <div class="available-tags-shelf" *ngIf="unselectedAvailableTags.length > 0">
+              <small class="shelf-label">Existing site tags:</small>
+              <div class="shelf-chips">
+                <span
+                  class="shelf-chip"
+                  *ngFor="let at of unselectedAvailableTags"
+                  (click)="selectTag(at)"
+                  title="Click to add tag"
+                >
+                  + {{ at }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -342,6 +422,28 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .success-box { background: #f0fdf4; color: #166534; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
     .error-box { background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+
+    .card-hint { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 12px; line-height: 1.4; }
+    .card-hint code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #0284c7; }
+    .tags-chips-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .tag-badge { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; }
+    .tag-remove-btn { background: none; border: none; color: #93c5fd; cursor: pointer; padding: 0; font-size: 12px; display: inline-flex; align-items: center; transition: color 0.15s; }
+    .tag-remove-btn:hover { color: #dc2626; }
+    .tag-input-wrapper { position: relative; margin-bottom: 12px; }
+    .tag-input-group { display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff; }
+    .tag-icon { padding-left: 12px; color: #94a3b8; font-size: 14px; }
+    .tag-text-input { flex: 1; border: none; outline: none; padding: 8px 12px; font-size: 13px; color: #1e293b; }
+    .btn-add-tag { background: #f1f5f9; border: none; border-left: 1px solid #cbd5e1; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-add-tag:hover:not(:disabled) { background: #e2e8f0; color: #0f172a; }
+    .btn-add-tag:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tag-autocomplete-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 50; max-height: 160px; overflow-y: auto; }
+    .tag-autocomplete-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; color: #334155; cursor: pointer; transition: background 0.15s; }
+    .tag-autocomplete-item:hover { background: #f8fafc; color: #0050e5; }
+    .available-tags-shelf { display: flex; flex-direction: column; gap: 6px; }
+    .shelf-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .shelf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .shelf-chip { background: #f8fafc; border: 1px dashed #cbd5e1; color: #64748b; font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+    .shelf-chip:hover { background: #f0fdf4; border-color: #86efac; color: #166534; }
   `]
 })
 export class WebPageEditComponent implements OnInit {
@@ -355,6 +457,16 @@ export class WebPageEditComponent implements OnInit {
   successMessage = '';
   errorMessage = '';
 
+  // Free-form Tag Management
+  tagsList: string[] = [];
+  newTagInput = '';
+  availableTags: string[] = [];
+  filteredTags: string[] = [];
+
+  get unselectedAvailableTags(): string[] {
+    return this.availableTags.filter(t => !this.tagsList.includes(t.toLowerCase()));
+  }
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -366,8 +478,66 @@ export class WebPageEditComponent implements OnInit {
     this.pageId = this.route.snapshot.paramMap.get('id') || '';
     this.loadCategories();
     this.loadAllPages();
+    this.loadAvailableTags();
     if (this.pageId) {
       this.loadPage();
+    }
+  }
+
+  loadAvailableTags(): void {
+    this.api.get<any>('ContentApi/page-tags').subscribe({
+      next: (res) => {
+        this.availableTags = res?.data || [];
+      }
+    });
+  }
+
+  filterTags(): void {
+    const q = (this.newTagInput || '').trim().toLowerCase();
+    if (!q) {
+      this.filteredTags = [];
+      return;
+    }
+    this.filteredTags = this.availableTags.filter(
+      t => t.toLowerCase().includes(q) && !this.tagsList.includes(t.toLowerCase())
+    );
+  }
+
+  addTag(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    const clean = (this.newTagInput || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[,;]/g, '')
+      .replace(/\s+/g, '-');
+    if (clean && !this.tagsList.includes(clean)) {
+      this.tagsList.push(clean);
+      this.syncTags();
+    }
+    this.newTagInput = '';
+    this.filteredTags = [];
+  }
+
+  selectTag(tag: string): void {
+    const clean = tag.trim().toLowerCase();
+    if (clean && !this.tagsList.includes(clean)) {
+      this.tagsList.push(clean);
+      this.syncTags();
+    }
+    this.newTagInput = '';
+    this.filteredTags = [];
+  }
+
+  removeTag(tag: string): void {
+    this.tagsList = this.tagsList.filter(t => t !== tag);
+    this.syncTags();
+  }
+
+  syncTags(): void {
+    if (this.page) {
+      this.page.tags = this.tagsList.join(',');
     }
   }
 
@@ -377,6 +547,12 @@ export class WebPageEditComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         this.page = res?.data;
+        if (this.page) {
+          this.tagsList = (this.page.tags || '')
+            .split(',')
+            .map((t: string) => t.trim().toLowerCase())
+            .filter((t: string) => !!t);
+        }
       },
       error: (err) => {
         this.loading = false;
@@ -433,6 +609,8 @@ export class WebPageEditComponent implements OnInit {
   }
 
   savePage(): void {
+    this.syncTags();
+
     if (!this.page?.title?.trim()) {
       this.toast.warning('Page Title is required.');
       return;

@@ -202,6 +202,30 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves all unique tags currently assigned across all web pages.
+        /// Used for autocomplete in the page editor tags chips input.
+        /// </summary>
+        /// <returns>A sorted list of unique tag strings.</returns>
+        [HttpGet("page-tags")]
+        public async Task<IActionResult> GetPageTags()
+        {
+            var rawTags = await _context.WebPages
+                .Where(p => !string.IsNullOrWhiteSpace(p.Tags))
+                .Select(p => p.Tags!)
+                .ToListAsync();
+
+            var uniqueTags = rawTags
+                .SelectMany(t => t.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                .Select(t => t.Trim().ToLowerInvariant())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Distinct()
+                .OrderBy(t => t)
+                .ToList();
+
+            return Ok(ApiResponse<List<string>>.SuccessResponse(uniqueTags, "Page tags retrieved successfully."));
+        }
+
         [HttpPost("pages")]
         public async Task<IActionResult> CreatePage([FromBody] CreateWebPageRequest request)
         {
@@ -229,6 +253,9 @@ namespace Ozikol_BCC.Api.Controllers
                     ShowInMainMenu = request.ShowInMenu || request.ShowInMainMenu,
                     ShowInMenuDropDown = request.ShowInMenuDropDown,
                     ShowInFooter = request.ShowInFooter,
+                    IsLegal = request.IsLegal,
+                    IsMenuCTA = request.IsMenuCTA,
+                    Tags = request.Tags,
                     Publish = request.IsPublished || request.Publish,
                     SecurityPage = request.SecurityPage,
                     SortOrder = request.SortOrder,
@@ -273,6 +300,9 @@ namespace Ozikol_BCC.Api.Controllers
             existing.ShowInMainMenu = updated.ShowInMainMenu;
             existing.ShowInMenuDropDown = updated.ShowInMenuDropDown;
             existing.ShowInFooter = updated.ShowInFooter;
+            existing.IsLegal = updated.IsLegal;
+            existing.IsMenuCTA = updated.IsMenuCTA;
+            existing.Tags = updated.Tags;
             existing.SortOrder = updated.SortOrder;
             existing.PageCategoryId = updated.PageCategoryId == Guid.Empty ? null : updated.PageCategoryId;
             existing.ImageUrl = updated.ImageUrl;
@@ -1584,10 +1614,10 @@ namespace Ozikol_BCC.Api.Controllers
                     })
                     .ToList();
 
-                // 4. Legal Compliance Pages
+                // 4. Legal Compliance Pages (Only published and enabled for footer)
                 var legalPages = await _context.WebPages
                     .AsNoTracking()
-                    .Where(p => p.IsLegal && p.Publish)
+                    .Where(p => p.IsLegal && p.Publish && p.ShowInFooter)
                     .OrderBy(p => p.SortOrder)
                     .Select(p => new
                     {
@@ -1626,6 +1656,52 @@ namespace Ozikol_BCC.Api.Controllers
                     })
                     .ToListAsync();
 
+                // 4d. Tagged Pages for Footer Link Grouping (Publish == true && ShowInFooter == true && Tags != null)
+                var taggedWebPages = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.Publish && p.ShowInFooter && !string.IsNullOrWhiteSpace(p.Tags))
+                    .OrderBy(p => p.SortOrder)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        title = p.Title,
+                        slug = p.DirectUrl,
+                        url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                        tags = p.Tags
+                    })
+                    .ToListAsync();
+
+                var taggedPagesDict = new Dictionary<string, List<object>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in taggedWebPages)
+                {
+                    var tokens = (p.tags ?? "")
+                        .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(t => t.Trim())
+                        .Where(t => !string.IsNullOrWhiteSpace(t));
+
+                    foreach (var tag in tokens)
+                    {
+                        if (!taggedPagesDict.TryGetValue(tag, out var list))
+                        {
+                            list = new List<object>();
+                            taggedPagesDict[tag] = list;
+                        }
+                        list.Add(new
+                        {
+                            id = p.id,
+                            title = p.title,
+                            slug = p.slug,
+                            url = p.url
+                        });
+                    }
+                }
+
+                var taggedPages = taggedPagesDict.Select(kvp => new
+                {
+                    tag = kvp.Key,
+                    pages = kvp.Value
+                }).OrderBy(g => g.tag).ToList();
+
                 // 5. Tenant Brand Settings
                 var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
                 var brand = new
@@ -1651,6 +1727,7 @@ namespace Ozikol_BCC.Api.Controllers
                     topMenuItems = topMenuItems,
                     menuCtaButtons = menuCtaButtons,
                     footerGroups = footerGroups,
+                    taggedPages = taggedPages,
                     legalPages = legalPages,
                     brand = brand
                 }, "Template editor tokens loaded successfully."));
@@ -1923,6 +2000,9 @@ namespace Ozikol_BCC.Api.Controllers
         public bool ShowInMainMenu { get; set; } = true;
         public bool ShowInMenuDropDown { get; set; } = false;
         public bool ShowInFooter { get; set; } = true;
+        public bool IsLegal { get; set; } = false;
+        public bool IsMenuCTA { get; set; } = false;
+        public string? Tags { get; set; }
         public bool IsPublished { get; set; } = true;
         public bool Publish { get; set; } = true;
         public bool SecurityPage { get; set; } = false;
