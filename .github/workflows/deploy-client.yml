@@ -65,7 +65,7 @@ jobs:
           SOURCE: "publish-client/"
           TARGET: "/var/www/client"
 
-      # Ensure Nginx (www-data) has read access to the HTML/CSS/JS files
+      # Ensure Nginx (www-data) has read access to the HTML/CSS/JS files//
       - name: Set Permissions
         uses: appleboy/ssh-action@master
         with:
