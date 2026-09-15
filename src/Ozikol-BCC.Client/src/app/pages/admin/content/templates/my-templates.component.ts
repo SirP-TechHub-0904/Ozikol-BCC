@@ -621,6 +621,76 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Embeds an active published form component by key (e.g. newsletter subscribe or contact).',
       cmsPath: 'Admin Console > Content Console > Forms',
       example: '{{ Form "Newsletter_Subscribe" }}'
+    },
+    Articles: {
+      name: 'Articles Showcase Loop',
+      token: '{{#each Articles}}...{{/each}}',
+      description: 'Iterates through published articles for card grids and showcases.',
+      cmsPath: 'Admin Console > Content Console > Articles & Insights',
+      example: '{{#each Articles}}<div class="col-md-4">...</div>{{/each}}'
+    },
+    CoverImageUrl: {
+      name: 'Article Cover Image',
+      token: '{{ CoverImageUrl }}',
+      description: 'High-resolution featured cover photo for the article.',
+      cmsPath: 'Admin Console > Content Console > Articles > Edit Article > Featured Image',
+      example: '<img src="{{ CoverImageUrl }}" alt="{{ Title }}" />'
+    },
+    PublishedDate: {
+      name: 'Published Date',
+      token: '{{ PublishedDate }}',
+      description: 'Formatted date of article publication (e.g. Sep 14, 2026).',
+      cmsPath: 'Admin Console > Content Console > Articles > Published Date',
+      example: '<span>{{ PublishedDate }}</span>'
+    },
+    Excerpt: {
+      name: 'Article Excerpt',
+      token: '{{ Excerpt }}',
+      description: 'Introductory summary or teaser paragraph.',
+      cmsPath: 'Admin Console > Content Console > Articles > Summary',
+      example: '<p>{{ Excerpt }}</p>'
+    },
+    RecentArticles: {
+      name: 'Recent Articles Loop',
+      token: '{{#each RecentArticles}}...{{/each}}',
+      description: 'Iterates through the most recent articles for sidebar widgets.',
+      cmsPath: 'Admin Console > Content Console > Articles & Insights',
+      example: '{{#each RecentArticles}}...{{/each}}'
+    },
+    BlogCategories: {
+      name: 'Blog Categories Loop',
+      token: '{{#each BlogCategories}}...{{/each}}',
+      description: 'Iterates through topics and categories with live article counts.',
+      cmsPath: 'Admin Console > Content Console > Articles > Categories',
+      example: '{{#each BlogCategories}}<li>{{ Name }} ({{ PostCount }})</li>{{/each}}'
+    },
+    Article_Title: {
+      name: 'Main Article Title',
+      token: '{{ Article.Title }}',
+      description: 'Full title of the active article being displayed.',
+      cmsPath: 'Admin Console > Content Console > Articles > Title',
+      example: '<h1>{{ Article.Title }}</h1>'
+    },
+    Article_Body: {
+      name: 'Article Content Body',
+      token: '{{ Article.Body }}',
+      description: 'Full rich HTML body text of the article.',
+      cmsPath: 'Admin Console > Content Console > Articles > Content Editor',
+      example: '<div class="article-body">{{ Article.Body }}</div>'
+    },
+    Article_ReadTime: {
+      name: 'Estimated Read Time',
+      token: '{{ Article.ReadTime }}',
+      description: 'Calculated reading time (e.g. 5 min read).',
+      cmsPath: 'Admin Console > Content Console > Articles > Auto-calculated',
+      example: '<span>{{ Article.ReadTime }}</span>'
+    },
+    Article_AuthorName: {
+      name: 'Author Name',
+      token: '{{ Article.AuthorName }}',
+      description: 'Full name of the article author.',
+      cmsPath: 'Admin Console > Content Console > Articles > Author',
+      example: '<h6>Written by {{ Article.AuthorName }}</h6>'
     }
   };
 
@@ -2438,6 +2508,89 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   <h4 class="oz-footer-col-title">Stay Connected</h4>
   <p class="oz-footer-desc">Subscribe to our newsletter for the latest updates.</p>
   {{ Form "Newsletter_Subscribe" }}
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a standardized, responsive 3-column article showcase loop snippet matching Blog_CardGrid3 markup.
+   */
+  insertBlogArticlesLoopSnippet(): void {
+    const snippet = `<div class="row g-4">
+  {{#each Articles}}
+    <div class="col-md-4">
+      <div class="card border-0 rounded-4 overflow-hidden shadow-sm bg-white h-100 d-flex flex-column">
+        <div class="position-relative">
+          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="card-img-top object-fit-cover" style="height: 220px;" />
+          <span class="badge bg-white text-dark shadow-sm position-absolute top-0 start-0 m-3 px-3 py-1 rounded-pill small fw-bold">{{ Category }}</span>
+        </div>
+        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+          <span class="text-muted small mb-2 d-block"><i class="fa-regular fa-calendar me-1"></i>{{ PublishedDate }}</span>
+          <h5 class="fw-bold text-dark mb-2 line-clamp-2">{{ Title }}</h5>
+          <p class="text-muted small mb-4 line-clamp-3">{{ Excerpt }}</p>
+          <div class="mt-auto">
+            <a href="{{ Url }}" class="text-primary fw-bold small text-decoration-none d-inline-flex align-items-center gap-1">
+              <span>Read Article</span>
+              <span>&rarr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{/each}}
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a compact recent dispatches loop snippet for article sidebars.
+   */
+  insertBlogRecentSidebarSnippet(): void {
+    const snippet = `<div class="card border border-light-subtle rounded-4 p-4 shadow-sm bg-white">
+  <h6 class="fw-bold text-dark mb-3">Recent Dispatches</h6>
+  <div class="d-flex flex-column gap-3">
+    {{#each RecentArticles}}
+      <div class="d-flex gap-3 align-items-center">
+        <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="rounded-3 object-fit-cover flex-shrink-0" style="width: 60px; height: 60px;" />
+        <div>
+          <small class="text-muted d-block" style="font-size: 11px;">{{ PublishedDate }}</small>
+          <a href="{{ Url }}" class="fw-bold text-dark small text-decoration-none line-clamp-2">{{ Title }}</a>
+        </div>
+      </div>
+    {{/each}}
+  </div>
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts a categorized topics and taxonomy list loop with live post counts.
+   */
+  insertBlogCategoriesSnippet(): void {
+    const snippet = `<div class="card border border-light-subtle rounded-4 p-4 shadow-sm bg-white">
+  <h6 class="fw-bold text-dark mb-3">Topics & Categories</h6>
+  <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+    {{#each BlogCategories}}
+      <li class="d-flex justify-content-between align-items-center">
+        <a href="{{ Url }}" class="text-decoration-none text-secondary">{{ Name }}</a>
+        <span class="badge bg-light text-muted border">{{ PostCount }}</span>
+      </li>
+    {{/each}}
+  </ul>
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
+   * Inserts an author biography card snippet with portrait avatar, name, and background summary.
+   */
+  insertBlogAuthorBioSnippet(): void {
+    const snippet = `<div class="card border-0 bg-light rounded-4 p-4 d-flex flex-row gap-3 align-items-center">
+  <img src="{{ Article.AuthorAvatarUrl }}" alt="{{ Article.AuthorName }}" class="rounded-circle object-fit-cover" style="width: 64px; height: 64px;" />
+  <div>
+    <h6 class="fw-bold text-dark mb-1">Written by {{ Article.AuthorName }}</h6>
+    <p class="text-muted small mb-0">{{ Article.AuthorBio }}</p>
+  </div>
 </div>`;
     this.insertTokenAtModalCursor(snippet);
   }
