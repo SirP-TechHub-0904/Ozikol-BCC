@@ -671,12 +671,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       cmsPath: 'Admin Console > Content Console > Articles > Title',
       example: '<h1>{{ Article.Title }}</h1>'
     },
-    Article_Body: {
-      name: 'Article Content Body',
-      token: '{{ Article.Body }}',
-      description: 'Full rich HTML body text of the article.',
-      cmsPath: 'Admin Console > Content Console > Articles > Content Editor',
-      example: '<div class="article-body">{{ Article.Body }}</div>'
+    Article_Category: {
+      name: 'Article Category',
+      token: '{{ Article.Category }}',
+      description: 'Editorial topic or taxonomy badge of the article.',
+      cmsPath: 'Admin Console > Content Console > Articles > Category',
+      example: '<span class="badge">{{ Article.Category }}</span>'
+    },
+    Article_PublishedDate: {
+      name: 'Publication Date',
+      token: '{{ Article.PublishedDate }}',
+      description: 'Formatted date of publication (e.g. September 14, 2026).',
+      cmsPath: 'Admin Console > Content Console > Articles > Published Date',
+      example: '<span>{{ Article.PublishedDate }}</span>'
     },
     Article_ReadTime: {
       name: 'Estimated Read Time',
@@ -685,12 +692,54 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       cmsPath: 'Admin Console > Content Console > Articles > Auto-calculated',
       example: '<span>{{ Article.ReadTime }}</span>'
     },
+    Article_CoverImageUrl: {
+      name: 'Featured Banner Image',
+      token: '{{ Article.CoverImageUrl }}',
+      description: 'High-resolution wide header banner image.',
+      cmsPath: 'Admin Console > Content Console > Articles > Featured Image',
+      example: '<img src="{{ Article.CoverImageUrl }}" alt="{{ Article.Title }}" />'
+    },
+    Article_Body: {
+      name: 'Article Content Body',
+      token: '{{ Article.Body }}',
+      description: 'Full rich HTML body text of the article.',
+      cmsPath: 'Admin Console > Content Console > Articles > Content Editor',
+      example: '<div class="article-body">{{ Article.Body }}</div>'
+    },
+    Article_Tags: {
+      name: 'Article Tags Loop',
+      token: '{{#each Article.Tags}}...{{/each}}',
+      description: 'Iterates through topic tags assigned to the article.',
+      cmsPath: 'Admin Console > Content Console > Articles > Tags',
+      example: '{{#each Article.Tags}}<span class="badge">{{ this }}</span>{{/each}}'
+    },
     Article_AuthorName: {
       name: 'Author Name',
       token: '{{ Article.AuthorName }}',
       description: 'Full name of the article author.',
       cmsPath: 'Admin Console > Content Console > Articles > Author',
       example: '<h6>Written by {{ Article.AuthorName }}</h6>'
+    },
+    Article_AuthorRole: {
+      name: 'Author Role / Title',
+      token: '{{ Article.AuthorRole }}',
+      description: 'Professional title or organizational role of the author.',
+      cmsPath: 'Admin Console > Content Console > Articles > Author Role',
+      example: '<span>{{ Article.AuthorRole }}</span>'
+    },
+    Article_AuthorBio: {
+      name: 'Author Biography',
+      token: '{{ Article.AuthorBio }}',
+      description: 'Short professional biography summary for the author card.',
+      cmsPath: 'Admin Console > Content Console > Articles > Author Bio',
+      example: '<p>{{ Article.AuthorBio }}</p>'
+    },
+    Article_AuthorAvatarUrl: {
+      name: 'Author Portrait Photo',
+      token: '{{ Article.AuthorAvatarUrl }}',
+      description: 'Square avatar photograph of the author.',
+      cmsPath: 'Admin Console > Content Console > Articles > Author Avatar',
+      example: '<img src="{{ Article.AuthorAvatarUrl }}" alt="{{ Article.AuthorName }}" />'
     }
   };
 
@@ -699,12 +748,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     title: 'Platform Insights & Case Studies',
     miniTitle: 'LATEST KNOWLEDGE',
     description: 'Deep dives, architectural benchmarks, and best practices curated by our systems engineering team.',
+    buttonText: 'Browse All Articles →',
+    buttonLink: '/blog',
     viewAllButtonText: 'Browse All Articles →',
     viewAllButtonLink: '/blog',
     articles: [
       {
         title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
         summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+        excerpt: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
         coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
         category: 'Engineering & Architecture',
         authorName: 'Alex Rivera',
@@ -715,6 +767,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       {
         title: 'The Shift to Zero-Downtime Migration Pipelines',
         summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+        excerpt: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
         coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
         category: 'DevOps & Reliability',
         authorName: 'Sarah Chen',
@@ -725,6 +778,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       {
         title: 'Next-Gen Identity & Granular Role Governance',
         summary: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
+        excerpt: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
         coverImageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
         category: 'Cybersecurity',
         authorName: 'Marcus Vance',
@@ -732,6 +786,39 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         publishedDate: 'Aug 29, 2026',
         url: '/blog/next-gen-identity-governance'
       }
+    ]
+  };
+
+  /**
+   * Sample Content Replacements specifically for single article detail templates (e.g. Blog_ArticleDetail).
+   * Fully binds all article scalars, author metadata, tags, and sidebar loops.
+   */
+  previewBlogDetailContent = {
+    title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',
+    category: 'Technology & Cloud',
+    publishedDate: 'September 14, 2026',
+    readTime: '5 min read',
+    coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+    body: `<p class="lead">In an era of relentless digital expansion, organizations are increasingly challenged to balance agility, resilience, and operational security.</p>
+<p>Legacy architectures, once the bedrock of institutional workflows, now struggle to sustain the real-time processing demands of globally distributed systems. By transitioning toward unified hybrid cloud infrastructures, forward-thinking enterprises establish a modular foundation capable of horizontal scaling while preserving strict governance over proprietary data assets.</p>
+<h4>Strategic Architectural Foundations</h4>
+<p>A resilient multi-region deployment demands three non-negotiable pillars: programmatic infrastructure as code, continuous behavioral telemetries, and automated self-healing orchestration clusters.</p>`,
+    tags: ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'],
+    tagsInput: 'Cloud Architecture, Enterprise Security, Scalability, Automation',
+    authorName: 'Dr. Jennifer Miller',
+    authorRole: 'Principal Cloud Strategist & Enterprise Systems Architect',
+    authorBio: 'Principal Cloud Strategist and Enterprise Systems Architect with over 15 years leading high-availability transformations.',
+    authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    recentArticles: [
+      { title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics', publishedDate: 'Sep 10, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80', url: '/blog/sustainable-commerce-supply-chain' },
+      { title: 'AI-Driven Workflow Orchestration and Customer Personalization', publishedDate: 'Sep 06, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&auto=format&fit=crop&q=80', url: '/blog/ai-driven-workflow-orchestration' }
+    ],
+    categories: [
+      { name: 'Technology & Cloud', postCount: 14, url: '/blog?category=technology' },
+      { name: 'Enterprise Strategy', postCount: 9, url: '/blog?category=strategy' },
+      { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
+      { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
+      { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
     ]
   };
 
@@ -1809,10 +1896,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         ? { ...this.previewContent, ...this.previewFooterContent }
         : (this.activePreviewItem.category === 'menu')
         ? { ...this.previewContent, ...this.previewMenuContent }
-        : (this.activePreviewItem.category === 'hero')
-        ? { ...this.previewContent, ...this.previewHeroContent }
-        : (this.activePreviewItem.category === 'blog' || this.activePreviewItem.category === 'blog_detail')
-        ? { ...this.previewContent, ...this.previewBlogContent }
+        : (this.activePreviewItem.category === 'blog')
+        ? (this.isBlogDetailTemplate()
+            ? { ...this.previewContent, ...this.previewBlogDetailContent, article: this.previewBlogDetailContent }
+            : { ...this.previewContent, ...this.previewBlogContent, articles: this.previewBlogContent.articles })
         : this.previewContent;
       let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
       if (this.activePreviewItem.category === 'footer') {
@@ -1937,6 +2024,34 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   onPreviewContentChange(): void {
     this.updateSinglePreviewHtml();
+  }
+
+  /**
+   * Checks whether the current or specified template is a single article blog detail view (e.g. Blog_ArticleDetail).
+   * @param item Optional template item to test; defaults to activePreviewItem.
+   * @returns True if the template represents a single article detail layout.
+   */
+  isBlogDetailTemplate(item?: InstalledTemplateItem | null): boolean {
+    const target = item || this.activePreviewItem;
+    if (!target) return false;
+    const v = (target.variantCode || target.id || '').toLowerCase();
+    const name = (target.name || '').toLowerCase();
+    return v.includes('detail') || v.includes('single') || name.includes('detail') || name.includes('single');
+  }
+
+  /**
+   * Handles comma-separated tags input change in the Article Detail sample content editor.
+   */
+  onBlogDetailTagsChange(): void {
+    if (this.previewBlogDetailContent.tagsInput) {
+      this.previewBlogDetailContent.tags = this.previewBlogDetailContent.tagsInput
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+    } else {
+      this.previewBlogDetailContent.tags = [];
+    }
+    this.onPreviewContentChange();
   }
 
   addPreviewSubItem(): void {
@@ -2596,6 +2711,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Inserts an article tags loop snippet.
+   */
+  insertBlogTagsLoopSnippet(): void {
+    const snippet = `<div class="d-flex align-items-center gap-2">
+  <span class="fw-bold text-dark small">Tagged:</span>
+  {{#each Article.Tags}}
+    <span class="badge bg-light text-dark border">{{ this }}</span>
+  {{/each}}
+</div>`;
+    this.insertTokenAtModalCursor(snippet);
+  }
+
+  /**
    * Replaces a balanced Handlebars block {{#each BlockName}}...{{/each}}, properly
    * tracking depth to prevent premature truncation when nested {{#each ...}} loops exist.
    * @param template The raw HTML template string.
@@ -2698,6 +2826,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.previewBlogContent.articles.push({
       title: `Enterprise Case Study #${nextIdx}`,
       summary: 'Comprehensive analysis on infrastructure modernization and real-time transaction processing.',
+      excerpt: 'Comprehensive analysis on infrastructure modernization and real-time transaction processing.',
       coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
       category: 'Case Studies',
       authorName: 'Alex Rivera',
@@ -2717,7 +2846,130 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.onPreviewContentChange();
   }
 
+  addBlogRecentArticle(): void {
+    const nextIdx = this.previewBlogDetailContent.recentArticles.length + 1;
+    this.previewBlogDetailContent.recentArticles.push({
+      title: `Strategic Field Dispatch #${nextIdx}`,
+      publishedDate: 'Recently Published',
+      coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&auto=format&fit=crop&q=80',
+      url: `/blog/dispatch-${nextIdx}`
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeBlogRecentArticle(index: number): void {
+    if (this.previewBlogDetailContent.recentArticles.length <= 1) {
+      this.toast.warning('At least 1 recent article is required for sidebar preview.');
+      return;
+    }
+    this.previewBlogDetailContent.recentArticles.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
+  addBlogCategoryItem(): void {
+    const nextIdx = this.previewBlogDetailContent.categories.length + 1;
+    this.previewBlogDetailContent.categories.push({
+      name: `Specialty Topic ${nextIdx}`,
+      postCount: 3,
+      url: `/blog?category=topic-${nextIdx}`
+    });
+    this.onPreviewContentChange();
+  }
+
+  removeBlogCategoryItem(index: number): void {
+    if (this.previewBlogDetailContent.categories.length <= 1) {
+      this.toast.warning('At least 1 category is required for sidebar preview.');
+      return;
+    }
+    this.previewBlogDetailContent.categories.splice(index, 1);
+    this.onPreviewContentChange();
+  }
+
   resetPreviewContent(): void {
+    if (this.activePreviewItem?.category === 'blog') {
+      if (this.isBlogDetailTemplate()) {
+        this.previewBlogDetailContent = {
+          title: 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',
+          category: 'Technology & Cloud',
+          publishedDate: 'September 14, 2026',
+          readTime: '5 min read',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+          body: `<p class="lead">In an era of relentless digital expansion, organizations are increasingly challenged to balance agility, resilience, and operational security.</p>
+<p>Legacy architectures, once the bedrock of institutional workflows, now struggle to sustain the real-time processing demands of globally distributed systems. By transitioning toward unified hybrid cloud infrastructures, forward-thinking enterprises establish a modular foundation capable of horizontal scaling while preserving strict governance over proprietary data assets.</p>
+<h4>Strategic Architectural Foundations</h4>
+<p>A resilient multi-region deployment demands three non-negotiable pillars: programmatic infrastructure as code, continuous behavioral telemetries, and automated self-healing orchestration clusters.</p>`,
+          tags: ['Cloud Architecture', 'Enterprise Security', 'Scalability', 'Automation'],
+          tagsInput: 'Cloud Architecture, Enterprise Security, Scalability, Automation',
+          authorName: 'Dr. Jennifer Miller',
+          authorRole: 'Principal Cloud Strategist & Enterprise Systems Architect',
+          authorBio: 'Principal Cloud Strategist and Enterprise Systems Architect with over 15 years leading high-availability transformations.',
+          authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          recentArticles: [
+            { title: 'Sustainable Commerce: Optimizing Global Supply Chain Logistics', publishedDate: 'Sep 10, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&auto=format&fit=crop&q=80', url: '/blog/sustainable-commerce-supply-chain' },
+            { title: 'AI-Driven Workflow Orchestration and Customer Personalization', publishedDate: 'Sep 06, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&auto=format&fit=crop&q=80', url: '/blog/ai-driven-workflow-orchestration' }
+          ],
+          categories: [
+            { name: 'Technology & Cloud', postCount: 14, url: '/blog?category=technology' },
+            { name: 'Enterprise Strategy', postCount: 9, url: '/blog?category=strategy' },
+            { name: 'Operations & Logistics', postCount: 7, url: '/blog?category=operations' },
+            { name: 'AI & Automation', postCount: 12, url: '/blog?category=ai' },
+            { name: 'Security & Governance', postCount: 5, url: '/blog?category=security' }
+          ]
+        };
+        this.onPreviewContentChange();
+        this.toast.info('Blog article detail sample content restored to defaults.');
+        return;
+      } else {
+        this.previewBlogContent = {
+          title: 'Platform Insights & Case Studies',
+          miniTitle: 'LATEST KNOWLEDGE',
+          description: 'Deep dives, architectural benchmarks, and best practices curated by our systems engineering team.',
+          buttonText: 'Browse All Articles →',
+          buttonLink: '/blog',
+          viewAllButtonText: 'Browse All Articles →',
+          viewAllButtonLink: '/blog',
+          articles: [
+            {
+              title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+              summary: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+              excerpt: 'Explore proven patterns for high-throughput tenant isolation, schema partitioning, and real-time synchronization.',
+              coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+              category: 'Engineering & Architecture',
+              authorName: 'Alex Rivera',
+              authorRole: 'Chief Architect',
+              publishedDate: 'Sep 12, 2026',
+              url: '/blog/architecting-resilient-multi-tenant-cloud-ecosystems'
+            },
+            {
+              title: 'The Shift to Zero-Downtime Migration Pipelines',
+              summary: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+              excerpt: 'How leading enterprise engineering teams execute petabyte-scale database cutovers without dropping a single active transaction.',
+              coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+              category: 'DevOps & Reliability',
+              authorName: 'Sarah Chen',
+              authorRole: 'Head of Infrastructure',
+              publishedDate: 'Sep 08, 2026',
+              url: '/blog/zero-downtime-migration-pipelines'
+            },
+            {
+              title: 'Next-Gen Identity & Granular Role Governance',
+              summary: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
+              excerpt: 'Integrating decentralized identity tokens with high-compliance RBAC structures across distributed micro-services.',
+              coverImageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
+              category: 'Cybersecurity',
+              authorName: 'Marcus Vance',
+              authorRole: 'Security Lead',
+              publishedDate: 'Aug 29, 2026',
+              url: '/blog/next-gen-identity-governance'
+            }
+          ]
+        };
+        this.onPreviewContentChange();
+        this.toast.info('Blog showcase sample content restored to defaults.');
+        return;
+      }
+    }
+
     if (this.activePreviewItem?.category === 'hero') {
       this.previewHeroContent = {
         title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Innovating the Future of Community Empowerment',
@@ -2789,7 +3041,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       currentTenantBrandName: this.currentTenantBrandName,
       previewMenuContent: this.previewMenuContent,
       previewFooterContent: this.previewFooterContent,
-      previewBlogContent: this.previewBlogContent
+      previewBlogContent: this.previewBlogContent,
+      previewBlogDetailContent: this.previewBlogDetailContent
     });
   }
 
@@ -3047,6 +3300,20 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             if (parsed?.phone) ctx.phone = parsed.phone;
             if (parsed?.description) ctx.description = parsed.description;
           } catch (e) {}
+        }
+      } else if (b.category === 'blog') {
+        if (this.isBlogDetailTemplate(b)) {
+          ctx = {
+            ...ctx,
+            ...this.previewBlogDetailContent,
+            article: this.previewBlogDetailContent
+          };
+        } else {
+          ctx = {
+            ...ctx,
+            ...this.previewBlogContent,
+            articles: this.previewBlogContent.articles
+          };
         }
       }
 

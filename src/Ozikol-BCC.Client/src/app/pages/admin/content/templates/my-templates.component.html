@@ -812,64 +812,170 @@
               </div>
             </div>
 
-            <!-- BLOG & ARTICLES CATEGORY -->
+            <!-- BLOG & ARTICLES CATEGORY (DETAIL VS GRID) -->
             <div class="custom-tpl-form-grid" *ngSwitchCase="'blog'">
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'SECTION TITLE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewBlogContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Platform Insights & Case Studies" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
-                <input type="text" [(ngModel)]="previewBlogContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. LATEST KNOWLEDGE" />
-              </div>
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewBlogContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'VIEW ALL BUTTON TEXT ({{ ButtonText }})'"></label>
-                <input type="text" [(ngModel)]="previewBlogContent.viewAllButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Browse All Articles →" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'VIEW ALL BUTTON LINK ({{ ButtonLink }})'"></label>
-                <input type="text" [(ngModel)]="previewBlogContent.viewAllButtonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/blog" />
-              </div>
-
-              <!-- Blog Articles Repeater -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'BLOG ARTICLES GRID ({{#each Articles}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addBlogArticle()">+ Add Article</button>
+              <!-- 1. Single Article Detail Sample Content Editor -->
+              <ng-container *ngIf="isBlogDetailTemplate(); else blogGridContent">
+                <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 14px 16px;">
+                  <h5 style="margin: 0 0 4px 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">
+                    <i class="fa-solid fa-file-lines me-2"></i>Single Article Detail Sample Content
+                  </h5>
+                  <p style="margin: 0; font-size: 12px; color: #475569; line-height: 1.5;">
+                    All modifications below dynamically hydrate the article headline, author biography, rich-text body, and sticky sidebar dispatches in real-time.
+                  </p>
                 </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row mb-2" *ngFor="let art of previewBlogContent.articles; let aIdx = index" style="flex-direction: column; align-items: stretch;">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                      <span class="subitem-badge">#{{ aIdx + 1 }}</span>
-                      <input type="text" [(ngModel)]="art.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
-                      <input type="text" [(ngModel)]="art.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Category" />
-                      <button type="button" class="btn-del-subitem" (click)="removeBlogArticle(aIdx)" title="Remove Article">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
-                      <input type="text" [(ngModel)]="art.summary" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Short summary..." />
-                      <input type="text" [(ngModel)]="art.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Cover Image URL" />
+
+                <div class="form-group full-width">
+                  <label class="form-lbl" [innerText]="'ARTICLE TITLE ({{ Article.Title }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Accelerating Enterprise Scalability with Hybrid Cloud Architecture" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'ARTICLE CATEGORY ({{ Article.Category }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Technology & Cloud" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'PUBLISHED DATE ({{ Article.PublishedDate }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. September 14, 2026" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'ESTIMATED READ TIME ({{ Article.ReadTime }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.readTime" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. 5 min read" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'FEATURED BANNER IMAGE ({{ Article.CoverImageUrl }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'AUTHOR FULL NAME ({{ Article.AuthorName }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Dr. Jennifer Miller" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'AUTHOR ROLE / TITLE ({{ Article.AuthorRole }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorRole" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Principal Cloud Strategist" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'AUTHOR AVATAR URL ({{ Article.AuthorAvatarUrl }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorAvatarUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'ARTICLE TOPIC TAGS ({{#each Article.Tags}})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogDetailContent.tagsInput" (ngModelChange)="onBlogDetailTagsChange()" class="form-ctrl" placeholder="Comma-separated e.g. Cloud, Scalability, Security" />
+                </div>
+
+                <div class="form-group full-width">
+                  <label class="form-lbl" [innerText]="'AUTHOR BIOGRAPHY ({{ Article.AuthorBio }})'"></label>
+                  <textarea [(ngModel)]="previewBlogDetailContent.authorBio" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
+                </div>
+
+                <div class="form-group full-width">
+                  <label class="form-lbl" [innerText]="'ARTICLE CONTENT BODY HTML ({{ Article.Body }})'"></label>
+                  <textarea [(ngModel)]="previewBlogDetailContent.body" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" rows="6"></textarea>
+                </div>
+
+                <!-- Sidebar Recent Dispatches Repeater -->
+                <div class="form-group full-width">
+                  <div class="lbl-with-note">
+                    <label class="form-lbl" [innerText]="'SIDEBAR: RECENT DISPATCHES ({{#each RecentArticles}})'"></label>
+                    <button type="button" class="btn-add-subitem" (click)="addBlogRecentArticle()">+ Add Dispatch</button>
+                  </div>
+                  <div class="subitems-list">
+                    <div class="subitem-card-row mb-2" *ngFor="let r of previewBlogDetailContent.recentArticles; let rIdx = index" style="flex-direction: column; align-items: stretch;">
+                      <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="subitem-badge">#{{ rIdx + 1 }}</span>
+                        <input type="text" [(ngModel)]="r.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
+                        <input type="text" [(ngModel)]="r.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Date" />
+                        <button type="button" class="btn-del-subitem" (click)="removeBlogRecentArticle(rIdx)" title="Remove Dispatch">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                        <input type="text" [(ngModel)]="r.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Thumbnail Cover URL" />
+                        <input type="text" [(ngModel)]="r.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1;" placeholder="/route or URL" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- BLOG DETAIL CATEGORY -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'blog_detail'">
-              <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 16px;">
-                <h5 style="margin: 0 0 6px 0; color: #0050e5; font-size: 14px; font-weight: 700;">
-                  <i class="fa-solid fa-file-lines me-2"></i>Dynamic Blog Article Detail Template
-                </h5>
-                <p style="margin: 0; font-size: 12.5px; color: #475569; line-height: 1.5;">
-                  This template renders individual blog posts dynamically from your CMS database. Real article content is managed under <strong>Blog &rarr; Articles</strong>. Sidebar widgets dynamically pull from <strong>RecentArticles</strong>, <strong>BlogCategories</strong>, and <strong>ArticleTags</strong>.
-                </p>
-              </div>
+                <!-- Sidebar Topics & Categories Repeater -->
+                <div class="form-group full-width">
+                  <div class="lbl-with-note">
+                    <label class="form-lbl" [innerText]="'SIDEBAR: TOPICS & CATEGORIES ({{#each BlogCategories}})'"></label>
+                    <button type="button" class="btn-add-subitem" (click)="addBlogCategoryItem()">+ Add Topic</button>
+                  </div>
+                  <div class="subitems-list">
+                    <div class="subitem-card-row mb-2" *ngFor="let c of previewBlogDetailContent.categories; let cIdx = index" style="align-items: center; gap: 10px;">
+                      <span class="subitem-badge">#{{ cIdx + 1 }}</span>
+                      <input type="text" [(ngModel)]="c.name" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Category Name" />
+                      <input type="number" [(ngModel)]="c.postCount" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="max-width: 90px;" placeholder="Count" />
+                      <input type="text" [(ngModel)]="c.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1.5;" placeholder="/blog?category=..." />
+                      <button type="button" class="btn-del-subitem" (click)="removeBlogCategoryItem(cIdx)" title="Remove Topic">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- 2. Blog Articles Showcase Grid Sample Content Editor -->
+              <ng-template #blogGridContent>
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'SECTION TITLE ({{ Title }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Platform Insights & Case Studies" />
+                </div>
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. LATEST KNOWLEDGE" />
+                </div>
+                <div class="form-group full-width">
+                  <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
+                  <textarea [(ngModel)]="previewBlogContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'VIEW ALL BUTTON TEXT ({{ ButtonText }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogContent.buttonText" (ngModelChange)="previewBlogContent.viewAllButtonText = previewBlogContent.buttonText; onPreviewContentChange()" class="form-ctrl" placeholder="Browse All Articles →" />
+                </div>
+                <div class="form-group">
+                  <label class="form-lbl" [innerText]="'VIEW ALL BUTTON LINK ({{ ButtonLink }})'"></label>
+                  <input type="text" [(ngModel)]="previewBlogContent.buttonLink" (ngModelChange)="previewBlogContent.viewAllButtonLink = previewBlogContent.buttonLink; onPreviewContentChange()" class="form-ctrl" placeholder="/blog" />
+                </div>
+
+                <!-- Blog Articles Repeater -->
+                <div class="form-group full-width">
+                  <div class="lbl-with-note">
+                    <label class="form-lbl" [innerText]="'BLOG ARTICLES GRID ({{#each Articles}})'"></label>
+                    <button type="button" class="btn-add-subitem" (click)="addBlogArticle()">+ Add Article</button>
+                  </div>
+                  <div class="subitems-list">
+                    <div class="subitem-card-row mb-2" *ngFor="let art of previewBlogContent.articles; let aIdx = index" style="flex-direction: column; align-items: stretch;">
+                      <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="subitem-badge">#{{ aIdx + 1 }}</span>
+                        <input type="text" [(ngModel)]="art.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
+                        <input type="text" [(ngModel)]="art.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Category" />
+                        <button type="button" class="btn-del-subitem" (click)="removeBlogArticle(aIdx)" title="Remove Article">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                        <input type="text" [(ngModel)]="art.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Published Date (e.g. Sep 12, 2026)" />
+                        <input type="text" [(ngModel)]="art.authorName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Author Name" />
+                        <input type="text" [(ngModel)]="art.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1;" placeholder="Article Route URL (/blog/...)" />
+                      </div>
+                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+                        <input type="text" [(ngModel)]="art.summary" (ngModelChange)="art.excerpt = art.summary; onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article summary / excerpt..." />
+                        <input type="text" [(ngModel)]="art.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Cover Image URL" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-template>
             </div>
 
             <!-- FOOTER-SPECIFIC CONTENT EDITOR -->
@@ -1188,54 +1294,108 @@
 
             <!-- Blog & Insights Category Ribbon -->
             <ng-container *ngIf="activePreviewItem?.category === 'blog'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Showcase Title"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Category / Tag Badge"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertBlogArticlesLoopSnippet()" title="Loop published articles (Card Grid Showcase)">
-                  <span class="material-symbols-outlined chip-icon">newspaper</span>
-                  <span>+ Articles Grid Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Articles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Articles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ CoverImageUrl }}')" [innerText]="'+ {{ CoverImageUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CoverImageUrl', $event)" title="Featured Image"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ PublishedDate }}')" [innerText]="'+ {{ PublishedDate }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Excerpt }}')" [innerText]="'+ {{ Excerpt }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Excerpt', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Excerpt', $event)" title="Summary Excerpt"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertBlogRecentSidebarSnippet()" title="Loop recent dispatches for sidebars">
-                  <span class="material-symbols-outlined chip-icon">history</span>
-                  <span>+ Recent Articles Sidebar</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('RecentArticles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('RecentArticles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertBlogCategoriesSnippet()" title="Loop topics and categories with live article counts">
-                  <span class="material-symbols-outlined chip-icon">category</span>
-                  <span>+ Topics Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BlogCategories', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BlogCategories', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertBlogAuthorBioSnippet()" title="Author biography card with portrait">
-                  <span class="material-symbols-outlined chip-icon">person</span>
-                  <span>+ Author Bio Card</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_AuthorName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_AuthorName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
+              <!-- Detail Template Tokens -->
+              <ng-container *ngIf="isBlogDetailTemplate(); else blogGridRibbon">
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Title }}')" [innerText]="'+ {{ Article.Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Title', $event)" title="Article Title"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Category }}')" [innerText]="'+ {{ Article.Category }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Category', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Category', $event)" title="Article Category"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.PublishedDate }}')" [innerText]="'+ {{ Article.PublishedDate }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.ReadTime }}')" [innerText]="'+ {{ Article.ReadTime }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_ReadTime', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_ReadTime', $event)" title="Estimated Read Time"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ Article.CoverImageUrl }}')" [innerText]="'+ {{ Article.CoverImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_CoverImageUrl', $event)" title="Banner Image URL"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Body }}')" [innerText]="'+ {{ Article.Body }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Body', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Body', $event)" title="Article Rich-Text Body"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogTagsLoopSnippet()" title="Loop article tags">
+                    <span class="material-symbols-outlined chip-icon">sell</span>
+                    <span>+ Tags Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Tags', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Tags', $event)" title="Article Tags Loop"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertBlogAuthorBioSnippet()" title="Author biography card with portrait">
+                    <span class="material-symbols-outlined chip-icon">person</span>
+                    <span>+ Author Bio Card</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_AuthorName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_AuthorName', $event)" title="Author Card"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogRecentSidebarSnippet()" title="Loop recent dispatches for sidebars">
+                    <span class="material-symbols-outlined chip-icon">history</span>
+                    <span>+ Recent Articles Sidebar</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('RecentArticles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('RecentArticles', $event)" title="Recent Articles"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogCategoriesSnippet()" title="Loop topics and categories with live article counts">
+                    <span class="material-symbols-outlined chip-icon">category</span>
+                    <span>+ Topics Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BlogCategories', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BlogCategories', $event)" title="Topics Loop"><span class="material-symbols-outlined">info</span></button>
+                </span>
+              </ng-container>
+
+              <!-- Grid Showcase Tokens -->
+              <ng-template #blogGridRibbon>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Showcase Title"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Category / Tag Badge"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)" title="Button Text"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Button Link"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogArticlesLoopSnippet()" title="Loop published articles (Card Grid Showcase)">
+                    <span class="material-symbols-outlined chip-icon">newspaper</span>
+                    <span>+ Articles Grid Loop</span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Articles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Articles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ CoverImageUrl }}')" [innerText]="'+ {{ CoverImageUrl }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CoverImageUrl', $event)" title="Featured Image"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Category }}')" [innerText]="'+ {{ Category }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Category', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Category', $event)" title="Category"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ PublishedDate }}')" [innerText]="'+ {{ PublishedDate }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Excerpt }}')" [innerText]="'+ {{ Excerpt }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Excerpt', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Excerpt', $event)" title="Summary Excerpt"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Url }}')" [innerText]="'+ {{ Url }}'"></button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Url', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Url', $event)" title="Article URL"><span class="material-symbols-outlined">info</span></button>
+                </span>
+              </ng-template>
             </ng-container>
 
             <!-- Other Categories Ribbon -->
