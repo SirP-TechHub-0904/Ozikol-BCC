@@ -5979,6 +5979,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 

@@ -99,6 +99,14 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsMenuCTA { get; set; } = false;
 
         /// <summary>
+        /// Comma-separated list of free-form tags used for arbitrary page grouping (e.g., "quick-links,visit-today").
+        /// Enables custom groupings in templates via {{#each TaggedPages "tag-name"}} (e.g. custom footer link columns).
+        /// </summary>
+        [Display(Name = "Tags")]
+        [StringLength(500)]
+        public string? Tags { get; set; }
+
+        /// <summary>
         /// Toggle to use a custom URL route instead of the default ID-based route.
         /// </summary>
         [Display(Name = "Enable Direct Url")]
