@@ -63,8 +63,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     { id: 'hero', name: 'Hero Sliders', icon: 'view_carousel' },
     { id: 'body', name: 'Body Features', icon: 'view_quilt' },
     { id: 'footer', name: 'Footers', icon: 'dock_to_bottom' },
-    { id: 'newsletter', name: 'Newsletter', icon: 'mail' },
-    { id: 'contact', name: 'Contact', icon: 'contact_mail' },
     { id: 'blog', name: 'Blogs', icon: 'newspaper' },
     { id: 'ecommerce', name: 'E-Commerce', icon: 'shopping_bag' },
     { id: 'breadcrumb', name: 'Breadcrumbs & Page Headers', icon: 'linear_scale' }
@@ -690,15 +688,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   tagToDelete: CodeInjectionTag | null = null;
   deletingTag: boolean = false;
 
-  // Active Singletons state (menu, hero, newsletter, footer, blog, breadcrumb = 1 active each; body, contact = additive)
+  // Active Singletons state (menu, hero, footer, blog, breadcrumb, ecommerce = 1 active each; body = additive)
   activeMenuId: string = 'menu-01';
   activeHeroId: string = 'hero-01';
-  activeNewsletterId: string = '';
   activeFooterId: string = 'footer-01';
   activeBlogId: string = '';
   activeBreadcrumbId: string = '';
   activeEcommerceId: string = 'ecom-01';
-  singletonCategories: string[] = ['menu', 'hero', 'newsletter', 'footer', 'blog', 'breadcrumb', 'ecommerce'];
+  singletonCategories: string[] = ['menu', 'hero', 'footer', 'blog', 'breadcrumb', 'ecommerce'];
 
   constructor(
     private router: Router,
@@ -1266,7 +1263,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   loadInstalledTemplates(): void {
     const storedMenu = localStorage.getItem('oz_active_menu_id');
     const storedHero = localStorage.getItem('oz_active_hero_id');
-    const storedNewsletter = localStorage.getItem('oz_active_newsletter_id');
     const storedFooter = localStorage.getItem('oz_active_footer_id');
     const storedBlog = localStorage.getItem('oz_active_blog_id');
     const storedBreadcrumb = localStorage.getItem('oz_active_breadcrumb_id');
@@ -1274,7 +1270,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     if (storedMenu) this.activeMenuId = storedMenu;
     if (storedHero) this.activeHeroId = storedHero;
-    if (storedNewsletter) this.activeNewsletterId = storedNewsletter;
     if (storedFooter) this.activeFooterId = storedFooter;
     if (storedBlog) this.activeBlogId = storedBlog;
     if (storedBreadcrumb) this.activeBreadcrumbId = storedBreadcrumb;
@@ -1296,7 +1291,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             if (apiT.isActive) {
               if (cat === 'menu') { this.activeMenuId = itemId; localStorage.setItem('oz_active_menu_id', itemId); }
               if (cat === 'hero') { this.activeHeroId = itemId; localStorage.setItem('oz_active_hero_id', itemId); }
-              if (cat === 'newsletter') { this.activeNewsletterId = itemId; localStorage.setItem('oz_active_newsletter_id', itemId); }
               if (cat === 'footer') { this.activeFooterId = itemId; localStorage.setItem('oz_active_footer_id', itemId); }
               if (cat === 'blog') { this.activeBlogId = itemId; localStorage.setItem('oz_active_blog_id', itemId); }
               if (cat === 'breadcrumb') { this.activeBreadcrumbId = itemId; localStorage.setItem('oz_active_breadcrumb_id', itemId); }
@@ -1395,25 +1389,17 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const singletonIds = new Set<string>();
     const menu = this.getActiveMenu();
     const hero = this.getActiveHero();
-    const news = this.getActiveNewsletter();
     const footer = this.getActiveFooter();
     if (menu) singletonIds.add(menu.id);
     if (hero) singletonIds.add(hero.id);
-    if (news) singletonIds.add(news.id);
     if (footer) singletonIds.add(footer.id);
 
     return this.installedTemplates.filter(t => 
       !singletonIds.has(t.id) &&
       t.category !== 'menu' &&
       t.category !== 'hero' &&
-      t.category !== 'newsletter' &&
       t.category !== 'footer'
     );
-  }
-
-  getActiveNewsletter(): InstalledTemplateItem | undefined {
-    return this.installedTemplates.find(t => t.category === 'newsletter' && this.activeNewsletterId === t.id) ||
-           this.installedTemplates.find(t => t.category === 'newsletter');
   }
 
   getActiveFooter(): InstalledTemplateItem | undefined {
@@ -1426,12 +1412,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
            this.installedTemplates.find(t => t.category === 'ecommerce');
   }
 
+  /**
+   * Calculates the total count of configured active layers in the website layout pipeline.
+   * @returns Number of active slots out of the 5 architectural layers (Menu, Hero, Body, Footer, Storefront).
+   */
   getBlueprintFilledCount(): number {
     let count = 0;
     if (this.getActiveMenu()) count++;
     if (this.getActiveHero()) count++;
     if (this.getActiveBody()) count++;
-    if (this.getActiveNewsletter()) count++;
     if (this.getActiveFooter()) count++;
     if (this.getActiveEcommerce()) count++;
     return count;
@@ -1444,7 +1433,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   getSingletonLabel(cat: string): string {
     if (cat === 'menu') return 'Navbar';
     if (cat === 'hero') return 'Hero Section';
-    if (cat === 'newsletter') return 'Newsletter';
     if (cat === 'footer') return 'Footer';
     if (cat === 'blog') return 'Blog Layout';
     if (cat === 'breadcrumb') return 'Breadcrumb Header';
@@ -1458,10 +1446,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   isActiveHero(item: InstalledTemplateItem): boolean {
     return item.category === 'hero' && this.activeHeroId === item.id;
-  }
-
-  isActiveNewsletter(item: InstalledTemplateItem): boolean {
-    return item.category === 'newsletter' && this.activeNewsletterId === item.id;
   }
 
   isActiveFooter(item: InstalledTemplateItem): boolean {
@@ -1481,13 +1465,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   isActiveSingleton(item: InstalledTemplateItem): boolean {
-    return this.isActiveMenu(item) || this.isActiveHero(item) || this.isActiveNewsletter(item) || this.isActiveFooter(item) || this.isActiveBlog(item) || this.isActiveBreadcrumb(item) || this.isActiveEcommerce(item);
+    return this.isActiveMenu(item) || this.isActiveHero(item) || this.isActiveFooter(item) || this.isActiveBlog(item) || this.isActiveBreadcrumb(item) || this.isActiveEcommerce(item);
   }
 
   activateTemplate(item: InstalledTemplateItem): void {
     if (item.category === 'menu') { this.activeMenuId = item.id; localStorage.setItem('oz_active_menu_id', item.id); }
     if (item.category === 'hero') { this.activeHeroId = item.id; localStorage.setItem('oz_active_hero_id', item.id); }
-    if (item.category === 'newsletter') { this.activeNewsletterId = item.id; localStorage.setItem('oz_active_newsletter_id', item.id); }
     if (item.category === 'footer') { this.activeFooterId = item.id; localStorage.setItem('oz_active_footer_id', item.id); }
     if (item.category === 'blog') { this.activeBlogId = item.id; localStorage.setItem('oz_active_blog_id', item.id); }
     if (item.category === 'breadcrumb') { this.activeBreadcrumbId = item.id; localStorage.setItem('oz_active_breadcrumb_id', item.id); }
@@ -1504,13 +1487,52 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.toast.success(`'${item.name}' is now your active website ${this.getSingletonLabel(item.category).toLowerCase()}!`);
   }
 
+  /**
+   * Retrieves all unique Theme Suites discovered from installed templates with item counts.
+   * Enables dynamic, multi-theme filtering without hardcoded theme chips.
+   * @returns Array of unique theme suite descriptors.
+   */
+  getAvailableSuites(): { code: string; name: string; count: number }[] {
+    const map = new Map<string, { code: string; name: string; count: number }>();
+    this.installedTemplates.forEach(t => {
+      const code = t.groupCode || 'apex-corporate';
+      const name = t.groupName || 'Corporate Suite';
+      if (!map.has(code)) {
+        map.set(code, { code, name, count: 0 });
+      }
+      map.get(code)!.count++;
+    });
+    return Array.from(map.values());
+  }
+
+  /**
+   * Adopts and activates all companion layout templates (Navbar, Hero, Footer, Blog, etc.) for a specified Theme Suite.
+   * This provides the turnkey 1-click theme experience while preserving mix-and-match capabilities.
+   * @param groupCode The unique code of the theme suite to adopt.
+   */
+  adoptSuite(groupCode: string): void {
+    const suiteItems = this.installedTemplates.filter(t => (t.groupCode || 'apex-corporate') === groupCode);
+    if (!suiteItems.length) return;
+
+    let activatedCount = 0;
+    suiteItems.forEach(item => {
+      if (this.singletonCategories.includes(item.category)) {
+        this.activateTemplate(item);
+        activatedCount++;
+      }
+    });
+
+    const suiteName = suiteItems[0]?.groupName || 'Selected Suite';
+    this.toast.success(`Adopted ${suiteName}: ${activatedCount} core components activated across your website blueprint.`);
+  }
+
   applyFilters(): void {
     let list = [...this.installedTemplates];
     if (this.selectedCategory !== 'all') {
       list = list.filter(t => t.category === this.selectedCategory);
     }
     if (this.selectedGroup !== 'all') {
-      list = list.filter(t => (t.groupCode || 'apex-commerce') === this.selectedGroup);
+      list = list.filter(t => (t.groupCode || 'apex-corporate') === this.selectedGroup);
     }
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
@@ -2675,7 +2697,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const menuBlock = menuBlockOverride || this.getActiveMenu();
     const heroBlock = this.getActiveHero();
     const allBodyBlocks = this.getAllBodyBlocks();
-    const newsBlock = this.getActiveNewsletter();
     const footerBlock = this.getActiveFooter();
 
     const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
@@ -2690,7 +2711,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (heroBlock) activeBlocks.push({ block: heroBlock });
       allBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
       if (blogBlock) activeBlocks.push({ block: blogBlock });
-      if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'about') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -2733,7 +2753,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (missionBlock) activeBlocks.push({ block: missionBlock });
       if (metricBlock) activeBlocks.push({ block: metricBlock });
       if (faqBlock) activeBlocks.push({ block: faqBlock });
-      if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'request-service') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -2768,7 +2787,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         });
       }
       if (blogBlock) activeBlocks.push({ block: blogBlock });
-      if (newsBlock) activeBlocks.push({ block: newsBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'contact') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -3058,7 +3076,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (this.getActiveMenu()) count++;
     if (this.getActiveHero()) count++;
     count += this.getAllBodyBlocks().length;
-    if (this.getActiveNewsletter()) count++;
     if (this.getActiveFooter()) count++;
     return count;
   }
