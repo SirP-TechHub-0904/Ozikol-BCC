@@ -571,14 +571,17 @@ export class LandingComponent implements OnInit, OnDestroy {
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
-        if (!combinedStyles.includes(secTemplate.cssStyles)) {
-          combinedStyles += `\n${secTemplate.cssStyles || ''}\n`;
+        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
+        if (activeCss && !combinedStyles.includes(activeCss)) {
+          combinedStyles += `\n${activeCss}\n`;
         }
+        const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
         const sectionData = this.buildSectionContext(sec);
-        const sectionHtml = this.templateHydration.hydrateTemplate(secTemplate.htmlTemplate, sectionData, this.getHydrationOptions());
+        const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
         combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-        if (secTemplate.jsScript && !combinedJs.includes(secTemplate.jsScript)) {
-          combinedJs += `\n${secTemplate.jsScript}\n`;
+        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
+        if (activeJs && !combinedJs.includes(activeJs)) {
+          combinedJs += `\n${activeJs}\n`;
         }
       }
     }
@@ -646,14 +649,17 @@ export class LandingComponent implements OnInit, OnDestroy {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
         if (secTemplate) {
-          if (!combinedStyles.includes(secTemplate.cssStyles)) {
-            combinedStyles += `\n${secTemplate.cssStyles || ''}\n`;
+          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
+          if (activeCss && !combinedStyles.includes(activeCss)) {
+            combinedStyles += `\n${activeCss}\n`;
           }
+          const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
           const sectionData = this.buildSectionContext(sec);
-          const sectionHtml = this.templateHydration.hydrateTemplate(secTemplate.htmlTemplate, sectionData, this.getHydrationOptions());
+          const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
           combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-          if (secTemplate.jsScript && !combinedJs.includes(secTemplate.jsScript)) {
-            combinedJs += `\n${secTemplate.jsScript}\n`;
+          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
+          if (activeJs && !combinedJs.includes(activeJs)) {
+            combinedJs += `\n${activeJs}\n`;
           }
         }
       }
