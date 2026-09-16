@@ -277,12 +277,20 @@ export class LandingComponent implements OnInit, OnDestroy {
     document.body.classList.add('public-website-mode');
 
     // Listen to route changes (slug changes) to support instant in-app navigation
-    this.routeSub = this.route.params.subscribe(params => {
-      const slugParam = (params['slug'] || '').trim().toLowerCase();
+    this.routeSub = this.route.paramMap.subscribe(params => {
+      // 1. Check direct slug parameter
+      let slugParam = (params.get('slug') || '').trim().toLowerCase();
+
+      // 2. Fallback to route URL segments (e.g. /blog, /blog/123, /about)
+      const urlSegments = this.route.snapshot.url.map(s => s.path.toLowerCase());
+      if (!slugParam && urlSegments.length > 0) {
+        slugParam = urlSegments[0];
+      }
+
       this.currentSlug = slugParam;
 
       // Check if viewing blog by ID or slug
-      const blogIdParam = this.route.snapshot.paramMap.get('id');
+      const blogIdParam = params.get('id') || (urlSegments[0] === 'blog' && urlSegments[1] ? urlSegments[1] : null);
       this.activeBlogId = blogIdParam;
 
       this.loadSiteData();
@@ -586,6 +594,35 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
+    // 3b. Recent Blog Articles Showcase (matching Demo Preview sequence)
+    const blogTemplate = this.findActiveTemplate('blog');
+    const hasBlogSectionAlready = bodySections.some(s => s.templateKey?.toLowerCase()?.includes('blog'));
+    if (blogTemplate && !hasBlogSectionAlready && this.blogs && this.blogs.length > 0) {
+      if (blogTemplate.cssStyles && !combinedStyles.includes(blogTemplate.cssStyles)) {
+        combinedStyles += `\n${blogTemplate.cssStyles}\n`;
+      }
+      const blogData = {
+        title: 'Platform Insights & Case Studies',
+        miniTitle: 'LATEST KNOWLEDGE',
+        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
+        articles: this.blogs.slice(0, 3).map(b => ({
+          id: b.id,
+          title: b.title,
+          excerpt: b.description || 'Comprehensive strategic analysis and insights.',
+          category: b.blogCategory?.categoryName || 'Strategy & Advisory',
+          date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          author: 'Executive Advisory Desk',
+          imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+          directUrl: `/blog/${b.id}`
+        }))
+      };
+      const blogHtml = this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogData, this.getHydrationOptions());
+      combinedHtml += `<!-- Section: Recent Blog Articles -->\n${blogHtml}\n`;
+      if (blogTemplate.jsScript && !combinedJs.includes(blogTemplate.jsScript)) {
+        combinedJs += `\n${blogTemplate.jsScript}\n`;
+      }
+    }
+
     // 4. Footer Section
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
@@ -626,13 +663,18 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     // 2. Breadcrumb Header
+    const rawSections: any[] = this.currentPage.pageSections || [];
+    const heroSection = rawSections.find(
+      (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
+    );
+
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: this.currentPage.title,
-        miniTitle: this.currentPage.pageCategory?.categoryName || 'Organization Overview',
-        description: this.currentPage.description || '',
-        backgroundImageUrl: this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
+        title: heroSection?.title || this.currentPage.title,
+        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || 'Organization Overview',
+        description: heroSection?.description || this.currentPage.description || '',
+        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: this.currentPage.title, url: '#', isActive: true }
@@ -643,8 +685,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
-    // 3. Page Layout Sections
-    const pageSections = this.currentPage.pageSections || [];
+    // 3. Page Layout Sections (excluding hero consumed as breadcrumb header banner)
+    const pageSections = rawSections.filter(
+      (sec: any) => sec !== heroSection && (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit'
+    );
     if (pageSections.length > 0) {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
@@ -811,23 +855,23 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: 'Insights & Publications',
-        miniTitle: 'Thought Leadership',
-        description: 'Latest research, corporate perspectives, and industry transformation analyses.',
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80',
+        title: 'Newsroom & Insights',
+        miniTitle: 'DISPATCHES',
+        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: 'Blog & Insights', url: '#', isActive: true }
+          { label: 'Newsroom & Insights', url: '#', isActive: true }
         ]
       };
-      combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
+      combinedHtml += `<!-- Breadcrumb Header -->\n` + this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()) + `\n`;
       if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
     // Render Blog Grid
     const blogContext = {
-      title: 'Latest Publications & Strategic Thinking',
-      miniTitle: 'Executive Insights',
+      title: 'Platform Insights & Case Studies',
+      miniTitle: 'LATEST KNOWLEDGE',
       description: 'Explore our latest releases and corporate updates directly from our research desks.',
       articles: this.blogs.map(b => ({
         id: b.id,
@@ -843,8 +887,22 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     if (blogTemplate) {
       if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions());
+      combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
       if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
+    }
+
+    // Newsletter Section (matching Demo Preview sequence)
+    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
+                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
+    if (newsletterTemplate) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
     }
 
     if (footerTemplate) {
@@ -927,6 +985,20 @@ export class LandingComponent implements OnInit, OnDestroy {
         </div>
       </section>
     `;
+
+    // Newsletter Section (matching Demo Preview sequence)
+    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
+                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
+    if (newsletterTemplate) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+    }
 
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
@@ -1147,30 +1219,51 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
    */
   private buildSectionContext(sec: any): any {
+    const listItems = (sec.pageSectionLists || []).map((item: any, idx: number) => ({
+      id: item.id,
+      title: item.title || `Capability ${idx + 1}`,
+      Title: item.title || `Capability ${idx + 1}`,
+      miniTitle: item.miniTitle || '',
+      MiniTitle: item.miniTitle || '',
+      description: item.description || '',
+      Description: item.description || '',
+      moreDescription: item.moreDescription || '',
+      MoreDescription: item.moreDescription || '',
+      iconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      IconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      icon: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      imageUrl: item.imageUrl || '',
+      ImageUrl: item.imageUrl || '',
+      buttonText: item.buttonText || '',
+      ButtonText: item.buttonText || '',
+      buttonLink: item.buttonLink || '#',
+      ButtonLink: item.buttonLink || '#',
+      sortOrder: item.sortOrder || idx + 1
+    }));
+
     return {
       title: sec.title || '',
+      Title: sec.title || '',
       miniTitle: sec.miniTitle || '',
+      MiniTitle: sec.miniTitle || '',
       description: sec.description || '',
+      Description: sec.description || '',
       moreDescription: sec.moreDescription || '',
+      MoreDescription: sec.moreDescription || '',
       imageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
+      ImageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
       buttonText: sec.buttonText || 'Explore Details',
+      ButtonText: sec.buttonText || 'Explore Details',
       buttonLink: sec.buttonLink || '#',
+      ButtonLink: sec.buttonLink || '#',
       secondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
+      SecondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
       secondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
+      SecondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
       videoUrl: sec.videoUrl || '',
-      pageSectionLists: (sec.pageSectionLists || []).map((item: any, idx: number) => ({
-        id: item.id,
-        title: item.title || `Capability ${idx + 1}`,
-        miniTitle: item.miniTitle || '',
-        description: item.description || '',
-        moreDescription: item.moreDescription || '',
-        iconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-        icon: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-        imageUrl: item.imageUrl || '',
-        buttonText: item.buttonText || '',
-        buttonLink: item.buttonLink || '#',
-        sortOrder: item.sortOrder || idx + 1
-      }))
+      pageSectionLists: listItems,
+      PageSectionLists: listItems,
+      items: listItems
     };
   }
 
@@ -1180,26 +1273,38 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private findTemplateForSection(sec: any): any {
     if (sec.templateKey) {
-      // 1. Exact match
-      const exactMatch = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase());
+      // 1. Exact match by TemplateKey or VariantCode
+      const exactMatch = this.activeTemplates.find(t => 
+        (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase() ||
+        (t.variantCode || '').toLowerCase() === sec.templateKey.toLowerCase()
+      );
       if (exactMatch) return exactMatch;
 
       // 2. Smart alias mapping between seeded template keys and installed theme keys
       const keyAliases: { [key: string]: string[] } = {
         'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
         'body_statscounters': ['body_metricscounter', 'body_statscounter4'],
-        'body_processsteps': ['body_featuregrid3', 'body_missionsplit', 'body_processsteps4'],
+        'body_metricscounter': ['body_metricscounter'],
+        'body_processsteps': ['body_missionsplit', 'body_featuregrid3'],
+        'body_missionsplit': ['body_missionsplit'],
         'body_ctasplit': ['body_ctabanner', 'body_ctabannerfull'],
+        'body_ctabanner': ['body_ctabanner'],
         'news_minimalbar': ['news_minimalbar'],
         'contact_splitdetails': ['contact_splitdetails'],
-        'body_requestservice': ['body_requestservice']
+        'body_requestservice': ['body_requestservice'],
+        'body_featuregrid3': ['body_featuregrid3'],
+        'body_testimonials': ['body_testimonials'],
+        'body_faqaccordion': ['body_faqaccordion']
       };
 
       const normalizedKey = sec.templateKey.toLowerCase();
       const aliases = keyAliases[normalizedKey];
       if (aliases) {
         for (const alias of aliases) {
-          const aliasMatch = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === alias);
+          const aliasMatch = this.activeTemplates.find(t => 
+            (t.templateKey || '').toLowerCase() === alias ||
+            (t.variantCode || '').toLowerCase() === alias
+          );
           if (aliasMatch) return aliasMatch;
         }
       }
