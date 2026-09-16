@@ -2371,14 +2371,19 @@
                 <!-- Uploaded CDN URL Ribbon -->
                 <div class="cloudflare-cdn-result-bar" *ngIf="uploadedCssUrl">
                   <div class="cdn-url-info">
-                    <span class="material-symbols-outlined icon-edge">public</span>
-                    <span class="cdn-label">Cloudflare CDN Edge URL:</span>
-                    <span class="cdn-url-text">{{ uploadedCssUrl }}</span>
+                    <span class="material-symbols-outlined icon-edge">cloud_done</span>
+                    <span class="cdn-label">CDN Edge URL:</span>
+                    <a [href]="uploadedCssUrl" target="_blank" rel="noopener noreferrer" class="cdn-url-link" title="Open stylesheet directly in new tab">
+                      <span>{{ uploadedCssUrl }}</span>
+                      <span class="material-symbols-outlined icon-external">open_in_new</span>
+                    </a>
                   </div>
-                  <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
-                    <span class="material-symbols-outlined">content_copy</span>
-                    <span>Copy CDN URL</span>
-                  </button>
+                  <div class="cdn-action-btns">
+                    <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
+                      <span class="material-symbols-outlined">content_copy</span>
+                      <span>Copy URL</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -87,6 +87,9 @@ namespace Ozikol_BCC.Application.Services.Cloudflare
                 var objectKey = $"{cleanFolder}{uniqueFileName}";
 
                 // Cloudflare R2 S3-compatible client initialization
+                // Cloudflare R2 S3-compatible client initialization
+                // Note: Cloudflare R2 does not implement STREAMING-AWS4-HMAC-SHA256-PAYLOAD,
+                // so UseChunkEncoding must be set to false and DisablePayloadSigning to true.
                 var credentials = new BasicAWSCredentials(_settings.AccessKeyId, _settings.SecretAccessKey);
                 var s3Config = new AmazonS3Config
                 {
@@ -97,22 +100,23 @@ namespace Ozikol_BCC.Application.Services.Cloudflare
                 };
 
                 using var s3Client = new AmazonS3Client(credentials, s3Config);
-                var transferUtility = new TransferUtility(s3Client);
 
-                // Prepare S3 transfer request with aggressive caching headers for Cloudflare CDN
-                var uploadRequest = new TransferUtilityUploadRequest
+                // Use PutObjectRequest with DisablePayloadSigning = true to ensure standard S3 payload hashing
+                var putRequest = new PutObjectRequest
                 {
                     InputStream = contentStream,
                     Key = objectKey,
                     BucketName = _settings.BucketName,
                     ContentType = contentType,
-                    CannedACL = S3CannedACL.NoACL
+                    CannedACL = S3CannedACL.NoACL,
+                    DisablePayloadSigning = true,
+                    UseChunkEncoding = false
                 };
 
-                // Enable 1-year immutable edge caching for hashed static assets
-                uploadRequest.Headers.CacheControl = "public, max-age=31536000, immutable";
+                // Enable 1-year immutable edge caching for hashed static assets on Cloudflare CDN
+                putRequest.Headers.CacheControl = "public, max-age=31536000, immutable";
 
-                await transferUtility.UploadAsync(uploadRequest);
+                await s3Client.PutObjectAsync(putRequest);
 
                 var cdnUrl = GetPublicCdnUrl(objectKey);
 

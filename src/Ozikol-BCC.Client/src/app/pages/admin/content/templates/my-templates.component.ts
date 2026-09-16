@@ -1443,9 +1443,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.uploadingCss = false;
-        const errMsg = err?.error?.message || 'Remote Cloudflare R2 upload failed.';
-        this.toast.warning(errMsg);
-        this.importCssAsInlineStyle();
+        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.toast.error(errMsg);
       }
     });
   }
