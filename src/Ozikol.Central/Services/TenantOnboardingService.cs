@@ -549,7 +549,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     CompanyName = request.OrganizationName,
                     CompanyNameAbbreviation = abbreviation,
                     CompanyDescription = sectorDefaults.Description,
-                    CompanyIconUrl = "/favicon.ico",
+                    CompanyIconUrl = null,
                     WebsiteTitle = request.OrganizationName,
                     DashboardTitle = $"{request.OrganizationName} Command Center",
                     TemplateLayoutKey = "standard",

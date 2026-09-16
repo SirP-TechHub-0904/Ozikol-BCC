@@ -714,8 +714,8 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
     output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || '');
     output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
-    output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');
-    const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
+    const rawFav = ctx.FaviconUrl || ctx.faviconUrl;
+    const faviconUrl = (rawFav && rawFav !== '/favicon.ico') ? rawFav : '';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
 
     // Legal URLs
