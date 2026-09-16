@@ -156,6 +156,11 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">arrow_back</span>
             Back to Login
           </a>
+          <span style="margin: 0 8px; color: #cbd5e1;">•</span>
+          <a routerLink="/" class="back-link">
+            <span class="material-symbols-outlined">home</span>
+            Return to Home
+          </a>
         </div>
       </div>
     </div>
@@ -169,37 +174,36 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 0;
     }
     .reset-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 20px;
       padding: 36px 32px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      color: #f8fafc;
+      box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: #0f172a;
       box-sizing: border-box;
     }
     .card-header { text-align: center; margin-bottom: 24px; }
     .brand-avatar {
-      width: 56px;
-      height: 56px;
+      width: 58px;
+      height: 58px;
       border-radius: 16px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
+      background: #eff6ff;
+      border: 1.5px solid #dbeafe;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 14px;
-      box-shadow: 0 8px 22px rgba(0, 80, 229, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.08);
     }
-    .brand-avatar span { font-size: 28px; color: #fff; }
-    .title { font-size: 20px; font-weight: 800; color: #ffffff; margin: 0 0 6px; }
-    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.45; }
+    .brand-avatar span { font-size: 28px; color: #0050e5; }
+    .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 6px; }
+    .subtitle { font-size: 13.5px; color: #64748b; margin: 0; line-height: 1.45; }
     .error-banner {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
       padding: 10px 14px;
       border-radius: 10px;
       font-size: 13px;
@@ -209,9 +213,9 @@ import { ToastService } from '../../../core/services/toast.service';
       margin-bottom: 16px;
     }
     .success-banner {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
       padding: 14px;
       border-radius: 10px;
       font-size: 13px;
@@ -225,53 +229,54 @@ import { ToastService } from '../../../core/services/toast.service';
     .form-group label {
       font-size: 11.5px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .input-wrapper { position: relative; display: flex; align-items: center; }
-    .input-icon { position: absolute; left: 14px; color: #64748b; font-size: 20px; pointer-events: none; }
+    .input-icon { position: absolute; left: 14px; color: #94a3b8; font-size: 20px; pointer-events: none; }
     .input-wrapper input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       padding: 12px 42px 12px 44px;
-      color: #ffffff;
+      color: #0f172a;
       font-size: 14px;
       outline: none;
       box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s ease;
     }
     .otp-input-field {
       font-family: monospace;
       font-size: 17px !important;
       letter-spacing: 4px;
       font-weight: 700;
-      color: #38bdf8 !important;
+      color: #0050e5 !important;
       text-align: center;
     }
     .input-wrapper input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
     }
-    .field-hint { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .field-hint { font-size: 11px; color: #64748b; margin-top: 2px; }
     .btn-resend-link {
       background: none;
       border: none;
-      color: #38bdf8;
+      color: #0050e5;
       font-size: 11.5px;
       font-weight: 700;
       cursor: pointer;
       padding: 0;
       transition: color 0.15s;
     }
-    .btn-resend-link:hover:not(:disabled) { text-decoration: underline; color: #7dd3fc; }
+    .btn-resend-link:hover:not(:disabled) { text-decoration: underline; color: #1d4ed8; }
     .btn-resend-link:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .password-rules-box {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 10px;
       padding: 10px 12px;
       display: flex;
@@ -281,7 +286,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .rules-box-title {
       font-size: 11px;
       font-weight: 700;
-      color: #94a3b8;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -296,32 +301,32 @@ import { ToastService } from '../../../core/services/toast.service';
       gap: 4px;
       padding: 3px 8px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
       font-size: 11px;
-      color: #94a3b8;
+      color: #64748b;
       font-weight: 500;
       transition: all 0.2s ease;
     }
     .rule-chip .rule-icon {
       font-size: 13px;
-      color: #64748b;
+      color: #94a3b8;
     }
     .rule-chip.rule-passed {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: rgba(16, 185, 129, 0.4);
-      color: #34d399;
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #15803d;
       font-weight: 700;
     }
     .rule-chip.rule-passed .rule-icon {
-      color: #34d399;
+      color: #16a34a;
     }
     .password-mismatch-hint {
       display: flex;
       align-items: center;
       gap: 4px;
       font-size: 11.5px;
-      color: #f87171;
+      color: #dc2626;
       font-weight: 600;
       margin-top: 4px;
     }
@@ -331,16 +336,16 @@ import { ToastService } from '../../../core/services/toast.service';
       right: 12px;
       background: none;
       border: none;
-      color: #64748b;
+      color: #94a3b8;
       cursor: pointer;
       display: flex;
       align-items: center;
       padding: 4px;
     }
-    .toggle-pwd-btn:hover { color: #cbd5e1; }
+    .toggle-pwd-btn:hover { color: #0050e5; }
 
     .btn-submit {
-      margin-top: 8px;
+      margin-top: 6px;
       background: linear-gradient(135deg, #0050e5, #1f6bff);
       color: #ffffff;
       border: none;
@@ -354,23 +359,23 @@ import { ToastService } from '../../../core/services/toast.service';
       justify-content: center;
       gap: 8px;
       transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
     }
-    .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45); }
-    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4); }
+    .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
     .spinner { width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .card-footer { margin-top: 22px; text-align: center; }
+    .card-footer { margin-top: 20px; text-align: center; }
     .back-link {
       color: #64748b;
-      font-size: 12.5px;
+      font-size: 13px;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: color 0.2s;
+      transition: color 0.15s;
     }
-    .back-link:hover { color: #cbd5e1; }
+    .back-link:hover { color: #0050e5; }
   `]
 })
 export class ResetPasswordComponent implements OnInit, OnDestroy {

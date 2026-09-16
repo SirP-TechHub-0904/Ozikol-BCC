@@ -105,7 +105,7 @@ import { ToastService } from '../../../core/services/toast.service';
           <p class="signin-prompt">Already have an account? <a routerLink="/auth/login" class="login-link">Sign In</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            Back to Home
+            Return to Home
           </a>
         </div>
       </div>
@@ -120,16 +120,14 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 0;
     }
     .register-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 20px;
       padding: 36px 32px;
       width: 100%;
       max-width: 500px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      color: #f8fafc;
+      box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: #0f172a;
       box-sizing: border-box;
     }
     .card-header {
@@ -137,25 +135,26 @@ import { ToastService } from '../../../core/services/toast.service';
       margin-bottom: 24px;
     }
     .brand-avatar {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #10b981, #06b6d4);
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: #eff6ff;
+      border: 1.5px solid #dbeafe;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 12px;
-      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.08);
     }
-    .brand-avatar span { font-size: 28px; color: #fff; }
-    .title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; }
+    .brand-avatar span { font-size: 28px; color: #0050e5; }
+    .title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px; }
+    .subtitle { font-size: 13.5px; color: #64748b; margin: 0; }
     .error-banner {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
       padding: 10px 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       display: flex;
       align-items: center;
@@ -167,9 +166,9 @@ import { ToastService } from '../../../core/services/toast.service';
     @media (max-width: 480px) { .form-grid-2 { grid-template-columns: 1fr; } }
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #cbd5e1;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -177,32 +176,33 @@ import { ToastService } from '../../../core/services/toast.service';
     .input-icon {
       position: absolute;
       left: 12px;
-      color: #64748b;
+      color: #94a3b8;
       font-size: 18px;
       pointer-events: none;
     }
     .input-wrapper input, .select-input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
       border-radius: 8px;
       padding: 10px 12px 10px 38px;
-      color: #fff;
+      color: #0f172a;
       font-size: 13px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s ease;
     }
     .select-input {
       cursor: pointer;
       appearance: none;
     }
     .select-input option {
-      background: #0f172a;
-      color: #ffffff;
+      background: #ffffff;
+      color: #0f172a;
     }
     .input-wrapper input:focus, .select-input:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
     }
     .toggle-pwd-btn {
       position: absolute;

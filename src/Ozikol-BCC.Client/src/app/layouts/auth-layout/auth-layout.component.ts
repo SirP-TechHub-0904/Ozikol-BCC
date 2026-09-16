@@ -9,6 +9,7 @@ import { ApiService } from '../../core/services/api.service';
  * - Login Background Wallpaper (with curated high-res license-free fallback)
  * - Brand Logo (White or Standard)
  * - Headline, Subtitle, and Institutional Support Notes
+ * - Official 'Powered by Ozikol' platform attribution
  */
 @Component({
   selector: 'app-auth-layout',
@@ -27,7 +28,7 @@ import { ApiService } from '../../core/services/api.service';
           <div class="showcase-content">
             <!-- Brand Identity Header -->
             <div class="showcase-header">
-              <a routerLink="/" class="brand-link" title="Return to public website">
+              <a routerLink="/" class="brand-link" title="Return to Home">
                 <img 
                   *ngIf="displayLogo" 
                   [src]="displayLogo" 
@@ -45,7 +46,7 @@ import { ApiService } from '../../core/services/api.service';
               </span>
             </div>
 
-            <!-- Central Hero Narrative -->
+            <!-- Central Hero Narrative (Dynamic from DB) -->
             <div class="showcase-hero">
               <div class="hero-chip" *ngIf="loginNoteTitle">
                 <span class="material-symbols-outlined icon-chip">verified_user</span>
@@ -53,46 +54,26 @@ import { ApiService } from '../../core/services/api.service';
               </div>
               <h1 class="hero-title">{{ displayTitle }}</h1>
               <p class="hero-description">{{ displayDescription }}</p>
-
-              <!-- Trust & Security Pillars -->
-              <div class="security-pillars-grid">
-                <div class="pillar-card">
-                  <span class="material-symbols-outlined icon-pillar">lock</span>
-                  <div>
-                    <strong>Encrypted Session</strong>
-                    <small>TLS 1.3 &amp; AES-256 Protocol</small>
-                  </div>
-                </div>
-                <div class="pillar-card">
-                  <span class="material-symbols-outlined icon-pillar">hub</span>
-                  <div>
-                    <strong>Isolated Workspace</strong>
-                    <small>Dedicated Tenant Partition</small>
-                  </div>
-                </div>
-                <div class="pillar-card">
-                  <span class="material-symbols-outlined icon-pillar">fingerprint</span>
-                  <div>
-                    <strong>Multi-Factor Auth</strong>
-                    <small>Biometric &amp; OTP Guarded</small>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <!-- Showcase Footer -->
             <div class="showcase-footer">
-              <a routerLink="/" class="btn-back-website">
+              <a routerLink="/" class="btn-return-home" title="Return to Home">
                 <span class="material-symbols-outlined">arrow_back</span>
-                <span>Back to Public Website</span>
+                <span>Return to Home</span>
               </a>
-              <span class="copyright-text">&copy; {{ currentYear }} {{ brandName }}. All rights reserved.</span>
+              <div class="footer-meta">
+                <span class="copyright-text">&copy; {{ currentYear }} {{ brandName }}.</span>
+                <span class="powered-by-tag">
+                  Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>
+                </span>
+              </div>
             </div>
           </div>
         </aside>
 
         <!-- ============================================== -->
-        <!-- RIGHT PANEL: CHILD ROUTE OUTLET               -->
+        <!-- RIGHT PANEL: CHILD ROUTE OUTLET (BRIGHT CARD) -->
         <!-- ============================================== -->
         <main class="auth-form-panel">
           <div class="form-panel-scroll">
@@ -108,9 +89,12 @@ import { ApiService } from '../../core/services/api.service';
               <!-- Routed Auth View (Login, 2FA, Reset Password, Register) -->
               <router-outlet></router-outlet>
 
-              <!-- Universal Form Footer Note -->
-              <div class="auth-terms-note" *ngIf="loginNoteFooter">
-                <p>{{ loginNoteFooter }}</p>
+              <!-- Universal Form Footer Note & Powered by Ozikol -->
+              <div class="form-footer-meta">
+                <p class="auth-terms-note" *ngIf="loginNoteFooter">{{ loginNoteFooter }}</p>
+                <div class="powered-by-row">
+                  <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
+                </div>
               </div>
             </div>
           </div>
@@ -121,31 +105,33 @@ import { ApiService } from '../../core/services/api.service';
   styles: [`
     :host {
       display: block;
-      min-height: 100vh;
-      width: 100%;
+      width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       background: #090d16;
-      color: #f8fafc;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .auth-viewport {
       position: relative;
-      min-height: 100vh;
-      width: 100%;
+      width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       background-image: var(--auth-bg);
       background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
       display: flex;
-      overflow-x: hidden;
     }
 
     .auth-backdrop-overlay {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 10% 20%, rgba(15, 23, 42, 0.82) 0%, rgba(9, 13, 22, 0.94) 100%);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: radial-gradient(circle at 15% 25%, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.88) 100%);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
       z-index: 1;
     }
 
@@ -153,9 +139,11 @@ import { ApiService } from '../../core/services/api.service';
       position: relative;
       z-index: 2;
       width: 100%;
-      min-height: 100vh;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       display: grid;
-      grid-template-columns: 1.15fr 1fr;
+      grid-template-columns: 1.1fr 0.9fr;
     }
 
     /* ---------------------------------------------------- */
@@ -163,12 +151,15 @@ import { ApiService } from '../../core/services/api.service';
     /* ---------------------------------------------------- */
     .auth-showcase-panel {
       position: relative;
-      padding: 56px 64px;
+      height: 100vh;
+      max-height: 100vh;
+      padding: 48px 56px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.5) 0%, rgba(15, 23, 42, 0.25) 100%);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .showcase-content {
@@ -176,7 +167,7 @@ import { ApiService } from '../../core/services/api.service';
       flex-direction: column;
       justify-content: space-between;
       height: 100%;
-      gap: 40px;
+      gap: 32px;
     }
 
     .showcase-header {
@@ -193,7 +184,7 @@ import { ApiService } from '../../core/services/api.service';
     }
 
     .brand-logo-img {
-      max-height: 48px;
+      max-height: 46px;
       max-width: 220px;
       object-fit: contain;
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
@@ -203,20 +194,22 @@ import { ApiService } from '../../core/services/api.service';
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      background: rgba(255, 255, 255, 0.06);
-      padding: 8px 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #ffffff;
 
       .icon-shield {
-        color: #38bdf8;
         font-size: 22px;
+        color: #38bdf8;
       }
+
       .fallback-name {
-        font-weight: 700;
         font-size: 16px;
-        color: #ffffff;
-        letter-spacing: -0.02em;
+        font-weight: 700;
+        letter-spacing: -0.01em;
       }
     }
 
@@ -225,104 +218,67 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       gap: 8px;
       padding: 6px 14px;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.25);
       border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #7dd3fc;
       font-size: 11.5px;
-      font-weight: 600;
-      color: #38bdf8;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.6px;
 
       .pulse-dot {
         width: 7px;
         height: 7px;
-        background: #38bdf8;
         border-radius: 50%;
-        box-shadow: 0 0 8px #38bdf8;
+        background: #38bdf8;
+        box-shadow: 0 0 10px #38bdf8;
         animation: pulseAnimation 2s infinite ease-in-out;
       }
     }
 
     .showcase-hero {
       max-width: 580px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: auto 0;
 
       .hero-chip {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 12px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
+        align-self: flex-start;
+        padding: 5px 12px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #f1f5f9;
         font-size: 12px;
         font-weight: 600;
-        color: #cbd5e1;
-        margin-bottom: 20px;
 
         .icon-chip {
           font-size: 16px;
-          color: #10b981;
+          color: #38bdf8;
         }
       }
 
       .hero-title {
         font-size: 38px;
         font-weight: 800;
-        line-height: 1.18;
+        line-height: 1.2;
         color: #ffffff;
-        letter-spacing: -0.03em;
-        margin-bottom: 16px;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        letter-spacing: -0.025em;
+        margin: 0;
+        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
       }
 
       .hero-description {
-        font-size: 15.5px;
-        line-height: 1.6;
-        color: #94a3b8;
-        margin-bottom: 36px;
-      }
-    }
-
-    .security-pillars-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-
-      .pillar-card {
-        background: rgba(15, 23, 42, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: rgba(30, 41, 59, 0.7);
-          border-color: rgba(56, 189, 248, 0.3);
-          transform: translateY(-2px);
-        }
-
-        .icon-pillar {
-          font-size: 22px;
-          color: #38bdf8;
-        }
-
-        strong {
-          font-size: 12.5px;
-          font-weight: 700;
-          color: #f1f5f9;
-          display: block;
-        }
-
-        small {
-          font-size: 11px;
-          color: #64748b;
-          display: block;
-          line-height: 1.3;
-        }
+        font-size: 15px;
+        line-height: 1.65;
+        color: #cbd5e1;
+        margin: 0;
+        max-width: 520px;
       }
     }
 
@@ -331,14 +287,14 @@ import { ApiService } from '../../core/services/api.service';
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
 
-      .btn-back-website {
+      .btn-return-home {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        color: #94a3b8;
+        color: #cbd5e1;
         font-size: 13px;
         font-weight: 600;
         text-decoration: none;
@@ -353,23 +309,42 @@ import { ApiService } from '../../core/services/api.service';
         }
       }
 
-      .copyright-text {
+      .footer-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
         font-size: 12px;
-        color: #64748b;
+        color: #94a3b8;
+
+        .powered-by-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #94a3b8;
+
+          a {
+            color: #38bdf8;
+            font-weight: 700;
+            text-decoration: none;
+            &:hover { text-decoration: underline; }
+          }
+        }
       }
     }
 
     /* ---------------------------------------------------- */
-    /* RIGHT PANEL: FORM SHELL                              */
+    /* RIGHT PANEL: BRIGHT FORM SHELL                       */
     /* ---------------------------------------------------- */
     .auth-form-panel {
       position: relative;
+      height: 100vh;
+      max-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(11, 15, 25, 0.88);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: #f8fafc;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
 
     .form-panel-scroll {
@@ -378,42 +353,64 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 48px 32px;
-      overflow-y: auto;
+      padding: 24px 32px;
+      box-sizing: border-box;
     }
 
     .form-wrapper {
       width: 100%;
-      max-width: 460px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 16px;
+      margin: auto 0;
     }
 
     .mobile-brand-bar {
       display: none;
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
 
       .mobile-logo-img {
-        max-height: 42px;
-        max-width: 200px;
+        max-height: 40px;
+        max-width: 190px;
         object-fit: contain;
       }
 
       .mobile-brand-text {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 800;
-        color: #ffffff;
+        color: #0f172a;
       }
     }
 
-    .auth-terms-note {
-      text-align: center;
-      font-size: 11.5px;
-      color: #64748b;
-      line-height: 1.5;
-      padding: 0 12px;
+    .form-footer-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+
+      .auth-terms-note {
+        text-align: center;
+        font-size: 11px;
+        color: #64748b;
+        line-height: 1.45;
+        margin: 0;
+        padding: 0 8px;
+      }
+
+      .powered-by-row {
+        font-size: 11.5px;
+        color: #64748b;
+
+        a {
+          color: #0050e5;
+          font-weight: 700;
+          text-decoration: none;
+          &:hover { text-decoration: underline; }
+        }
+      }
     }
 
     @keyframes pulseAnimation {
@@ -427,19 +424,29 @@ import { ApiService } from '../../core/services/api.service';
     /* ---------------------------------------------------- */
     @media (max-width: 1080px) {
       .auth-showcase-panel {
-        padding: 40px 32px;
+        padding: 36px 32px;
       }
       .showcase-hero .hero-title {
-        font-size: 30px;
-      }
-      .security-pillars-grid {
-        grid-template-columns: 1fr;
+        font-size: 32px;
       }
     }
 
     @media (max-width: 900px) {
+      :host {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      .auth-viewport {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
       .auth-split-layout {
+        height: auto;
+        min-height: 100vh;
         grid-template-columns: 1fr;
+        overflow-y: auto;
       }
       .auth-showcase-panel {
         display: none;
@@ -448,7 +455,14 @@ import { ApiService } from '../../core/services/api.service';
         display: block;
       }
       .auth-form-panel {
-        background: rgba(11, 15, 25, 0.94);
+        height: auto;
+        min-height: 100vh;
+        background: #f8fafc;
+        padding: 36px 20px;
+      }
+      .form-panel-scroll {
+        height: auto;
+        padding: 0;
       }
     }
   `]
@@ -493,7 +507,7 @@ export class AuthLayoutComponent implements OnInit {
     if (this.useWhiteLogo && this.brandWhiteLogoUrl) {
       return this.brandWhiteLogoUrl;
     }
-    return this.brandLogoUrl || this.brandWhiteLogoUrl || '';
+    return this.brandWhiteLogoUrl || this.brandLogoUrl || '';
   }
 
   get activeBackground(): string {

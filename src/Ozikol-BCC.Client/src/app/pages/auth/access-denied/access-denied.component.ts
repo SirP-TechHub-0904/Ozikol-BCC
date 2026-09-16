@@ -27,6 +27,10 @@ import { Router, RouterModule } from '@angular/router';
             <span class="material-symbols-outlined">switch_account</span>
             <span>Sign In with Another Account</span>
           </a>
+          <a routerLink="/" class="btn-home-link">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Return to Home</span>
+          </a>
         </div>
       </div>
     </div>
@@ -40,53 +44,52 @@ import { Router, RouterModule } from '@angular/router';
       padding: 0;
     }
     .denied-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 20px;
       padding: 44px 36px;
       width: 100%;
       max-width: 480px;
       text-align: center;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      color: #f8fafc;
+      box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: #0f172a;
       box-sizing: border-box;
     }
     .denied-icon-wrap {
       width: 68px;
       height: 68px;
       border-radius: 18px;
-      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      background: #fef3c7;
+      border: 1.5px solid #fde68a;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 20px;
-      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.35);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
     }
     .denied-icon-wrap span {
       font-size: 34px;
-      color: #ffffff;
+      color: #d97706;
     }
     .denied-title {
       font-size: 24px;
       font-weight: 800;
-      color: #ffffff;
+      color: #0f172a;
       margin: 0 0 10px;
     }
     .denied-subtitle {
       font-size: 14px;
-      color: #94a3b8;
+      color: #64748b;
       margin: 0 0 28px;
       line-height: 1.6;
     }
     .denied-subtitle strong {
-      color: #cbd5e1;
+      color: #0f172a;
     }
     .action-buttons {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .btn-primary {
       background: linear-gradient(135deg, #0050e5, #1f6bff);
@@ -101,18 +104,18 @@ import { Router, RouterModule } from '@angular/router';
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
       transition: all 0.2s ease;
       text-decoration: none;
     }
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45);
+      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
     }
     .btn-secondary {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #cbd5e1;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #475569;
       border-radius: 10px;
       padding: 12px 20px;
       font-size: 13.5px;
@@ -126,8 +129,23 @@ import { Router, RouterModule } from '@angular/router';
       text-decoration: none;
     }
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-home-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 8px;
+      transition: color 0.15s;
+    }
+    .btn-home-link:hover {
+      color: #0050e5;
     }
   `]
 })
