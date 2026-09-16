@@ -2270,17 +2270,47 @@
               </div>
             </div>
 
-            <!-- CSS File Upload & Link Studio (Shown when stylesheet or css is selected in head) -->
-            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
-              <div class="css-upload-studio-card">
-                <div class="css-upload-header">
-                  <div class="css-upload-title-box">
-                    <div class="css-icon-badge">
-                      <span class="material-symbols-outlined">upload_file</span>
+            <!-- 1-Click Popular Framework & CDN Presets -->
+            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'external_js' || tagForm.tagType === 'google_fonts')">
+              <div class="framework-presets-studio-card">
+                <div class="presets-header">
+                  <div class="presets-title-box">
+                    <div class="preset-icon-badge">
+                      <span class="material-symbols-outlined">bolt</span>
                     </div>
                     <div>
-                      <strong>Upload Custom CSS File &amp; Link It</strong>
-                      <small>Select a .css file from your computer to host and link via &lt;link rel="stylesheet"&gt; or embed inline.</small>
+                      <strong>1-Click Popular Framework &amp; CDN Presets</strong>
+                      <small>Instantly inject pre-configured production CDN stylesheets, fonts, and icon packs.</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="preset-chips-scroll">
+                  <button type="button" 
+                          class="framework-preset-chip" 
+                          *ngFor="let preset of frameworkPresets" 
+                          (click)="applyFrameworkPreset(preset)">
+                    <span class="material-symbols-outlined preset-chip-icon">{{ preset.icon }}</span>
+                    <span class="preset-chip-name">{{ preset.name }}</span>
+                    <span class="preset-chip-badge">{{ preset.badge }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cloudflare R2 + Cloudflare CDN Custom CSS Studio -->
+            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
+              <div class="cloudflare-r2-studio-card">
+                <div class="cloudflare-header">
+                  <div class="cloudflare-title-box">
+                    <div class="cloudflare-icon-badge">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                    </div>
+                    <div>
+                      <div class="cloudflare-pill-row">
+                        <strong>Cloudflare R2 + Global CDN</strong>
+                        <span class="cf-badge-tag">Zero-Egress Edge Storage</span>
+                      </div>
+                      <small>Upload your stylesheet to Cloudflare R2 for worldwide edge distribution and sub-millisecond asset caching.</small>
                     </div>
                   </div>
                   <input type="file" #cssFileInput accept=".css" (change)="onCssFileSelected($event)" style="display: none;" />
@@ -2290,6 +2320,7 @@
                   </button>
                 </div>
 
+                <!-- Selected File Status Bar -->
                 <div class="css-file-status-bar" *ngIf="selectedCssFileName">
                   <div class="css-file-info">
                     <span class="material-symbols-outlined icon-file">css</span>
@@ -2298,14 +2329,27 @@
                   </div>
                   <div class="css-action-buttons">
                     <button type="button" class="btn-action-link-css" (click)="uploadAndLinkCssFile()" [disabled]="uploadingCss">
-                      <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'link' }}</span>
-                      <span>{{ uploadingCss ? 'Uploading...' : 'Upload &amp; Link (&lt;link rel="stylesheet"&gt;)' }}</span>
+                      <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'rocket_launch' }}</span>
+                      <span>{{ uploadingCss ? 'Uploading to R2...' : 'Upload to Cloudflare R2 &amp; Link' }}</span>
                     </button>
                     <button type="button" class="btn-action-import-css" (click)="importCssAsInlineStyle()" [disabled]="uploadingCss">
                       <span class="material-symbols-outlined">code</span>
                       <span>Import as Inline CSS (&lt;style&gt;)</span>
                     </button>
                   </div>
+                </div>
+
+                <!-- Uploaded CDN URL Ribbon -->
+                <div class="cloudflare-cdn-result-bar" *ngIf="uploadedCssUrl">
+                  <div class="cdn-url-info">
+                    <span class="material-symbols-outlined icon-edge">public</span>
+                    <span class="cdn-label">Cloudflare CDN Edge URL:</span>
+                    <span class="cdn-url-text">{{ uploadedCssUrl }}</span>
+                  </div>
+                  <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
+                    <span class="material-symbols-outlined">content_copy</span>
+                    <span>Copy CDN URL</span>
+                  </button>
                 </div>
               </div>
             </div>

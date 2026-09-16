@@ -116,12 +116,80 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   customMetaAttrName: string = '';
   customMetaAttrContent: string = '';
 
-  // CSS File Upload State
+  // CSS File Upload State (Cloudflare R2 + CDN)
   selectedCssFile: File | null = null;
   selectedCssFileName: string = '';
   selectedCssFileSize: string = '';
   uploadingCss: boolean = false;
   uploadedCssUrl: string = '';
+  uploadedCssStorage: string = '';
+
+  // 1-Click Popular Framework & CDN Presets
+  readonly frameworkPresets: Array<{
+    name: string;
+    description: string;
+    tagType: string;
+    icon: string;
+    badge: string;
+    content: string;
+  }> = [
+    {
+      name: 'Bootstrap 5.3.3 (CSS)',
+      description: 'Official production CSS with responsive grid and utility classes.',
+      tagType: 'link_stylesheet',
+      icon: 'grid_view',
+      badge: 'CSS Framework',
+      content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
+    },
+    {
+      name: 'FontAwesome 6.5.1 (Icons)',
+      description: 'Global icon library with thousands of web icons.',
+      tagType: 'link_stylesheet',
+      icon: 'category',
+      badge: 'Icon Suite',
+      content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />'
+    },
+    {
+      name: 'Bootstrap Icons 1.11.3',
+      description: 'Over 2,000 official SVG font icons for Bootstrap.',
+      tagType: 'link_stylesheet',
+      icon: 'token',
+      badge: 'Icon Suite',
+      content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">'
+    },
+    {
+      name: 'Tailwind CSS (Play CDN)',
+      description: 'Utility-first CSS runtime engine via script tag for rapid development.',
+      tagType: 'external_js',
+      icon: 'palette',
+      badge: 'Utility CSS',
+      content: '<script src="https://cdn.tailwindcss.com"></script>'
+    },
+    {
+      name: 'Google Font (Inter)',
+      description: 'Modern, highly legible sans-serif typography for clean interfaces.',
+      tagType: 'link_stylesheet',
+      icon: 'text_fields',
+      badge: 'Typography',
+      content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
+    },
+    {
+      name: 'Google Font (Poppins)',
+      description: 'Geometric sans-serif with friendly curves and multiple weights.',
+      tagType: 'link_stylesheet',
+      icon: 'format_size',
+      badge: 'Typography',
+      content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
+    },
+    {
+      name: 'Animate.css 4.1.1',
+      description: 'Cross-browser CSS animations library for entrance and attention effects.',
+      tagType: 'link_stylesheet',
+      icon: 'animation',
+      badge: 'Animations',
+      content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />'
+    }
+  ];
 
   readonly metaPresets: Record<string, { name: string; icon: string; content: string }> = {
     full_suite: {
@@ -1312,7 +1380,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Uploads the selected CSS file to the backend and links it via <link rel="stylesheet">.
+   * Applies a popular 1-click CDN framework or icon preset.
+   */
+  applyFrameworkPreset(preset: any): void {
+    this.tagForm.name = preset.name;
+    this.tagForm.tagType = preset.tagType;
+    this.tagForm.content = preset.content;
+    this.toast.success(`Applied ${preset.name} CDN template!`);
+  }
+
+  /**
+   * Copies the generated Cloudflare CDN URL to the clipboard.
+   */
+  copyCdnUrl(url: string): void {
+    if (!url) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.toast.success('Cloudflare CDN URL copied to clipboard!');
+      }).catch(() => {
+        this.toast.info(`CDN URL: ${url}`);
+      });
+    } else {
+      this.toast.info(`CDN URL: ${url}`);
+    }
+  }
+
+  /**
+   * Uploads the selected CSS file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
    */
   uploadAndLinkCssFile(): void {
     if (!this.selectedCssFile) {
@@ -1328,19 +1422,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingCss = false;
         const url = res?.data?.url;
+        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
         if (url) {
           this.uploadedCssUrl = url;
+          this.uploadedCssStorage = storage;
           this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
           this.tagForm.name = `Stylesheet: ${this.selectedCssFileName}`;
           this.tagForm.tagType = 'link_stylesheet';
-          this.toast.success('CSS uploaded and stylesheet link generated successfully!');
+          this.toast.success(`Uploaded to ${storage} and edge CDN link generated!`);
         } else {
           this.toast.error('Failed to resolve uploaded CSS URL.');
         }
       },
-      error: () => {
+      error: (err) => {
         this.uploadingCss = false;
-        this.toast.warning('Remote upload failed. Automatically importing as inline <style> directly.');
+        const errMsg = err?.error?.message || 'Remote Cloudflare R2 upload failed.';
+        this.toast.warning(errMsg);
         this.importCssAsInlineStyle();
       }
     });
