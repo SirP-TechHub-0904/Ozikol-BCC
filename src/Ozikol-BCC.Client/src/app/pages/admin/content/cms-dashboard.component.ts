@@ -21,6 +21,10 @@ import { ApiService } from '../../../core/services/api.service';
           <p class="subtitle">Real-time statistics, traffic density analytics, device breakdown, and web structure monitoring.</p>
         </div>
         <div class="header-actions">
+          <a href="/" target="_blank" class="btn btn-outline visit-site-btn" title="Open live public website in new tab">
+            <span class="material-symbols-outlined">open_in_new</span>
+            <span>Visit Website</span>
+          </a>
           <a routerLink="/admin/content/pages" class="btn btn-primary">
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Web Page</span>
@@ -302,6 +306,17 @@ import { ApiService } from '../../../core/services/api.service';
     .btn-primary:hover { background: #003ebd; transform: translateY(-1px); }
     .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; }
+    .visit-site-btn {
+      color: #0050e5;
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .visit-site-btn:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #003ebd;
+      transform: translateY(-1px);
+    }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
