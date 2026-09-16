@@ -1103,7 +1103,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       });
 
     // 3. CTA Buttons (pages with isMenuCTA = true)
-    const menuCtaButtons = this.publishedPages
+    const menuCtaButtons: Array<{ title: string; url: string; isLoginBtn?: boolean }> = this.publishedPages
       .filter(p => p.isMenuCTA)
       .map(p => ({
         title: p.title,
@@ -1117,13 +1117,33 @@ export class LandingComponent implements OnInit, OnDestroy {
     // Dynamic Live Sign-In Button in Navigation Menu
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInMenu = this.brandInfo?.activateLoginInMenu !== false;
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const isMember = authed && !isAdmin;
+
+    // Determine login label, URL, and icon based on auth & role
+    // Admin / SuperAdmin / Privileged -> Console (/dashboard/console)
+    // Normal User / Member -> My Workspace (/dashboard/workspace)
+    // Guest / Not logged in -> Custom label or "Sign In" (/auth/login)
+    const loginText = !authed 
+      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+      : (isAdmin ? 'Console' : 'My Workspace');
+    const loginUrl = !authed 
+      ? '/auth/login' 
+      : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
+    const loginIcon = !authed 
+      ? 'fa-solid fa-arrow-right-to-bracket' 
+      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
+
+    const loginButtonHtml = (isLoginActive && isLoginInMenu)
+      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
+      : '';
+
     if (isLoginActive && isLoginInMenu) {
-      const authed = this.isUserAuthenticated();
-      const btnText = authed ? 'Console' : (this.brandInfo?.loginButtonText || 'Sign In');
-      const btnUrl = authed ? '/dashboard' : '/auth/login';
       menuCtaButtons.push({
-        title: btnText,
-        url: btnUrl
+        title: loginText,
+        url: loginUrl,
+        isLoginBtn: true
       });
     }
 
@@ -1133,7 +1153,18 @@ export class LandingComponent implements OnInit, OnDestroy {
       menuCtaButtons,
       cartCount: this.cartService.getItemCount(),
       BrandName: this.brandName,
-      LogoUrl: this.brandLogoUrl
+      LogoUrl: this.brandLogoUrl,
+      // Authentication & Role Tokens for Menu templates
+      IsAuthenticated: authed,
+      IsAdmin: isAdmin,
+      IsMember: isMember,
+      ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      LoginText: loginText,
+      LoginTitle: loginText,
+      LoginUrl: loginUrl,
+      LoginButtonHtml: loginButtonHtml,
+      LoginButton: loginButtonHtml,
+      LoginLink: loginButtonHtml
     };
 
     let html = this.templateHydration.hydrateTemplate(rawHtml, menuContext, this.getHydrationOptions());
@@ -1161,6 +1192,24 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
         return !!payload.exp && Date.now() < payload.exp * 1000;
+      }
+    } catch {}
+    return false;
+  }
+
+  /**
+   * Helper to check if the current user possesses administrative roles
+   * (SuperAdmin, Admin, IdentityManager, CmsManager, SystemAdministrator).
+   */
+  private isUserAdmin(): boolean {
+    if (typeof window === 'undefined') return false;
+    const rolesJson = localStorage.getItem('user_roles');
+    if (!rolesJson) return false;
+    try {
+      const roles = JSON.parse(rolesJson);
+      if (Array.isArray(roles)) {
+        const adminRoles = ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'];
+        return roles.some((r: any) => typeof r === 'string' && adminRoles.includes(r.toLowerCase()));
       }
     } catch {}
     return false;
@@ -1202,18 +1251,33 @@ export class LandingComponent implements OnInit, OnDestroy {
     // Dynamic Live Sign-In Button in Website Footer
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInFooter = this.brandInfo?.activateLoginInFooter !== false;
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const isMember = authed && !isAdmin;
+
+    const loginText = !authed 
+      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+      : (isAdmin ? 'Console' : 'My Workspace');
+    const loginUrl = !authed 
+      ? '/auth/login' 
+      : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
+    const loginIcon = !authed 
+      ? 'fa-solid fa-arrow-right-to-bracket' 
+      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
+
+    const loginButtonHtml = (isLoginActive && isLoginInFooter)
+      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
+      : '';
+
     if (isLoginActive && isLoginInFooter) {
-      const authed = this.isUserAuthenticated();
-      const btnText = authed ? 'Workspace Console' : (this.brandInfo?.loginButtonText || 'Sign In');
-      const btnUrl = authed ? '/dashboard' : '/auth/login';
       legalPages.push({
-        title: btnText,
-        url: btnUrl
+        title: loginText,
+        url: loginUrl
       });
       if (footerCategories.length > 0) {
         footerCategories[footerCategories.length - 1].pages.push({
-          title: btnText,
-          url: btnUrl
+          title: loginText,
+          url: loginUrl
         });
       }
     }
@@ -1228,7 +1292,18 @@ export class LandingComponent implements OnInit, OnDestroy {
       Address: this.brandInfo?.companyAddress || 'Corporate Headquarters',
       Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
       categories: footerCategories,
-      legalPages: legalPages
+      legalPages: legalPages,
+      // Authentication & Role Tokens for Footer templates
+      IsAuthenticated: authed,
+      IsAdmin: isAdmin,
+      IsMember: isMember,
+      ActivateLoginInFooter: isLoginActive && isLoginInFooter,
+      LoginText: loginText,
+      LoginTitle: loginText,
+      LoginUrl: loginUrl,
+      LoginButtonHtml: loginButtonHtml,
+      LoginButton: loginButtonHtml,
+      LoginLink: loginButtonHtml
     };
 
     let html = this.templateHydration.hydrateTemplate(rawHtml, footerContext, this.getHydrationOptions());

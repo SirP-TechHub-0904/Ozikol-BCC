@@ -624,6 +624,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Show as Menu CTA"',
       example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn btn-primary">{{ Title }}</a>{{/each}}'
     },
+    LoginButton: {
+      name: 'Dynamic Login / Portal Button',
+      token: '{{ LoginButton }}',
+      description: 'Role-aware portal button. Renders "Console" linking to /dashboard/console for Admins, "My Workspace" linking to /dashboard/workspace for Members, or "Sign In" linking to /auth/login for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '{{ LoginButton }}'
+    },
+    LoginUrl: {
+      name: 'Dynamic Login / Portal URL',
+      token: '{{ LoginUrl }}',
+      description: 'Resolves to /dashboard/console for Admins, /dashboard/workspace for Members, or /auth/login for unauthenticated visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '<a href="{{ LoginUrl }}" class="btn btn-primary">{{ LoginText }}</a>'
+    },
+    LoginText: {
+      name: 'Dynamic Login / Portal Text',
+      token: '{{ LoginText }}',
+      description: 'Resolves to "Console" for Admins, "My Workspace" for Members, or configured loginButtonText for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Login Button Text',
+      example: '<span>{{ LoginText }}</span>'
+    },
     Title: {
       name: 'Headline / Title',
       token: '{{ Title }}',

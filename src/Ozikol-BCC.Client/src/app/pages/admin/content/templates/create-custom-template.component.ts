@@ -509,6 +509,20 @@ export interface TokenDoc {
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginButton }}')" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In">
+                    <span class="material-symbols-outlined chip-icon">login</span>
+                    <span [innerText]="'+ {{ LoginButton }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginButton', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginButton', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginUrl }}')" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login">
+                    <span class="material-symbols-outlined chip-icon">link</span>
+                    <span [innerText]="'+ {{ LoginUrl }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: FOOTER COLUMNS -->
@@ -551,6 +565,20 @@ export interface TokenDoc {
                 <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginButton }}')" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In">
+                    <span class="material-symbols-outlined chip-icon">login</span>
+                    <span [innerText]="'+ {{ LoginButton }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginButton', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginButton', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginUrl }}')" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login">
+                    <span class="material-symbols-outlined chip-icon">link</span>
+                    <span [innerText]="'+ {{ LoginUrl }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
@@ -3767,6 +3795,27 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       description: 'Tenant organization brand name.',
       cmsPath: 'Admin Console > Settings > General / Branding',
       example: '<span>{{ BrandName }}</span>'
+    },
+    LoginButton: {
+      name: 'Dynamic Login / Portal Button',
+      token: '{{ LoginButton }}',
+      description: 'Role-aware portal button. Renders "Console" linking to /dashboard/console for Admins, "My Workspace" linking to /dashboard/workspace for Members, or "Sign In" linking to /auth/login for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '{{ LoginButton }}'
+    },
+    LoginUrl: {
+      name: 'Dynamic Login / Portal URL',
+      token: '{{ LoginUrl }}',
+      description: 'Resolves to /dashboard/console for Admins, /dashboard/workspace for Members, or /auth/login for unauthenticated visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '<a href="{{ LoginUrl }}" class="btn btn-primary">{{ LoginText }}</a>'
+    },
+    LoginText: {
+      name: 'Dynamic Login / Portal Text',
+      token: '{{ LoginText }}',
+      description: 'Resolves to "Console" for Admins, "My Workspace" for Members, or configured loginButtonText for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Login Button Text',
+      example: '<span>{{ LoginText }}</span>'
     },
     Copyright: {
       name: 'Copyright Notice',
