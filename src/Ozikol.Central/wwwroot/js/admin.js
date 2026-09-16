@@ -1,10 +1,11 @@
 /**
  * Ozikol Central Administration & Management Suite JS
- * Core interactivity: sidebar drawer, theme toggle, search, alerts, dropdowns
+ * Core interactivity: sidebar drawer, collapse rail, theme toggle, search, alerts, dropdowns
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
+    initSidebarCollapse();
     initTheme();
     initUserDropdown();
     initActiveNavLinks();
@@ -39,6 +40,35 @@ function initSidebar() {
     if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
+}
+
+/**
+ * Desktop sidebar collapse rail (icon-only mode) with localStorage persistence
+ */
+function initSidebarCollapse() {
+    const sidebar = document.getElementById('adminSidebar');
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const wrapper = document.getElementById('adminContentWrapper');
+    const STORAGE_KEY = 'ozikol_sidebar_collapsed';
+
+    if (!sidebar || !collapseBtn) return;
+
+    // Restore saved state
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'true') {
+        sidebar.classList.add('is-collapsed');
+        if (wrapper) wrapper.style.marginLeft = 'var(--sidebar-rail-width)';
+    }
+
+    collapseBtn.addEventListener('click', () => {
+        const isCollapsed = sidebar.classList.toggle('is-collapsed');
+        if (wrapper) {
+            wrapper.style.marginLeft = isCollapsed
+                ? 'var(--sidebar-rail-width)'
+                : 'var(--sidebar-width)';
+        }
+        localStorage.setItem(STORAGE_KEY, isCollapsed ? 'true' : 'false');
+    });
 }
 
 /**
@@ -88,23 +118,29 @@ function initActiveNavLinks() {
  */
 function initTheme() {
     const themeBtn = document.getElementById('themeToggleBtn');
-    const storedTheme = localStorage.getItem('oz_admin_theme') || 'dark';
+    const themeIcon = document.getElementById('themeIcon');
+    const storedTheme = localStorage.getItem('oz_admin_theme') || 'light';
 
+    // Apply stored theme
     if (storedTheme === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
     }
+    if (themeIcon) themeIcon.textContent = storedTheme === 'light' ? 'dark_mode' : 'light_mode';
 
     if (themeBtn) {
         themeBtn.addEventListener('click', () => {
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'light' ? 'dark' : 'light';
-            
+
             if (next === 'light') {
                 document.documentElement.setAttribute('data-theme', 'light');
             } else {
                 document.documentElement.removeAttribute('data-theme');
             }
 
+            if (themeIcon) themeIcon.textContent = next === 'light' ? 'dark_mode' : 'light_mode';
             localStorage.setItem('oz_admin_theme', next);
         });
     }
@@ -172,11 +208,9 @@ function initClipboardButtons() {
             const textToCopy = input.value || input.innerText;
             try {
                 await navigator.clipboard.writeText(textToCopy);
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '✓ Copied!';
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                }, 2000);
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">check</span> Copied!';
+                setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
             } catch (err) {
                 console.error('Failed to copy', err);
             }
