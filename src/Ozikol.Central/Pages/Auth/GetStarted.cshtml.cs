@@ -37,11 +37,11 @@ namespace Ozikol.Central.Pages
         public string WorkspaceSlug { get; set; } = string.Empty;
 
         /// <summary>
-        /// Corporate or work email address for workspace ownership.
+        /// Administrator email address for workspace ownership and root account authentication.
         /// </summary>
-        [Required(ErrorMessage = "Please enter your work email address.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid work email address.")]
-        [Display(Name = "Work Email")]
+        [Required(ErrorMessage = "Please enter your admin email address.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [Display(Name = "Admin Email Address")]
         [MaxLength(256)]
         public string WorkEmail { get; set; } = string.Empty;
 
