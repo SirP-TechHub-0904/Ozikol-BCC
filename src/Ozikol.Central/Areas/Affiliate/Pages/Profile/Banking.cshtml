@@ -63,7 +63,7 @@
                         <label asp-for="Input.BankName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                             Banking Institution Name
                         </label>
-                        <input asp-for="Input.BankName" placeholder="e.g. JPMorgan Chase, Barclays" 
+                        <input asp-for="Input.BankName" placeholder="Banking Institution Name" 
                                class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                         <label asp-for="Input.IbanOrAccountNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                             IBAN or Account Number
                         </label>
-                        <input asp-for="Input.IbanOrAccountNumber" placeholder="GB29BARC20201531234567" 
+                        <input asp-for="Input.IbanOrAccountNumber" placeholder="IBAN / Account Number" 
                                class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
                     </div>
 
@@ -81,7 +81,7 @@
                         <label asp-for="Input.SwiftBic" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                             SWIFT / BIC Code
                         </label>
-                        <input asp-for="Input.SwiftBic" placeholder="BARCGB22" 
+                        <input asp-for="Input.SwiftBic" placeholder="SWIFT / BIC Code" 
                                class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-family: monospace; font-size: 13px;" />
                     </div>
                 </div>
@@ -100,7 +100,7 @@
                 <label asp-for="Input.PayPalEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     PayPal Registered Email Address
                 </label>
-                <input asp-for="Input.PayPalEmail" type="email" placeholder="payouts@mycompany.com" 
+                <input asp-for="Input.PayPalEmail" type="email" placeholder="name@company.com" 
                        class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: #93c5fd; font-size: 14px;" />
                 <span asp-validation-for="Input.PayPalEmail" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>

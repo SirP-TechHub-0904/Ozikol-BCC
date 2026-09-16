@@ -67,7 +67,7 @@
                             <span class="input-group-text border-0 bg-dark text-muted" style="border-radius: 12px 0 0 12px; border: 1px solid rgba(255,255,255,0.1); border-right: none;">
                                 <i class="bi bi-search"></i>
                             </span>
-                            <input type="text" name="SearchReference" value="@Model.ReferenceNumber" class="form-control border-0 bg-dark text-white" placeholder="e.g. OZK-SUP-20260905-ABCD" style="border: 1px solid rgba(255,255,255,0.1); border-left: none; border-right: none; font-family: monospace; letter-spacing: 0.5px;" required />
+                            <input type="text" name="SearchReference" value="@Model.ReferenceNumber" class="form-control border-0 bg-dark text-white" placeholder="OZK-SUP-XXXXXXXX-XXXX" style="border: 1px solid rgba(255,255,255,0.1); border-left: none; border-right: none; font-family: monospace; letter-spacing: 0.5px;" required />
                             <button type="submit" class="btn btn-primary px-4 fw-bold" style="border-radius: 0 12px 12px 0; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
                                 Track Ticket
                             </button>
@@ -185,7 +185,7 @@
                                     <p class="text-muted small mb-3">Has your question or issue been successfully resolved? You can close this ticket now. You can always reopen it later by posting a new reply.</p>
                                     <div class="mb-3">
                                         <label class="form-label text-muted small">Optional Resolution Note:</label>
-                                        <input type="text" name="CloseReason" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. Issue resolved after following instructions." />
+                                        <input type="text" name="CloseReason" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Reason for closing ticket..." />
                                     </div>
                                     <div class="d-flex gap-2">
                                         <button type="submit" class="btn btn-danger btn-sm fw-bold">Confirm & Close Ticket</button>

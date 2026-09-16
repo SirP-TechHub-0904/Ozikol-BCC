@@ -227,14 +227,14 @@
                                     <label asp-for="Input.FullName" class="oz-partner-label">
                                         @SharedLocalizer["Creator_Field_FullName"] <span class="oz-partner-req">*</span>
                                     </label>
-                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="e.g. Elena Rostova" required />
+                                    <input asp-for="Input.FullName" class="oz-partner-input" placeholder="Full Name" required />
                                     <span asp-validation-for="Input.FullName" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.StudioName" class="oz-partner-label">
                                         @SharedLocalizer["Creator_Field_StudioName"]
                                     </label>
-                                    <input asp-for="Input.StudioName" class="oz-partner-input" placeholder="e.g. Apex Interface Lab" />
+                                    <input asp-for="Input.StudioName" class="oz-partner-input" placeholder="Studio or Agency Name" />
                                     <span asp-validation-for="Input.StudioName" class="oz-partner-field-error"></span>
                                 </div>
                             </div>
@@ -244,14 +244,14 @@
                                     <label asp-for="Input.Email" class="oz-partner-label">
                                         @SharedLocalizer["Creator_Field_Email"] <span class="oz-partner-req">*</span>
                                     </label>
-                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="elena@apexstudio.design" required />
+                                    <input asp-for="Input.Email" type="email" class="oz-partner-input" placeholder="name@company.com" required />
                                     <span asp-validation-for="Input.Email" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
                                     <label asp-for="Input.Phone" class="oz-partner-label">
                                         @SharedLocalizer["Creator_Field_Phone"]
                                     </label>
-                                    <input asp-for="Input.Phone" type="tel" class="oz-partner-input" placeholder="+1 (555) 019-2834" />
+                                    <input asp-for="Input.Phone" type="tel" class="oz-partner-input" placeholder="Phone Number" />
                                     <span asp-validation-for="Input.Phone" class="oz-partner-field-error"></span>
                                 </div>
                             </div>
@@ -261,7 +261,7 @@
                                     <label asp-for="Input.PortfolioUrl" class="oz-partner-label">
                                         @SharedLocalizer["Creator_Field_PortfolioUrl"] <span class="oz-partner-req">*</span>
                                     </label>
-                                    <input asp-for="Input.PortfolioUrl" class="oz-partner-input" placeholder="https://figma.com/@@studio or https://github.com/profile" required />
+                                    <input asp-for="Input.PortfolioUrl" class="oz-partner-input" placeholder="https://portfolio.example.com" required />
                                     <span asp-validation-for="Input.PortfolioUrl" class="oz-partner-field-error"></span>
                                 </div>
                                 <div class="oz-partner-field">
