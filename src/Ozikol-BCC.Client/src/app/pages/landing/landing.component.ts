@@ -1114,6 +1114,19 @@ export class LandingComponent implements OnInit, OnDestroy {
       menuCtaButtons.push({ title: 'Request a Service', url: '/request-service' });
     }
 
+    // Dynamic Live Sign-In Button in Navigation Menu
+    const isLoginActive = this.brandInfo?.activateLogin !== false;
+    const isLoginInMenu = this.brandInfo?.activateLoginInMenu !== false;
+    if (isLoginActive && isLoginInMenu) {
+      const authed = this.isUserAuthenticated();
+      const btnText = authed ? 'Console' : (this.brandInfo?.loginButtonText || 'Sign In');
+      const btnUrl = authed ? '/dashboard' : '/auth/login';
+      menuCtaButtons.push({
+        title: btnText,
+        url: btnUrl
+      });
+    }
+
     const menuContext = {
       topMenuItems,
       dropdowns,
@@ -1134,6 +1147,23 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     return html;
+  }
+
+  /**
+   * Helper to check if the current browser session has an active, unexpired JWT token.
+   */
+  private isUserAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+    const token = localStorage.getItem('access_token');
+    if (!token) return false;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        return !!payload.exp && Date.now() < payload.exp * 1000;
+      }
+    } catch {}
+    return false;
   }
 
   /**
@@ -1168,6 +1198,25 @@ export class LandingComponent implements OnInit, OnDestroy {
         title: p.title,
         url: `/${p.directUrl || p.slug}`
       }));
+
+    // Dynamic Live Sign-In Button in Website Footer
+    const isLoginActive = this.brandInfo?.activateLogin !== false;
+    const isLoginInFooter = this.brandInfo?.activateLoginInFooter !== false;
+    if (isLoginActive && isLoginInFooter) {
+      const authed = this.isUserAuthenticated();
+      const btnText = authed ? 'Workspace Console' : (this.brandInfo?.loginButtonText || 'Sign In');
+      const btnUrl = authed ? '/dashboard' : '/auth/login';
+      legalPages.push({
+        title: btnText,
+        url: btnUrl
+      });
+      if (footerCategories.length > 0) {
+        footerCategories[footerCategories.length - 1].pages.push({
+          title: btnText,
+          url: btnUrl
+        });
+      }
+    }
 
     const footerContext = {
       BrandName: this.brandName,

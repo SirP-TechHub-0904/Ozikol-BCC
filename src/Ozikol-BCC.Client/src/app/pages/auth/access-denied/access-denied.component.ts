@@ -33,22 +33,16 @@ import { Router, RouterModule } from '@angular/router';
   `,
   styles: [`
     .denied-container {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
       box-sizing: border-box;
-      font-family: 'Roboto', 'Inter', sans-serif;
-      z-index: 100;
+      padding: 0;
     }
     .denied-card {
-      background: rgba(30, 41, 59, 0.85);
+      background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 20px;
       padding: 44px 36px;

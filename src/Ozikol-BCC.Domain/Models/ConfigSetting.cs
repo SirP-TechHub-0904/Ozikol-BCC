@@ -143,7 +143,17 @@ namespace Ozikol_BCC.Domain.Models
         /// <summary>
         /// Shows/hides the 'Login' button specifically in the nav.
         /// </summary>
-        public bool ActivateLoginInMenu { get; set; }
+        public bool ActivateLoginInMenu { get; set; } = true;
+
+        /// <summary>
+        /// Shows/hides the 'Login' button or portal link in the website footer.
+        /// </summary>
+        public bool ActivateLoginInFooter { get; set; } = true;
+
+        /// <summary>
+        /// Custom display text for the website sign-in button (e.g. 'Sign In', 'Client Portal', 'Member Login').
+        /// </summary>
+        public string? LoginButtonText { get; set; } = "Sign In";
 
         /// <summary>
         /// Locks the whole site behind a 'Coming Soon' screen.

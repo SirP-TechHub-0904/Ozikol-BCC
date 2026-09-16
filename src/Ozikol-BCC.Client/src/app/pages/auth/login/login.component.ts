@@ -48,7 +48,7 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="form-group">
             <div class="label-row">
               <label for="password">Password</label>
-              <a routerLink="/reset-password" class="forgot-link">Forgot password?</a>
+              <a routerLink="/auth/reset-password" class="forgot-link">Forgot password?</a>
             </div>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">key</span>
@@ -90,7 +90,7 @@ import { ApiService } from '../../../core/services/api.service';
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt">Need a new account? <a routerLink="/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
             Back to Public Website
@@ -264,8 +264,8 @@ import { ApiService } from '../../../core/services/api.service';
                   type="text" 
                   [(ngModel)]="mfaCode" 
                   name="mfaCode" 
-                  placeholder="123456" 
-                  style="letter-spacing:4px; font-size:18px; font-weight:700; text-align:center;" 
+                  placeholder="6-digit code or backup key" 
+                  style="letter-spacing:2px; font-size:16px; font-weight:700; text-align:center;" 
                   required 
                 />
               </div>
@@ -279,7 +279,7 @@ import { ApiService } from '../../../core/services/api.service';
               </label>
             </div>
 
-            <button type="submit" [disabled]="mfaLoading || mfaCode.length < 6" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
+            <button type="submit" [disabled]="mfaLoading || !mfaCode || mfaCode.trim().length < 4" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
               <span *ngIf="mfaLoading" class="spinner"></span>
               <span *ngIf="!mfaLoading" class="material-symbols-outlined">verified_user</span>
               <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
@@ -315,26 +315,19 @@ import { ApiService } from '../../../core/services/api.service';
   `,
   styles: [`
     .login-container {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
-      font-family: 'Roboto', 'Inter', sans-serif;
       box-sizing: border-box;
-      overflow-y: auto;
-      z-index: 100;
+      padding: 0;
     }
     .login-card {
-      background: rgba(30, 41, 59, 0.85);
+      background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 20px;
-      padding: 40px;
+      padding: 36px 32px;
       width: 100%;
       max-width: 440px;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
@@ -968,7 +961,7 @@ export class LoginComponent implements OnInit {
   }
 
   onVerifyLoginMfa(): void {
-    if (!this.mfaCode || this.mfaCode.length < 6) return;
+    if (!this.mfaCode || this.mfaCode.trim().length < 4) return;
 
     this.mfaLoading = true;
     this.mfaError = '';
