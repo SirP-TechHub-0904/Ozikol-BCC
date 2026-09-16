@@ -11,10 +11,12 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
 
 /**
  * Public dynamic website orchestration component.
- * Replaces static mock landing page by fetching active tenant installed templates
- * (Menu, Hero, Body Sections, Footer, Breadcrumbs) from WebsiteContentApi and hydrating
- * them with live database content (WebPages, PageCategories, PageSections, PageSectionLists,
- * Blogs, PageForms, and SiteCodeInjectionTags).
+ * Faithfully implements the full web architecture:
+ * 1. Header Tags (<head>): Active SEO meta tags, Google Fonts, OpenGraph, Twitter cards, Favicons, and Bootstrap/FA CSS.
+ * 2. Body Open Tags (<body>): Injected immediately after <body> opening tag.
+ * 3. Modular Sections: Navbar (menu), Hero (hero) or Breadcrumb, ordered PageSections (body), and Footer (footer).
+ * 4. Footer Scripts (</body>): Injected immediately before </body> closing tag (Bootstrap JS bundle, section scripts).
+ * 5. Full Document Scrolling: Native responsive browser scrolling without viewport lock.
  */
 @Component({
   selector: 'app-landing',
@@ -271,6 +273,9 @@ export class LandingComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Unlock native document scrolling for public website mode
+    document.body.classList.add('public-website-mode');
+
     // Listen to route changes (slug changes) to support instant in-app navigation
     this.routeSub = this.route.params.subscribe(params => {
       const slugParam = (params['slug'] || '').trim().toLowerCase();
@@ -285,6 +290,13 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Re-lock or restore default dashboard mode
+    document.body.classList.remove('public-website-mode');
+
+    // Clean up dynamic tags injected into head and body
+    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+    document.getElementById('tenant-dynamic-theme-styles')?.remove();
+
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
@@ -492,7 +504,7 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Assembles the Homepage:
-   * Menu + Hero + Home Body Sections in Order + Footer.
+   * Menu + Hero + Home Body Sections in Order (without duplicate Hero) + Footer.
    */
   private composeHomepage(): void {
     this.titleService.setTitle(`${this.brandName} | Official Website`);
@@ -503,24 +515,30 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     let combinedStyles = '';
     let combinedHtml = '';
+    let combinedJs = '';
 
     // 1. Menu Section
     if (menuTemplate) {
       combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
       const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, 'home');
       combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
     }
 
     // 2. Hero Section
+    // Locate if a hero section was seeded in DB (directUrl == 'home-hero' or homePageSortOrder == 1)
+    const dbHeroSection = this.sections.find(s => s.directUrl === 'home-hero' || s.homePageSortOrder === 1);
     if (heroTemplate) {
       combinedStyles += `\n${heroTemplate.cssStyles || ''}\n`;
-      const heroData = this.buildHeroContext();
+      const heroData = this.buildHeroContext(dbHeroSection);
       const heroHtml = this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, heroData, this.getHydrationOptions());
       combinedHtml += `<!-- Hero -->\n${heroHtml}\n`;
+      if (heroTemplate.jsScript) combinedJs += `\n${heroTemplate.jsScript}\n`;
     }
 
-    // 3. Modular Body Sections (From DB HomePageSortOrder)
-    for (const sec of this.sections) {
+    // 3. Modular Body Sections (exclude section consumed as Hero to prevent duplicate display)
+    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
+    for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
         if (!combinedStyles.includes(secTemplate.cssStyles)) {
@@ -529,6 +547,9 @@ export class LandingComponent implements OnInit, OnDestroy {
         const sectionData = this.buildSectionContext(sec);
         const sectionHtml = this.templateHydration.hydrateTemplate(secTemplate.htmlTemplate, sectionData, this.getHydrationOptions());
         combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
+        if (secTemplate.jsScript && !combinedJs.includes(secTemplate.jsScript)) {
+          combinedJs += `\n${secTemplate.jsScript}\n`;
+        }
       }
     }
 
@@ -537,9 +558,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
       const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
       combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml);
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
   /**
@@ -560,12 +582,14 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     let combinedStyles = '';
     let combinedHtml = '';
+    let combinedJs = '';
 
     // 1. Menu
     if (menuTemplate) {
       combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
       const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug);
       combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
     }
 
     // 2. Breadcrumb Header
@@ -583,6 +607,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       };
       const breadcrumbHtml = this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
       combinedHtml += `<!-- Breadcrumb Header -->\n${breadcrumbHtml}\n`;
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
     // 3. Page Layout Sections
@@ -597,6 +622,9 @@ export class LandingComponent implements OnInit, OnDestroy {
           const sectionData = this.buildSectionContext(sec);
           const sectionHtml = this.templateHydration.hydrateTemplate(secTemplate.htmlTemplate, sectionData, this.getHydrationOptions());
           combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
+          if (secTemplate.jsScript && !combinedJs.includes(secTemplate.jsScript)) {
+            combinedJs += `\n${secTemplate.jsScript}\n`;
+          }
         }
       }
     } else if (this.currentPage.fullDescription || this.currentPage.description) {
@@ -621,9 +649,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
       const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
       combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml);
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
   /**
@@ -640,10 +669,12 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     let combinedStyles = '';
     let combinedHtml = '';
+    let combinedJs = '';
 
     if (menuTemplate) {
       combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
       combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
     }
 
     if (breadcrumbTemplate) {
@@ -659,6 +690,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         ]
       };
       combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
     // Render Blog Grid
@@ -681,14 +713,16 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (blogTemplate) {
       if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
       combinedHtml += this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions());
+      if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
     }
 
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
       combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml);
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
   /**
@@ -709,10 +743,12 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     let combinedStyles = '';
     let combinedHtml = '';
+    let combinedJs = '';
 
     if (menuTemplate) {
       combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
       combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
     }
 
     if (breadcrumbTemplate) {
@@ -729,6 +765,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         ]
       };
       combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
     // Article Reader Layout
@@ -763,9 +800,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
       combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml);
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
   /**
@@ -896,9 +934,22 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Builds Hero hydration data from active sliders or default template tokens.
+   * Builds Hero hydration data from active DB section or sliders or defaults.
    */
-  private buildHeroContext(): any {
+  private buildHeroContext(dbHeroSection?: any): any {
+    if (dbHeroSection) {
+      return {
+        title: dbHeroSection.title || 'Driving Next-Generation Enterprise Growth',
+        miniTitle: dbHeroSection.miniTitle || 'Strategic Modernization',
+        description: dbHeroSection.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
+        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
+        buttonText: dbHeroSection.buttonText || 'Explore Services',
+        buttonLink: dbHeroSection.buttonLink || '/services',
+        secondaryButtonText: 'Schedule Consultation',
+        secondaryButtonLink: '/contact-us'
+      };
+    }
+
     if (this.sliders && this.sliders.length > 0) {
       const activeSlider = this.sliders[0];
       return {
@@ -906,9 +957,9 @@ export class LandingComponent implements OnInit, OnDestroy {
         miniTitle: activeSlider.miniTitle || 'Strategic Modernization',
         description: activeSlider.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
         imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-        buttonText: activeSlider.buttonText || 'Discover Solutions',
-        buttonLink: activeSlider.buttonLink || '/strategic-consulting',
-        secondaryButtonText: activeSlider.secondaryButtonText || 'Contact Leadership',
+        buttonText: activeSlider.buttonText || 'Explore Services',
+        buttonLink: activeSlider.buttonLink || '/services',
+        secondaryButtonText: activeSlider.secondaryButtonText || 'Schedule Consultation',
         secondaryButtonLink: activeSlider.secondaryButtonLink || '/contact-us'
       };
     }
@@ -918,10 +969,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       miniTitle: 'Next-Generation Technology & Consulting',
       description: 'We orchestrate robust operational frameworks, modern digital architecture, and resilient systems for global industry leaders.',
       imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-      buttonText: 'Explore Advisory',
-      buttonLink: '/strategic-consulting',
-      secondaryButtonText: 'Consult With Us',
-      secondaryButtonLink: '/request-service'
+      buttonText: 'Explore Services',
+      buttonLink: '/services',
+      secondaryButtonText: 'Schedule Consultation',
+      secondaryButtonLink: '/contact-us'
     };
   }
 
@@ -975,11 +1026,136 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Finalizes document rendering by sanitizing HTML and injecting into DOM.
+   * Finalizes document rendering by:
+   * 1. Injecting CSS styles into <head> via a dedicated style tag.
+   * 2. Sanitizing HTML for Angular DOM rendering.
+   * 3. Executing the complete 3-zone tag injection pipeline (head, body_open, footer) + section scripts.
    */
-  private finalizeRender(styles: string, html: string): void {
-    const fullHtml = styles ? `<style>${styles}</style>\n${html}` : html;
-    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(fullHtml);
+  private finalizeRender(styles: string, html: string, combinedJs?: string): void {
+    // 1. Inject Scoped Template CSS into <head>
+    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'tenant-dynamic-theme-styles';
+      document.head.appendChild(styleTag);
+    }
+    styleTag.textContent = styles || '';
+
+    // 2. Set Safe HTML for main page layout
+    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+
+    // 3. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
+    this.injectCodeTags(combinedJs);
+  }
+
+  /**
+   * Injects code tags into all 3 document zones according to CMS architecture:
+   * - Zone 1: <head> -> external CSS stylesheets, meta tags, Google Fonts, OpenGraph, JSON-LD, Favicons
+   * - Zone 2: <body> -> immediately after opening body tag
+   * - Zone 3: </body> -> immediately before closing body tag (Bootstrap JS bundle, section scripts)
+   */
+  private injectCodeTags(combinedJs?: string): void {
+    // Clean up previously injected dynamic tags
+    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+
+    // 1. Guaranteed Baseline Head Assets (Bootstrap 5.3 CSS, FA 6, Google Fonts)
+    this.ensureBaselineHeadTags();
+
+    // 2. Inject CMS Header Tags (<head>)
+    if (this.codeInjections.head && this.codeInjections.head.length > 0) {
+      for (const tag of this.codeInjections.head) {
+        if (!tag.content) continue;
+        this.appendHtmlToContainer(document.head, tag.content, 'head');
+      }
+    }
+
+    // 3. Inject CMS Body Open Tags (immediately after <body>)
+    if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
+      for (const tag of this.codeInjections.bodyOpen) {
+        if (!tag.content) continue;
+        this.prependHtmlToBody(tag.content);
+      }
+    }
+
+    // 4. Inject CMS Footer Scripts (right before </body>)
+    if (this.codeInjections.footer && this.codeInjections.footer.length > 0) {
+      for (const tag of this.codeInjections.footer) {
+        if (!tag.content) continue;
+        this.appendHtmlToContainer(document.body, tag.content, 'footer');
+      }
+    }
+
+    // 5. Guaranteed Baseline Footer Scripts (Bootstrap 5.3 JS Bundle)
+    this.ensureBootstrapJsScript();
+
+    // 6. Section JavaScript Execution
+    if (combinedJs && combinedJs.trim()) {
+      const script = document.createElement('script');
+      script.className = 'ozikol-injected-tag ozikol-section-scripts';
+      script.textContent = combinedJs;
+      document.body.appendChild(script);
+    }
+  }
+
+  private ensureBaselineHeadTags(): void {
+    if (!document.querySelector('link[href*="bootstrap"]')) {
+      const bsCss = document.createElement('link');
+      bsCss.rel = 'stylesheet';
+      bsCss.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
+      bsCss.className = 'ozikol-injected-tag';
+      document.head.appendChild(bsCss);
+    }
+    if (!document.querySelector('link[href*="font-awesome"]')) {
+      const faCss = document.createElement('link');
+      faCss.rel = 'stylesheet';
+      faCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+      faCss.className = 'ozikol-injected-tag';
+      document.head.appendChild(faCss);
+    }
+  }
+
+  private ensureBootstrapJsScript(): void {
+    if (!document.querySelector('script[src*="bootstrap"]')) {
+      const bsJs = document.createElement('script');
+      bsJs.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
+      bsJs.className = 'ozikol-injected-tag';
+      document.body.appendChild(bsJs);
+    }
+  }
+
+  private appendHtmlToContainer(container: HTMLElement, htmlString: string, zone: string): void {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlString.trim();
+
+    Array.from(temp.children).forEach(child => {
+      const el = child as HTMLElement;
+      el.classList.add('ozikol-injected-tag', `ozikol-zone-${zone}`);
+
+      if (el.tagName.toLowerCase() === 'script') {
+        const script = document.createElement('script');
+        script.className = el.className;
+        Array.from(el.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
+        script.textContent = el.textContent || '';
+        container.appendChild(script);
+      } else {
+        container.appendChild(el);
+      }
+    });
+  }
+
+  private prependHtmlToBody(htmlString: string): void {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlString.trim();
+
+    Array.from(temp.children).reverse().forEach(child => {
+      const el = child as HTMLElement;
+      el.classList.add('ozikol-injected-tag', 'ozikol-zone-body-open');
+      if (document.body.firstChild) {
+        document.body.insertBefore(el, document.body.firstChild);
+      } else {
+        document.body.appendChild(el);
+      }
+    });
   }
 
   private recordTelemetry(): void {
