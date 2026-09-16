@@ -737,9 +737,18 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
     output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@organization.com');
     output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (555) 019-2834');
-    output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Administrative Headquarters');
     output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `&copy; ${currentYear} ${brandName}. All rights reserved.`);
     output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
+
+    // Authentication, Portal & Role-Aware Placeholders (Console vs. My Workspace vs. Sign In)
+    const loginUrl = ctx.LoginUrl || ctx.loginUrl || '/auth/login';
+    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || 'Sign In';
+    const loginBtnHtml = ctx.LoginButtonHtml || ctx.loginButtonHtml || 
+      `<a href="${loginUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><span>${loginText}</span></a>`;
+
+    output = output.replace(/\{\{\s*(?:LoginUrl|AuthUrl|PortalUrl)\s*\}\}/gi, loginUrl);
+    output = output.replace(/\{\{\s*(?:LoginText|LoginTitle|AuthText|PortalText)\s*\}\}/gi, loginText);
+    output = output.replace(/\{\{\s*(?:LoginButton|LoginLink|AuthButton|PortalButton|PortalLink)\s*\}\}/gi, loginBtnHtml);
 
     // Clean up any remaining unhandled {{#each ...}} loops and leftover {{ Token }} placeholders to prevent visual leakage
     output = output.replace(/\{\{#each[\s\S]*?\{\{\/each\}\}/gi, '');

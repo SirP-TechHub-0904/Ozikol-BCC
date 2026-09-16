@@ -1429,6 +1429,14 @@
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
             </ng-container>
 
             <!-- Hero Category Ribbon (Slider Model) -->
@@ -1530,6 +1538,14 @@
                   <span>+ Form Embed</span>
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
             </ng-container>
 
