@@ -2209,7 +2209,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       combinedJs = this.activePreviewItem.jsScript || '';
     }
 
-    const combined = `<style>${combinedStyles}</style>\n${combinedHtml}`;
+    const cleanCombinedStyles = (combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    const cleanCombinedJs = (combinedJs || '').replace(/<\/?script[^>]*>/gi, '').trim();
+
+    const combined = `<style>${cleanCombinedStyles}</style>\n${combinedHtml}`;
     this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
 
     const singleIframeDoc = `<!DOCTYPE html>
@@ -2231,10 +2234,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       position: relative !important;
     }
     .dropdown-menu {
-      display: none;
-    }
-    .dropdown-menu.show {
-      display: block !important;
       position: absolute !important;
       top: 100% !important;
       left: 0 !important;
@@ -2263,7 +2262,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       background-color: #f1f5f9 !important;
       color: #0050e5 !important;
     }
-    ${combinedStyles}
+    ${cleanCombinedStyles}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -2298,15 +2297,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       var dropdownItem = e.target.closest('.dropdown-item');
       if (dropdownItem) {
         var itemHref = (dropdownItem.getAttribute('href') || '').trim();
-        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-          m.classList.remove('show');
-          m.style.display = 'none';
-        });
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-          t.setAttribute('aria-expanded', 'false');
-        });
         if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
           e.preventDefault();
+          e.stopPropagation();
           if (e.stopImmediatePropagation) e.stopImmediatePropagation();
           window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
           return;
@@ -2351,7 +2344,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 </head>
 <body>
   ${combinedHtml}
-  ${combinedJs ? `\n  <script>\n    ${combinedJs}\n  <\/script>` : ''}
+  ${cleanCombinedJs ? `\n  <script>\n    ${cleanCombinedJs}\n  <\/script>` : ''}
 </body>
 </html>`;
     this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
@@ -2716,11 +2709,62 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }, 60);
   }
 
+  public readonly DEFAULT_CSS_GUIDE: string = `/* ==========================================================================
+ * SCOPED CSS STYLESHEET GUIDELINES:
+ * 1. PURE CSS ONLY: Do NOT include <style> or </style> tags.
+ * 2. SCOPING: Use class selectors matching your section HTML to prevent global leaks.
+ * 3. CSS VARIABLES: Leverage theme tokens like var(--primary-color, #0050e5).
+ * 4. RESPONSIVE BREAKPOINTS:
+ *    @media (max-width: 991.98px) { /* Tablets & Mobile */ }
+ *    @media (max-width: 575.98px) { /* Small Phones */ }
+ * ========================================================================== */
+
+.oz-custom-section {
+  padding: 60px 0;
+  background-color: var(--bg-light, #f8fafc);
+}
+`;
+
+  public readonly DEFAULT_JS_GUIDE: string = `/**
+ * ==========================================================================
+ * SECTION JAVASCRIPT LOGIC GUIDELINES:
+ * 1. PURE JAVASCRIPT ONLY: Do NOT include <script> or </script> tags.
+ * 2. NO CONFLICTS (IIFE): Keep code wrapped in (function() { 'use strict'; ... })();
+ *    This ensures variables do not conflict with other sections on the page.
+ * 3. MULTIPLE FUNCTIONS: You can define multiple functions freely inside this closure.
+ * 4. EXECUTION: Runs automatically in Zone 3 (before </body>) once DOM is ready.
+ * ==========================================================================
+ */
+(function() {
+  'use strict';
+
+  // Function 1: Initialization logic
+  function initSection() {
+    // Example: Select interactive elements inside this section
+    // const interactiveItems = document.querySelectorAll('.oz-interactive-card');
+    // interactiveItems.forEach(item => {
+    //   item.addEventListener('click', handleCardClick);
+    // });
+  }
+
+  // Function 2: Event handler or calculation helper
+  function handleCardClick(event) {
+    // Custom interaction logic here
+  }
+
+  // Auto-run section initializer
+  initSection();
+})();
+`;
+
   /**
    * Initializes or updates the Monaco Editor instance for inspecting scoped CSS with code folding.
    */
   initMonacoCssEditor(): void {
     if (!this.activePreviewItem) return;
+    if (!this.activePreviewItem.cssStyles || !this.activePreviewItem.cssStyles.trim()) {
+      this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    }
     setTimeout(() => {
       const container = this.monacoCssContainer?.nativeElement;
       if (!container || !container.isConnected) return;
@@ -2822,6 +2866,32 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         console.warn('Monaco JS editor load error:', err);
       });
     }, 60);
+  }
+
+  /**
+   * Initializes starter scoped CSS with architectural guidance
+   * and mounts or refreshes the Monaco CSS editor.
+   */
+  initializeTemplateCss(): void {
+    if (!this.activePreviewItem) return;
+    this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    if (this.monacoInstanceCss) {
+      this.monacoInstanceCss.setValue(this.activePreviewItem.cssStyles);
+    } else {
+      this.initMonacoCssEditor();
+    }
+    this.updateSinglePreviewHtml();
+  }
+
+  /**
+   * Initializes boilerplate JavaScript with architectural guidance
+   * and mounts the Monaco JS editor.
+   */
+  initializeTemplateJs(): void {
+    if (!this.activePreviewItem) return;
+    this.activePreviewItem.jsScript = this.DEFAULT_JS_GUIDE;
+    this.initMonacoJsEditor();
+    this.updateSinglePreviewHtml();
   }
 
   /**
