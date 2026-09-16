@@ -1374,30 +1374,43 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    miniTitle = "Enterprise Solutions",
+                    title = "Empowering Modern Enterprises to Scale with Confidence.",
+                    description = "Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.",
+                    buttonText = "Explore Services",
+                    buttonLink = "#services",
+                    secondaryButtonText = "Schedule Consultation",
+                    secondaryButtonLink = "#contact",
+                    imageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-lg-4"">
     <div class=""row align-items-center g-5"">
       <div class=""col-lg-6"">
         <div class=""d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3"">
-          <span class=""small fw-bold text-uppercase"">Enterprise Solutions</span>
+          <span class=""small fw-bold text-uppercase"">{{ MiniTitle }}</span>
         </div>
-        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Empowering Modern Enterprises to Scale with Confidence.</h1>
-        <p class=""lead text-muted mb-4 fs-6"">Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.</p>
+        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">{{ Title }}</h1>
+        <p class=""lead text-muted mb-4 fs-6"">{{ Description }}</p>
         <div class=""d-flex flex-wrap gap-3"">
-          <a href=""#services"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
-            <span>Explore Services</span>
+          <a href=""{{ ButtonLink }}"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
+            <span>{{ ButtonText }}</span>
             <span style=""font-size: 16px;"">→</span>
           </a>
-          <a href=""#contact"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
-            Schedule Consultation
+          {{#if SecondaryButtonText}}
+          <a href=""{{ SecondaryButtonLink }}"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
+            {{ SecondaryButtonText }}
           </a>
+          {{/if}}
         </div>
       </div>
       <div class=""col-lg-6"">
         <div class=""rounded-4 overflow-hidden shadow-lg border border-light-subtle"">
-          <img src=""https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"" 
-               alt=""Modern Corporate Architecture"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 420px;"" />
+          <img src=""{{ ImageUrl }}"" 
+               alt=""{{ Title }}"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 420px;"" />
         </div>
       </div>
     </div>
@@ -1853,9 +1866,12 @@ public class TenantOnboardingService : ITenantOnboardingService
                     title = "Send Us a Direct Message",
                     miniTitle = "Official Inquiries",
                     description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
-                    address = "Administrative Headquarters, 742 Evergreen Terrace, Suite 500",
-                    phone = "+1 (800) 555-0199",
-                    email = "contact@organization.com"
+                    items = new[]
+                    {
+                        new { title = "Corporate Office", description = "Administrative Headquarters, 742 Evergreen Terrace, Suite 500", iconText = "fa-solid fa-location-dot" },
+                        new { title = "Official Inquiry Desk", description = "Direct corporate correspondence and information", iconText = "fa-solid fa-envelope" },
+                        new { title = "Business Hours", description = "Monday – Friday: 8:30 AM – 5:30 PM (LST)", iconText = "fa-solid fa-clock" }
+                    }
                 }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"" id=""contact"">
@@ -1868,45 +1884,19 @@ public class TenantOnboardingService : ITenantOnboardingService
         <p class=""text-muted mb-4 fs-6"">{{ Description }}</p>
 
         <div class=""d-flex flex-column gap-3 mb-4"">
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-location-dot""></i>
+          {{#each PageSectionLists}}
+            <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+              {{#if IconText}}
+                <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+                  <i class=""{{ IconText }}""></i>
+                </div>
+              {{/if}}
+              <div>
+                <strong class=""text-dark small d-block"">{{ Title }}</strong>
+                <span class=""text-muted small"">{{ Description }}</span>
+              </div>
             </div>
-            <div>
-              <strong class=""text-dark small d-block"">Corporate Office</strong>
-              <span class=""text-muted small"">{{ Address }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-phone""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Telephone Hotline</strong>
-              <span class=""text-muted small"">{{ Phone }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-envelope""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Official Inquiry Desk</strong>
-              <span class=""text-muted small"">{{ Email }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-clock""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Business Hours</strong>
-              <span class=""text-muted small"">Monday – Friday: 8:30 AM – 5:30 PM (LST)</span>
-            </div>
-          </div>
+          {{/each}}
         </div>
       </div>
 
@@ -1940,8 +1930,6 @@ public class TenantOnboardingService : ITenantOnboardingService
                     title = "Request a Tailored Enterprise Service",
                     miniTitle = "Service Consultation",
                     description = "Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.",
-                    phone = "+1 (800) 555-0199",
-                    email = "advisory@organization.com",
                     items = new[]
                     {
                         new { title = "Dedicated Solutions Lead", description = "Direct engagement with an enterprise systems architect.", iconText = "fa-solid fa-check" },
@@ -1953,7 +1941,7 @@ public class TenantOnboardingService : ITenantOnboardingService
 <section class=""py-5 bg-light border-bottom"" id=""request-service"">
   <div class=""container py-4"">
     <div class=""row g-5"">
-      <!-- Left Column: Executive Consultation Scope & Hotline -->
+      <!-- Left Column: Executive Consultation Scope -->
       <div class=""col-lg-5"">
         <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">{{ MiniTitle }}</span>
         <h2 class=""fw-bold text-dark mb-3"">{{ Title }}</h2>
@@ -1974,11 +1962,6 @@ public class TenantOnboardingService : ITenantOnboardingService
               </div>
             {{/each}}
           </div>
-        </div>
-
-        <div class=""d-flex flex-column gap-2 text-muted small"">
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-phone text-primary""></i><span>Direct Hotline: {{ Phone }}</span></div>
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-envelope text-primary""></i><span>Advisory Desk: {{ Email }}</span></div>
         </div>
       </div>
 
@@ -2804,26 +2787,6 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
         sections.Add(contactHero);
 
-        var contactChannels = new PageSection
-        {
-            Id = Guid.NewGuid(),
-            WebPageId = contactPage.Id,
-            TemplateKey = "Body_FeatureGrid3",
-            Title = "Communication Channels",
-            MiniTitle = "DIRECT ACCESS",
-            Description = "Choose the most convenient communication method to connect directly with our departments.",
-            DirectUrl = "contact-channels",
-            ShowInHome = false,
-            PageSortOrder = 2,
-            PageSectionLists = new List<PageSectionList>
-            {
-                new() { Id = Guid.NewGuid(), Title = "General Inquiries", Description = $"Direct correspondence and corporate information: {request.AdminEmail}", IconText = "fa-solid fa-envelope", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Telephone Support", Description = "Corporate office and administrative support: +1 (800) 555-0199", IconText = "fa-solid fa-phone", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Operating Hours", Description = "Monday through Friday: 8:30 AM to 5:30 PM (Local Standard Time).", IconText = "fa-solid fa-location-dot", SortOrder = 3 }
-            }
-        };
-        sections.Add(contactChannels);
-
         var contactFormSection = new PageSection
         {
             Id = Guid.NewGuid(),
@@ -2834,9 +2797,15 @@ public class TenantOnboardingService : ITenantOnboardingService
             Description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
             DirectUrl = "contact-form",
             ShowInHome = false,
-            PageSortOrder = 3,
+            PageSortOrder = 2,
             PageFormId = contactForm?.Id,
-            FormKey = "contact-us"
+            FormKey = "contact-us",
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Corporate Headquarters", Description = "Administrative & Executive Offices", IconText = "fa-solid fa-location-dot", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Direct Correspondence", Description = $"Official communications desk: {request.AdminEmail}", IconText = "fa-solid fa-envelope", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Operating Hours", Description = "Monday through Friday: 8:30 AM to 5:30 PM (Local Standard Time)", IconText = "fa-solid fa-clock", SortOrder = 3 }
+            }
         };
         sections.Add(contactFormSection);
 
@@ -2852,7 +2821,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonLink = $"mailto:{request.AdminEmail}",
             DirectUrl = "contact-cta",
             ShowInHome = false,
-            PageSortOrder = 4
+            PageSortOrder = 3
         };
         sections.Add(contactCta);
 
