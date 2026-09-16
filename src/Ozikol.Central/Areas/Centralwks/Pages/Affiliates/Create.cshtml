@@ -42,7 +42,7 @@
                     <label asp-for="Input.FullName" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                         Full Name / Agency <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.FullName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="e.g. Acme Media Group or Sarah Jenkins" />
+                    <input asp-for="Input.FullName" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="Full Name or Agency Name" />
                     <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
 
@@ -50,7 +50,7 @@
                     <label asp-for="Input.Email" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                         Email Address <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                     </label>
-                    <input asp-for="Input.Email" type="email" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="partner@example.com" />
+                    <input asp-for="Input.Email" type="email" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="name@company.com" />
                     <span asp-validation-for="Input.Email" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                 </div>
             </div>
@@ -60,14 +60,14 @@
                     <label asp-for="Input.PhoneNumber" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                         Phone Number (Optional)
                     </label>
-                    <input asp-for="Input.PhoneNumber" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="+1 (555) 000-0000" />
+                    <input asp-for="Input.PhoneNumber" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="Phone Number" />
                 </div>
 
                 <div class="form-group">
                     <label asp-for="Input.WebsiteOrChannel" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                         Primary Reach / Channel
                     </label>
-                    <input asp-for="Input.WebsiteOrChannel" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="e.g. youtube.com/c/techhub or acme.agency" />
+                    <input asp-for="Input.WebsiteOrChannel" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="https://channel.example.com" />
                 </div>
             </div>
         </div>
@@ -118,7 +118,7 @@
                 <label asp-for="Input.PayoutDetailsJson" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                     Payout Instructions (Bank / PayPal / Crypto)
                 </label>
-                <textarea asp-for="Input.PayoutDetailsJson" rows="3" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="e.g. PayPal: payments@partner.com or Bank: First City Bank, Acc: 123456789, SWIFT: FCBKUS33"></textarea>
+                <textarea asp-for="Input.PayoutDetailsJson" rows="3" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" placeholder="Bank account details, PayPal address, or wire transfer instructions"></textarea>
             </div>
         </div>
     </div>

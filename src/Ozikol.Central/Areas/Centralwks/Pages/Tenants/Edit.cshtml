@@ -48,7 +48,7 @@
 
                     <div class="form-group">
                         <label asp-for="Input.CustomDomain" class="form-label">Custom Domain (CNAME)</label>
-                        <input asp-for="Input.CustomDomain" class="form-control" placeholder="e.g. portal.acme.com" />
+                        <input asp-for="Input.CustomDomain" class="form-control" placeholder="portal.yourdomain.com" />
                         <span asp-validation-for="Input.CustomDomain" class="field-validation-error"></span>
                     </div>
                 </div>
@@ -56,13 +56,13 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label asp-for="Input.WebsiteUrl" class="form-label">Website URL</label>
-                        <input asp-for="Input.WebsiteUrl" class="form-control" placeholder="https://acme.com" />
+                        <input asp-for="Input.WebsiteUrl" class="form-control" placeholder="https://yourdomain.com" />
                         <span asp-validation-for="Input.WebsiteUrl" class="field-validation-error"></span>
                     </div>
 
                     <div class="form-group">
                         <label asp-for="Input.ApiUrl" class="form-label">Dedicated API URL</label>
-                        <input asp-for="Input.ApiUrl" class="form-control" placeholder="https://api.acme.ozikol.cloud" />
+                        <input asp-for="Input.ApiUrl" class="form-control" placeholder="https://api.workspace.ozikol.cloud" />
                         <span asp-validation-for="Input.ApiUrl" class="field-validation-error"></span>
                     </div>
                 </div>
@@ -75,7 +75,7 @@
 
                 <div class="form-group">
                     <label asp-for="Input.ReferredByPartnerCode" class="form-label">Affiliate Partner Referral Code</label>
-                    <input asp-for="Input.ReferredByPartnerCode" class="form-control" placeholder="e.g. PARTNER-1029" />
+                    <input asp-for="Input.ReferredByPartnerCode" class="form-control" placeholder="PARTNER-CODE" />
                     <span asp-validation-for="Input.ReferredByPartnerCode" class="field-validation-error"></span>
                 </div>
 

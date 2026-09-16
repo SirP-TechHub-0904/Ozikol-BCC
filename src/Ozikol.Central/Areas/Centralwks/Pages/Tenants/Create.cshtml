@@ -33,7 +33,7 @@
                     <label asp-for="Input.OrganizationName" class="form-label">
                         Organization Display Name <span class="required">*</span>
                     </label>
-                    <input asp-for="Input.OrganizationName" class="form-control" placeholder="e.g. Acme Health Corp" autofocus />
+                    <input asp-for="Input.OrganizationName" class="form-control" placeholder="Organization Name" autofocus />
                     <span asp-validation-for="Input.OrganizationName" class="field-validation-error"></span>
                     <span class="form-help">The official commercial name displayed across invoices and header branding.</span>
                 </div>
@@ -43,7 +43,7 @@
                         Tenant Subdomain Key <span class="required">*</span>
                     </label>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <input asp-for="Input.TenantKey" class="form-control" placeholder="e.g. acme-health" style="flex: 1;" />
+                        <input asp-for="Input.TenantKey" class="form-control" placeholder="workspace-subdomain" style="flex: 1;" />
                         <span style="color: var(--admin-text-dim); font-size: 13px; font-weight: 600;">.ozikol.cloud</span>
                     </div>
                     <span asp-validation-for="Input.TenantKey" class="field-validation-error"></span>
@@ -54,7 +54,7 @@
                     <label asp-for="Input.CustomDomain" class="form-label">
                         Custom Domain (Optional)
                     </label>
-                    <input asp-for="Input.CustomDomain" class="form-control" placeholder="e.g. workspace.acmehealth.com" />
+                    <input asp-for="Input.CustomDomain" class="form-control" placeholder="workspace.yourdomain.com" />
                     <span asp-validation-for="Input.CustomDomain" class="field-validation-error"></span>
                     <span class="form-help">Tenant's own CNAME domain mapped to the sovereign workspace.</span>
                 </div>
@@ -63,7 +63,7 @@
                     <label asp-for="Input.ReferredBy" class="form-label">
                         Affiliate Referral Code (Optional)
                     </label>
-                    <input asp-for="Input.ReferredBy" class="form-control" placeholder="e.g. PARTNER-1029" />
+                    <input asp-for="Input.ReferredBy" class="form-control" placeholder="PARTNER-CODE" />
                     <span asp-validation-for="Input.ReferredBy" class="field-validation-error"></span>
                     <span class="form-help">Partner referral promo code if introduced via an affiliate partner.</span>
                 </div>
@@ -79,12 +79,12 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label asp-for="Input.AdminFirstName" class="form-label">First Name <span class="required">*</span></label>
-                        <input asp-for="Input.AdminFirstName" class="form-control" placeholder="John" />
+                        <input asp-for="Input.AdminFirstName" class="form-control" placeholder="First Name" />
                         <span asp-validation-for="Input.AdminFirstName" class="field-validation-error"></span>
                     </div>
                     <div class="form-group">
                         <label asp-for="Input.AdminLastName" class="form-label">Last Name <span class="required">*</span></label>
-                        <input asp-for="Input.AdminLastName" class="form-control" placeholder="Doe" />
+                        <input asp-for="Input.AdminLastName" class="form-control" placeholder="Last Name" />
                         <span asp-validation-for="Input.AdminLastName" class="field-validation-error"></span>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
                     <label asp-for="Input.AdminEmail" class="form-label">
                         Work Email Address <span class="required">*</span>
                     </label>
-                    <input asp-for="Input.AdminEmail" class="form-control" placeholder="johndoe@acmehealth.com" />
+                    <input asp-for="Input.AdminEmail" class="form-control" placeholder="name@company.com" />
                     <span asp-validation-for="Input.AdminEmail" class="field-validation-error"></span>
                     <span class="form-help">Primary root administrator for the provisioned tenant environment.</span>
                 </div>

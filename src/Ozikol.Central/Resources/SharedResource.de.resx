@@ -2845,7 +2845,7 @@
     <value>Gewünschter Partner-Referral-Code</value>
   </data>
   <data name="Partner_Field_CodeHint" xml:space="preserve">
-    <value>Alphanumerischer Code für Ihre Links (z.B. ACME-TECH). Wird automatisch generiert, falls leer.</value>
+    <value>Alphanumerischer Code für Ihre Links. Wird automatisch generiert, falls leer.</value>
   </data>
   <data name="Partner_Field_Pitch" xml:space="preserve">
     <value>Strategie- &amp; Wachstumskonzept</value>
@@ -3195,31 +3195,31 @@
     <value>Vollständiger rechtlicher Name</value>
   </data>
   <data name="Careers_Apply_FullName_Placeholder" xml:space="preserve">
-    <value>z. B. Max Mustermann</value>
+    <value>Vollständiger Name</value>
   </data>
   <data name="Careers_Apply_Email" xml:space="preserve">
     <value>E-Mail-Adresse</value>
   </data>
   <data name="Careers_Apply_Email_Placeholder" xml:space="preserve">
-    <value>name@beispiel.de</value>
+    <value>name@unternehmen.de</value>
   </data>
   <data name="Careers_Apply_Phone" xml:space="preserve">
     <value>Telefonnummer</value>
   </data>
   <data name="Careers_Apply_Phone_Placeholder" xml:space="preserve">
-    <value>+49 30 1234567</value>
+    <value>Telefonnummer</value>
   </data>
   <data name="Careers_Apply_City" xml:space="preserve">
     <value>Stadt</value>
   </data>
   <data name="Careers_Apply_City_Placeholder" xml:space="preserve">
-    <value>z. B. Berlin</value>
+    <value>Stadt</value>
   </data>
   <data name="Careers_Apply_Country" xml:space="preserve">
     <value>Land</value>
   </data>
   <data name="Careers_Apply_Country_Placeholder" xml:space="preserve">
-    <value>z. B. Deutschland</value>
+    <value>Land</value>
   </data>
   <data name="Careers_Apply_LinkedIn" xml:space="preserve">
     <value>LinkedIn-Profil oder Portfolio-Link</value>
