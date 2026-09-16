@@ -103,7 +103,6 @@ export class TemplateHydrationService {
     output = output.replace(mainMenuItemsRegex, (_match, innerTemplate) => {
       const items = ctx.topMenuItems || opts.previewMenuContent?.topMenuItems || [
         { title: 'Home', url: '/' },
-        { title: 'About Us', url: '/about' },
         { title: 'Blog', url: '/blog' },
         { title: 'Contact', url: '/contact' }
       ];
@@ -119,7 +118,6 @@ export class TemplateHydrationService {
     const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
       const ctas = ctx.menuCtaButtons || opts.previewMenuContent?.menuCtaButtons || (opts.editorTokens?.menuCtaButtons?.length ? opts.editorTokens.menuCtaButtons : [
-        { title: 'Sign In', url: '/login' },
         { title: 'Request a Service', url: '/request-service' }
       ]);
       return ctas.map((cta: any) => {
@@ -137,17 +135,18 @@ export class TemplateHydrationService {
         {
           title: 'Services',
           pages: [
-            { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-            { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-            { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+            { title: 'Strategic Consulting', url: '/strategic-advisory' },
+            { title: 'Systems Modernization', url: '/systems-modernization' },
+            { title: 'Performance & Scale', url: '/performance-scale' },
+            { title: 'Enterprise Advisory', url: '/enterprise-governance' }
           ]
         },
         {
           title: 'Company',
           pages: [
             { title: 'About Us', url: '/about' },
-            { title: 'Request a Service', url: '/request-service' },
-            { title: 'Contact Us', url: '/contact' }
+            { title: 'Our History', url: '/history' },
+            { title: 'Leadership Team', url: '/team' }
           ]
         }
       ]);

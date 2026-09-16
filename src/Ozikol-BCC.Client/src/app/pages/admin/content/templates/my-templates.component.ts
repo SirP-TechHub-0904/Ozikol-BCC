@@ -417,7 +417,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     logoUrl: '',
     topMenuItems: [
       { title: 'Home', url: '/' },
-      { title: 'About Us', url: '/about' },
       { title: 'Blog', url: '/blog' },
       { title: 'Contact', url: '/contact' }
     ],
@@ -425,22 +424,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       {
         title: 'Services',
         pages: [
-          { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-          { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-          { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+          { title: 'Strategic Consulting', url: '/strategic-advisory' },
+          { title: 'Systems Modernization', url: '/systems-modernization' },
+          { title: 'Performance & Scale', url: '/performance-scale' },
+          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
         ]
       },
       {
         title: 'Company',
         pages: [
           { title: 'About Us', url: '/about' },
-          { title: 'Request a Service', url: '/request-service' },
-          { title: 'Contact Us', url: '/contact' }
+          { title: 'Our History', url: '/history' },
+          { title: 'Leadership Team', url: '/team' }
         ]
       }
     ],
     menuCtaButtons: [
-      { title: 'Sign In', url: '/login' },
       { title: 'Request a Service', url: '/request-service' }
     ]
   };
@@ -2040,7 +2039,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           ? JSON.parse(JSON.stringify(this.editorTokens.topMenuItems))
           : [
               { title: 'Home', url: '/' },
-              { title: 'About Us', url: '/about' },
               { title: 'Blog', url: '/blog' },
               { title: 'Contact', url: '/contact' }
             ],
@@ -2050,24 +2048,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
               {
                 title: 'Services',
                 pages: [
-                  { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-                  { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-                  { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+                  { title: 'Strategic Consulting', url: '/strategic-advisory' },
+                  { title: 'Systems Modernization', url: '/systems-modernization' },
+                  { title: 'Performance & Scale', url: '/performance-scale' },
+                  { title: 'Enterprise Advisory', url: '/enterprise-governance' }
                 ]
               },
               {
                 title: 'Company',
                 pages: [
                   { title: 'About Us', url: '/about' },
-                  { title: 'Request a Service', url: '/request-service' },
-                  { title: 'Contact Us', url: '/contact' }
+                  { title: 'Our History', url: '/history' },
+                  { title: 'Leadership Team', url: '/team' }
                 ]
               }
             ],
         menuCtaButtons: (this.editorTokens?.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
           ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons)).map((b: any) => ({ title: b.title, url: b.url }))
           : [
-              { title: 'Sign In', url: '/login' },
               { title: 'Request a Service', url: '/request-service' }
             ]
       };
@@ -2232,21 +2230,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     .dropdown {
       position: relative !important;
     }
+    .dropdown-menu {
+      display: none;
+    }
     .dropdown-menu.show {
       display: block !important;
       position: absolute !important;
       top: 100% !important;
       left: 0 !important;
-      z-index: 9999 !important;
-      min-width: 13rem !important;
-      margin-top: 4px !important;
+      z-index: 99999 !important;
+      min-width: 14rem !important;
+      margin-top: 6px !important;
       opacity: 1 !important;
       visibility: visible !important;
       background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      padding: 6px 0 !important;
     }
     .dropdown-item {
       cursor: pointer;
+      display: block !important;
+      padding: 8px 16px !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      text-decoration: none !important;
+      transition: background 0.15s ease, color 0.15s ease !important;
+    }
+    .dropdown-item:hover {
+      background-color: #f1f5f9 !important;
+      color: #0050e5 !important;
     }
     ${combinedStyles}
   </style>
@@ -2258,41 +2273,60 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (dropdownToggle) {
         e.preventDefault();
         e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
         var parentDropdown = dropdownToggle.closest('.dropdown');
         var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
         if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show');
-          // Close any open dropdowns first
+          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            m.removeAttribute('data-bs-popper');
+            m.style.display = 'none';
           });
           document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
             t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
-            menu.setAttribute('data-bs-popper', 'static');
+            menu.style.display = 'block';
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
         return;
       }
 
-      // 2. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown-menu')) {
+      // 2. Dropdown Item Click Handler
+      var dropdownItem = e.target.closest('.dropdown-item');
+      if (dropdownItem) {
+        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          m.removeAttribute('data-bs-popper');
+          m.style.display = 'none';
+        });
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
+        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
+          e.preventDefault();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
+          return;
+        }
+      }
+
+      // 3. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+          m.classList.remove('show');
+          m.style.display = 'none';
         });
         document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
           t.setAttribute('aria-expanded', 'false');
         });
       }
 
-      // 3. Regular Navigation Links
+      // 4. Regular Navigation Links
       var a = e.target.closest('a');
-      if (a) {
+      if (a && !a.classList.contains('dropdown-toggle')) {
         var href = (a.getAttribute('href') || '').trim();
         if (!href || href === '#' || href.startsWith('javascript:')) {
           e.preventDefault();
@@ -3919,21 +3953,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     .dropdown {
       position: relative !important;
     }
+    .dropdown-menu {
+      display: none;
+    }
     .dropdown-menu.show {
       display: block !important;
       position: absolute !important;
       top: 100% !important;
       left: 0 !important;
-      z-index: 9999 !important;
-      min-width: 13rem !important;
-      margin-top: 4px !important;
+      z-index: 99999 !important;
+      min-width: 14rem !important;
+      margin-top: 6px !important;
       opacity: 1 !important;
       visibility: visible !important;
       background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      padding: 6px 0 !important;
     }
     .dropdown-item {
       cursor: pointer;
+      display: block !important;
+      padding: 8px 16px !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      text-decoration: none !important;
+      transition: background 0.15s ease, color 0.15s ease !important;
+    }
+    .dropdown-item:hover {
+      background-color: #f1f5f9 !important;
+      color: #0050e5 !important;
     }
     ${combinedStyles}
   </style>
@@ -3945,41 +3996,60 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (dropdownToggle) {
         e.preventDefault();
         e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
         var parentDropdown = dropdownToggle.closest('.dropdown');
         var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
         if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show');
-          // Close any open dropdowns first
+          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            m.removeAttribute('data-bs-popper');
+            m.style.display = 'none';
           });
           document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
             t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
-            menu.setAttribute('data-bs-popper', 'static');
+            menu.style.display = 'block';
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
         return;
       }
 
-      // 2. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown-menu')) {
+      // 2. Dropdown Item Click Handler
+      var dropdownItem = e.target.closest('.dropdown-item');
+      if (dropdownItem) {
+        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          m.removeAttribute('data-bs-popper');
+          m.style.display = 'none';
+        });
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
+        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
+          e.preventDefault();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
+          return;
+        }
+      }
+
+      // 3. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+          m.classList.remove('show');
+          m.style.display = 'none';
         });
         document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
           t.setAttribute('aria-expanded', 'false');
         });
       }
 
-      // 3. Regular Navigation Links
+      // 4. Regular Navigation Links
       var a = e.target.closest('a');
-      if (a) {
+      if (a && !a.classList.contains('dropdown-toggle')) {
         var href = (a.getAttribute('href') || '').trim();
         if (!href || href === '#' || href.startsWith('javascript:')) {
           e.preventDefault();
