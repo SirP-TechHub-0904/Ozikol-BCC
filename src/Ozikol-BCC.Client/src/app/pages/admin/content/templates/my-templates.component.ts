@@ -69,7 +69,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   ];
 
   selectedGroup: string = 'all';
-  previewActivePageSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
+  previewActivePageSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact' = 'home';
   previewCartCount: number = 0;
   currentTenantBrandName: string = localStorage.getItem('tenant_name') || localStorage.getItem('tenant_company_name') || 'Enterprise Workspace';
   currentTenantSubdomain: string = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_subdomain') || 'portal';
@@ -295,7 +295,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   activePreviewItem: InstalledTemplateItem | null = null;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   previewModalTab: 'preview' | 'content' | 'html' | 'css' | 'js' = 'preview';
-  modalPreviewPageSlug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' = 'isolated';
+  modalPreviewPageSlug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail' = 'isolated';
   safeSinglePreviewHtml: SafeHtml = '';
   safeSinglePreviewSrcDoc: SafeHtml | string = '';
 
@@ -966,7 +966,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Full-Site Demo Modal
+  // Full-Site Demo Modal & Multi-Page Simulation State
   showFullSiteDemoModal: boolean = false;
   fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeFullDemoHtml: SafeHtml = '';
@@ -1053,7 +1053,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       const href = (event.data.href || '').trim().toLowerCase();
       const text = (event.data.text || '').trim().toLowerCase();
       if (!href || href === '#' || href.startsWith('javascript:')) return;
-      let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
+      let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact' = 'home';
 
       if (href.includes('request') || text.includes('request')) {
         targetSlug = 'request-service';
@@ -1061,7 +1061,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         targetSlug = 'about';
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
         targetSlug = 'services';
-      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+      } else if (
+        href.includes('/blog/') ||
+        href.includes('detail') ||
+        text.includes('read article') ||
+        text.includes('view article') ||
+        text.includes('read more')
+      ) {
+        targetSlug = 'blog-detail';
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article') || text.includes('insights')) {
         targetSlug = 'blog';
       } else if (href.includes('contact') || text.includes('contact')) {
         targetSlug = 'contact';
@@ -1686,6 +1694,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     return this.installedTemplates.find(t => t.category === 'body');
   }
 
+  /**
+   * Returns all installed content section templates belonging strictly to the 'body' category,
+   * isolating them from header navigation, hero banners, footers, breadcrumbs, ecommerce, and single-article blog details.
+   * @returns Array of installed body template items.
+   */
   getAllBodyBlocks(): InstalledTemplateItem[] {
     const singletonIds = new Set<string>();
     const menu = this.getActiveMenu();
@@ -1697,9 +1710,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     return this.installedTemplates.filter(t => 
       !singletonIds.has(t.id) &&
-      t.category !== 'menu' &&
-      t.category !== 'hero' &&
-      t.category !== 'footer'
+      t.category === 'body' &&
+      !this.isBlogDetailTemplate(t) &&
+      t.variantCode !== 'Breadcrumb_PageHeader'
+    );
+  }
+
+  /**
+   * Returns the curated sequence of body sections that belong specifically on the Home page.
+   * Strictly excludes dedicated landing/intake forms (e.g. Body_RequestService, Contact_SplitDetails)
+   * and single-article blog detail views.
+   * @returns Array of body blocks designated for the Home page.
+   */
+  getHomeBodyBlocks(): InstalledTemplateItem[] {
+    return this.getAllBodyBlocks().filter(t => 
+      t.variantCode !== 'Body_RequestService' &&
+      t.variantCode !== 'Contact_SplitDetails'
     );
   }
 
@@ -2131,7 +2157,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    * Sets the active page preview simulation inside the Single Preview Modal for Menu components.
    * @param slug Target page slug or 'isolated' for standalone navigation bar.
    */
-  setModalPreviewPage(slug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog'): void {
+  setModalPreviewPage(slug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail'): void {
     this.modalPreviewPageSlug = slug;
     this.updateSinglePreviewHtml();
   }
@@ -3533,7 +3559,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   // Full-Site Demo Modal & Multi-Page Engine
-  setPreviewPage(slug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact'): void {
+  setPreviewPage(slug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact'): void {
     this.previewActivePageSlug = slug;
     this.renderFullSitePreview();
   }
@@ -3546,35 +3572,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Composes a complete simulated page containing Menu, Hero/Breadcrumbs, Body sections, Blog/Contact/Request-Service, and Footer.
+   * Composes a complete simulated page containing Menu, Hero/Breadcrumbs, designated Body sections, and Footer.
    * Enables 100% sample-content fidelity and live navigation simulation across all pages.
-   * @param pageSlug The target route slug ('home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog').
+   * @param pageSlug The target route slug ('home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail').
    * @param menuBlockOverride Optional menu template item to override the active installed menu (used in modal preview).
    * @param menuContextOverride Optional menu data context to override sample data.
-   * @returns An object containing combined CSS styles and combined HTML markup.
+   * @returns An object containing combined CSS styles, combined HTML markup, and JavaScript.
    */
   composePageSimulation(
-    pageSlug: 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog',
+    pageSlug: 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail',
     menuBlockOverride?: InstalledTemplateItem,
     menuContextOverride?: any
   ): { combinedStyles: string; combinedHtml: string; combinedJs: string } {
     const menuBlock = menuBlockOverride || this.getActiveMenu();
     const heroBlock = this.getActiveHero();
+    const homeBodyBlocks = this.getHomeBodyBlocks();
     const allBodyBlocks = this.getAllBodyBlocks();
     const footerBlock = this.getActiveFooter();
 
     const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
-    const blogBlock = this.installedTemplates.find(t => t.category === 'blog') || this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3');
+    const blogListBlock = this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3') || this.installedTemplates.find(t => t.category === 'blog' && !this.isBlogDetailTemplate(t));
+    const blogDetailBlock = this.installedTemplates.find(t => this.isBlogDetailTemplate(t)) || this.installedTemplates.find(t => t.variantCode === 'Blog_ArticleDetail');
     const contactBlock = this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails') || this.installedTemplates.find(t => t.category === 'contact');
     const requestServiceBlock = this.installedTemplates.find(t => t.variantCode === 'Body_RequestService');
+    const newsletterBlock = this.installedTemplates.find(t => t.variantCode === 'News_MinimalBar');
 
     let activeBlocks: { block: InstalledTemplateItem; contextOverride?: any }[] = [];
 
     if (pageSlug === 'home') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (heroBlock) activeBlocks.push({ block: heroBlock });
-      allBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
-      if (blogBlock) activeBlocks.push({ block: blogBlock });
+      homeBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
+      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'about') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -3650,7 +3679,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           }
         });
       }
-      if (blogBlock) activeBlocks.push({ block: blogBlock });
+      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
+      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (pageSlug === 'blog-detail') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: this.previewBlogDetailContent.title || 'Article Detail',
+            miniTitle: (this.previewBlogDetailContent.category || 'ARTICLE').toUpperCase(),
+            description: 'Deep-dive analysis, technical breakdown, and enterprise reference implementation.'
+          }
+        });
+      }
+      if (blogDetailBlock) {
+        activeBlocks.push({ block: blogDetailBlock });
+      } else if (blogListBlock) {
+        activeBlocks.push({ block: blogListBlock });
+      }
+      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'contact') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -3799,7 +3848,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         );
 
         // Dynamically synchronize active navbar link highlighting with the current page slug
-        const activeSlug = pageSlug;
+        const activeSlug = pageSlug === 'blog-detail' ? 'blog' : pageSlug;
 
         // 1. Strip hardcoded active / text-dark classes from all nav-links
         hydratedBlockHtml = hydratedBlockHtml
@@ -3966,7 +4015,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     let count = 0;
     if (this.getActiveMenu()) count++;
     if (this.getActiveHero()) count++;
-    count += this.getAllBodyBlocks().length;
+    count += this.getHomeBodyBlocks().length;
+    if (this.installedTemplates.some(t => t.category === 'blog' && !this.isBlogDetailTemplate(t))) count++;
     if (this.getActiveFooter()) count++;
     return count;
   }
@@ -3991,7 +4041,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
         this.setPreviewPage('services');
         this.toast.info('Navigated to Services & Solutions in live preview.');
-      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+      } else if (
+        href.includes('/blog/') ||
+        href.includes('detail') ||
+        text.includes('read article') ||
+        text.includes('view article') ||
+        text.includes('read more')
+      ) {
+        this.setPreviewPage('blog-detail');
+        this.toast.info('Navigated to Blog Article Detail in live preview.');
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article') || text.includes('insights')) {
         this.setPreviewPage('blog');
         this.toast.info('Navigated to News & Insights in live preview.');
       } else if (href.includes('contact') || text.includes('contact')) {
