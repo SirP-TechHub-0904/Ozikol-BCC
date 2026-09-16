@@ -2365,6 +2365,9 @@
                       <span class="material-symbols-outlined">code</span>
                       <span>Import as Inline CSS (&lt;style&gt;)</span>
                     </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="resetCssUploadState()" title="Remove chosen file">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
                   </div>
                 </div>
 
@@ -2382,6 +2385,9 @@
                     <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
                       <span class="material-symbols-outlined">content_copy</span>
                       <span>Copy URL</span>
+                    </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="uploadedCssUrl = ''" title="Dismiss CDN ribbon">
+                      <span class="material-symbols-outlined">close</span>
                     </button>
                   </div>
                 </div>
@@ -2413,9 +2419,12 @@
           <div class="form-group" style="margin-top: 10px;">
             <div class="lbl-with-note">
               <label class="form-lbl">TAG / SCRIPT CODE CONTENT *</label>
-              <span class="note-pill"><i class="fa-solid fa-bolt text-warning me-1"></i> Auto-generated sample boilerplate with placeholders. Customize as needed!</span>
+              <span class="note-pill" *ngIf="tagForm.tagType === 'meta_tag' || tagForm.tagType === 'raw_html'">
+                <i class="fa-solid fa-bolt text-warning me-1"></i> Auto-generated sample boilerplate with placeholders. Customize as needed!
+              </span>
             </div>
-            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
+            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9"
+              [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to Cloudflare R2, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
           </div>
         </div>
 

@@ -117,6 +117,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   customMetaAttrContent: string = '';
 
   // CSS File Upload State (Cloudflare R2 + CDN)
+  @ViewChild('cssFileInput') cssFileInput?: ElementRef<HTMLInputElement>;
   selectedCssFile: File | null = null;
   selectedCssFileName: string = '';
   selectedCssFileSize: string = '';
@@ -315,8 +316,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   };
 
   private readonly tagBoilerplates: Record<string, string> = {
-    // Head zone
-    link_stylesheet: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />',
+    // Head zone - empty by default so user is not confused by sample third-party links
+    link_stylesheet: '',
     inline_css: '<style>\n  /* Custom CSS Overrides */\n  :root {\n    --theme-accent: #0050e5;\n  }\n</style>',
     google_fonts: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">',
     meta_tag: `<!-- Primary SEO Meta Tags -->
@@ -351,7 +352,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
 <link rel="apple-touch-icon" sizes="180x180" href="{{ AppleTouchIconUrl }}" />
 <meta name="theme-color" content="{{ ThemeColor }}" />`,
-    script_url: '<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" async></script>',
+    script_url: '',
     inline_script: '<script>\n  // Google Tag Manager / Analytics Head Snippet\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n</script>',
     // Body open zone
     gtm_noscript: '<!-- Google Tag Manager (noscript) -->\n<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"\nheight="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n<!-- End Google Tag Manager (noscript) -->',
@@ -1283,8 +1284,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Resets any active CSS upload selection and CDN URL status to ensure clean modal sessions.
+   */
+  resetCssUploadState(): void {
+    this.selectedCssFile = null;
+    this.selectedCssFileName = '';
+    this.selectedCssFileSize = '';
+    this.uploadedCssUrl = '';
+    this.uploadedCssStorage = '';
+    this.uploadingCss = false;
+    if (this.cssFileInput?.nativeElement) {
+      this.cssFileInput.nativeElement.value = '';
+    }
+  }
+
   openCreateTagModal(zone?: 'head' | 'body_open' | 'footer' | string): void {
     this.isEditingTag = false;
+    this.resetCssUploadState();
     const targetZone: 'head' | 'body_open' | 'footer' =
       (zone === 'head' || zone === 'body_open' || zone === 'footer')
         ? zone
@@ -1311,6 +1328,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   openEditTagModal(tag: CodeInjectionTag): void {
     this.isEditingTag = true;
+    this.resetCssUploadState();
     this.tagFormZone = tag.zone;
     this.tagForm = { ...tag };
     this.showTagModal = true;
@@ -1318,9 +1336,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   closeTagModal(): void {
     this.showTagModal = false;
+    this.resetCssUploadState();
   }
 
   onTagTypeChanged(): void {
+    this.resetCssUploadState();
+
     if (this.tagForm.tagType === 'meta_tag') {
       this.selectedMetaPreset = 'full_suite';
       this.tagForm.content = this.metaPresets['full_suite'].content;
@@ -1330,8 +1351,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.tagBoilerplates[this.tagForm.tagType]) {
+    if (this.tagBoilerplates[this.tagForm.tagType] !== undefined) {
       this.tagForm.content = this.tagBoilerplates[this.tagForm.tagType];
+    } else {
+      this.tagForm.content = '';
     }
   }
 
