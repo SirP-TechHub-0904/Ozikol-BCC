@@ -1807,10 +1807,20 @@
               <span class="material-symbols-outlined">style</span>
               <span>Scoped CSS Stylesheet</span>
             </div>
-            <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.cssStyles, 'CSS')">
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy CSS</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button *ngIf="!activePreviewItem.cssStyles || !activePreviewItem.cssStyles.trim()" type="button" class="btn-copy-code" (click)="initializeTemplateCss()">
+                <span class="material-symbols-outlined">add</span>
+                <span>Add Starter CSS</span>
+              </button>
+              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.cssStyles, 'CSS')">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span>Copy CSS</span>
+              </button>
+            </div>
+          </div>
+          <div class="code-guideline-bar">
+            <span class="material-symbols-outlined guideline-icon">lightbulb</span>
+            <span>Write pure CSS only (do NOT include <code>&lt;style&gt;</code> tags). Scope class names to your section to prevent global leaks.</span>
           </div>
           <div class="monaco-host-wrap">
             <div #monacoCssContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
@@ -1825,10 +1835,20 @@
               <span class="material-symbols-outlined">terminal</span>
               <span>JavaScript Logic Script</span>
             </div>
-            <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.jsScript || '', 'JavaScript')" [disabled]="!activePreviewItem.jsScript">
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy JS</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button *ngIf="!activePreviewItem.jsScript" type="button" class="btn-copy-code" (click)="initializeTemplateJs()">
+                <span class="material-symbols-outlined">add_code</span>
+                <span>Initialize JS</span>
+              </button>
+              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.jsScript || '', 'JavaScript')" [disabled]="!activePreviewItem.jsScript">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span>Copy JS</span>
+              </button>
+            </div>
+          </div>
+          <div class="code-guideline-bar">
+            <span class="material-symbols-outlined guideline-icon">info</span>
+            <span>Write pure JavaScript only (do NOT include <code>&lt;script&gt;</code> tags). Keep code wrapped in an IIFE <code>(function() &#123; ... &#125;)();</code> so multiple functions don't collide.</span>
           </div>
           <div class="monaco-host-wrap" *ngIf="activePreviewItem.jsScript">
             <div #monacoJsContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
@@ -1836,7 +1856,11 @@
           </div>
           <div class="code-empty-state" *ngIf="!activePreviewItem.jsScript">
             <span class="material-symbols-outlined empty-code-icon">data_object</span>
-            <p>This template is pure HTML/CSS and does not require an external JavaScript bundle.</p>
+            <p>This template is pure HTML/CSS and does not currently have custom JavaScript logic.</p>
+            <button type="button" class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" (click)="initializeTemplateJs()">
+              <span class="material-symbols-outlined fs-6">add_code</span>
+              <span>Add Custom JavaScript</span>
+            </button>
           </div>
         </div>
 

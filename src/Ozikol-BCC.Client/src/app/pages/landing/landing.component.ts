@@ -1229,7 +1229,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       styleTag.id = 'tenant-dynamic-theme-styles';
       document.head.appendChild(styleTag);
     }
-    styleTag.textContent = styles || '';
+    // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
+    const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    styleTag.textContent = cleanStyles;
 
     // 2. Set Safe HTML for main page layout
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
@@ -1282,7 +1284,9 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (combinedJs && combinedJs.trim()) {
       const script = document.createElement('script');
       script.className = 'ozikol-injected-tag ozikol-section-scripts';
-      script.textContent = combinedJs;
+      // Defensively strip any accidental <script> or </script> tags to ensure valid pure JS execution
+      const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
+      script.textContent = cleanJs;
       document.body.appendChild(script);
     }
   }
