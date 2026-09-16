@@ -2712,17 +2712,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   public readonly DEFAULT_CSS_GUIDE: string = `/* ==========================================================================
  * SCOPED CSS STYLESHEET GUIDELINES:
  * 1. PURE CSS ONLY: Do NOT include <style> or </style> tags.
- * 2. SCOPING: Use class selectors matching your section HTML to prevent global leaks.
+ * 2. SCOPING: Prefix all selectors with your unique section root class
+ *    (e.g., .my-hero-section .title) to prevent styles leaking to other sections.
  * 3. CSS VARIABLES: Leverage theme tokens like var(--primary-color, #0050e5).
  * 4. RESPONSIVE BREAKPOINTS:
  *    @media (max-width: 991.98px) { /* Tablets & Mobile */ }
  *    @media (max-width: 575.98px) { /* Small Phones */ }
+ *
+ * EXAMPLE (Safe reference - uncomment or customize for your section):
+ * .your-section-root-class {
+ *   padding: 60px 0;
+ *   background-color: var(--bg-light, #f8fafc);
+ * }
  * ========================================================================== */
-
-.oz-custom-section {
-  padding: 60px 0;
-  background-color: var(--bg-light, #f8fafc);
-}
 `;
 
   public readonly DEFAULT_JS_GUIDE: string = `/**
