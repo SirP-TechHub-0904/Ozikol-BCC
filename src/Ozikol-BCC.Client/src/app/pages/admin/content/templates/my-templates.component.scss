@@ -2336,6 +2336,54 @@
             font-size: 14px;
           }
         }
+        .btn-dismiss-bar {
+          height: 28px;
+          width: 28px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #64748b;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          padding: 0;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fca5a5;
+          }
+
+          .material-symbols-outlined {
+            font-size: 15px;
+          }
+        }
+      }
+      .btn-dismiss-bar {
+        height: 32px;
+        width: 32px;
+        border-radius: 6px;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: #fee2e2;
+          color: #ef4444;
+          border-color: #fca5a5;
+        }
+
+        .material-symbols-outlined {
+          font-size: 16px;
+        }
       }
     }
 
