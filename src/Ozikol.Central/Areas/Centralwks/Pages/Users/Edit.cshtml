@@ -99,9 +99,13 @@
         </div>
 
         <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer; margin-bottom: 10px;">
                 <input type="checkbox" asp-for="Input.IsActive" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
                 Operator account is active and allowed to sign in
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
+                <input type="checkbox" asp-for="Input.TwoFactorEnabled" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
+                Enforce Two-Factor Authentication (2FA) via 6-digit Email OTP
             </label>
         </div>
 

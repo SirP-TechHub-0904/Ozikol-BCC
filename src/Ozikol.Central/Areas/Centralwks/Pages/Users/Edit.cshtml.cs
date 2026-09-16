@@ -95,6 +95,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             /// <summary>Gets or sets whether account is active.</summary>
             public bool IsActive { get; set; }
 
+            /// <summary>Gets or sets whether Two-Factor Authentication (2FA) is enforced via OTP for this operator.</summary>
+            public bool TwoFactorEnabled { get; set; }
+
             /// <summary>Gets or sets optional new password to reset credentials.</summary>
             [StringLength(100, MinimumLength = 8, ErrorMessage = "New password must be at least 8 characters long.")]
             [DataType(DataType.Password)]
@@ -133,7 +136,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
                 PhoneNumber = user.PhoneNumber,
                 Department = user.Department,
                 SelectedRole = currentRoles.FirstOrDefault() ?? "Admin",
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                TwoFactorEnabled = user.TwoFactorEnabled
             };
 
             return Page();
@@ -181,6 +185,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Users
             user.PhoneNumber = Input.PhoneNumber?.Trim();
             user.Department = Input.Department?.Trim();
             user.IsActive = Input.IsActive;
+            user.TwoFactorEnabled = Input.TwoFactorEnabled;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
