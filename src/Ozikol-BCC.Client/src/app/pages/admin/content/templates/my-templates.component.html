@@ -636,7 +636,10 @@
               <span>Contact Us</span>
             </button>
             <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog'" (click)="setModalPreviewPage('blog')">
-              <span>Blog</span>
+              <span>Blog (List)</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog-detail'" (click)="setModalPreviewPage('blog-detail')">
+              <span>Blog (Detail)</span>
             </button>
           </div>
         </div>
@@ -1960,6 +1963,79 @@
             </div>
 
             <button type="button" class="btn-close-modal" (click)="closeFullSiteDemoModal()" title="Close Live Demo">✕</button>
+          </div>
+        </div>
+
+        <!-- Page Navigation Switcher Toolbar -->
+        <div class="page-sim-toolbar" style="border-bottom: 1.5px solid #e2e8f0; padding: 10px 24px; background: #f8fafc;">
+          <div class="sim-brand-badge">
+            <span class="material-symbols-outlined fs-6">web</span>
+            <span>Switch Page:</span>
+          </div>
+          <div class="sim-pills-wrap">
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'home'"
+              (click)="setPreviewPage('home')"
+            >
+              <span class="material-symbols-outlined fs-6">home</span>
+              <span>Home</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'about'"
+              (click)="setPreviewPage('about')"
+            >
+              <span class="material-symbols-outlined fs-6">info</span>
+              <span>About Us</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'services'"
+              (click)="setPreviewPage('services')"
+            >
+              <span class="material-symbols-outlined fs-6">design_services</span>
+              <span>Services</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'request-service'"
+              (click)="setPreviewPage('request-service')"
+            >
+              <span class="material-symbols-outlined fs-6">assignment_turned_in</span>
+              <span>Request a Service</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'blog'"
+              (click)="setPreviewPage('blog')"
+            >
+              <span class="material-symbols-outlined fs-6">grid_view</span>
+              <span>Blog (List)</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'blog-detail'"
+              (click)="setPreviewPage('blog-detail')"
+            >
+              <span class="material-symbols-outlined fs-6">article</span>
+              <span>Blog (Single Article)</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'contact'"
+              (click)="setPreviewPage('contact')"
+            >
+              <span class="material-symbols-outlined fs-6">contact_support</span>
+              <span>Contact Us</span>
+            </button>
           </div>
         </div>
 
