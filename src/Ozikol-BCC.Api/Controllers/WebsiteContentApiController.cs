@@ -502,6 +502,99 @@ namespace Ozikol_BCC.Api.Controllers
                 message = form.SuccessMessage
             }, form.SuccessMessage));
         }
+
+        // ==========================================
+        // 10. PUBLIC THEME & ACTIVE TEMPLATES
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves all currently active UI templates installed for this tenant.
+        /// Delivers layout templates (menu, hero, body, footer, breadcrumb) to public visitors
+        /// without requiring administrative authentication.
+        /// </summary>
+        /// <returns>A collection of active UI templates ordered by category.</returns>
+        [HttpGet("theme/active-templates")]
+        public async Task<IActionResult> GetActiveThemeTemplates()
+        {
+            // Query active installed templates from the tenant database
+            var activeTemplates = await _context.TenantInstalledTemplates
+                .AsNoTracking()
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.CategoryKey)
+                .ThenBy(t => t.InstalledUtc)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TemplateKey,
+                    t.CategoryKey,
+                    t.Name,
+                    t.VariantCode,
+                    t.HtmlTemplate,
+                    t.CssStyles,
+                    t.JsScript,
+                    t.DefaultContentJson,
+                    t.InstalledVersion
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(activeTemplates, "Active website theme templates retrieved successfully."));
+        }
+
+        // ==========================================
+        // 11. PUBLIC BLOG ARTICLES & ARCHIVE
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves published blog articles for the public website blog archive or homepage widget.
+        /// </summary>
+        /// <param name="categoryId">Optional blog category ID to filter by.</param>
+        /// <param name="limit">Optional maximum number of articles to return.</param>
+        /// <returns>List of published blog articles with category metadata.</returns>
+        [HttpGet("blogs")]
+        public async Task<IActionResult> GetPublishedBlogs([FromQuery] Guid? categoryId = null, [FromQuery] int? limit = null)
+        {
+            // Fetch published articles ordered chronologically descending
+            var query = _context.Blogs
+                .Include(b => b.BlogCategory)
+                .AsNoTracking()
+                .Where(b => b.Publish);
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(b => b.BlogCategoryId == categoryId.Value);
+            }
+
+            query = query.OrderByDescending(b => b.Date).ThenBy(b => b.SortOrder);
+
+            if (limit.HasValue && limit.Value > 0)
+            {
+                query = query.Take(limit.Value);
+            }
+
+            var blogs = await query.ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(blogs, "Published blog articles retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves a single published blog article by its ID for reader view.
+        /// </summary>
+        /// <param name="id">Unique identifier of the blog article.</param>
+        /// <returns>Full blog article details if published; otherwise 404 NotFound.</returns>
+        [HttpGet("blogs/{id:guid}")]
+        public async Task<IActionResult> GetPublishedBlogById(Guid id)
+        {
+            var blog = await _context.Blogs
+                .Include(b => b.BlogCategory)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == id && b.Publish);
+
+            if (blog == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse($"Published article with ID '{id}' was not found."));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(blog, "Blog article retrieved successfully."));
+        }
     }
 
     /// <summary>

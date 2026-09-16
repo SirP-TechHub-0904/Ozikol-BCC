@@ -265,6 +265,11 @@ export const routes: Routes = [
       { path: 'portal/dashboard', redirectTo: 'dashboard/workspace', pathMatch: 'full' }
     ]
   },
+  // Dynamic Public Website Content Routes
+  { path: 'page/:slug', component: LandingComponent },
+  { path: 'blog', component: LandingComponent },
+  { path: 'blog/:id', component: LandingComponent },
+  { path: ':slug', component: LandingComponent },
   {
     path: '**',
     redirectTo: ''
