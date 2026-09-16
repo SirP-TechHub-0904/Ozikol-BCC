@@ -93,72 +93,89 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 }
             }
 
-            // Seed SuperAdmin Users (support both .cloud and .com domains for seamless administrative access)
-            var superAdminEmails = new[] { "superadmin@ozikol.cloud", "superadmin@ozikol.com" };
+            // 1. Clean up legacy duplicate test/seed accounts (e.g. superadmin@ozikol.com)
+            const string primarySuperAdminEmail = "superadmin@ozikol.cloud";
+            const string legacySuperAdminEmail = "superadmin@ozikol.com";
 
-            foreach (var superAdminEmail in superAdminEmails)
+            if (userManager != null)
             {
-                if (userManager != null)
+                var legacyUser = await userManager.FindByEmailAsync(legacySuperAdminEmail);
+                if (legacyUser != null)
                 {
-                    var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
-                    if (existingUser == null)
-                    {
-                        var superAdmin = new CentralUser
-                        {
-                            UserName = superAdminEmail,
-                            Email = superAdminEmail,
-                            EmailConfirmed = true,
-                            FirstName = "Ozikol",
-                            LastName = "SuperAdmin",
-                            Department = "Global DevOps & Architecture",
-                            IsActive = true,
-                            CreatedUtc = DateTime.UtcNow
-                        };
+                    await userManager.DeleteAsync(legacyUser);
+                }
+            }
+            else
+            {
+                var legacyUser = await dbContext.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == legacySuperAdminEmail.ToUpperInvariant(), ct);
+                if (legacyUser != null)
+                {
+                    dbContext.Users.Remove(legacyUser);
+                    await dbContext.SaveChangesAsync(ct);
+                }
+            }
 
-                        var createResult = await userManager.CreateAsync(superAdmin, "SuperAdmin@Ozikol2026!");
-                        if (createResult.Succeeded)
-                        {
-                            await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
-                        }
+            // 2. Seed single official root SuperAdmin account
+            if (userManager != null)
+            {
+                var existingUser = await userManager.FindByEmailAsync(primarySuperAdminEmail);
+                if (existingUser == null)
+                {
+                    var superAdmin = new CentralUser
+                    {
+                        UserName = primarySuperAdminEmail,
+                        Email = primarySuperAdminEmail,
+                        EmailConfirmed = true,
+                        FirstName = "Ozikol",
+                        LastName = "SuperAdmin",
+                        Department = "Global DevOps & Architecture",
+                        IsActive = true,
+                        CreatedUtc = DateTime.UtcNow
+                    };
+
+                    var createResult = await userManager.CreateAsync(superAdmin, "SuperAdmin@Ozikol2026!");
+                    if (createResult.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
                     }
                 }
-                else
+            }
+            else
+            {
+                // Fallback direct creation when executed in headless migrator contexts
+                if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == primarySuperAdminEmail.ToUpperInvariant(), ct))
                 {
-                    // Fallback direct creation when executed in headless migrator contexts
-                    if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == superAdminEmail.ToUpperInvariant(), ct))
+                    var hasher = new PasswordHasher<CentralUser>();
+                    var superAdmin = new CentralUser
                     {
-                        var hasher = new PasswordHasher<CentralUser>();
-                        var superAdmin = new CentralUser
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = superAdminEmail,
-                            NormalizedUserName = superAdminEmail.ToUpperInvariant(),
-                            Email = superAdminEmail,
-                            NormalizedEmail = superAdminEmail.ToUpperInvariant(),
-                            EmailConfirmed = true,
-                            FirstName = "Ozikol",
-                            LastName = "SuperAdmin",
-                            Department = "Global DevOps & Architecture",
-                            IsActive = true,
-                            SecurityStamp = Guid.NewGuid().ToString(),
-                            ConcurrencyStamp = Guid.NewGuid().ToString(),
-                            CreatedUtc = DateTime.UtcNow
-                        };
-                        superAdmin.PasswordHash = hasher.HashPassword(superAdmin, "SuperAdmin@Ozikol2026!");
+                        Id = Guid.NewGuid().ToString(),
+                        UserName = primarySuperAdminEmail,
+                        NormalizedUserName = primarySuperAdminEmail.ToUpperInvariant(),
+                        Email = primarySuperAdminEmail,
+                        NormalizedEmail = primarySuperAdminEmail.ToUpperInvariant(),
+                        EmailConfirmed = true,
+                        FirstName = "Ozikol",
+                        LastName = "SuperAdmin",
+                        Department = "Global DevOps & Architecture",
+                        IsActive = true,
+                        SecurityStamp = Guid.NewGuid().ToString(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        CreatedUtc = DateTime.UtcNow
+                    };
+                    superAdmin.PasswordHash = hasher.HashPassword(superAdmin, "SuperAdmin@Ozikol2026!");
 
-                        dbContext.Users.Add(superAdmin);
+                    dbContext.Users.Add(superAdmin);
+                    await dbContext.SaveChangesAsync(ct);
+
+                    var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
+                    if (superAdminRole != null)
+                    {
+                        dbContext.UserRoles.Add(new IdentityUserRole<string>
+                        {
+                            UserId = superAdmin.Id,
+                            RoleId = superAdminRole.Id
+                        });
                         await dbContext.SaveChangesAsync(ct);
-
-                        var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
-                        if (superAdminRole != null)
-                        {
-                            dbContext.UserRoles.Add(new IdentityUserRole<string>
-                            {
-                                UserId = superAdmin.Id,
-                                RoleId = superAdminRole.Id
-                            });
-                            await dbContext.SaveChangesAsync(ct);
-                        }
                     }
                 }
             }
