@@ -44,9 +44,15 @@ builder.Services.AddRazorPages(options =>
     // Register clean top-level and hyphenated route aliases for Auth pages
     options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
     options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
-    options.Conventions.AddPageRoute("/Auth/Login", "login");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
+
+    // Clean hyphenated route aliases for Centralwks operator authentication
+    options.Conventions.AddAreaPageRoute("Centralwks", "/Login", "centralwks/login");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/Logout", "centralwks/logout");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/ForgotPassword", "centralwks/forgot-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/ResetPassword", "centralwks/reset-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/Login2fa", "centralwks/login-2fa");
 
     // Enable optional /{culture} route prefix constrained strictly to supported language codes
     options.Conventions.AddFolderRouteModelConvention("/", model =>
@@ -79,6 +85,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Centralwks", "/", "CentralAdminPolicy");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Logout");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ForgotPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ResetPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login2fa");
 
     options.Conventions.AuthorizeAreaFolder("Affiliate", "/", "AffiliatePartnerPolicy");
     options.Conventions.AllowAnonymousToAreaPage("Affiliate", "/Login");
@@ -142,8 +151,8 @@ builder.Services.AddIdentity<CentralUser, CentralRole>(options =>
 // 6b. Configure Multi-Portal Dynamic Application Cookie Authentication
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Auth/Login";
-    options.AccessDeniedPath = "/Auth/Login";
+    options.LoginPath = "/Centralwks/Login";
+    options.AccessDeniedPath = "/Centralwks/Login";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
 
     // Dynamically route unauthenticated challenges to the appropriate portal login
