@@ -4465,6 +4465,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("ActivateLogin")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("ActivateLoginInFooter")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("ActivateLoginInMenu")
                         .HasColumnType("bit");
 
@@ -4622,6 +4625,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LoginBackgroundImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LoginButtonText")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LoginNote")
