@@ -58,7 +58,7 @@
 </style>
 
 <div class="oz-pricing-page">
-    <!-- Section 1: Hero Banner & Currency Selector -->
+    <!-- Section 1: Hero Banner -->
     <section class="oz-pricing-hero">
         <div class="container">
             <div class="oz-section-header">
@@ -72,20 +72,6 @@
                 <p class="oz-pricing-hero-desc">
                     @SharedLocalizer["Pricing_Hero_Desc"]
                 </p>
-
-                <!-- Interactive Currency Selector -->
-                <div class="oz-pricing-currency-container">
-                    <span class="oz-pricing-currency-label">@SharedLocalizer["Pricing_Currency_Label"]:</span>
-                    <div class="oz-pricing-currency-pills">
-                        @foreach (var curr in Model.SupportedCurrencies)
-                        {
-                            var isActive = curr.Code.Equals(Model.SelectedCurrency, StringComparison.OrdinalIgnoreCase);
-                            <a href="?currency=@curr.Code" class="oz-currency-pill @(isActive ? "is-active" : "")">
-                                @curr.PillLabel
-                            </a>
-                        }
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -704,6 +690,28 @@
                 });
             }
         });
+
+        // Automatic location-based currency detection fallback for local/direct access
+        if (!document.cookie.includes('oz_currency=')) {
+            try {
+                var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+                var detected = null;
+                if (tz.includes('lagos') || tz.includes('nigeria') || tz.includes('africa/luanda') || tz.includes('africa/porto-novo')) detected = 'NGN';
+                else if (tz.includes('accra')) detected = 'GHS';
+                else if (tz.includes('nairobi')) detected = 'KES';
+                else if (tz.includes('johannesburg')) detected = 'ZAR';
+                else if (tz.includes('london')) detected = 'GBP';
+                else if (tz.includes('dubai')) detected = 'AED';
+                else if (tz.includes('kolkata') || tz.includes('calcutta')) detected = 'INR';
+                else if (tz.includes('toronto') || tz.includes('vancouver') || tz.includes('montreal')) detected = 'CAD';
+                else if (tz.includes('paris') || tz.includes('berlin') || tz.includes('madrid') || tz.includes('rome') || tz.includes('amsterdam') || tz.includes('brussels')) detected = 'EUR';
+
+                if (detected && detected !== '@Model.SelectedCurrency') {
+                    document.cookie = 'oz_currency=' + detected + ';path=/;max-age=31536000;SameSite=Lax';
+                    window.location.reload();
+                }
+            } catch (e) {}
+        }
     });
 </script>
 }
