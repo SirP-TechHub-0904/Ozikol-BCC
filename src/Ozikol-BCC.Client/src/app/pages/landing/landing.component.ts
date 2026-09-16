@@ -1336,7 +1336,49 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
     // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
     const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
-    styleTag.textContent = cleanStyles;
+
+    // Base framework CSS (Bootstrap 5.3.3, FontAwesome 6, Inter Font) ensuring 100% parity with Demo Preview
+    const baseFrameworkStyles = `
+      @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
+      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+      body.public-website-mode {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        background: #ffffff;
+      }
+      body.public-website-mode a {
+        text-decoration: none;
+        cursor: pointer;
+      }
+      body.public-website-mode button {
+        cursor: pointer;
+      }
+      .dropdown {
+        position: relative !important;
+      }
+      .dropdown-menu {
+        display: none;
+      }
+      .dropdown:hover .dropdown-menu {
+        display: block;
+      }
+      /* Active Navigation Link Highlighting */
+      .oz-nav-header .nav-link.active {
+        color: #0050e5 !important;
+        font-weight: 700 !important;
+      }
+      .oz-nav-header .nav-link:not(.active) {
+        color: #64748b !important;
+        font-weight: 500 !important;
+      }
+      .oz-nav-header .btn.active {
+        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.4) !important;
+        transform: translateY(-1px);
+      }
+    `;
+
+    styleTag.textContent = `${baseFrameworkStyles}\n${cleanStyles}`;
 
     // 2. Set Safe HTML for main page layout
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
