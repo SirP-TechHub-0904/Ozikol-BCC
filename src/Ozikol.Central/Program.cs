@@ -49,9 +49,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
 
-    // Clean hyphenated route aliases for Centralwks operator authentication
-    options.Conventions.AddAreaPageRoute("Centralwks", "/Login", "centralwks/login");
-    options.Conventions.AddAreaPageRoute("Centralwks", "/Logout", "centralwks/logout");
+    // Clean hyphenated route aliases for Centralwks operator authentication (Login and Logout are already handled case-insensitively by default area routing)
     options.Conventions.AddAreaPageRoute("Centralwks", "/ForgotPassword", "centralwks/forgot-password");
     options.Conventions.AddAreaPageRoute("Centralwks", "/ResetPassword", "centralwks/reset-password");
     options.Conventions.AddAreaPageRoute("Centralwks", "/Login2fa", "centralwks/login-2fa");
@@ -59,6 +57,12 @@ builder.Services.AddRazorPages(options =>
     // Enable optional /{culture} route prefix constrained strictly to supported language codes
     options.Conventions.AddFolderRouteModelConvention("/", model =>
     {
+        // Administrative console areas (Centralwks, Affiliate, Creator) are culture-neutral; skip adding /{culture} routes
+        if (!string.IsNullOrEmpty(model.AreaName))
+        {
+            return;
+        }
+
         var selectors = model.Selectors.ToList();
         // Track unique route templates case-insensitively to prevent duplicate selectors / AmbiguousMatchException
         var seenTemplates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -337,6 +341,12 @@ app.Use(async (context, next) =>
     {
         var culturePrefix = isCulturePrefixed ? path.Substring(0, 3) : "";
         context.Response.Redirect($"{culturePrefix}/policies-and-reports", permanent: true);
+        return;
+    }
+    if (subPath.Equals("/login", StringComparison.OrdinalIgnoreCase) ||
+        subPath.Equals("/auth/login", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/centralwks/login", permanent: false);
         return;
     }
 
