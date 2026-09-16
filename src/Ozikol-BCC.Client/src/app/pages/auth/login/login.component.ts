@@ -13,10 +13,9 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="login-card">
         <!-- Logo & Header -->
         <div class="card-header">
-          <div class="brand-avatar" *ngIf="brandIconUrl || brandLogoUrl || brandInitials">
+          <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
             <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-logo-main" />
             <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
-            <span *ngIf="!brandIconUrl && !brandInitials" class="material-symbols-outlined">shield_person</span>
           </div>
           <h2 class="title">Sign In to Workspace</h2>
           <p class="subtitle">Enter your credentials to access your organization portal.</p>
@@ -105,7 +104,7 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="force-modal-header">
             <div class="force-modal-avatar">
               <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-img" />
-              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">shield_person</span>
+              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock_reset</span>
             </div>
             <h3 class="force-modal-title">Temporary Password Detected</h3>
             <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>

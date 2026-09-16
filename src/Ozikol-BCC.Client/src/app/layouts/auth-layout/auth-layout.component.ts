@@ -36,7 +36,7 @@ import { ApiService } from '../../core/services/api.service';
                   class="brand-logo-img" 
                 />
                 <div *ngIf="!displayLogo" class="brand-fallback-badge">
-                  <span class="material-symbols-outlined icon-shield">shield</span>
+                  <img *ngIf="displayIcon" [src]="displayIcon" [alt]="brandName" class="brand-icon-img" />
                   <span class="fallback-name">{{ brandName }}</span>
                 </div>
               </a>
@@ -201,9 +201,11 @@ import { ApiService } from '../../core/services/api.service';
       border: 1px solid rgba(255, 255, 255, 0.16);
       color: #ffffff;
 
-      .icon-shield {
-        font-size: 22px;
-        color: #38bdf8;
+      .brand-icon-img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        border-radius: 4px;
       }
 
       .fallback-name {
@@ -471,6 +473,7 @@ export class AuthLayoutComponent implements OnInit {
   brandName: string = 'Workspace';
   brandLogoUrl: string = '';
   brandWhiteLogoUrl: string = '';
+  brandIconUrl: string = '';
   useWhiteLogo: boolean = false;
   loginBgUrl: string = '';
   loginTitle: string = '';
@@ -491,6 +494,8 @@ export class AuthLayoutComponent implements OnInit {
           this.brandName = res.data.companyName || 'Workspace';
           this.brandLogoUrl = res.data.companyLogoUrl || '';
           this.brandWhiteLogoUrl = res.data.companyWhiteLogoUrl || '';
+          const rawIcon = res.data.companyIconUrl;
+          this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
           this.useWhiteLogo = res.data.useWhiteLogoInLogin || false;
           this.loginBgUrl = res.data.loginBackgroundImageUrl || '';
           this.loginTitle = res.data.loginTitle || '';
@@ -501,6 +506,10 @@ export class AuthLayoutComponent implements OnInit {
       },
       error: () => {}
     });
+  }
+
+  get displayIcon(): string {
+    return this.brandIconUrl || '';
   }
 
   get displayLogo(): string {
