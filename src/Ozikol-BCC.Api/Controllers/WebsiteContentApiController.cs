@@ -344,9 +344,9 @@ namespace Ozikol_BCC.Api.Controllers
             var brandName = !string.IsNullOrWhiteSpace(config?.CompanyName)
                 ? config.CompanyName
                 : (!string.IsNullOrWhiteSpace(config?.WebsiteTitle) ? config.WebsiteTitle : "Ozikol");
-            var faviconUrl = !string.IsNullOrWhiteSpace(config?.CompanyIconUrl)
+            var faviconUrl = !string.IsNullOrWhiteSpace(config?.CompanyIconUrl) && config.CompanyIconUrl != "/favicon.ico"
                 ? config.CompanyIconUrl
-                : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : "/favicon.ico");
+                : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : string.Empty);
             var logoUrl = !string.IsNullOrWhiteSpace(config?.CompanyLogoUrl)
                 ? config.CompanyLogoUrl
                 : faviconUrl;
