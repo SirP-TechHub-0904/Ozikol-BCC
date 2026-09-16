@@ -44,6 +44,8 @@ builder.Services.AddRazorPages(options =>
     // Register clean top-level and hyphenated route aliases for Auth pages
     options.Conventions.AddPageRoute("/Auth/GetStarted", "get-started");
     options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/get-started");
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "register");
+    options.Conventions.AddPageRoute("/Auth/GetStarted", "auth/register");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "workspace-setup-details");
     options.Conventions.AddPageRoute("/Auth/WorkspaceSetupDetails", "auth/workspace-setup-details");
 
