@@ -277,13 +277,32 @@ public class CurrencyService : ICurrencyService
             }
         }
 
-        // 3. Cloudflare GeoIP header (CF-IPCountry)
-        string? countryIso = context.Request.Headers["CF-IPCountry"].FirstOrDefault();
+        // 3. Edge CDN & Proxy Country Headers (Cloudflare, AWS CloudFront, Fastly, Nginx)
+        string? countryIso = context.Request.Headers["CF-IPCountry"].FirstOrDefault()
+                          ?? context.Request.Headers["CloudFront-Viewer-Country"].FirstOrDefault()
+                          ?? context.Request.Headers["X-Country-Code"].FirstOrDefault()
+                          ?? context.Request.Headers["X-GeoIP-Country"].FirstOrDefault();
 
-        // 4. Offline MaxMind GeoLite2 lookup via client Remote IP address
-        if (string.IsNullOrWhiteSpace(countryIso) && context.Connection.RemoteIpAddress != null)
+        // 4. Offline MaxMind GeoLite2 lookup via client IP (supports CF-Connecting-IP and X-Forwarded-For)
+        if (string.IsNullOrWhiteSpace(countryIso))
         {
-            countryIso = _geoLocationService.ResolveCountryCode(context.Connection.RemoteIpAddress);
+            var ipHeader = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault()
+                        ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',')[0].Trim();
+
+            System.Net.IPAddress? clientIp = null;
+            if (!string.IsNullOrWhiteSpace(ipHeader) && System.Net.IPAddress.TryParse(ipHeader, out var parsedIp))
+            {
+                clientIp = parsedIp;
+            }
+            else
+            {
+                clientIp = context.Connection.RemoteIpAddress;
+            }
+
+            if (clientIp != null)
+            {
+                countryIso = _geoLocationService.ResolveCountryCode(clientIp);
+            }
         }
 
         // 5. Match detected country ISO against configured currency associations
