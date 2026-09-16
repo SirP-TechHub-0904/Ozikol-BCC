@@ -265,7 +265,11 @@ namespace Ozikol_BCC.Api.Controllers
                 LoginTitle = config?.LoginTitle ?? "",
                 LoginNoteTitle = config?.LoginNoteTitle ?? "",
                 LoginNote = config?.LoginNote ?? "",
-                LoginNoteFooter = config?.LoginNoteFooter ?? ""
+                LoginNoteFooter = config?.LoginNoteFooter ?? "",
+                ActivateLogin = config?.ActivateLogin ?? true,
+                ActivateLoginInMenu = config?.ActivateLoginInMenu ?? true,
+                ActivateLoginInFooter = config?.ActivateLoginInFooter ?? true,
+                LoginButtonText = !string.IsNullOrWhiteSpace(config?.LoginButtonText) ? config.LoginButtonText : "Sign In"
             };
 
             return Ok(ApiResponse<BrandSettingsResponseDto>.SuccessResponse(data, "Brand identity settings retrieved."));
@@ -313,6 +317,10 @@ namespace Ozikol_BCC.Api.Controllers
             config.LoginNoteTitle = dto.LoginNoteTitle;
             config.LoginNote = dto.LoginNote;
             config.LoginNoteFooter = dto.LoginNoteFooter;
+            config.ActivateLogin = dto.ActivateLogin;
+            config.ActivateLoginInMenu = dto.ActivateLoginInMenu;
+            config.ActivateLoginInFooter = dto.ActivateLoginInFooter;
+            config.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
 
             await _db.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Brand identity updated successfully."));
@@ -616,6 +624,10 @@ namespace Ozikol_BCC.Api.Controllers
         public string LoginNoteTitle { get; set; } = string.Empty;
         public string LoginNote { get; set; } = string.Empty;
         public string LoginNoteFooter { get; set; } = string.Empty;
+        public bool ActivateLogin { get; set; } = true;
+        public bool ActivateLoginInMenu { get; set; } = true;
+        public bool ActivateLoginInFooter { get; set; } = true;
+        public string LoginButtonText { get; set; } = "Sign In";
     }
 
     public class BrandSettingsUpdateRequestDto
@@ -642,6 +654,10 @@ namespace Ozikol_BCC.Api.Controllers
         public string LoginNoteTitle { get; set; } = string.Empty;
         public string LoginNote { get; set; } = string.Empty;
         public string LoginNoteFooter { get; set; } = string.Empty;
+        public bool ActivateLogin { get; set; } = true;
+        public bool ActivateLoginInMenu { get; set; } = true;
+        public bool ActivateLoginInFooter { get; set; } = true;
+        public string LoginButtonText { get; set; } = "Sign In";
     }
 
     public class AppearanceUpdateRequestDto

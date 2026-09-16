@@ -1,10 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 
+/**
+ * Self-service password reset and account activation component.
+ * Allows users to request a 6-digit OTP to their registered email,
+ * verify their identity, and set a new compliant password with live validation.
+ */
 @Component({
   selector: 'app-reset-password',
   standalone: true,
@@ -14,10 +19,10 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="reset-card">
         <div class="card-header">
           <div class="brand-avatar">
-            <span class="material-symbols-outlined">pin</span>
+            <span class="material-symbols-outlined">lock_reset</span>
           </div>
-          <h2 class="title">6-Digit OTP Verification</h2>
-          <p class="subtitle">Enter your 6-digit security code and set your permanent password.</p>
+          <h2 class="title">Reset Account Password</h2>
+          <p class="subtitle">Enter your 6-digit verification code and set your permanent password.</p>
         </div>
 
         <div *ngIf="errorMessage" class="error-banner">
@@ -35,13 +40,20 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <label for="email">Account Email *</label>
-              <button type="button" class="btn-resend-link" (click)="requestOtp()" [disabled]="isRequestingOtp || !email">
-                <span>{{ isRequestingOtp ? 'Sending...' : 'Send / Resend OTP' }}</span>
+              <button 
+                type="button" 
+                class="btn-resend-link" 
+                (click)="requestOtp()" 
+                [disabled]="isRequestingOtp || otpCountdown > 0 || !email"
+              >
+                <span *ngIf="isRequestingOtp">Sending...</span>
+                <span *ngIf="!isRequestingOtp && otpCountdown > 0">Resend in {{ otpCountdown }}s</span>
+                <span *ngIf="!isRequestingOtp && otpCountdown === 0">Send / Resend OTP</span>
               </button>
             </div>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">mail</span>
-              <input id="email" type="email" [(ngModel)]="email" name="email" placeholder="user@domain.com" required />
+              <input id="email" type="email" [(ngModel)]="email" name="email" placeholder="user@domain.com" required autocomplete="email" />
             </div>
           </div>
 
@@ -76,10 +88,38 @@ import { ToastService } from '../../../core/services/toast.service';
                 name="newPassword"
                 placeholder="••••••••••••"
                 required
+                autocomplete="new-password"
               />
-              <button type="button" class="toggle-pwd-btn" (click)="showPassword = !showPassword">
+              <button type="button" class="toggle-pwd-btn" (click)="showPassword = !showPassword" tabindex="-1">
                 <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Live Password Complexity Checklist -->
+          <div class="password-rules-box">
+            <span class="rules-box-title">Password Complexity Requirements:</span>
+            <div class="rules-list">
+              <div class="rule-chip" [class.rule-passed]="newPassword.length >= 8">
+                <span class="material-symbols-outlined rule-icon">{{ newPassword.length >= 8 ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>8+ Chars</span>
+              </div>
+              <div class="rule-chip" [class.rule-passed]="hasUpperCase()">
+                <span class="material-symbols-outlined rule-icon">{{ hasUpperCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>Uppercase (A-Z)</span>
+              </div>
+              <div class="rule-chip" [class.rule-passed]="hasLowerCase()">
+                <span class="material-symbols-outlined rule-icon">{{ hasLowerCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>Lowercase (a-z)</span>
+              </div>
+              <div class="rule-chip" [class.rule-passed]="hasNumber()">
+                <span class="material-symbols-outlined rule-icon">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>Number (0-9)</span>
+              </div>
+              <div class="rule-chip" [class.rule-passed]="hasSpecial()">
+                <span class="material-symbols-outlined rule-icon">{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>Special (!&#64;#$...)</span>
+              </div>
             </div>
           </div>
 
@@ -95,11 +135,16 @@ import { ToastService } from '../../../core/services/toast.service';
                 name="confirmPassword"
                 placeholder="••••••••••••"
                 required
+                autocomplete="new-password"
               />
+            </div>
+            <div *ngIf="confirmPassword && newPassword !== confirmPassword" class="password-mismatch-hint">
+              <span class="material-symbols-outlined" style="font-size:14px;">warning</span>
+              <span>Passwords do not match</span>
             </div>
           </div>
 
-          <button type="submit" [disabled]="loading || !email || !otp || !newPassword" class="btn-submit">
+          <button type="submit" [disabled]="loading || !email || !otp || !isPasswordValid()" class="btn-submit">
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">verified_user</span>
             <span>{{ loading ? 'Verifying & Saving...' : 'Verify OTP & Activate Account' }}</span>
@@ -117,47 +162,46 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .reset-container {
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       box-sizing: border-box;
+      padding: 0;
     }
     .reset-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 36px 40px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 36px 32px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
       color: #f8fafc;
+      box-sizing: border-box;
     }
     .card-header { text-align: center; margin-bottom: 24px; }
     .brand-avatar {
       width: 56px;
       height: 56px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #0050e5, #3b82f6);
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0050e5, #38bdf8);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 12px;
-      box-shadow: 0 8px 20px rgba(0, 80, 229, 0.35);
+      margin-bottom: 14px;
+      box-shadow: 0 8px 22px rgba(0, 80, 229, 0.35);
     }
     .brand-avatar span { font-size: 28px; color: #fff; }
-    .title { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
-    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.4; }
+    .title { font-size: 20px; font-weight: 800; color: #ffffff; margin: 0 0 6px; }
+    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.45; }
     .error-banner {
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #f87171;
       padding: 10px 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       display: flex;
       align-items: center;
@@ -169,54 +213,122 @@ import { ToastService } from '../../../core/services/toast.service';
       border: 1px solid rgba(16, 185, 129, 0.3);
       color: #34d399;
       padding: 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 20px;
     }
-    .reset-form { display: flex; flex-direction: column; gap: 14px; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .reset-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
       color: #cbd5e1;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .input-wrapper { position: relative; display: flex; align-items: center; }
-    .input-icon { position: absolute; left: 12px; color: #64748b; font-size: 18px; pointer-events: none; }
+    .input-icon { position: absolute; left: 14px; color: #64748b; font-size: 20px; pointer-events: none; }
     .input-wrapper input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      padding: 10px 12px 10px 38px;
-      color: #fff;
-      font-size: 13px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      padding: 12px 42px 12px 44px;
+      color: #ffffff;
+      font-size: 14px;
       outline: none;
+      box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .otp-input-field {
       font-family: monospace;
-      font-size: 16px !important;
+      font-size: 17px !important;
       letter-spacing: 4px;
       font-weight: 700;
-      color: #60a5fa !important;
+      color: #38bdf8 !important;
+      text-align: center;
     }
     .input-wrapper input:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
     }
-    .field-hint { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .btn-resend-link { background: none; border: none; color: #60a5fa; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; }
-    .btn-resend-link:hover { text-decoration: underline; }
+    .field-hint { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .btn-resend-link {
+      background: none;
+      border: none;
+      color: #38bdf8;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s;
+    }
+    .btn-resend-link:hover:not(:disabled) { text-decoration: underline; color: #7dd3fc; }
     .btn-resend-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .password-rules-box {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .rules-box-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .rules-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .rule-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .rule-chip .rule-icon {
+      font-size: 13px;
+      color: #64748b;
+    }
+    .rule-chip.rule-passed {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-weight: 700;
+    }
+    .rule-chip.rule-passed .rule-icon {
+      color: #34d399;
+    }
+    .password-mismatch-hint {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      color: #f87171;
+      font-weight: 600;
+      margin-top: 4px;
+    }
 
     .toggle-pwd-btn {
       position: absolute;
-      right: 10px;
+      right: 12px;
       background: none;
       border: none;
       color: #64748b;
@@ -225,13 +337,15 @@ import { ToastService } from '../../../core/services/toast.service';
       align-items: center;
       padding: 4px;
     }
+    .toggle-pwd-btn:hover { color: #cbd5e1; }
+
     .btn-submit {
       margin-top: 8px;
-      background: linear-gradient(135deg, #0050e5, #2563eb);
-      color: #fff;
+      background: linear-gradient(135deg, #0050e5, #1f6bff);
+      color: #ffffff;
       border: none;
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 14px;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
@@ -240,18 +354,26 @@ import { ToastService } from '../../../core/services/toast.service';
       justify-content: center;
       gap: 8px;
       transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.3);
+      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
     }
     .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45); }
-    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
     .spinner { width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .card-footer { margin-top: 20px; text-align: center; }
-    .back-link { color: #64748b; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .card-footer { margin-top: 22px; text-align: center; }
+    .back-link {
+      color: #64748b;
+      font-size: 12.5px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
     .back-link:hover { color: #cbd5e1; }
   `]
 })
-export class ResetPasswordComponent implements OnInit {
+export class ResetPasswordComponent implements OnInit, OnDestroy {
   email = '';
   otp = '';
   newPassword = '';
@@ -259,6 +381,8 @@ export class ResetPasswordComponent implements OnInit {
   showPassword = false;
   loading = false;
   isRequestingOtp = false;
+  otpCountdown = 0;
+  otpInterval: any = null;
   errorMessage = '';
   successMessage = '';
 
@@ -280,6 +404,52 @@ export class ResetPasswordComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    if (this.otpInterval) {
+      clearInterval(this.otpInterval);
+      this.otpInterval = null;
+    }
+  }
+
+  hasUpperCase(): boolean {
+    return /[A-Z]/.test(this.newPassword || '');
+  }
+
+  hasLowerCase(): boolean {
+    return /[a-z]/.test(this.newPassword || '');
+  }
+
+  hasNumber(): boolean {
+    return /[0-9]/.test(this.newPassword || '');
+  }
+
+  hasSpecial(): boolean {
+    return /[^a-zA-Z0-9]/.test(this.newPassword || '');
+  }
+
+  isPasswordValid(): boolean {
+    if (!this.newPassword) return false;
+    return this.newPassword.length >= 8
+      && this.hasUpperCase()
+      && this.hasLowerCase()
+      && this.hasNumber()
+      && this.hasSpecial()
+      && this.newPassword === this.confirmPassword;
+  }
+
+  private startCountdown(): void {
+    this.otpCountdown = 60;
+    if (this.otpInterval) clearInterval(this.otpInterval);
+    this.otpInterval = setInterval(() => {
+      if (this.otpCountdown > 0) {
+        this.otpCountdown--;
+      } else {
+        clearInterval(this.otpInterval);
+        this.otpInterval = null;
+      }
+    }, 1000);
+  }
+
   requestOtp(): void {
     if (!this.email.trim()) {
       this.errorMessage = 'Please enter your account email address first.';
@@ -291,6 +461,7 @@ export class ResetPasswordComponent implements OnInit {
     this.api.post<any>('auth/password/request-otp', { email: this.email.trim() }).subscribe({
       next: () => {
         this.isRequestingOtp = false;
+        this.startCountdown();
         this.toast.success('6-Digit OTP dispatched to your registered email & phone.');
       },
       error: (err) => {

@@ -113,25 +113,24 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .register-container {
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
-      font-family: 'Roboto', 'Inter', sans-serif;
       box-sizing: border-box;
+      padding: 0;
     }
     .register-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 36px 40px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 36px 32px;
       width: 100%;
-      max-width: 540px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      max-width: 500px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
       color: #f8fafc;
+      box-sizing: border-box;
     }
     .card-header {
       text-align: center;

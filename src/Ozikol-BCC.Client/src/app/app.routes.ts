@@ -102,16 +102,30 @@ import { StoreCheckoutComponent } from './pages/store/store-checkout.component';
 
 import { authGuard } from './core/guards/auth.guard';
 
+import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
+
 export const routes: Routes = [
-  // Public & Authentication
+  // Public Landing
   { path: '', component: LandingComponent },
-  { path: 'auth/login', component: LoginComponent },
-  { path: 'login', redirectTo: 'auth/login' },
-  { path: 'register', component: RegisterComponent },
-  { path: 'auth/register', component: RegisterComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'auth/reset-password', component: ResetPasswordComponent },
-  { path: 'access-denied', component: AccessDeniedComponent },
+
+  // Unified Authentication Shell & Flows
+  {
+    path: 'auth',
+    component: AuthLayoutComponent,
+    children: [
+      { path: '', redirectTo: 'login', pathMatch: 'full' },
+      { path: 'login', component: LoginComponent },
+      { path: 'register', component: RegisterComponent },
+      { path: 'reset-password', component: ResetPasswordComponent },
+      { path: 'forgot-password', component: ResetPasswordComponent },
+      { path: 'access-denied', component: AccessDeniedComponent }
+    ]
+  },
+  { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
+  { path: 'register', redirectTo: 'auth/register', pathMatch: 'full' },
+  { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
+  { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
 
   // Public Storefront & Commerce Catalog
   { path: 'store', component: StoreCatalogComponent },
