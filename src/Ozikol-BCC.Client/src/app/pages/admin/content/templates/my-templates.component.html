@@ -2178,7 +2178,9 @@
               <select [(ngModel)]="tagForm.tagType" class="form-ctrl" (change)="onTagTypeChanged()">
                 <!-- Header Zone Types -->
                 <ng-container *ngIf="tagFormZone === 'head'">
-                  <option value="meta_tag">SEO / Social Meta Tag (&lt;meta&gt;)</option>
+                  <option value="meta_tag">
+                    SEO / Social Meta Tag (&lt;meta&gt;){{ getExistingSingletonTag('meta_tag', 'head') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="link_stylesheet">External Stylesheet (&lt;link rel="stylesheet"&gt;) / Upload CSS</option>
                   <option value="inline_css">Inline Custom CSS (&lt;style&gt;)</option>
                   <option value="google_fonts">Google Fonts Link &amp; Preconnect</option>
@@ -2189,10 +2191,18 @@
 
                 <!-- Body Open Zone Types -->
                 <ng-container *ngIf="tagFormZone === 'body_open'">
-                  <option value="gtm_noscript">Google Tag Manager (&lt;noscript&gt; iframe)</option>
-                  <option value="pixel_noscript">Meta / Facebook Pixel (&lt;noscript&gt; img)</option>
-                  <option value="page_loader">Page Splash / Preloader Screen</option>
-                  <option value="svg_sprites">SVG Icon Sprite Sheet (&lt;symbol&gt;)</option>
+                  <option value="gtm_noscript">
+                    Google Tag Manager (&lt;noscript&gt; iframe){{ getExistingSingletonTag('gtm_noscript', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="pixel_noscript">
+                    Meta / Facebook Pixel (&lt;noscript&gt; img){{ getExistingSingletonTag('pixel_noscript', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="page_loader">
+                    Page Splash / Preloader Screen{{ getExistingSingletonTag('page_loader', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="svg_sprites">
+                    SVG Icon Sprite Sheet (&lt;symbol&gt;){{ getExistingSingletonTag('svg_sprites', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="raw_html">Raw HTML / Code Snippet</option>
                 </ng-container>
 
@@ -2200,10 +2210,29 @@
                 <ng-container *ngIf="tagFormZone === 'footer'">
                   <option value="script_url">External Vendor JS (&lt;script src="" defer&gt;)</option>
                   <option value="inline_script">Inline JavaScript (&lt;script&gt; DOMContentLoaded)</option>
-                  <option value="live_chat">Live Chat / Helpdesk Widget</option>
+                  <option value="live_chat">
+                    Live Chat / Helpdesk Widget{{ getExistingSingletonTag('live_chat', 'footer') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="raw_html">Raw HTML / Footer Snippet</option>
                 </ng-container>
               </select>
+            </div>
+
+            <!-- Singleton Tag Warning Banner (shown when a singleton tag that already exists is selected) -->
+            <div class="form-group full-width" *ngIf="currentZoneExistingSingleton">
+              <div class="singleton-alert-banner">
+                <div class="singleton-alert-content">
+                  <span class="material-symbols-outlined icon-warn">warning</span>
+                  <div>
+                    <strong>This tag cannot be added twice (Singleton).</strong>
+                    <small>A '{{ currentZoneExistingSingleton.name }}' is already active in the {{ getZoneShortTitle(tagFormZone) }} zone.</small>
+                  </div>
+                </div>
+                <button type="button" class="btn-switch-edit" (click)="switchToEditSingleton(currentZoneExistingSingleton)">
+                  <span class="material-symbols-outlined">edit</span>
+                  <span>Edit Existing Tag</span>
+                </button>
+              </div>
             </div>
 
             <!-- Meta & Icon Preset Dropdown (Shown when meta_tag is selected) -->
@@ -2355,8 +2384,8 @@
             </div>
           </div>
 
-          <!-- Placeholder Tokens Quick Ribbon -->
-          <div class="token-quick-ribbon" style="margin-top: 14px;">
+          <!-- Placeholder Tokens Quick Ribbon (Only displayed for Meta Tags and dynamic Raw HTML) -->
+          <div class="token-quick-ribbon" style="margin-top: 14px;" *ngIf="tagForm.tagType === 'meta_tag' || tagForm.tagType === 'raw_html'">
             <div class="token-ribbon-heading">
               <span class="material-symbols-outlined icon-token">token</span>
               <span>Available Placeholders (Click to insert):</span>

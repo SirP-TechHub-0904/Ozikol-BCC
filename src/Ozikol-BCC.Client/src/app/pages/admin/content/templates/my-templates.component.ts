@@ -191,6 +191,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
   ];
 
+  // Singleton Tag Types that must not be added more than once per zone
+  readonly singletonTagTypes: Record<string, string[]> = {
+    head: ['meta_tag'],
+    body_open: ['gtm_noscript', 'pixel_noscript', 'page_loader', 'svg_sprites'],
+    footer: ['live_chat']
+  };
+
   readonly metaPresets: Record<string, { name: string; icon: string; content: string }> = {
     full_suite: {
       name: 'Full SEO & Social Meta Suite (All-In-One with Placeholders)',
@@ -1466,10 +1473,47 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     reader.readAsText(this.selectedCssFile);
   }
 
+  /**
+   * Checks if a singleton tag type already exists in the specified zone.
+   */
+  getExistingSingletonTag(tagType: string, zone?: string): CodeInjectionTag | undefined {
+    const activeZone = (zone || this.tagFormZone) as 'head' | 'body_open' | 'footer';
+    const singletons = this.singletonTagTypes[activeZone] || [];
+    if (!singletons.includes(tagType)) return undefined;
+
+    const list = activeZone === 'head' ? this.headTags : activeZone === 'body_open' ? this.bodyOpenTags : this.footerTags;
+    return list.find(t => t.tagType === tagType && (!this.isEditingTag || t.id !== this.tagForm.id));
+  }
+
+  /**
+   * Gets the existing singleton tag matching the currently selected tagType in the current zone.
+   */
+  get currentZoneExistingSingleton(): CodeInjectionTag | undefined {
+    if (this.isEditingTag) return undefined;
+    return this.getExistingSingletonTag(this.tagForm.tagType, this.tagFormZone);
+  }
+
+  /**
+   * Switches the active modal directly into edit mode for an existing singleton tag.
+   */
+  switchToEditSingleton(tag: CodeInjectionTag): void {
+    this.openEditTagModal(tag);
+    this.toast.info(`Switched to editing existing '${tag.name}'.`);
+  }
+
   saveTag(): void {
     if (!this.tagForm.name?.trim() || !this.tagForm.content?.trim()) {
       this.toast.error('Please enter a tag name and snippet content.');
       return;
+    }
+
+    // Singleton Duplicate Guard
+    if (!this.isEditingTag) {
+      const existing = this.getExistingSingletonTag(this.tagForm.tagType, this.tagFormZone);
+      if (existing) {
+        this.toast.warning(`A '${this.getTagTypeLabel(this.tagForm.tagType)}' tag already exists in the ${this.getZoneShortTitle(this.tagFormZone)} zone. You cannot add it twice.`);
+        return;
+      }
     }
 
     this.savingTag = true;
