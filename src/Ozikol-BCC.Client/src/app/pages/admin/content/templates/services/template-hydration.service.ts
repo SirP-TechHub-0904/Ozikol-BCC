@@ -245,11 +245,13 @@ export class TemplateHydrationService {
           (p.showInFooter === undefined || p.showInFooter === true)
         );
       } else if (opts.availablePages && Array.isArray(opts.availablePages)) {
-        pages = opts.availablePages.filter((p: any) =>
-          p.publish !== false &&
-          p.showInFooter !== false &&
-          (p.pageCategory && p.pageCategory.toLowerCase().trim() === normalized)
-        );
+        pages = opts.availablePages.filter((p: any) => {
+          if (p.publish === false || p.showInFooter === false) return false;
+          const catStr = typeof p.pageCategory === 'string'
+            ? p.pageCategory
+            : (p.pageCategory?.categoryName || p.pageCategory?.name || p.categoryName || '');
+          return Boolean(catStr && catStr.toLowerCase().trim() === normalized);
+        });
       } else if (normalized.includes('service') || normalized.includes('solution')) {
         pages = [
           { title: 'Strategic Consulting', url: '/strategic-advisory' },
@@ -269,7 +271,8 @@ export class TemplateHydrationService {
       return pages.map((p: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        const targetUrl = p.url || (p.directUrl ? `/${p.directUrl}` : '') || (p.slug ? `/${p.slug}` : '#');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, targetUrl);
         return rendered;
       }).join('\n');
     });
@@ -293,7 +296,7 @@ export class TemplateHydrationService {
         pages = opts.availablePages.filter((p: any) => {
           const isPublished = p.publish !== false && p.isPublished !== false;
           const isFooter = p.showInFooter !== false;
-          if (!isPublished || !isFooter || !p.tags) return false;
+          if (!isPublished || !isFooter || !p.tags || typeof p.tags !== 'string') return false;
 
           const tagsList = p.tags.toLowerCase().split(/[,;]/).map((t: string) => t.trim());
           return tagsList.includes(normalized);
