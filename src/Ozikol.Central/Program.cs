@@ -300,6 +300,25 @@ app.Use(async (context, next) =>
 
     if (isCulturePrefixed)
     {
+        // If an administrative area URL was accessed with a culture prefix (e.g. /en/centralwks/login),
+        // redirect directly to the culture-neutral console route (/centralwks/login)
+        if (path.Length > 3)
+        {
+            var rawSubPath = path.Substring(3);
+            if (rawSubPath.StartsWith("/centralwks", StringComparison.OrdinalIgnoreCase) ||
+                rawSubPath.StartsWith("/affiliate", StringComparison.OrdinalIgnoreCase) ||
+                rawSubPath.StartsWith("/creator", StringComparison.OrdinalIgnoreCase))
+            {
+                var targetUrl = rawSubPath;
+                if (context.Request.QueryString.HasValue)
+                {
+                    targetUrl += context.Request.QueryString.Value;
+                }
+                context.Response.Redirect(targetUrl, permanent: false);
+                return;
+            }
+        }
+
         // Keep culture cookie synchronized with the active URL prefix
         var cultureSegment = path.Substring(1, 2).ToLowerInvariant();
         context.Response.Cookies.Append(
