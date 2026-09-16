@@ -56,18 +56,23 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Retrieves full published page details and layout sections by unique slug.
         /// </summary>
+        /// <param name="slug">The direct URL slug of the page.</param>
+        /// <returns>Published page entity with ordered sections, lists, and forms.</returns>
         [HttpGet("pages/slug/{slug}")]
         public async Task<IActionResult> GetPublishedPageBySlug(string slug)
         {
-            var cleanSlug = slug.Trim().ToLowerInvariant();
+            var cleanSlug = (slug ?? string.Empty).Trim().ToLowerInvariant().Trim('/');
+            var slashSlug = "/" + cleanSlug;
+
             var page = await _context.WebPages
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
-                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageForm)
                         .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
-                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
+                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null &&
+                    (p.DirectUrl.ToLower() == cleanSlug || p.DirectUrl.ToLower() == slashSlug));
 
             if (page == null)
             {
@@ -84,6 +89,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Retrieves full published page details and layout sections by ID.
         /// </summary>
+        /// <param name="id">The unique GUID identifier of the web page.</param>
+        /// <returns>Published page entity with ordered sections, lists, and forms.</returns>
         [HttpGet("pages/{id:guid}")]
         public async Task<IActionResult> GetPublishedPageById(Guid id)
         {
@@ -91,7 +98,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
-                .Include(p => p.PageSections!.Where(s => !s.Disable))
+                .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageForm)
                         .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
                 .FirstOrDefaultAsync(p => p.Publish && p.Id == id);

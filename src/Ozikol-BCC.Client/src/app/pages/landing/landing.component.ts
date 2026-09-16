@@ -314,6 +314,7 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     // Concurrently fetch foundational website metadata
     Promise.all([
+      this.fetchBrandSettings(),
       this.fetchActiveTemplates(),
       this.fetchNavigationCategories(),
       this.fetchPublishedPages(),
@@ -339,7 +340,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.composeBlogArchive();
         }
       } else {
-        // 3. Dynamic Page by Slug (e.g., about-us, strategic-consulting, request-service, contact-us, etc.)
+        // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
         await this.fetchPageBySlug(this.currentSlug);
         this.composeContentPage();
       }
@@ -358,6 +359,22 @@ export class LandingComponent implements OnInit, OnDestroy {
   // ========================================================
   // BACKEND API DATA RETRIEVAL
   // ========================================================
+
+  private fetchBrandSettings(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('SettingsApi/brand').subscribe({
+        next: (res: any) => {
+          if (res?.data) {
+            this.brandInfo = res.data;
+            this.brandName = res.data.companyName || res.data.websiteTitle || 'Acme Global';
+            this.brandLogoUrl = res.data.companyLogoUrl || '';
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
 
   private fetchActiveTemplates(): Promise<void> {
     return new Promise((resolve) => {
@@ -484,14 +501,27 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchPageBySlug(slug: string): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get(`WebsiteContentApi/pages/slug/${slug}`).subscribe({
+      const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
+      this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
         next: (res: any) => {
           this.currentPage = res?.data || null;
+          // In-memory fallback if not found via API
+          if (!this.currentPage) {
+            this.currentPage = this.publishedPages.find(p =>
+              (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+              (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+            ) || null;
+          }
           resolve();
         },
         error: (err) => {
           console.warn(`Could not load page with slug '${slug}':`, err);
-          this.currentPage = null;
+          this.currentPage = this.publishedPages.find(p =>
+            (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+            (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+          ) || null;
           resolve();
         }
       });
@@ -627,15 +657,19 @@ export class LandingComponent implements OnInit, OnDestroy {
           }
         }
       }
-    } else if (this.currentPage.fullDescription || this.currentPage.description) {
-      // Fallback clean article content wrapper
+    } else {
+      // Fallback clean article content wrapper (including turnkey legal compliance content for legal pages)
+      const bodyContent = this.currentPage.fullDescription ||
+                          this.currentPage.description ||
+                          this.getTurnkeyLegalContent(this.currentSlug, this.currentPage.title);
+
       combinedHtml += `
-        <section class="py-5 bg-white">
+        <section class="py-5 bg-white border-bottom">
           <div class="container py-4">
             <div class="row justify-content-center">
               <div class="col-lg-9">
                 <article class="prose-content fs-5 leading-relaxed text-secondary">
-                  ${this.currentPage.fullDescription || this.currentPage.description}
+                  ${bodyContent}
                 </article>
               </div>
             </div>
@@ -653,6 +687,97 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+  }
+
+  /**
+   * Generates turnkey corporate compliance text for legal pages when no custom CMS sections exist.
+   */
+  private getTurnkeyLegalContent(slug: string, pageTitle?: string): string {
+    const norm = (slug || '').toLowerCase().trim();
+
+    if (norm.includes('privacy')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Compliance</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Privacy & Data Governance Policy</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            This Privacy Policy explains how <strong>${this.brandName}</strong> collects, processes, stores, and safeguards personal data and institutional information when accessing our platform, services, and client portals.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Information We Collect</h4>
+          <p>We collect information necessary to deliver enterprise services, authenticate authorized personnel, and maintain platform security:</p>
+          <ul class="mb-4">
+            <li><strong>Account Identification:</strong> Full name, professional work email, corporate phone number, job title, and organization affiliation.</li>
+            <li><strong>Technical Telemetry:</strong> IP address, device telemetry, browser specifications, operating system parameters, and session access timestamps.</li>
+            <li><strong>Transactional & Service Inquiries:</strong> Engagement records, support ticket correspondence, service requests, and authorized billing profiles.</li>
+          </ul>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. How We Use Information</h4>
+          <p>We process collected data exclusively under legitimate business interests, contractual commitments, and legal obligations:</p>
+          <ul class="mb-4">
+            <li>To initialize, configure, and maintain sovereign tenant environments and user permissions.</li>
+            <li>To provide responsive technical support, incident escalation, and operational communications.</li>
+            <li>To monitor system resilience, prevent fraudulent access, and enforce SOC2/ISO 27001 compliance standards.</li>
+          </ul>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Data Retention & Sovereign Storage</h4>
+          <p class="mb-4">Personal and institutional data is encrypted in transit via TLS 1.3 and at rest via AES-256 standards. Records are retained strictly for the duration of the commercial agreement plus standard statutory compliance periods.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">4. Individual Rights & Inquiries</h4>
+          <p class="mb-4">Depending on applicable jurisdictions (including GDPR and CCPA), individuals hold rights to request access, rectification, portability, or erasure of their personal data. Inquiries may be directed to our Privacy Officer at <code>${this.brandInfo?.companyEmail || 'privacy@organization.com'}</code>.</p>
+        </div>
+      `;
+    }
+
+    if (norm.includes('terms') || norm.includes('condition')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Governance</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Terms & Conditions of Service</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            These Terms & Conditions govern access to and use of digital products, enterprise services, and web portals operated by <strong>${this.brandName}</strong>.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Acceptance of Terms</h4>
+          <p class="mb-4">By accessing our website or subscribing to our services, you confirm that you have read, understood, and agreed to be legally bound by these terms.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. Authorized Use & Account Governance</h4>
+          <p class="mb-4">Users are responsible for maintaining the confidentiality of their credentials and all activities executed under their authorized profiles. Unauthorized access, system reverse-engineering, or automated scraping is strictly prohibited.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Intellectual Property Rights</h4>
+          <p class="mb-4">All trademarks, service designs, proprietary codebases, templates, and multimedia content hosted across this portal remain the exclusive intellectual property of <strong>${this.brandName}</strong> or its licensed ecosystem partners.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">4. Limitation of Liability</h4>
+          <p class="mb-4">To the maximum extent permitted by applicable law, <strong>${this.brandName}</strong> and its affiliates shall not be liable for indirect, incidental, or consequential damages arising from service disruption or data loss.</p>
+        </div>
+      `;
+    }
+
+    if (norm.includes('cookie')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Cookies & Tracking</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Cookie & Tracking Technologies Policy</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            This policy outlines how <strong>${this.brandName}</strong> utilizes cookies and analogous tracking technologies to provide seamless, secure website navigation.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Essential Operational Cookies</h4>
+          <p class="mb-4">These cookies are strictly required to ensure core portal security, tenant subdomain routing, authentication state management, and shopping cart persistence.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. Analytics & Performance Cookies</h4>
+          <p class="mb-4">We aggregate anonymized navigation metrics to understand visitor engagement, optimize page load speed, and improve overall content quality.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Managing Your Cookie Preferences</h4>
+          <p class="mb-4">You can modify or disable browser cookies at any time via your browser settings. Note that disabling essential cookies may impact system functionality.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="general-page-content">
+        <p class="lead text-secondary mb-4">Welcome to <strong>${pageTitle || 'Page'}</strong> at <strong>${this.brandName}</strong>.</p>
+        <p class="text-muted">Content for this page is managed directly through the CMS Studio. Please check back shortly for upcoming publications, modules, and announcements.</p>
+      </div>
+    `;
   }
 
   /**
@@ -850,9 +975,9 @@ export class LandingComponent implements OnInit, OnDestroy {
    * top menu pages, CTA buttons, and active link highlights.
    */
   private hydrateMenu(rawHtml: string, activeSlug: string): string {
-    // 1. Top menu items (pages with no category, not CTA, published, and not home)
+    // 1. Top menu items (strictly pages configured for main menu, published, not legal, not category child, not CTA, and not home)
     const topMenuItems = this.publishedPages
-      .filter(p => !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
+      .filter(p => p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
       .map(p => ({
         title: p.title,
         url: `/${p.directUrl || p.slug}`
@@ -869,16 +994,21 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 2. Navigation Dropdowns (PageCategories with their published child WebPages)
     const dropdowns = this.categories
       .filter(c => c.publish)
-      .map(c => ({
-        title: c.categoryName,
-        categoryName: c.categoryName,
-        pages: (c.webPages || [])
-          .filter((p: any) => p.publish)
-          .map((p: any) => ({
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Menu';
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish)
+          : this.publishedPages.filter(p => p.publish && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+
+        return {
+          title: catTitle,
+          categoryName: catTitle,
+          pages: childPages.map((p: any) => ({
             title: p.title,
             url: `/${p.directUrl || p.slug}`
           }))
-      }));
+        };
+      });
 
     // 3. CTA Buttons (pages with isMenuCTA = true)
     const menuCtaButtons = this.publishedPages
@@ -919,14 +1049,45 @@ export class LandingComponent implements OnInit, OnDestroy {
    * and enforces the official Ozikol credit bar.
    */
   private hydrateFooter(rawHtml: string): string {
+    // Prepare categorized links for footer columns
+    const footerCategories = this.categories
+      .filter(c => c.publish && c.showInFooter !== false)
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Category';
+        const displayTitle = c.footerDisplayTitle || catTitle;
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish && p.showInFooter !== false)
+          : this.publishedPages.filter(p => p.publish && p.showInFooter !== false && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+
+        return {
+          name: catTitle,
+          title: catTitle,
+          displayTitle: displayTitle,
+          pages: childPages.map((p: any) => ({
+            title: p.title,
+            url: `/${p.directUrl || p.slug || ''}`
+          }))
+        };
+      });
+
+    const legalPages = this.publishedPages
+      .filter(p => p.isLegal)
+      .map(p => ({
+        title: p.title,
+        url: `/${p.directUrl || p.slug}`
+      }));
+
     const footerContext = {
       BrandName: this.brandName,
       LogoUrl: this.brandLogoUrl,
       Year: new Date().getFullYear().toString(),
+      Description: this.brandInfo?.companyDescription || 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
       Email: this.brandInfo?.companyEmail || 'contact@organization.com',
       Phone: this.brandInfo?.companyPhone || '+1 (555) 019-2834',
       Address: this.brandInfo?.companyAddress || 'Corporate Headquarters',
-      Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`
+      Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
+      categories: footerCategories,
+      legalPages: legalPages
     };
 
     let html = this.templateHydration.hydrateTemplate(rawHtml, footerContext, this.getHydrationOptions());
@@ -985,9 +1146,11 @@ export class LandingComponent implements OnInit, OnDestroy {
       miniTitle: sec.miniTitle || '',
       description: sec.description || '',
       moreDescription: sec.moreDescription || '',
-      imageUrl: sec.imageUrl || '',
-      buttonText: sec.buttonText || '',
+      imageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
+      buttonText: sec.buttonText || 'Explore Details',
       buttonLink: sec.buttonLink || '#',
+      secondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
+      secondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
       videoUrl: sec.videoUrl || '',
       pageSectionLists: (sec.pageSectionLists || []).map((item: any, idx: number) => ({
         id: item.id,
@@ -1011,8 +1174,29 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private findTemplateForSection(sec: any): any {
     if (sec.templateKey) {
-      const match = this.activeTemplates.find(t => t.templateKey === sec.templateKey);
-      if (match) return match;
+      // 1. Exact match
+      const exactMatch = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase());
+      if (exactMatch) return exactMatch;
+
+      // 2. Smart alias mapping between seeded template keys and installed theme keys
+      const keyAliases: { [key: string]: string[] } = {
+        'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
+        'body_statscounters': ['body_metricscounter', 'body_statscounter4'],
+        'body_processsteps': ['body_featuregrid3', 'body_missionsplit', 'body_processsteps4'],
+        'body_ctasplit': ['body_ctabanner', 'body_ctabannerfull'],
+        'news_minimalbar': ['news_minimalbar'],
+        'contact_splitdetails': ['contact_splitdetails'],
+        'body_requestservice': ['body_requestservice']
+      };
+
+      const normalizedKey = sec.templateKey.toLowerCase();
+      const aliases = keyAliases[normalizedKey];
+      if (aliases) {
+        for (const alias of aliases) {
+          const aliasMatch = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === alias);
+          if (aliasMatch) return aliasMatch;
+        }
+      }
     }
     // Fallback to active body template
     return this.findActiveTemplate('body');
