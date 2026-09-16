@@ -376,6 +376,21 @@ export class LandingComponent implements OnInit, OnDestroy {
             this.brandInfo = res.data;
             this.brandName = res.data.companyName || res.data.websiteTitle || 'Acme Global';
             this.brandLogoUrl = res.data.companyLogoUrl || '';
+
+            // Apply tenant browser tab favicon to live storefront
+            const activeIcon = res.data.companyIconUrl || res.data.companyLogoUrl;
+            if (activeIcon) {
+              const favicons = document.querySelectorAll("link[rel*='icon']");
+              if (favicons.length > 0) {
+                favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
+              } else {
+                const link = document.createElement('link');
+                link.rel = 'shortcut icon';
+                link.type = 'image/x-icon';
+                link.href = activeIcon;
+                document.head.appendChild(link);
+              }
+            }
           }
           resolve();
         },
