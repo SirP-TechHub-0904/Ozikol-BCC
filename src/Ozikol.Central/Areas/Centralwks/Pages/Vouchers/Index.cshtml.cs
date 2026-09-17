@@ -225,7 +225,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
             AvailableFeatures = await _masterDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.IsActive)
-                .OrderBy(f => f.DisplayOrder)
+                .OrderBy(f => f.Category)
                 .ThenBy(f => f.Name)
                 .ToListAsync();
         }

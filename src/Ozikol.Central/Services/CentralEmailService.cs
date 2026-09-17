@@ -25,7 +25,7 @@ public interface ICentralEmailService
     Task SendExamBookingDualAsync(string candidateName, string candidateEmail, string examTitle, string bookingRef, CancellationToken cancellationToken = default);
     Task SendNewsletterSubscriptionAsync(string email, CancellationToken cancellationToken = default);
     Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default);
-    Task<bool> SendVoucherApprovalEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default);
+    Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
