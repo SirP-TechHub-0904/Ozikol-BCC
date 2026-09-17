@@ -2,31 +2,51 @@
 @model Ozikol.Central.Pages.Vouchers.ApplyModel
 @{
     ViewData["Title"] = "Apply for Free 1-Year Promotional Voucher | Ozikol";
+    var currentCulture = Model.CurrentCulture;
 }
 
-<div class="oz-corp-page" style="background: #f8fafc; min-height: 100vh; padding-bottom: 80px;">
-    <!-- Hero Header -->
-    <section class="oz-corp-banner" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 60px 20px; text-align: center;">
-        <div style="max-width: 800px; margin: 0 auto;">
-            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 6px 18px; border-radius: 9999px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">card_giftcard</span>
-                <span>Community Empowerment Program</span>
+<div class="oz-corp-page" style="min-height: 100vh; padding-bottom: 80px;">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-corp-container">
+            <div class="oz-breadcrumb-wrap">
+                <div class="oz-breadcrumb-links">
+                    <a href="/@currentCulture">Home</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <a href="/@currentCulture/pricing">Pricing</a>
+                    <span class="oz-breadcrumb-sep">/</span>
+                    <span>Promotional Voucher</span>
+                </div>
+                <a href="/@currentCulture/pricing" class="oz-breadcrumb-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span>Back to Pricing</span>
+                </a>
             </div>
-            <h1 style="font-size: 34px; font-weight: 900; line-height: 1.25; margin: 0 0 16px; color: #ffffff; letter-spacing: -0.5px;">
+        </div>
+    </div>
+
+    <!-- Hero Header (Standard Corporate Light Theme) -->
+    <section class="oz-corp-banner">
+        <div class="oz-corp-banner-wrap">
+            <div class="oz-corp-badge">
+                <span class="oz-corp-badge-dot"></span>
+                Community Empowerment Program
+            </div>
+            <h1 class="oz-corp-title">
                 Apply for a Free 1-Year Promotional Voucher
             </h1>
-            <p style="font-size: 16px; color: #94a3b8; line-height: 1.6; margin: 0; max-width: 680px; margin: 0 auto;">
-                Empower your organization with sovereign cloud infrastructure. Complete our community engagement steps below to receive a 100% discount promotional voucher for your workspace.
+            <p class="oz-corp-lead">
+                Empower your organization with sovereign cloud infrastructure. Complete our community engagement steps below to receive a promotional voucher for your workspace.
             </p>
         </div>
     </section>
 
     <!-- Main Content Container -->
-    <main style="max-width: 900px; margin: -30px auto 0; padding: 0 20px;">
+    <main class="oz-corp-container oz-corp-section" style="max-width: 900px; margin: 0 auto; padding-top: 36px;">
         @if (Model.IsSuccess)
         {
             <!-- Application Success State -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 48px 32px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 48px 32px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
                 <div style="width: 72px; height: 72px; background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
                     <span class="material-symbols-outlined" style="font-size: 38px; color: #059669;">check_circle</span>
                 </div>
@@ -42,11 +62,11 @@
                 </div>
 
                 <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
-                    <a href="/" style="display: inline-flex; align-items: center; gap: 8px; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none;">
+                    <a href="/@currentCulture" style="display: inline-flex; align-items: center; gap: 8px; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none;">
                         Return to Homepage
                     </a>
-                    <a href="/auth/get-started" style="display: inline-flex; align-items: center; gap: 8px; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none;">
-                        Explore Workspace Onboarding &rarr;
+                    <a href="/@currentCulture/pricing" style="display: inline-flex; align-items: center; gap: 8px; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; text-decoration: none;">
+                        Back to Pricing &rarr;
                     </a>
                 </div>
             </div>
@@ -54,16 +74,16 @@
         else
         {
             <!-- Application Form -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 36px; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
                 
                 <!-- Notice Banner: How It Works -->
                 <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-bottom: 32px;">
                     <div style="display: flex; align-items: flex-start; gap: 14px;">
                         <span class="material-symbols-outlined" style="font-size: 28px; color: #2563eb; margin-top: 2px;">info</span>
                         <div style="flex: 1;">
-                            <h3 style="font-size: 16px; font-weight: 800; color: #1e3a8a; margin: 0 0 4px;">How the 1-Year Voucher Program Works</h3>
+                            <h3 style="font-size: 16px; font-weight: 800; color: #1e3a8a; margin: 0 0 4px;">How the Voucher Program Works</h3>
                             <p style="font-size: 13.5px; color: #3b82f6; line-height: 1.5; margin: 0;">
-                                We support growing organizations, startups, and community builders. Follow our official community accounts, enter your public handles/links for verification, and our team will issue an official 100% discount voucher covering your workspace capabilities.
+                                We support growing organizations, startups, and community builders. Follow our official community accounts, enter your public handles/links for verification, and our team will issue a promotional voucher covering your workspace capabilities.
                             </p>
                         </div>
                     </div>
@@ -94,8 +114,8 @@
                             </div>
 
                             <div>
-                                <label asp-for="Input.WorkEmail" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Work Email Address *</label>
-                                <input asp-for="Input.WorkEmail" type="email" placeholder="name@company.com" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
+                                <label asp-for="Input.WorkEmail" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Email Address *</label>
+                                <input asp-for="Input.WorkEmail" type="email" placeholder="name@example.com" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
                                 <span asp-validation-for="Input.WorkEmail" style="color: #ef4444; font-size: 12px;"></span>
                             </div>
 
