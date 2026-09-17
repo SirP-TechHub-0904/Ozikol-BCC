@@ -30,6 +30,8 @@ namespace Ozikol.Central.Services
                 await MasterCatalogDataSeeder.SeedCurrenciesAsync(dbContext);
                 await MasterCatalogDataSeeder.SeedPlatformSettingsAsync(dbContext);
                 await MasterCatalogDataSeeder.SeedLegalDocumentsAsync(dbContext);
+                await MasterCatalogDataSeeder.SeedCouponsAsync(dbContext);
+                await MasterCatalogDataSeeder.SeedFeaturesAsync(dbContext);
             }
             catch (Exception ex)
             {

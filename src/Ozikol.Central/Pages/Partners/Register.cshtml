@@ -4,6 +4,10 @@
     ViewData["Title"] = SharedLocalizer["Partner_Reg_Page_Title"];
 }
 
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}
+
 <div class="oz-corp-page">
     <!-- Hero Header -->
     <section class="oz-corp-banner">
@@ -213,6 +217,11 @@
                                 </span>
                             </label>
                             <span asp-validation-for="Input.AgreeToTerms" class="oz-partner-field-error"></span>
+
+                            <!-- Google reCAPTCHA Verification Widget -->
+                            <div class="oz-recaptcha-wrap" style="margin: 18px 0;">
+                                <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
+                            </div>
 
                             <div class="oz-partner-submit-wrap">
                                 <button type="submit" class="oz-btn-primary-hero oz-partner-submit-btn">

@@ -67,9 +67,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             // Generate sample pricing simulation
             var baseUsdValues = new[]
             {
-                (Name: "Sovereign Starter Annual", Usd: 25.00m),
+                (Name: "Organization Starter Annual", Usd: 25.00m),
                 (Name: "Growth Expansion Add-on", Usd: 50.00m),
-                (Name: "Professional Sovereign Bundle", Usd: 120.00m),
+                (Name: "Professional Enterprise Bundle", Usd: 120.00m),
                 (Name: "Autonomous Enterprise Core", Usd: 499.00m)
             };
 

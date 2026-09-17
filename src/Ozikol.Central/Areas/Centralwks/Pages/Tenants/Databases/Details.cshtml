@@ -1,0 +1,456 @@
+@page
+@model Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases.DetailsModel
+@{
+    ViewData["Title"] = $"{Model.Tenant.DatabaseName} — Database Deep Dive";
+    ViewData["BreadcrumbSection"] = "Databases";
+}
+
+<div class="admin-page-header" style="margin-bottom: 20px;">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="admin-title" style="margin: 0; font-family: monospace;">@Model.Tenant.DatabaseName</h1>
+            @if (Model.DeepDive.IsReachable)
+            {
+                <span class="badge badge-success" id="pingStatusBadge">
+                    <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                    Online @(Model.PingLatencyMs.HasValue ? $"({Model.PingLatencyMs}ms)" : "")
+                </span>
+            }
+            else
+            {
+                <span class="badge badge-danger">
+                    <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                    Unreachable
+                </span>
+            }
+
+            @if (Model.DeepDive.HasPendingMigrations)
+            {
+                <span class="badge badge-warning">
+                    <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                    @Model.DeepDive.PendingMigrations.Count Pending Migrations
+                </span>
+            }
+            else
+            {
+                <span class="badge badge-success">
+                    <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                    Schema Synced
+                </span>
+            }
+        </div>
+        <div class="admin-subtitle" style="margin-top: 8px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+            <div>
+                Assigned to: <strong style="color: var(--admin-text);">@Model.Tenant.OrganizationName</strong>
+            </div>
+            <div>
+                Tenant Key: <code style="color: var(--admin-primary); font-weight: 700; background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px;">@Model.Tenant.TenantKey</code>
+            </div>
+            <div>
+                Default Domain: 
+                <a href="https://@Model.Tenant.PrimaryDomain" target="_blank" style="font-weight: 600; color: var(--admin-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    @Model.Tenant.PrimaryDomain
+                    <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                </a>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Tenant.CustomDomain))
+            {
+                <div style="display: flex; align-items: center; gap: 4px; color: var(--admin-success); font-weight: 600;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">verified</span>
+                    @Model.Tenant.CustomDomain
+                </div>
+            }
+            <div style="color: var(--admin-text-muted);">
+                Host: <span>@Model.ServerHost</span>
+            </div>
+        </div>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="testPingConnection('@Model.Tenant.TenantKey');" id="btnPingTest">
+            <span class="material-symbols-outlined" style="font-size: 16px;">network_ping</span>
+            Test Ping Connection
+        </button>
+
+        @if (Model.DeepDive.HasPendingMigrations)
+        {
+            <form method="post" asp-page-handler="Migrate" asp-route-tenantKey="@Model.Tenant.TenantKey" style="display: inline; margin: 0;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-primary" onclick="return confirm('Apply pending migrations to @Model.Tenant.DatabaseName?');">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
+                    Apply Pending Migrations (@Model.DeepDive.PendingMigrations.Count)
+                </button>
+            </form>
+        }
+
+        <a href="/centralwks/tenants/details?id=@Model.Tenant.Id" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+            Tenant Center
+        </a>
+    </div>
+</div>
+
+@* ── Storage & Diagnostic Metric Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">storage</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Allocated Storage</span>
+            <span class="stat-value">@Model.DeepDive.FormattedTotalStorage</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-info">
+            <span class="material-symbols-outlined">table_chart</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Physical Tables</span>
+            <span class="stat-value">@Model.DeepDive.TotalTablesCount</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">dns</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Database Records</span>
+            <span class="stat-value">@Model.DeepDive.FormattedTotalRecords</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">sync</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Applied Migrations</span>
+            <span class="stat-value" style="font-size: 20px;">@Model.DeepDive.AppliedMigrations.Count</span>
+        </div>
+    </div>
+</div>
+
+@* ── Tenant Activity & Ingestion Telemetry Grid ── *@
+<div class="activity-card-grid">
+    @* Weekly Distribution Bar Chart *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary);">calendar_view_week</span>
+                Days in a Week Volume (Activity Heatmap)
+            </div>
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <span class="badge badge-success">
+                    Peak: @Model.DeepDive.ActivityDistribution.PeakDay
+                </span>
+            }
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px;">
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <div class="weekday-bar-container">
+                    @foreach (var day in Model.DeepDive.ActivityDistribution.WeeklyDistribution)
+                    {
+                        var heightPct = Math.Max(day.Percentage, 4.0);
+                        <div class="weekday-bar-col" title="@day.DayName: @day.RecordCount.ToString("N0") records">
+                            <span class="weekday-bar-val">@(day.RecordCount > 0 ? day.RecordCount.ToString("N0") : "-")</span>
+                            <div class="weekday-bar-track">
+                                <div class="weekday-bar-fill @(day.IsPeak ? "is-peak" : "")" style="height: @(heightPct.ToString("F1"))%;"></div>
+                            </div>
+                            <span class="weekday-bar-label" style="@(day.IsPeak ? "color: var(--admin-primary); font-weight: 700;" : "")">@day.ShortName</span>
+                        </div>
+                    }
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--admin-text-dim);">
+                    <span>Tracked across @Model.DeepDive.ActivityDistribution.TrackedTablesCount tables</span>
+                    <span>Total Analyzed: <strong>@Model.DeepDive.ActivityDistribution.TotalAnalyzedRecords.ToString("N0")</strong> records</span>
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 28px 12px; color: var(--admin-text-muted);">
+                    <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-text-dim); display: block; margin-bottom: 6px;">event_busy</span>
+                    <span style="font-size: 13px;">No timestamped record activity detected in this database yet.</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Hourly 24-Hour Time Distribution Bar Curve *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-info);">schedule</span>
+                Time in a Day (24-Hour Peak Ingestion)
+            </div>
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <span class="badge badge-warning">
+                    Window: @Model.DeepDive.ActivityDistribution.PeakHourWindow
+                </span>
+            }
+        </div>
+        <div class="admin-card-body" style="padding: 16px 20px;">
+            @if (Model.DeepDive.ActivityDistribution.HasData)
+            {
+                <div class="hour-timeline-container">
+                    @foreach (var hour in Model.DeepDive.ActivityDistribution.HourlyDistribution)
+                    {
+                        var heightPct = Math.Max(hour.Percentage, 3.0);
+                        <div class="hour-bar-col" title="@hour.Label UTC (@hour.DisplayLabel): @hour.RecordCount.ToString("N0") records">
+                            <div class="hour-bar-track">
+                                <div class="hour-bar-fill @(hour.IsPeak ? "is-peak" : "")" style="height: @(heightPct.ToString("F1"))%;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="hour-timeline-axis">
+                    <span>12 AM (00:00)</span>
+                    <span>6 AM</span>
+                    <span>12 PM (12:00)</span>
+                    <span>6 PM</span>
+                    <span>11 PM (23:00)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--admin-text-dim);">
+                    <span>Timeline (UTC Engine Time)</span>
+                    <span>Peak Window: <strong>@Model.DeepDive.ActivityDistribution.PeakHourWindow</strong></span>
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 28px 12px; color: var(--admin-text-muted);">
+                    <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-text-dim); display: block; margin-bottom: 6px;">query_builder</span>
+                    <span style="font-size: 13px;">No hourly ingestion telemetry available.</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ── Main Deep Dive Grid ── *@
+<div style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+    @* Physical Tables Inspector Card *@
+    <div class="admin-card" style="margin: 0;">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">analytics</span>
+                    Physical Tables Inspector
+                </div>
+                <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                    Live breakdown of all SQL tables, active row counts, and physical storage footprints.
+                </p>
+            </div>
+            <div class="table-search-box" style="width: 260px;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+                <input type="text" id="tableFilterInput" onkeyup="filterPhysicalTables();" placeholder="Filter tables by name..." />
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table" id="physicalTablesList">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th>Table Name</th>
+                        <th>Row / Record Count</th>
+                        <th>Allocated Storage (KB / MB)</th>
+                        <th style="width: 260px;">Storage Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.DeepDive.Tables.Any())
+                    {
+                        var maxBytes = Model.DeepDive.Tables.Max(t => t.UsedSpaceKb);
+                        if (maxBytes <= 0) maxBytes = 1;
+                        var orderedTables = Model.DeepDive.Tables.OrderByDescending(t => t.UsedSpaceKb).ToList();
+
+                        @for (int i = 0; i < orderedTables.Count; i++)
+                        {
+                            var table = orderedTables[i];
+                            var pct = (table.UsedSpaceKb / (double)maxBytes) * 100.0;
+                            var totalSharePct = Model.DeepDive.TotalStorageKb > 0 ? (table.UsedSpaceKb / (double)Model.DeepDive.TotalStorageKb) * 100.0 : 0.0;
+                            <tr class="table-row-item">
+                                <td style="text-align: center;">
+                                    <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">table_rows</span>
+                                        <code style="font-weight: 600; color: var(--admin-text); font-size: 13.5px;" class="table-name-text">@table.FullName</code>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@table.FormattedRows</strong>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px; font-weight: 600; color: var(--admin-text);">@table.FormattedStorage</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="background: var(--admin-border); height: 8px; border-radius: 4px; overflow: hidden; flex: 1;">
+                                            <div style="background: var(--admin-primary); height: 100%; width: @(pct.ToString("F1"))%;"></div>
+                                        </div>
+                                        <span style="font-size: 11.5px; color: var(--admin-text-dim); min-width: 45px; text-align: right;">
+                                            @(totalSharePct.ToString("F1"))%
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                No physical user tables discovered in this database.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* Schema Migrations Timeline & Diagnostics Grid *@
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+        @* EF Core Migrations Timeline *@
+        <div class="admin-card" style="margin: 0;">
+            <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-success);">history_edu</span>
+                    Schema Migrations Timeline
+                </div>
+                <span class="badge badge-info">
+                    @Model.DeepDive.AppliedMigrations.Count Applied
+                </span>
+            </div>
+            <div class="admin-card-body" style="padding: 16px 20px; max-height: 380px; overflow-y: auto;">
+                @if (Model.DeepDive.PendingMigrations.Any())
+                {
+                    <div style="padding: 12px 14px; background: rgba(234, 179, 8, 0.1); border-left: 3px solid var(--admin-warning); border-radius: 4px; margin-bottom: 16px;">
+                        <span style="font-weight: 700; color: var(--admin-warning); font-size: 12.5px; display: block;">Pending Migrations Awaiting Execution:</span>
+                        <ul style="margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: var(--admin-text);">
+                            @foreach (var pending in Model.DeepDive.PendingMigrations)
+                            {
+                                <li><code>@pending</code></li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (Model.DeepDive.AppliedMigrations.Any())
+                {
+                    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+                        @for (int i = Model.DeepDive.AppliedMigrations.Count - 1; i >= 0; i--)
+                        {
+                            var migration = Model.DeepDive.AppliedMigrations[i];
+                            <li style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--admin-bg-surface-elevated); border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-success);">check_circle</span>
+                                <code style="font-size: 12px; color: var(--admin-text); flex: 1;">@migration</code>
+                                <span style="font-size: 11px; color: var(--admin-text-dim);">#@(i + 1)</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div style="font-size: 13px; color: var(--admin-text-muted); text-align: center; padding: 20px;">
+                        No applied migration history found in <code>__EFMigrationsHistory</code>.
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Host & Database Instance Properties *@
+        <div class="admin-card" style="margin: 0;">
+            <div class="admin-card-header" style="padding: 16px 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">settings_ethernet</span>
+                    Instance Properties &amp; Host Connectivity
+                </div>
+            </div>
+            <div class="admin-card-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">MSSQL Server Host / Instance</span>
+                    <code style="font-weight: 600; color: var(--admin-text);">@Model.ServerHost</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Dedicated Database Name</span>
+                    <code style="font-weight: 600; color: var(--admin-primary);">@Model.Tenant.DatabaseName</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">DbContext Context Binding</span>
+                    <code>DashboardDbContext (Ozikol_BCC.Persistence.EF.SQL)</code>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Isolation Strategy</span>
+                    <span class="badge badge-success">Database-per-Tenant (Isolated MSSQL Database)</span>
+                </div>
+                <div>
+                    <span style="color: var(--admin-text-dim); font-size: 12px; display: block; margin-bottom: 2px;">Tenant Creation Date</span>
+                    <div>@Model.Tenant.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterPhysicalTables() {
+            const term = document.getElementById('tableFilterInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#physicalTablesList tbody .table-row-item');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('.table-name-text')?.textContent.toLowerCase() || '';
+                row.style.display = name.includes(term) ? '' : 'none';
+            });
+        }
+
+        async function testPingConnection(tenantKey) {
+            const btn = document.getElementById('btnPingTest');
+            const badge = document.getElementById('pingStatusBadge');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px; animation: spin 1s infinite linear;">sync</span> Pinging...';
+            btn.disabled = true;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('tenantKey', tenantKey);
+
+            try {
+                const response = await fetch(`?handler=Ping&tenantKey=${tenantKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    if (badge) {
+                        badge.className = 'badge badge-success';
+                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-success);"></span> Online (${data.latencyMs}ms)`;
+                    }
+                    alert(data.message);
+                } else {
+                    if (badge) {
+                        badge.className = 'badge badge-danger';
+                        badge.innerHTML = `<span class="badge-dot" style="background-color: var(--admin-danger);"></span> Unreachable`;
+                    }
+                    alert('Ping test failed: ' + data.message);
+                }
+            } catch (err) {
+                console.error('Ping test error', err);
+                alert('Ping connection test encountered an error.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+}

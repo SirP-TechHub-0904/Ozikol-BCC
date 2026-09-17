@@ -72,9 +72,14 @@ public class GeoLocationService : IGeoLocationService, IDisposable
             return null;
         }
 
-        // Ignore private / loopback IP addresses (127.0.0.1, ::1, 10.x, 192.168.x)
+        // In local development (127.0.0.1, ::1), detect host machine timezone
         if (IPAddress.IsLoopback(clientIp) || IsPrivateIp(clientIp))
         {
+            var tz = TimeZoneInfo.Local.Id;
+            if (tz.Contains("W. Central Africa", StringComparison.OrdinalIgnoreCase) || tz.Contains("Lagos", StringComparison.OrdinalIgnoreCase))
+            {
+                return "NG";
+            }
             return null;
         }
 

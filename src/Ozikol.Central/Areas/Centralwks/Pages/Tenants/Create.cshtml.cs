@@ -11,7 +11,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
     /// <summary>
-    /// PageModel for administrative provisioning of a new sovereign tenant workspace database.
+    /// PageModel for administrative provisioning of a new tenant workspace database.
     /// Employs ITenantOnboardingService to initialize database schema, default credentials, and catalog entries.
     /// </summary>
     public class CreateModel : PageModel
@@ -37,20 +37,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public TenantInputModel Input { get; set; } = new();
 
         /// <summary>
+        /// Modular capabilities available for optional provisioning.
+        /// </summary>
+        public List<MasterFeatureCatalog> AvailableFeatures { get; set; } = new();
+
+        /// <summary>
         /// Displays the tenant provisioning form.
         /// </summary>
-        public void OnGet()
+        public async Task OnGetAsync()
         {
+            AvailableFeatures = await _dbContext.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => !f.IsCompulsory && f.IsActive)
+                .OrderBy(f => f.Category)
+                .ThenBy(f => f.Name)
+                .ToListAsync();
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to provision and initialize a sovereign tenant database fleet instance.
+        /// Handles HTTP POST requests to provision and initialize a tenant database instance.
         /// </summary>
         /// <returns>Redirect to tenant details on success or redisplayed form with validation errors.</returns>
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
             {
+                AvailableFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .OrderBy(f => f.Category)
+                    .ThenBy(f => f.Name)
+                    .ToListAsync();
                 return Page();
             }
 
@@ -58,6 +75,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             if (ReservedWorkspaceNames.IsReserved(cleanKey))
             {
                 ModelState.AddModelError("Input.TenantKey", $"The tenant key '{cleanKey}' is reserved by the system and cannot be assigned to an organization.");
+                AvailableFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .OrderBy(f => f.Category)
+                    .ThenBy(f => f.Name)
+                    .ToListAsync();
                 return Page();
             }
 
@@ -65,6 +88,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             if (!isAvailable)
             {
                 ModelState.AddModelError("Input.TenantKey", $"The tenant key '{cleanKey}' is already taken. Please choose another unique key.");
+                AvailableFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .OrderBy(f => f.Category)
+                    .ThenBy(f => f.Name)
+                    .ToListAsync();
                 return Page();
             }
 
@@ -78,7 +107,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 AdminPassword = Input.AdminPassword,
                 PhoneNumber = Input.PhoneNumber?.Trim(),
                 CustomDomain = Input.CustomDomain?.Trim().ToLowerInvariant(),
-                ReferredBy = Input.ReferredBy?.Trim()
+                ReferredBy = Input.ReferredBy?.Trim(),
+                SelectedFeatureIds = Input.SelectedFeatureIds ?? new List<Guid>(),
+                CouponCode = string.IsNullOrWhiteSpace(Input.CouponCode) ? null : Input.CouponCode.Trim()
             };
 
             var result = await _onboardingService.OnboardNewTenantAsync(request);
@@ -86,6 +117,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, $"Provisioning failed: {result.Message}. {result.ErrorDetail}");
+                AvailableFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => !f.IsCompulsory && f.IsActive)
+                    .OrderBy(f => f.Category)
+                    .ThenBy(f => f.Name)
+                    .ToListAsync();
                 return Page();
             }
 
@@ -100,7 +137,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 Action = "Create",
                 EntityType = "Tenant",
                 EntityId = tenant?.Id.ToString() ?? cleanKey,
-                Summary = $"Provisioned new sovereign tenant '{Input.OrganizationName}' with key '{cleanKey}' on database '{result.DatabaseName}'",
+                Summary = $"Provisioned new tenant '{Input.OrganizationName}' with key '{cleanKey}' on database '{result.DatabaseName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -162,6 +199,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             [Display(Name = "Affiliate Referral Code (Optional)")]
             public string? ReferredBy { get; set; }
+
+            [Display(Name = "Selected Modular Add-On Features")]
+            public List<Guid> SelectedFeatureIds { get; set; } = new();
+
+            [Display(Name = "Promotional Coupon Code (Optional)")]
+            public string? CouponCode { get; set; }
         }
     }
 }

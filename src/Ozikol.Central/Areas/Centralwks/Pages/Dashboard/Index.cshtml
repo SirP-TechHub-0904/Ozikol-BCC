@@ -8,14 +8,14 @@
 <div class="admin-page-header">
     <div class="admin-title-group">
         <h1 class="admin-title">Platform Operations Dashboard</h1>
-        <p class="admin-subtitle">Real-time telemetry across sovereign tenant databases, subscription activations, and administrative audit logs.</p>
+        <p class="admin-subtitle">Real-time telemetry across tenant databases, subscription activations, and administrative audit logs.</p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/tenants/create" class="btn-admin btn-admin-primary">
-            <span>+</span> Provision New Tenant
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Provision New Tenant
         </a>
         <a href="/centralwks/billing" class="btn-admin btn-admin-secondary">
-            <span>💰</span> View Billing
+            <span class="material-symbols-outlined" style="font-size: 16px;">payments</span> View Billing
         </a>
     </div>
 </div>
@@ -83,14 +83,18 @@
     @* Left Column *@
     <div>
         <div class="admin-card">
-            <div class="admin-card-header">
-                <h2 class="admin-card-title">🏢 Recently Registered Tenants</h2>
-                <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary btn-admin-sm">View All Tenants →</a>
+            <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">domain</span>
+                    Recently Registered Tenants
+                </div>
+                <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary btn-admin-sm">View All Tenants</a>
             </div>
             <div class="table-responsive">
                 <table class="admin-table">
                     <thead>
                         <tr>
+                            <th style="width: 50px; text-align: center;">S/N</th>
                             <th>Organization</th>
                             <th>Tenant Key</th>
                             <th>Primary Domain</th>
@@ -102,14 +106,18 @@
                     <tbody>
                         @if (Model.RecentTenants.Any())
                         {
-                            @foreach (var tenant in Model.RecentTenants)
+                            @for (int i = 0; i < Model.RecentTenants.Count; i++)
                             {
+                                var tenant = Model.RecentTenants[i];
                                 <tr>
+                                    <td style="text-align: center;">
+                                        <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                                    </td>
                                     <td>
                                         <strong style="color: var(--admin-text);">@tenant.OrganizationName</strong>
                                     </td>
                                     <td>
-                                        <code style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 12px;">@tenant.TenantKey</code>
+                                        <code style="background: var(--admin-bg-surface-elevated); padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid var(--admin-border);">@tenant.TenantKey</code>
                                     </td>
                                     <td style="color: var(--admin-text-muted);">
                                         @tenant.PrimaryDomain
@@ -142,7 +150,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 32px; color: var(--admin-text-muted);">
+                                <td colspan="7" style="text-align: center; padding: 32px; color: var(--admin-text-muted);">
                                     No tenant organizations registered yet.
                                 </td>
                             </tr>

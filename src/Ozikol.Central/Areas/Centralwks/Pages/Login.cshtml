@@ -12,6 +12,7 @@
     <title>Admin Sign In — Ozikol Console</title>
     <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
     <link rel="icon" type="image/png" href="/images/oz-logo-red.png" />
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -319,6 +320,11 @@
                         <span>Keep me signed in</span>
                     </label>
                     <a href="/centralwks/forgot-password" class="forgot-link">Forgot password?</a>
+                </div>
+
+                <!-- Google reCAPTCHA Verification Widget -->
+                <div style="margin-bottom: 20px; display: flex; justify-content: center;">
+                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
                 </div>
 
                 <button type="submit" class="btn-submit">

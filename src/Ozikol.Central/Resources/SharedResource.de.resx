@@ -230,7 +230,7 @@
     <value>Unternehmen</value>
   </data>
   <data name="Footer_AllFeaturesHub" xml:space="preserve">
-    <value>Alle 37 Funktionen →</value>
+    <value>Alle {0} Funktionen →</value>
   </data>
   <data name="Footer_StaffRota" xml:space="preserve">
     <value>Schichtplanung &amp; Personal</value>
@@ -332,7 +332,7 @@
     <value>Funktionskatalog</value>
   </data>
   <data name="Catalog_ExploreAll" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken →</value>
+    <value>Alle {0} Funktionen entdecken →</value>
   </data>
   <data name="Suite_People_Nav" xml:space="preserve">
     <value>Personen, Community &amp; Zusammenarbeit</value>
@@ -770,7 +770,7 @@
     <value>KOMPLETTE MODULARE PLATTFORM</value>
   </data>
   <data name="Home_Suites_Title" xml:space="preserve">
-    <value>Eine Plattform. 37 Funktionen. 9 integrierte Suites.</value>
+    <value>Eine Plattform. {0} Funktionen. {1} integrierte Suites.</value>
   </data>
   <data name="Home_Suites_Desc" xml:space="preserve">
     <value>Alle Werkzeuge für Führung, Verwaltung und Skalierung Ihrer Organisation, nativ integriert ohne Integrationsaufwand.</value>
@@ -968,7 +968,7 @@
     <value>All-Inclusive Jahrestarif | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Betreiben Sie Ihr gesamtes Handelsgeschäft auf Ozikol mit einem transparenten Jahrestarif. 9 Suites und 37 Funktionen ohne Verkaufsprovision. Sie kaufen nur Ihre Domain.</value>
+    <value>Betreiben Sie Ihr gesamtes Handelsgeschäft auf Ozikol mit einem transparenten Jahrestarif. {1} Suites und {0} Funktionen ohne Verkaufsprovision. Sie kaufen nur Ihre Domain.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
     <value>ALL-INCLUSIVE JAHRESTARIF</value>
@@ -1022,7 +1022,7 @@
     <value>Sofortige Cloud-Bereitstellung</value>
   </data>
   <data name="Pricing_Card_Feat1" xml:space="preserve">
-    <value>Alle 9 integrierten Produktsuites und 37 Kernfunktionen</value>
+    <value>Alle {1} integrierten Produktsuites und {0} Kernfunktionen</value>
   </data>
   <data name="Pricing_Card_Feat2" xml:space="preserve">
     <value>Omnichannel Point of Sale (POS) mit Offline-Modus</value>
@@ -1109,7 +1109,7 @@
     <value>Alle Funktionen freigeschaltet</value>
   </data>
   <data name="Pricing_Why3_Desc" xml:space="preserve">
-    <value>Keine künstlichen Einschränkungen. Von vorausschauender KI bis zu Multi-Lager-Routen sind alle 37 Funktionen nutzbar.</value>
+    <value>Keine künstlichen Einschränkungen. Von vorausschauender KI bis zu Multi-Lager-Routen sind alle {0} Funktionen nutzbar.</value>
   </data>
   <data name="Pricing_Why4_Title" xml:space="preserve">
     <value>Cloud-Hosting &amp; Backups</value>
@@ -1121,7 +1121,7 @@
     <value>WAS DER TARIF ENTHÄLT</value>
   </data>
   <data name="Pricing_Suites_Title" xml:space="preserve">
-    <value>Entdecken Sie alle 9 integrierten Suiten</value>
+    <value>Entdecken Sie alle {0} integrierten Suiten</value>
   </data>
   <data name="Pricing_Suites_Desc" xml:space="preserve">
     <value>Alles, was Sie für den erfolgreichen Betrieb und die Skalierung Ihres Handelsgeschäfts benötigen.</value>
@@ -1187,7 +1187,7 @@
     <value>Alle Funktionen und Module - Ozikol Plattform</value>
   </data>
   <data name="Features_Meta_Desc" xml:space="preserve">
-    <value>Entdecken Sie alle 37 Cloud-Funktionen in 9 modularen Suiten, die in Ihrem Ozikol-Abonnement enthalten sind.</value>
+    <value>Entdecken Sie alle {0} Cloud-Funktionen in {1} modularen Suiten, die in Ihrem Ozikol-Abonnement enthalten sind.</value>
   </data>
   <data name="Features_Hero_Badge" xml:space="preserve">
     <value>Ozikol Plattformfunktionen</value>
@@ -1196,13 +1196,13 @@
     <value>Alles was Ihre Organisation braucht um zu kollaborieren, arbeiten und wachsen</value>
   </data>
   <data name="Features_Hero_Desc" xml:space="preserve">
-    <value>Entdecken Sie alle 37 integrierten Cloud-Funktionen in 9 modularen Unternehmenssuiten. Jede Funktion ist mit Ihrem Jahresabonnement sofort freigeschaltet.</value>
+    <value>Entdecken Sie alle {0} integrierten Cloud-Funktionen in {1} modularen Unternehmenssuiten. Jede Funktion ist mit Ihrem Jahresabonnement sofort freigeschaltet.</value>
   </data>
   <data name="Features_Hero_Btn_Trial" xml:space="preserve">
     <value>14 Tage kostenlos testen</value>
   </data>
   <data name="Features_Hero_Btn_Explore" xml:space="preserve">
-    <value>Alle 9 Suiten entdecken</value>
+    <value>Alle {0} Suiten entdecken</value>
   </data>
   <data name="Features_Jump_Label" xml:space="preserve">
     <value>Direkt zur Suite:</value>
@@ -1217,7 +1217,7 @@
     <value>Bereit für die Transformation Ihrer Betriebsabläufe?</value>
   </data>
   <data name="Features_Cta_Desc" xml:space="preserve">
-    <value>Schalten Sie noch heute alle 37 Funktionen frei. Keine Kreditkarte erforderlich für Ihren 14-tägigen kostenlosen Test.</value>
+    <value>Schalten Sie noch heute alle {0} Funktionen frei. Keine Kreditkarte erforderlich für Ihren 14-tägigen kostenlosen Test.</value>
   </data>
   <data name="Features_Cta_Btn_Trial" xml:space="preserve">
     <value>14-Tage-Testversion starten</value>
@@ -2235,7 +2235,7 @@
     <value>14 Tage kostenlos testen</value>
   </data>
   <data name="About_Hero_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Alle {0} Funktionen entdecken</value>
   </data>
   <data name="About_Metric_Capabilities" xml:space="preserve">
     <value>Modulare Funktionen</value>
@@ -2268,7 +2268,7 @@
     <value>Kein Software-Ballast</value>
   </data>
   <data name="About_Adv_1_Desc" xml:space="preserve">
-    <value>Aktivieren oder deaktivieren Sie jede der 37 Funktionen nach Bedarf mit transparenten Festpreisen.</value>
+    <value>Aktivieren oder deaktivieren Sie jede der {0} Funktionen nach Bedarf mit transparenten Festpreisen.</value>
   </data>
   <data name="About_Adv_2_Title" xml:space="preserve">
     <value>Souveräne Dateneigentümerschaft</value>
@@ -2346,7 +2346,7 @@
     <value>14-tägige Testphase starten</value>
   </data>
   <data name="About_Cta_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Alle {0} Funktionen entdecken</value>
   </data>
   <data name="Culture_Page_Title" xml:space="preserve">
     <value>Grundwerte &amp; Kultur - Der Ozikol-Weg | Ozikol</value>
@@ -2451,7 +2451,7 @@
     <value>14-tägige Testphase starten</value>
   </data>
   <data name="Culture_Cta_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Alle {0} Funktionen entdecken</value>
   </data>
   <data name="Leadership_Page_Title" xml:space="preserve">
     <value>Geschäftsführung &amp; Governance | Ozikol</value>
@@ -2556,7 +2556,7 @@
     <value>14-tägige Testphase starten</value>
   </data>
   <data name="Leadership_Cta_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Alle {0} Funktionen entdecken</value>
   </data>
   <data name="Offices_Page_Title" xml:space="preserve">
     <value>Kontakt- und Anfragewege | Ozikol</value>
@@ -2781,7 +2781,7 @@
     <value>Als Partner bewerben</value>
   </data>
   <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
-    <value>Alle 37 Funktionen entdecken</value>
+    <value>Alle {0} Funktionen entdecken</value>
   </data>
 
   <data name="Partner_Reg_Page_Title" xml:space="preserve">
@@ -3489,7 +3489,7 @@
     <value>Verbinden Sie Ihre Website direkt mit Ihrem MIS, Ihren mobilen Mitarbeitern und dem Desktop-Backoffice.</value>
   </data>
   <data name="Website_CTA_Btn_Features" xml:space="preserve">
-    <value>Alle 37 Module entdecken</value>
+    <value>Alle {0} Module entdecken</value>
   </data>
 
   <data name="Mis_Meta_Title" xml:space="preserve">

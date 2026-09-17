@@ -70,13 +70,13 @@
                     @SharedLocalizer["Pricing_Hero_Title", Model.FormattedAnnualPrice]
                 </h1>
                 <p class="oz-pricing-hero-desc">
-                    @SharedLocalizer["Pricing_Hero_Desc"]
+                    @SharedLocalizer["Pricing_Hero_Desc", Model.CompulsoryFeaturesCount, Model.TotalSuitesCount]
                 </p>
             </div>
         </div>
     </section>
 
-    <!-- Section 2: 40k All-Inclusive Spotlight Card -->
+    <!-- Section 2: All-Inclusive Spotlight Card -->
     <section class="oz-single-card-section">
         <div class="container">
             <div class="oz-single-price-card">
@@ -88,7 +88,7 @@
                         </svg>
                         <span>@SharedLocalizer["Pricing_Card_Badge"]</span>
                     </div>
-                    <h2 class="oz-single-card-title">@SharedLocalizer["Pricing_Card_Title"]</h2>
+                    <h2 class="oz-single-card-title">@SharedLocalizer["Pricing_Card_Title", Model.CompulsoryFeaturesCount, Model.TotalSuitesCount]</h2>
                     <p class="oz-single-card-desc">@SharedLocalizer["Pricing_Card_Desc"]</p>
                 </div>
 

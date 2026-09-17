@@ -9,7 +9,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
     /// <summary>
-    /// PageModel for modifying sovereign tenant configuration, domain routing, and platform status.
+    /// PageModel for modifying tenant configuration, domain routing, and platform status.
     /// </summary>
     public class EditModel : PageModel
     {
@@ -60,7 +60,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 OrganizationName = tenant.OrganizationName,
                 PrimaryDomain = tenant.PrimaryDomain,
                 CustomDomain = tenant.CustomDomain,
-                ApiUrl = tenant.ApiUrl,
                 WebsiteUrl = tenant.WebsiteUrl,
                 AdminEmail = tenant.AdminEmail,
                 IsActive = tenant.IsActive,
@@ -96,12 +95,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             tenant.OrganizationName = Input.OrganizationName.Trim();
             tenant.PrimaryDomain = Input.PrimaryDomain.Trim().ToLowerInvariant();
             tenant.CustomDomain = string.IsNullOrWhiteSpace(Input.CustomDomain) ? null : Input.CustomDomain.Trim().ToLowerInvariant();
-            tenant.ApiUrl = string.IsNullOrWhiteSpace(Input.ApiUrl) ? null : Input.ApiUrl.Trim();
             tenant.WebsiteUrl = string.IsNullOrWhiteSpace(Input.WebsiteUrl) ? null : Input.WebsiteUrl.Trim();
             tenant.AdminEmail = string.IsNullOrWhiteSpace(Input.AdminEmail) ? null : Input.AdminEmail.Trim().ToLowerInvariant();
             tenant.IsActive = Input.IsActive;
             tenant.ReferredByPartnerCode = string.IsNullOrWhiteSpace(Input.ReferredByPartnerCode) ? null : Input.ReferredByPartnerCode.Trim();
             tenant.UpdatedUtc = DateTime.UtcNow;
+            tenant.LastUpdatedBy = User.Identity?.Name ?? "SuperAdmin";
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -142,10 +141,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             [StringLength(255)]
             [Display(Name = "Custom Domain (CNAME)")]
             public string? CustomDomain { get; set; }
-
-            [StringLength(255)]
-            [Display(Name = "API URL")]
-            public string? ApiUrl { get; set; }
 
             [StringLength(255)]
             [Display(Name = "Website URL")]
