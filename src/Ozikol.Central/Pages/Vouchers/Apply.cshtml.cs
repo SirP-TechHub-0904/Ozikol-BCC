@@ -54,13 +54,20 @@ namespace Ozikol.Central.Pages.Vouchers
         /// </summary>
         public bool IsSuccess { get; set; }
 
+        /// <summary>
+        /// Active UI culture code (e.g. "en", "fr", "es", "de").
+        /// </summary>
+        public string CurrentCulture { get; private set; } = "en";
+
         public void OnGet()
         {
+            ResolveCulture();
             LoadCommunityLinks();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
+            ResolveCulture();
             LoadCommunityLinks();
 
             if (!ModelState.IsValid)
@@ -155,6 +162,20 @@ namespace Ozikol.Central.Pages.Vouchers
                 SnapchatName = _configuration["CommunityLinks:SnapchatName"] ?? "ozikol"
             };
         }
+
+        private void ResolveCulture()
+        {
+            var routeCulture = RouteData.Values["culture"]?.ToString()?.ToLowerInvariant();
+            if (routeCulture is "en" or "fr" or "es" or "de")
+            {
+                CurrentCulture = routeCulture;
+            }
+            else
+            {
+                var current = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+                CurrentCulture = current is "en" or "fr" or "es" or "de" ? current : "en";
+            }
+        }
     }
 
     /// <summary>
@@ -167,9 +188,9 @@ namespace Ozikol.Central.Pages.Vouchers
         [MaxLength(150)]
         public string FullName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Work Email is required.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid work email address.")]
-        [Display(Name = "Work Email Address")]
+        [Required(ErrorMessage = "Email Address is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [Display(Name = "Email Address")]
         [MaxLength(200)]
         public string WorkEmail { get; set; } = string.Empty;
 
