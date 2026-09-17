@@ -57,6 +57,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
         public async Task<IActionResult> OnPostApproveAsync(
             long applicationId,
             int durationDays,
+            decimal discountPercentage,
             string scopeType,
             List<Guid> selectedFeatureIds,
             string? adminNotes)
@@ -81,6 +82,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
                 durationDays = 365;
             }
 
+            if (discountPercentage <= 0 || discountPercentage > 100)
+            {
+                discountPercentage = 100.00m;
+            }
+
             // Build feature summary
             string featuresSummary;
             string? allowedFeaturesJson = null;
@@ -102,17 +108,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
 
             // Generate unique voucher coupon code (e.g. VOUCHER-1YR-7F92A or VOUCHER-60D-9B12C)
             var durationCodePart = durationDays >= 365 ? "1YR" : $"{durationDays}D";
+            var discountCodePart = discountPercentage >= 100.00m ? "" : $"-{discountPercentage:G29}PCT";
             var randomCode = Guid.NewGuid().ToString("N")[..5].ToUpperInvariant();
-            var couponCode = $"VOUCHER-{durationCodePart}-{randomCode}";
+            var couponCode = $"VOUCHER-{durationCodePart}{discountCodePart}-{randomCode}";
 
             // Create MasterCoupon in Master DB
             var coupon = new MasterCoupon
             {
                 Id = Guid.NewGuid(),
                 Code = couponCode,
-                Description = $"Promotional voucher for {application.OrganizationName} ({durationDays} days access)",
+                Description = $"Promotional voucher for {application.OrganizationName} ({discountPercentage:G29}% OFF for {durationDays} days access)",
                 IsPercentage = true,
-                DiscountPercentage = 100.00m,
+                DiscountPercentage = discountPercentage,
                 DurationDays = durationDays,
                 AllowedFeatureIdsJson = allowedFeaturesJson,
                 GrantedFeaturesSummary = featuresSummary,
@@ -130,6 +137,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
             application.IssuedCouponCode = couponCode;
             application.IssuedCouponId = coupon.Id;
             application.GrantedDurationDays = durationDays;
+            application.GrantedDiscountPercentage = discountPercentage;
             application.GrantedFeaturesSummary = featuresSummary;
             application.AdminNotes = adminNotes?.Trim();
             application.ReviewedByAdminId = User.Identity?.Name ?? "CentralAdmin";
@@ -137,8 +145,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
 
             await _masterDbContext.SaveChangesAsync();
 
-            _logger.LogInformation("Approved voucher application [{Ref}]. Generated coupon [{Code}] with duration [{Days}d] for [{Org}].",
-                application.ReferenceNumber, couponCode, durationDays, application.OrganizationName);
+            _logger.LogInformation("Approved voucher application [{Ref}]. Generated coupon [{Code}] ({Discount}% OFF, {Days}d) for [{Org}].",
+                application.ReferenceNumber, couponCode, discountPercentage, durationDays, application.OrganizationName);
 
             // Dispatch Approval Email with Voucher Code
             try
@@ -147,14 +155,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Vouchers
                     application,
                     couponCode,
                     durationDays,
-                    featuresSummary);
+                    featuresSummary,
+                    discountPercentage);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to dispatch voucher approval email for {Ref}", application.ReferenceNumber);
             }
 
-            TempData["SuccessMessage"] = $"Voucher [{couponCode}] approved and issued to {application.OrganizationName} ({application.WorkEmail}).";
+            TempData["SuccessMessage"] = $"Voucher [{couponCode}] ({discountPercentage:G29}% OFF, {durationDays}d) approved and issued to {application.OrganizationName}.";
             return RedirectToPage(new { StatusFilter, SearchTerm });
         }
 
