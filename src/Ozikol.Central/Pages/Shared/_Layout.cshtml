@@ -39,7 +39,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ozikol" />
     <meta property="og:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
+    <meta property="og:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
     <meta property="og:image" content="https://ozikol.cloud/images/ozikol-red.png" />
     <meta property="og:url" content="https://ozikol.cloud@(Context.Request.Path)" />
 
@@ -47,7 +47,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@@ozikol" />
     <meta name="twitter:title" content="@(ViewData["Title"] ?? "Ozikol") | Unified Business Cloud Platform" />
-    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with 37 modular cloud tools across 9 enterprise suites." />
+    <meta name="twitter:description" content="Connect teams, manage rotas, issue verifiable certificates, run community censuses, and scale your organization with @CurrencyService.GetActiveFeaturesCount() modular cloud tools across @CurrencyService.GetActiveSuitesCount() enterprise suites." />
     <meta name="twitter:image" content="https://ozikol.cloud/images/ozikol-red.png" />
 
     <!-- Favicon & Brand Icons -->
@@ -587,7 +587,7 @@
                 <div class="mega-menu__mid-items-group">
                     <div class="mega-menu__nav-title">@SharedLocalizer["Catalog_Title"]</div>
                         <div class="mega-menu__link-wrap">
-                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll"]</a>
+                            <a href='/features' class='mega-menu__link mega-menu__link--highlight'>@SharedLocalizer["Catalog_ExploreAll", CurrencyService.GetActiveFeaturesCount()]</a>
                         </div>
                 </div>
         </div>
@@ -888,7 +888,7 @@
                         <li><a href="/features/community-messenger">@SharedLocalizer["Footer_CommunityMessenger"]</a></li>
                         <li><a href="/features/equipment-fleet">@SharedLocalizer["Footer_EquipmentFleet"]</a></li>
                         <li><a href="/features/visitor-gate-management">@SharedLocalizer["Footer_VisitorSecurity"]</a></li>
-                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub"]</a></li>
+                        <li><a href="/features" class="oz-ms-highlight-link">@SharedLocalizer["Footer_AllFeaturesHub", CurrencyService.GetActiveFeaturesCount()]</a></li>
                     </ul>
                 </div>
 

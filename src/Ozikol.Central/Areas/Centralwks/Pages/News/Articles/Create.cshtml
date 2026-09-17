@@ -23,7 +23,7 @@
             <label asp-for="Input.Title" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                 Article Title <span style="color: #f87171;">*</span>
             </label>
-            <input asp-for="Input.Title" id="articleTitleInput" placeholder="e.g. Announcing Sovereign Multi-Tenant Database Clusters in Ozikol" 
+            <input asp-for="Input.Title" id="articleTitleInput" placeholder="e.g. Announcing Dedicated Multi-Tenant Database Clusters in Ozikol" 
                    class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 15px; font-weight: 500;" />
             <span asp-validation-for="Input.Title" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
@@ -37,7 +37,7 @@
                     <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid rgba(255, 255, 255, 0.06); font-family: monospace;">
                         /news/
                     </span>
-                    <input asp-for="Input.Slug" id="articleSlugInput" placeholder="announcing-sovereign-database-clusters" 
+                    <input asp-for="Input.Slug" id="articleSlugInput" placeholder="announcing-dedicated-database-clusters" 
                            class="form-control" style="flex: 1; background: transparent; border: none; padding: 10px 14px; color: #93c5fd; font-size: 13px; font-family: monospace;" />
                 </div>
                 <span asp-validation-for="Input.Slug" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>

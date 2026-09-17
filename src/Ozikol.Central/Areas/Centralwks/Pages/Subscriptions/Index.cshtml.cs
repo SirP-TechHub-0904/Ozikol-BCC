@@ -11,7 +11,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 {
     /// <summary>
-    /// PageModel displaying and managing the fleet-wide feature activation matrix across all sovereign tenant databases.
+    /// PageModel displaying and managing the fleet-wide feature activation matrix across all tenant databases.
     /// Supports tenant filtering, capability filtering, cadence filtering, pagination, and status toggling.
     /// </summary>
     public class IndexModel : PageModel
@@ -65,7 +65,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 
         public List<MasterTenantFeatureSubscription> Subscriptions { get; set; } = new();
 
-        private const int PageSize = 20;
+        /// <summary>
+        /// Page size for server-side pagination.
+        /// </summary>
+        public int PageSize { get; set; } = 20;
 
         /// <summary>
         /// Handles HTTP GET requests to query and paginate subscription records.

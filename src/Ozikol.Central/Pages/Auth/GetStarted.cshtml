@@ -3,80 +3,62 @@
 @inject Microsoft.Extensions.Localization.IStringLocalizer<Ozikol.Central.SharedResource> SharedLocalizer
 @{
     var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-    ViewData["Title"] = SharedLocalizer["Auth_GetStarted_Title"];
+    ViewData["Title"] = "Get Started — Provision Your Organization Workspace";
 }
 
-<div class="auth-page-wrapper">
-    <div class="auth-card auth-card--wide">
-        @if (Model.IsProvisioned)
-        {
-            <!-- Provisioned Success State -->
-            <div style="text-align: center; padding: 20px 10px;">
-                <div style="width: 68px; height: 68px; border-radius: 50%; background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                    <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+<div class="auth-page-wrapper" style="max-width: 960px; margin: 0 auto; padding: 40px 20px;">
+    <div class="auth-card auth-card--wide" style="max-width: 900px; padding: 36px 40px; border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.06); background: #ffffff;">
+
+        @* Step Indicator Header *@
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="stepBadge1" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--ozikol-primary); background: rgba(59, 130, 246, 0.1); padding: 6px 14px; border-radius: 20px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">1</span>
+                    Organization Details
                 </div>
-                <h1 class="auth-title" style="color: #065f46;">@SharedLocalizer["Auth_Setup_ReadyBadge"]</h1>
-                <p class="auth-subtitle" style="margin-bottom: 24px;">
-                    @SharedLocalizer["Auth_Setup_ReadyDesc"]
-                </p>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: left;">
-                    <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">@SharedLocalizer["Auth_Setup_WebsiteLabel"]</div>
-                    <div style="font-size: 15px; font-weight: 700; color: #0f172a; word-break: break-all;">@Model.ProvisionedRedirectUrl</div>
-                </div>
-                <a href="@Model.ProvisionedRedirectUrl" class="btn-auth-submit" style="display: block; text-decoration: none; text-align: center; line-height: 24px;">
-                    @SharedLocalizer["Auth_Setup_LaunchBtn"] &rarr;
-                </a>
-                <div style="font-size: 12.5px; color: #94a3b8; margin-top: 14px;">
-                    Redirecting automatically in <span id="redirectCountdown">3</span>s...
+                <div style="width: 40px; height: 2px; background: #e2e8f0;" id="stepDivider"></div>
+                <div id="stepBadge2" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; color: #94a3b8; background: #f8fafc; padding: 6px 14px; border-radius: 20px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span>
+                    Features &amp; Promo
                 </div>
             </div>
-            <script>
-                let sec = 3;
-                const timer = setInterval(() => {
-                    sec--;
-                    const el = document.getElementById('redirectCountdown');
-                    if (el) el.innerText = sec;
-                    if (sec <= 0) {
-                        clearInterval(timer);
-                        window.location.href = '@Model.ProvisionedRedirectUrl';
-                    }
-                }, 1000);
-            </script>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>@Model.ErrorMessage</span>
+            </div>
         }
-        else
-        {
-            <div class="auth-header">
-                <h1 class="auth-title">@SharedLocalizer["Auth_GetStarted_Heading"]</h1>
-                <p class="auth-subtitle">@SharedLocalizer["Auth_GetStarted_Subtitle"]</p>
-            </div>
 
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span>@Model.ErrorMessage</span>
+        <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
+            
+            @* ── STEP 1: Organization & Root Admin Details ── *@
+            <div id="step1Container">
+                <div class="auth-header" style="text-align: left; margin-bottom: 24px;">
+                    <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 6px;">Setup Your Organization Workspace</h1>
+                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">Enter your organization details and root administrator credentials.</p>
                 </div>
-            }
 
-            <form id="onboardingForm" method="post" onsubmit="handleOnboardingSubmit(event)">
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_FullName"]</label>
+                        <label class="form-label">Full Name <span style="color: #ef4444;">*</span></label>
                         <input asp-for="Input.FullName" id="inputFullName" required placeholder="Full Name" class="form-input" />
                         <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgName"]</label>
-                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="Business Name" oninput="handleOrgNameInput(this.value)" class="form-input" />
+                        <label class="form-label">Organization / Business Name <span style="color: #ef4444;">*</span></label>
+                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="Business or Organization Name" oninput="handleOrgNameInput(this.value)" class="form-input" />
                         <span asp-validation-for="Input.OrganizationName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                 </div>
 
-                <!-- Workspace Address -->
-                <div class="form-group">
+                <!-- Workspace Subdomain Address -->
+                <div class="form-group" style="margin-top: 14px;">
                     <label class="form-label">
-                        @SharedLocalizer["Auth_GetStarted_WorkspaceAddress"]
-                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">@SharedLocalizer["Auth_GetStarted_SubdomainHint"]</span>
+                        Workspace Subdomain Address <span style="color: #ef4444;">*</span>
+                        <span style="font-weight: normal; color: #64748b; font-size: 12px;">(Unique cloud workspace portal URL)</span>
                     </label>
                     <div style="display: flex; align-items: center; background: #fff; border: 1px solid var(--ozikol-border-hover); border-radius: 8px; overflow: hidden;">
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-right: 1px solid #e2e8f0; font-weight: 600;">https://</span>
@@ -90,26 +72,26 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">@SharedLocalizer["Auth_GetStarted_WorkEmail"]</label>
-                    <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="admin@company.com" class="form-input" />
+                    <label class="form-label">Root Administrator Email <span style="color: #ef4444;">*</span></label>
+                    <input asp-for="Input.WorkEmail" id="inputWorkEmail" type="email" required placeholder="name@company.com" class="form-input" />
                     <span asp-validation-for="Input.WorkEmail" class="text-danger" style="font-size: 12px;"></span>
                 </div>
 
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label class="form-label" style="margin-bottom: 0;">@SharedLocalizer["Auth_GetStarted_Password"]</label>
-                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">@SharedLocalizer["Auth_Login_ShowPassword"]</button>
+                        <label class="form-label" style="margin-bottom: 0;">Master Password <span style="color: #ef4444;">*</span></label>
+                        <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show Password</button>
                     </div>
-                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="@SharedLocalizer["Auth_GetStarted_PasswordPlaceholder"]" oninput="updateStrength(this.value)" class="form-input" />
-                    <div class="strength-meter">
-                        <div id="strengthFill" class="strength-fill"></div>
+                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="Enter master password" oninput="updateStrength(this.value)" class="form-input" />
+                    <div class="strength-meter" style="margin-top: 6px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                        <div id="strengthFill" style="height: 100%; width: 0; transition: width 0.3s ease, background 0.3s ease;"></div>
                     </div>
                     <span asp-validation-for="Input.Password" class="text-danger" style="font-size: 12px;"></span>
                 </div>
 
                 <div class="form-grid-2">
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_OrgSector"]</label>
+                        <label class="form-label">Industry / Organization Sector</label>
                         <select asp-for="Input.OrganizationType" class="form-select">
                             <option>Business & Enterprise</option>
                             <option>Non-Profit & Foundation</option>
@@ -120,35 +102,199 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">@SharedLocalizer["Auth_GetStarted_Phone"] <span style="font-weight: normal; color: #94a3b8;">(@SharedLocalizer["Auth_GetStarted_Optional"])</span></label>
-                        <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" class="form-input" />
+                        <label class="form-label">Phone Number <span style="font-weight: normal; color: #94a3b8;">(Optional)</span></label>
+                        <input asp-for="Input.PhoneNumber" placeholder="Phone Number" class="form-input" />
                     </div>
                 </div>
 
-                <div style="margin-bottom: 18px;">
+                <div style="margin: 16px 0;">
                     <a href="javascript:void(0)" onclick="document.getElementById('refGroup').style.display = document.getElementById('refGroup').style.display === 'none' ? 'block' : 'none';" style="font-size: 12.5px; color: var(--ozikol-primary); text-decoration: none; font-weight: 600;">
-                        @SharedLocalizer["Auth_GetStarted_HaveReferral"]
+                        Have an Affiliate Referral Code?
                     </a>
-                    <div id="refGroup" style="display: none; margin-top: 8px;">
-                        <input asp-for="Input.ReferralCode" placeholder="Enter referral code (e.g. PARTNER2026)" class="form-input" />
+                    <div id="refGroup" style="display: @(string.IsNullOrEmpty(Model.Input.ReferralCode) ? "none" : "block"); margin-top: 8px;">
+                        <input asp-for="Input.ReferralCode" placeholder="Enter referral code" class="form-input" />
                     </div>
                 </div>
 
-                <button type="submit" id="btnSubmit" class="btn-auth-submit">
-                    @SharedLocalizer["Auth_GetStarted_SubmitBtn"] &rarr;
-                </button>
-                <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 14px; line-height: 1.5;">
-                    By continuing you agree to Ozikol 
-                    <a href="/@currentCulture/terms-of-use" target="_blank" rel="noopener noreferrer" style="color: var(--ozikol-primary); text-decoration: underline; font-weight: 500;">Terms of Service</a> 
-                    and 
-                    <a href="/@currentCulture/privacy-notice" target="_blank" rel="noopener noreferrer" style="color: var(--ozikol-primary); text-decoration: underline; font-weight: 500;">Privacy Policy</a>.
+                <!-- Google reCAPTCHA Verification Widget -->
+                <div class="oz-recaptcha-wrap" style="margin: 18px 0 10px; display: flex; justify-content: center;">
+                    <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
                 </div>
-            </form>
 
-            <div class="auth-footer" style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
-                Already have an organization workspace? Log in directly via your dedicated company link (e.g. <span style="font-weight: 600; color: #0f172a;">https://[company].ozikol.cloud</span>), your linked domain, or your dedicated custom domain.
+                <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px;">
+                    Continue to Feature Selection &rarr;
+                </button>
             </div>
-        }
+
+            @* ── STEP 2: Feature Selection & Voucher / Trial ── *@
+            <div id="step2Container" style="display: none;">
+                <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
+                    <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 6px;">Select Features</h1>
+                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">Review included platform capabilities and apply any promotional discounts.</p>
+                </div>
+
+                @* 1. Included Features (Auto-Included in Base Plan) *@
+                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%); border: 1px solid #bfdbfe; border-radius: 14px; padding: 22px; margin-bottom: 24px;">
+                    
+                    @* Center Header: Big, Bold Free Trial Badge & Base Plan Price *@
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; color: #065f46; background: #ecfdf5; border: 2px solid #10b981; padding: 8px 24px; border-radius: 9999px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.18); margin-bottom: 10px;">
+                            <span class="material-symbols-outlined" style="font-size: 22px; color: #059669;">verified</span>
+                            <span>@Model.TrialDays-Day Free Trial</span>
+                        </div>
+                        <div style="font-size: 22px; font-weight: 900; color: #0f172a; margin-top: 6px; letter-spacing: -0.3px;">
+                            <span>Annual Base Plan: @Model.FormattedBasePlanPrice</span>
+                            <span style="color: #059669; font-weight: 900; margin-left: 8px;">(Pay Nothing Today)</span>
+                        </div>
+                        <p style="font-size: 13.5px; color: #64748b; margin: 8px auto 0 auto; font-weight: 500; max-width: 600px;">
+                            Core foundational capabilities automatically provisioned with dedicated secure cloud infrastructure and daily automated backups.
+                        </p>
+                    </div>
+
+                    @* Alert Note: Request for Free 1-Year Voucher *@
+                    <div style="background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 12px; padding: 14px 20px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="material-symbols-outlined" style="font-size: 26px; color: #d97706;">card_giftcard</span>
+                            <div>
+                                <div style="font-size: 14px; font-weight: 800; color: #92400e;">
+                                    Want 100% Free Access for 1 Full Year?
+                                </div>
+                                <div style="font-size: 13px; font-weight: 500; color: #b45309; margin-top: 2px;">
+                                    Request for a Free 1-Year Promotional Voucher by completing our community eligibility activities.
+                                </div>
+                            </div>
+                        </div>
+                        <a href="/en/vouchers/apply" style="font-size: 13px; font-weight: 800; color: #ffffff; background: #d97706; padding: 8px 16px; border-radius: 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25); transition: background 0.15s ease;">
+                            <span class="material-symbols-outlined" style="font-size: 17px;">redeem</span>
+                            <span>Apply for Free 1-Year Voucher</span>
+                            <span style="font-size: 15px;">&rarr;</span>
+                        </a>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        @if (Model.CompulsoryFeatures.Any())
+                        {
+                            @foreach (var feat in Model.CompulsoryFeatures)
+                            {
+                                <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
+                                    <span style="color: #10b981; font-weight: 800;">✓</span>
+                                    <span>@feat.Name</span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
+                                <span style="color: #10b981; font-weight: 800;">✓</span>
+                                <span>Identity, RBAC, Cloud Storage, Audit Logs, Backups</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* 2. Additional Features (Rendered dynamically only when extra features exist) *@
+                @if (Model.AddonFeatures.Any())
+                {
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                            <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <span class="material-symbols-outlined" style="color: var(--ozikol-primary); font-size: 20px;">widgets</span>
+                                Additional Features (@Model.AddonFeatures.Count Available)
+                            </h3>
+                            <div style="font-size: 12px; color: #64748b;">
+                                Select extra capabilities to activate for your organization
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; max-height: 380px; overflow-y: auto; padding: 4px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+                            @foreach (var feat in Model.AddonFeatures)
+                            {
+                                <label style="display: flex; align-items: flex-start; gap: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.15s ease;" class="feature-checkbox-label">
+                                    <input type="checkbox" name="Input.SelectedFeatureIds" value="@feat.Id" 
+                                           data-price="@feat.MonthlyPrice" data-billing="@feat.BillingType"
+                                           onchange="updateCartTotal()" 
+                                           style="width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ozikol-primary);" />
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                             <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">@feat.Name</div>
+                                            <span style="font-size: 11.5px; font-weight: 700; color: var(--ozikol-primary); background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
+                                                @(feat.MonthlyPrice == 0 ? "Free" : $"{Model.ActiveCurrencySymbol}{feat.MonthlyPrice:N0}/mo")
+                                            </span>
+                                        </div>
+                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px; line-height: 1.3;">
+                                            @(feat.Description ?? feat.Category)
+                                        </div>
+                                    </div>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @* 3. Coupon Voucher / Promo Box *@
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
+                    <label class="form-label" style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px;">
+                        Promotional Voucher / Partner Coupon
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <input asp-for="Input.CouponCode" id="inputCouponCode" placeholder="Enter coupon or promo code" 
+                               class="form-input" style="flex: 1; font-family: monospace; font-size: 14px; font-weight: 700; text-transform: uppercase;" />
+                        <button type="button" onclick="applyCouponCode()" class="btn-auth-outline" style="padding: 10px 18px; font-weight: 700; font-size: 13px; white-space: nowrap; border: 1.5px solid var(--ozikol-primary); color: var(--ozikol-primary); background: transparent; border-radius: 8px; cursor: pointer;">
+                            Apply Voucher
+                        </button>
+                    </div>
+                    <div id="couponFeedback" style="font-size: 12.5px; margin-top: 8px; display: none;"></div>
+                </div>
+
+                @* 4. Cart Breakdown & Live Total *@
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #64748b; margin-bottom: 6px;">
+                        <span>Annual Platform Plan</span>
+                        <span id="basePlanDisplay" style="font-weight: 600; color: #0f172a;">@Model.FormattedBasePlanPrice</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
+                        <span>Complimentary Free Trial</span>
+                        <span>@Model.TrialDays Days (@Model.ActiveCurrencySymbol 0.00 Due Today)</span>
+                    </div>
+                    @if (Model.AddonFeatures.Any())
+                    {
+                        <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #64748b; margin-bottom: 6px;">
+                            <span>Selected Additional Features (<span id="selectedCount">0</span> selected)</span>
+                            <span id="addonsTotalDisplay" style="font-weight: 600; color: #0f172a;">@Model.ActiveCurrencySymbol 0.00/mo</span>
+                        </div>
+                    }
+                    <div id="discountRow" style="display: none; justify-content: space-between; font-size: 13.5px; color: #10b981; font-weight: 700; margin-bottom: 6px;">
+                        <span>Promotional Voucher Discount (<span id="discountBadgeText">100% OFF</span>)</span>
+                        <span id="discountAmountDisplay">-@Model.FormattedBasePlanPrice</span>
+                    </div>
+                    <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Total Due Today</div>
+                            <div id="trialGuaranteeText" style="font-size: 11.5px; color: #10b981; font-weight: 600;">Pay nothing today • Full access for @Model.TrialDays days</div>
+                        </div>
+                        <div id="finalTotalDisplay" style="font-size: 22px; font-weight: 800; color: #10b981;">
+                            @Model.ActiveCurrencySymbol 0.00 Free
+                        </div>
+                    </div>
+                </div>
+
+                @* Navigation & Submission Buttons *@
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
+                        &larr; Back to Step 1
+                    </button>
+                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0;">
+                        <span id="submitBtnText">🚀 Start @Model.TrialDays-Day Free Trial</span>
+                    </button>
+                </div>
+            </div>
+
+        </form>
+
+        <div class="auth-footer" style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
+            Already have an organization workspace? Log in directly via your dedicated company URL (e.g. <span style="font-weight: 600; color: #0f172a;">https://[company].ozikol.cloud</span>) or your linked domain.
+        </div>
     </div>
 </div>
 
@@ -156,8 +302,8 @@
 <div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
     <div style="background: #ffffff; border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center;">
         <div style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">@SharedLocalizer["Auth_GetStarted_ModalTitle"]</h2>
-        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">@SharedLocalizer["Auth_GetStarted_ModalDesc"]</p>
+        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
+        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13.5px;">
             <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
@@ -180,10 +326,59 @@
 @@keyframes spin {
     to { transform: rotate(360deg); }
 }
+.feature-checkbox-label:hover {
+    border-color: var(--ozikol-primary) !important;
+    background: #f0f7ff !important;
+}
 </style>
 
 <script>
+let currentDiscountPct = 0; // Default zero discount until valid coupon is entered
 let slugDebounceTimer = null;
+
+function goToStep2() {
+    const fullName = document.getElementById('inputFullName');
+    const orgName = document.getElementById('inputOrgName');
+    const slug = document.getElementById('inputWorkspaceSlug');
+    const email = document.getElementById('inputWorkEmail');
+    const pwd = document.getElementById('regPassword');
+
+    if (!fullName.value.trim() || !orgName.value.trim() || !slug.value.trim() || !email.value.trim() || !pwd.value) {
+        alert('Please fill in all required fields (Full Name, Organization, Address, Email, Password) to proceed.');
+        return;
+    }
+
+    document.getElementById('step1Container').style.display = 'none';
+    document.getElementById('step2Container').style.display = 'block';
+
+    document.getElementById('stepBadge1').style.color = '#10b981';
+    document.getElementById('stepBadge1').style.background = '#ecfdf5';
+    document.getElementById('stepBadge1').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">✓</span> Organization Details';
+
+    document.getElementById('stepBadge2').style.color = 'var(--ozikol-primary)';
+    document.getElementById('stepBadge2').style.background = 'rgba(59, 130, 246, 0.1)';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Features & Promo';
+
+    updateCartTotal();
+
+    const codeInput = document.getElementById('inputCouponCode');
+    if (codeInput && codeInput.value.trim() && currentDiscountPct === 0) {
+        applyCouponCode();
+    }
+}
+
+function goToStep1() {
+    document.getElementById('step2Container').style.display = 'none';
+    document.getElementById('step1Container').style.display = 'block';
+
+    document.getElementById('stepBadge1').style.color = 'var(--ozikol-primary)';
+    document.getElementById('stepBadge1').style.background = 'rgba(59, 130, 246, 0.1)';
+    document.getElementById('stepBadge1').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">1</span> Organization Details';
+
+    document.getElementById('stepBadge2').style.color = '#94a3b8';
+    document.getElementById('stepBadge2').style.background = '#f8fafc';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Features & Promo';
+}
 
 function handleOrgNameInput(val) {
     const slugInput = document.getElementById('inputWorkspaceSlug');
@@ -204,33 +399,11 @@ function handleSlugInput(val) {
     checkSlugAvailability(val);
 }
 
-const RESERVED_SLUGS = new Set([
-    'admin', 'administrator', 'superadmin', 'supadmin', 'root', 'sysadmin', 'system',
-    'manager', 'moderator', 'security', 'host', 'master', 'central', 'portal',
-    'console', 'dashboard', 'api', 'apis', 'gateway', 'graphql', 'rest', 'webhook',
-    'webhooks', 'cdn', 'dns', 'ns', 'ns1', 'ns2', 'mail', 'email', 'smtp', 'imap',
-    'pop', 'ftp', 'ssh', 'ssl', 'cert', 'certs', 'status', 'health', 'monitor', 'ping',
-    'metrics', 'auth', 'oauth', 'sso', 'login', 'signin', 'signup', 'logout', 'register',
-    'onboarding', 'account', 'accounts', 'billing', 'pay', 'payment', 'payments',
-    'checkout', 'cart', 'internal', 'dev', 'development', 'staging', 'test', 'prod',
-    'production', 'sandbox', 'ozikol', 'ozikol-bcc', 'ozikolcloud', 'ozikol-cloud',
-    'support', 'help', 'helpdesk', 'docs', 'documentation', 'legal', 'terms', 'privacy',
-    'compliance', 'about', 'contact', 'marketplace', 'store', 'shop', 'localhost',
-    '127', 'local', 'null', 'undefined', 'default', 'public', 'private', 'static',
-    'assets', 'media', 'www', 'web', 'app'
-]);
-
 function checkSlugAvailability(slug) {
     clearTimeout(slugDebounceTimer);
     const feedback = document.getElementById('slugFeedback');
     if (!slug || slug.length < 3) {
         feedback.innerHTML = '<span style="color: #64748b;">Enter at least 3 characters.</span>';
-        return;
-    }
-
-    const clean = slug.toLowerCase().trim();
-    if (RESERVED_SLUGS.has(clean)) {
-        feedback.innerHTML = '<span style="color: #ef4444; font-weight: 600;">✗ This workspace address is reserved by the system and cannot be used.</span>';
         return;
     }
 
@@ -277,12 +450,105 @@ function togglePasswordVisibility(fieldId, btn) {
     }
 }
 
+async function applyCouponCode() {
+    const codeInput = document.getElementById('inputCouponCode');
+    const feedback = document.getElementById('couponFeedback');
+    const code = (codeInput.value || '').trim();
+
+    if (!code) {
+        feedback.style.display = 'block';
+        feedback.innerHTML = '<span style="color: #ef4444; font-weight: 600;">Please enter a coupon code.</span>';
+        return;
+    }
+
+    try {
+        const resp = await fetch(`?handler=ValidateCoupon&code=${encodeURIComponent(code)}`);
+        const data = await resp.json();
+
+        feedback.style.display = 'block';
+        if (data.valid) {
+            currentDiscountPct = data.discountPercent;
+            feedback.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ ${data.message}</span>`;
+        } else {
+            currentDiscountPct = 0;
+            feedback.innerHTML = `<span style="color: #ef4444; font-weight: 600;">✗ ${data.message}</span>`;
+        }
+    } catch (e) {
+        feedback.style.display = 'block';
+        feedback.innerHTML = '<span style="color: #ef4444;">Failed to validate coupon.</span>';
+    }
+
+    updateCartTotal();
+}
+
+function updateCartTotal() {
+    const checkboxes = document.querySelectorAll('input[name="Input.SelectedFeatureIds"]:checked');
+    let addonsTotal = 0;
+
+    checkboxes.forEach(cb => {
+        const price = parseFloat(cb.dataset.price) || 0;
+        addonsTotal += price;
+    });
+
+    const basePlan = @Model.BasePlanAnnualPrice;
+    const currencySymbol = '@Html.Raw(Model.ActiveCurrencySymbol)';
+    const trialDays = @Model.TrialDays;
+    const subtotal = basePlan + (addonsTotal * 12); // Annualized subtotal
+
+    const selectedCountEl = document.getElementById('selectedCount');
+    if (selectedCountEl) {
+        selectedCountEl.innerText = checkboxes.length;
+    }
+
+    const addonsTotalEl = document.getElementById('addonsTotalDisplay');
+    if (addonsTotalEl) {
+        addonsTotalEl.innerText = `${currencySymbol}${addonsTotal.toFixed(2)}/mo`;
+    }
+
+    const discountRow = document.getElementById('discountRow');
+    const discountBadgeText = document.getElementById('discountBadgeText');
+    const discountAmountDisplay = document.getElementById('discountAmountDisplay');
+    const finalTotalDisplay = document.getElementById('finalTotalDisplay');
+    const trialGuaranteeText = document.getElementById('trialGuaranteeText');
+    const submitBtnText = document.getElementById('submitBtnText');
+
+    if (currentDiscountPct > 0) {
+        const discountVal = (subtotal * (currentDiscountPct / 100));
+        const finalNet = Math.max(0, subtotal - discountVal);
+
+        discountRow.style.display = 'flex';
+        discountBadgeText.innerText = `${currentDiscountPct}% OFF`;
+        discountAmountDisplay.innerText = `-${currencySymbol}${discountVal.toFixed(2)}`;
+
+        if (finalNet === 0) {
+            finalTotalDisplay.innerHTML = `<span style="color: #10b981;">${currencySymbol}0.00 Free</span>`;
+            if (trialGuaranteeText) {
+                trialGuaranteeText.innerText = 'Promotional voucher applied (100% OFF)';
+            }
+            submitBtnText.innerText = '🚀 Initialize Workspace (Free)';
+        } else {
+            finalTotalDisplay.innerText = `${currencySymbol}${finalNet.toFixed(2)}`;
+            if (trialGuaranteeText) {
+                trialGuaranteeText.innerText = `Promotional voucher applied (${currentDiscountPct}% OFF)`;
+            }
+            submitBtnText.innerText = `🚀 Start ${trialDays}-Day Free Trial`;
+        }
+    } else {
+        discountRow.style.display = 'none';
+        // Free trial default state: $0.00 / ₦0.00 due today during trial period
+        finalTotalDisplay.innerHTML = `<span style="color: #10b981;">${currencySymbol}0.00 Free</span>`;
+        if (trialGuaranteeText) {
+            trialGuaranteeText.innerText = `Pay nothing today • Full access for ${trialDays} days`;
+        }
+        submitBtnText.innerText = `🚀 Start ${trialDays}-Day Free Trial`;
+    }
+}
+
 async function handleOnboardingSubmit(e) {
     e.preventDefault();
     const form = document.getElementById('onboardingForm');
     const modal = document.getElementById('provisioningModal');
 
-    // Show interactive provisioning modal
     modal.style.display = 'flex';
 
     setTimeout(() => {
@@ -312,7 +578,6 @@ async function handleOnboardingSubmit(e) {
             const step4 = document.getElementById('step4');
             if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready! Launching portal...'; }
 
-            // Clear credentials from DOM immediately so Chromium credential manager does not prompt to save
             const regPwd = document.getElementById('regPassword');
             if (regPwd) {
                 regPwd.value = '';
@@ -327,8 +592,11 @@ async function handleOnboardingSubmit(e) {
             alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
         }
     } catch (err) {
-        // Fallback standard submit if AJAX fetch fails
         form.submit();
     }
 }
 </script>
+
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+}

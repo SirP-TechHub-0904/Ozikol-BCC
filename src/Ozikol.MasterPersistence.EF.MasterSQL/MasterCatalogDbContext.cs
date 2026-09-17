@@ -55,6 +55,9 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterPlatformSetting> MasterPlatformSettings { get; set; } = null!;
     public DbSet<MasterTicketReply> MasterTicketReplies { get; set; } = null!;
     public DbSet<MasterLegalDocument> MasterLegalDocuments { get; set; } = null!;
+    public DbSet<MasterCoupon> MasterCoupons { get; set; } = null!;
+    public DbSet<MasterCouponRedemption> MasterCouponRedemptions { get; set; } = null!;
+    public DbSet<MasterVoucherApplication> MasterVoucherApplications { get; set; } = null!;
 
     /// <summary>
     /// Audit log entries tracking all administrative actions across the platform.
@@ -112,6 +115,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.PrimaryDomain).IsUnique();
             entity.HasIndex(e => e.CustomDomain);
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsSuspended);
+            entity.HasIndex(e => e.IsDeleted);
         });
 
         modelBuilder.Entity<MasterFeatureCatalog>(entity =>
@@ -539,6 +544,16 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                 .WithMany()
                 .HasForeignKey(e => e.MasterTenantFeatureSubscriptionId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Voucher Application Configurations ──
+        modelBuilder.Entity<MasterVoucherApplication>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReferenceNumber).IsUnique();
+            entity.HasIndex(e => e.WorkEmail);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAtUtc);
         });
     }
 }

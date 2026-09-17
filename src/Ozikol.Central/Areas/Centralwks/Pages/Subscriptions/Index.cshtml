@@ -72,6 +72,7 @@
         <table class="admin-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">S/N</th>
                     <th>Tenant Organization</th>
                     <th>Capability Module</th>
                     <th>Cadence</th>
@@ -85,9 +86,14 @@
             <tbody>
                 @if (Model.Subscriptions.Any())
                 {
-                    @foreach (var sub in Model.Subscriptions)
+                    @for (int i = 0; i < Model.Subscriptions.Count; i++)
                     {
+                        var sub = Model.Subscriptions[i];
+                        var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
                         <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
+                            </td>
                             <td>
                                 <div>
                                     <a href="/centralwks/tenants/details?id=@sub.MasterTenantCatalogId" style="color: var(--admin-text); font-weight: 600; text-decoration: none;">
@@ -144,9 +150,7 @@
                                 }
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <a href="/centralwks/subscriptions/details?id=@sub.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Details</a>
-                                    <a href="/centralwks/subscriptions/edit?id=@sub.Id" class="btn-admin btn-admin-secondary btn-admin-sm">Edit</a>
+                                <div style="display: inline-flex; gap: 6px;">
                                     <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@sub.Id" style="display: inline; margin: 0;">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn-admin @(sub.IsActive ? "btn-admin-danger" : "btn-admin-primary") btn-admin-sm" onclick="return confirm('Toggle status for this subscription?');">
@@ -161,9 +165,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="empty-state">
-                                <div class="empty-state-icon">📋</div>
+                                <div class="empty-state-icon">
+                                    <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">inventory_2</span>
+                                </div>
                                 <h3 class="empty-state-title">No Subscriptions Found</h3>
                                 <p class="empty-state-desc">No active or suspended subscriptions match your filter criteria.</p>
                             </div>

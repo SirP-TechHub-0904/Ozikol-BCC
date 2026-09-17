@@ -11,7 +11,7 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
     /// <summary>
-    /// PageModel enabling administrators to toggle, provision, and configure modular capability subscriptions for a specific sovereign tenant database.
+    /// PageModel enabling administrators to toggle, provision, and configure modular capability subscriptions for a specific tenant database.
     /// </summary>
     public class FeaturesModel : PageModel
     {

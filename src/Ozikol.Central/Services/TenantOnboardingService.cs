@@ -23,6 +23,16 @@ public class TenantOnboardingRequest
     public string? CustomDomain { get; set; }
     public string? ReferredBy { get; set; }
     public string? Sector { get; set; }
+
+    /// <summary>
+    /// Selected optional add-on feature IDs chosen by the tenant during registration.
+    /// </summary>
+    public List<Guid> SelectedFeatureIds { get; set; } = new();
+
+    /// <summary>
+    /// Optional promotional coupon or voucher code entered during registration (e.g. "LAUNCH100").
+    /// </summary>
+    public string? CouponCode { get; set; }
 }
 
 public class TenantOnboardingResult
@@ -65,6 +75,15 @@ public interface ITenantOnboardingService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>True if valid and active; false otherwise.</returns>
     Task<bool> IsReferralCodeValidAsync(string referralCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates a promotional coupon code against active expiration dates, redemption quotas, and feature scope.
+    /// </summary>
+    /// <param name="couponCode">The promo voucher code string.</param>
+    /// <param name="featureId">Optional specific feature catalog ID to check compatibility.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>Validation result tuple indicating validity, coupon entity, discount percentage, and descriptive message.</returns>
+    Task<(bool IsValid, MasterCoupon? Coupon, decimal DiscountPercent, string Message)> ValidateCouponAsync(string couponCode, Guid? featureId = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Finds all active organization workspaces associated with the specified administrator email.
@@ -151,6 +170,75 @@ public class TenantOnboardingService : ITenantOnboardingService
         var cleanCode = referralCode.Trim().ToUpperInvariant();
         return await _masterCatalogDbContext.MasterAffiliatePartners
             .AnyAsync(p => p.PartnerCode == cleanCode && p.Status == "Active", cancellationToken);
+    }
+
+    /// <summary>
+    /// Validates a promotional coupon code against active expiration dates, redemption quotas, and feature scope.
+    /// </summary>
+    /// <param name="couponCode">The promo voucher code string.</param>
+    /// <param name="featureId">Optional specific feature catalog ID to check compatibility.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>Validation result tuple indicating validity, coupon entity, discount percentage, and descriptive message.</returns>
+    public async Task<(bool IsValid, MasterCoupon? Coupon, decimal DiscountPercent, string Message)> ValidateCouponAsync(
+        string couponCode,
+        Guid? featureId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(couponCode))
+        {
+            return (false, null, 0.00m, "Please enter a coupon code.");
+        }
+
+        var cleanCode = couponCode.Trim().ToUpperInvariant();
+
+        var coupon = await _masterCatalogDbContext.MasterCoupons
+            .Include(c => c.SpecificFeature)
+            .FirstOrDefaultAsync(c => c.Code == cleanCode, cancellationToken);
+
+        if (coupon == null)
+        {
+            return (false, null, 0.00m, $"Promo code '{cleanCode}' was not found.");
+        }
+
+        if (!coupon.IsActive)
+        {
+            return (false, coupon, 0.00m, $"Promo code '{cleanCode}' is currently inactive.");
+        }
+
+        var now = DateTime.UtcNow;
+        if (coupon.StartsAtUtc > now)
+        {
+            return (false, coupon, 0.00m, $"Promo code '{cleanCode}' is not active yet.");
+        }
+
+        if (coupon.ExpiresAtUtc.HasValue && coupon.ExpiresAtUtc.Value < now)
+        {
+            return (false, coupon, 0.00m, $"Promo code '{cleanCode}' has expired on {coupon.ExpiresAtUtc.Value:MMM dd, yyyy}.");
+        }
+
+        if (coupon.MaxRedemptions > 0 && coupon.TimesRedeemed >= coupon.MaxRedemptions)
+        {
+            return (false, coupon, 0.00m, $"Promo code '{cleanCode}' has reached its maximum redemption quota.");
+        }
+
+        if (coupon.SpecificFeatureId.HasValue)
+        {
+            if (featureId.HasValue && coupon.SpecificFeatureId.Value != featureId.Value)
+            {
+                var featName = coupon.SpecificFeature?.Name ?? "a specific module";
+                return (false, coupon, 0.00m, $"Promo code '{cleanCode}' can only be applied to '{featName}'.");
+            }
+        }
+
+        decimal discountPct = coupon.IsPercentage ? coupon.DiscountPercentage : 100.00m;
+        var durationInfo = coupon.DurationDays >= 365 ? "1 Year" : $"{coupon.DurationDays} Days";
+        var scopeInfo = string.IsNullOrWhiteSpace(coupon.GrantedFeaturesSummary) ? "all platform features" : coupon.GrantedFeaturesSummary;
+
+        string successMsg = coupon.DiscountPercentage >= 100.00m
+            ? $"100% OFF promotional voucher '{cleanCode}' applied ({durationInfo} free access to {scopeInfo})!"
+            : $"{coupon.DiscountPercentage:G29}% OFF discount coupon '{cleanCode}' applied successfully ({durationInfo})!";
+
+        return (true, coupon, discountPct, successMsg);
     }
 
     /// <summary>
@@ -362,10 +450,76 @@ public class TenantOnboardingService : ITenantOnboardingService
                 });
             }
 
-            if (compulsoryFeatures.Count > 0)
+            // Step G: Provision Optional Add-on Features Selected by Tenant
+            var selectedFeatureGuids = (request.SelectedFeatureIds ?? new List<Guid>())
+                .Distinct()
+                .Where(id => compulsoryFeatures.All(c => c.Id != id))
+                .ToList();
+
+            if (selectedFeatureGuids.Count > 0)
             {
-                await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+                var selectedFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
+                    .Where(f => selectedFeatureGuids.Contains(f.Id) && f.IsActive)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var addon in selectedFeatures)
+                {
+                    _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
+                    {
+                        Id = Guid.NewGuid(),
+                        MasterTenantCatalogId = catalogEntry.Id,
+                        MasterFeatureCatalogId = addon.Id,
+                        DurationType = SubscriptionBillingDuration.Monthly,
+                        RecurringPrice = addon.MonthlyPrice,
+                        StartsAtUtc = DateTime.UtcNow,
+                        ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
+                        AutoRenew = true,
+                        IsActive = true,
+                        Status = "Active",
+                        CreatedUtc = DateTime.UtcNow
+                    });
+                }
             }
+
+            // Step H: Redeem Promotional Coupon if provided
+            if (!string.IsNullOrWhiteSpace(request.CouponCode))
+            {
+                var validation = await ValidateCouponAsync(request.CouponCode, null, cancellationToken);
+                if (validation.IsValid && validation.Coupon != null)
+                {
+                    var coupon = await _masterCatalogDbContext.MasterCoupons
+                        .FirstOrDefaultAsync(c => c.Id == validation.Coupon.Id, cancellationToken);
+
+                    if (coupon != null)
+                    {
+                        coupon.TimesRedeemed += 1;
+
+                        const decimal assumedBasePrice = 199.00m;
+                        decimal discountAmount = coupon.IsPercentage
+                            ? (assumedBasePrice * (coupon.DiscountPercentage / 100m))
+                            : Math.Min(coupon.DiscountAmount, assumedBasePrice);
+
+                        decimal finalPrice = Math.Max(0.00m, assumedBasePrice - discountAmount);
+
+                        _masterCatalogDbContext.MasterCouponRedemptions.Add(new MasterCouponRedemption
+                        {
+                            Id = Guid.NewGuid(),
+                            MasterCouponId = coupon.Id,
+                            MasterTenantCatalogId = catalogEntry.Id,
+                            MasterFeatureCatalogId = coupon.SpecificFeatureId,
+                            OriginalPrice = assumedBasePrice,
+                            DiscountApplied = discountAmount,
+                            FinalPricePaid = finalPrice,
+                            RedeemedAtUtc = DateTime.UtcNow
+                        });
+
+                        _logger.LogInformation("🎟️ Coupon [{Code}] redeemed by Tenant [{TenantKey}]. Discount: ${Discount:F2}",
+                            coupon.Code, cleanKey, discountAmount);
+                    }
+                }
+            }
+
+            await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("✅ TENANT [{TenantKey}] ONBOARDED SUCCESSFULLY!", cleanKey);
             _logger.LogInformation("================================================================");

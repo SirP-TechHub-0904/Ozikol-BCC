@@ -230,7 +230,7 @@
     <value>Entreprise</value>
   </data>
   <data name="Footer_AllFeaturesHub" xml:space="preserve">
-    <value>Espace des 37 fonctionnalités →</value>
+    <value>Espace des {0} fonctionnalités →</value>
   </data>
   <data name="Footer_StaffRota" xml:space="preserve">
     <value>Planning &amp; Équipes</value>
@@ -332,7 +332,7 @@
     <value>Catalogue de fonctionnalités</value>
   </data>
   <data name="Catalog_ExploreAll" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités →</value>
+    <value>Explorer les {0} fonctionnalités →</value>
   </data>
   <data name="Suite_People_Nav" xml:space="preserve">
     <value>Personnes, communauté &amp; collaboration</value>
@@ -770,7 +770,7 @@
     <value>PLATEFORME MODULAIRE COMPLÈTE</value>
   </data>
   <data name="Home_Suites_Title" xml:space="preserve">
-    <value>Une plateforme. 37 fonctionnalités. 9 suites intégrées.</value>
+    <value>Une plateforme. {0} fonctionnalités. {1} suites intégrées.</value>
   </data>
   <data name="Home_Suites_Desc" xml:space="preserve">
     <value>Tous les outils indispensables pour gérer, gouverner et faire évoluer votre organisation, connectés nativement sans complexité.</value>
@@ -953,7 +953,7 @@
     <value>Tarification annuelle tout-en-un | Ozikol</value>
   </data>
   <data name="Pricing_Meta_Desc" xml:space="preserve">
-    <value>Gérez l'ensemble de votre commerce sur Ozikol pour un abonnement annuel transparent. 9 suites et 37 fonctionnalités sans commission de vente. Vous achetez seulement votre domaine.</value>
+    <value>Gérez l'ensemble de votre commerce sur Ozikol pour un abonnement annuel transparent. {1} suites et {0} fonctionnalités sans commission de vente. Vous achetez seulement votre domaine.</value>
   </data>
   <data name="Pricing_Hero_Badge" xml:space="preserve">
     <value>TARIFICATION ANNUELLE TOUT-EN-UN</value>
@@ -1007,7 +1007,7 @@
     <value>Activation cloud instantanée</value>
   </data>
   <data name="Pricing_Card_Feat1" xml:space="preserve">
-    <value>Les 9 suites logicielles intégrées et 37 fonctionnalités</value>
+    <value>Les {1} suites logicielles intégrées et {0} fonctionnalités</value>
   </data>
   <data name="Pricing_Card_Feat2" xml:space="preserve">
     <value>Point de vente omnicanal (POS) avec mode hors-ligne</value>
@@ -1094,7 +1094,7 @@
     <value>Toutes les fonctionnalités débloquées</value>
   </data>
   <data name="Pricing_Why3_Desc" xml:space="preserve">
-    <value>Aucun niveau verrouillé. De l'intelligence artificielle prédictive à la logistique multi-entrepôts, les 37 outils sont inclus.</value>
+    <value>Aucun niveau verrouillé. De l'intelligence artificielle prédictive à la logistique multi-entrepôts, les {0} outils sont inclus.</value>
   </data>
   <data name="Pricing_Why4_Title" xml:space="preserve">
     <value>Hébergement cloud et sauvegardes</value>
@@ -1106,7 +1106,7 @@
     <value>CE QUE VOUS OFFRE LE FORFAIT</value>
   </data>
   <data name="Pricing_Suites_Title" xml:space="preserve">
-    <value>Explorez les 9 suites intégrées incluses dans votre formule</value>
+    <value>Explorez les {0} suites intégrées incluses dans votre formule</value>
   </data>
   <data name="Pricing_Suites_Desc" xml:space="preserve">
     <value>Tout ce dont vous avez besoin pour gérer, opérer et développer vos activités commerciales physiques et en ligne.</value>
@@ -1172,7 +1172,7 @@
     <value>Toutes les Fonctionnalités et Capacités - Plateforme Ozikol</value>
   </data>
   <data name="Features_Meta_Desc" xml:space="preserve">
-    <value>Découvrez l'ensemble des 37 fonctionnalités cloud réparties en 9 suites modulaires incluses avec votre abonnement Ozikol.</value>
+    <value>Découvrez l'ensemble des {0} fonctionnalités cloud réparties en {1} suites modulaires incluses avec votre abonnement Ozikol.</value>
   </data>
   <data name="Features_Hero_Badge" xml:space="preserve">
     <value>Capacités de la Plateforme Ozikol</value>
@@ -1181,13 +1181,13 @@
     <value>Tout ce dont votre organisation a besoin pour collaborer, opérer et grandir</value>
   </data>
   <data name="Features_Hero_Desc" xml:space="preserve">
-    <value>Explorez l'ensemble des 37 fonctionnalités cloud réparties en 9 suites modulaires. Chaque outil est disponible dès le départ avec votre abonnement annuel unique.</value>
+    <value>Explorez l'ensemble des {0} fonctionnalités cloud réparties en {1} suites modulaires. Chaque outil est disponible dès le départ avec votre abonnement annuel unique.</value>
   </data>
   <data name="Features_Hero_Btn_Trial" xml:space="preserve">
     <value>Commencer l'essai gratuit de 14 jours</value>
   </data>
   <data name="Features_Hero_Btn_Explore" xml:space="preserve">
-    <value>Explorer les 9 suites</value>
+    <value>Explorer les {0} suites</value>
   </data>
   <data name="Features_Jump_Label" xml:space="preserve">
     <value>Accéder à la suite :</value>
@@ -1202,7 +1202,7 @@
     <value>Prêt à transformer votre gestion ?</value>
   </data>
   <data name="Features_Cta_Desc" xml:space="preserve">
-    <value>Accédez aux 37 fonctionnalités dès aujourd'hui. Aucune carte bancaire requise pour démarrer votre essai gratuit de 14 jours.</value>
+    <value>Accédez aux {0} fonctionnalités dès aujourd'hui. Aucune carte bancaire requise pour démarrer votre essai gratuit de 14 jours.</value>
   </data>
   <data name="Features_Cta_Btn_Trial" xml:space="preserve">
     <value>Démarrer l'essai gratuit de 14 jours</value>
@@ -2220,7 +2220,7 @@
     <value>Essai gratuit de 14 jours</value>
   </data>
   <data name="About_Hero_BtnSecondary" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités</value>
+    <value>Explorer les {0} fonctionnalités</value>
   </data>
   <data name="About_Metric_Capabilities" xml:space="preserve">
     <value>Fonctionnalités modulaires</value>
@@ -2253,7 +2253,7 @@
     <value>Zéro superflu</value>
   </data>
   <data name="About_Adv_1_Desc" xml:space="preserve">
-    <value>Activez ou désactivez l'une des 37 fonctionnalités à la demande avec une tarification fixe et transparente.</value>
+    <value>Activez ou désactivez l'une des {0} fonctionnalités à la demande avec une tarification fixe et transparente.</value>
   </data>
   <data name="About_Adv_2_Title" xml:space="preserve">
     <value>Souveraineté totale des données</value>
@@ -2331,7 +2331,7 @@
     <value>Commencer l'essai de 14 jours</value>
   </data>
   <data name="About_Cta_BtnSecondary" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités</value>
+    <value>Explorer les {0} fonctionnalités</value>
   </data>
   <data name="Culture_Page_Title" xml:space="preserve">
     <value>Valeurs fondamentales et culture - La voie Ozikol | Ozikol</value>
@@ -2436,7 +2436,7 @@
     <value>Commencer l'essai de 14 jours</value>
   </data>
   <data name="Culture_Cta_BtnSecondary" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités</value>
+    <value>Explorer les {0} fonctionnalités</value>
   </data>
   <data name="Leadership_Page_Title" xml:space="preserve">
     <value>Direction exécutive et gouvernance | Ozikol</value>
@@ -2541,7 +2541,7 @@
     <value>Commencer l'essai de 14 jours</value>
   </data>
   <data name="Leadership_Cta_BtnSecondary" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités</value>
+    <value>Explorer les {0} fonctionnalités</value>
   </data>
   <data name="Offices_Page_Title" xml:space="preserve">
     <value>Canaux de Contact et Demandes | Ozikol</value>
@@ -2766,7 +2766,7 @@
     <value>Postuler au réseau de partenaires</value>
   </data>
   <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
-    <value>Explorer les 37 fonctionnalités</value>
+    <value>Explorer les {0} fonctionnalités</value>
   </data>
 
   <data name="Partner_Reg_Page_Title" xml:space="preserve">
@@ -3474,7 +3474,7 @@
     <value>Connectez votre site Web directement à votre MIS, vos équipes mobiles et votre back-office sur ordinateur.</value>
   </data>
   <data name="Website_CTA_Btn_Features" xml:space="preserve">
-    <value>Explorer les 37 modules</value>
+    <value>Explorer les {0} modules</value>
   </data>
 
   <data name="Mis_Meta_Title" xml:space="preserve">

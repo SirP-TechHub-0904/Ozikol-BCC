@@ -29,10 +29,12 @@
 
     <div class="admin-card" style="margin-bottom: 24px;">
         <div class="card-header-styled">
-            <div class="card-header-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">🏢</div>
+            <div class="card-header-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">domain</span>
+            </div>
             <div>
                 <h3 class="card-header-title">Target Tenant & Allocation</h3>
-                <p class="card-header-subtitle">Assign this transaction to a sovereign tenant database and an optional active feature subscription.</p>
+                <p class="card-header-subtitle">Assign this transaction to a tenant database and an optional active feature subscription.</p>
             </div>
         </div>
 
@@ -42,7 +44,7 @@
                     Tenant Organization <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                 </label>
                 <select asp-for="Input.TenantId" asp-items="Model.TenantOptions" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;">
-                    <option value="">-- Select Sovereign Tenant Organization --</option>
+                    <option value="">-- Select Tenant Organization --</option>
                 </select>
                 <span asp-validation-for="Input.TenantId" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
             </div>

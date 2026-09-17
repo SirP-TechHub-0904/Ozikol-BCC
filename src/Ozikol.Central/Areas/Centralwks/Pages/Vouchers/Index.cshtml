@@ -1,0 +1,420 @@
+@page "/centralwks/voucher-applications"
+@model Ozikol.Central.Areas.Centralwks.Pages.Vouchers.IndexModel
+@{
+    ViewData["Title"] = "Promotional Voucher Applications";
+    Layout = "_AdminLayout";
+}
+
+<div class="admin-page-container" style="padding: 24px;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--ozikol-primary, #3b82f6);">card_giftcard</span>
+                <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Promotional Voucher Applications</h1>
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0;">
+                Review community engagement submissions, verify social media proof, and configure scoped promotional access.
+            </p>
+        </div>
+        <div>
+            <a href="/centralwks/coupons" class="btn btn-outline-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">local_offer</span>
+                <span>View All Master Coupons</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #065f46; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">check_circle</span>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #991b1b; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">error</span>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Stat Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Requests</div>
+            <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">@Model.TotalCount</div>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 18px;">
+            <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase;">Pending Review</div>
+            <div style="font-size: 26px; font-weight: 800; color: #b45309; margin-top: 4px;">@Model.PendingCount</div>
+        </div>
+        <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 12px; padding: 18px;">
+            <div style="font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase;">Approved & Issued</div>
+            <div style="font-size: 26px; font-weight: 800; color: #047857; margin-top: 4px;">@Model.ApprovedCount</div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Rejected</div>
+            <div style="font-size: 26px; font-weight: 800; color: #64748b; margin-top: 4px;">@Model.RejectedCount</div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Bar -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="/centralwks/voucher-applications?StatusFilter=Pending&SearchTerm=@Model.SearchTerm" 
+               style="padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; @(Model.StatusFilter == "Pending" ? "background: #0f172a; color: #ffffff;" : "background: #f1f5f9; color: #475569;")">
+                Pending Verification (@Model.PendingCount)
+            </a>
+            <a href="/centralwks/voucher-applications?StatusFilter=Approved&SearchTerm=@Model.SearchTerm" 
+               style="padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; @(Model.StatusFilter == "Approved" ? "background: #0f172a; color: #ffffff;" : "background: #f1f5f9; color: #475569;")">
+                Approved (@Model.ApprovedCount)
+            </a>
+            <a href="/centralwks/voucher-applications?StatusFilter=Rejected&SearchTerm=@Model.SearchTerm" 
+               style="padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; @(Model.StatusFilter == "Rejected" ? "background: #0f172a; color: #ffffff;" : "background: #f1f5f9; color: #475569;")">
+                Rejected (@Model.RejectedCount)
+            </a>
+            <a href="/centralwks/voucher-applications?StatusFilter=All&SearchTerm=@Model.SearchTerm" 
+               style="padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; @(Model.StatusFilter == "All" ? "background: #0f172a; color: #ffffff;" : "background: #f1f5f9; color: #475569;")">
+                All Applications (@Model.TotalCount)
+            </a>
+        </div>
+
+        <form method="get" style="display: flex; gap: 8px;">
+            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+            <input type="text" name="SearchTerm" value="@Model.SearchTerm" placeholder="Search reference, email, org..." style="padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; min-width: 240px;" />
+            <button type="submit" style="background: #0f172a; color: #ffffff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                Search
+            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+            {
+                <a href="/centralwks/voucher-applications?StatusFilter=@Model.StatusFilter" style="background: #f1f5f9; color: #475569; padding: 7px 12px; border-radius: 8px; font-size: 13px; text-decoration: none; display: flex; align-items: center;">
+                    Clear
+                </a>
+            }
+        </form>
+    </div>
+
+    <!-- Applications Table -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 14px 18px;">Reference</th>
+                        <th style="padding: 14px 18px;">Organization & Applicant</th>
+                        <th style="padding: 14px 18px;">Social Proofs Submitted</th>
+                        <th style="padding: 14px 18px;">Status / Code</th>
+                        <th style="padding: 14px 18px;">Applied Date</th>
+                        <th style="padding: 14px 18px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Applications.Any())
+                    {
+                        <tr>
+                            <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">
+                                <span class="material-symbols-outlined" style="font-size: 40px; margin-bottom: 8px; color: #cbd5e1;">inbox</span>
+                                <div>No promotional voucher applications found under this filter.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Applications)
+                        {
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                                <td style="padding: 16px 18px; font-weight: 800; color: #0f172a; font-family: monospace;">
+                                    @item.ReferenceNumber
+                                </td>
+                                <td style="padding: 16px 18px;">
+                                    <div style="font-weight: 800; color: #0f172a; font-size: 14px;">@item.OrganizationName</div>
+                                    <div style="color: #475569; font-size: 13px; margin-top: 2px;">@item.FullName &bull; <a href="mailto:@item.WorkEmail" style="color: #0284c7; text-decoration: none;">@item.WorkEmail</a></div>
+                                    @if (!string.IsNullOrWhiteSpace(item.WorkspaceSlug))
+                                    {
+                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                                            Target: <span style="font-family: monospace; color: #0284c7;">@item.WorkspaceSlug.ozikol.cloud</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td style="padding: 16px 18px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
+                                        @if (!string.IsNullOrWhiteSpace(item.TwitterHandle))
+                                        {
+                                            <div>
+                                                <strong style="color: #0f172a;">𝕏 Twitter:</strong>
+                                                <a href="https://x.com/@item.TwitterHandle.TrimStart('@')" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: underline;">@item.TwitterHandle</a>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.LinkedInProfile))
+                                        {
+                                            <div>
+                                                <strong style="color: #0a66c2;">LinkedIn:</strong>
+                                                <a href="@(item.LinkedInProfile.StartsWith("http") ? item.LinkedInProfile : $"https://linkedin.com/in/{item.LinkedInProfile}")" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: underline;">View Profile</a>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.YouTubeHandle))
+                                        {
+                                            <div>
+                                                <strong style="color: #dc2626;">YouTube:</strong>
+                                                <span>@item.YouTubeHandle</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.InstagramHandle))
+                                        {
+                                            <div>
+                                                <strong style="color: #c13584;">Instagram:</strong>
+                                                <a href="https://instagram.com/@item.InstagramHandle.TrimStart('@')" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: underline;">@item.InstagramHandle</a>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.SnapchatHandle))
+                                        {
+                                            <div>
+                                                <strong style="color: #eab308;">Snapchat:</strong>
+                                                <span>@item.SnapchatHandle</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.FacebookProfile))
+                                        {
+                                            <div>
+                                                <strong style="color: #1877f2;">Facebook:</strong>
+                                                <span>@item.FacebookProfile</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 18px;">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <span style="background: #fef3c7; color: #92400e; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">hourglass_empty</span>
+                                            Pending
+                                        </span>
+                                    }
+                                    else if (item.Status == "Approved")
+                                    {
+                                        <div>
+                                            <span style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                                Approved
+                                            </span>
+                                            <div style="font-family: monospace; font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 4px;">
+                                                @item.IssuedCouponCode
+                                            </div>
+                                            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 2px;">
+                                                @(item.GrantedDurationDays >= 365 ? "1 Year Access" : $"{item.GrantedDurationDays} Days") &bull; @(item.GrantedFeaturesSummary ?? "Full Suite")
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span style="background: #f1f5f9; color: #64748b; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 9999px;">
+                                            Rejected
+                                        </span>
+                                    }
+                                </td>
+                                <td style="padding: 16px 18px; color: #64748b; font-size: 13px;">
+                                    @item.CreatedAtUtc.ToString("MMM dd, yyyy")
+                                    <div style="font-size: 11px; color: #94a3b8;">@item.CreatedAtUtc.ToString("HH:mm") UTC</div>
+                                </td>
+                                <td style="padding: 16px 18px; text-align: right;">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                            <button type="button" onclick="openApprovalModal(@item.Id, '@item.ReferenceNumber', '@item.OrganizationName', '@item.WorkEmail')" 
+                                                    style="background: #10b981; color: #ffffff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+                                                <span>Configure & Approve</span>
+                                            </button>
+                                            <button type="button" onclick="openRejectModal(@item.Id, '@item.ReferenceNumber', '@item.OrganizationName')"
+                                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
+                                                Reject
+                                            </button>
+                                        </div>
+                                    }
+                                    else if (item.Status == "Approved")
+                                    {
+                                        <button type="button" onclick="navigator.clipboard.writeText('@item.IssuedCouponCode'); alert('Voucher code copied to clipboard!');"
+                                                style="background: #f8fafc; border: 1px solid #cbd5e1; color: #0f172a; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
+                                            <span>Copy Code</span>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 1: GRANULAR APPROVAL & VOUCHER CONFIGURATION            -->
+<!-- ============================================================== -->
+<div id="approvalModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); padding: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #059669;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">card_membership</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a;">Configure & Issue Promotional Voucher</h3>
+                    <div id="modalSubtitle" style="font-size: 13px; color: #64748b; margin-top: 2px;"></div>
+                </div>
+            </div>
+            <button type="button" onclick="closeApprovalModal()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 22px;">&times;</button>
+        </div>
+
+        <form method="post" asp-page-handler="Approve">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="modalApplicationId" name="applicationId" value="" />
+
+            <!-- 1. DURATION PRESETS -->
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                    Promotional Access Duration
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 10px;">
+                    <button type="button" class="duration-btn" onclick="selectDuration(30, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">1 Month (30d)</button>
+                    <button type="button" class="duration-btn" onclick="selectDuration(60, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">2 Months (60d)</button>
+                    <button type="button" class="duration-btn" onclick="selectDuration(90, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">3 Months (90d)</button>
+                    <button type="button" class="duration-btn" onclick="selectDuration(180, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">6 Months (180d)</button>
+                    <button type="button" class="duration-btn active" onclick="selectDuration(365, this)" style="padding: 8px 10px; border: 2px solid #10b981; border-radius: 8px; background: #ecfdf5; font-size: 12.5px; font-weight: 800; color: #047857; cursor: pointer;">1 Full Year (365d)</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12.5px; color: #64748b;">Or custom days:</span>
+                    <input type="number" id="durationDaysInput" name="durationDays" value="365" min="1" max="1825" style="width: 100px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 700;" />
+                    <span style="font-size: 12px; color: #94a3b8;">days</span>
+                </div>
+            </div>
+
+            <!-- 2. FEATURE SCOPE SELECTION -->
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                    Feature Entitlement Coverage
+                </label>
+                <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #0f172a; cursor: pointer;">
+                        <input type="radio" name="scopeType" value="all" checked onchange="toggleScope('all')" style="accent-color: #10b981;" />
+                        <span>All Platform Features (Full Suite)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #0f172a; cursor: pointer;">
+                        <input type="radio" name="scopeType" value="selective" onchange="toggleScope('selective')" style="accent-color: #10b981;" />
+                        <span>Selective Feature Checklist</span>
+                    </label>
+                </div>
+
+                <!-- Selective Checklist Box -->
+                <div id="selectiveFeaturesBox" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px; max-height: 220px; overflow-y: auto;">
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 8px; font-weight: 600;">Check specific features to include in this voucher:</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                        @foreach (var feat in Model.AvailableFeatures)
+                        {
+                            <label style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 7px 10px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b; cursor: pointer;">
+                                <input type="checkbox" name="selectedFeatureIds" value="@feat.Id" style="accent-color: var(--ozikol-primary);" />
+                                <span>@feat.Name</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. INTERNAL ADMIN NOTES -->
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                    Review Notes / Justification (Optional)
+                </label>
+                <textarea name="adminNotes" rows="2" placeholder="e.g. Verified X and LinkedIn accounts. Granted 100% full suite access." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1.5px solid #f1f5f9; padding-top: 16px;">
+                <button type="button" onclick="closeApprovalModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #475569; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 10px 24px; border: none; border-radius: 8px; background: #10b981; color: #ffffff; font-weight: 800; font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+                    <span>Issue 100% Voucher & Email Applicant</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 2: REJECT APPLICATION MODAL                             -->
+<!-- ============================================================== -->
+<div id="rejectModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); padding: 24px;">
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: #0f172a;">Reject Application</h3>
+        <p id="rejectSubtitle" style="font-size: 13.5px; color: #64748b; margin: 0 0 16px 0;"></p>
+
+        <form method="post" asp-page-handler="Reject">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="rejectApplicationId" name="applicationId" value="" />
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Reason for Rejection (Internal Note)</label>
+                <textarea name="reason" rows="3" placeholder="e.g. Social media profiles were invalid or could not be verified." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeRejectModal()" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 8px 18px; border: none; border-radius: 6px; background: #ef4444; color: #ffffff; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Confirm Rejection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openApprovalModal(appId, refNum, orgName, email) {
+        document.getElementById('modalApplicationId').value = appId;
+        document.getElementById('modalSubtitle').innerText = refNum + ' • ' + orgName + ' (' + email + ')';
+        document.getElementById('approvalModal').style.display = 'flex';
+    }
+
+    function closeApprovalModal() {
+        document.getElementById('approvalModal').style.display = 'none';
+    }
+
+    function selectDuration(days, btn) {
+        document.getElementById('durationDaysInput').value = days;
+        document.querySelectorAll('.duration-btn').forEach(b => {
+            b.style.borderColor = '#cbd5e1';
+            b.style.background = '#ffffff';
+            b.style.color = '#334155';
+            b.style.fontWeight = '700';
+        });
+        btn.style.borderColor = '#10b981';
+        btn.style.background = '#ecfdf5';
+        btn.style.color = '#047857';
+        btn.style.fontWeight = '800';
+    }
+
+    function toggleScope(scope) {
+        const box = document.getElementById('selectiveFeaturesBox');
+        if (scope === 'selective') {
+            box.style.display = 'block';
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function openRejectModal(appId, refNum, orgName) {
+        document.getElementById('rejectApplicationId').value = appId;
+        document.getElementById('rejectSubtitle').innerText = 'Rejecting #' + refNum + ' for ' + orgName;
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+</script>

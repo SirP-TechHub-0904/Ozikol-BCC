@@ -24,6 +24,8 @@ public interface ICentralEmailService
     Task SendJobApplicationDualAsync(MasterJobApplication application, string openingTitle, CancellationToken cancellationToken = default);
     Task SendExamBookingDualAsync(string candidateName, string candidateEmail, string examTitle, string bookingRef, CancellationToken cancellationToken = default);
     Task SendNewsletterSubscriptionAsync(string email, CancellationToken cancellationToken = default);
+    Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default);
+    Task<bool> SendVoucherApprovalEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
@@ -135,6 +137,9 @@ public class CentralEmailService : ICentralEmailService
     {
         var subject = $"Welcome to Ozikol: Sovereign Workspace for {organizationName} is Ready!";
         var loginUrl = $"https://{domainUrl}/auth/login";
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var voucherUrl = $"{baseUrl.TrimEnd('/')}/en/vouchers/apply";
+
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
@@ -158,9 +163,23 @@ public class CentralEmailService : ICentralEmailService
                         <div style='font-size: 14px; color: #0f172a; margin-top: 2px; font-family: monospace;'>{toEmail}</div>
                     </div>
                 </div>
-                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 24px; line-height: 1.5;'>
+                <div style='background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 20px; line-height: 1.5;'>
                     <strong>Important Security Note:</strong> For maximum security and independence, client organizations log in directly through their dedicated website link. Bookmark your portal URL for all future team access.
                 </div>
+                
+                <!-- Promotional 1-Year Free Voucher Callout -->
+                <div style='background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px; padding: 18px; margin-bottom: 24px; text-align: center;'>
+                    <div style='font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 4px;'>
+                        Want 100% Free Access for 1 Full Year?
+                    </div>
+                    <p style='color: #b45309; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;'>
+                        Complete our community eligibility verification tasks and receive a 100% discount promotional voucher for your workspace.
+                    </p>
+                    <a href='{voucherUrl}' style='display: inline-block; background: #d97706; color: #ffffff; padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; text-decoration: none;'>
+                        Apply for Free 1-Year Voucher &rarr;
+                    </a>
+                </div>
+
                 <div style='text-align: center;'>
                     <a href='{loginUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;'>Launch Command Center &rarr;</a>
                 </div>
@@ -474,6 +493,132 @@ public class CentralEmailService : ICentralEmailService
             </div>
         ";
         await SendEmailAsync(email, subject, body, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Dispatches dual confirmation emails when a promotional voucher application is submitted:
+    /// a branded receipt to the applicant and notifications to the central partner/support administrator pool.
+    /// </summary>
+    /// <param name="app">The submitted voucher application entity.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    public async Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetPlatformSettingAsync(cancellationToken);
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+
+        // 1. Applicant Confirmation Receipt
+        var applicantSubject = $"[Voucher Application #{app.ReferenceNumber}] We have received your request for {app.OrganizationName}";
+        var applicantBody = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='margin-bottom: 24px;'>
+                    <span style='background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;'>APPLICATION #{app.ReferenceNumber}</span>
+                    <h2 style='color: #0f172a; margin: 12px 0 6px 0; font-size: 22px; font-weight: 800;'>Promotional Voucher Request Received</h2>
+                    <p style='color: #64748b; font-size: 14px; margin: 0;'>Hello {app.FullName}, thank you for completing our community engagement eligibility steps.</p>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px;'>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Organization:</strong> <div style='color: #0f172a; font-size: 15px; font-weight: 700;'>{app.OrganizationName}</div></div>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Target Workspace:</strong> <div style='color: #0284c7; font-size: 14px; font-weight: 600;'>{app.WorkspaceSlug}.ozikol.cloud</div></div>
+                    <div style='margin-bottom: 10px;'><strong style='color: #475569; font-size: 12px; text-transform: uppercase;'>Status:</strong> <div style='color: #d97706; font-size: 14px; font-weight: 700;'>Under Verification Review</div></div>
+                </div>
+                <p style='color: #334155; font-size: 14px; line-height: 1.6;'>
+                    Our partnership team is verifying your submitted social media handles. Once approved, you will receive an official email containing your unique 100% discount promotional voucher code.
+                </p>
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
+                <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
+                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                </p>
+            </div>
+        ";
+
+        await SendEmailAsync(app.WorkEmail, applicantSubject, applicantBody, null, cancellationToken);
+
+        // 2. Admin Pool Notification
+        if (settings.EnableAdminNotifications)
+        {
+            var adminPool = ParseEmailPool(settings.PartnerAdminEmails ?? settings.SupportAdminEmails);
+            if (adminPool.Any())
+            {
+                var adminSubject = $"[New Voucher Application] #{app.ReferenceNumber} - {app.OrganizationName}";
+                var adminUrl = $"{baseUrl.TrimEnd('/')}/centralwks/voucher-applications";
+                var adminBody = $@"
+                    <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                        <h3 style='margin: 0 0 16px 0; font-size: 18px; color: #0f172a;'>New 1-Year Voucher Application</h3>
+                        <p style='font-size: 14px; color: #334155; margin: 0 0 16px 0;'>A new organization has submitted proof of social engagement for voucher eligibility.</p>
+                        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.6;'>
+                            <div><strong>Reference:</strong> {app.ReferenceNumber}</div>
+                            <div><strong>Applicant:</strong> {app.FullName} ({app.WorkEmail})</div>
+                            <div><strong>Organization:</strong> {app.OrganizationName}</div>
+                            <div><strong>X / Twitter:</strong> {app.TwitterHandle ?? "N/A"}</div>
+                            <div><strong>LinkedIn:</strong> {app.LinkedInProfile ?? "N/A"}</div>
+                            <div><strong>YouTube:</strong> {app.YouTubeHandle ?? "N/A"}</div>
+                            <div><strong>Snapchat:</strong> {app.SnapchatHandle ?? "N/A"}</div>
+                        </div>
+                        <div style='margin-top: 20px; text-align: center;'>
+                            <a href='{adminUrl}' style='display: inline-block; background: #0f172a; color: #ffffff; padding: 10px 22px; border-radius: 6px; font-size: 13.5px; font-weight: 700; text-decoration: none;'>Review & Issue Voucher &rarr;</a>
+                        </div>
+                    </div>
+                ";
+
+                await SendToAdminPoolAsync(adminPool, adminSubject, adminBody, cancellationToken);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dispatches the official voucher approval email containing the unique coupon code, duration, granted feature scope, and 1-click activation link.
+    /// </summary>
+    /// <param name="app">The approved voucher application.</param>
+    /// <param name="couponCode">The generated promo coupon code.</param>
+    /// <param name="durationDays">Number of access days granted (e.g. 365).</param>
+    /// <param name="featuresSummary">Human-readable summary of features included.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if delivered; false otherwise.</returns>
+    public async Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetPlatformSettingAsync(cancellationToken);
+        var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
+        var activationUrl = $"{baseUrl.TrimEnd('/')}/auth/get-started?coupon={Uri.EscapeDataString(couponCode)}";
+
+        var durationLabel = durationDays >= 365 ? "1 Full Year (365 Days)" : $"{durationDays} Days";
+        var featuresLabel = string.IsNullOrWhiteSpace(featuresSummary) ? "All Platform Capabilities (Full Suite)" : featuresSummary;
+
+        var subject = $"Congratulations! Your Ozikol Promotional Voucher [{couponCode}] is Ready!";
+        var body = $@"
+            <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 14px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;'>VOUCHER APPROVED</span>
+                    <h2 style='color: #0f172a; margin: 12px 0 6px 0; font-size: 24px; font-weight: 800;'>Your Promotional Voucher is Ready!</h2>
+                    <p style='color: #64748b; font-size: 14px; margin: 0;'>Congratulations {app.FullName}! Your community verification has been approved for <strong>{app.OrganizationName}</strong>.</p>
+                </div>
+
+                <div style='background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #10b981; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;'>
+                    <div style='font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 1px;'>Your 100% Free Voucher Code:</div>
+                    <div style='font-size: 32px; font-weight: 900; color: #047857; letter-spacing: 4px; font-family: monospace; padding: 10px 0;'>{couponCode}</div>
+                    <div style='display: flex; justify-content: center; gap: 16px; margin-top: 10px; font-size: 13px; color: #065f46; font-weight: 600; flex-wrap: wrap;'>
+                        <span>⏱ <strong>Duration:</strong> {durationLabel}</span>
+                        <span>✨ <strong>Scope:</strong> {featuresLabel}</span>
+                    </div>
+                </div>
+
+                <div style='text-align: center; margin-bottom: 28px;'>
+                    <a href='{activationUrl}' style='display: inline-block; background: #10b981; color: #ffffff; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);'>
+                        Activate Workspace with Voucher &rarr;
+                    </a>
+                    <div style='font-size: 12px; color: #64748b; margin-top: 8px;'>Clicking will open setup with voucher code pre-applied.</div>
+                </div>
+
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; color: #475569; line-height: 1.5;'>
+                    <strong>How to Redeem:</strong> If you are setting up manually, enter code <code>{couponCode}</code> at Step 2 (Features & Promo) of the Get Started onboarding flow. The total will automatically discount to 100% Free.
+                </div>
+
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />
+                <p style='color: #94a3b8; font-size: 12px; text-align: center; margin: 0;'>
+                    {settings.PlatformName} Cloud Security &bull; Sovereign Business Operating Systems
+                </p>
+            </div>
+        ";
+
+        return await SendEmailAsync(app.WorkEmail, subject, body, null, cancellationToken);
     }
 
     private async Task<MasterPlatformSetting> GetPlatformSettingAsync(CancellationToken cancellationToken)

@@ -2,8 +2,7 @@
 @model Ozikol.Central.Pages.FeaturesModel
 @{
     ViewData["Title"] = SharedLocalizer["Features_Meta_Title"].Value;
-    ViewData["MetaDescription"] = SharedLocalizer["Features_Meta_Desc"].Value;
-    ViewData["MetaDescription"] = "Explore all 37 modular cloud capabilities across 9 integrated suites on Ozikol. Included in one simple annual subscription.";
+    ViewData["MetaDescription"] = SharedLocalizer["Features_Meta_Desc", Model.TotalFeaturesCount, Model.TotalSuitesCount].Value;
 }
 
 <div class="oz-features-page">
@@ -16,10 +15,10 @@
                     <span>@SharedLocalizer["Features_Hero_Badge"]</span>
                 </div>
                 <h1 class="oz-pricing-hero-title">
-                    @SharedLocalizer["Features_Hero_Title"]
+                    @SharedLocalizer["Features_Hero_Title", Model.TotalFeaturesCount, Model.TotalSuitesCount]
                 </h1>
                 <p class="oz-pricing-hero-desc">
-                    @SharedLocalizer["Features_Hero_Desc"]
+                    @SharedLocalizer["Features_Hero_Desc", Model.TotalFeaturesCount, Model.TotalSuitesCount]
                 </p>
             </div>
 

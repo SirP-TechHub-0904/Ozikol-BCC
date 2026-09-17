@@ -2,28 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
-    /// PageModel displaying capability diagnostics, pricing matrix, and active subscribing tenant fleet instances.
+    /// PageModel displaying capability diagnostics, intelligent monthly/yearly discount calculations,
+    /// and location-detected currency pricing breakdown.
     /// </summary>
     public class DetailsModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly ICurrencyService _currencyService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
-        public DetailsModel(MasterCatalogDbContext dbContext)
+        /// <param name="currencyService">Central platform currency engine service.</param>
+        public DetailsModel(MasterCatalogDbContext dbContext, ICurrencyService currencyService)
         {
-            _dbContext = dbContext;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
         }
 
         /// <summary>
@@ -38,14 +43,81 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public MasterFeatureCatalog Feature { get; set; } = null!;
 
         /// <summary>
-        /// All tenant subscriptions for this capability.
+        /// The resolved currency ISO code determined by user location or preferences.
         /// </summary>
-        public List<MasterTenantFeatureSubscription> Subscriptions { get; set; } = new();
+        public string ResolvedCurrency { get; private set; } = "USD";
 
         /// <summary>
-        /// Handles HTTP GET requests to retrieve capability details and subscribing tenants.
+        /// Metadata descriptor for the active currency.
         /// </summary>
-        public async Task<IActionResult> OnGetAsync()
+        public CurrencyInfo ActiveCurrency { get; private set; } = default!;
+
+        /// <summary>
+        /// Returns true if the capability has no subscription price and no metered usage.
+        /// </summary>
+        public bool IsFreeIncluded => Feature.MonthlyPrice == 0 && Feature.YearlyPrice == 0 && !Feature.IsMetered;
+
+        /// <summary>
+        /// Returns true if the capability has a recurring monthly price.
+        /// </summary>
+        public bool IsMonthlyBilled => Feature.MonthlyPrice > 0;
+
+        /// <summary>
+        /// Formatted monthly rate in the location-resolved currency.
+        /// </summary>
+        public string FormattedMonthlyPrice => _currencyService.FormatUsdConverted(Feature.MonthlyPrice, ResolvedCurrency);
+
+        /// <summary>
+        /// Formatted quarterly rate in the location-resolved currency.
+        /// </summary>
+        public string FormattedQuarterlyPrice => _currencyService.FormatUsdConverted(Feature.QuarterlyPrice, ResolvedCurrency);
+
+        /// <summary>
+        /// Formatted yearly rate in the location-resolved currency.
+        /// </summary>
+        public string FormattedYearlyPrice => _currencyService.FormatUsdConverted(Feature.YearlyPrice, ResolvedCurrency);
+
+        /// <summary>
+        /// Formatted undiscounted annualized price (Monthly * 12).
+        /// </summary>
+        public string FormattedFullAnnualRate => _currencyService.FormatUsdConverted(Feature.MonthlyPrice * 12m, ResolvedCurrency);
+
+        /// <summary>
+        /// Formatted annual savings amount when billed yearly.
+        /// </summary>
+        public string FormattedAnnualSavings
+        {
+            get
+            {
+                var annualFull = Feature.MonthlyPrice * 12m;
+                var savings = Math.Max(0, annualFull - Feature.YearlyPrice);
+                return _currencyService.FormatUsdConverted(savings, ResolvedCurrency);
+            }
+        }
+
+        /// <summary>
+        /// Calculated discount percentage for annual billing vs 12 monthly payments.
+        /// </summary>
+        public int AnnualDiscountPercentage
+        {
+            get
+            {
+                if (Feature.MonthlyPrice <= 0) return 0;
+                var annualFull = Feature.MonthlyPrice * 12m;
+                if (annualFull <= 0 || Feature.YearlyPrice >= annualFull) return 0;
+                return (int)Math.Round((1.0m - (Feature.YearlyPrice / annualFull)) * 100m);
+            }
+        }
+
+        /// <summary>
+        /// Formatted metered unit rate in the location-resolved currency.
+        /// </summary>
+        public string FormattedMeterUnitPrice => _currencyService.FormatUsdConverted(Feature.MeterUnitPrice, ResolvedCurrency, compact: false);
+
+        /// <summary>
+        /// Handles HTTP GET requests to retrieve capability details.
+        /// </summary>
+        public async Task<IActionResult> OnGetAsync([FromQuery] string? currency)
         {
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(Id);
             if (feature == null)
@@ -56,12 +128,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             Feature = feature;
 
-            Subscriptions = await _dbContext.MasterTenantFeatureSubscriptions
-                .Where(s => s.MasterFeatureCatalogId == Id)
-                .Include(s => s.MasterTenantCatalog)
-                .OrderByDescending(s => s.IsActive)
-                .ThenBy(s => s.ExpiresAtUtc)
-                .ToListAsync();
+            // Resolve currency based on user location (Query > Cookie > GeoIP > Default)
+            ResolvedCurrency = _currencyService.ResolveCurrencyCodeFromRequest(HttpContext, currency);
+            ActiveCurrency = _currencyService.ResolveCurrency(ResolvedCurrency);
 
             return Page();
         }
@@ -94,6 +163,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             });
 
             await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
             TempData["Success"] = $"Feature status updated to {(feature.IsActive ? "Active" : "Inactive")}.";
 
             return RedirectToPage(new { id = Id });

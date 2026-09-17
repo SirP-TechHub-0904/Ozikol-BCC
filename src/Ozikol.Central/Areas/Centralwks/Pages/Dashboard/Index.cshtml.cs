@@ -28,7 +28,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
         }
 
         /// <summary>
-        /// Total number of provisioned sovereign tenant databases in the platform fleet.
+        /// Total number of provisioned tenant databases in the platform fleet.
         /// </summary>
         public int TotalTenants { get; set; }
 

@@ -26,7 +26,68 @@
 
 <form method="post">
     <div style="display: flex; flex-direction: column; gap: 24px; max-width: 960px;">
-        @* ── Section 1: Branding & Public Contact ── *@
+        @* ── Section 1: Onboarding, Free Trial & Currency ── *@
+        <div class="admin-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
+                <span style="font-size: 20px;">⏱️</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 600; color: var(--admin-text); margin: 0;">Workspace Onboarding &amp; Free Trial Duration</h2>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Configure the default trial length granted to new customer workspaces and fallback platform currency.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label asp-for="Input.DefaultTrialDays" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Default Free Trial (Days) <span style="color: #f87171;">*</span>
+                    </label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input id="trialDaysInput" asp-for="Input.DefaultTrialDays" type="number" min="1" max="365" class="form-control" 
+                               style="width: 140px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 14px; font-weight: 600;" />
+                        <span style="font-size: 13px; color: var(--admin-text-muted);">days</span>
+                    </div>
+                    <span asp-validation-for="Input.DefaultTrialDays" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+
+                    <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button type="button" onclick="document.getElementById('trialDaysInput').value = '14'" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px; border-radius: 6px;">14 Days</button>
+                        <button type="button" onclick="document.getElementById('trialDaysInput').value = '30'" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px; border-radius: 6px;">30 Days</button>
+                        <button type="button" onclick="document.getElementById('trialDaysInput').value = '40'" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px; border-radius: 6px;">40 Days</button>
+                        <button type="button" onclick="document.getElementById('trialDaysInput').value = '60'" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px; border-radius: 6px;">60 Days</button>
+                        <button type="button" onclick="document.getElementById('trialDaysInput').value = '90'" class="btn-admin btn-admin-secondary" style="padding: 3px 10px; font-size: 11px; border-radius: 6px;">90 Days</button>
+                    </div>
+
+                    <p style="font-size: 11px; color: var(--admin-text-muted); margin: 8px 0 0 0; line-height: 1.4;">
+                        Applied automatically when a customer registers at <code>/en/auth/get-started</code> without a coupon code. Applying a promotional coupon will override this with the coupon's specific trial days.
+                    </p>
+                </div>
+
+                <div>
+                    <label asp-for="Input.DefaultCurrencyCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                        Default Fallback Currency <span style="color: #f87171;">*</span>
+                    </label>
+                    <select asp-for="Input.DefaultCurrencyCode" class="form-control" 
+                            style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                        <option value="USD">USD ($) - US Dollar</option>
+                        <option value="NGN">NGN (₦) - Nigerian Naira</option>
+                        <option value="GBP">GBP (£) - British Pound</option>
+                        <option value="EUR">EUR (€) - Euro</option>
+                        <option value="GHS">GHS (GH₵) - Ghanaian Cedi</option>
+                        <option value="KES">KES (KSh) - Kenyan Shilling</option>
+                        <option value="ZAR">ZAR (R) - South African Rand</option>
+                        <option value="CAD">CAD (CA$) - Canadian Dollar</option>
+                        <option value="AED">AED - UAE Dirham</option>
+                        <option value="INR">INR (₹) - Indian Rupee</option>
+                    </select>
+                    <span asp-validation-for="Input.DefaultCurrencyCode" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
+
+                    <p style="font-size: 11px; color: var(--admin-text-muted); margin: 8px 0 0 0; line-height: 1.4;">
+                        Fallback regional currency when visitor geolocation is indeterminate. Pricing amounts are dynamically calculated from the sum of active modular features.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        @* ── Section 2: Branding & Public Contact ── *@
         <div class="admin-card" style="padding: 24px;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-card-border);">
                 <span style="font-size: 20px;">🌐</span>

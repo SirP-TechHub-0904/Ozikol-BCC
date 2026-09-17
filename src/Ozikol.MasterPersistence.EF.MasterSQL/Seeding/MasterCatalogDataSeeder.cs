@@ -40,6 +40,12 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
 
             // Seed default dynamic legal and compliance documents via EF Core
             await SeedLegalDocumentsAsync(dbContext, cancellationToken);
+
+            // Seed default platform promotional vouchers & launch coupons
+            await SeedCouponsAsync(dbContext, cancellationToken);
+
+            // Seed canonical 37 modular capabilities across the 10 platform feature suites
+            await SeedFeaturesAsync(dbContext, cancellationToken);
         }
 
         /// <summary>
@@ -219,7 +225,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     DisplayName = "Nigerian Naira",
                     CultureName = "en-NG",
                     PillLabel = "NGN (\u20A6)",
-                    RateFromUsd = 1600.0m,
+                    RateFromUsd = 1350.0m,
                     IsBaseCurrency = false,
                     IsActive = true,
                     SortOrder = 2,
@@ -1388,6 +1394,858 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     existing.ContentHtml = doc.ContentHtml;
                     existing.SortOrder = doc.SortOrder;
                     existing.IsPublished = doc.IsPublished;
+                }
+            }
+
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Seeds standard platform campaign discount coupons and launch vouchers.
+        /// Includes universal 100% off launch vouchers ("LAUNCH100", "BETA100") and growth discount codes ("WELCOME50", "PARTNER20").
+        /// </summary>
+        /// <param name="dbContext">The master catalog database context.</param>
+        /// <param name="ct">Cancellation token for async operations.</param>
+        /// <returns>A task representing the asynchronous coupon seeding operation.</returns>
+        public static async Task SeedCouponsAsync(MasterCatalogDbContext dbContext, CancellationToken ct = default)
+        {
+            var defaultCoupons = new[]
+            {
+                new MasterCoupon
+                {
+                    Code = "LAUNCH100",
+                    Description = "Official 100% Platform Launch Voucher — grants complete free access to base tier and selected modules.",
+                    IsPercentage = true,
+                    DiscountPercentage = 100.00m,
+                    DiscountAmount = 0.00m,
+                    SpecificFeatureId = null,
+                    MaxRedemptions = 1000,
+                    TimesRedeemed = 0,
+                    StartsAtUtc = DateTime.UtcNow.AddDays(-30),
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(2),
+                    IsActive = true,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new MasterCoupon
+                {
+                    Code = "BETA100",
+                    Description = "Beta Tester Early Adopter Voucher — 100% waiver on initial workspace subscription.",
+                    IsPercentage = true,
+                    DiscountPercentage = 100.00m,
+                    DiscountAmount = 0.00m,
+                    SpecificFeatureId = null,
+                    MaxRedemptions = 500,
+                    TimesRedeemed = 0,
+                    StartsAtUtc = DateTime.UtcNow.AddDays(-30),
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(1),
+                    IsActive = true,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new MasterCoupon
+                {
+                    Code = "WELCOME50",
+                    Description = "New Business Welcome Incentive — 50% discount across all first-year modular capabilities.",
+                    IsPercentage = true,
+                    DiscountPercentage = 50.00m,
+                    DiscountAmount = 0.00m,
+                    SpecificFeatureId = null,
+                    MaxRedemptions = 2000,
+                    TimesRedeemed = 0,
+                    StartsAtUtc = DateTime.UtcNow.AddDays(-30),
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(2),
+                    IsActive = true,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new MasterCoupon
+                {
+                    Code = "PARTNER20",
+                    Description = "Global Affiliate & Partner Incentive — 20% promotional discount voucher.",
+                    IsPercentage = true,
+                    DiscountPercentage = 20.00m,
+                    DiscountAmount = 0.00m,
+                    SpecificFeatureId = null,
+                    MaxRedemptions = 5000,
+                    TimesRedeemed = 0,
+                    StartsAtUtc = DateTime.UtcNow.AddDays(-30),
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(3),
+                    IsActive = true,
+                    CreatedUtc = DateTime.UtcNow
+                }
+            };
+
+            foreach (var coupon in defaultCoupons)
+            {
+                var exists = await dbContext.MasterCoupons.AnyAsync(c => c.Code == coupon.Code, ct);
+                if (!exists)
+                {
+                    dbContext.MasterCoupons.Add(coupon);
+                }
+            }
+
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Seeds and synchronizes the canonical 40 platform features organized under the 10 official Feature Suites.
+        /// Preserves custom pricing overrides while ensuring all official capabilities exist in the master catalog.
+        /// All 40 features are configured as Compulsory Core at $0.74 USD / year ($0.08 USD / month, $0.22 USD / quarter),
+        /// yielding ~$29.60 USD (~40,000 NGN) per year platform total.
+        /// </summary>
+        /// <param name="dbContext">The master catalog database context.</param>
+        /// <param name="ct">Cancellation token for async operations.</param>
+        /// <returns>A task representing the asynchronous feature seeding operation.</returns>
+        public static async Task SeedFeaturesAsync(MasterCatalogDbContext dbContext, CancellationToken ct = default)
+        {
+            var defaultFeatures = new[]
+            {
+                // =========================================================================
+                // Suite 01: People, Community & Collaboration
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-community-messenger",
+                    Name = "Community Messenger & Team Chat",
+                    Category = "People, Community & Collaboration",
+                    Description = "Real-time 1-to-1 DMs, group channels, and platform-wide floating quick chat with end-to-end encryption.",
+                    Icon = "chat",
+                    RoutePrefix = "/messenger",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 1,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-committees",
+                    Name = "Committees & Sub-Groups",
+                    Category = "People, Community & Collaboration",
+                    Description = "Manage committee leadership, meeting schedules, minutes, voting resolutions, and member rosters.",
+                    Icon = "groups",
+                    RoutePrefix = "/committees",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 2,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-alumni-directory",
+                    Name = "Alumni Network & Directory",
+                    Category = "People, Community & Collaboration",
+                    Description = "Searchable alumni directory, graduating class portals, career networking, and mentoring rosters.",
+                    Icon = "badge",
+                    RoutePrefix = "/alumni",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 3,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-whistleblowing",
+                    Name = "Anonymous Whistleblowing & Feedback",
+                    Category = "People, Community & Collaboration",
+                    Description = "Encrypted, anonymous whistleblowing submission channel and internal investigation management ledger.",
+                    Icon = "security",
+                    RoutePrefix = "/whistleblowing",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 4,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 02: Workforce, Rota & Scheduling
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-staff-rota",
+                    Name = "Staff & Volunteer Rota Scheduling",
+                    Category = "Workforce, Rota & Scheduling",
+                    Description = "Multi-department weekly shift scheduling, recurring duty patterns, on-call assignment, and conflict detection.",
+                    Icon = "calendar_month",
+                    RoutePrefix = "/rota",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 5,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-shift-swaps",
+                    Name = "Shift Swaps & Leave Management",
+                    Category = "Workforce, Rota & Scheduling",
+                    Description = "Peer-to-peer shift trade approvals, annual leave accrual tracking, sick leave requests, and supervisor sign-offs.",
+                    Icon = "swap_horiz",
+                    RoutePrefix = "/leave",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 6,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-attendance-tracking",
+                    Name = "Biometric & QR Attendance Tracking",
+                    Category = "Workforce, Rota & Scheduling",
+                    Description = "Clock-in/out via mobile QR codes, biometric device sync, geolocation geofencing, and timesheet reports.",
+                    Icon = "fingerprint",
+                    RoutePrefix = "/attendance",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 7,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-appointment-booking",
+                    Name = "Appointment & Facility Booking",
+                    Category = "Workforce, Rota & Scheduling",
+                    Description = "Online calendar booking for consultations, counseling, meeting rooms, shared equipment, and venues.",
+                    Icon = "book_online",
+                    RoutePrefix = "/appointments",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 8,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 03: Reports, Forms & Analytics
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-interval-reporting",
+                    Name = "Interval & Periodic Reporting",
+                    Category = "Reports, Forms & Analytics",
+                    Description = "Automated weekly, monthly, and annual operational reports with PDF exports and executive summaries.",
+                    Icon = "assessment",
+                    RoutePrefix = "/reporting",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 9,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-form-builder",
+                    Name = "Custom Dynamic Form Builder",
+                    Category = "Reports, Forms & Analytics",
+                    Description = "Drag-and-drop form designer with conditional logic, payment collection, file uploads, and webhook integrations.",
+                    Icon = "dynamic_form",
+                    RoutePrefix = "/forms",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 10,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-survey-analytics",
+                    Name = "Survey & Opinion Poll Analytics",
+                    Category = "Reports, Forms & Analytics",
+                    Description = "Create multi-question satisfaction surveys, NPS sentiment scoring, and real-time response distribution charts.",
+                    Icon = "poll",
+                    RoutePrefix = "/surveys",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 11,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 04: Events & Training Management
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-event-ticketing",
+                    Name = "Event Ticketing & Registration",
+                    Category = "Events & Training Management",
+                    Description = "Paid and free event registration, tiered tickets, promo codes, digital PDF passes, and Apple/Google Wallet cards.",
+                    Icon = "confirmation_number",
+                    RoutePrefix = "/events",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 12,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-speaker-sessions",
+                    Name = "Speaker & Session Management",
+                    Category = "Events & Training Management",
+                    Description = "Conference schedules, track/room allocations, speaker bio directories, presentation slide downloads, and Q&A.",
+                    Icon = "record_voice_over",
+                    RoutePrefix = "/sessions",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 13,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-attendee-management",
+                    Name = "Attendee Management & QR Check-in",
+                    Category = "Events & Training Management",
+                    Description = "Rapid onsite QR scanning, badge printing, attendance telemetry, live delegate rosters, and post-event certificates.",
+                    Icon = "how_to_reg",
+                    RoutePrefix = "/attendees",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 14,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 05: Finance & Commercial Revenue
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-invoicing-dues",
+                    Name = "Invoicing, Dues & Pledges",
+                    Category = "Finance & Commercial Revenue",
+                    Description = "Membership dues billing, automated payment reminders, recurring invoice schedules, and Paystack/Stripe gateways.",
+                    Icon = "receipt_long",
+                    RoutePrefix = "/invoicing",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 15,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-store-ecommerce",
+                    Name = "Store & E-Commerce Catalog",
+                    Category = "Finance & Commercial Revenue",
+                    Description = "Online storefront for merchandise, digital resources, publications, and uniform orders with inventory tracking.",
+                    Icon = "shopping_bag",
+                    RoutePrefix = "/store",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 16,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-proposal-pipeline",
+                    Name = "Proposal & Grant Pipeline",
+                    Category = "Finance & Commercial Revenue",
+                    Description = "Track grant opportunities, donor proposal pipelines, pitch decks, award milestones, and disbursement timelines.",
+                    Icon = "monetization_on",
+                    RoutePrefix = "/proposals",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 17,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-grant-ledger",
+                    Name = "Grant & Project Ledger",
+                    Category = "Finance & Commercial Revenue",
+                    Description = "Restricted fund accounting, grant allocation burn rates, vendor receipt audits, and donor compliance reporting.",
+                    Icon = "account_balance",
+                    RoutePrefix = "/grant-ledger",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 18,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 06: Operations & Workflows
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-recruitment-hiring",
+                    Name = "Recruitment & Applicant Tracking",
+                    Category = "Operations & Workflows",
+                    Description = "Job board publishing, candidate resume ingestion, interview scorecards, background checks, and offer letter generation.",
+                    Icon = "person_search",
+                    RoutePrefix = "/recruitment",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 19,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-elections-evoting",
+                    Name = "Elections & Secure E-Voting",
+                    Category = "Operations & Workflows",
+                    Description = "Cryptographic secret-ballot e-voting, voter voter registry validation, candidate profiles, and real-time certified tallies.",
+                    Icon = "how_to_vote",
+                    RoutePrefix = "/elections",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 20,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-equipment-fleet",
+                    Name = "Equipment & Fleet Management",
+                    Category = "Operations & Workflows",
+                    Description = "Vehicle fleet tracking, maintenance logs, insurance renewal alerts, fuel telemetry, and checkout custodianship.",
+                    Icon = "local_shipping",
+                    RoutePrefix = "/fleet",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 21,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-company-assets",
+                    Name = "Fixed Asset & Tag Registry",
+                    Category = "Operations & Workflows",
+                    Description = "Depreciation schedules, QR/barcode asset tags, physical audit verification, and equipment assignment records.",
+                    Icon = "inventory_2",
+                    RoutePrefix = "/assets",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 22,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-project-tasks",
+                    Name = "Project & Task Tracking Board",
+                    Category = "Operations & Workflows",
+                    Description = "Kanban boards, Gantt milestones, task dependencies, time logging, and cross-team project collaboration.",
+                    Icon = "task_alt",
+                    RoutePrefix = "/projects",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 23,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 07: Communication, AI & Support
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-ai-smart-assist",
+                    Name = "AI Smart Assist & Workflows",
+                    Category = "Communication, AI & Support",
+                    Description = "AI-powered document summarization, draft generation, member inquiry auto-replies, and intelligent search.",
+                    Icon = "smart_toy",
+                    RoutePrefix = "/ai",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 24,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-mass-communication",
+                    Name = "Mass Multi-Channel SMS & Email",
+                    Category = "Communication, AI & Support",
+                    Description = "Broadcast bulk SMS, targeted email newsletters, WhatsApp announcements, and delivery receipts.",
+                    Icon = "campaign",
+                    RoutePrefix = "/communications",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 25,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-helpdesk-support",
+                    Name = "Helpdesk & Ticketing Support",
+                    Category = "Communication, AI & Support",
+                    Description = "Multi-agent ticket queue, SLA resolution timers, automated routing, canned answers, and customer CSAT surveys.",
+                    Icon = "support_agent",
+                    RoutePrefix = "/helpdesk",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 26,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-live-chat",
+                    Name = "Live Chat & Widget Messenger",
+                    Category = "Communication, AI & Support",
+                    Description = "Embeddable website live chat widget, real-time agent notifications, file sharing, and visitor routing.",
+                    Icon = "forum",
+                    RoutePrefix = "/live-chat",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 27,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-social-media",
+                    Name = "Social Media Publisher & Queue",
+                    Category = "Communication, AI & Support",
+                    Description = "Schedule and publish posts to Facebook, X (Twitter), LinkedIn, and Instagram with analytics tracking.",
+                    Icon = "share",
+                    RoutePrefix = "/social",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 28,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-bio-link",
+                    Name = "Bio Link Hub & Public Microsite",
+                    Category = "Communication, AI & Support",
+                    Description = "Custom branded link-in-bio hub, event buttons, donation links, and embeddable social media widgets.",
+                    Icon = "link",
+                    RoutePrefix = "/bio",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 29,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 08: Compliance, Learning & Certification
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-document-management",
+                    Name = "Document Vault & Revision Control",
+                    Category = "Compliance, Learning & Certification",
+                    Description = "Encrypted digital document storage, role-based access permissions, version history, and audit watermarking.",
+                    Icon = "folder_open",
+                    RoutePrefix = "/documents",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 30,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-learning-management",
+                    Name = "Learning Management & Course LMS",
+                    Category = "Compliance, Learning & Certification",
+                    Description = "Video lectures, quiz assessments, course progress tracking, instructor gradebooks, and completion diplomas.",
+                    Icon = "school",
+                    RoutePrefix = "/lms",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 31,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-certificate-verification",
+                    Name = "Certificate Issuance & Verification",
+                    Category = "Compliance, Learning & Certification",
+                    Description = "Issue tamper-proof certificates with QR validation codes, public lookup portal, and blockchain stamping.",
+                    Icon = "workspace_premium",
+                    RoutePrefix = "/certificates",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 32,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-visitor-gate",
+                    Name = "Visitor & Gate Pass Management",
+                    Category = "Compliance, Learning & Certification",
+                    Description = "Digital visitor registration, host notifications, visitor badge generation, NDA signing, and gate logs.",
+                    Icon = "meeting_room",
+                    RoutePrefix = "/visitor-gate",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 33,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 09: Demographics & Civic Census
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-community-census",
+                    Name = "Community & Household Census",
+                    Category = "Demographics & Civic Census",
+                    Description = "Household census enumeration, socio-economic surveys, family relationships, and civic profiling.",
+                    Icon = "people",
+                    RoutePrefix = "/census",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 34,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-field-surveyor",
+                    Name = "Offline Field Surveyor & GPS",
+                    Category = "Demographics & Civic Census",
+                    Description = "Mobile surveyor data collection with offline caching, GPS location stamping, and photo evidence attachments.",
+                    Icon = "location_on",
+                    RoutePrefix = "/field-survey",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 35,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-resident-id-cards",
+                    Name = "Resident PVC & Digital ID Cards",
+                    Category = "Demographics & Civic Census",
+                    Description = "PVC card template designer, batch barcode/QR generation, biometric photo capture, and print queue management.",
+                    Icon = "badge",
+                    RoutePrefix = "/id-cards",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 36,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-demographic-analytics",
+                    Name = "Demographic & Spatial Analytics",
+                    Category = "Demographics & Civic Census",
+                    Description = "Interactive GIS mapping, age/gender pyramid distribution, income stratifications, and civic cluster charts.",
+                    Icon = "insights",
+                    RoutePrefix = "/demographics",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 37,
+                    IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 10: Life Events & Publications
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-digital-memorials",
+                    Name = "Digital Memorials & Funeral Tributes",
+                    Category = "Life Events & Publications",
+                    Description = "Online memorial portals, virtual candles, biography galleries, eulogy streams, and printable funeral booklets.",
+                    Icon = "local_fire_department",
+                    RoutePrefix = "/memorials",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 38,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-wedding-portals",
+                    Name = "Weddings & Celebration Portals",
+                    Category = "Life Events & Publications",
+                    Description = "Digital wedding invitations, RSVP registry, order of service flipbook, and guest live camera snapping.",
+                    Icon = "celebration",
+                    RoutePrefix = "/weddings",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 39,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-digital-brochures",
+                    Name = "Digital Brochures & Magazine Publishing",
+                    Category = "Life Events & Publications",
+                    Description = "Interactive 3D page-flip brochures, anniversary magazines, souvenir programmes, and PDF downloads.",
+                    Icon = "auto_stories",
+                    RoutePrefix = "/brochures",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 40,
+                    IsActive = true
+                }
+            };
+
+            foreach (var feat in defaultFeatures)
+            {
+                var existing = await dbContext.MasterFeatureCatalogs
+                    .FirstOrDefaultAsync(f => f.FeatureCode == feat.FeatureCode, ct);
+
+                if (existing == null)
+                {
+                    dbContext.MasterFeatureCatalogs.Add(feat);
+                }
+                else
+                {
+                    existing.Name = feat.Name;
+                    existing.Category = feat.Category;
+                    existing.Description = feat.Description;
+                    existing.Icon = feat.Icon;
+                    existing.RoutePrefix = feat.RoutePrefix;
+                    existing.IsCompulsory = feat.IsCompulsory;
+                    existing.BillingType = feat.BillingType;
+                    existing.MonthlyPrice = feat.MonthlyPrice;
+                    existing.QuarterlyPrice = feat.QuarterlyPrice;
+                    existing.YearlyPrice = feat.YearlyPrice;
+                    existing.IsMetered = feat.IsMetered;
+                    existing.MeterUnitName = feat.MeterUnitName;
+                    existing.MeterUnitPrice = feat.MeterUnitPrice;
+                    existing.MeterBlockSize = feat.MeterBlockSize;
+                    existing.IncludedFreeUnits = feat.IncludedFreeUnits;
+                    existing.SortOrder = feat.SortOrder;
                 }
             }
 

@@ -87,6 +87,19 @@ namespace Ozikol.MasterDomain.Models
         public bool EnableTicketAutoClose { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the default number of free trial days granted to new organization workspaces (e.g. 14, 15, 30, 40, 60, 90).
+        /// Defaults to 14 days.
+        /// </summary>
+        public int DefaultTrialDays { get; set; } = 14;
+
+        /// <summary>
+        /// Gets or sets the global default fallback 3-letter currency code (e.g. "USD", "NGN", "GBP")
+        /// when country detection yields no specific regional match.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
         /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.
         /// Defaults to "Support, Sales, Billing, Partnership, Enterprise, General".
         /// </summary>

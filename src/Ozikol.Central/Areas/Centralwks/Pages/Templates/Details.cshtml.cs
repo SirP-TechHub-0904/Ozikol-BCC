@@ -63,7 +63,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             // Generate basic simulated markup replacing mustache placeholders
             var mockHtml = template.HtmlTemplate ?? string.Empty;
             mockHtml = mockHtml.Replace("{{ Title }}", template.PreviewTitle ?? template.Name);
-            mockHtml = mockHtml.Replace("{{ Subtitle }}", template.PreviewSubtitle ?? template.Description ?? "Experience effortless sovereign cloud management.");
+            mockHtml = mockHtml.Replace("{{ Subtitle }}", template.PreviewSubtitle ?? template.Description ?? "Experience effortless enterprise cloud management.");
             mockHtml = mockHtml.Replace("{{ ImageUrl }}", template.PreviewImageUrl ?? "/assets/brand/hero-preview.webp");
             mockHtml = mockHtml.Replace("{{ ButtonText }}", "Explore Platform");
             mockHtml = mockHtml.Replace("{{ ButtonUrl }}", "#");

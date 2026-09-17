@@ -22,6 +22,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ICentralTwoFactorService _twoFactorService;
         private readonly ICentralEmailService _emailService;
+        private readonly IRecaptchaService _recaptchaService;
         private readonly ILogger<LoginModel> _logger;
 
         /// <summary>
@@ -32,6 +33,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         /// <param name="dbContext">Master catalog database context for audit logging.</param>
         /// <param name="twoFactorService">Service for generating and validating OTP codes.</param>
         /// <param name="emailService">Service for dispatching security notifications.</param>
+        /// <param name="recaptchaService">Service for verifying Google reCAPTCHA tokens.</param>
         /// <param name="logger">Logging facility for security diagnostics.</param>
         public LoginModel(
             SignInManager<CentralUser> signInManager,
@@ -39,6 +41,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             MasterCatalogDbContext dbContext,
             ICentralTwoFactorService twoFactorService,
             ICentralEmailService emailService,
+            IRecaptchaService recaptchaService,
             ILogger<LoginModel> logger)
         {
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
@@ -46,8 +49,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
+        /// <summary>
+        /// Gets the public Google reCAPTCHA site key for widget rendering in the administrative sign-in interface.
+        /// </summary>
+        public string RecaptchaSiteKey => _recaptchaService.SiteKey;
 
         /// <summary>
         /// Work email address of the platform administrator.
@@ -125,6 +134,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             }
 
             var cleanEmail = Email.Trim().ToLowerInvariant();
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // 1. Verify Google reCAPTCHA token
+            var recaptchaResponse = Request.Form["g-recaptcha-response"].ToString();
+            _logger.LogInformation("Central Console Sign-In attempt for operator '{Email}' from IP {ClientIp}. Verifying reCAPTCHA...", cleanEmail, clientIp);
+
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaResponse, clientIp);
+            if (!isCaptchaValid)
+            {
+                _logger.LogWarning("Admin login rejected: Google reCAPTCHA verification failed for operator '{Email}' from IP {ClientIp}.", cleanEmail, clientIp);
+                ErrorMessage = "Security verification failed. Please complete the reCAPTCHA challenge.";
+                return Page();
+            }
+
             var user = await _userManager.FindByEmailAsync(cleanEmail);
 
             if (user == null || !user.IsActive)

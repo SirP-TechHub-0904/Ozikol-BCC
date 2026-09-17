@@ -7,12 +7,12 @@
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Provision Sovereign Tenant Database</h1>
-        <p class="admin-subtitle">Initializes an isolated MSSQL database on the VPS fleet, configures tenant catalog, and seeds the initial tenant admin user.</p>
+        <h1 class="admin-title">Provision Tenant Database</h1>
+        <p class="admin-subtitle">Initializes an isolated MSSQL database, configures tenant catalog, and seeds the initial tenant admin user.</p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary">
-            ← Back to Fleet List
+            ← Back to Tenant List
         </a>
     </div>
 </div>
@@ -26,7 +26,7 @@
         @* Organization & Domain Setup *@
         <div class="admin-card">
             <div class="admin-card-header">
-                <h2 class="admin-card-title">🏢 Organization & Subdomain</h2>
+                <h2 class="admin-card-title">Organization & Subdomain</h2>
             </div>
             <div class="admin-card-body">
                 <div class="form-group">
@@ -56,7 +56,7 @@
                     </label>
                     <input asp-for="Input.CustomDomain" class="form-control" placeholder="workspace.yourdomain.com" />
                     <span asp-validation-for="Input.CustomDomain" class="field-validation-error"></span>
-                    <span class="form-help">Tenant's own CNAME domain mapped to the sovereign workspace.</span>
+                    <span class="form-help">Tenant's own CNAME domain mapped to the workspace.</span>
                 </div>
 
                 <div class="form-group">
@@ -70,10 +70,10 @@
             </div>
         </div>
 
-        @* Sovereign Tenant Administrator Account *@
+        @* Tenant Administrator Account *@
         <div class="admin-card">
             <div class="admin-card-header">
-                <h2 class="admin-card-title">👤 Initial Administrator Credentials</h2>
+                <h2 class="admin-card-title">Initial Administrator Credentials</h2>
             </div>
             <div class="admin-card-body">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -114,18 +114,63 @@
                 </div>
             </div>
         </div>
+
+        @* Modular Capabilities & Promotional Voucher *@
+        <div class="admin-card" style="grid-column: 1 / -1;">
+            <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="admin-card-title">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">widgets</span>
+                    Modular Capabilities &amp; Promotional Voucher
+                </h2>
+                <span class="badge badge-neutral" style="font-size: 11.5px;">Optional Add-Ons</span>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                    <div>
+                        <label class="form-label" style="font-weight: 700; margin-bottom: 8px;">Select Initial Add-On Capabilities</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; max-height: 260px; overflow-y: auto; padding: 10px; border: 1px solid var(--admin-border); border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated);">
+                            @if (Model.AvailableFeatures.Any())
+                            {
+                                @foreach (var feat in Model.AvailableFeatures)
+                                {
+                                    <label style="display: flex; align-items: center; gap: 8px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: 6px; padding: 8px 10px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--admin-text);">
+                                        <input type="checkbox" name="Input.SelectedFeatureIds" value="@feat.Id" style="width: 16px; height: 16px; accent-color: var(--admin-primary);" />
+                                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            <div>@feat.Name</div>
+                                            <div style="font-size: 10.5px; color: var(--admin-text-muted);">@feat.Category • $@feat.MonthlyPrice.ToString("N0")/mo</div>
+                                        </div>
+                                    </label>
+                                }
+                            }
+                            else
+                            {
+                                <div style="font-size: 12px; color: var(--admin-text-muted); padding: 8px;">All available features will be provisioned.</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="form-group">
+                            <label asp-for="Input.CouponCode" class="form-label" style="font-weight: 700;">Promotional Voucher Code</label>
+                            <input asp-for="Input.CouponCode" class="form-control" placeholder="e.g. LAUNCH100" style="font-family: monospace; font-weight: 700; text-transform: uppercase;" />
+                            <span class="form-help">Enter a voucher code (e.g. LAUNCH100) to grant discount or free onboarding.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     @* Form Submission Bar *@
     <div class="admin-card" style="margin-top: 16px;">
         <div class="admin-card-body" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px;">
             <div style="font-size: 13px; color: var(--admin-text-muted);">
-                ⚡ Provisioning will execute database migrations and establish dedicated physical isolation.
+                Provisioning will execute database migrations and establish dedicated physical isolation.
             </div>
             <div style="display: flex; gap: 12px;">
                 <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary">Cancel</a>
                 <button type="submit" class="btn-admin btn-admin-primary">
-                    🚀 Provision Sovereign Database Fleet Entry
+                    Provision Tenant Database
                 </button>
             </div>
         </div>

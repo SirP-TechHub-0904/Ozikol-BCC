@@ -8,6 +8,7 @@ namespace Ozikol.MasterDomain.Models;
 /// <summary>
 /// Domain model for the central Master Catalog Database.
 /// Tracks registered tenant databases, subdomains, primary platform domains, custom domains, and API endpoints.
+/// Includes full lifecycle governance, user attribution, and audit timestamps.
 /// </summary>
 [Table("MasterTenantCatalogs")]
 public class MasterTenantCatalog
@@ -85,9 +86,76 @@ public class MasterTenantCatalog
     [MaxLength(100)]
     public string? ReferredByPartnerCode { get; set; }
 
+    /// <summary>
+    /// UTC timestamp when the tenant was provisioned.
+    /// </summary>
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// UTC timestamp when a user/visitor last accessed or interacted with this tenant's website or portal.
+    /// </summary>
+    public DateTime? LastAccessedUtc { get; set; }
+
+    /// <summary>
+    /// Authenticated admin username or system identity who created/provisioned this tenant.
+    /// </summary>
+    [MaxLength(200)]
+    public string? CreatedBy { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when this tenant was last updated.
+    /// </summary>
     public DateTime? UpdatedUtc { get; set; }
+
+    /// <summary>
+    /// Authenticated admin username who last updated this tenant.
+    /// </summary>
+    [MaxLength(200)]
+    public string? LastUpdatedBy { get; set; }
+
+    /// <summary>
+    /// Explicit flag indicating if the tenant is paused/suspended by super-admin.
+    /// </summary>
+    public bool IsSuspended { get; set; } = false;
+
+    /// <summary>
+    /// UTC timestamp when the tenant was suspended.
+    /// </summary>
+    public DateTime? SuspendedUtc { get; set; }
+
+    /// <summary>
+    /// Admin username who performed the suspension.
+    /// </summary>
+    [MaxLength(200)]
+    public string? SuspendedBy { get; set; }
+
+    /// <summary>
+    /// Reason provided by super-admin for suspending the tenant.
+    /// </summary>
+    [MaxLength(500)]
+    public string? SuspensionReason { get; set; }
+
+    /// <summary>
+    /// Soft delete flag: marks the organization as deactivated while safely preserving database.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// UTC timestamp when the tenant was soft-deleted.
+    /// </summary>
+    public DateTime? DeletedUtc { get; set; }
+
+    /// <summary>
+    /// Admin username who performed the soft delete.
+    /// </summary>
+    [MaxLength(200)]
+    public string? DeletedBy { get; set; }
+
+    /// <summary>
+    /// Reason provided for deactivating/soft-deleting the tenant.
+    /// </summary>
+    [MaxLength(500)]
+    public string? DeletionReason { get; set; }
 
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }
