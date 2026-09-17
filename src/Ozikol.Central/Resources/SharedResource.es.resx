@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -2218,7 +2218,6 @@
   <data name="Feat_VisitorGateManagement_Pt3" xml:space="preserve">
     <value>Libro de registro electrónico con sellado temporal</value>
   </data>
-
   <data name="About_Page_Title" xml:space="preserve">
     <value>Sobre nosotros - Nuestra historia, misión y arquitectura | Ozikol</value>
   </data>
@@ -2783,7 +2782,6 @@
   <data name="Partners_Cta_BtnSecondary" xml:space="preserve">
     <value>Explorar las {0} funciones</value>
   </data>
-
   <data name="Partner_Reg_Page_Title" xml:space="preserve">
     <value>Solicitud y registro de socios | Ozikol</value>
   </data>
@@ -2901,8 +2899,411 @@
   <data name="Partner_Success_BtnHome" xml:space="preserve">
     <value>Volver al inicio</value>
   </data>
-<data name="Offices_Hub1_Team" xml:space="preserve"><value>Equipo de Soporte</value></data><data name="Offices_Hub2_Team" xml:space="preserve"><value>Equipo de Alianzas</value></data><data name="Offices_Hub3_Team" xml:space="preserve"><value>Confianza y Seguridad</value></data><data name="Offices_Hub4_Team" xml:space="preserve"><value>Equipo de Ventas</value></data><data name="News_Page_Title" xml:space="preserve"><value>Noticias de la Empresa y Lanzamientos | Ozikol</value></data><data name="News_Hero_Badge" xml:space="preserve"><value>Sala de Prensa Ozikol</value></data><data name="News_Hero_Title" xml:space="preserve"><value>Noticias &amp; &lt;span class="text-primary"&gt;Lanzamientos de la Plataforma&lt;/span&gt;</value></data><data name="News_Hero_Lead" xml:space="preserve"><value>Manténgase al día sobre actualizaciones de arquitectura, plantillas de interfaz, anuncios de socios y perspectivas.</value></data><data name="News_Hero_BtnPrimary" xml:space="preserve"><value>Explorar Noticias</value></data><data name="News_Hero_BtnSecondary" xml:space="preserve"><value>Acerca de Ozikol</value></data><data name="News_Search_Placeholder" xml:space="preserve"><value>Buscar noticias o temas...</value></data><data name="News_Filter_All" xml:space="preserve"><value>Todas las Noticias</value></data><data name="News_Featured_Badge" xml:space="preserve"><value>Artículo Destacado</value></data><data name="News_Btn_ReadArticle" xml:space="preserve"><value>Leer Artículo</value></data><data name="News_Empty_Title" xml:space="preserve"><value>No se Encontraron Artículos</value></data><data name="News_Empty_Desc" xml:space="preserve"><value>Ningún artículo coincide con sus filtros activos.</value></data><data name="News_Btn_ResetFilters" xml:space="preserve"><value>Ver Todos los Artículos</value></data><data name="News_Sub_Badge" xml:space="preserve"><value>Oficina de Prensa y Medios</value></data><data name="News_Sub_Title" xml:space="preserve"><value>Manténgase Informado con Ozikol</value></data><data name="News_Sub_Desc" xml:space="preserve"><value>Suscríbase para recibir los lanzamientos y actualizaciones técnicas en su correo electrónico.</value></data><data name="News_Sub_EmailPlaceholder" xml:space="preserve"><value>Ingrese su correo electrónico</value></data><data name="News_Sub_BtnText" xml:space="preserve"><value>Suscribirse a Novedades</value></data><data name="News_Breadcrumb_Newsroom" xml:space="preserve"><value>Sala de Prensa</value></data><data name="News_Btn_BackToNews" xml:space="preserve"><value>Volver a Noticias</value></data><data name="News_Tags_Label" xml:space="preserve"><value>Temas</value></data><data name="News_Btn_ExploreFeatures" xml:space="preserve"><value>Explorar Suites en la Nube</value></data><data name="News_Related_Tag" xml:space="preserve"><value>Sugerencias Editoriales</value></data><data name="News_Related_Title" xml:space="preserve"><value>Noticias y Artículos Relacionados</value></data><data name="Creator_Page_Title" xml:space="preserve"><value>Programa de Creadores | Diseñar y Monetizar Plantillas | Ozikol</value></data><data name="Creator_Breadcrumb_Title" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Btn_BackToMarketplace" xml:space="preserve"><value>Marketplace UI</value></data><data name="Creator_Hero_Badge" xml:space="preserve"><value>Programa de Creadores</value></data><data name="Creator_Hero_Title" xml:space="preserve"><value>Cree Plantillas Modulares &amp; &lt;span class="text-primary"&gt;Monetice en el Marketplace&lt;/span&gt;</value></data><data name="Creator_Hero_Lead" xml:space="preserve"><value>Diseñe páginas de inicio responsivas, paneles de operaciones y secciones modulares. Obtenga ingresos recurrentes de miles de organizaciones activas.</value></data><data name="Creator_Hero_BtnPrimary" xml:space="preserve"><value>Postularse como Creador</value></data><data name="Creator_Hero_BtnSecondary" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_Badge" xml:space="preserve"><value>Solicitud Recibida</value></data><data name="Creator_Success_Title" xml:space="preserve"><value>Solicitud de Creador Enviada</value></data><data name="Creator_Success_Desc" xml:space="preserve"><value>Gracias por postularse al Programa de Creadores de Ozikol. Nuestro equipo está revisando su portafolio.</value></data><data name="Creator_Success_RefLabel" xml:space="preserve"><value>Código de Seguimiento de Creador</value></data><data name="Creator_Success_StepsTitle" xml:space="preserve"><value>Cronograma de Integración</value></data><data name="Creator_Success_Step1" xml:space="preserve"><value>Revisión de portafolio y estándares de diseño por nuestro equipo</value></data><data name="Creator_Success_Step2" xml:space="preserve"><value>Invitación al portal de pruebas y claves de desarrollador</value></data><data name="Creator_Success_Step3" xml:space="preserve"><value>Publicación de su primera plantilla en el Marketplace UI</value></data><data name="Creator_Success_BtnMarketplace" xml:space="preserve"><value>Explorar Marketplace</value></data><data name="Creator_Success_BtnHome" xml:space="preserve"><value>Volver al Inicio</value></data><data name="Creator_Categories_Tag" xml:space="preserve"><value>Plantillas de Creadores</value></data><data name="Creator_Categories_Title" xml:space="preserve"><value>Lo que Puede Crear y Publicar</value></data><data name="Creator_Categories_Desc" xml:space="preserve"><value>Secciones modulares compatibles con tokens de diseño en todas las suites de trabajo.</value></data><data name="Creator_Cat1_Badge" xml:space="preserve"><value>Encabezados e Inicio</value></data><data name="Creator_Cat1_Title" xml:space="preserve"><value>Encabezados y Menús de Navegación</value></data><data name="Creator_Cat1_Desc" xml:space="preserve"><value>Barras de navegación modernas y secciones de cabecera que se adaptan automáticamente a los colores de la organización.</value></data><data name="Creator_Cat2_Badge" xml:space="preserve"><value>Datos y Operaciones</value></data><data name="Creator_Cat2_Title" xml:space="preserve"><value>Paneles Operativos y Widgets</value></data><data name="Creator_Cat2_Desc" xml:space="preserve"><value>Contadores métricos, cuadrículas de turnos, seguimiento de incidencias y tarjetas interactivas.</value></data><data name="Creator_Cat3_Badge" xml:space="preserve"><value>Plantillas Integrales</value></data><data name="Creator_Cat3_Title" xml:space="preserve"><value>Portales Sectoriales y para ONGs</value></data><data name="Creator_Cat3_Desc" xml:space="preserve"><value>Diseños integrales orientados a entidades asistenciales, instituciones cívicas, centros educativos y consultorías.</value></data><data name="Creator_Benefits_Tag" xml:space="preserve"><value>Ventajas para Creadores</value></data><data name="Creator_Benefits_Title" xml:space="preserve"><value>Por Qué Crear en Ozikol</value></data><data name="Creator_Benefits_Desc" xml:space="preserve"><value>Herramientas completas para desarrolladores, distribución internacional y regalías recurrentes.</value></data><data name="Creator_Ben1_Title" xml:space="preserve"><value>Participación Recurrente de Ingresos</value></data><data name="Creator_Ben1_Desc" xml:space="preserve"><value>Obtenga regalías recurrentes cada vez que una organización instale o renueve su colección de plantillas.</value></data><data name="Creator_Ben2_Title" xml:space="preserve"><value>Insignia de Creador Verificado</value></data><data name="Creator_Ben2_Desc" xml:space="preserve"><value>Destaque su estudio o perfil con una insignia verificada para captar solicitudes de diseño empresarial.</value></data><data name="Creator_Ben3_Title" xml:space="preserve"><value>Tokens de Diseño Preconfigurados</value></data><data name="Creator_Ben3_Desc" xml:space="preserve"><value>Utilice variables CSS nativas para que sus componentes hereden automáticamente el modo oscuro y el estilo de marca del cliente.</value></data><data name="Creator_Steps_Tag" xml:space="preserve"><value>Flujo de Creador</value></data><data name="Creator_Steps_Title" xml:space="preserve"><value>Tres Pasos para Empezar</value></data><data name="Creator_Steps_Desc" xml:space="preserve"><value>Desde su solicitud hasta la publicación en el marketplace con una orientación clara.</value></data><data name="Creator_Step1_Title" xml:space="preserve"><value>Postúlese con su Portafolio</value></data><data name="Creator_Step1_Desc" xml:space="preserve"><value>Comparta su portafolio, trayectoria y propuesta de plantillas.</value></data><data name="Creator_Step2_Title" xml:space="preserve"><value>Acceda al Entorno de Pruebas</value></data><data name="Creator_Step2_Desc" xml:space="preserve"><value>Reciba su espacio de desarrollo, proyecto inicial y librerías de tokens.</value></data><data name="Creator_Step3_Title" xml:space="preserve"><value>Publique y Monetice</value></data><data name="Creator_Step3_Desc" xml:space="preserve"><value>Valide sus plantillas en las pruebas de compatibilidad y empiece a recibir pagos recurrentes.</value></data><data name="Creator_Form_Badge" xml:space="preserve"><value>Postúlese Hoy</value></data><data name="Creator_Form_Title" xml:space="preserve"><value>Formulario de Postulación para Creadores</value></data><data name="Creator_Form_Desc" xml:space="preserve"><value>Complete el siguiente formulario para formar parte de nuestro programa de creadores certificados.</value></data><data name="Creator_Field_FullName" xml:space="preserve"><value>Nombre Legal Completo</value></data><data name="Creator_Field_StudioName" xml:space="preserve"><value>Nombre de la Agencia o Marca</value></data><data name="Creator_Field_Email" xml:space="preserve"><value>Correo Electrónico Corporativo</value></data><data name="Creator_Field_Phone" xml:space="preserve"><value>Número de Teléfono</value></data><data name="Creator_Field_PortfolioUrl" xml:space="preserve"><value>Enlace a Portafolio, GitHub o Figma</value></data><data name="Creator_Field_Specialization" xml:space="preserve"><value>Especialidad Principal en Diseño</value></data><data name="Creator_Field_Pitch" xml:space="preserve"><value>Presentación de su Propuesta</value></data><data name="Creator_Field_PitchPlaceholder" xml:space="preserve"><value>Describa brevemente las plantillas o suites que desea diseñar para Ozikol...</value></data><data name="Creator_Field_AgreeTerms" xml:space="preserve"><value>He leído y acepto los</value></data><data name="Creator_Btn_Submit" xml:space="preserve"><value>Enviar Solicitud de Creador</value></data><data name="Creator_Err_TermsRequired" xml:space="preserve"><value>Debe aceptar los términos del programa de creadores para continuar.</value></data><data name="Creator_Err_EmailExists" xml:space="preserve"><value>Ya existe una solicitud con este correo en proceso de revisión.</value></data><data name="DevApi_Page_Title" xml:space="preserve"><value>API para Desarrolladores MIS y Webhooks | Ozikol</value></data><data name="DevApi_Breadcrumb_Title" xml:space="preserve"><value>API Desarrollador MIS y Webhooks</value></data><data name="DevApi_Btn_BackToFeatures" xml:space="preserve"><value>Explorar Funciones</value></data><data name="DevApi_Hero_Badge" xml:space="preserve"><value>Centro para Desarrolladores • API MIS y Webhooks</value></data><data name="DevApi_Hero_Title" xml:space="preserve"><value>API Desarrollador MIS &amp; &lt;span class="text-primary"&gt;Webhooks en Tiempo Real&lt;/span&gt;</value></data><data name="DevApi_Hero_Lead" xml:space="preserve"><value>Habilite acceso externo seguro a los datos de su organización. Comparta datos demográficos, gestión de incidencias y balances de ingresos con organismos públicos, entidades colaboradoras y auditores sin otorgarles credenciales directas a su panel de administración.</value></data><data name="DevApi_Hero_BtnPrimary" xml:space="preserve"><value>Solicitar Acceso API</value></data><data name="DevApi_Hero_BtnSecondary" xml:space="preserve"><value>Ver Casos de Uso</value></data><data name="DevApi_Scenarios_Tag" xml:space="preserve"><value>Acceso Externo Controlado</value></data><data name="DevApi_Scenarios_Title" xml:space="preserve"><value>Por Qué Habilitar la API MIS</value></data><data name="DevApi_Scenarios_Desc" xml:space="preserve"><value>Proporcione a organismos públicos, auditores y contratistas flujos de datos específicos sin exponer credenciales de acceso internas.</value></data><data name="DevApi_Scen1_Badge" xml:space="preserve"><value>Organismos Públicos</value></data><data name="DevApi_Scen1_Title" xml:space="preserve"><value>Reportes de Censo y Demografía</value></data><data name="DevApi_Scen1_Desc" xml:space="preserve"><value>Transmita datos censales y demográficos verificados a agencias estadísticas sin crear cuentas de empleado a los funcionarios en su sistema interno.</value></data><data name="DevApi_Scope_ReadOnly" xml:space="preserve"><value>Solo Lectura Delimitada</value></data><data name="DevApi_Scen2_Badge" xml:space="preserve"><value>Contratistas y Operaciones</value></data><data name="DevApi_Scen2_Title" xml:space="preserve"><value>Integración y Gestión de Tickets</value></data><data name="DevApi_Scen2_Desc" xml:space="preserve"><value>Permita a empresas de mantenimiento y soporte resolver incidencias sin tener acceso al directorio de empleados de su entidad.</value></data><data name="DevApi_Scope_ReadWrite" xml:space="preserve"><value>Acceso Delimitado a Tickets</value></data><data name="DevApi_Scen3_Badge" xml:space="preserve"><value>Finanzas y Control</value></data><data name="DevApi_Scen3_Title" xml:space="preserve"><value>Auditoría Financiera y de Ingresos</value></data><data name="DevApi_Scen3_Desc" xml:space="preserve"><value>Facilite a auditores e inspectores acceso directo de solo lectura a transacciones y facturas con registro de auditoría completo.</value></data><data name="DevApi_Scope_AuditOnly" xml:space="preserve"><value>Acceso de Auditoría</value></data><data name="DevApi_Scen4_Badge" xml:space="preserve"><value>Organismos Reguladores</value></data><data name="DevApi_Scen4_Title" xml:space="preserve"><value>Acreditación y Verificación de Cumplimiento</value></data><data name="DevApi_Scen4_Desc" xml:space="preserve"><value>Permita a entidades de supervisión certificar el cumplimiento normativo mediante puntos de enlace seguros y cifrados.</value></data><data name="DevApi_Scope_Verified" xml:space="preserve"><value>Comprobación Cifrada</value></data><data name="DevApi_Security_Tag" xml:space="preserve"><value>Seguridad Confianza Cero</value></data><data name="DevApi_Security_Title" xml:space="preserve"><value>Diseñado para Garantizar la Soberanía de sus Datos</value></data><data name="DevApi_Security_Desc" xml:space="preserve"><value>Límites estrictos de permisos, restricción por IP y registro criptográfico de cada petición.</value></data><data name="DevApi_Sec1_Title" xml:space="preserve"><value>Tokens de Acceso Delimitados</value></data><data name="DevApi_Sec1_Desc" xml:space="preserve"><value>Genere claves restringidas a rutas específicas. Las entidades externas nunca pueden acceder a datos ajenos a su autorización.</value></data><data name="DevApi_Sec2_Title" xml:space="preserve"><value>Webhooks en Tiempo Real</value></data><data name="DevApi_Sec2_Desc" xml:space="preserve"><value>Reciba notificaciones firmadas con HMAC al producirse un evento, eliminando consultas repetitivas a sus servidores.</value></data><data name="DevApi_Sec3_Title" xml:space="preserve"><value>Revocación Inmediata y Auditoría</value></data><data name="DevApi_Sec3_Desc" xml:space="preserve"><value>Cada consulta queda registrada con dirección IP y hora. Revoque cualquier clave en un clic sin afectar su operativa diaria.</value></data><data name="DevApi_Code_Tag" xml:space="preserve"><value>Demostración Interactiva</value></data><data name="DevApi_Code_Title" xml:space="preserve"><value>Endpoints RESTful JSON Claros</value></data><data name="DevApi_Code_Desc" xml:space="preserve"><value>Respuestas estructuradas con paginación estándar, marcas temporales UTC y firmas de verificación.</value></data><data name="DevApi_Cta_Badge" xml:space="preserve"><value>Integración Empresarial</value></data><data name="DevApi_Cta_Title" xml:space="preserve"><value>¿Listo para conectar sus colaboradores externos de forma segura?</value></data><data name="DevApi_Cta_Desc" xml:space="preserve"><value>Consulte con nuestro equipo técnico para configurar sus claves API delimitadas y automatizar sus procesos hoy.</value></data><data name="DevApi_Cta_BtnPrimary" xml:space="preserve"><value>Solicitar Demostración API</value></data><data name="DevApi_Cta_BtnSecondary" xml:space="preserve"><value>Explorar la Plataforma</value></data>
-
+  <data name="Offices_Hub1_Team" xml:space="preserve">
+    <value>Equipo de Soporte</value>
+  </data>
+  <data name="Offices_Hub2_Team" xml:space="preserve">
+    <value>Equipo de Alianzas</value>
+  </data>
+  <data name="Offices_Hub3_Team" xml:space="preserve">
+    <value>Confianza y Seguridad</value>
+  </data>
+  <data name="Offices_Hub4_Team" xml:space="preserve">
+    <value>Equipo de Ventas</value>
+  </data>
+  <data name="News_Page_Title" xml:space="preserve">
+    <value>Noticias de la Empresa y Lanzamientos | Ozikol</value>
+  </data>
+  <data name="News_Hero_Badge" xml:space="preserve">
+    <value>Sala de Prensa Ozikol</value>
+  </data>
+  <data name="News_Hero_Title" xml:space="preserve">
+    <value>Noticias &amp; &lt;span class="text-primary"&gt;Lanzamientos de la Plataforma&lt;/span&gt;</value>
+  </data>
+  <data name="News_Hero_Lead" xml:space="preserve">
+    <value>Manténgase al día sobre actualizaciones de arquitectura, plantillas de interfaz, anuncios de socios y perspectivas.</value>
+  </data>
+  <data name="News_Hero_BtnPrimary" xml:space="preserve">
+    <value>Explorar Noticias</value>
+  </data>
+  <data name="News_Hero_BtnSecondary" xml:space="preserve">
+    <value>Acerca de Ozikol</value>
+  </data>
+  <data name="News_Search_Placeholder" xml:space="preserve">
+    <value>Buscar noticias o temas...</value>
+  </data>
+  <data name="News_Filter_All" xml:space="preserve">
+    <value>Todas las Noticias</value>
+  </data>
+  <data name="News_Featured_Badge" xml:space="preserve">
+    <value>Artículo Destacado</value>
+  </data>
+  <data name="News_Btn_ReadArticle" xml:space="preserve">
+    <value>Leer Artículo</value>
+  </data>
+  <data name="News_Empty_Title" xml:space="preserve">
+    <value>No se Encontraron Artículos</value>
+  </data>
+  <data name="News_Empty_Desc" xml:space="preserve">
+    <value>Ningún artículo coincide con sus filtros activos.</value>
+  </data>
+  <data name="News_Btn_ResetFilters" xml:space="preserve">
+    <value>Ver Todos los Artículos</value>
+  </data>
+  <data name="News_Sub_Badge" xml:space="preserve">
+    <value>Oficina de Prensa y Medios</value>
+  </data>
+  <data name="News_Sub_Title" xml:space="preserve">
+    <value>Manténgase Informado con Ozikol</value>
+  </data>
+  <data name="News_Sub_Desc" xml:space="preserve">
+    <value>Suscríbase para recibir los lanzamientos y actualizaciones técnicas en su correo electrónico.</value>
+  </data>
+  <data name="News_Sub_EmailPlaceholder" xml:space="preserve">
+    <value>Ingrese su correo electrónico</value>
+  </data>
+  <data name="News_Sub_BtnText" xml:space="preserve">
+    <value>Suscribirse a Novedades</value>
+  </data>
+  <data name="News_Breadcrumb_Newsroom" xml:space="preserve">
+    <value>Sala de Prensa</value>
+  </data>
+  <data name="News_Btn_BackToNews" xml:space="preserve">
+    <value>Volver a Noticias</value>
+  </data>
+  <data name="News_Tags_Label" xml:space="preserve">
+    <value>Temas</value>
+  </data>
+  <data name="News_Btn_ExploreFeatures" xml:space="preserve">
+    <value>Explorar Suites en la Nube</value>
+  </data>
+  <data name="News_Related_Tag" xml:space="preserve">
+    <value>Sugerencias Editoriales</value>
+  </data>
+  <data name="News_Related_Title" xml:space="preserve">
+    <value>Noticias y Artículos Relacionados</value>
+  </data>
+  <data name="Creator_Page_Title" xml:space="preserve">
+    <value>Programa de Creadores | Diseñar y Monetizar Plantillas | Ozikol</value>
+  </data>
+  <data name="Creator_Breadcrumb_Title" xml:space="preserve">
+    <value>Programa de Creadores</value>
+  </data>
+  <data name="Creator_Btn_BackToMarketplace" xml:space="preserve">
+    <value>Marketplace UI</value>
+  </data>
+  <data name="Creator_Hero_Badge" xml:space="preserve">
+    <value>Programa de Creadores</value>
+  </data>
+  <data name="Creator_Hero_Title" xml:space="preserve">
+    <value>Cree Plantillas Modulares &amp; &lt;span class="text-primary"&gt;Monetice en el Marketplace&lt;/span&gt;</value>
+  </data>
+  <data name="Creator_Hero_Lead" xml:space="preserve">
+    <value>Diseñe páginas de inicio responsivas, paneles de operaciones y secciones modulares. Obtenga ingresos recurrentes de miles de organizaciones activas.</value>
+  </data>
+  <data name="Creator_Hero_BtnPrimary" xml:space="preserve">
+    <value>Postularse como Creador</value>
+  </data>
+  <data name="Creator_Hero_BtnSecondary" xml:space="preserve">
+    <value>Explorar Marketplace</value>
+  </data>
+  <data name="Creator_Success_Badge" xml:space="preserve">
+    <value>Solicitud Recibida</value>
+  </data>
+  <data name="Creator_Success_Title" xml:space="preserve">
+    <value>Solicitud de Creador Enviada</value>
+  </data>
+  <data name="Creator_Success_Desc" xml:space="preserve">
+    <value>Gracias por postularse al Programa de Creadores de Ozikol. Nuestro equipo está revisando su portafolio.</value>
+  </data>
+  <data name="Creator_Success_RefLabel" xml:space="preserve">
+    <value>Código de Seguimiento de Creador</value>
+  </data>
+  <data name="Creator_Success_StepsTitle" xml:space="preserve">
+    <value>Cronograma de Integración</value>
+  </data>
+  <data name="Creator_Success_Step1" xml:space="preserve">
+    <value>Revisión de portafolio y estándares de diseño por nuestro equipo</value>
+  </data>
+  <data name="Creator_Success_Step2" xml:space="preserve">
+    <value>Invitación al portal de pruebas y claves de desarrollador</value>
+  </data>
+  <data name="Creator_Success_Step3" xml:space="preserve">
+    <value>Publicación de su primera plantilla en el Marketplace UI</value>
+  </data>
+  <data name="Creator_Success_BtnMarketplace" xml:space="preserve">
+    <value>Explorar Marketplace</value>
+  </data>
+  <data name="Creator_Success_BtnHome" xml:space="preserve">
+    <value>Volver al Inicio</value>
+  </data>
+  <data name="Creator_Categories_Tag" xml:space="preserve">
+    <value>Plantillas de Creadores</value>
+  </data>
+  <data name="Creator_Categories_Title" xml:space="preserve">
+    <value>Lo que Puede Crear y Publicar</value>
+  </data>
+  <data name="Creator_Categories_Desc" xml:space="preserve">
+    <value>Secciones modulares compatibles con tokens de diseño en todas las suites de trabajo.</value>
+  </data>
+  <data name="Creator_Cat1_Badge" xml:space="preserve">
+    <value>Encabezados e Inicio</value>
+  </data>
+  <data name="Creator_Cat1_Title" xml:space="preserve">
+    <value>Encabezados y Menús de Navegación</value>
+  </data>
+  <data name="Creator_Cat1_Desc" xml:space="preserve">
+    <value>Barras de navegación modernas y secciones de cabecera que se adaptan automáticamente a los colores de la organización.</value>
+  </data>
+  <data name="Creator_Cat2_Badge" xml:space="preserve">
+    <value>Datos y Operaciones</value>
+  </data>
+  <data name="Creator_Cat2_Title" xml:space="preserve">
+    <value>Paneles Operativos y Widgets</value>
+  </data>
+  <data name="Creator_Cat2_Desc" xml:space="preserve">
+    <value>Contadores métricos, cuadrículas de turnos, seguimiento de incidencias y tarjetas interactivas.</value>
+  </data>
+  <data name="Creator_Cat3_Badge" xml:space="preserve">
+    <value>Plantillas Integrales</value>
+  </data>
+  <data name="Creator_Cat3_Title" xml:space="preserve">
+    <value>Portales Sectoriales y para ONGs</value>
+  </data>
+  <data name="Creator_Cat3_Desc" xml:space="preserve">
+    <value>Diseños integrales orientados a entidades asistenciales, instituciones cívicas, centros educativos y consultorías.</value>
+  </data>
+  <data name="Creator_Benefits_Tag" xml:space="preserve">
+    <value>Ventajas para Creadores</value>
+  </data>
+  <data name="Creator_Benefits_Title" xml:space="preserve">
+    <value>Por Qué Crear en Ozikol</value>
+  </data>
+  <data name="Creator_Benefits_Desc" xml:space="preserve">
+    <value>Herramientas completas para desarrolladores, distribución internacional y regalías recurrentes.</value>
+  </data>
+  <data name="Creator_Ben1_Title" xml:space="preserve">
+    <value>Participación Recurrente de Ingresos</value>
+  </data>
+  <data name="Creator_Ben1_Desc" xml:space="preserve">
+    <value>Obtenga regalías recurrentes cada vez que una organización instale o renueve su colección de plantillas.</value>
+  </data>
+  <data name="Creator_Ben2_Title" xml:space="preserve">
+    <value>Insignia de Creador Verificado</value>
+  </data>
+  <data name="Creator_Ben2_Desc" xml:space="preserve">
+    <value>Destaque su estudio o perfil con una insignia verificada para captar solicitudes de diseño empresarial.</value>
+  </data>
+  <data name="Creator_Ben3_Title" xml:space="preserve">
+    <value>Tokens de Diseño Preconfigurados</value>
+  </data>
+  <data name="Creator_Ben3_Desc" xml:space="preserve">
+    <value>Utilice variables CSS nativas para que sus componentes hereden automáticamente el modo oscuro y el estilo de marca del cliente.</value>
+  </data>
+  <data name="Creator_Steps_Tag" xml:space="preserve">
+    <value>Flujo de Creador</value>
+  </data>
+  <data name="Creator_Steps_Title" xml:space="preserve">
+    <value>Tres Pasos para Empezar</value>
+  </data>
+  <data name="Creator_Steps_Desc" xml:space="preserve">
+    <value>Desde su solicitud hasta la publicación en el marketplace con una orientación clara.</value>
+  </data>
+  <data name="Creator_Step1_Title" xml:space="preserve">
+    <value>Postúlese con su Portafolio</value>
+  </data>
+  <data name="Creator_Step1_Desc" xml:space="preserve">
+    <value>Comparta su portafolio, trayectoria y propuesta de plantillas.</value>
+  </data>
+  <data name="Creator_Step2_Title" xml:space="preserve">
+    <value>Acceda al Entorno de Pruebas</value>
+  </data>
+  <data name="Creator_Step2_Desc" xml:space="preserve">
+    <value>Reciba su espacio de desarrollo, proyecto inicial y librerías de tokens.</value>
+  </data>
+  <data name="Creator_Step3_Title" xml:space="preserve">
+    <value>Publique y Monetice</value>
+  </data>
+  <data name="Creator_Step3_Desc" xml:space="preserve">
+    <value>Valide sus plantillas en las pruebas de compatibilidad y empiece a recibir pagos recurrentes.</value>
+  </data>
+  <data name="Creator_Form_Badge" xml:space="preserve">
+    <value>Postúlese Hoy</value>
+  </data>
+  <data name="Creator_Form_Title" xml:space="preserve">
+    <value>Formulario de Postulación para Creadores</value>
+  </data>
+  <data name="Creator_Form_Desc" xml:space="preserve">
+    <value>Complete el siguiente formulario para formar parte de nuestro programa de creadores certificados.</value>
+  </data>
+  <data name="Creator_Field_FullName" xml:space="preserve">
+    <value>Nombre Legal Completo</value>
+  </data>
+  <data name="Creator_Field_StudioName" xml:space="preserve">
+    <value>Nombre de la Agencia o Marca</value>
+  </data>
+  <data name="Creator_Field_Email" xml:space="preserve">
+    <value>Correo Electrónico Corporativo</value>
+  </data>
+  <data name="Creator_Field_Phone" xml:space="preserve">
+    <value>Número de Teléfono</value>
+  </data>
+  <data name="Creator_Field_PortfolioUrl" xml:space="preserve">
+    <value>Enlace a Portafolio, GitHub o Figma</value>
+  </data>
+  <data name="Creator_Field_Specialization" xml:space="preserve">
+    <value>Especialidad Principal en Diseño</value>
+  </data>
+  <data name="Creator_Field_Pitch" xml:space="preserve">
+    <value>Presentación de su Propuesta</value>
+  </data>
+  <data name="Creator_Field_PitchPlaceholder" xml:space="preserve">
+    <value>Describa brevemente las plantillas o suites que desea diseñar para Ozikol...</value>
+  </data>
+  <data name="Creator_Field_AgreeTerms" xml:space="preserve">
+    <value>He leído y acepto los</value>
+  </data>
+  <data name="Creator_Btn_Submit" xml:space="preserve">
+    <value>Enviar Solicitud de Creador</value>
+  </data>
+  <data name="Creator_Err_TermsRequired" xml:space="preserve">
+    <value>Debe aceptar los términos del programa de creadores para continuar.</value>
+  </data>
+  <data name="Creator_Err_EmailExists" xml:space="preserve">
+    <value>Ya existe una solicitud con este correo en proceso de revisión.</value>
+  </data>
+  <data name="DevApi_Page_Title" xml:space="preserve">
+    <value>API para Desarrolladores MIS y Webhooks | Ozikol</value>
+  </data>
+  <data name="DevApi_Breadcrumb_Title" xml:space="preserve">
+    <value>API Desarrollador MIS y Webhooks</value>
+  </data>
+  <data name="DevApi_Btn_BackToFeatures" xml:space="preserve">
+    <value>Explorar Funciones</value>
+  </data>
+  <data name="DevApi_Hero_Badge" xml:space="preserve">
+    <value>Centro para Desarrolladores • API MIS y Webhooks</value>
+  </data>
+  <data name="DevApi_Hero_Title" xml:space="preserve">
+    <value>API Desarrollador MIS &amp; &lt;span class="text-primary"&gt;Webhooks en Tiempo Real&lt;/span&gt;</value>
+  </data>
+  <data name="DevApi_Hero_Lead" xml:space="preserve">
+    <value>Habilite acceso externo seguro a los datos de su organización. Comparta datos demográficos, gestión de incidencias y balances de ingresos con organismos públicos, entidades colaboradoras y auditores sin otorgarles credenciales directas a su panel de administración.</value>
+  </data>
+  <data name="DevApi_Hero_BtnPrimary" xml:space="preserve">
+    <value>Solicitar Acceso API</value>
+  </data>
+  <data name="DevApi_Hero_BtnSecondary" xml:space="preserve">
+    <value>Ver Casos de Uso</value>
+  </data>
+  <data name="DevApi_Scenarios_Tag" xml:space="preserve">
+    <value>Acceso Externo Controlado</value>
+  </data>
+  <data name="DevApi_Scenarios_Title" xml:space="preserve">
+    <value>Por Qué Habilitar la API MIS</value>
+  </data>
+  <data name="DevApi_Scenarios_Desc" xml:space="preserve">
+    <value>Proporcione a organismos públicos, auditores y contratistas flujos de datos específicos sin exponer credenciales de acceso internas.</value>
+  </data>
+  <data name="DevApi_Scen1_Badge" xml:space="preserve">
+    <value>Organismos Públicos</value>
+  </data>
+  <data name="DevApi_Scen1_Title" xml:space="preserve">
+    <value>Reportes de Censo y Demografía</value>
+  </data>
+  <data name="DevApi_Scen1_Desc" xml:space="preserve">
+    <value>Transmita datos censales y demográficos verificados a agencias estadísticas sin crear cuentas de empleado a los funcionarios en su sistema interno.</value>
+  </data>
+  <data name="DevApi_Scope_ReadOnly" xml:space="preserve">
+    <value>Solo Lectura Delimitada</value>
+  </data>
+  <data name="DevApi_Scen2_Badge" xml:space="preserve">
+    <value>Contratistas y Operaciones</value>
+  </data>
+  <data name="DevApi_Scen2_Title" xml:space="preserve">
+    <value>Integración y Gestión de Tickets</value>
+  </data>
+  <data name="DevApi_Scen2_Desc" xml:space="preserve">
+    <value>Permita a empresas de mantenimiento y soporte resolver incidencias sin tener acceso al directorio de empleados de su entidad.</value>
+  </data>
+  <data name="DevApi_Scope_ReadWrite" xml:space="preserve">
+    <value>Acceso Delimitado a Tickets</value>
+  </data>
+  <data name="DevApi_Scen3_Badge" xml:space="preserve">
+    <value>Finanzas y Control</value>
+  </data>
+  <data name="DevApi_Scen3_Title" xml:space="preserve">
+    <value>Auditoría Financiera y de Ingresos</value>
+  </data>
+  <data name="DevApi_Scen3_Desc" xml:space="preserve">
+    <value>Facilite a auditores e inspectores acceso directo de solo lectura a transacciones y facturas con registro de auditoría completo.</value>
+  </data>
+  <data name="DevApi_Scope_AuditOnly" xml:space="preserve">
+    <value>Acceso de Auditoría</value>
+  </data>
+  <data name="DevApi_Scen4_Badge" xml:space="preserve">
+    <value>Organismos Reguladores</value>
+  </data>
+  <data name="DevApi_Scen4_Title" xml:space="preserve">
+    <value>Acreditación y Verificación de Cumplimiento</value>
+  </data>
+  <data name="DevApi_Scen4_Desc" xml:space="preserve">
+    <value>Permita a entidades de supervisión certificar el cumplimiento normativo mediante puntos de enlace seguros y cifrados.</value>
+  </data>
+  <data name="DevApi_Scope_Verified" xml:space="preserve">
+    <value>Comprobación Cifrada</value>
+  </data>
+  <data name="DevApi_Security_Tag" xml:space="preserve">
+    <value>Seguridad Confianza Cero</value>
+  </data>
+  <data name="DevApi_Security_Title" xml:space="preserve">
+    <value>Diseñado para Garantizar la Soberanía de sus Datos</value>
+  </data>
+  <data name="DevApi_Security_Desc" xml:space="preserve">
+    <value>Límites estrictos de permisos, restricción por IP y registro criptográfico de cada petición.</value>
+  </data>
+  <data name="DevApi_Sec1_Title" xml:space="preserve">
+    <value>Tokens de Acceso Delimitados</value>
+  </data>
+  <data name="DevApi_Sec1_Desc" xml:space="preserve">
+    <value>Genere claves restringidas a rutas específicas. Las entidades externas nunca pueden acceder a datos ajenos a su autorización.</value>
+  </data>
+  <data name="DevApi_Sec2_Title" xml:space="preserve">
+    <value>Webhooks en Tiempo Real</value>
+  </data>
+  <data name="DevApi_Sec2_Desc" xml:space="preserve">
+    <value>Reciba notificaciones firmadas con HMAC al producirse un evento, eliminando consultas repetitivas a sus servidores.</value>
+  </data>
+  <data name="DevApi_Sec3_Title" xml:space="preserve">
+    <value>Revocación Inmediata y Auditoría</value>
+  </data>
+  <data name="DevApi_Sec3_Desc" xml:space="preserve">
+    <value>Cada consulta queda registrada con dirección IP y hora. Revoque cualquier clave en un clic sin afectar su operativa diaria.</value>
+  </data>
+  <data name="DevApi_Code_Tag" xml:space="preserve">
+    <value>Demostración Interactiva</value>
+  </data>
+  <data name="DevApi_Code_Title" xml:space="preserve">
+    <value>Endpoints RESTful JSON Claros</value>
+  </data>
+  <data name="DevApi_Code_Desc" xml:space="preserve">
+    <value>Respuestas estructuradas con paginación estándar, marcas temporales UTC y firmas de verificación.</value>
+  </data>
+  <data name="DevApi_Cta_Badge" xml:space="preserve">
+    <value>Integración Empresarial</value>
+  </data>
+  <data name="DevApi_Cta_Title" xml:space="preserve">
+    <value>¿Listo para conectar sus colaboradores externos de forma segura?</value>
+  </data>
+  <data name="DevApi_Cta_Desc" xml:space="preserve">
+    <value>Consulte con nuestro equipo técnico para configurar sus claves API delimitadas y automatizar sus procesos hoy.</value>
+  </data>
+  <data name="DevApi_Cta_BtnPrimary" xml:space="preserve">
+    <value>Solicitar Demostración API</value>
+  </data>
+  <data name="DevApi_Cta_BtnSecondary" xml:space="preserve">
+    <value>Explorar la Plataforma</value>
+  </data>
   <data name="Careers_Page_Title" xml:space="preserve">
     <value>Carreras en Ozikol | Ama tu trabajo. Ama tu vida. Sé tú mismo.</value>
   </data>
@@ -3293,7 +3694,419 @@
   <data name="Careers_Error_PassportSize" xml:space="preserve">
     <value>El tamaño del documento de identidad supera el límite permitido de 10 MB.</value>
   </data>
-<data name="Nav_Support" xml:space="preserve"><value>Soporte</value><comment>Support portal localized key (es)</comment></data><data name="Support_Page_Title" xml:space="preserve"><value>Centro de Soporte, Mesa de Ayuda y Consultas | Ozikol</value><comment>Support portal localized key (es)</comment></data><data name="Support_Meta_Desc" xml:space="preserve"><value>Explore tutoriales en vídeo, artículos de ayuda y soporte directo para las 9 suites empresariales de Ozikol.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Hero_Badge" xml:space="preserve"><value>Soporte Global y Base de Conocimiento</value><comment>Support portal localized key (es)</comment></data><data name="Support_Hero_Title" xml:space="preserve"><value>¿Cómo podemos ayudarle a tener éxito hoy?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Hero_Sub" xml:space="preserve"><value>Descubra tutoriales en vídeo interactivos, guías completas y asistencia directa para las 9 suites empresariales de Ozikol.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Search_Placeholder" xml:space="preserve"><value>Buscar artículos de ayuda, tutoriales de YouTube, módulos o temas...</value><comment>Support portal localized key (es)</comment></data><data name="Support_Search_Btn" xml:space="preserve"><value>Buscar</value><comment>Support portal localized key (es)</comment></data><data name="Support_Quick_AllSuites" xml:space="preserve"><value>Las 9 Suites</value><comment>Support portal localized key (es)</comment></data><data name="Support_Quick_Videos" xml:space="preserve"><value>Tutoriales en Vídeo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Quick_Articles" xml:space="preserve"><value>Base de Conocimiento</value><comment>Support portal localized key (es)</comment></data><data name="Support_Quick_Contact" xml:space="preserve"><value>Contacto y Mesa de Ayuda</value><comment>Support portal localized key (es)</comment></data><data name="Support_Suite_Select" xml:space="preserve"><value>Seleccionar Suite</value><comment>Support portal localized key (es)</comment></data><data name="Support_Feature_All" xml:space="preserve"><value>Todas las funcionalidades</value><comment>Support portal localized key (es)</comment></data><data name="Support_Tab_All" xml:space="preserve"><value>Todos los Recursos</value><comment>Support portal localized key (es)</comment></data><data name="Support_Tab_Videos" xml:space="preserve"><value>Tutoriales en Vídeo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Tab_Articles" xml:space="preserve"><value>Base de Conocimiento</value><comment>Support portal localized key (es)</comment></data><data name="Support_Tab_Contact" xml:space="preserve"><value>Contáctenos</value><comment>Support portal localized key (es)</comment></data><data name="Support_Videos_Heading" xml:space="preserve"><value>Tutoriales en Vídeo y Demostraciones</value><comment>Support portal localized key (es)</comment></data><data name="Support_Videos_Sub" xml:space="preserve"><value>Guías visuales paso a paso que muestran cómo configurar y operar los módulos de Ozikol.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Articles_Heading" xml:space="preserve"><value>Base de Conocimiento y Documentación</value><comment>Support portal localized key (es)</comment></data><data name="Support_Articles_Sub" xml:space="preserve"><value>Guías detalladas, estándares de cumplimiento y procedimientos de resolución de problemas.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Card_WatchVideo" xml:space="preserve"><value>Ver Tutorial</value><comment>Support portal localized key (es)</comment></data><data name="Support_Card_ReadGuide" xml:space="preserve"><value>Leer Guía</value><comment>Support portal localized key (es)</comment></data><data name="Support_Card_MinRead" xml:space="preserve"><value>min de lectura</value><comment>Support portal localized key (es)</comment></data><data name="Support_Card_Views" xml:space="preserve"><value>vistas</value><comment>Support portal localized key (es)</comment></data><data name="Support_Card_Helpful" xml:space="preserve"><value>les resultó útil</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_Close" xml:space="preserve"><value>Cerrar</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_WasHelpful" xml:space="preserve"><value>¿Le ha resultado útil esta guía?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_Yes" xml:space="preserve"><value>Sí, útil</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_No" xml:space="preserve"><value>No del todo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_ThankFeedback" xml:space="preserve"><value>¡Gracias por sus comentarios!</value><comment>Support portal localized key (es)</comment></data><data name="Support_Modal_AskQuestion" xml:space="preserve"><value>¿Aún necesita ayuda? Abra un ticket de soporte</value><comment>Support portal localized key (es)</comment></data><data name="Support_Contact_Badge" xml:space="preserve"><value>Contacto y Soporte Empresarial</value><comment>Support portal localized key (es)</comment></data><data name="Support_Contact_Title" xml:space="preserve"><value>Póngase en Contacto con Nuestros Equipos Globales</value><comment>Support portal localized key (es)</comment></data><data name="Support_Contact_Sub" xml:space="preserve"><value>Ya sea que necesite escalamiento técnico, orientación de implementación empresarial o asistencia de facturación, nuestros especialistas responden en menos de 2 horas.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Sales_Title" xml:space="preserve"><value>Ventas y Demostraciones</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Sales_Desc" xml:space="preserve"><value>Consultas de arquitectura a medida, demostraciones de múltiples suites y cotizaciones empresariales.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Tech_Title" xml:space="preserve"><value>Escalamiento Técnico 24/7</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Tech_Desc" xml:space="preserve"><value>Asistencia directa para inquilinos activos, integraciones API y alertas de infraestructura.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Partner_Title" xml:space="preserve"><value>Alianzas Estratégicas y Socios</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Partner_Desc" xml:space="preserve"><value>Únase a nuestro mercado de creadores, red de distribuidores o alianza de integración tecnológica.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Billing_Title" xml:space="preserve"><value>Facturación y Cuentas</value><comment>Support portal localized key (es)</comment></data><data name="Support_Channel_Billing_Desc" xml:space="preserve"><value>Asistencia para facturación, cambios de nivel de suscripción y adquisiciones corporativas.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Heading" xml:space="preserve"><value>Enviar un Ticket de Soporte o Consulta</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Sub" xml:space="preserve"><value>Complete los datos a continuación. Nuestros ingenieros de soporte y especialistas de producto revisan cada ticket.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_FullName" xml:space="preserve"><value>Nombre Completo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_FullName_Placeholder" xml:space="preserve"><value>Nombre completo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Email" xml:space="preserve"><value>Correo Electrónico de Trabajo</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Email_Placeholder" xml:space="preserve"><value>nombre@empresa.com</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Phone" xml:space="preserve"><value>Número de Teléfono (Opcional)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Phone_Placeholder" xml:space="preserve"><value>Número de teléfono</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Organization" xml:space="preserve"><value>Organización / Comunidad / Empresa</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Organization_Placeholder" xml:space="preserve"><value>Nombre de la empresa u organización</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_JobTitle" xml:space="preserve"><value>Puesto / Cargo (Opcional)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_JobTitle_Placeholder" xml:space="preserve"><value>Cargo o función</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_InquiryType" xml:space="preserve"><value>Clasificación de la Consulta</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Inquiry_General" xml:space="preserve"><value>Consulta General</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Inquiry_Support" xml:space="preserve"><value>Soporte Técnico y Resolución de Problemas</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Inquiry_Sales" xml:space="preserve"><value>Ventas y Demo Empresarial</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Inquiry_Partnership" xml:space="preserve"><value>Alianzas y Programa de Creadores</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Inquiry_Billing" xml:space="preserve"><value>Facturación y Suscripciones</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Suite" xml:space="preserve"><value>Suite Relacionada (Opcional)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Feature" xml:space="preserve"><value>Módulo Relacionado (Opcional)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Subject" xml:space="preserve"><value>Asunto / Tema</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Subject_Placeholder" xml:space="preserve"><value>Breve resumen de su pregunta o problema</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Message" xml:space="preserve"><value>Detalles del Mensaje / Ticket</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Message_Placeholder" xml:space="preserve"><value>Proporcione todo el contexto posible (pasos para reproducir, mensaje de error, dominio de inquilino)...</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Consent" xml:space="preserve"><value>Acepto el procesamiento de esta consulta de acuerdo con la Política de Privacidad de Ozikol.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_SubmitBtn" xml:space="preserve"><value>Enviar Ticket de Soporte</value><comment>Support portal localized key (es)</comment></data><data name="Support_Form_Submitting" xml:space="preserve"><value>Enviando ticket...</value><comment>Support portal localized key (es)</comment></data><data name="Support_Success_Title" xml:space="preserve"><value>¡Ticket de Soporte Enviado con Éxito!</value><comment>Support portal localized key (es)</comment></data><data name="Support_Success_Reference" xml:space="preserve"><value>Su Número de Referencia:</value><comment>Support portal localized key (es)</comment></data><data name="Support_Success_Desc" xml:space="preserve"><value>Se ha registrado la confirmación. Nuestro equipo regional revisará su consulta y responderá dentro de nuestro compromiso garantizado (&lt; 2 horas).</value><comment>Support portal localized key (es)</comment></data><data name="Support_Success_AnotherBtn" xml:space="preserve"><value>Enviar Otro Ticket</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Guarantee_Title" xml:space="preserve"><value>Garantías de Nivel de Servicio (SLA)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Guarantee_1" xml:space="preserve"><value>Tiempo promedio de respuesta inicial de ingeniería inferior a 2 horas</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Guarantee_2" xml:space="preserve"><value>Compromiso de disponibilidad de infraestructura en la nube del 99,99%</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Guarantee_3" xml:space="preserve"><value>Certificación ISO 27001 y residencia soberana de datos RGPD</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Guarantee_4" xml:space="preserve"><value>Línea de escalamiento directo para cuentas multiinquilino activas</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Emergency_Title" xml:space="preserve"><value>Escalamiento de Emergencia en Producción</value><comment>Support portal localized key (es)</comment></data><data name="Support_Sidebar_Emergency_Desc" xml:space="preserve"><value>Si su inquilino de producción experimenta una interrupción crítica, llame directamente a nuestra línea 24/7:</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_London_City" xml:space="preserve"><value>Londres, Reino Unido (Sede Global)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_London_Addr" xml:space="preserve"><value>100 Bishopsgate, Londres EC2N 4AG</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_London_Hours" xml:space="preserve"><value>Lun – Vie: 08:30 – 18:00 GMT</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_NY_City" xml:space="preserve"><value>Nueva York, Estados Unidos (Américas)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_NY_Addr" xml:space="preserve"><value>One World Trade Center, Suite 8500, Nueva York, NY 10007</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_NY_Hours" xml:space="preserve"><value>Lun – Vie: 09:00 – 18:00 EST</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Lagos_City" xml:space="preserve"><value>Lagos, Nigeria (África Occidental)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Lagos_Addr" xml:space="preserve"><value>Distrito Financiero de Victoria Island, Lagos</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Lagos_Hours" xml:space="preserve"><value>Lun – Vie: 08:00 – 17:30 WAT</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Singapore_City" xml:space="preserve"><value>Singapur (Centro Asia-Pacífico)</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Singapore_Addr" xml:space="preserve"><value>Marina Bay Financial Centre, Torre 2, Singapur</value><comment>Support portal localized key (es)</comment></data><data name="Support_Office_Singapore_Hours" xml:space="preserve"><value>Lun – Vie: 09:00 – 18:00 SGT</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_Heading" xml:space="preserve"><value>Preguntas Frecuentes sobre Soporte</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_Q1" xml:space="preserve"><value>¿Con qué rapidez responderá un ingeniero a mi ticket de soporte?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_A1" xml:space="preserve"><value>Las consultas de soporte estándar se atienden dentro de 2 a 4 horas hábiles. Los incidentes críticos de producción presentados por inquilinos empresariales reciben respuesta en menos de 15 minutos.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_Q2" xml:space="preserve"><value>¿Dónde pueden acceder los inquilinos existentes a su portal administrativo en vivo?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_A2" xml:space="preserve"><value>Los administradores de inquilinos pueden iniciar sesión en su subdominio dedicado (ej. suempresa.ozikol.cloud) o utilizar la página de Inicio de Sesión Central con sus credenciales.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_Q3" xml:space="preserve"><value>¿Podemos solicitar una demostración personalizada o una sesión de capacitación para el personal?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_A3" xml:space="preserve"><value>¡Sí! Seleccione 'Ventas y Demo Empresarial' en el formulario o comuníquese con su Administrador de Éxito del Cliente para programar una sesión en vídeo.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_Q4" xml:space="preserve"><value>¿Están disponibles todos los tutoriales en vídeo de YouTube con subtítulos multilingües?</value><comment>Support portal localized key (es)</comment></data><data name="Support_Faq_A4" xml:space="preserve"><value>Sí, todos los tutoriales en vídeo oficiales de Ozikol admiten subtítulos (CC) en inglés, francés, español y alemán.</value><comment>Support portal localized key (es)</comment></data><data name="Support_Tab_Certifications" xml:space="preserve">
+  <data name="Nav_Support" xml:space="preserve">
+    <value>Soporte</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Page_Title" xml:space="preserve">
+    <value>Centro de Soporte, Mesa de Ayuda y Consultas | Ozikol</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Meta_Desc" xml:space="preserve">
+    <value>Explore tutoriales en vídeo, artículos de ayuda y soporte directo para las 9 suites empresariales de Ozikol.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Hero_Badge" xml:space="preserve">
+    <value>Soporte Global y Base de Conocimiento</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Hero_Title" xml:space="preserve">
+    <value>¿Cómo podemos ayudarle a tener éxito hoy?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Hero_Sub" xml:space="preserve">
+    <value>Descubra tutoriales en vídeo interactivos, guías completas y asistencia directa para las 9 suites empresariales de Ozikol.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Search_Placeholder" xml:space="preserve">
+    <value>Buscar artículos de ayuda, tutoriales de YouTube, módulos o temas...</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Search_Btn" xml:space="preserve">
+    <value>Buscar</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Quick_AllSuites" xml:space="preserve">
+    <value>Las 9 Suites</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Quick_Videos" xml:space="preserve">
+    <value>Tutoriales en Vídeo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Quick_Articles" xml:space="preserve">
+    <value>Base de Conocimiento</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Quick_Contact" xml:space="preserve">
+    <value>Contacto y Mesa de Ayuda</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Suite_Select" xml:space="preserve">
+    <value>Seleccionar Suite</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Feature_All" xml:space="preserve">
+    <value>Todas las funcionalidades</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Tab_All" xml:space="preserve">
+    <value>Todos los Recursos</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Tab_Videos" xml:space="preserve">
+    <value>Tutoriales en Vídeo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Tab_Articles" xml:space="preserve">
+    <value>Base de Conocimiento</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Tab_Contact" xml:space="preserve">
+    <value>Contáctenos</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Videos_Heading" xml:space="preserve">
+    <value>Tutoriales en Vídeo y Demostraciones</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Videos_Sub" xml:space="preserve">
+    <value>Guías visuales paso a paso que muestran cómo configurar y operar los módulos de Ozikol.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Articles_Heading" xml:space="preserve">
+    <value>Base de Conocimiento y Documentación</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Articles_Sub" xml:space="preserve">
+    <value>Guías detalladas, estándares de cumplimiento y procedimientos de resolución de problemas.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Card_WatchVideo" xml:space="preserve">
+    <value>Ver Tutorial</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Card_ReadGuide" xml:space="preserve">
+    <value>Leer Guía</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Card_MinRead" xml:space="preserve">
+    <value>min de lectura</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Card_Views" xml:space="preserve">
+    <value>vistas</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Card_Helpful" xml:space="preserve">
+    <value>les resultó útil</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_Close" xml:space="preserve">
+    <value>Cerrar</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_WasHelpful" xml:space="preserve">
+    <value>¿Le ha resultado útil esta guía?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_Yes" xml:space="preserve">
+    <value>Sí, útil</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_No" xml:space="preserve">
+    <value>No del todo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_ThankFeedback" xml:space="preserve">
+    <value>¡Gracias por sus comentarios!</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Modal_AskQuestion" xml:space="preserve">
+    <value>¿Aún necesita ayuda? Abra un ticket de soporte</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Contact_Badge" xml:space="preserve">
+    <value>Contacto y Soporte Empresarial</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Contact_Title" xml:space="preserve">
+    <value>Póngase en Contacto con Nuestros Equipos Globales</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Contact_Sub" xml:space="preserve">
+    <value>Ya sea que necesite escalamiento técnico, orientación de implementación empresarial o asistencia de facturación, nuestros especialistas responden en menos de 2 horas.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Sales_Title" xml:space="preserve">
+    <value>Ventas y Demostraciones</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Sales_Desc" xml:space="preserve">
+    <value>Consultas de arquitectura a medida, demostraciones de múltiples suites y cotizaciones empresariales.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Tech_Title" xml:space="preserve">
+    <value>Escalamiento Técnico 24/7</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Tech_Desc" xml:space="preserve">
+    <value>Asistencia directa para inquilinos activos, integraciones API y alertas de infraestructura.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Partner_Title" xml:space="preserve">
+    <value>Alianzas Estratégicas y Socios</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Partner_Desc" xml:space="preserve">
+    <value>Únase a nuestro mercado de creadores, red de distribuidores o alianza de integración tecnológica.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Billing_Title" xml:space="preserve">
+    <value>Facturación y Cuentas</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Channel_Billing_Desc" xml:space="preserve">
+    <value>Asistencia para facturación, cambios de nivel de suscripción y adquisiciones corporativas.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Heading" xml:space="preserve">
+    <value>Enviar un Ticket de Soporte o Consulta</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Sub" xml:space="preserve">
+    <value>Complete los datos a continuación. Nuestros ingenieros de soporte y especialistas de producto revisan cada ticket.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_FullName" xml:space="preserve">
+    <value>Nombre Completo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_FullName_Placeholder" xml:space="preserve">
+    <value>Nombre completo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Email" xml:space="preserve">
+    <value>Correo Electrónico de Trabajo</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Email_Placeholder" xml:space="preserve">
+    <value>nombre@empresa.com</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Phone" xml:space="preserve">
+    <value>Número de Teléfono (Opcional)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Phone_Placeholder" xml:space="preserve">
+    <value>Número de teléfono</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Organization" xml:space="preserve">
+    <value>Organización / Comunidad / Empresa</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Organization_Placeholder" xml:space="preserve">
+    <value>Nombre de la empresa u organización</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_JobTitle" xml:space="preserve">
+    <value>Puesto / Cargo (Opcional)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_JobTitle_Placeholder" xml:space="preserve">
+    <value>Cargo o función</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_InquiryType" xml:space="preserve">
+    <value>Clasificación de la Consulta</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Inquiry_General" xml:space="preserve">
+    <value>Consulta General</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Inquiry_Support" xml:space="preserve">
+    <value>Soporte Técnico y Resolución de Problemas</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Inquiry_Sales" xml:space="preserve">
+    <value>Ventas y Demo Empresarial</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Inquiry_Partnership" xml:space="preserve">
+    <value>Alianzas y Programa de Creadores</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Inquiry_Billing" xml:space="preserve">
+    <value>Facturación y Suscripciones</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Suite" xml:space="preserve">
+    <value>Suite Relacionada (Opcional)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Feature" xml:space="preserve">
+    <value>Módulo Relacionado (Opcional)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Subject" xml:space="preserve">
+    <value>Asunto / Tema</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Subject_Placeholder" xml:space="preserve">
+    <value>Breve resumen de su pregunta o problema</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Message" xml:space="preserve">
+    <value>Detalles del Mensaje / Ticket</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Message_Placeholder" xml:space="preserve">
+    <value>Proporcione todo el contexto posible (pasos para reproducir, mensaje de error, dominio de inquilino)...</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Consent" xml:space="preserve">
+    <value>Acepto el procesamiento de esta consulta de acuerdo con la Política de Privacidad de Ozikol.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_SubmitBtn" xml:space="preserve">
+    <value>Enviar Ticket de Soporte</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Form_Submitting" xml:space="preserve">
+    <value>Enviando ticket...</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Success_Title" xml:space="preserve">
+    <value>¡Ticket de Soporte Enviado con Éxito!</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Success_Reference" xml:space="preserve">
+    <value>Su Número de Referencia:</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Success_Desc" xml:space="preserve">
+    <value>Se ha registrado la confirmación. Nuestro equipo regional revisará su consulta y responderá dentro de nuestro compromiso garantizado (&lt; 2 horas).</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Success_AnotherBtn" xml:space="preserve">
+    <value>Enviar Otro Ticket</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Guarantee_Title" xml:space="preserve">
+    <value>Garantías de Nivel de Servicio (SLA)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Guarantee_1" xml:space="preserve">
+    <value>Tiempo promedio de respuesta inicial de ingeniería inferior a 2 horas</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Guarantee_2" xml:space="preserve">
+    <value>Compromiso de disponibilidad de infraestructura en la nube del 99,99%</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Guarantee_3" xml:space="preserve">
+    <value>Certificación ISO 27001 y residencia soberana de datos RGPD</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Guarantee_4" xml:space="preserve">
+    <value>Línea de escalamiento directo para cuentas multiinquilino activas</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Emergency_Title" xml:space="preserve">
+    <value>Escalamiento de Emergencia en Producción</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Sidebar_Emergency_Desc" xml:space="preserve">
+    <value>Si su inquilino de producción experimenta una interrupción crítica, llame directamente a nuestra línea 24/7:</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_London_City" xml:space="preserve">
+    <value>Londres, Reino Unido (Sede Global)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_London_Addr" xml:space="preserve">
+    <value>100 Bishopsgate, Londres EC2N 4AG</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_London_Hours" xml:space="preserve">
+    <value>Lun – Vie: 08:30 – 18:00 GMT</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_NY_City" xml:space="preserve">
+    <value>Nueva York, Estados Unidos (Américas)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_NY_Addr" xml:space="preserve">
+    <value>One World Trade Center, Suite 8500, Nueva York, NY 10007</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_NY_Hours" xml:space="preserve">
+    <value>Lun – Vie: 09:00 – 18:00 EST</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Lagos_City" xml:space="preserve">
+    <value>Lagos, Nigeria (África Occidental)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Lagos_Addr" xml:space="preserve">
+    <value>Distrito Financiero de Victoria Island, Lagos</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Lagos_Hours" xml:space="preserve">
+    <value>Lun – Vie: 08:00 – 17:30 WAT</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Singapore_City" xml:space="preserve">
+    <value>Singapur (Centro Asia-Pacífico)</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Singapore_Addr" xml:space="preserve">
+    <value>Marina Bay Financial Centre, Torre 2, Singapur</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Office_Singapore_Hours" xml:space="preserve">
+    <value>Lun – Vie: 09:00 – 18:00 SGT</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_Heading" xml:space="preserve">
+    <value>Preguntas Frecuentes sobre Soporte</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_Q1" xml:space="preserve">
+    <value>¿Con qué rapidez responderá un ingeniero a mi ticket de soporte?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_A1" xml:space="preserve">
+    <value>Las consultas de soporte estándar se atienden dentro de 2 a 4 horas hábiles. Los incidentes críticos de producción presentados por inquilinos empresariales reciben respuesta en menos de 15 minutos.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_Q2" xml:space="preserve">
+    <value>¿Dónde pueden acceder los inquilinos existentes a su portal administrativo en vivo?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_A2" xml:space="preserve">
+    <value>Los administradores de inquilinos pueden iniciar sesión en su subdominio dedicado (ej. suempresa.ozikol.cloud) o utilizar la página de Inicio de Sesión Central con sus credenciales.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_Q3" xml:space="preserve">
+    <value>¿Podemos solicitar una demostración personalizada o una sesión de capacitación para el personal?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_A3" xml:space="preserve">
+    <value>¡Sí! Seleccione 'Ventas y Demo Empresarial' en el formulario o comuníquese con su Administrador de Éxito del Cliente para programar una sesión en vídeo.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_Q4" xml:space="preserve">
+    <value>¿Están disponibles todos los tutoriales en vídeo de YouTube con subtítulos multilingües?</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Faq_A4" xml:space="preserve">
+    <value>Sí, todos los tutoriales en vídeo oficiales de Ozikol admiten subtítulos (CC) en inglés, francés, español y alemán.</value>
+    <comment>Support portal localized key (es)</comment>
+  </data>
+  <data name="Support_Tab_Certifications" xml:space="preserve">
     <value>Certificaciones Profesionales</value>
     <comment>Certification portal localized key</comment>
   </data>
@@ -3301,7 +4114,63 @@
     <value>Titulaciones oficiales y formación en las 9 suites de Ozikol.</value>
     <comment>Certification portal localized key</comment>
   </data>
-<data name="Pricing_Enterprise_Badge" xml:space="preserve"><value>EMPRESAS Y GRANDES INSTITUCIONES</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Title" xml:space="preserve"><value>¿Necesita infraestructura soberana dedicada o capacidades a medida?</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Desc" xml:space="preserve"><value>Para corporaciones multinacionales, instituciones soberanas y grupos empresariales federados que requieren aislamiento de cómputo dedicado, bóvedas de cumplimiento a medida y garantías SLA personalizadas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve"><value>Aislamiento de flota dedicada</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve"><value>Flotas de cómputo totalmente aisladas, opciones de residencia de datos sin conexión y topologías de base de datos exclusivas.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve"><value>SLA del 99,99 % respaldado financieramente</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve"><value>Disponibilidad de misión crítica garantizada contractualmente con protocolos de escalamiento en menos de 15 minutos y créditos directos.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve"><value>Acompañamiento técnico dedicado 24/7</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve"><value>Arquitectos de infraestructura sénior asignados en canales dedicados de Slack/Teams con priorización ejecutiva de sprints.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve"><value>Cumplimiento y seguridad a medida</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve"><value>SSO empresarial (SAML/Okta/Azure AD), exportación de pistas de auditoría inmutables, claves de cifrado personalizadas y controles SOC2/ISO.</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve"><value>Consultar arquitectura empresarial</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve"><value>Explorar certificaciones y cumplimiento</value><comment>Enterprise pricing section key (es)</comment></data><data name="Pricing_Enterprise_Response_Time" xml:space="preserve"><value>Tiempo medio de respuesta empresarial: &lt; 2 horas laborales</value><comment>Enterprise pricing section key (es)</comment></data>  <data name="Legal_Breadcrumb_Home" xml:space="preserve">
+  <data name="Pricing_Enterprise_Badge" xml:space="preserve">
+    <value>EMPRESAS Y GRANDES INSTITUCIONES</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Title" xml:space="preserve">
+    <value>¿Necesita infraestructura soberana dedicada o capacidades a medida?</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Desc" xml:space="preserve">
+    <value>Para corporaciones multinacionales, instituciones soberanas y grupos empresariales federados que requieren aislamiento de cómputo dedicado, bóvedas de cumplimiento a medida y garantías SLA personalizadas.</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve">
+    <value>Aislamiento de flota dedicada</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve">
+    <value>Flotas de cómputo totalmente aisladas, opciones de residencia de datos sin conexión y topologías de base de datos exclusivas.</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve">
+    <value>SLA del 99,99 % respaldado financieramente</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature2_Desc" xml:space="preserve">
+    <value>Disponibilidad de misión crítica garantizada contractualmente con protocolos de escalamiento en menos de 15 minutos y créditos directos.</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature3_Title" xml:space="preserve">
+    <value>Acompañamiento técnico dedicado 24/7</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature3_Desc" xml:space="preserve">
+    <value>Arquitectos de infraestructura sénior asignados en canales dedicados de Slack/Teams con priorización ejecutiva de sprints.</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature4_Title" xml:space="preserve">
+    <value>Cumplimiento y seguridad a medida</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Feature4_Desc" xml:space="preserve">
+    <value>SSO empresarial (SAML/Okta/Azure AD), exportación de pistas de auditoría inmutables, claves de cifrado personalizadas y controles SOC2/ISO.</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Btn_Consult" xml:space="preserve">
+    <value>Consultar arquitectura empresarial</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Btn_Cert" xml:space="preserve">
+    <value>Explorar certificaciones y cumplimiento</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Pricing_Enterprise_Response_Time" xml:space="preserve">
+    <value>Tiempo medio de respuesta empresarial: &lt; 2 horas laborales</value>
+    <comment>Enterprise pricing section key (es)</comment>
+  </data>
+  <data name="Legal_Breadcrumb_Home" xml:space="preserve">
     <value>Inicio</value>
   </data>
   <data name="Legal_Breadcrumb_Hub" xml:space="preserve">
@@ -3373,7 +4242,6 @@
   <data name="Category_SecurityCompliance" xml:space="preserve">
     <value>Seguridad y Cumplimiento</value>
   </data>
-
   <data name="Website_Meta_Title" xml:space="preserve">
     <value>Sitio web dedicado y portal web personalizado - Ozikol</value>
   </data>
@@ -3491,7 +4359,6 @@
   <data name="Website_CTA_Btn_Features" xml:space="preserve">
     <value>Explorar los {0} módulos</value>
   </data>
-
   <data name="Mis_Meta_Title" xml:space="preserve">
     <value>Consola ejecutiva MIS - Sistema de información gerencial - Ozikol</value>
   </data>
@@ -3903,4 +4770,319 @@
   <data name="Desktop_CTA_Btn_Mobile" xml:space="preserve">
     <value>Explorar aplicaciones móviles</value>
   </data>
-<data name="Auth_Login_Title" xml:space="preserve"><value>Inicio de sesión en la consola de la plataforma central - Ozikol</value></data><data name="Auth_Login_Badge" xml:space="preserve"><value>Consola central</value></data><data name="Auth_Login_Heading" xml:space="preserve"><value>Inicio de sesión de administrador</value></data><data name="Auth_Login_Subtitle" xml:space="preserve"><value>Acceso autorizado a la consola para operadores y administradores de la plataforma Ozikol.</value></data><data name="Auth_Login_OrgNoticeTitle" xml:space="preserve"><value>¿Busca acceder al espacio de trabajo de su organización?</value></data><data name="Auth_Login_OrgNoticeDesc" xml:space="preserve"><value>Para iniciar sesión en su espacio de trabajo, navegue directamente al enlace del sitio web de su organización (ej. {0}). Por seguridad y aislamiento, cada empresa inicia sesión a través de su dominio dedicado.</value></data><data name="Auth_Login_EmailLabel" xml:space="preserve"><value>Correo electrónico corporativo del operador</value></data><data name="Auth_Login_PasswordLabel" xml:space="preserve"><value>Contraseña</value></data><data name="Auth_Login_ShowPassword" xml:space="preserve"><value>Mostrar</value></data><data name="Auth_Login_HidePassword" xml:space="preserve"><value>Ocultar</value></data><data name="Auth_Login_RememberMe" xml:space="preserve"><value>Mantener activa esta sesión de la consola durante 7 días</value></data><data name="Auth_Login_SubmitBtn" xml:space="preserve"><value>Iniciar sesión en la consola central</value></data><data name="Auth_Login_FooterPrompt" xml:space="preserve"><value>¿Necesita registrar una organización empresarial?</value></data><data name="Auth_Login_CreateWorkspaceLink" xml:space="preserve"><value>Crear un espacio de trabajo empresarial</value></data><data name="Auth_GetStarted_Title" xml:space="preserve"><value>Crear espacio de trabajo empresarial gratuito - Ozikol</value></data><data name="Auth_GetStarted_Heading" xml:space="preserve"><value>Comenzar con Ozikol</value></data><data name="Auth_GetStarted_Subtitle" xml:space="preserve"><value>Cree su espacio de trabajo empresarial en 60 segundos. Entorno dedicado con módulos empresariales centrales.</value></data><data name="Auth_GetStarted_GoogleFastTrack" xml:space="preserve"><value>Acceso rápido con Google Workspace</value></data><data name="Auth_GetStarted_MicrosoftFastTrack" xml:space="preserve"><value>Acceso rápido con Microsoft 365</value></data><data name="Auth_GetStarted_OrCorporate" xml:space="preserve"><value>o regístrese con credenciales corporativas</value></data><data name="Auth_GetStarted_FullName" xml:space="preserve"><value>Nombre completo del administrador</value></data><data name="Auth_GetStarted_OrgName" xml:space="preserve"><value>Nombre de la organización</value></data><data name="Auth_GetStarted_WorkspaceAddress" xml:space="preserve"><value>Dirección del espacio de trabajo</value></data><data name="Auth_GetStarted_SubdomainHint" xml:space="preserve"><value>(el subdominio en la nube de su organización)</value></data><data name="Auth_GetStarted_WorkEmail" xml:space="preserve"><value>Dirección de correo electrónico del administrador</value></data><data name="Auth_GetStarted_Password" xml:space="preserve"><value>Contraseña de administrador</value></data><data name="Auth_GetStarted_PasswordPlaceholder" xml:space="preserve"><value>Cree una contraseña segura (mín. 6 caracteres)</value></data><data name="Auth_GetStarted_OrgSector" xml:space="preserve"><value>Sector de la organización</value></data><data name="Auth_GetStarted_Phone" xml:space="preserve"><value>Número de teléfono</value></data><data name="Auth_GetStarted_Optional" xml:space="preserve"><value>Opcional</value></data><data name="Auth_GetStarted_HaveReferral" xml:space="preserve"><value>¿Tiene un código de referencia de socio?</value></data><data name="Auth_GetStarted_SubmitBtn" xml:space="preserve"><value>Inicializar espacio de trabajo dedicado</value></data><data name="Auth_GetStarted_TermsNotice" xml:space="preserve"><value>Al continuar, acepta los Términos de servicio y la Política de privacidad de Ozikol.</value></data><data name="Auth_GetStarted_AlreadyHaveAccount" xml:space="preserve"><value>¿Ya tiene un espacio de trabajo para su organización?</value></data><data name="Auth_GetStarted_SignInLink" xml:space="preserve"><value>Inicie sesión aquí</value></data><data name="Auth_GetStarted_ModalTitle" xml:space="preserve"><value>Configurando su espacio de trabajo</value></data><data name="Auth_GetStarted_ModalDesc" xml:space="preserve"><value>Espere mientras aprovisionamos su entorno de nube dedicado...</value></data><data name="Auth_Setup_ExpiredTitle" xml:space="preserve"><value>Resumen de configuración caducado</value></data><data name="Auth_Setup_ExpiredDesc" xml:space="preserve"><value>Por su seguridad, los detalles iniciales del espacio se muestran solo una vez en el momento de la creación.</value></data><data name="Auth_Setup_HowToAccess" xml:space="preserve"><value>Cómo acceder a su espacio de trabajo:</value></data><data name="Auth_Setup_ReturnHome" xml:space="preserve"><value>Volver a la página principal</value></data><data name="Auth_Setup_ReadyBadge" xml:space="preserve"><value>Espacio de trabajo listo</value></data><data name="Auth_Setup_ReadyDesc" xml:space="preserve"><value>Su entorno en la nube empresarial dedicado está inicializado y operativo.</value></data><data name="Auth_Setup_WebsiteLabel" xml:space="preserve"><value>Sitio web dedicado de la organización:</value></data><data name="Auth_Setup_LoginLabel" xml:space="preserve"><value>Acceso al centro de control del administrador:</value></data><data name="Auth_Setup_CredentialsLabel" xml:space="preserve"><value>Credenciales de administrador:</value></data><data name="Auth_Setup_UsernameLabel" xml:space="preserve"><value>Nombre de usuario:</value></data><data name="Auth_Setup_PasswordNotice" xml:space="preserve"><value>Contraseña: [La contraseña especificada durante la configuración]</value></data><data name="Auth_Setup_Copy" xml:space="preserve"><value>Copiar</value></data><data name="Auth_Setup_Copied" xml:space="preserve"><value>¡Copiado!</value></data><data name="Auth_Setup_LaunchBtn" xml:space="preserve"><value>Iniciar centro de control del espacio</value></data><data name="Footer_Sitemap" xml:space="preserve"><value>Mapa del sitio</value></data><data name="Sitemap_Hero_Badge" xml:space="preserve"><value>Directorio y navegación</value></data><data name="Sitemap_Hero_Title" xml:space="preserve"><value>Mapa del sitio de la plataforma</value></data><data name="Sitemap_Hero_Desc" xml:space="preserve"><value>Explore el directorio completo de páginas del portal Ozikol, plataformas empresariales, módulos de negocio, soporte y gobernanza.</value></data><data name="Sitemap_Xml_Badge" xml:space="preserve"><value>Ver sitemap XML</value></data><data name="Sitemap_Search_Placeholder" xml:space="preserve"><value>Filtrar páginas y módulos...</value></data><data name="Sitemap_Sec_Platform" xml:space="preserve"><value>Suite de plataformas</value></data><data name="Sitemap_Sec_Features" xml:space="preserve"><value>Módulos y funciones empresariales</value></data><data name="Sitemap_Sec_Support" xml:space="preserve"><value>Recursos de soporte y ayuda</value></data><data name="Sitemap_Sec_Legal" xml:space="preserve"><value>Legal, privacidad y cumplimiento</value></data><data name="Sitemap_Sec_Company" xml:space="preserve"><value>Corporativo y ecosistema</value></data><data name="Voucher_Page_Title" xml:space="preserve"><value>Solicitar cupón promocional gratuito de 1 año | Ozikol</value></data><data name="Voucher_Breadcrumb_Title" xml:space="preserve"><value>Cupón promocional</value></data><data name="Voucher_Btn_BackToPricing" xml:space="preserve"><value>Volver a precios</value></data><data name="Voucher_Hero_Badge" xml:space="preserve"><value>Programa de empoderamiento comunitario</value></data><data name="Voucher_Hero_Title" xml:space="preserve"><value>Solicite un cupón promocional gratuito de 1 año</value></data><data name="Voucher_Hero_Lead" xml:space="preserve"><value>Empodere a su organización con infraestructura en la nube soberana. Complete nuestros pasos de participación comunitaria a continuación para recibir un cupón promocional para su espacio de trabajo.</value></data><data name="Voucher_Notice_Title" xml:space="preserve"><value>Cómo funciona el programa de cupones</value></data><data name="Voucher_Notice_Desc" xml:space="preserve"><value>Apoyamos a organizaciones en crecimiento, startups y constructores comunitarios. Siga nuestras cuentas oficiales, ingrese sus perfiles para verificación y nuestro equipo emitirá un cupón promocional.</value></data><data name="Voucher_Section1_Title" xml:space="preserve"><value>Información de la organización y del administrador</value></data><data name="Voucher_Field_FullName" xml:space="preserve"><value>Nombre completo *</value></data><data name="Voucher_Field_FullName_Placeholder" xml:space="preserve"><value>ej. Juan Pérez</value></data><data name="Voucher_Field_Email" xml:space="preserve"><value>Dirección de correo electrónico *</value></data><data name="Voucher_Field_Email_Placeholder" xml:space="preserve"><value>nombre@ejemplo.com</value></data><data name="Voucher_Field_OrgName" xml:space="preserve"><value>Nombre de la organización / empresa *</value></data><data name="Voucher_Field_OrgName_Placeholder" xml:space="preserve"><value>ej. Acme Corporation</value></data><data name="Voucher_Field_Phone" xml:space="preserve"><value>Número de teléfono de contacto</value></data><data name="Voucher_Field_Phone_Placeholder" xml:space="preserve"><value>ej. +34 912 34 56 78</value></data><data name="Voucher_Field_Subdomain" xml:space="preserve"><value>Dominio de espacio de trabajo (Opcional)</value></data><data name="Voucher_Field_Subdomain_Placeholder" xml:space="preserve"><value>ej. miempresa</value></data><data name="Voucher_Field_SubdomainHelp" xml:space="preserve"><value>Si ya tiene un subdominio preferido en mente, ingréselo arriba.</value></data><data name="Voucher_Section2_Title" xml:space="preserve"><value>Lista de verificación y participación comunitaria</value></data><data name="Voucher_Section2_Subtitle" xml:space="preserve"><value>Haga clic en cada canal para seguir/suscribirse. Al volver, la tarea se verificará automáticamente.</value></data><data name="Voucher_Task_Done" xml:space="preserve"><value>✓ Listo</value></data><data name="Voucher_Btn_Follow" xml:space="preserve"><value>Seguir</value></data><data name="Voucher_Btn_Subscribe" xml:space="preserve"><value>Suscribirse</value></data><data name="Voucher_Btn_Add" xml:space="preserve"><value>Añadir</value></data><data name="Voucher_Section3_Title" xml:space="preserve"><value>Objetivos de la organización y confirmación</value></data><data name="Voucher_Field_Remarks" xml:space="preserve"><value>¿Cómo utilizará su organización la plataforma? (Opcional)</value></data><data name="Voucher_Field_Remarks_Placeholder" xml:space="preserve"><value>Describa los objetivos de su organización, funciones previstas o uso esperado...</value></data><data name="Voucher_Field_Newsletter" xml:space="preserve"><value>Suscríbase a informes técnicos oficiales, boletines de seguridad y lanzamientos de funciones.</value></data><data name="Voucher_Btn_Submit" xml:space="preserve"><value>Enviar solicitud de cupón</value></data><data name="Voucher_Success_Title" xml:space="preserve"><value>¡Solicitud enviada con éxito!</value></data><data name="Voucher_Success_Desc" xml:space="preserve"><value>Gracias por solicitar el cupón promocional gratuito de 1 año de Ozikol. Nuestro equipo verificará sus actividades comunitarias y le enviará su código por correo electrónico en breve.</value></data><data name="Voucher_Success_RefLabel" xml:space="preserve"><value>Su referencia de solicitud:</value></data><data name="Voucher_Success_EmailNotice" xml:space="preserve"><value>Se ha enviado un recibo de confirmación a su dirección de correo electrónico.</value></data><data name="Voucher_Success_BtnHome" xml:space="preserve"><value>Volver al inicio</value></data><data name="Voucher_Success_BtnPricing" xml:space="preserve"><value>Volver a precios</value></data><data name="GetStarted_Voucher_Title" xml:space="preserve"><value>¿Desea acceso 100% gratuito por 1 año completo?</value></data><data name="GetStarted_Voucher_Desc" xml:space="preserve"><value>Solicite un cupón promocional gratuito de 1 año completando nuestras actividades comunitarias.</value></data><data name="GetStarted_Voucher_Btn" xml:space="preserve"><value>Solicitar cupón de 1 año gratis</value></data></root>
+  <data name="Auth_Login_Title" xml:space="preserve">
+    <value>Inicio de sesión en la consola de la plataforma central - Ozikol</value>
+  </data>
+  <data name="Auth_Login_Badge" xml:space="preserve">
+    <value>Consola central</value>
+  </data>
+  <data name="Auth_Login_Heading" xml:space="preserve">
+    <value>Inicio de sesión de administrador</value>
+  </data>
+  <data name="Auth_Login_Subtitle" xml:space="preserve">
+    <value>Acceso autorizado a la consola para operadores y administradores de la plataforma Ozikol.</value>
+  </data>
+  <data name="Auth_Login_OrgNoticeTitle" xml:space="preserve">
+    <value>¿Busca acceder al espacio de trabajo de su organización?</value>
+  </data>
+  <data name="Auth_Login_OrgNoticeDesc" xml:space="preserve">
+    <value>Para iniciar sesión en su espacio de trabajo, navegue directamente al enlace del sitio web de su organización (ej. {0}). Por seguridad y aislamiento, cada empresa inicia sesión a través de su dominio dedicado.</value>
+  </data>
+  <data name="Auth_Login_EmailLabel" xml:space="preserve">
+    <value>Correo electrónico corporativo del operador</value>
+  </data>
+  <data name="Auth_Login_PasswordLabel" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+  <data name="Auth_Login_ShowPassword" xml:space="preserve">
+    <value>Mostrar</value>
+  </data>
+  <data name="Auth_Login_HidePassword" xml:space="preserve">
+    <value>Ocultar</value>
+  </data>
+  <data name="Auth_Login_RememberMe" xml:space="preserve">
+    <value>Mantener activa esta sesión de la consola durante 7 días</value>
+  </data>
+  <data name="Auth_Login_SubmitBtn" xml:space="preserve">
+    <value>Iniciar sesión en la consola central</value>
+  </data>
+  <data name="Auth_Login_FooterPrompt" xml:space="preserve">
+    <value>¿Necesita registrar una organización empresarial?</value>
+  </data>
+  <data name="Auth_Login_CreateWorkspaceLink" xml:space="preserve">
+    <value>Crear un espacio de trabajo empresarial</value>
+  </data>
+  <data name="Auth_GetStarted_Title" xml:space="preserve">
+    <value>Crear espacio de trabajo empresarial gratuito - Ozikol</value>
+  </data>
+  <data name="Auth_GetStarted_Heading" xml:space="preserve">
+    <value>Comenzar con Ozikol</value>
+  </data>
+  <data name="Auth_GetStarted_Subtitle" xml:space="preserve">
+    <value>Cree su espacio de trabajo empresarial en 60 segundos. Entorno dedicado con módulos empresariales centrales.</value>
+  </data>
+  <data name="Auth_GetStarted_GoogleFastTrack" xml:space="preserve">
+    <value>Acceso rápido con Google Workspace</value>
+  </data>
+  <data name="Auth_GetStarted_MicrosoftFastTrack" xml:space="preserve">
+    <value>Acceso rápido con Microsoft 365</value>
+  </data>
+  <data name="Auth_GetStarted_OrCorporate" xml:space="preserve">
+    <value>o regístrese con credenciales corporativas</value>
+  </data>
+  <data name="Auth_GetStarted_FullName" xml:space="preserve">
+    <value>Nombre completo del administrador</value>
+  </data>
+  <data name="Auth_GetStarted_OrgName" xml:space="preserve">
+    <value>Nombre de la organización</value>
+  </data>
+  <data name="Auth_GetStarted_WorkspaceAddress" xml:space="preserve">
+    <value>Dirección del espacio de trabajo</value>
+  </data>
+  <data name="Auth_GetStarted_SubdomainHint" xml:space="preserve">
+    <value>(el subdominio en la nube de su organización)</value>
+  </data>
+  <data name="Auth_GetStarted_WorkEmail" xml:space="preserve">
+    <value>Dirección de correo electrónico del administrador</value>
+  </data>
+  <data name="Auth_GetStarted_Password" xml:space="preserve">
+    <value>Contraseña de administrador</value>
+  </data>
+  <data name="Auth_GetStarted_PasswordPlaceholder" xml:space="preserve">
+    <value>Cree una contraseña segura (mín. 6 caracteres)</value>
+  </data>
+  <data name="Auth_GetStarted_OrgSector" xml:space="preserve">
+    <value>Sector de la organización</value>
+  </data>
+  <data name="Auth_GetStarted_Phone" xml:space="preserve">
+    <value>Número de teléfono</value>
+  </data>
+  <data name="Auth_GetStarted_Optional" xml:space="preserve">
+    <value>Opcional</value>
+  </data>
+  <data name="Auth_GetStarted_HaveReferral" xml:space="preserve">
+    <value>¿Tiene un código de referencia de socio?</value>
+  </data>
+  <data name="Auth_GetStarted_SubmitBtn" xml:space="preserve">
+    <value>Inicializar espacio de trabajo dedicado</value>
+  </data>
+  <data name="Auth_GetStarted_TermsNotice" xml:space="preserve">
+    <value>Al continuar, acepta los Términos de servicio y la Política de privacidad de Ozikol.</value>
+  </data>
+  <data name="Auth_GetStarted_AlreadyHaveAccount" xml:space="preserve">
+    <value>¿Ya tiene un espacio de trabajo para su organización?</value>
+  </data>
+  <data name="Auth_GetStarted_SignInLink" xml:space="preserve">
+    <value>Inicie sesión aquí</value>
+  </data>
+  <data name="Auth_GetStarted_ModalTitle" xml:space="preserve">
+    <value>Configurando su espacio de trabajo</value>
+  </data>
+  <data name="Auth_GetStarted_ModalDesc" xml:space="preserve">
+    <value>Espere mientras aprovisionamos su entorno de nube dedicado...</value>
+  </data>
+  <data name="Auth_Setup_ExpiredTitle" xml:space="preserve">
+    <value>Resumen de configuración caducado</value>
+  </data>
+  <data name="Auth_Setup_ExpiredDesc" xml:space="preserve">
+    <value>Por su seguridad, los detalles iniciales del espacio se muestran solo una vez en el momento de la creación.</value>
+  </data>
+  <data name="Auth_Setup_HowToAccess" xml:space="preserve">
+    <value>Cómo acceder a su espacio de trabajo:</value>
+  </data>
+  <data name="Auth_Setup_ReturnHome" xml:space="preserve">
+    <value>Volver a la página principal</value>
+  </data>
+  <data name="Auth_Setup_ReadyBadge" xml:space="preserve">
+    <value>Espacio de trabajo listo</value>
+  </data>
+  <data name="Auth_Setup_ReadyDesc" xml:space="preserve">
+    <value>Su entorno en la nube empresarial dedicado está inicializado y operativo.</value>
+  </data>
+  <data name="Auth_Setup_WebsiteLabel" xml:space="preserve">
+    <value>Sitio web dedicado de la organización:</value>
+  </data>
+  <data name="Auth_Setup_LoginLabel" xml:space="preserve">
+    <value>Acceso al centro de control del administrador:</value>
+  </data>
+  <data name="Auth_Setup_CredentialsLabel" xml:space="preserve">
+    <value>Credenciales de administrador:</value>
+  </data>
+  <data name="Auth_Setup_UsernameLabel" xml:space="preserve">
+    <value>Nombre de usuario:</value>
+  </data>
+  <data name="Auth_Setup_PasswordNotice" xml:space="preserve">
+    <value>Contraseña: [La contraseña especificada durante la configuración]</value>
+  </data>
+  <data name="Auth_Setup_Copy" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="Auth_Setup_Copied" xml:space="preserve">
+    <value>¡Copiado!</value>
+  </data>
+  <data name="Auth_Setup_LaunchBtn" xml:space="preserve">
+    <value>Iniciar centro de control del espacio</value>
+  </data>
+  <data name="Footer_Sitemap" xml:space="preserve">
+    <value>Mapa del sitio</value>
+  </data>
+  <data name="Sitemap_Hero_Badge" xml:space="preserve">
+    <value>Directorio y navegación</value>
+  </data>
+  <data name="Sitemap_Hero_Title" xml:space="preserve">
+    <value>Mapa del sitio de la plataforma</value>
+  </data>
+  <data name="Sitemap_Hero_Desc" xml:space="preserve">
+    <value>Explore el directorio completo de páginas del portal Ozikol, plataformas empresariales, módulos de negocio, soporte y gobernanza.</value>
+  </data>
+  <data name="Sitemap_Xml_Badge" xml:space="preserve">
+    <value>Ver sitemap XML</value>
+  </data>
+  <data name="Sitemap_Search_Placeholder" xml:space="preserve">
+    <value>Filtrar páginas y módulos...</value>
+  </data>
+  <data name="Sitemap_Sec_Platform" xml:space="preserve">
+    <value>Suite de plataformas</value>
+  </data>
+  <data name="Sitemap_Sec_Features" xml:space="preserve">
+    <value>Módulos y funciones empresariales</value>
+  </data>
+  <data name="Sitemap_Sec_Support" xml:space="preserve">
+    <value>Recursos de soporte y ayuda</value>
+  </data>
+  <data name="Sitemap_Sec_Legal" xml:space="preserve">
+    <value>Legal, privacidad y cumplimiento</value>
+  </data>
+  <data name="Sitemap_Sec_Company" xml:space="preserve">
+    <value>Corporativo y ecosistema</value>
+  </data>
+  <data name="Voucher_Page_Title" xml:space="preserve">
+    <value>Solicitar cupón promocional gratuito de 1 año | Ozikol</value>
+  </data>
+  <data name="Voucher_Breadcrumb_Title" xml:space="preserve">
+    <value>Cupón promocional</value>
+  </data>
+  <data name="Voucher_Btn_BackToPricing" xml:space="preserve">
+    <value>Volver a precios</value>
+  </data>
+  <data name="Voucher_Hero_Badge" xml:space="preserve">
+    <value>Programa de empoderamiento comunitario</value>
+  </data>
+  <data name="Voucher_Hero_Title" xml:space="preserve">
+    <value>Solicite un cupón promocional gratuito de 1 año</value>
+  </data>
+  <data name="Voucher_Hero_Lead" xml:space="preserve">
+    <value>Empodere a su organización con infraestructura en la nube soberana. Complete nuestros pasos de participación comunitaria a continuación para recibir un cupón promocional para su espacio de trabajo.</value>
+  </data>
+  <data name="Voucher_Notice_Title" xml:space="preserve">
+    <value>Cómo funciona el programa de cupones</value>
+  </data>
+  <data name="Voucher_Notice_Desc" xml:space="preserve">
+    <value>Apoyamos a organizaciones en crecimiento, startups y constructores comunitarios. Siga nuestras cuentas oficiales, ingrese sus perfiles para verificación y nuestro equipo emitirá un cupón promocional.</value>
+  </data>
+  <data name="Voucher_Section1_Title" xml:space="preserve">
+    <value>Información de la organización y del administrador</value>
+  </data>
+  <data name="Voucher_Field_FullName" xml:space="preserve">
+    <value>Nombre completo *</value>
+  </data>
+  <data name="Voucher_Field_FullName_Placeholder" xml:space="preserve">
+    <value>ej. Juan Pérez</value>
+  </data>
+  <data name="Voucher_Field_Email" xml:space="preserve">
+    <value>Dirección de correo electrónico *</value>
+  </data>
+  <data name="Voucher_Field_Email_Placeholder" xml:space="preserve">
+    <value>nombre@ejemplo.com</value>
+  </data>
+  <data name="Voucher_Field_OrgName" xml:space="preserve">
+    <value>Nombre de la organización / empresa *</value>
+  </data>
+  <data name="Voucher_Field_OrgName_Placeholder" xml:space="preserve">
+    <value>ej. Acme Corporation</value>
+  </data>
+  <data name="Voucher_Field_Phone" xml:space="preserve">
+    <value>Número de teléfono de contacto</value>
+  </data>
+  <data name="Voucher_Field_Phone_Placeholder" xml:space="preserve">
+    <value>ej. +34 912 34 56 78</value>
+  </data>
+  <data name="Voucher_Field_Subdomain" xml:space="preserve">
+    <value>Dominio de espacio de trabajo (Opcional)</value>
+  </data>
+  <data name="Voucher_Field_Subdomain_Placeholder" xml:space="preserve">
+    <value>ej. miempresa</value>
+  </data>
+  <data name="Voucher_Field_SubdomainHelp" xml:space="preserve">
+    <value>Si ya tiene un subdominio preferido en mente, ingréselo arriba.</value>
+  </data>
+  <data name="Voucher_Section2_Title" xml:space="preserve">
+    <value>Lista de verificación y participación comunitaria</value>
+  </data>
+  <data name="Voucher_Section2_Subtitle" xml:space="preserve">
+    <value>Haga clic en cada canal para seguir/suscribirse. Al volver, la tarea se verificará automáticamente.</value>
+  </data>
+  <data name="Voucher_Task_Done" xml:space="preserve">
+    <value>✓ Listo</value>
+  </data>
+  <data name="Voucher_Btn_Follow" xml:space="preserve">
+    <value>Seguir</value>
+  </data>
+  <data name="Voucher_Btn_Subscribe" xml:space="preserve">
+    <value>Suscribirse</value>
+  </data>
+  <data name="Voucher_Btn_Add" xml:space="preserve">
+    <value>Añadir</value>
+  </data>
+  <data name="Voucher_Section3_Title" xml:space="preserve">
+    <value>Objetivos de la organización y confirmación</value>
+  </data>
+  <data name="Voucher_Field_Remarks" xml:space="preserve">
+    <value>¿Cómo utilizará su organización la plataforma? (Opcional)</value>
+  </data>
+  <data name="Voucher_Field_Remarks_Placeholder" xml:space="preserve">
+    <value>Describa los objetivos de su organización, funciones previstas o uso esperado...</value>
+  </data>
+  <data name="Voucher_Field_Newsletter" xml:space="preserve">
+    <value>Suscríbase a informes técnicos oficiales, boletines de seguridad y lanzamientos de funciones.</value>
+  </data>
+  <data name="Voucher_Btn_Submit" xml:space="preserve">
+    <value>Enviar solicitud de cupón</value>
+  </data>
+  <data name="Voucher_Success_Title" xml:space="preserve">
+    <value>¡Solicitud enviada con éxito!</value>
+  </data>
+  <data name="Voucher_Success_Desc" xml:space="preserve">
+    <value>Gracias por solicitar el cupón promocional gratuito de 1 año de Ozikol. Nuestro equipo verificará sus actividades comunitarias y le enviará su código por correo electrónico en breve.</value>
+  </data>
+  <data name="Voucher_Success_RefLabel" xml:space="preserve">
+    <value>Su referencia de solicitud:</value>
+  </data>
+  <data name="Voucher_Success_EmailNotice" xml:space="preserve">
+    <value>Se ha enviado un recibo de confirmación a su dirección de correo electrónico.</value>
+  </data>
+  <data name="Voucher_Success_BtnHome" xml:space="preserve">
+    <value>Volver al inicio</value>
+  </data>
+  <data name="Voucher_Success_BtnPricing" xml:space="preserve">
+    <value>Volver a precios</value>
+  </data>
+  <data name="GetStarted_Voucher_Title" xml:space="preserve">
+    <value>¿Desea acceso 100% gratuito por 1 año completo?</value>
+  </data>
+  <data name="GetStarted_Voucher_Desc" xml:space="preserve">
+    <value>Solicite un cupón promocional gratuito de 1 año completando nuestras actividades comunitarias.</value>
+  </data>
+  <data name="GetStarted_Voucher_Btn" xml:space="preserve">
+    <value>Solicitar cupón de 1 año gratis</value>
+  </data>
+  <data name="Support_Vouchers_Sub" xml:space="preserve">
+    <value>Solicite cupones y hasta 1 aÃ±o de acceso promocional a la plataforma.</value>
+  </data>
+  <data name="Nav_Support_Vouchers" xml:space="preserve">
+    <value>CupÃ³n promocional</value>
+  </data>
+  <data name="Support_Tab_Vouchers" xml:space="preserve">
+    <value>CupÃ³n promocional</value>
+  </data>
+</root>
