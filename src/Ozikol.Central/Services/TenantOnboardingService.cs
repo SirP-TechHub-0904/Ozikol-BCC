@@ -235,8 +235,8 @@ public class TenantOnboardingService : ITenantOnboardingService
         var scopeInfo = string.IsNullOrWhiteSpace(coupon.GrantedFeaturesSummary) ? "all platform features" : coupon.GrantedFeaturesSummary;
 
         string successMsg = coupon.DiscountPercentage >= 100.00m
-            ? $"100% OFF promotional voucher '{cleanCode}' applied ({durationInfo} free access to {scopeInfo})!"
-            : $"{coupon.DiscountPercentage:G29}% OFF discount coupon '{cleanCode}' applied successfully ({durationInfo})!";
+            ? $"100% Free promotional voucher '{cleanCode}' applied ({durationInfo} free access to {scopeInfo})!"
+            : $"{coupon.DiscountPercentage:G29}% OFF promotional voucher '{cleanCode}' applied ({durationInfo} access to {scopeInfo})!";
 
         return (true, coupon, discountPct, successMsg);
     }

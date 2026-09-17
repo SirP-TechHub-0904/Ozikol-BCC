@@ -274,7 +274,26 @@
             @Html.AntiForgeryToken()
             <input type="hidden" id="modalApplicationId" name="applicationId" value="" />
 
-            <!-- 1. DURATION PRESETS -->
+            <!-- 1. DISCOUNT PERCENTAGE PRESETS -->
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                    Promotional Discount Percentage
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;">
+                    <button type="button" class="discount-btn active" onclick="selectDiscount(100, this)" style="padding: 8px 10px; border: 2px solid #10b981; border-radius: 8px; background: #ecfdf5; font-size: 12.5px; font-weight: 800; color: #047857; cursor: pointer;">100% Free</button>
+                    <button type="button" class="discount-btn" onclick="selectDiscount(50, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">50% OFF</button>
+                    <button type="button" class="discount-btn" onclick="selectDiscount(30, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">30% OFF</button>
+                    <button type="button" class="discount-btn" onclick="selectDiscount(20, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">20% OFF</button>
+                    <button type="button" class="discount-btn" onclick="selectDiscount(10, this)" style="padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #ffffff; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">10% OFF</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12.5px; color: #64748b;">Or custom discount:</span>
+                    <input type="number" id="discountPctInput" name="discountPercentage" value="100" min="1" max="100" step="1" style="width: 90px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 700;" />
+                    <span style="font-size: 12px; color: #94a3b8;">%</span>
+                </div>
+            </div>
+
+            <!-- 2. DURATION PRESETS -->
             <div style="margin-bottom: 22px;">
                 <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
                     Promotional Access Duration
@@ -293,7 +312,7 @@
                 </div>
             </div>
 
-            <!-- 2. FEATURE SCOPE SELECTION -->
+            <!-- 3. FEATURE SCOPE SELECTION -->
             <div style="margin-bottom: 22px;">
                 <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
                     Feature Entitlement Coverage
@@ -324,12 +343,12 @@
                 </div>
             </div>
 
-            <!-- 3. INTERNAL ADMIN NOTES -->
+            <!-- 4. INTERNAL ADMIN NOTES -->
             <div style="margin-bottom: 24px;">
                 <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
                     Review Notes / Justification (Optional)
                 </label>
-                <textarea name="adminNotes" rows="2" placeholder="e.g. Verified X and LinkedIn accounts. Granted 100% full suite access." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; resize: vertical;"></textarea>
+                <textarea name="adminNotes" rows="2" placeholder="e.g. Verified social media channels. Granted voucher access." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; resize: vertical;"></textarea>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1.5px solid #f1f5f9; padding-top: 16px;">
@@ -338,7 +357,7 @@
                 </button>
                 <button type="submit" style="padding: 10px 24px; border: none; border-radius: 8px; background: #10b981; color: #ffffff; font-weight: 800; font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">
                     <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
-                    <span>Issue 100% Voucher & Email Applicant</span>
+                    <span>Issue Voucher & Email Applicant</span>
                 </button>
             </div>
         </form>
@@ -383,6 +402,20 @@
 
     function closeApprovalModal() {
         document.getElementById('approvalModal').style.display = 'none';
+    }
+
+    function selectDiscount(pct, btn) {
+        document.getElementById('discountPctInput').value = pct;
+        document.querySelectorAll('.discount-btn').forEach(b => {
+            b.style.borderColor = '#cbd5e1';
+            b.style.background = '#ffffff';
+            b.style.color = '#334155';
+            b.style.fontWeight = '700';
+        });
+        btn.style.borderColor = '#10b981';
+        btn.style.background = '#ecfdf5';
+        btn.style.color = '#047857';
+        btn.style.fontWeight = '800';
     }
 
     function selectDuration(days, btn) {

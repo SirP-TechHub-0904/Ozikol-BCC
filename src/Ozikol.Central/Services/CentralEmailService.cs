@@ -25,7 +25,7 @@ public interface ICentralEmailService
     Task SendExamBookingDualAsync(string candidateName, string candidateEmail, string examTitle, string bookingRef, CancellationToken cancellationToken = default);
     Task SendNewsletterSubscriptionAsync(string email, CancellationToken cancellationToken = default);
     Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default);
-    Task<bool> SendVoucherApprovalEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, CancellationToken cancellationToken = default);
+    Task<bool> SendVoucherApprovalEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
@@ -565,15 +565,16 @@ public class CentralEmailService : ICentralEmailService
     }
 
     /// <summary>
-    /// Dispatches the official voucher approval email containing the unique coupon code, duration, granted feature scope, and 1-click activation link.
+    /// Dispatches the official voucher approval email containing the unique coupon code, duration, granted feature scope, discount percentage, and 1-click activation link.
     /// </summary>
     /// <param name="app">The approved voucher application.</param>
     /// <param name="couponCode">The generated promo coupon code.</param>
     /// <param name="durationDays">Number of access days granted (e.g. 365).</param>
     /// <param name="featuresSummary">Human-readable summary of features included.</param>
+    /// <param name="discountPercentage">The percentage discount granted (e.g. 100.00%, 50.00%, 30.00%).</param>
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>True if delivered; false otherwise.</returns>
-    public async Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, CancellationToken cancellationToken = default)
+    public async Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default)
     {
         var settings = await GetPlatformSettingAsync(cancellationToken);
         var baseUrl = _configuration["App:BaseUrl"] ?? _configuration["Hosting:BaseUrl"] ?? "https://ozikol.cloud";
@@ -581,20 +582,22 @@ public class CentralEmailService : ICentralEmailService
 
         var durationLabel = durationDays >= 365 ? "1 Full Year (365 Days)" : $"{durationDays} Days";
         var featuresLabel = string.IsNullOrWhiteSpace(featuresSummary) ? "All Platform Capabilities (Full Suite)" : featuresSummary;
+        var discountLabel = discountPercentage >= 100.00m ? "100% Free" : $"{discountPercentage:G29}% OFF";
 
-        var subject = $"Congratulations! Your Ozikol Promotional Voucher [{couponCode}] is Ready!";
+        var subject = $"Congratulations! Your Ozikol Promotional Voucher [{couponCode}] ({discountLabel}) is Ready!";
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
-                    <span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 14px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;'>VOUCHER APPROVED</span>
+                    <span style='background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 14px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;'>VOUCHER APPROVED &bull; {discountLabel}</span>
                     <h2 style='color: #0f172a; margin: 12px 0 6px 0; font-size: 24px; font-weight: 800;'>Your Promotional Voucher is Ready!</h2>
                     <p style='color: #64748b; font-size: 14px; margin: 0;'>Congratulations {app.FullName}! Your community verification has been approved for <strong>{app.OrganizationName}</strong>.</p>
                 </div>
 
                 <div style='background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #10b981; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;'>
-                    <div style='font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 1px;'>Your 100% Free Voucher Code:</div>
+                    <div style='font-size: 12px; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: 1px;'>Your {discountLabel} Voucher Code:</div>
                     <div style='font-size: 32px; font-weight: 900; color: #047857; letter-spacing: 4px; font-family: monospace; padding: 10px 0;'>{couponCode}</div>
                     <div style='display: flex; justify-content: center; gap: 16px; margin-top: 10px; font-size: 13px; color: #065f46; font-weight: 600; flex-wrap: wrap;'>
+                        <span>🏷 <strong>Discount:</strong> {discountLabel}</span>
                         <span>⏱ <strong>Duration:</strong> {durationLabel}</span>
                         <span>✨ <strong>Scope:</strong> {featuresLabel}</span>
                     </div>
@@ -608,7 +611,7 @@ public class CentralEmailService : ICentralEmailService
                 </div>
 
                 <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13px; color: #475569; line-height: 1.5;'>
-                    <strong>How to Redeem:</strong> If you are setting up manually, enter code <code>{couponCode}</code> at Step 2 (Features & Promo) of the Get Started onboarding flow. The total will automatically discount to 100% Free.
+                    <strong>How to Redeem:</strong> If you are setting up manually, enter code <code>{couponCode}</code> at Step 2 (Features & Promo) of the Get Started onboarding flow.
                 </div>
 
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px 0;' />

@@ -139,6 +139,12 @@ namespace Ozikol.MasterDomain.Models
         public int GrantedDurationDays { get; set; } = 365;
 
         /// <summary>
+        /// Discount percentage granted upon approval (e.g. 100.00% for full free access, 50.00%, 30.00%, etc.).
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal GrantedDiscountPercentage { get; set; } = 100.00m;
+
+        /// <summary>
         /// Human-readable summary of features granted (e.g. "Full Suite", or "Mass SMS & Email, Voting").
         /// </summary>
         [MaxLength(500)]
