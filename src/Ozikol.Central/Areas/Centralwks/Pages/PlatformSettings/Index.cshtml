@@ -43,7 +43,7 @@
                     </label>
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input id="trialDaysInput" asp-for="Input.DefaultTrialDays" type="number" min="1" max="365" class="form-control" 
-                               style="width: 140px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 14px; font-weight: 600;" />
+                               style="width: 140px; font-weight: 600;" />
                         <span style="font-size: 13px; color: var(--admin-text-muted);">days</span>
                     </div>
                     <span asp-validation-for="Input.DefaultTrialDays" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
@@ -65,8 +65,7 @@
                     <label asp-for="Input.DefaultCurrencyCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Default Fallback Currency <span style="color: #f87171;">*</span>
                     </label>
-                    <select asp-for="Input.DefaultCurrencyCode" class="form-control" 
-                            style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                    <select asp-for="Input.DefaultCurrencyCode" class="form-control">
                         <option value="USD">USD ($) - US Dollar</option>
                         <option value="NGN">NGN (₦) - Nigerian Naira</option>
                         <option value="GBP">GBP (£) - British Pound</option>
@@ -102,8 +101,7 @@
                     <label asp-for="Input.PlatformName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Platform Brand Name <span style="color: #f87171;">*</span>
                     </label>
-                    <input asp-for="Input.PlatformName" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <input asp-for="Input.PlatformName" class="form-control" />
                     <span asp-validation-for="Input.PlatformName" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
@@ -111,20 +109,18 @@
                     <label asp-for="Input.SupportContactEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Public Support Contact Email
                     </label>
-                    <input asp-for="Input.SupportContactEmail" class="form-control" placeholder="support@ozikol.com" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <input asp-for="Input.SupportContactEmail" class="form-control" placeholder="support@ozikol.com" />
                 </div>
 
                 <div>
                     <label asp-for="Input.DefaultFromEmail" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Default Outbound "From" Email
                     </label>
-                    <input asp-for="Input.DefaultFromEmail" class="form-control" placeholder="noreply@ozikol.com" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <input asp-for="Input.DefaultFromEmail" class="form-control" placeholder="noreply@ozikol.com" />
                 </div>
             </div>
 
-            <div style="margin-top: 18px; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
+            <div style="margin-top: 18px; padding: 12px 16px; background: rgba(0, 0, 0, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
                     <input type="checkbox" asp-for="Input.EnableAdminNotifications" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
                     Enable administrator notification emails globally across all departments
@@ -148,7 +144,7 @@
                         Support &amp; Inquiry Alert Recipients
                     </label>
                     <textarea asp-for="Input.SupportAdminEmails" rows="2" placeholder="support-leads@ozikol.com, triage@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
 
                 <div>
@@ -156,7 +152,7 @@
                         Affiliate Partner Application Alerts
                     </label>
                     <textarea asp-for="Input.PartnerAdminEmails" rows="2" placeholder="affiliates-team@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
 
                 <div>
@@ -164,7 +160,7 @@
                         Creator Program Application Alerts
                     </label>
                     <textarea asp-for="Input.CreatorAdminEmails" rows="2" placeholder="creators-review@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
 
                 <div>
@@ -172,7 +168,7 @@
                         Candidate Job Application Alerts
                     </label>
                     <textarea asp-for="Input.CareersAdminEmails" rows="2" placeholder="recruitment@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
 
                 <div style="grid-column: span 2;">
@@ -180,7 +176,7 @@
                         Certification Exam Registration Alerts
                     </label>
                     <textarea asp-for="Input.CertificationAdminEmails" rows="2" placeholder="certifications-ops@ozikol.com" 
-                              class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;"></textarea>
+                              class="form-control"></textarea>
                 </div>
             </div>
         </div>
@@ -200,8 +196,7 @@
                     <label asp-for="Input.TicketAutoCloseHours" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Auto-Close Inactivity Threshold (Hours)
                     </label>
-                    <input asp-for="Input.TicketAutoCloseHours" type="number" min="1" max="720" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <input asp-for="Input.TicketAutoCloseHours" type="number" min="1" max="720" class="form-control" />
                     <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Default is 24 hours.</span>
                 </div>
 
@@ -209,13 +204,12 @@
                     <label asp-for="Input.SupportCategories" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                         Public Support Inquiry Categories (Comma-separated)
                     </label>
-                    <input asp-for="Input.SupportCategories" class="form-control" 
-                           style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                    <input asp-for="Input.SupportCategories" class="form-control" />
                     <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Populates inquiry classification dropdowns on public portals.</span>
                 </div>
             </div>
 
-            <div style="padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
+            <div style="padding: 12px 16px; background: rgba(0, 0, 0, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px;">
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text); cursor: pointer;">
                     <input type="checkbox" asp-for="Input.EnableTicketAutoClose" style="accent-color: var(--admin-accent); width: 16px; height: 16px;" />
                     Enable automated background closure of resolved tickets after inactivity threshold
