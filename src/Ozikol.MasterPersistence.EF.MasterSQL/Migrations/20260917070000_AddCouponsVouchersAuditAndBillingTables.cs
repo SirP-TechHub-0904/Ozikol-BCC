@@ -135,67 +135,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     table.PrimaryKey("PK_MasterVoucherApplications", x => x.Id);
                 });
 
-            // 5. Create MasterAuditLogs Table
-            migrationBuilder.CreateTable(
-                name: "MasterAuditLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
-                    UserEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
-                    UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
-                    Action = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    EntityType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    EntityId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    OldValuesJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    NewValuesJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IpAddress = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: true),
-                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MasterAuditLogs", x => x.Id);
-                });
-
-            // 6. Create MasterBillingTransactions Table
-            migrationBuilder.CreateTable(
-                name: "MasterBillingTransactions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MasterTenantCatalogId = table.Column<int>(type: "int", nullable: false),
-                    MasterTenantFeatureSubscriptionId = table.Column<int>(type: "int", nullable: true),
-                    InvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    TransactionReference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    PaymentProvider = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    CurrencyCode = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    BillingPeriodStartUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    BillingPeriodEndUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PaidAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MasterBillingTransactions", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MasterBillingTransactions_MasterTenantCatalogs_MasterTenantCatalogId",
-                        column: x => x.MasterTenantCatalogId,
-                        principalTable: "MasterTenantCatalogs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_MasterBillingTransactions_MasterTenantFeatureSubscriptions_MasterTenantFeatureSubscriptionId",
-                        column: x => x.MasterTenantFeatureSubscriptionId,
-                        principalTable: "MasterTenantFeatureSubscriptions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                });
-
             // ── Create Indexes ──
             migrationBuilder.CreateIndex(
                 name: "IX_MasterCoupons_Code",
@@ -243,65 +182,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                 name: "IX_MasterVoucherApplications_WorkEmail",
                 table: "MasterVoucherApplications",
                 column: "WorkEmail");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterAuditLogs_Action",
-                table: "MasterAuditLogs",
-                column: "Action");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterAuditLogs_CreatedUtc",
-                table: "MasterAuditLogs",
-                column: "CreatedUtc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterAuditLogs_EntityType",
-                table: "MasterAuditLogs",
-                column: "EntityType");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterAuditLogs_EntityType_CreatedUtc",
-                table: "MasterAuditLogs",
-                columns: new[] { "EntityType", "CreatedUtc" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterAuditLogs_UserId",
-                table: "MasterAuditLogs",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterBillingTransactions_CreatedUtc",
-                table: "MasterBillingTransactions",
-                column: "CreatedUtc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterBillingTransactions_InvoiceNumber",
-                table: "MasterBillingTransactions",
-                column: "InvoiceNumber",
-                unique: true,
-                filter: "[InvoiceNumber] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterBillingTransactions_MasterTenantCatalogId",
-                table: "MasterBillingTransactions",
-                column: "MasterTenantCatalogId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterBillingTransactions_MasterTenantFeatureSubscriptionId",
-                table: "MasterBillingTransactions",
-                column: "MasterTenantFeatureSubscriptionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MasterBillingTransactions_Status",
-                table: "MasterBillingTransactions",
-                column: "Status");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "MasterBillingTransactions");
-            migrationBuilder.DropTable(name: "MasterAuditLogs");
             migrationBuilder.DropTable(name: "MasterVoucherApplications");
             migrationBuilder.DropTable(name: "MasterCouponRedemptions");
             migrationBuilder.DropTable(name: "MasterCoupons");
