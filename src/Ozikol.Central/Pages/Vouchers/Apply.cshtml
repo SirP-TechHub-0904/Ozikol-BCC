@@ -89,32 +89,32 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
                             <div>
                                 <label asp-for="Input.FullName" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Full Name *</label>
-                                <input asp-for="Input.FullName" placeholder="e.g. Alexander Vance" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
+                                <input asp-for="Input.FullName" placeholder="e.g. John Doe" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
                                 <span asp-validation-for="Input.FullName" style="color: #ef4444; font-size: 12px;"></span>
                             </div>
 
                             <div>
                                 <label asp-for="Input.WorkEmail" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Work Email Address *</label>
-                                <input asp-for="Input.WorkEmail" type="email" placeholder="alexander@organization.org" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
+                                <input asp-for="Input.WorkEmail" type="email" placeholder="name@company.com" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
                                 <span asp-validation-for="Input.WorkEmail" style="color: #ef4444; font-size: 12px;"></span>
                             </div>
 
                             <div>
                                 <label asp-for="Input.OrganizationName" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Organization / Company Name *</label>
-                                <input asp-for="Input.OrganizationName" placeholder="e.g. Apex Global Initiatives" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
+                                <input asp-for="Input.OrganizationName" placeholder="e.g. Acme Corporation" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" required />
                                 <span asp-validation-for="Input.OrganizationName" style="color: #ef4444; font-size: 12px;"></span>
                             </div>
 
                             <div>
                                 <label asp-for="Input.PhoneNumber" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Contact Phone Number</label>
-                                <input asp-for="Input.PhoneNumber" placeholder="+1 (555) 000-0000" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+                                <input asp-for="Input.PhoneNumber" placeholder="e.g. +1 (555) 000-0000" style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
                             </div>
 
                             <div style="grid-column: 1 / -1;">
                                 <label asp-for="Input.WorkspaceSlug" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">Target Workspace Domain (Optional)</label>
                                 <div style="display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
                                     <span style="background: #f1f5f9; padding: 11px 14px; font-size: 13px; color: #64748b; font-weight: 600; border-right: 1px solid #cbd5e1;">https://</span>
-                                    <input asp-for="Input.WorkspaceSlug" placeholder="myorg" style="flex: 1; padding: 11px 14px; border: none; font-size: 14px; outline: none;" />
+                                    <input asp-for="Input.WorkspaceSlug" placeholder="e.g. mycompany" style="flex: 1; padding: 11px 14px; border: none; font-size: 14px; outline: none;" />
                                     <span style="background: #f1f5f9; padding: 11px 14px; font-size: 13px; color: #64748b; font-weight: 600; border-left: 1px solid #cbd5e1;">.ozikol.cloud</span>
                                 </div>
                                 <div style="font-size: 11.5px; color: #94a3b8; margin-top: 4px;">If you already have a preferred subdomain slug in mind, enter it above.</div>
@@ -161,7 +161,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.TwitterHandle" id="input-twitter" oninput="checkTaskInput('twitter')" placeholder="Your X handle (e.g. @@alexander)" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.TwitterHandle" id="input-twitter" oninput="checkTaskInput('twitter')" placeholder="e.g. @@username" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                             <!-- 2. LinkedIn -->
@@ -179,7 +179,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.LinkedInProfile" id="input-linkedin" oninput="checkTaskInput('linkedin')" placeholder="Your LinkedIn URL / Profile" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.LinkedInProfile" id="input-linkedin" oninput="checkTaskInput('linkedin')" placeholder="e.g. linkedin.com/in/username" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                             <!-- 3. YouTube -->
@@ -197,7 +197,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.YouTubeHandle" id="input-youtube" oninput="checkTaskInput('youtube')" placeholder="Your YouTube handle / name" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.YouTubeHandle" id="input-youtube" oninput="checkTaskInput('youtube')" placeholder="e.g. @@channelname" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                             <!-- 4. Facebook -->
@@ -215,7 +215,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.FacebookProfile" id="input-facebook" oninput="checkTaskInput('facebook')" placeholder="Your Facebook name / profile link" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.FacebookProfile" id="input-facebook" oninput="checkTaskInput('facebook')" placeholder="e.g. facebook.com/profile" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                             <!-- 5. Instagram -->
@@ -233,7 +233,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.InstagramHandle" id="input-instagram" oninput="checkTaskInput('instagram')" placeholder="Your Instagram handle (e.g. @@alex)" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.InstagramHandle" id="input-instagram" oninput="checkTaskInput('instagram')" placeholder="e.g. @@username" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                             <!-- 6. Snapchat -->
@@ -251,7 +251,7 @@
                                         <span>&rarr;</span>
                                     </a>
                                 </div>
-                                <input asp-for="Input.SnapchatHandle" id="input-snapchat" oninput="checkTaskInput('snapchat')" placeholder="Your Snapchat username" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
+                                <input asp-for="Input.SnapchatHandle" id="input-snapchat" oninput="checkTaskInput('snapchat')" placeholder="e.g. username" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #ffffff;" />
                             </div>
 
                         </div>
@@ -266,7 +266,7 @@
 
                         <div style="margin-bottom: 16px;">
                             <label asp-for="Input.Remarks" style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">How will your organization use the platform? (Optional)</label>
-                            <textarea asp-for="Input.Remarks" rows="3" placeholder="Briefly describe your use case, feature priorities (e.g. Mass SMS, Voting, LMS), or team structure..." style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                            <textarea asp-for="Input.Remarks" rows="3" placeholder="Describe your organization's goals, intended features, or expected usage..." style="width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
                         </div>
 
                         <div style="display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px;">

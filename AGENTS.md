@@ -39,3 +39,11 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Tenant persistence lives strictly in `Ozikol-BCC.Domain` and `Ozikol-BCC.Persistence.EF.SQL`.
   * Never cross-contaminate models, contexts, or migrations between Master and Tenant.
 * **Planning Before Modification**: Always provide a structured implementation plan and obtain user approval before modifying, deleting, or moving files across project boundaries.
+
+---
+
+## 4. UI Form & Placeholder Standards (Mandatory)
+* **Standard Professional Placeholders**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format (e.g., `e.g. John Doe`, `name@company.com`, `e.g. Acme Corporation`, `e.g. +1 (555) 000-0000`, `e.g. @@username`, `e.g. mycompany`).
+* **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
+* **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
+
