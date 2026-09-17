@@ -72,7 +72,9 @@ export class SignalRService {
     }
 
     // Resolve API origin correctly from environment configuration
-    const apiOrigin = environment.apiUrl.replace(/\/api\/?$/, '');
+    const apiOrigin = environment.apiUrl.startsWith('http')
+      ? environment.apiUrl.replace(/\/api\/?$/, '')
+      : (typeof window !== 'undefined' ? `${window.location.origin}${environment.apiUrl.replace(/\/api\/?$/, '')}` : '');
     const tenantKey = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_domain') || '';
     const hubUrl = `${apiOrigin}/hubs/group-chat?tenant=${encodeURIComponent(tenantKey)}`;
 
