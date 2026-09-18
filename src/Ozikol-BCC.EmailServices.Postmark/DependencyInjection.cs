@@ -56,6 +56,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IPostmarkEmailService, PostmarkEmailService>();
+        services.AddSingleton<IPostmarkWebhookParser, PostmarkWebhookParser>();
 
         return services;
     }
@@ -74,6 +75,7 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IPostmarkEmailService, PostmarkEmailService>();
+        services.AddSingleton<IPostmarkWebhookParser, PostmarkWebhookParser>();
 
         return services;
     }
