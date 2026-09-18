@@ -18,13 +18,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
     {
         private readonly MasterCatalogDbContext _dbContext;
 
+        private readonly ILogger<IndexModel> _logger;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
         /// </summary>
         /// <param name="dbContext">Master catalog database context for platform queries.</param>
-        public IndexModel(MasterCatalogDbContext dbContext)
+        /// <param name="logger">Diagnostic logging service.</param>
+        public IndexModel(MasterCatalogDbContext dbContext, ILogger<IndexModel> logger)
         {
-            _dbContext = dbContext;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -73,34 +77,92 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
         public List<MasterAuditLog> RecentAuditLogs { get; set; } = new();
 
         /// <summary>
-        /// Handles HTTP GET requests to calculate and populate dashboard statistics.
+        /// Handles HTTP GET requests to calculate and populate dashboard statistics with fault tolerance.
         /// </summary>
         public async Task OnGetAsync()
         {
-            TotalTenants = await _dbContext.MasterTenantCatalogs.CountAsync();
-            ActiveTenants = await _dbContext.MasterTenantCatalogs.CountAsync(t => t.IsActive);
-            ActiveSubscriptions = await _dbContext.MasterTenantFeatureSubscriptions.CountAsync(s => s.IsActive);
+            try
+            {
+                TotalTenants = await _dbContext.MasterTenantCatalogs.CountAsync();
+                ActiveTenants = await _dbContext.MasterTenantCatalogs.CountAsync(t => t.IsActive);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterTenantCatalogs metric for dashboard.");
+            }
 
-            var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-            MonthlyRevenue = await _dbContext.MasterBillingTransactions
-                .Where(t => t.CreatedUtc >= startOfMonth && t.Status == "Completed")
-                .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+            try
+            {
+                ActiveSubscriptions = await _dbContext.MasterTenantFeatureSubscriptions.CountAsync(s => s.IsActive);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterTenantFeatureSubscriptions metric for dashboard.");
+            }
 
-            OpenTickets = await _dbContext.MasterSupportInquiries
-                .CountAsync(t => t.Status == "Pending" || t.Status == "InReview");
+            try
+            {
+                var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                MonthlyRevenue = await _dbContext.MasterBillingTransactions
+                    .Where(t => t.CreatedUtc >= startOfMonth && t.Status == "Completed")
+                    .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterBillingTransactions metric for dashboard.");
+            }
 
-            TotalAffiliates = await _dbContext.MasterAffiliatePartners.CountAsync();
-            TotalCreators = await _dbContext.MasterCreatorApplications.CountAsync(c => c.Status == "Approved");
+            try
+            {
+                OpenTickets = await _dbContext.MasterSupportInquiries
+                    .CountAsync(t => t.Status == "Pending" || t.Status == "InReview");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterSupportInquiries metric for dashboard.");
+            }
 
-            RecentTenants = await _dbContext.MasterTenantCatalogs
-                .OrderByDescending(t => t.CreatedUtc)
-                .Take(5)
-                .ToListAsync();
+            try
+            {
+                TotalAffiliates = await _dbContext.MasterAffiliatePartners.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterAffiliatePartners metric for dashboard.");
+            }
 
-            RecentAuditLogs = await _dbContext.MasterAuditLogs
-                .OrderByDescending(a => a.CreatedUtc)
-                .Take(8)
-                .ToListAsync();
+            try
+            {
+                TotalCreators = await _dbContext.MasterCreatorApplications.CountAsync(c => c.Status == "Approved");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query MasterCreatorApplications metric for dashboard.");
+            }
+
+            try
+            {
+                RecentTenants = await _dbContext.MasterTenantCatalogs
+                    .OrderByDescending(t => t.CreatedUtc)
+                    .Take(5)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query RecentTenants list for dashboard.");
+            }
+
+            try
+            {
+                RecentAuditLogs = await _dbContext.MasterAuditLogs
+                    .OrderByDescending(a => a.CreatedUtc)
+                    .Take(8)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query RecentAuditLogs list for dashboard.");
+            }
         }
     }
 }

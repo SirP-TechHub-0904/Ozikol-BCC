@@ -1,20 +1,24 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Identity;
-using Ozikol.Central;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Localization.Routing;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central;
+using Ozikol.Central.Configuration;
+using Ozikol.Central.Middleware;
 using Ozikol.Central.Services;
 using Ozikol.Central.Services.Legal;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.EmailServices.Postmark;
 using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol_BCC.Telemetry.Sentry.Extensions;
 
 // 1. Load project-local .env environment variables
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
@@ -30,6 +34,9 @@ if (File.Exists(envPath))
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
+// Configure Sentry Cloud Telemetry (gracefully active when SENTRY_DSN is configured in .env or appsettings)
+builder.WebHost.UseOzikolSentry("Ozikol.Central");
+
 // 2. Configure Native ASP.NET Core Multi-Language Localization Engine
 builder.Services.AddLocalization();
 builder.Services.AddHttpClient();
@@ -38,6 +45,10 @@ builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Storage.IFileStorageService, Ozikol.Central.Services.Storage.CloudinaryFileStorageService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Careers.ICareersService, Ozikol.Central.Services.Careers.CareersService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozikol.Central.Services.Support.SupportService>();
+
+// Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
+builder.Services.AddPostmarkEmailServices(builder.Configuration);
+builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));
 
 builder.Services.AddRazorPages(options =>
 {
@@ -159,7 +170,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Centralwks/Login";
     options.AccessDeniedPath = "/Centralwks/Login";
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+    options.Cookie.IsEssential = true;
 
     // Dynamically route unauthenticated challenges to the appropriate portal login
     options.Events.OnRedirectToLogin = context =>
@@ -236,6 +249,9 @@ catch (Exception ex)
     Console.WriteLine($"[Central Startup Notice]: Seeder deferred (DB may be initializing): {ex.Message}");
 }
 
+// Global Exception Interception & Automated Cloud Email Alerting
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -286,7 +302,8 @@ app.Use(async (context, next) =>
         path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/centralwks", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/affiliate", StringComparison.OrdinalIgnoreCase) ||
-        path.StartsWith("/creator", StringComparison.OrdinalIgnoreCase))
+        path.StartsWith("/creator", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/error", StringComparison.OrdinalIgnoreCase))
     {
         await next();
         return;
