@@ -72,20 +72,6 @@
                 <p class="oz-pricing-hero-desc">
                     @SharedLocalizer["Pricing_Hero_Desc", Model.CompulsoryFeaturesCount, Model.TotalSuitesCount]
                 </p>
-
-                <!-- Currency Selector Pills -->
-                <div class="oz-pricing-currency-container">
-                    <span class="oz-pricing-currency-label">@SharedLocalizer["Pricing_Currency_Label"]</span>
-                    <div class="oz-pricing-currency-pills">
-                        @foreach (var curr in Model.SupportedCurrencies)
-                        {
-                            var isActive = curr.Code.Equals(Model.SelectedCurrency, StringComparison.OrdinalIgnoreCase);
-                            <a href="?currency=@curr.Code" class="oz-currency-pill @(isActive ? "is-active" : "")">
-                                @curr.PillLabel
-                            </a>
-                        }
-                    </div>
-                </div>
             </div>
         </div>
     </section>

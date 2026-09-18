@@ -20,9 +20,8 @@ public class PricingSettings
 {
     /// <summary>
     /// The default fallback currency code when country detection yields no specific regional match.
-    /// Defaults to NGN (Nigerian Naira).
     /// </summary>
-    public string DefaultCurrencyCode { get; set; } = "NGN";
+    public string DefaultCurrencyCode { get; set; } = "USD";
 
     /// <summary>
     /// The default free trial period in days for new workspaces when no promotional coupon override is provided.
