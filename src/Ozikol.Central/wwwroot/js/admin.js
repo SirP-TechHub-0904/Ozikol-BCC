@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDropdownMenus();
     initTheme();
     initUserDropdown();
+    initNotificationDropdown();
     initActiveNavLinks();
     initDismissibleAlerts();
     initGlobalSearchShortcut();
@@ -102,11 +103,42 @@ function initUserDropdown() {
     userBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         userContainer.classList.toggle('is-open');
+        // Close notification dropdown if open
+        const notifMenu = document.getElementById('notificationsDropdownMenu');
+        if (notifMenu) notifMenu.style.display = 'none';
     });
 
     document.addEventListener('click', (e) => {
         if (!userContainer.contains(e.target)) {
             userContainer.classList.remove('is-open');
+        }
+    });
+}
+
+/**
+ * Topbar Notification Popover toggle
+ */
+function initNotificationDropdown() {
+    const notifBtn = document.getElementById('notificationsDropdownBtn');
+    const notifMenu = document.getElementById('notificationsDropdownMenu');
+
+    if (!notifBtn || !notifMenu) return;
+
+    notifBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = notifMenu.style.display === 'block';
+        notifMenu.style.display = isOpen ? 'none' : 'block';
+        notifBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+
+        // Close user dropdown if open
+        const userContainer = document.querySelector('.topbar-user');
+        if (userContainer) userContainer.classList.remove('is-open');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!notifMenu.contains(e.target) && !notifBtn.contains(e.target)) {
+            notifMenu.style.display = 'none';
+            notifBtn.setAttribute('aria-expanded', 'false');
         }
     });
 }

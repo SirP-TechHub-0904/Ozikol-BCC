@@ -30,7 +30,7 @@
                 Question Title <span style="color: #f87171;">*</span>
             </label>
             <input asp-for="Input.Question" placeholder="e.g. How do dedicated multi-tenant databases isolate customer records?" 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                   class="form-control" />
             <span asp-validation-for="Input.Question" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -40,7 +40,7 @@
                     Category <span style="color: #f87171;">*</span>
                 </label>
                 <input asp-for="Input.Category" list="categoryOptions" placeholder="e.g. General, Security, Billing"
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                       class="form-control" />
                 <datalist id="categoryOptions">
                     <option value="General" />
                     <option value="Support" />
@@ -57,14 +57,14 @@
                     Target Suite (Optional)
                 </label>
                 <input asp-for="Input.SuiteCode" placeholder="e.g. suite-workforce" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                       class="form-control" />
             </div>
 
             <div>
                 <label asp-for="Input.Culture" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Locale <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.Culture" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.Culture" class="form-select">
                     <option value="en">English (en)</option>
                     <option value="fr">French (fr)</option>
                     <option value="es">Spanish (es)</option>
@@ -81,7 +81,7 @@
                 Answer Content <span style="color: #f87171;">*</span>
             </label>
             <textarea asp-for="Input.Answer" rows="7" placeholder="Detailed technical or policy explanation answering the customer inquiry..."
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: var(--admin-text); font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
+                      class="form-control" style="line-height: 1.5; resize: vertical;"></textarea>
             <span asp-validation-for="Input.Answer" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -91,7 +91,7 @@
                     Sort Order Priority
                 </label>
                 <input asp-for="Input.SortOrder" type="number" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;" />
+                       class="form-control" />
                 <span style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Lower numbers appear first in the customer portal.</span>
             </div>
 
@@ -103,12 +103,12 @@
             </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 18px;">
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--admin-card-border); padding-top: 18px;">
             <a href="/centralwks/support/faqs" class="btn-admin btn-admin-secondary" style="padding: 10px 20px;">
                 Cancel
             </a>
-            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 24px;">
-                <span>💾</span> @(isEdit ? "Update Article" : "Save & Publish Article")
+            <button type="submit" class="btn-admin btn-admin-primary" style="padding: 10px 24px; display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">save</span> @(isEdit ? "Update Article" : "Save & Publish Article")
             </button>
         </div>
     </form>

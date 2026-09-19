@@ -22,17 +22,20 @@ namespace Ozikol.Central.Pages.Vouchers
         private readonly MasterCatalogDbContext _masterDbContext;
         private readonly ICentralEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
         private readonly ILogger<ApplyModel> _logger;
 
         public ApplyModel(
             MasterCatalogDbContext masterDbContext,
             ICentralEmailService emailService,
             IConfiguration configuration,
+            Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
             ILogger<ApplyModel> logger)
         {
             _masterDbContext = masterDbContext;
             _emailService = emailService;
             _configuration = configuration;
+            _emailValidationService = emailValidationService;
             _logger = logger;
         }
 
@@ -69,6 +72,11 @@ namespace Ozikol.Central.Pages.Vouchers
         {
             ResolveCulture();
             LoadCommunityLinks();
+
+            if (!_emailValidationService.IsValidEmail(Input.WorkEmail, out var emailError))
+            {
+                ModelState.AddModelError("Input.WorkEmail", emailError ?? "Please provide a valid work email address.");
+            }
 
             if (!ModelState.IsValid)
             {

@@ -33,6 +33,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public int Id { get; set; }
 
         /// <summary>
+        /// Alias tenant ID parameter for navigation links.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int? TenantId { get; set; }
+
+        /// <summary>
         /// The loaded tenant entity.
         /// </summary>
         public MasterTenantCatalog Tenant { get; set; } = null!;
@@ -47,9 +53,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
         {
+            var targetId = Id != 0 ? Id : (TenantId ?? 0);
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
-                .FirstOrDefaultAsync(t => t.Id == Id);
+                .FirstOrDefaultAsync(t => t.Id == targetId);
 
             if (tenant == null)
             {
@@ -57,6 +64,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 return RedirectToPage("/Tenants/Index");
             }
 
+            Id = tenant.Id;
             Tenant = tenant;
 
             var allFeatures = await _dbContext.MasterFeatureCatalogs

@@ -317,20 +317,26 @@
                     <span class="auth-brand-text">Ozikol <span class="auth-brand-accent">Console</span></span>
                 </a>
                 <h1 class="auth-title">Administrative Sign In</h1>
-                <p class="auth-subtitle">Authorized platform operators &amp; fleet controllers authenticate here</p>
+                <p class="auth-subtitle">Authorized platform operators &amp; system administrators authenticate here</p>
             </div>
 
             @if (!string.IsNullOrEmpty(Model.StatusMessage))
             {
                 <div class="alert-box alert-success" role="alert">
-                    <span>✓ @Model.StatusMessage</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                        @Model.StatusMessage
+                    </span>
                 </div>
             }
 
             @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
                 <div class="alert-box alert-danger" role="alert">
-                    <span>⚠ @Model.ErrorMessage</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+                        @Model.ErrorMessage
+                    </span>
                 </div>
             }
 
@@ -339,7 +345,7 @@
 
                 <div class="form-group">
                     <label asp-for="Email" class="form-label">Operator Work Email <span class="required">*</span></label>
-                    <input asp-for="Email" class="form-control" placeholder="admin@ozikol.cloud" autocomplete="email" autofocus />
+                    <input asp-for="Email" class="form-control" placeholder="name@@company.com" autocomplete="email" autofocus />
                     <span asp-validation-for="Email" class="field-validation-error"></span>
                 </div>
 
@@ -376,7 +382,7 @@
 
                 <button type="submit" class="btn-submit">
                     <span>Sign In to Console</span>
-                    <span>→</span>
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
                 </button>
             </form>
 

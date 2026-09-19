@@ -1,5 +1,6 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Features.AnalyticsModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Tenant Feature Adoption Analytics";
     ViewData["BreadcrumbSection"] = "Platform Core";
@@ -7,8 +8,8 @@
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Tenant Feature Adoption &amp; Performance</h1>
-        <p class="admin-subtitle">Live telemetry, capability utilization ranking, category revenue distribution, and adoption velocity across all tenant organizations.</p>
+        <h1 class="admin-title">Tenant Feature Adoption &amp; Telemetry</h1>
+        <p class="admin-subtitle">Live capability utilization, running modular features, tenant usage activity levels, and recurring feature revenue across all tenant organizations.</p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/features" class="btn-admin btn-admin-secondary">
@@ -22,15 +23,16 @@
     </div>
 </div>
 
-@* ── Top KPI Stat Cards ── *@
+@* ── Top KPI Stat Cards (Anchored in USD MRR) ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card">
         <div class="stat-icon-wrapper stat-icon-primary">
             <span class="material-symbols-outlined">analytics</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Fleet Avg Adoption</span>
+            <span class="stat-label">Avg Feature Adoption</span>
             <span class="stat-value">@Model.AverageAdoptionRate.ToString("F1")%</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted);">Across @Model.TotalCapabilities Platform Capabilities</span>
         </div>
     </div>
     <div class="stat-card">
@@ -38,22 +40,34 @@
             <span class="material-symbols-outlined">trending_up</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Top Performer</span>
-            <span class="stat-value" style="font-size: 16px; color: var(--admin-success); line-height: 1.2;" title="@Model.TopPerformingFeature?.Feature.Name">
-                @(Model.TopPerformingFeature?.Feature.Name ?? "N/A")
-            </span>
-            <span style="font-size: 11px; color: var(--admin-text-muted);">
-                @Model.TopPerformingFeature?.AdoptionRate.ToString("F0")% Adoption (@Model.TopPerformingFeature?.SubscribersCount tenants)
-            </span>
+            <span class="stat-label">Top Add-on Feature</span>
+            @if (Model.TopPerformingFeature != null && Model.TopPerformingFeature.SubscribersCount > 0)
+            {
+                <span class="stat-value" style="font-size: 15px; color: var(--admin-success); line-height: 1.2;" title="@Model.TopPerformingFeature.Feature.Name">
+                    @Model.TopPerformingFeature.Feature.Name
+                </span>
+                <span style="font-size: 11px; color: var(--admin-text-muted);">
+                    @Model.TopPerformingFeature.AdoptionRate.ToString("F0")% Adoption (@Model.TopPerformingFeature.SubscribersCount tenants)
+                </span>
+            }
+            else
+            {
+                <span class="stat-value" style="font-size: 15px; color: var(--admin-text-muted); line-height: 1.2;">
+                    No Active Add-ons
+                </span>
+                <span style="font-size: 11px; color: var(--admin-text-muted);">
+                    0 Paid Subscriptions
+                </span>
+            }
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon-wrapper stat-icon-warning">
-            <span class="material-symbols-outlined">trending_down</span>
+            <span class="material-symbols-outlined">tune</span>
         </div>
         <div class="stat-details">
             <span class="stat-label">Underperforming (< 30%)</span>
-            <span class="stat-value" style="color: var(--admin-warning);">@Model.UnderperformingCount Modules</span>
+            <span class="stat-value" style="color: var(--admin-warning);">@Model.UnderperformingCount Add-ons</span>
             <span style="font-size: 11px; color: var(--admin-text-muted);">+ @Model.ZeroAdoptionCount with 0 subscribers</span>
         </div>
     </div>
@@ -62,9 +76,9 @@
             <span class="material-symbols-outlined">payments</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Total Feature MRR</span>
+            <span class="stat-label">Total Feature MRR (USD)</span>
             <span class="stat-value" style="color: var(--admin-primary);">$@Model.TotalSubscriptionMrr.ToString("N2")</span>
-            <span style="font-size: 11px; color: var(--admin-text-muted);">Monthly equivalent revenue</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted);">Monthly recurring feature revenue</span>
         </div>
     </div>
     <div class="stat-card">
@@ -74,265 +88,349 @@
         <div class="stat-details">
             <span class="stat-label">Active Tenants</span>
             <span class="stat-value">@Model.TotalTenants.ToString("N0")</span>
-            <span style="font-size: 11px; color: var(--admin-text-muted);">Across @Model.TotalCapabilities capabilities</span>
+            <span style="font-size: 11px; color: var(--admin-text-muted);">27 Base + 10 Add-on Capabilities</span>
         </div>
     </div>
 </div>
 
-@* ── Visual Graphs Grid (Bar Chart & Donut Chart) ── *@
-<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; margin-bottom: 24px;">
-    
-    @* Left: Feature Adoption Ranking Bar Chart *@
-    <div class="admin-card" style="padding: 24px; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-            <div>
-                <h3 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">bar_chart</span>
-                    Top &amp; Underperforming Capabilities Ranking
-                </h3>
-                <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
-                    Adoption rate percentage across @Model.TotalTenants active tenant organizations.
+@* ── Navigation View Tabs ── *@
+<div class="admin-tabs" style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--admin-border);">
+    <button type="button" class="tab-btn @(Model.ActiveTab == "tenants" ? "active" : "")" onclick="switchViewTab('tenants')" id="tab-btn-tenants" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 700; font-size: 13.5px; border: none; background: none; cursor: pointer; color: @(Model.ActiveTab == "tenants" ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.ActiveTab == "tenants" ? "var(--admin-primary)" : "transparent"); margin-bottom: -2px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">domain_verification</span>
+        All Tenants &amp; Running Features Matrix
+        <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: var(--admin-primary); font-size: 11px; padding: 2px 7px; border-radius: 10px;">@Model.AllTenantsFeatureMatrix.Count</span>
+    </button>
+    <button type="button" class="tab-btn @(Model.ActiveTab == "ranking" ? "active" : "")" onclick="switchViewTab('ranking')" id="tab-btn-ranking" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 700; font-size: 13.5px; border: none; background: none; cursor: pointer; color: @(Model.ActiveTab == "ranking" ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.ActiveTab == "ranking" ? "var(--admin-primary)" : "transparent"); margin-bottom: -2px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">bar_chart</span>
+        Platform Feature Adoption Ranking
+    </button>
+    <button type="button" class="tab-btn @(Model.ActiveTab == "inspector" ? "active" : "")" onclick="switchViewTab('inspector')" id="tab-btn-inspector" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 700; font-size: 13.5px; border: none; background: none; cursor: pointer; color: @(Model.ActiveTab == "inspector" ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.ActiveTab == "inspector" ? "var(--admin-primary)" : "transparent"); margin-bottom: -2px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">query_stats</span>
+        Deep-Dive Tenant Inspector
+    </button>
+</div>
+
+@* ========================================================================= *@
+@* ── VIEW 1: ALL TENANTS & RUNNING FEATURES MATRIX ── *@
+@* ========================================================================= *@
+<div id="view-tenants" class="view-content" style="display: @(Model.ActiveTab == "tenants" ? "block" : "none");">
+    <div class="admin-card">
+        <div class="admin-card-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+            <div style="min-width: 280px;">
+                <h2 class="admin-card-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">layers</span>
+                    Tenant Organizations &amp; Running Capabilities
+                </h2>
+                <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 3px 0 0 0;">
+                    Real-time roster of tenant workspaces, active base &amp; add-on features, usage activity scoring, and last platform activity.
                 </p>
             </div>
-            <div style="display: flex; gap: 8px; font-size: 11.5px; align-items: center;">
-                <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span> &ge; 70%
-                </span>
-                <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #6366f1;"></span> 30-69%
-                </span>
-                <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span> &lt; 30%
-                </span>
-            </div>
-        </div>
 
-        @* Horizontal Ranked Bars (Top 10 non-compulsory) *@
-        <div style="display: flex; flex-direction: column; gap: 14px; flex: 1;">
-            @{
-                var rankedSample = Model.RankedFeatures.Where(f => !f.Feature.IsCompulsory).Take(9).ToList();
-            }
-            @foreach (var item in rankedSample)
-            {
-                var iconName = string.IsNullOrEmpty(item.Feature.Icon) ? "extension" : item.Feature.Icon;
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12.5px;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--admin-text);">
-                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-muted);">@iconName</span>
-                            @item.Feature.Name
-                            <span class="badge badge-neutral" style="font-size: 10px; padding: 1px 6px;">@item.Feature.Category</span>
-                        </span>
-                        <span style="font-weight: 700; color: @item.StatusColor;">
-                            @item.AdoptionRate.ToString("F0")% <span style="font-weight: 400; font-size: 11px; color: var(--admin-text-muted);">(@item.SubscribersCount/@Model.TotalTenants)</span>
-                        </span>
-                    </div>
-                    <div style="height: 8px; background: var(--admin-bg-hover); border-radius: 4px; overflow: hidden; position: relative;">
-                        <div style="height: 100%; width: @Math.Min(100, Math.Max(3, item.AdoptionRate))%; background: @item.StatusColor; border-radius: 4px; transition: width 0.6s ease;"></div>
-                    </div>
+            @* Filter Toolbar (Sleek Single Horizontal Row) *@
+            <form method="get" style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; margin: 0;">
+                <input type="hidden" name="activeTab" value="tenants" />
+                
+                <div class="search-box" style="position: relative; width: 220px; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--admin-text-muted);">search</span>
+                    <input type="text" name="tenantSearch" value="@Model.TenantSearch" placeholder="Search tenant..." class="form-input" style="padding-left: 32px; height: 36px; font-size: 13px; width: 100%; box-sizing: border-box;" />
                 </div>
-            }
-        </div>
-    </div>
 
-    @* Right: Suite Category Distribution & Revenue Share (Donut & Breakdown) *@
-    <div class="admin-card" style="padding: 24px; display: flex; flex-direction: column;">
-        <div style="margin-bottom: 18px;">
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-outlined" style="color: #a855f7; font-size: 20px;">donut_small</span>
-                Suite Category Distribution &amp; MRR
-            </h3>
-            <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
-                Share of capabilities and revenue breakdown across domain suites.
-            </p>
+                <select name="usageFilter" class="form-select" style="height: 36px; font-size: 12.5px; font-weight: 600; padding: 0 10px; width: 165px; flex-shrink: 0;">
+                    <option value="All" selected="@(string.IsNullOrEmpty(Model.UsageFilter) || Model.UsageFilter == "All")">All Usage Levels</option>
+                    <option value="High Activity" selected="@(Model.UsageFilter == "High Activity")">High (&lt; 24h)</option>
+                    <option value="Active" selected="@(Model.UsageFilter == "Active")">Active (&lt; 7d)</option>
+                    <option value="Moderate" selected="@(Model.UsageFilter == "Moderate")">Moderate (&lt; 30d)</option>
+                    <option value="Dormant" selected="@(Model.UsageFilter == "Dormant")">Dormant</option>
+                </select>
+
+                <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="height: 36px; padding: 0 14px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">filter_list</span>
+                    Filter
+                </button>
+
+                @if (!string.IsNullOrEmpty(Model.TenantSearch) || (!string.IsNullOrEmpty(Model.UsageFilter) && Model.UsageFilter != "All"))
+                {
+                    <a href="/centralwks/features/analytics?activeTab=tenants" class="btn-admin btn-admin-secondary btn-admin-sm" style="height: 36px; padding: 0 10px; color: var(--admin-danger); flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                        Clear
+                    </a>
+                }
+            </form>
         </div>
 
-        @* Donut Chart (SVG) *@
-        <div style="display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 18px;">
-            <div style="position: relative; width: 140px; height: 140px; flex-shrink: 0;">
-                <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                    @{
-                        double accumulatedPercent = 0.0;
-                    }
-                    @foreach (var cat in Model.CategoryDistributions)
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th>Tenant Organization</th>
+                        <th>Active Features</th>
+                        <th>Usage Activity Level</th>
+                        <th>Last Platform Activity</th>
+                        <th>Monthly Spend (MRR)</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllTenantsFeatureMatrix.Any())
                     {
-                        var dashArray = $"{cat.PercentageOfTotal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} {(100.0 - cat.PercentageOfTotal).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}";
-                        var dashOffset = (-accumulatedPercent).ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                        accumulatedPercent += cat.PercentageOfTotal;
-
-                        <circle cx="18" cy="18" r="15.91549430918954" fill="transparent"
-                                stroke="@cat.Color" stroke-width="4.5"
-                                stroke-dasharray="@dashArray" stroke-dashoffset="@dashOffset" />
+                        @for (int i = 0; i < Model.AllTenantsFeatureMatrix.Count; i++)
+                        {
+                            var t = Model.AllTenantsFeatureMatrix[i];
+                            <tr>
+                                <td style="text-align: center;">
+                                    <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11px;">@(i + 1)</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(59, 130, 246, 0.12); color: var(--admin-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0;">
+                                            @(t.OrganizationName.Length > 0 ? t.OrganizationName.Substring(0, 1).ToUpperInvariant() : "T")
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--admin-text); font-size: 13.5px;">
+                                                @t.OrganizationName
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                                <code style="font-size: 11px; padding: 1px 5px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 3px; color: var(--admin-info); font-weight: 600;">
+                                                    @t.TenantKey
+                                                </code>
+                                                <span style="font-size: 11.5px; color: var(--admin-text-muted);">
+                                                    @t.PrimaryDomain
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="min-width: 140px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                            <span style="font-size: 12.5px; font-weight: 700; color: var(--admin-text);">
+                                                @t.TotalActiveFeaturesCount / @Model.TotalCapabilities Active
+                                            </span>
+                                            <span style="font-size: 11.5px; font-weight: 600; color: var(--admin-primary);">
+                                                @t.AdoptionPercentage.ToString("F0")%
+                                            </span>
+                                        </div>
+                                        <div style="height: 6px; background: var(--admin-bg-hover); border-radius: 3px; overflow: hidden;">
+                                            <div style="height: 100%; width: @Math.Min(100, Math.Max(5, t.AdoptionPercentage))%; background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%); border-radius: 3px;"></div>
+                                        </div>
+                                        <div style="font-size: 10.5px; color: var(--admin-text-muted); margin-top: 3px;">
+                                            27 Base + @t.SubscribedAddonsCount Add-ons
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background: @(t.UsageLevelColor)18; color: @t.UsageLevelColor; border: 1px solid @(t.UsageLevelColor)40; font-weight: 700; font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: @t.UsageLevelColor;"></span>
+                                        @t.UsageLevel
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="font-size: 12.5px; font-weight: 600; color: var(--admin-text);">
+                                        @t.LastUsedDisplay
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--admin-text-muted);">
+                                        @(t.LastAccessedUtc.HasValue ? t.LastAccessedUtc.Value.ToString("MMM dd, yyyy HH:mm") + " UTC" : "No web activity")
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (t.MonthlyRevenueMrr > 0)
+                                    {
+                                        <div style="font-size: 13px; font-weight: 800; color: var(--admin-text);">
+                                            $@t.MonthlyRevenueMrr.ToString("N2") <span style="font-size: 10.5px; font-weight: 400; color: var(--admin-text-muted);">/mo</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="font-size: 13px; font-weight: 700; color: var(--admin-text-muted);">
+                                            $0.00 <span style="font-size: 10px; padding: 1px 5px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 3px; font-weight: 600;">Free Tier</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (t.IsSuspended)
+                                    {
+                                        <span class="badge badge-danger" style="font-size: 11px;">Suspended</span>
+                                    }
+                                    else if (t.IsActive)
+                                    {
+                                        <span class="badge badge-success" style="font-size: 11px;">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-neutral" style="font-size: 11px;">Inactive</span>
+                                    }
+                                </td>
+                                <td style="text-align: right;">
+                                    <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick='openFeatureModal(@Html.Raw(JsonSerializer.Serialize(t.OrganizationName)), @Html.Raw(JsonSerializer.Serialize(t.TenantKey)), @t.TenantId, @Html.Raw(t.AllFeaturesJson))' title="View All Running Features">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                            Inspect
+                                        </button>
+                                        <a href="/centralwks/tenants/features?tenantId=@t.TenantId" class="btn-admin btn-admin-primary btn-admin-sm" title="Provision or Configure Subscriptions">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">tune</span>
+                                            Manage
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
                     }
-                </svg>
-                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-                    <span style="font-size: 18px; font-weight: 800; color: var(--admin-text); line-height: 1;">@Model.TotalCapabilities</span>
-                    <span style="font-size: 10px; color: var(--admin-text-muted); text-transform: uppercase; margin-top: 2px;">Modules</span>
+                    else
+                    {
+                        <tr>
+                            <td colspan="9">
+                                <div class="empty-state" style="padding: 40px; text-align: center;">
+                                    <div class="empty-state-icon" style="margin-bottom: 12px;">
+                                        <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">domain_disabled</span>
+                                    </div>
+                                    <h3 class="empty-state-title">No Tenants Match Criteria</h3>
+                                    <p class="empty-state-desc" style="color: var(--admin-text-muted);">Try adjusting your search keyword or clearing the usage level filter.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* ========================================================================= *@
+@* ── VIEW 2: PLATFORM FEATURE ADOPTION RANKING & TELEMETRY ── *@
+@* ========================================================================= *@
+<div id="view-ranking" class="view-content" style="display: @(Model.ActiveTab == "ranking" ? "block" : "none");">
+    
+    @* Charts Grid: Top Ranked Bars & Category Revenue Donut *@
+    <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; margin-bottom: 24px;">
+        
+        @* Left: Feature Adoption Ranking Bar Chart *@
+        <div class="admin-card" style="padding: 24px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">bar_chart</span>
+                        Optional Add-on Capabilities Ranking
+                    </h3>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
+                        Adoption rate percentage across @Model.TotalTenants active tenant organizations.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px; font-size: 11.5px; align-items: center;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span> &ge; 70%
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #6366f1;"></span> 30-69%
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--admin-text-muted);">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span> &lt; 30%
+                    </span>
                 </div>
             </div>
 
-            @* Mini Legend with MRR contribution *@
-            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; font-size: 11.5px;">
-                @foreach (var cat in Model.CategoryDistributions.Take(5))
+            @* Horizontal Ranked Bars *@
+            <div style="display: flex; flex-direction: column; gap: 14px; flex: 1;">
+                @{
+                    var rankedSample = Model.RankedFeatures.Where(f => !f.Feature.IsCompulsory).Take(10).ToList();
+                }
+                @foreach (var item in rankedSample)
                 {
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--admin-text);">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background: @cat.Color; flex-shrink: 0;"></span>
-                            @cat.CategoryName
-                        </span>
-                        <span style="font-weight: 600; color: var(--admin-text);">
-                            $@cat.TotalMrr.ToString("N0")/mo <span style="color: var(--admin-text-muted); font-weight: normal;">(@cat.FeatureCount)</span>
-                        </span>
+                    var iconName = string.IsNullOrEmpty(item.Feature.Icon) ? "extension" : item.Feature.Icon;
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12.5px;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--admin-text);">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: @item.StatusColor;">@iconName</span>
+                                @item.Feature.Name
+                            </span>
+                            <span style="font-weight: 700; color: var(--admin-text);">
+                                @item.AdoptionRate.ToString("F0")% <span style="font-size: 11px; font-weight: 400; color: var(--admin-text-muted);">(@item.SubscribersCount tenants)</span>
+                            </span>
+                        </div>
+                        <div style="height: 8px; background: var(--admin-bg-hover); border-radius: 4px; overflow: hidden; position: relative;">
+                            <div style="height: 100%; width: @Math.Min(100, Math.Max(2, item.AdoptionRate))%; background: @item.StatusColor; border-radius: 4px; transition: width 0.6s ease;"></div>
+                        </div>
                     </div>
                 }
             </div>
         </div>
 
-        @* Category Quick Metrics Strip *@
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid var(--admin-border); margin-top: auto;">
-            <div style="background: var(--admin-bg-surface-elevated); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
-                <span style="font-size: 11px; color: var(--admin-text-dim); display: block;">Top Revenue Category</span>
-                <span style="font-size: 12.5px; font-weight: 700; color: var(--admin-text);">
-                    @(Model.CategoryDistributions.FirstOrDefault()?.CategoryName ?? "Finance")
-                </span>
-            </div>
-            <div style="background: var(--admin-bg-surface-elevated); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">
-                <span style="font-size: 11px; color: var(--admin-text-dim); display: block;">Total Modules Seeded</span>
-                <span style="font-size: 12.5px; font-weight: 700; color: var(--admin-primary);">
-                    @Model.TotalCapabilities Core &amp; Addons
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ── Activation Velocity Timeline & Metered Quotas Strip ── *@
-<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; margin-bottom: 24px;">
-    
-    @* Net Activation Velocity Area Graph (SVG) *@
-    <div class="admin-card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <div>
+        @* Right: Category Distribution Summary *@
+        <div class="admin-card" style="padding: 24px;">
+            <div style="margin-bottom: 18px;">
                 <h3 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-symbols-outlined" style="color: var(--admin-info); font-size: 20px;">stacked_line_chart</span>
-                    Net Feature Activation Velocity (12-Month Growth)
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 20px;">pie_chart</span>
+                    Suite Capability Distribution
                 </h3>
                 <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
-                    Cumulative active tenant module activations over the past year.
+                    Breakdown of the 10 platform suites across 37 modular features.
                 </p>
             </div>
-            <span class="badge badge-success" style="font-size: 11px;">+52 New This Month</span>
-        </div>
 
-        @* SVG Area Curve *@
-        <div style="width: 100%; height: 120px; position: relative;">
-            <svg viewBox="0 0 600 120" style="width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="velocityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35" />
-                        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
-                    </linearGradient>
-                </defs>
-                <polygon points="0,120 0,110 50,105 100,100 150,92 200,85 250,78 300,65 350,55 400,40 450,25 500,15 550,5 600,0 600,120" fill="url(#velocityGrad)" />
-                <polyline points="0,110 50,105 100,100 150,92 200,85 250,78 300,65 350,55 400,40 450,25 500,15 550,5 600,0" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-        </div>
-
-        @* Timeline X-Axis Labels *@
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--admin-text-dim); margin-top: 8px;">
-            @foreach (var pt in Model.ActivationVelocityTimeline)
-            {
-                <span>@pt.MonthLabel</span>
-            }
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                @foreach (var cat in Model.CategoryDistributions)
+                {
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm);">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: @cat.Color; flex-shrink: 0;"></span>
+                            <span style="font-size: 12.5px; font-weight: 600; color: var(--admin-text);">@cat.CategoryName</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="badge badge-neutral" style="font-size: 11px;">@cat.FeatureCount Features</span>
+                            <span style="font-size: 12px; font-weight: 700; color: var(--admin-primary); min-width: 60px; text-align: right;">
+                                $@cat.TotalMrr.ToString("N2")/mo
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
-    @* Consumable Quota Intensity Histogram *@
-    <div class="admin-card" style="padding: 24px; display: flex; flex-direction: column;">
-        <div style="margin-bottom: 16px;">
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-outlined" style="color: var(--admin-warning); font-size: 20px;">speed</span>
-                Metered Quota Consumption Intensity
-            </h3>
-            <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
-                Tenant consumption volume for SMS, AI queries, and storage units.
-            </p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 14px; flex: 1; justify-content: center;">
-            @foreach (var band in Model.QuotaIntensityBands)
-            {
-                <div>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                        <span style="font-weight: 600; color: var(--admin-text);">@band.BandName</span>
-                        <span style="font-weight: 700; color: @band.Color;">@band.TenantCount Tenants (@band.Percentage.ToString("F0")%)</span>
-                    </div>
-                    <div style="height: 6px; background: var(--admin-bg-hover); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: @band.Percentage%; background: @band.Color; border-radius: 3px;"></div>
-                    </div>
-                    <span style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px; display: block;">@band.Description</span>
-                </div>
-            }
-        </div>
-    </div>
-</div>
-
-@* ── Granular Feature Adoption Telemetry Table ── *@
-<div class="admin-card">
-    <div class="table-toolbar" style="flex-wrap: wrap; gap: 14px;">
-        <form method="get" class="table-filters" style="flex: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-            <div class="table-search-box" style="min-width: 260px; flex: 1;">
-                <span class="search-icon">
-                    <span class="material-symbols-outlined">search</span>
-                </span>
-                <input type="text" name="search" value="@Model.Search" placeholder="Search capability name or code..." />
+    @* Full Capabilities Roster Table *@
+    <div class="admin-card">
+        <div class="admin-card-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+            <div>
+                <h2 class="admin-card-title">All 37 Platform Capabilities Roster</h2>
+                <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                    Adoption ranking, classification tiers, and recurring revenue generated per capability.
+                </p>
             </div>
 
-            <select name="category" class="form-select" style="min-width: 180px; padding: 8px 12px; font-size: 13px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); color: var(--admin-text);">
-                <option value="">All Categories (@Model.Categories.Count)</option>
-                @foreach (var cat in Model.Categories)
-                {
-                    <option value="@cat" selected="@(Model.Category == cat)">@cat</option>
-                }
-            </select>
-
-            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm">
-                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
-                Filter
-            </button>
-
-            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category))
-            {
-                <a href="/centralwks/features/analytics" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: var(--admin-danger);">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
-                    Clear
-                </a>
-            }
-        </form>
-
-        <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
-            Showing @Model.RankedFeatures.Count capabilities
+            <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <input type="hidden" name="activeTab" value="ranking" />
+                <div class="search-box" style="position: relative; min-width: 220px;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--admin-text-muted);">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Search feature name or code..." class="form-input" style="padding-left: 34px; height: 36px; font-size: 13px;" />
+                </div>
+                <select name="category" class="form-select" style="height: 36px; font-size: 13px;">
+                    <option value="">All Suites &amp; Categories</option>
+                    @foreach (var c in Model.Categories)
+                    {
+                        <option value="@c" selected="@(Model.Category == c)">@c</option>
+                    }
+                </select>
+                <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="height: 36px;">Filter</button>
+            </form>
         </div>
-    </div>
 
-    <div class="table-responsive">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th style="width: 50px; text-align: center;">S/N</th>
-                    <th>Capability &amp; Code</th>
-                    <th>Category</th>
-                    <th>Billing Model</th>
-                    <th>Subscribed Tenants</th>
-                    <th>Adoption Rate</th>
-                    <th>Monthly Revenue (MRR)</th>
-                    <th>Performance Tier</th>
-                    <th style="text-align: right;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.RankedFeatures.Any())
-                {
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th>Capability &amp; Code</th>
+                        <th>Suite / Category</th>
+                        <th>Type</th>
+                        <th>Subscribed Tenants</th>
+                        <th>Adoption Rate</th>
+                        <th>Monthly Revenue (MRR)</th>
+                        <th>Performance Tier</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
                     @for (int i = 0; i < Model.RankedFeatures.Count; i++)
                     {
                         var item = Model.RankedFeatures[i];
@@ -340,41 +438,40 @@
                         var iconName = string.IsNullOrEmpty(feat.Icon) ? "extension" : feat.Icon;
                         <tr>
                             <td style="text-align: center;">
-                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11px;">@(i + 1)</span>
                             </td>
                             <td>
-                                <div style="display: flex; align-items: flex-start; gap: 10px;">
-                                    <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-primary); margin-top: 2px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-primary);">
                                         <span class="material-symbols-outlined" style="font-size: 18px;">@iconName</span>
                                     </div>
                                     <div>
-                                        <a href="/centralwks/features/details?id=@feat.Id" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 13.5px;" class="feature-name-link">
-                                            @feat.Name
-                                        </a>
-                                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                            <code style="font-size: 11px; padding: 1px 5px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 3px; color: var(--admin-info); font-weight: 600;">
-                                                @feat.FeatureCode
-                                            </code>
-                                        </div>
+                                        <div style="font-weight: 600; color: var(--admin-text); font-size: 13.5px;">@feat.Name</div>
+                                        <code style="font-size: 11px; color: var(--admin-info);">@feat.FeatureCode</code>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-neutral" style="font-size: 11.5px;">@feat.Category</span>
+                                <span class="badge badge-neutral" style="font-size: 11px;">@feat.Category</span>
                             </td>
                             <td>
-                                <span style="font-size: 12px; color: var(--admin-text);">
-                                    @feat.BillingType
+                                @if (feat.IsCompulsory)
+                                {
+                                    <span class="badge badge-primary" style="font-size: 10.5px;">Compulsory Base</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success" style="font-size: 10.5px;">Optional Add-on</span>
+                                }
+                            </td>
+                            <td>
+                                <span style="font-weight: 700; font-size: 13px; color: var(--admin-text);">
+                                    @item.SubscribersCount / @Model.TotalTenants Tenants
                                 </span>
                             </td>
                             <td>
-                                <a href="/centralwks/subscriptions?featureId=@feat.Id" style="font-weight: 600; font-size: 13px; color: var(--admin-primary); text-decoration: none;">
-                                    @item.SubscribersCount / @Model.TotalTenants Tenants
-                                </a>
-                            </td>
-                            <td>
-                                <div style="min-width: 130px;">
-                                    <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--admin-text); margin-bottom: 4px;">
+                                <div style="min-width: 120px;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 3px;">
                                         <span>@item.AdoptionRate.ToString("F1")%</span>
                                     </div>
                                     <div style="height: 6px; background: var(--admin-bg-hover); border-radius: 3px; overflow: hidden;">
@@ -384,144 +481,117 @@
                             </td>
                             <td>
                                 <div style="font-size: 13px; font-weight: 700; color: var(--admin-text);">
-                                    $@item.MonthlyRecurringRevenue.ToString("N2") <span style="font-size: 11px; font-weight: 400; color: var(--admin-text-muted);">/mo</span>
+                                    $@item.MonthlyRecurringRevenue.ToString("N2") <span style="font-size: 10.5px; font-weight: 400; color: var(--admin-text-muted);">/mo</span>
                                 </div>
-                                <span style="font-size: 11px; color: var(--admin-text-dim);">
-                                    $@(item.MonthlyRecurringRevenue * 12).ToString("N0") ARR
-                                </span>
                             </td>
                             <td>
-                                <span class="badge" style="background: @(item.StatusColor)20; color: @item.StatusColor; font-weight: 600; font-size: 11.5px; border: 1px solid @(item.StatusColor)40;">
+                                <span class="badge" style="background: @(item.StatusColor)18; color: @item.StatusColor; font-weight: 600; font-size: 11px; border: 1px solid @(item.StatusColor)40;">
                                     <span class="badge-dot" style="background-color: @item.StatusColor;"></span>
                                     @item.Classification
                                 </span>
                             </td>
                             <td style="text-align: right;">
-                                <a href="/centralwks/subscriptions?featureId=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Subscribed Tenants">
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">group</span>
-                                    Subscribers
+                                <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">info</span>
+                                    Details
                                 </a>
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="9">
-                            <div class="empty-state" style="padding: 40px; text-align: center;">
-                                <div class="empty-state-icon" style="margin-bottom: 12px;">
-                                    <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">extension</span>
-                                </div>
-                                <h3 class="empty-state-title">No Capabilities Match Filter</h3>
-                                <p class="empty-state-desc" style="color: var(--admin-text-muted);">Try clearing the search query or selecting a different category.</p>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-@* ── Tenant 365-Day Feature Adoption & Utilization Inspector ── *@
-<div class="admin-card" id="tenant-inspector" style="margin-top: 28px; border: 1px solid rgba(59, 130, 246, 0.3);">
-    <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);">
-        <div>
-            <h2 class="admin-card-title" style="display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 22px;">query_stats</span>
-                Tenant Feature Utilization &amp; 365-Day Telemetry
-            </h2>
-            <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
-                Audit currently running capabilities and full 12-month historical usage for any organization in the fleet.
-            </p>
-        </div>
-
-        <form method="get" style="display: flex; align-items: center; gap: 10px;">
-            @if (!string.IsNullOrEmpty(Model.Search))
-            {
-                <input type="hidden" name="search" value="@Model.Search" />
-            }
-            @if (!string.IsNullOrEmpty(Model.Category))
-            {
-                <input type="hidden" name="category" value="@Model.Category" />
-            }
-            <label style="font-size: 12.5px; font-weight: 700; color: var(--admin-text-muted);">Inspect Organization:</label>
-            <select name="selectedTenantId" onchange="this.form.submit()" class="form-select" style="min-width: 240px; padding: 7px 12px; font-size: 13px; font-weight: 600; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); color: var(--admin-text);">
-                @foreach (var t in Model.TenantOptions)
-                {
-                    <option value="@t.Id" selected="@(Model.SelectedTenantId == t.Id)">
-                        @t.OrganizationName (@t.TenantKey)
-                    </option>
-                }
-            </select>
-        </form>
-    </div>
-
-    @if (Model.InspectedTenant != null)
-    {
-        <div class="admin-card-body" style="padding: 20px 24px;">
-            @* Tenant Summary Strip *@
-            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.15); color: var(--admin-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
-                        @(Model.InspectedTenant.OrganizationName.Length > 0 ? Model.InspectedTenant.OrganizationName.Substring(0, 1).ToUpperInvariant() : "T")
-                    </div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <h3 style="font-size: 16px; font-weight: 800; color: var(--admin-text); margin: 0;">@Model.InspectedTenant.OrganizationName</h3>
-                            <code style="font-size: 11px; padding: 2px 6px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: 4px; color: var(--admin-info); font-weight: 600;">@Model.InspectedTenant.TenantKey</code>
-                        </div>
-                        <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 3px;">
-                            <span>Domain: <a href="https://@Model.InspectedTenant.PrimaryDomain" target="_blank" style="color: var(--admin-primary); text-decoration: none;">@Model.InspectedTenant.PrimaryDomain</a></span>
-                            <span style="margin: 0 6px;">•</span>
-                            <span>Registered: @Model.InspectedTenant.CreatedUtc.ToString("MMM dd, yyyy")</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 24px; align-items: center;">
-                    <div>
-                        <div style="font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700;">Currently Active</div>
-                        <div style="font-size: 18px; font-weight: 800; color: var(--admin-success);">@Model.TenantActiveFeatures.Count Modules</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700;">365-Day Reach</div>
-                        <div style="font-size: 18px; font-weight: 800; color: var(--admin-primary);">@Model.Tenant365DayUsageHistory.Count Features</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700;">Monthly Add-on Spend</div>
-                        <div style="font-size: 18px; font-weight: 800; color: var(--admin-text);">$@Model.TenantActiveFeatures.Sum(f => f.RecurringPrice).ToString("N2")/mo</div>
-                    </div>
-                    <a href="/centralwks/tenants/features?tenantId=@Model.InspectedTenant.Id" class="btn-admin btn-admin-primary btn-admin-sm">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
-                        Manage Subscriptions
-                    </a>
-                </div>
+@* ========================================================================= *@
+@* ── VIEW 3: DEEP-DIVE TENANT INSPECTOR ── *@
+@* ========================================================================= *@
+<div id="view-inspector" class="view-content" style="display: @(Model.ActiveTab == "inspector" ? "block" : "none");">
+    <div class="admin-card" style="border: 1px solid rgba(59, 130, 246, 0.3);">
+        <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);">
+            <div>
+                <h2 class="admin-card-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 22px;">query_stats</span>
+                    Tenant Feature Telemetry &amp; 365-Day Inspector
+                </h2>
+                <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">
+                    Select any workspace organization to audit active capabilities, base tiers, add-on spend, and 12-month usage timeline.
+                </p>
             </div>
 
-            @* 2 Sub-Sections: 1. Currently Active Features & 2. 365-Day Usage History *@
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                
-                @* Panel 1: Currently Active Features *@
-                <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 18px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--admin-border);">
-                        <h4 style="font-size: 14px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 6px;">
-                            <span class="material-symbols-outlined" style="color: var(--admin-success); font-size: 18px;">check_circle</span>
-                            Currently Active Capabilities (@Model.TenantActiveFeatures.Count)
-                        </h4>
-                        <span class="badge badge-success" style="font-size: 11px;">Active Today</span>
+            <form method="get" style="display: flex; align-items: center; gap: 10px;">
+                <input type="hidden" name="activeTab" value="inspector" />
+                <label style="font-size: 12.5px; font-weight: 700; color: var(--admin-text-muted);">Select Workspace:</label>
+                <select name="selectedTenantId" onchange="this.form.submit()" class="form-select" style="min-width: 260px; height: 38px; font-size: 13px; font-weight: 600;">
+                    @foreach (var t in Model.TenantOptions)
+                    {
+                        <option value="@t.Id" selected="@(Model.SelectedTenantId == t.Id)">
+                            @t.OrganizationName (@t.TenantKey)
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+
+        @if (Model.InspectedTenant != null)
+        {
+            <div class="admin-card-body" style="padding: 20px 24px;">
+                @* Summary Strip *@
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.15); color: var(--admin-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px;">
+                            @(Model.InspectedTenant.OrganizationName.Length > 0 ? Model.InspectedTenant.OrganizationName.Substring(0, 1).ToUpperInvariant() : "T")
+                        </div>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3 style="font-size: 16px; font-weight: 800; color: var(--admin-text); margin: 0;">@Model.InspectedTenant.OrganizationName</h3>
+                                <code style="font-size: 11px; padding: 2px 6px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: 4px; color: var(--admin-info); font-weight: 600;">@Model.InspectedTenant.TenantKey</code>
+                            </div>
+                            <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 3px;">
+                                <span>Domain: <a href="https://@Model.InspectedTenant.PrimaryDomain" target="_blank" style="color: var(--admin-primary); text-decoration: none; font-weight: 600;">@Model.InspectedTenant.PrimaryDomain</a></span>
+                                <span style="margin: 0 6px;">•</span>
+                                <span>Registered: @Model.InspectedTenant.CreatedUtc.ToString("MMM dd, yyyy")</span>
+                            </div>
+                        </div>
                     </div>
 
-                    @if (Model.TenantActiveFeatures.Any())
-                    {
-                        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto;">
+                    <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700;">Active Features</div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--admin-success);">@Model.TenantActiveFeatures.Count / @Model.TotalCapabilities</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--admin-text-muted); text-transform: uppercase; font-weight: 700;">Monthly Add-on Spend</div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--admin-primary);">$@Model.TenantActiveFeatures.Sum(f => f.RecurringPrice).ToString("N2")/mo</div>
+                        </div>
+                        <a href="/centralwks/tenants/features?tenantId=@Model.InspectedTenant.Id" class="btn-admin btn-admin-primary btn-admin-sm">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
+                            Manage Subscriptions
+                        </a>
+                    </div>
+                </div>
+
+                @* 2 Side-by-Side Panels *@
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    
+                    @* Panel 1: Currently Running Capabilities *@
+                    <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 18px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--admin-border);">
+                            <h4 style="font-size: 14px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-success); font-size: 18px;">check_circle</span>
+                                Running Capabilities (@Model.TenantActiveFeatures.Count)
+                            </h4>
+                            <span class="badge badge-success" style="font-size: 11px;">Active</span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto;">
                             @foreach (var item in Model.TenantActiveFeatures)
                             {
                                 var iconName = string.IsNullOrEmpty(item.Feature.Icon) ? "extension" : item.Feature.Icon;
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm);">
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <div style="width: 28px; height: 28px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                                        <div style="width: 30px; height: 30px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
                                             <span class="material-symbols-outlined" style="font-size: 16px;">@iconName</span>
                                         </div>
                                         <div>
@@ -529,80 +599,190 @@
                                             <div style="font-size: 11px; color: var(--admin-text-muted);">
                                                 <span>@item.Feature.Category</span>
                                                 <span style="margin: 0 4px;">•</span>
-                                                <span>Active for @item.DaysActive days</span>
+                                                <span>@(item.Feature.IsCompulsory ? "Included Base Plan" : $"${item.RecurringPrice:N2}/mo Add-on")</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div style="text-align: right;">
-                                        <div style="font-size: 12.5px; font-weight: 700; color: var(--admin-text);">
-                                            @(item.RecurringPrice == 0 ? "Included Base" : $"${item.RecurringPrice:N2}/{item.BillingDuration.ToLower()}")
-                                        </div>
-                                        <span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">@item.Status</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div style="text-align: center; padding: 24px; color: var(--admin-text-muted); font-size: 13px;">
-                            No active subscriptions recorded for this tenant.
-                        </div>
-                    }
-                </div>
-
-                @* Panel 2: 365-Day Historical Telemetry *@
-                <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 18px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--admin-border);">
-                        <h4 style="font-size: 14px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 6px;">
-                            <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 18px;">history</span>
-                            Last 365 Days Usage History (@Model.Tenant365DayUsageHistory.Count)
-                        </h4>
-                        <span class="badge badge-primary" style="font-size: 11px;">12-Month Window</span>
-                    </div>
-
-                    @if (Model.Tenant365DayUsageHistory.Any())
-                    {
-                        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto;">
-                            @foreach (var item in Model.Tenant365DayUsageHistory)
-                            {
-                                var iconName = string.IsNullOrEmpty(item.Feature.Icon) ? "extension" : item.Feature.Icon;
-                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm);">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <div style="width: 28px; height: 28px; border-radius: 4px; background: rgba(139, 92, 246, 0.1); color: #a855f7; display: flex; align-items: center; justify-content: center;">
-                                            <span class="material-symbols-outlined" style="font-size: 16px;">@iconName</span>
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 13px; font-weight: 700; color: var(--admin-text);">@item.Feature.Name</div>
-                                            <div style="font-size: 11px; color: var(--admin-text-muted);">
-                                                <span>First Activated: @item.ActivatedUtc.ToString("MMM dd, yyyy")</span>
-                                                @if (item.ExpiresUtc.HasValue)
-                                                {
-                                                    <span style="margin: 0 4px;">•</span>
-                                                    <span>Renews/Expired: @item.ExpiresUtc.Value.ToString("MMM dd, yyyy")</span>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <span class="badge @(item.IsActive ? "badge-success" : "badge-neutral")" style="font-size: 10.5px; font-weight: 600;">
-                                            @(item.IsActive ? "Subscribed" : "Historical/Trial")
+                                        <span class="badge @(item.Feature.IsCompulsory ? "badge-primary" : "badge-success")" style="font-size: 10.5px; padding: 2px 6px;">
+                                            @(item.Feature.IsCompulsory ? "Base Core" : "Add-on")
                                         </span>
                                     </div>
                                 </div>
                             }
                         </div>
-                    }
-                    else
-                    {
-                        <div style="text-align: center; padding: 24px; color: var(--admin-text-muted); font-size: 13px;">
-                            No historical activity recorded in the past 365 days.
-                        </div>
-                    }
-                </div>
+                    </div>
 
+                    @* Panel 2: 365-Day Add-on Subscription History *@
+                    <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); padding: 18px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--admin-border);">
+                            <h4 style="font-size: 14px; font-weight: 700; color: var(--admin-text); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 18px;">history</span>
+                                365-Day Subscription History (@Model.Tenant365DayUsageHistory.Count)
+                            </h4>
+                            <span class="badge badge-primary" style="font-size: 11px;">12-Month Window</span>
+                        </div>
+
+                        @if (Model.Tenant365DayUsageHistory.Any())
+                        {
+                            <div style="display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto;">
+                                @foreach (var item in Model.Tenant365DayUsageHistory)
+                                {
+                                    var iconName = string.IsNullOrEmpty(item.Feature.Icon) ? "extension" : item.Feature.Icon;
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm);">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div style="width: 30px; height: 30px; border-radius: 4px; background: rgba(139, 92, 246, 0.1); color: #a855f7; display: flex; align-items: center; justify-content: center;">
+                                                <span class="material-symbols-outlined" style="font-size: 16px;">@iconName</span>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 13px; font-weight: 700; color: var(--admin-text);">@item.Feature.Name</div>
+                                                <div style="font-size: 11px; color: var(--admin-text-muted);">
+                                                    <span>Subscribed: @item.ActivatedUtc.ToString("MMM dd, yyyy")</span>
+                                                    @if (item.ExpiresUtc.HasValue)
+                                                    {
+                                                        <span style="margin: 0 4px;">•</span>
+                                                        <span>Renews: @item.ExpiresUtc.Value.ToString("MMM dd, yyyy")</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <span class="badge @(item.IsActive ? "badge-success" : "badge-neutral")" style="font-size: 10.5px; font-weight: 600;">
+                                                @(item.IsActive ? "Active" : "Expired/Trial")
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted); font-size: 13px;">
+                                No paid add-on subscriptions recorded in the past 365 days. Tenant is operating on the standard 27 Compulsory Base features.
+                            </div>
+                        }
+                    </div>
+
+                </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>
 
+@* ========================================================================= *@
+@* ── CLIENT-SIDE INSTANT FEATURE INSPECTION MODAL ── *@
+@* ========================================================================= *@
+<div id="featureModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); width: 90%; max-width: 780px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); color: var(--admin-primary); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">domain</span>
+                </div>
+                <div>
+                    <h3 id="modalTenantName" style="margin: 0; font-size: 16px; font-weight: 800; color: var(--admin-text);">Tenant Features</h3>
+                    <code id="modalTenantKey" style="font-size: 11.5px; color: var(--admin-info);">subdomain</code>
+                </div>
+            </div>
+            <button type="button" onclick="closeFeatureModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--admin-text-muted);">&times;</button>
+        </div>
+
+        <div id="modalFeatureList" style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex: 1;">
+            <!-- Dynamically populated via JS -->
+        </div>
+
+        <div style="padding: 14px 24px; border-top: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); display: flex; justify-content: space-between; align-items: center;">
+            <div id="modalSummaryCount" style="font-size: 12.5px; font-weight: 600; color: var(--admin-text-muted);">
+                27 Base Core + 0 Subscribed Add-ons
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeFeatureModal()" class="btn-admin btn-admin-secondary btn-admin-sm">Close</button>
+                <a id="modalManageBtn" href="#" class="btn-admin btn-admin-primary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
+                    Manage Subscriptions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchViewTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.color = 'var(--admin-text-muted)';
+            btn.style.borderBottomColor = 'transparent';
+        });
+        document.querySelectorAll('.view-content').forEach(view => {
+            view.style.display = 'none';
+        });
+
+        const activeBtn = document.getElementById('tab-btn-' + tabName);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            activeBtn.style.color = 'var(--admin-primary)';
+            activeBtn.style.borderBottomColor = 'var(--admin-primary)';
+        }
+
+        const activeView = document.getElementById('view-' + tabName);
+        if (activeView) {
+            activeView.style.display = 'block';
+        }
+    }
+
+    function openFeatureModal(orgName, tenantKey, tenantId, features) {
+        document.getElementById('modalTenantName').textContent = orgName;
+        document.getElementById('modalTenantKey').textContent = tenantKey + '.ozikol.cloud';
+        document.getElementById('modalManageBtn').href = '/centralwks/tenants/features?tenantId=' + tenantId;
+
+        const container = document.getElementById('modalFeatureList');
+        container.innerHTML = '';
+
+        let compulsoryCount = 0;
+        let addonCount = 0;
+
+        features.forEach(f => {
+            if (f.isCompulsory) compulsoryCount++;
+            else if (f.isActive) addonCount++;
+
+            const item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--admin-bg-surface-elevated);border:1px solid var(--admin-border);border-radius:6px;';
+            
+            const isBase = f.isCompulsory;
+            const badgeClass = isBase ? 'background:rgba(59,130,246,0.15);color:#3b82f6;' : (f.isActive ? 'background:rgba(16,185,129,0.15);color:#10b981;' : 'background:rgba(100,116,139,0.15);color:#94a3b8;');
+            const statusText = isBase ? 'Compulsory Base' : (f.isActive ? 'Active Add-on ($' + Number(f.recurringPrice || f.monthlyPrice).toFixed(2) + '/mo)' : 'Not Subscribed');
+
+            item.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;border-radius:4px;background:rgba(59,130,246,0.1);color:var(--admin-primary);display:flex;align-items:center;justify-content:center;">
+                        <span class="material-symbols-outlined" style="font-size:16px;">${f.icon || 'extension'}</span>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:var(--admin-text);">${f.name}</div>
+                        <div style="font-size:11px;color:var(--admin-text-muted);">${f.category}</div>
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;${badgeClass}">${statusText}</span>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+
+        document.getElementById('modalSummaryCount').textContent = `${compulsoryCount} Compulsory Base + ${addonCount} Subscribed Add-ons (${compulsoryCount + addonCount}/37 Active)`;
+        document.getElementById('featureModal').style.display = 'flex';
+    }
+
+    function closeFeatureModal() {
+        document.getElementById('featureModal').style.display = 'none';
+    }
+
+    // Close on outside click
+    window.onclick = function(e) {
+        const modal = document.getElementById('featureModal');
+        if (e.target === modal) {
+            closeFeatureModal();
+        }
+    };
+</script>

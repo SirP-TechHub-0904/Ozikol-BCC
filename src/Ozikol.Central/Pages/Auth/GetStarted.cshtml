@@ -44,12 +44,12 @@
                 <div class="form-grid-2">
                     <div>
                         <label class="form-label">Full Name <span style="color: #ef4444;">*</span></label>
-                        <input asp-for="Input.FullName" id="inputFullName" required placeholder="Full Name" class="form-input" />
+                        <input asp-for="Input.FullName" id="inputFullName" required placeholder="e.g. First Last" class="form-input" />
                         <span asp-validation-for="Input.FullName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                     <div>
                         <label class="form-label">Organization / Business Name <span style="color: #ef4444;">*</span></label>
-                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="Business or Organization Name" oninput="handleOrgNameInput(this.value)" class="form-input" />
+                        <input asp-for="Input.OrganizationName" id="inputOrgName" required placeholder="e.g. Your Organization Name" oninput="handleOrgNameInput(this.value)" class="form-input" />
                         <span asp-validation-for="Input.OrganizationName" class="text-danger" style="font-size: 12px;"></span>
                     </div>
                 </div>
@@ -62,7 +62,7 @@
                     </label>
                     <div style="display: flex; align-items: center; background: #fff; border: 1px solid var(--ozikol-border-hover); border-radius: 8px; overflow: hidden;">
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-right: 1px solid #e2e8f0; font-weight: 600;">https://</span>
-                        <input asp-for="Input.WorkspaceSlug" id="inputWorkspaceSlug" required placeholder="workspace-name" oninput="handleSlugInput(this.value)" style="flex: 1; border: none; padding: 11px 12px; font-size: 14px; font-weight: 700; color: var(--ozikol-primary); outline: none;" />
+                        <input asp-for="Input.WorkspaceSlug" id="inputWorkspaceSlug" required placeholder="e.g. mycompany" oninput="handleSlugInput(this.value)" style="flex: 1; border: none; padding: 11px 12px; font-size: 14px; font-weight: 700; color: var(--ozikol-primary); outline: none;" />
                         <span style="padding: 10px 12px; background: #f8fafc; color: #64748b; font-size: 13.5px; border-left: 1px solid #e2e8f0; font-weight: 600;">.ozikol.cloud</span>
                     </div>
                     <div id="slugFeedback" style="font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 6px; color: #64748b;">
@@ -82,7 +82,7 @@
                         <label class="form-label" style="margin-bottom: 0;">Master Password <span style="color: #ef4444;">*</span></label>
                         <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="background: none; border: none; font-size: 12.5px; color: var(--ozikol-primary); cursor: pointer; font-weight: 600;">Show Password</button>
                     </div>
-                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="Enter master password" oninput="updateStrength(this.value)" class="form-input" />
+                    <input asp-for="Input.Password" type="password" id="regPassword" autocomplete="new-password" required placeholder="Create a strong password" oninput="updateStrength(this.value)" class="form-input" />
                     <div class="strength-meter" style="margin-top: 6px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
                         <div id="strengthFill" style="height: 100%; width: 0; transition: width 0.3s ease, background 0.3s ease;"></div>
                     </div>
@@ -103,7 +103,7 @@
                     </div>
                     <div>
                         <label class="form-label">Phone Number <span style="font-weight: normal; color: #94a3b8;">(Optional)</span></label>
-                        <input asp-for="Input.PhoneNumber" placeholder="Phone Number" class="form-input" />
+                        <input asp-for="Input.PhoneNumber" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
                     </div>
                 </div>
 
@@ -112,7 +112,7 @@
                         Have an Affiliate Referral Code?
                     </a>
                     <div id="refGroup" style="display: @(string.IsNullOrEmpty(Model.Input.ReferralCode) ? "none" : "block"); margin-top: 8px;">
-                        <input asp-for="Input.ReferralCode" placeholder="Enter referral code" class="form-input" />
+                        <input asp-for="Input.ReferralCode" placeholder="e.g. REF-XXXX" class="form-input" />
                     </div>
                 </div>
 
@@ -171,25 +171,57 @@
                         </a>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                        @if (Model.CompulsoryFeatures.Any())
+                    @{
+                        // Shared serial counter — continuous numbering across compulsory AND addon feature sections
+                        int featureSerialNo = 0;
+
+                        // Build a letter index (A, B, C...) for all unique suite categories across both sections
+                        var allSuiteCategories = Model.CompulsoryFeatures
+                            .Select(f => f.Category)
+                            .Union(Model.AddonFeatures.Select(f => f.Category))
+                            .OrderBy(c => c)
+                            .ToList();
+                        var suiteLetterMap = new Dictionary<string, char>();
+                        for (int i = 0; i < allSuiteCategories.Count; i++)
                         {
-                            @foreach (var feat in Model.CompulsoryFeatures)
+                            suiteLetterMap[allSuiteCategories[i]] = (char)('A' + i);
+                        }
+                    }
+
+                    @if (Model.CompulsoryFeatures.Any())
+                    {
+                        var featureGroups = Model.CompulsoryFeatures.GroupBy(f => f.Category).OrderBy(g => g.Key);
+                        <div style="display: flex; flex-direction: column; gap: 22px;">
+                            @foreach (var suite in featureGroups)
                             {
-                                <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
-                                    <span style="color: #10b981; font-weight: 800;">✓</span>
-                                    <span>@feat.Name</span>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1;">
+                                        <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @suiteLetterMap[suite.Key]</span>
+                                        <span style="color: #334155;">@suite.Key</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                                        @foreach (var feat in suite)
+                                        {
+                                            featureSerialNo++;
+                                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
+                                                <span style="color: #10b981; font-weight: 800;">✓</span>
+                                                <span>@featureSerialNo. @feat.Name</span>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             }
-                        }
-                        else
-                        {
-                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
                                 <span style="color: #10b981; font-weight: 800;">✓</span>
                                 <span>Identity, RBAC, Cloud Storage, Audit Logs, Backups</span>
                             </div>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
 
                 @* 2. Additional Features (Rendered dynamically only when extra features exist) *@
@@ -206,30 +238,58 @@
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; max-height: 380px; overflow-y: auto; padding: 4px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
-                            @foreach (var feat in Model.AddonFeatures)
+                        <div style="max-height: 420px; overflow-y: auto; padding: 8px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+                            @{
+                                var addonGroups = Model.AddonFeatures.GroupBy(f => f.Category).OrderBy(g => g.Key);
+                            }
+                            @foreach (var suite in addonGroups)
                             {
-                                <label style="display: flex; align-items: flex-start; gap: 12px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.15s ease;" class="feature-checkbox-label">
-                                    <input type="checkbox" name="Input.SelectedFeatureIds" value="@feat.Id" 
-                                           data-price="@feat.MonthlyPrice" data-billing="@feat.BillingType"
-                                           onchange="updateCartTotal()" 
-                                           style="width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ozikol-primary);" />
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                             <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">@feat.Name</div>
-                                            <span style="font-size: 11.5px; font-weight: 700; color: var(--ozikol-primary); background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
-                                                @(feat.MonthlyPrice == 0 ? "Free" : $"{Model.ActiveCurrencySymbol}{feat.MonthlyPrice:N0}/mo")
-                                            </span>
-                                        </div>
-                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px; line-height: 1.3;">
-                                            @(feat.Description ?? feat.Category)
-                                        </div>
+                                <div style="margin-bottom: 22px;">
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding: 6px 12px 8px; border-bottom: 1.5px dashed #cbd5e1;">
+                                        <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @suiteLetterMap[suite.Key]</span>
+                                        <span style="color: #334155;">@suite.Key</span>
                                     </div>
-                                </label>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; padding: 0 4px;">
+                                        @foreach (var feat in suite)
+                                        {
+                                            featureSerialNo++;
+                                            var featYearlyPrice = feat.YearlyPrice > 0 ? feat.YearlyPrice : feat.MonthlyPrice * 10;
+                                            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px; transition: all 0.15s ease;" class="feature-card-wrapper" id="card_@feat.Id">
+                                                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                                                    <input type="checkbox" name="Input.SelectedFeatureIds" value="@feat.Id" id="cb_@feat.Id"
+                                                           data-monthly-price="@feat.MonthlyPrice"
+                                                           data-yearly-price="@featYearlyPrice"
+                                                           onchange="updateCartTotal()"
+                                                           style="width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ozikol-primary); cursor: pointer;" />
+                                                    <div style="flex: 1;">
+                                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                                            <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</div>
+                                                            <span id="priceBadge_@feat.Id" style="font-size: 11.5px; font-weight: 700; color: var(--ozikol-primary); background: #eff6ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
+                                                                @(feat.MonthlyPrice == 0 ? "Free" : $"{Model.ActiveCurrencySymbol}{feat.MonthlyPrice:N0}/mo")
+                                                            </span>
+                                                        </div>
+                                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px; line-height: 1.4;">
+                                                            @(feat.Description ?? feat.Category)
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                                    <span style="font-size: 11px; font-weight: 600; color: #64748b;">Billing Cadence:</span>
+                                                    <select class="feature-cadence-select" id="cadence_@feat.Id" data-feature-id="@feat.Id" onchange="onFeatureCadenceChanged('@feat.Id')" style="font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #0f172a; cursor: pointer;">
+                                                        <option value="Monthly" data-price="@feat.MonthlyPrice" selected>Monthly (@Model.ActiveCurrencySymbol@feat.MonthlyPrice.ToString("N0")/mo)</option>
+                                                        <option value="Yearly" data-price="@featYearlyPrice">Yearly (@Model.ActiveCurrencySymbol@featYearlyPrice.ToString("N0")/yr — Save 20%)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
                             }
                         </div>
                     </div>
                 }
+
+                <input type="hidden" asp-for="Input.FeatureCadencesJson" id="hiddenFeatureCadencesJson" />
 
                 @* 3. Coupon Voucher / Promo Box *@
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
@@ -237,7 +297,7 @@
                         Promotional Voucher / Partner Coupon
                     </label>
                     <div style="display: flex; gap: 10px;">
-                        <input asp-for="Input.CouponCode" id="inputCouponCode" placeholder="Enter coupon or promo code" 
+                        <input asp-for="Input.CouponCode" id="inputCouponCode" placeholder="e.g. PROMO-XXXX" 
                                class="form-input" style="flex: 1; font-family: monospace; font-size: 14px; font-weight: 700; text-transform: uppercase;" />
                         <button type="button" onclick="applyCouponCode()" class="btn-auth-outline" style="padding: 10px 18px; font-weight: 700; font-size: 13px; white-space: nowrap; border: 1.5px solid var(--ozikol-primary); color: var(--ozikol-primary); background: transparent; border-radius: 8px; cursor: pointer;">
                             Apply Voucher
@@ -290,6 +350,8 @@
                 </div>
             </div>
 
+            <!-- Hidden reCAPTCHA token backup: persists the verification token across step transitions -->
+            <input type="hidden" id="recaptchaTokenBackup" />
         </form>
 
         <div class="auth-footer" style="font-size: 13px; color: #64748b; text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #f1f5f9; line-height: 1.6;">
@@ -334,6 +396,7 @@
 
 <script>
 let currentDiscountPct = 0; // Default zero discount until valid coupon is entered
+let savedRecaptchaToken = ''; // Stores reCAPTCHA token from Step 1 for use in Step 2 submission
 let slugDebounceTimer = null;
 
 function goToStep2() {
@@ -346,6 +409,14 @@ function goToStep2() {
     if (!fullName.value.trim() || !orgName.value.trim() || !slug.value.trim() || !email.value.trim() || !pwd.value) {
         alert('Please fill in all required fields (Full Name, Organization, Address, Email, Password) to proceed.');
         return;
+    }
+
+    // Preserve reCAPTCHA token before hiding Step 1 container (tokens expire after ~2 min)
+    const recaptchaEl = document.querySelector('#step1Container [name="g-recaptcha-response"]');
+    if (recaptchaEl && recaptchaEl.value) {
+        savedRecaptchaToken = recaptchaEl.value;
+        const backup = document.getElementById('recaptchaTokenBackup');
+        if (backup) backup.value = recaptchaEl.value;
     }
 
     document.getElementById('step1Container').style.display = 'none';
@@ -481,19 +552,64 @@ async function applyCouponCode() {
     updateCartTotal();
 }
 
+function onFeatureCadenceChanged(featureId) {
+    const cadenceSelect = document.getElementById(`cadence_${featureId}`);
+    const priceBadge = document.getElementById(`priceBadge_${featureId}`);
+    const currencySymbol = '@Html.Raw(Model.ActiveCurrencySymbol)';
+
+    if (cadenceSelect && priceBadge) {
+        const isYearly = cadenceSelect.value === 'Yearly';
+        const opt = cadenceSelect.options[cadenceSelect.selectedIndex];
+        const price = parseFloat(opt.dataset.price) || 0;
+
+        if (price === 0) {
+            priceBadge.innerText = 'Free';
+        } else if (isYearly) {
+            priceBadge.innerText = `${currencySymbol}${price.toFixed(0)}/yr`;
+        } else {
+            priceBadge.innerText = `${currencySymbol}${price.toFixed(0)}/mo`;
+        }
+    }
+
+    updateCartTotal();
+}
+
 function updateCartTotal() {
     const checkboxes = document.querySelectorAll('input[name="Input.SelectedFeatureIds"]:checked');
-    let addonsTotal = 0;
+    let monthlyAddonsTotal = 0;
+    let yearlyAddonsTotal = 0;
+    let monthlyCount = 0;
+    let yearlyCount = 0;
+    const cadencesMap = {};
 
     checkboxes.forEach(cb => {
-        const price = parseFloat(cb.dataset.price) || 0;
-        addonsTotal += price;
+        const featureId = cb.value;
+        const cadenceSelect = document.getElementById(`cadence_${featureId}`);
+        const isYearly = cadenceSelect && cadenceSelect.value === 'Yearly';
+
+        cadencesMap[featureId] = isYearly ? 'Yearly' : 'Monthly';
+
+        if (isYearly) {
+            const price = parseFloat(cb.dataset.yearlyPrice) || 0;
+            yearlyAddonsTotal += price;
+            yearlyCount++;
+        } else {
+            const price = parseFloat(cb.dataset.monthlyPrice) || 0;
+            monthlyAddonsTotal += price;
+            monthlyCount++;
+        }
     });
+
+    // Serialize cadence choices for backend binding
+    const hiddenCadencesInput = document.getElementById('hiddenFeatureCadencesJson');
+    if (hiddenCadencesInput) {
+        hiddenCadencesInput.value = JSON.stringify(cadencesMap);
+    }
 
     const basePlan = @Model.BasePlanAnnualPrice;
     const currencySymbol = '@Html.Raw(Model.ActiveCurrencySymbol)';
     const trialDays = @Model.TrialDays;
-    const subtotal = basePlan + (addonsTotal * 12); // Annualized subtotal
+    const subtotal = basePlan + yearlyAddonsTotal + (monthlyAddonsTotal * 12); // Annualized contract volume
 
     const selectedCountEl = document.getElementById('selectedCount');
     if (selectedCountEl) {
@@ -502,7 +618,10 @@ function updateCartTotal() {
 
     const addonsTotalEl = document.getElementById('addonsTotalDisplay');
     if (addonsTotalEl) {
-        addonsTotalEl.innerText = `${currencySymbol}${addonsTotal.toFixed(2)}/mo`;
+        let textParts = [];
+        if (monthlyCount > 0) textParts.push(`${currencySymbol}${monthlyAddonsTotal.toFixed(2)}/mo (${monthlyCount} monthly)`);
+        if (yearlyCount > 0) textParts.push(`${currencySymbol}${yearlyAddonsTotal.toFixed(2)}/yr (${yearlyCount} yearly)`);
+        addonsTotalEl.innerText = textParts.length > 0 ? textParts.join(' + ') : `${currencySymbol}0.00`;
     }
 
     const discountRow = document.getElementById('discountRow');
@@ -563,6 +682,12 @@ async function handleOnboardingSubmit(e) {
 
     try {
         const formData = new FormData(form);
+
+        // Explicitly include the reCAPTCHA token (widget is inside hidden Step 1 container)
+        if (savedRecaptchaToken) {
+            formData.set('g-recaptcha-response', savedRecaptchaToken);
+        }
+
         const resp = await fetch(form.action || window.location.pathname, {
             method: 'POST',
             body: formData,

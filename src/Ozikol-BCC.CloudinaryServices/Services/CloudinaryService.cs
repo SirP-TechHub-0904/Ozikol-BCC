@@ -1,35 +1,63 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Ozikol_BCC.Application.Configuration;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Ozikol_BCC.CloudinaryServices.Services
 {
     /// <summary>
-    /// Cloudinary-backed media service. This project owns direct Cloudinary API calls;
-    /// application code should depend on ICloudinaryService instead of provider classes.
+    /// Cloudinary-backed media and asset management service.
+    /// Manages direct Cloudinary API operations for images and raw documents across Central and Tenant platforms.
     /// </summary>
     public class CloudinaryService : ICloudinaryService
     {
-        private readonly Cloudinary _cloudinary;
+        private readonly Cloudinary? _cloudinary;
 
         /// <summary>
-        /// Expects CloudinarySettings to provide CloudName, ApiKey, and ApiSecret.
-        /// Missing or invalid credentials will surface when Cloudinary operations run.
+        /// Initializes a new instance of the <see cref="CloudinaryService"/> class.
+        /// Resolves Cloudinary credentials from configuration or environment variables.
         /// </summary>
-        public CloudinaryService(IOptions<CloudinarySettings> settings)
+        public CloudinaryService(IOptions<CloudinarySettings> settings, IConfiguration? configuration = null)
         {
-            var account = new Account(
-                settings.Value.CloudName,
-                settings.Value.ApiKey,
-                settings.Value.ApiSecret
-            );
+            // 1. Check for CLOUDINARY_URL format (e.g. cloudinary://apiKey:apiSecret@cloudName)
+            var cloudinaryUrl = configuration?["CLOUDINARY_URL"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_URL");
+            if (!string.IsNullOrWhiteSpace(cloudinaryUrl))
+            {
+                try
+                {
+                    _cloudinary = new Cloudinary(cloudinaryUrl) { Api = { Secure = true } };
+                    return;
+                }
+                catch
+                {
+                    // Fall back to discrete settings
+                }
+            }
 
-            _cloudinary = new Cloudinary(account);
+            // 2. Resolve credentials from settings or environment variables
+            var cloudName = !string.IsNullOrWhiteSpace(settings.Value.CloudName) 
+                ? settings.Value.CloudName 
+                : (configuration?["CLOUDINARY_CLOUD_NAME"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"));
+
+            var apiKey = !string.IsNullOrWhiteSpace(settings.Value.ApiKey) 
+                ? settings.Value.ApiKey 
+                : (configuration?["CLOUDINARY_API_KEY"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"));
+
+            var apiSecret = !string.IsNullOrWhiteSpace(settings.Value.ApiSecret) 
+                ? settings.Value.ApiSecret 
+                : (configuration?["CLOUDINARY_API_SECRET"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"));
+
+            if (!string.IsNullOrWhiteSpace(cloudName) && !string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiSecret))
+            {
+                var account = new Account(cloudName.Trim(), apiKey.Trim(), apiSecret.Trim());
+                _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
+            }
         }
 
         /// <summary>
@@ -41,30 +69,29 @@ namespace Ozikol_BCC.CloudinaryServices.Services
                 !string.IsNullOrWhiteSpace(customApiKey) &&
                 !string.IsNullOrWhiteSpace(customApiSecret))
             {
-                return new Cloudinary(new Account(customCloudName.Trim(), customApiKey.Trim(), customApiSecret.Trim()));
+                return new Cloudinary(new Account(customCloudName.Trim(), customApiKey.Trim(), customApiSecret.Trim())) { Api = { Secure = true } };
+            }
+
+            if (_cloudinary == null)
+            {
+                throw new InvalidOperationException("Cloudinary credentials are not configured on the server. Please provide CLOUDINARY_URL or CloudinarySettings.");
             }
 
             return _cloudinary;
         }
 
-        /// <summary>
-        /// Uploads an image to the requested Cloudinary folder and returns the secure URL.
-        /// Null/empty files are treated as no-op input. Provider upload failures throw
-        /// so calling workflows can stop and show a meaningful error.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<string> UploadImageAsync(IFormFile file, string folderName = "templates", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null)
         {
             var (url, _) = await UploadImageWithPublicIdAsync(file, folderName, customCloudName, customApiKey, customApiSecret);
             return url;
         }
 
-        /// <summary>
-        /// Uploads an image with support for optional custom tenant credentials, returning the secure URL and public ID.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<(string Url, string PublicId)> UploadImageWithPublicIdAsync(IFormFile file, string folderName = "templates", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null)
         {
             if (file == null || file.Length == 0)
-                return (null!, null!);
+                return (string.Empty, string.Empty);
 
             var client = GetClient(customCloudName, customApiKey, customApiSecret);
 
@@ -72,8 +99,7 @@ namespace Ozikol_BCC.CloudinaryServices.Services
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
-                Folder = folderName,
-                // Keep the original file name for readability, but let Cloudinary make it unique.
+                Folder = $"ozikol/{folderName}",
                 UseFilename = true,
                 UniqueFilename = true,
                 Overwrite = false
@@ -83,15 +109,48 @@ namespace Ozikol_BCC.CloudinaryServices.Services
 
             if (uploadResult.Error != null)
             {
-                throw new Exception($"Cloudinary upload failed: {uploadResult.Error.Message}");
+                throw new Exception($"Cloudinary image upload failed: {uploadResult.Error.Message}");
             }
 
             return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
         }
 
-        /// <summary>
-        /// Deletes an image by Cloudinary public ID, utilizing either custom tenant or platform master client.
-        /// </summary>
+        /// <inheritdoc />
+        public async Task<string> UploadRawDocumentAsync(IFormFile file, string folderName = "documents", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null)
+        {
+            var (url, _) = await UploadRawDocumentWithPublicIdAsync(file, folderName, customCloudName, customApiKey, customApiSecret);
+            return url;
+        }
+
+        /// <inheritdoc />
+        public async Task<(string Url, string PublicId)> UploadRawDocumentWithPublicIdAsync(IFormFile file, string folderName = "documents", string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null)
+        {
+            if (file == null || file.Length == 0)
+                return (string.Empty, string.Empty);
+
+            var client = GetClient(customCloudName, customApiKey, customApiSecret);
+
+            using var stream = file.OpenReadStream();
+            var uploadParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"ozikol/{folderName}",
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false
+            };
+
+            var uploadResult = await client.UploadAsync(uploadParams);
+
+            if (uploadResult.Error != null)
+            {
+                throw new Exception($"Cloudinary document upload failed: {uploadResult.Error.Message}");
+            }
+
+            return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
+        }
+
+        /// <inheritdoc />
         public async Task<bool> DeleteImageAsync(string publicId, string? customCloudName = null, string? customApiKey = null, string? customApiSecret = null)
         {
             if (string.IsNullOrEmpty(publicId))
@@ -104,9 +163,7 @@ namespace Ozikol_BCC.CloudinaryServices.Services
             return result.Result == "ok";
         }
 
-        /// <summary>
-        /// Validates tenant credentials by performing a micro test-upload and instant deletion.
-        /// </summary>
+        /// <inheritdoc />
         public async Task<bool> ValidateCredentialsAsync(string cloudName, string apiKey, string apiSecret)
         {
             if (string.IsNullOrWhiteSpace(cloudName) || string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
@@ -114,15 +171,15 @@ namespace Ozikol_BCC.CloudinaryServices.Services
 
             try
             {
-                var client = new Cloudinary(new Account(cloudName.Trim(), apiKey.Trim(), apiSecret.Trim()));
+                var client = new Cloudinary(new Account(cloudName.Trim(), apiKey.Trim(), apiSecret.Trim())) { Api = { Secure = true } };
 
                 // 1x1 transparent PNG pixel in Base64
                 byte[] pixelBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAA=");
-                using var memoryStream = new System.IO.MemoryStream(pixelBytes);
+                using var memoryStream = new MemoryStream(pixelBytes);
                 var uploadParams = new ImageUploadParams
                 {
                     File = new FileDescription("ping_test.png", memoryStream),
-                    Folder = "ping-verification",
+                    Folder = "ozikol/ping-verification",
                     PublicId = $"test_{Guid.NewGuid():N}"
                 };
 

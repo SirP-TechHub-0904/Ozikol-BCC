@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -4972,7 +4972,7 @@
     <value>Nom complet *</value>
   </data>
   <data name="Voucher_Field_FullName_Placeholder" xml:space="preserve">
-    <value>ex. Jean Dupont</value>
+    <value>ex. Prénom Nom</value>
   </data>
   <data name="Voucher_Field_Email" xml:space="preserve">
     <value>Adresse e-mail *</value>
@@ -4984,7 +4984,7 @@
     <value>Nom de l'organisation / entreprise *</value>
   </data>
   <data name="Voucher_Field_OrgName_Placeholder" xml:space="preserve">
-    <value>ex. Acme Corporation</value>
+    <value>ex. Votre Nom d'Organisation</value>
   </data>
   <data name="Voucher_Field_Phone" xml:space="preserve">
     <value>Numéro de téléphone</value>

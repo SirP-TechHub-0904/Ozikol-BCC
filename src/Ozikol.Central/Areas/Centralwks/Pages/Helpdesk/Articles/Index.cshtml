@@ -12,10 +12,12 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/helpdesk/videos" class="btn-admin btn-admin-secondary">
-            <span>🎬</span> Video Tutorials
+            <span class="material-symbols-outlined" style="font-size: 16px;">video_library</span>
+            Video Tutorials
         </a>
         <a href="/centralwks/helpdesk/articles/create" class="btn-admin btn-admin-primary">
-            <span>➕</span> New KB Article
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            New KB Article
         </a>
     </div>
 </div>
@@ -30,28 +32,36 @@
 @* ── Helpdesk Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">📚</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">menu_book</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Articles</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">🌐</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">public</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Published Live</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.PublishedCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">👀</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Readership Views</span>
             <span class="stat-value" style="font-size: 22px; color: #93c5fd;">@Model.TotalViews.ToString("N0")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; font-size: 18px; background: rgba(16, 185, 129, 0.2); color: #34d399;">👍</div>
+        <div class="stat-icon-wrapper" style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.2); color: #34d399;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">thumb_up</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Helpful Upvotes</span>
             <span class="stat-value" style="font-size: 22px; color: #34d399;">@Model.TotalHelpfulVotes.ToString("N0")</span>
@@ -63,12 +73,11 @@
 <div class="admin-card" style="padding: 16px 20px; margin-bottom: 24px;">
     <form method="get" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
         <div style="flex: 1; min-width: 220px;">
-            <input type="text" name="search" value="@Model.Search" placeholder="Search title, slug, excerpt, or suite code..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+            <input type="text" name="search" value="@Model.Search" placeholder="Search title, slug, excerpt, or suite code..." class="form-control" />
         </div>
 
         <div style="min-width: 160px;">
-            <select name="suiteFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="suiteFilter" class="form-select">
                 <option value="">All Suites</option>
                 @foreach (var s in Model.Suites)
                 {
@@ -78,7 +87,7 @@
         </div>
 
         <div style="min-width: 140px;">
-            <select name="categoryFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="categoryFilter" class="form-select">
                 <option value="">All Categories</option>
                 @foreach (var cat in Model.Categories)
                 {
@@ -88,7 +97,7 @@
         </div>
 
         <div style="min-width: 110px;">
-            <select name="cultureFilter" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+            <select name="cultureFilter" class="form-select">
                 <option value="">All Langs</option>
                 @foreach (var cult in Model.Cultures)
                 {
@@ -97,7 +106,10 @@
             </select>
         </div>
 
-        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">Filter</button>
+        <button type="submit" class="btn-admin btn-admin-primary" style="padding: 8px 16px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+            Filter
+        </button>
         <a href="/centralwks/helpdesk/articles" class="btn-admin btn-admin-secondary" style="padding: 8px 14px;">Reset</a>
     </form>
 </div>

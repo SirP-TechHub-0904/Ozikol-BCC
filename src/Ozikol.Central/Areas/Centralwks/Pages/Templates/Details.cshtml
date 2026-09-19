@@ -11,11 +11,11 @@
         <p class="admin-subtitle">Programmatic Variant Code: <code style="color: #38bdf8; font-size: 14px;">@Model.Template.VariantCode</code></p>
     </div>
     <div class="admin-actions">
-        <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary">
-            <span>✏️</span> Edit Template
+        <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
         </a>
         <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
-            <span>&larr;</span> Back to Templates
+            &larr; Back to Templates
         </a>
     </div>
 </div>
@@ -60,7 +60,7 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.Template.Description))
     {
-        <div style="padding: 16px 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 14px; color: var(--admin-text-muted); line-height: 1.6;">
+        <div style="padding: 16px 24px; border-top: 1px solid var(--admin-card-border); font-size: 14px; color: var(--admin-text-muted); line-height: 1.6;">
             @Model.Template.Description
         </div>
     }
@@ -70,8 +70,10 @@
     @* ── Left: Source Code Inspector ── *@
     <div>
         <div class="admin-card" style="margin-bottom: 24px;">
-            <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💻</div>
+            <div class="card-header-styled" style="border-bottom: 1px solid var(--admin-card-border);">
+                <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">code</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Source Markup & Code</h3>
                     <p class="card-header-subtitle">Inspect the underlying template source code and stylesheets.</p>
@@ -132,8 +134,10 @@
 
         @* ── Simulated Preview ── *@
         <div class="admin-card">
-            <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">👁️</div>
+            <div class="card-header-styled" style="border-bottom: 1px solid var(--admin-card-border);">
+                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">preview</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Rendered HTML Simulation</h3>
                     <p class="card-header-subtitle">Substituted mock parameters evaluated against template markup.</p>
@@ -155,7 +159,9 @@
     <div>
         <div class="admin-card" style="margin-bottom: 24px;">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📊</div>
+                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Blueprint Metrics</h3>
                     <p class="card-header-subtitle">Configuration parameters.</p>
@@ -197,7 +203,9 @@
 
         <div class="admin-card">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚡</div>
+                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">bolt</span>
+                </div>
                 <div>
                     <h3 class="card-header-title">Management Actions</h3>
                     <p class="card-header-subtitle">Administrative controls.</p>
@@ -205,14 +213,14 @@
             </div>
 
             <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="justify-content: center;">
-                    <span>✏️</span> Edit Template
+                <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
                 </a>
 
                 <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Template.Id">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center;">
-                        <span>@(Model.Template.IsActive ? "⏸️" : "▶️")</span>
+                    <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">@(Model.Template.IsActive ? "pause" : "play_arrow")</span>
                         @(Model.Template.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")
                     </button>
                 </form>

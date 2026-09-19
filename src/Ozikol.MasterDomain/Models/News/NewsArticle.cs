@@ -74,6 +74,11 @@ public class NewsArticle
     public List<string> Tags { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the total number of times this article has been read.
+    /// </summary>
+    public long ReadCount { get; set; } = 0;
+
+    /// <summary>
     /// Gets or sets the theme gradient or cover styling token.
     /// </summary>
     public string CoverGradientClass { get; set; } = "oz-news-cover-indigo";

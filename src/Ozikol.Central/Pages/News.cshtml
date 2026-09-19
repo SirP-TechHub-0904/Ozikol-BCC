@@ -98,6 +98,8 @@
                         <span class="oz-news-meta-date">@Model.FeaturedArticle.PublishedAtUtc.ToString("MMMM yyyy")</span>
                         <span class="oz-news-meta-bullet">&bull;</span>
                         <span class="oz-news-meta-read">@Model.FeaturedArticle.ReadTimeText</span>
+                        <span class="oz-news-meta-bullet">&bull;</span>
+                        <span class="oz-news-meta-reads">@Model.FeaturedArticle.ReadCount.ToString("N0") reads</span>
                     </div>
                     <h2 class="oz-news-featured-title">
                         <a href="/@Model.CurrentCulture/news/@Model.FeaturedArticle.Slug">@Model.FeaturedArticle.Title</a>
@@ -145,6 +147,8 @@
                             <span class="oz-news-meta-date">@article.PublishedAtUtc.ToString("MMMM yyyy")</span>
                             <span class="oz-news-meta-bullet">&bull;</span>
                             <span class="oz-news-meta-read">@article.ReadTimeText</span>
+                            <span class="oz-news-meta-bullet">&bull;</span>
+                            <span class="oz-news-meta-reads">@article.ReadCount.ToString("N0") reads</span>
                         </div>
                         <h3 class="oz-corp-card-title oz-news-card-title">
                             <a href="/@Model.CurrentCulture/news/@article.Slug">@article.Title</a>
@@ -163,6 +167,37 @@
                     </article>
                 }
             </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="oz-news-pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 36px 0 20px 0; flex-wrap: wrap;">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a href="/@Model.CurrentCulture/news?PageNumber=@(Model.PageNumber - 1)@(string.IsNullOrEmpty(Model.Category) ? "" : $"&category={Model.Category}")@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Model.Query}")#articles" class="oz-btn-outline-hero" style="padding: 8px 16px; font-size: 13px;">
+                            &larr; Previous
+                        </a>
+                    }
+
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        if (p == Model.PageNumber)
+                        {
+                            <span class="oz-btn-primary-hero" style="padding: 8px 16px; font-size: 13px; font-weight: 700; pointer-events: none;">@p</span>
+                        }
+                        else
+                        {
+                            <a href="/@Model.CurrentCulture/news?PageNumber=@p@(string.IsNullOrEmpty(Model.Category) ? "" : $"&category={Model.Category}")@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Model.Query}")#articles" class="oz-btn-outline-hero" style="padding: 8px 16px; font-size: 13px;">@p</a>
+                        }
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a href="/@Model.CurrentCulture/news?PageNumber=@(Model.PageNumber + 1)@(string.IsNullOrEmpty(Model.Category) ? "" : $"&category={Model.Category}")@(string.IsNullOrEmpty(Model.Query) ? "" : $"&query={Model.Query}")#articles" class="oz-btn-outline-hero" style="padding: 8px 16px; font-size: 13px;">
+                            Next &rarr;
+                        </a>
+                    }
+                </div>
+            }
         }
 
         <!-- Newsletter & Media Desk with reCAPTCHA -->
