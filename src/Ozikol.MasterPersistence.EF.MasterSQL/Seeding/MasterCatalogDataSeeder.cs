@@ -2228,25 +2228,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 {
                     dbContext.MasterFeatureCatalogs.Add(feat);
                 }
-                else
-                {
-                    existing.Name = feat.Name;
-                    existing.Category = feat.Category;
-                    existing.Description = feat.Description;
-                    existing.Icon = feat.Icon;
-                    existing.RoutePrefix = feat.RoutePrefix;
-                    existing.IsCompulsory = feat.IsCompulsory;
-                    existing.BillingType = feat.BillingType;
-                    existing.MonthlyPrice = feat.MonthlyPrice;
-                    existing.QuarterlyPrice = feat.QuarterlyPrice;
-                    existing.YearlyPrice = feat.YearlyPrice;
-                    existing.IsMetered = feat.IsMetered;
-                    existing.MeterUnitName = feat.MeterUnitName;
-                    existing.MeterUnitPrice = feat.MeterUnitPrice;
-                    existing.MeterBlockSize = feat.MeterBlockSize;
-                    existing.IncludedFreeUnits = feat.IncludedFreeUnits;
-                    existing.SortOrder = feat.SortOrder;
-                }
+                // If existing, do not overwrite database configuration (IsCompulsory, custom pricing, etc.)
+                // to preserve tenant/database customization without runtime drift.
             }
 
             await dbContext.SaveChangesAsync(ct);

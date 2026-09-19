@@ -83,6 +83,11 @@ namespace Ozikol.Central.Pages
         public List<Guid> SelectedFeatureIds { get; set; } = new();
 
         /// <summary>
+        /// JSON-serialized dictionary mapping selected feature IDs to their chosen billing frequency ("Monthly" or "Yearly").
+        /// </summary>
+        public string? FeatureCadencesJson { get; set; }
+
+        /// <summary>
         /// Promotional discount voucher / coupon code entered in Step 2.
         /// </summary>
         public string? CouponCode { get; set; }
@@ -100,6 +105,7 @@ namespace Ozikol.Central.Pages
         private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
         private readonly IRecaptchaService _recaptchaService;
         private readonly ICurrencyService _currencyService;
+        private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
         private readonly Microsoft.Extensions.Options.IOptions<PricingSettings> _pricingSettings;
         private readonly ILogger<GetStartedModel> _logger;
 
@@ -112,6 +118,7 @@ namespace Ozikol.Central.Pages
         /// <param name="cache">Memory cache used to store one-time setup summaries.</param>
         /// <param name="recaptchaService">Google reCAPTCHA verification service.</param>
         /// <param name="currencyService">Dynamic location-based currency and pricing service.</param>
+        /// <param name="emailValidationService">Email format and disposable domain verification service.</param>
         /// <param name="pricingSettings">Configured pricing options provider.</param>
         /// <param name="logger">Application logger instance.</param>
         public GetStartedModel(
@@ -121,6 +128,7 @@ namespace Ozikol.Central.Pages
             Microsoft.Extensions.Caching.Memory.IMemoryCache cache,
             IRecaptchaService recaptchaService,
             ICurrencyService currencyService,
+            Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
             Microsoft.Extensions.Options.IOptions<PricingSettings> pricingSettings,
             ILogger<GetStartedModel> logger)
         {
@@ -130,6 +138,7 @@ namespace Ozikol.Central.Pages
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
             _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
+            _emailValidationService = emailValidationService ?? throw new ArgumentNullException(nameof(emailValidationService));
             _pricingSettings = pricingSettings ?? throw new ArgumentNullException(nameof(pricingSettings));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -359,6 +368,13 @@ namespace Ozikol.Central.Pages
                 return await ReturnValidationFailureAsync();
             }
 
+            if (!_emailValidationService.IsValidEmail(Input.WorkEmail, out var emailError))
+            {
+                ModelState.AddModelError(nameof(Input.WorkEmail), emailError ?? "Please provide a valid work email address.");
+                ErrorMessage = emailError ?? "Please provide a valid work email address.";
+                return await ReturnValidationFailureAsync();
+            }
+
             if (!ModelState.IsValid)
             {
                 return await ReturnValidationFailureAsync();
@@ -398,6 +414,19 @@ namespace Ozikol.Central.Pages
             string firstName = nameParts.Length > 0 ? nameParts[0] : "Administrator";
             string lastName = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "Admin";
 
+            var cadencesDict = new Dictionary<Guid, string>();
+            if (!string.IsNullOrWhiteSpace(Input.FeatureCadencesJson))
+            {
+                try
+                {
+                    cadencesDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<Guid, string>>(Input.FeatureCadencesJson) ?? new();
+                }
+                catch
+                {
+                    // Fallback to empty dictionary if malformed
+                }
+            }
+
             var onboardingRequest = new TenantOnboardingRequest
             {
                 OrganizationName = Input.OrganizationName.Trim(),
@@ -410,6 +439,8 @@ namespace Ozikol.Central.Pages
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
                 Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
                 SelectedFeatureIds = Input.SelectedFeatureIds ?? new List<Guid>(),
+                SelectedFeatureCadences = cadencesDict,
+                TrialDays = TrialDays > 0 ? TrialDays : 14,
                 CouponCode = string.IsNullOrWhiteSpace(Input.CouponCode) ? null : Input.CouponCode.Trim()
             };
 

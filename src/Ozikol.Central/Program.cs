@@ -50,6 +50,9 @@ builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozik
 builder.Services.AddPostmarkEmailServices(builder.Configuration);
 builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(ErrorAlertSettings.SectionName));
 
+// Register Dedicated Cloudinary Media Services
+Ozikol_BCC.CloudinaryServices.DependencyInjection.AddCloudinaryServices(builder.Services, builder.Configuration);
+
 builder.Services.AddRazorPages(options =>
 {
     // Register clean top-level and hyphenated route aliases for Auth pages
@@ -63,6 +66,7 @@ builder.Services.AddRazorPages(options =>
     // Clean hyphenated route aliases for Centralwks operator authentication (Login and Logout are already handled case-insensitively by default area routing)
     options.Conventions.AddAreaPageRoute("Centralwks", "/ForgotPassword", "centralwks/forgot-password");
     options.Conventions.AddAreaPageRoute("Centralwks", "/ResetPassword", "centralwks/reset-password");
+    options.Conventions.AddAreaPageRoute("Centralwks", "/SetupPassword", "centralwks/setup-password");
     options.Conventions.AddAreaPageRoute("Centralwks", "/Login2fa", "centralwks/login-2fa");
 
     // Enable optional /{culture} route prefix constrained strictly to supported language codes
@@ -104,6 +108,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Logout");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ForgotPassword");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/ResetPassword");
+    options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/SetupPassword");
     options.Conventions.AllowAnonymousToAreaPage("Centralwks", "/Login2fa");
 
     options.Conventions.AuthorizeAreaFolder("Affiliate", "/", "AffiliatePartnerPolicy");
@@ -236,6 +241,20 @@ builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>(
 builder.Services.AddScoped<ILegalService, LegalService>();
 builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
+builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
+
+// 7a. Register Central Notification & OneSignal Push Engine
+builder.Services.AddHttpClient<Ozikol.Central.Services.Notifications.IOneSignalPushService, Ozikol.Central.Services.Notifications.OneSignalPushService>();
+builder.Services.AddScoped<Ozikol.Central.Services.Notifications.ICentralNotificationService, Ozikol.Central.Services.Notifications.CentralNotificationService>();
+
+// 7b. Register Background Job Handlers & Central Orchestrator
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.SubscriptionExpirationJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.RenewalWarningJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDbHealthJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantDailyDigestJobHandler>();
+builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, Ozikol.Central.Services.Jobs.Handlers.TenantEmailQueueJobHandler>();
+builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
 
 var app = builder.Build();
 

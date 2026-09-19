@@ -1,0 +1,266 @@
+@page "/centralwks/notifications"
+@model Ozikol.Central.Areas.Centralwks.Pages.Notifications.IndexModel
+@{
+    ViewData["Title"] = "Platform Notifications Center";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 28px; color: var(--admin-primary);">notifications</span>
+            Platform Notifications Center
+        </h1>
+        <p class="admin-subtitle">Live system telemetry, administrative activity alerts, background worker updates, and security events across all channels.</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/centralwks/notifications/compose" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">campaign</span>
+            Compose Broadcast Alert
+        </a>
+
+        <form method="post" asp-page-handler="MarkAllRead" style="margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">done_all</span>
+                Mark All as Read
+            </button>
+        </form>
+
+        <form method="post" asp-page-handler="ClearAllRead" onsubmit="return confirm('Purge all read notifications from your feed?');" style="margin: 0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px; color: var(--admin-danger);">
+                <span class="material-symbols-outlined" style="font-size: 16px;">delete_sweep</span>
+                Clear Read
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="admin-alert admin-alert-info" style="width: 100%; margin-bottom: 24px; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.25); color: #2563eb; border-radius: var(--radius-md); padding: 12px 18px; font-size: 13px; display: flex; align-items: center; gap: 10px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
+        <div>@Model.StatusMessage</div>
+    </div>
+}
+
+@* ── Non-Intrusive Soft Browser Push Opt-In Banner ── *@
+<div id="pushOptInBanner" style="display: none; width: 100%; margin-bottom: 24px; padding: 16px 20px; background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-lg); align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 260px;">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.15); color: #6366f1; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">notifications_active</span>
+        </div>
+        <div>
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--admin-text); margin-bottom: 2px;">Enable Instant Desktop Push Alerts?</div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); line-height: 1.4;">Receive critical background worker alerts, system status changes, and operational events directly on your desktop.</div>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" id="enablePushBtn" class="btn-admin btn-admin-primary" style="font-size: 12.5px; padding: 7px 16px; display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">check</span>
+            Enable Desktop Alerts
+        </button>
+        <button type="button" id="dismissPushBtn" class="btn-admin btn-admin-secondary" style="font-size: 12.5px; padding: 7px 14px;">
+            Not Now
+        </button>
+    </div>
+</div>
+
+@* ── Filter & Search Bar ── *@
+<div class="admin-card" style="width: 100%; margin-bottom: 24px; padding: 14px 20px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+        <a href="/centralwks/notifications?filter=all" class="btn-admin @(Model.Filter == "all" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            All (@Model.TotalCount)
+        </a>
+        <a href="/centralwks/notifications?filter=unread" class="btn-admin @(Model.Filter == "unread" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Unread (@Model.UnreadCount)
+        </a>
+        <a href="/centralwks/notifications?filter=System" class="btn-admin @(Model.Filter == "System" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            System
+        </a>
+        <a href="/centralwks/notifications?filter=Tenants" class="btn-admin @(Model.Filter == "Tenants" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Tenants
+        </a>
+        <a href="/centralwks/notifications?filter=Billing" class="btn-admin @(Model.Filter == "Billing" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Billing
+        </a>
+        <a href="/centralwks/notifications?filter=Security" class="btn-admin @(Model.Filter == "Security" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Security
+        </a>
+        <a href="/centralwks/notifications?filter=BackgroundJobs" class="btn-admin @(Model.Filter == "BackgroundJobs" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Jobs
+        </a>
+        <a href="/centralwks/notifications?filter=Creators" class="btn-admin @(Model.Filter == "Creators" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Creators
+        </a>
+        <a href="/centralwks/notifications?filter=Affiliates" class="btn-admin @(Model.Filter == "Affiliates" ? "btn-admin-primary" : "btn-admin-secondary")" style="font-size: 12px; padding: 6px 12px; text-decoration: none;">
+            Affiliates
+        </a>
+    </div>
+
+    <form method="get" style="display: flex; gap: 8px; margin: 0; min-width: 240px;">
+        <input type="hidden" name="filter" value="@Model.Filter" />
+        <div style="position: relative; width: 100%;">
+            <input type="text" name="search" value="@Model.Search" placeholder="Search alerts..." style="width: 100%; padding: 6px 12px 6px 32px; border-radius: var(--radius-md); border: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); color: var(--admin-text); font-size: 12.5px;" />
+            <span class="material-symbols-outlined" style="position: absolute; left: 8px; top: 7px; font-size: 18px; color: var(--admin-text-muted);">search</span>
+        </div>
+        <button type="submit" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 12px;">Filter</button>
+    </form>
+</div>
+
+@* ── Notifications Stream List ── *@
+<div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+    @if (Model.Notifications.Count == 0)
+    {
+        <div class="admin-card" style="text-align: center; padding: 56px 24px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg);">
+            <div style="width: 56px; height: 56px; margin: 0 auto 14px; border-radius: var(--radius-md); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 28px;">notifications_off</span>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;">No Notifications in this Category</h3>
+            <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 16px 0;">All platform alerts are caught up and clear.</p>
+            <a href="/centralwks/notifications/compose" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-size: 13px; padding: 8px 18px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">campaign</span>
+                Broadcast an Alert
+            </a>
+        </div>
+    }
+    else
+    {
+        @foreach (var n in Model.Notifications)
+        {
+            var iconColor = n.Severity switch
+            {
+                "Danger" => "var(--admin-danger)",
+                "Warning" => "#d97706",
+                "Success" => "#059669",
+                _ => "#2563eb"
+            };
+            var iconBg = n.Severity switch
+            {
+                "Danger" => "rgba(220, 38, 38, 0.12)",
+                "Warning" => "rgba(217, 119, 6, 0.12)",
+                "Success" => "rgba(5, 150, 105, 0.12)",
+                _ => "rgba(37, 99, 235, 0.12)"
+            };
+            var borderStyle = !n.IsRead ? "2px solid var(--admin-primary)" : "1px solid var(--admin-border)";
+
+            <div class="admin-card" style="width: 100%; margin-bottom: 0; padding: 18px 22px; background: var(--admin-bg-surface); border: @borderStyle; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: flex-start; gap: 16px; flex: 1; min-width: 280px;">
+                    <div style="width: 42px; height: 42px; border-radius: var(--radius-md); background: @iconBg; color: @iconColor; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.05);">
+                        <span class="material-symbols-outlined" style="font-size: 22px;">@n.Icon</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; font-weight: 700; color: var(--admin-primary); text-transform: uppercase; letter-spacing: 0.5px;">@n.Category</span>
+                            <span style="color: var(--admin-text-dim); font-size: 12px;">•</span>
+                            <span style="font-size: 11.5px; color: var(--admin-text-muted);">@n.CreatedUtc.ToString("MMM dd, yyyy HH:mm") UTC</span>
+                            
+                            @if (!n.IsRead)
+                            {
+                                <span style="font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 9999px; background: var(--admin-primary); color: #ffffff;">NEW</span>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(n.DispatchedChannels))
+                            {
+                                foreach (var ch in n.DispatchedChannels.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span style="font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 9999px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); color: var(--admin-text-muted);">
+                                        @(ch == "OneSignal" ? "Push" : ch)
+                                    </span>
+                                }
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(n.TargetAudience) && n.TargetAudience != "All")
+                            {
+                                <span style="font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 9999px; background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                                    Audience: @n.TargetAudience
+                                </span>
+                            }
+                        </div>
+                        
+                        <h3 style="font-size: 14.5px; font-weight: 600; color: var(--admin-text); margin: 0 0 6px 0;">@Html.Raw(n.Title)</h3>
+                        <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0; line-height: 1.5; white-space: pre-line;">@n.Message</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-top: 4px;">
+                    @if (!string.IsNullOrWhiteSpace(n.ActionUrl))
+                    {
+                        <a href="/centralwks/notifications?handler=Route&id=@n.Id" class="btn-admin btn-admin-primary" style="font-size: 12px; padding: 6px 14px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                            <span>Open Route</span>
+                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
+                        </a>
+                    }
+
+                    @if (!n.IsRead)
+                    {
+                        <form method="post" asp-page-handler="MarkRead" asp-route-id="@n.Id" style="margin:0;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-admin btn-admin-secondary" title="Mark as Read" style="font-size: 12px; padding: 6px 10px;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">check</span>
+                            </button>
+                        </form>
+                    }
+
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@n.Id" onsubmit="return confirm('Delete this notification?');" style="margin:0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-admin btn-admin-secondary" title="Delete" style="font-size: 12px; padding: 6px 10px; color: var(--admin-danger);">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const banner = document.getElementById('pushOptInBanner');
+            const enableBtn = document.getElementById('enablePushBtn');
+            const dismissBtn = document.getElementById('dismissPushBtn');
+            const DISMISS_STORAGE_KEY = 'oz_push_prompt_dismissed_until';
+
+            if (!banner || !window.OzikolPush) return;
+
+            // Check if dismissed previously
+            const dismissedUntil = localStorage.getItem(DISMISS_STORAGE_KEY);
+            if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
+                return;
+            }
+
+            // Check current permission state
+            const perm = await window.OzikolPush.getPermission();
+            if (perm === 'default') {
+                // Show polite soft prompt
+                banner.style.display = 'flex';
+            }
+
+            if (enableBtn) {
+                enableBtn.addEventListener('click', async () => {
+                    const result = await window.OzikolPush.enablePush();
+                    if (result === 'granted' || result === true) {
+                        banner.style.display = 'none';
+                    }
+                });
+            }
+
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    banner.style.display = 'none';
+                    // Don't show again for 30 days
+                    const thirtyDays = Date.now() + (30 * 24 * 60 * 60 * 1000);
+                    localStorage.setItem(DISMISS_STORAGE_KEY, thirtyDays.toString());
+                });
+            }
+
+            window.addEventListener('ozikol-push-changed', (e) => {
+                if (e.detail?.permission === 'granted') {
+                    banner.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

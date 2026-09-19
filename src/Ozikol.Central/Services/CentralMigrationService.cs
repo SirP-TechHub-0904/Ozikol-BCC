@@ -228,7 +228,10 @@ public class MasterMigrationSummary
     public int SyncedTenantsCount { get; set; }
     public int PendingTenantsCount { get; set; }
     public int ErrorTenantsCount { get; set; }
-    public long TotalFleetRecordsCount { get; set; }
+    /// <summary>
+    /// Total count of platform and tenant records monitored.
+    /// </summary>
+    public long TotalPlatformRecordsCount { get; set; }
 }
 
 public class MigrationExecutionResult

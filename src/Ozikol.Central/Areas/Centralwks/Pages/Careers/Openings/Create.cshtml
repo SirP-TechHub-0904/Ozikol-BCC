@@ -22,7 +22,7 @@
                 Position Title <span style="color: #f87171;">*</span>
             </label>
             <input asp-for="Input.Title" id="jobTitleInput" placeholder="e.g. Senior Distributed Systems Engineer (C# / .NET 9)" 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 15px; font-weight: 500;" />
+                   class="form-control" style="font-size: 15px; font-weight: 500;" />
             <span asp-validation-for="Input.Title" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -31,8 +31,8 @@
                 <label asp-for="Input.Slug" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     URL Permalink Slug <span style="color: #f87171;">*</span>
                 </label>
-                <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden;">
-                    <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid rgba(255, 255, 255, 0.06); font-family: monospace;">
+                <div style="display: flex; align-items: center; background: var(--admin-bg-surface); border: 1px solid var(--admin-card-border); border-radius: 8px; overflow: hidden;">
+                    <span style="padding: 10px 12px; color: var(--admin-text-muted); font-size: 13px; background: rgba(255, 255, 255, 0.03); border-right: 1px solid var(--admin-card-border); font-family: monospace;">
                         /careers/
                     </span>
                     <input asp-for="Input.Slug" id="jobSlugInput" placeholder="senior-distributed-systems-engineer" 
@@ -45,7 +45,7 @@
                 <label asp-for="Input.Department" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Department <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.Department" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.Department" class="form-select">
                     <option value="Engineering & Architecture">Engineering & Architecture</option>
                     <option value="Cloud Operations & SRE">Cloud Operations & SRE</option>
                     <option value="Security & Compliance">Security & Compliance</option>
@@ -63,8 +63,7 @@
                 <label asp-for="Input.Location" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Location / Work Model <span style="color: #f87171;">*</span>
                 </label>
-                <input asp-for="Input.Location" class="form-control" placeholder="Remote (Global) or Lagos, NG" 
-                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.Location" class="form-control" placeholder="Remote (Global) or Lagos, NG" />
                 <span asp-validation-for="Input.Location" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
 
@@ -72,7 +71,7 @@
                 <label asp-for="Input.EmploymentType" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Employment Type <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.EmploymentType" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.EmploymentType" class="form-select">
                     <option value="Full-time">Full-time</option>
                     <option value="Contract">Contract</option>
                     <option value="Part-time">Part-time</option>
@@ -84,7 +83,7 @@
                 <label asp-for="Input.ExperienceLevel" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Seniority Level <span style="color: #f87171;">*</span>
                 </label>
-                <select asp-for="Input.ExperienceLevel" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;">
+                <select asp-for="Input.ExperienceLevel" class="form-select">
                     <option value="Senior">Senior</option>
                     <option value="Staff / Principal">Staff / Principal</option>
                     <option value="Mid-Level">Mid-Level</option>
@@ -99,16 +98,14 @@
                 <label asp-for="Input.LanguageRequirements" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Language Requirements <span style="color: #f87171;">*</span>
                 </label>
-                <input asp-for="Input.LanguageRequirements" class="form-control" placeholder="e.g. English, French & English" 
-                       style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.LanguageRequirements" class="form-control" placeholder="e.g. English, French & English" />
             </div>
 
             <div>
                 <label asp-for="Input.SortOrder" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
                     Display Sort Order
                 </label>
-                <input asp-for="Input.SortOrder" type="number" min="1" 
-                       class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                <input asp-for="Input.SortOrder" type="number" min="1" class="form-control" />
             </div>
         </div>
 
@@ -117,7 +114,7 @@
                 Directory Card Summary
             </label>
             <textarea asp-for="Input.Summary" rows="3" placeholder="Brief 1-2 sentence lead text appearing on public career directory cards..." 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+                      class="form-control"></textarea>
             <span asp-validation-for="Input.Summary" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -126,7 +123,7 @@
                 Job Description (HTML) <span style="color: #f87171;">*</span>
             </label>
             <textarea asp-for="Input.DescriptionHtml" rows="8" placeholder="Detailed role description in HTML..." 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 14px; color: #e2e8f0; font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
+                      class="form-control" style="font-family: monospace; font-size: 13px; line-height: 1.5;"></textarea>
             <span asp-validation-for="Input.DescriptionHtml" style="color: #f87171; font-size: 12px; margin-top: 4px; display: block;"></span>
         </div>
 
@@ -136,7 +133,7 @@
                     Core Responsibilities (One item per line)
                 </label>
                 <textarea asp-for="Input.ResponsibilitiesText" rows="6" placeholder="Design highly available distributed data partitions&#10;Implement end-to-end telemetry and tracing&#10;Conduct security and load reviews" 
-                          class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+                          class="form-control"></textarea>
             </div>
 
             <div>
@@ -144,7 +141,7 @@
                     Required Qualifications (One item per line)
                 </label>
                 <textarea asp-for="Input.QualificationsText" rows="6" placeholder="5+ years building distributed backend services with C# and .NET&#10;Deep expertise in PostgreSQL or SQL Server concurrency&#10;Proven track record designing zero-trust SaaS systems" 
-                          class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+                          class="form-control"></textarea>
             </div>
         </div>
 
@@ -153,7 +150,7 @@
                 Benefits & Compensation Perks (One item per line)
             </label>
             <textarea asp-for="Input.BenefitsText" rows="4" placeholder="Competitive USD compensation package with annual review&#10;Full hardware setup allowance (MacBook Pro or high-spec Linux)&#10;Flexible remote working hours across timezones&#10;Comprehensive global health and wellness coverage" 
-                      class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 13px;"></textarea>
+                      class="form-control"></textarea>
         </div>
 
         <div style="margin-bottom: 24px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--admin-card-border); border-radius: 8px; padding: 12px 16px;">

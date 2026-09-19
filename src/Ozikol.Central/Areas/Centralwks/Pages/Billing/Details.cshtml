@@ -19,36 +19,39 @@
     </div>
     <div class="admin-actions">
         <a href="/centralwks/billing" class="btn-admin btn-admin-secondary">
-            <span>&larr;</span> Back to Ledger
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            Back to Ledger
         </a>
         <button onclick="window.print()" class="btn-admin btn-admin-secondary">
-            <span>🖨️</span> Print Invoice
+            <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+            Print Invoice
         </button>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
-    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
-        @Model.StatusMessage
+    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--admin-success); border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span>
+        <span>@Model.StatusMessage</span>
     </div>
 }
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
     @* ── Left: Formal Printable Invoice Card ── *@
     <div>
-        <div class="admin-card" style="padding: 32px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;">
+        <div class="admin-card" style="padding: 32px;">
             @* Invoice Header *@
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 24px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--admin-border); padding-bottom: 24px; margin-bottom: 24px;">
                 <div>
-                    <div style="font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 24px; font-weight: 800; color: var(--admin-text); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 28px;">bolt</span> OZIKOL
                     </div>
                     <p style="font-size: 13px; color: var(--admin-text-muted); margin: 4px 0 0 0;">Autonomous Multi-Tenant Cloud</p>
                     <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Central Financial & Settlement Portal</p>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 20px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px;">INVOICE</div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--admin-text); text-transform: uppercase; letter-spacing: 1px;">INVOICE</div>
                     <div style="font-size: 14px; font-family: monospace; color: var(--admin-primary); font-weight: 600; margin-top: 4px;">
                         @(Model.Transaction.InvoiceNumber ?? "PENDING-REF")
                     </div>
@@ -64,7 +67,7 @@
                     <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; color: var(--admin-text-muted); margin-bottom: 8px;">Billed To (Tenant)</div>
                     @if (Model.Transaction.Tenant != null)
                     {
-                        <div style="font-size: 16px; font-weight: 600; color: #fff;">@Model.Transaction.Tenant.OrganizationName</div>
+                        <div style="font-size: 16px; font-weight: 700; color: var(--admin-text);">@Model.Transaction.Tenant.OrganizationName</div>
                         <div style="font-size: 13px; color: var(--admin-text-muted); margin-top: 2px;">Domain: @Model.Transaction.Tenant.PrimaryDomain</div>
                         <div style="font-size: 13px; color: var(--admin-text-muted);">Database: @Model.Transaction.Tenant.DatabaseName</div>
                         <div style="font-size: 13px; color: var(--admin-text-muted);">Status: @(Model.Transaction.Tenant.IsActive ? "Active" : "Suspended")</div>
@@ -78,15 +81,15 @@
                 <div style="text-align: right;">
                     <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; color: var(--admin-text-muted); margin-bottom: 8px;">Invoice Summary</div>
                     <div style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 4px;">
-                        Issue Date: <span style="color: #fff; font-weight: 500;">@Model.Transaction.CreatedUtc.ToString("MMMM dd, yyyy HH:mm") UTC</span>
+                        Issue Date: <span style="color: var(--admin-text); font-weight: 600;">@Model.Transaction.CreatedUtc.ToString("MMMM dd, yyyy HH:mm") UTC</span>
                     </div>
                     <div style="font-size: 13px; color: var(--admin-text-muted); margin-bottom: 4px;">
-                        Settlement Provider: <span style="color: #fff; font-weight: 500;">@(Model.Transaction.PaymentProvider ?? "Direct / Manual")</span>
+                        Settlement Provider: <span style="color: var(--admin-text); font-weight: 600;">@(Model.Transaction.PaymentProvider ?? "Direct / Manual")</span>
                     </div>
                     @if (Model.Transaction.UpdatedUtc.HasValue)
                     {
                         <div style="font-size: 13px; color: var(--admin-text-muted);">
-                            Last Updated: <span style="color: #fff; font-weight: 500;">@Model.Transaction.UpdatedUtc.Value.ToString("MMMM dd, yyyy HH:mm") UTC</span>
+                            Last Updated: <span style="color: var(--admin-text); font-weight: 600;">@Model.Transaction.UpdatedUtc.Value.ToString("MMMM dd, yyyy HH:mm") UTC</span>
                         </div>
                     }
                 </div>
@@ -95,18 +98,18 @@
             @* Line Items Table *@
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <thead>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); text-align: left;">
+                    <tr style="border-bottom: 1px solid var(--admin-border); text-align: left;">
                         <th style="padding: 12px 8px; font-size: 12px; text-transform: uppercase; color: var(--admin-text-muted); font-weight: 600;">Description</th>
                         <th style="padding: 12px 8px; font-size: 12px; text-transform: uppercase; color: var(--admin-text-muted); font-weight: 600; text-align: center;">Cycle / Scope</th>
                         <th style="padding: 12px 8px; font-size: 12px; text-transform: uppercase; color: var(--admin-text-muted); font-weight: 600; text-align: right;">Amount (@Model.Transaction.Currency)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <tr style="border-bottom: 1px solid var(--admin-border);">
                         <td style="padding: 16px 8px;">
                             @if (Model.Transaction.FeatureSubscription != null)
                             {
-                                <div style="font-weight: 600; color: #fff;">
+                                <div style="font-weight: 700; color: var(--admin-text);">
                                     @(Model.Transaction.FeatureSubscription.MasterFeatureCatalog?.Name ?? "Modular Feature Subscription")
                                 </div>
                                 <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
@@ -115,7 +118,7 @@
                             }
                             else
                             {
-                                <div style="font-weight: 600; color: #fff;">Platform License / Manual Adjustment</div>
+                                <div style="font-weight: 700; color: var(--admin-text);">Platform License / Manual Adjustment</div>
                                 <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
                                     @(Model.Transaction.Notes ?? "General ledger credit or settlement")
                                 </div>
@@ -124,14 +127,14 @@
                         <td style="padding: 16px 8px; text-align: center; color: var(--admin-text-muted); font-size: 13px;">
                             @(Model.Transaction.FeatureSubscription?.DurationType.ToString() ?? "Ad-hoc")
                         </td>
-                        <td style="padding: 16px 8px; text-align: right; font-weight: 600; font-size: 15px; color: @(Model.Transaction.Amount >= 0 ? "#fff" : "var(--admin-danger)");">
+                        <td style="padding: 16px 8px; text-align: right; font-weight: 700; font-size: 15px; color: @(Model.Transaction.Amount >= 0 ? "var(--admin-text)" : "var(--admin-danger)");">
                             @Model.Transaction.Amount.ToString("N2")
                         </td>
                     </tr>
                 </tbody>
                 <tfoot>
-                    <tr style="border-top: 2px solid rgba(255, 255, 255, 0.15);">
-                        <td colspan="2" style="padding: 16px 8px; font-weight: 700; font-size: 16px; color: #fff; text-align: right;">Total Amount Due / Settled:</td>
+                    <tr style="border-top: 2px solid var(--admin-border);">
+                        <td colspan="2" style="padding: 16px 8px; font-weight: 700; font-size: 16px; color: var(--admin-text); text-align: right;">Total Amount Due / Settled:</td>
                         <td style="padding: 16px 8px; font-weight: 800; font-size: 18px; color: var(--admin-primary); text-align: right;">
                             @Model.Transaction.Currency @Model.Transaction.Amount.ToString("N2")
                         </td>
@@ -140,70 +143,77 @@
             </table>
 
             @* Payment Verification & Audit Reference *@
-            <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 16px;">
+            <div style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); margin-bottom: 6px;">Provider Audit Hash / Reference</div>
-                <div style="font-family: monospace; font-size: 13px; color: #38bdf8; word-break: break-all;">
+                <div style="font-family: monospace; font-size: 13px; color: var(--admin-info); word-break: break-all;">
                     @(Model.Transaction.TransactionRef ?? "N/A — No external transaction reference logged")
                 </div>
                 @if (!string.IsNullOrEmpty(Model.Transaction.Notes))
                 {
                     <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); margin: 12px 0 4px 0;">Audit Notes</div>
-                    <div style="font-size: 13px; color: var(--admin-text-muted); line-height: 1.5;">@Model.Transaction.Notes</div>
+                    <div style="font-size: 13px; color: var(--admin-text);">@Model.Transaction.Notes</div>
                 }
             </div>
         </div>
     </div>
 
-    @* ── Right: Admin Management & Status Controls ── *@
+    @* ── Right: Admin State Modifications & Actions ── *@
     <div>
         <div class="admin-card" style="margin-bottom: 24px;">
             <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">⚙️</div>
+                <div class="card-header-icon" style="background: rgba(229, 23, 63, 0.12); color: var(--admin-primary);">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">tune</span>
+                </div>
                 <div>
-                    <h3 class="card-header-title">Settlement Actions</h3>
-                    <p class="card-header-subtitle">Update transaction state in the master ledger.</p>
+                    <h3 class="card-header-title">Status Management</h3>
+                    <p class="card-header-subtitle">Update settlement status.</p>
                 </div>
             </div>
 
-            <div style="padding: 20px;">
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
                 @if (isPending)
                 {
-                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Completed" style="margin-bottom: 12px;">
+                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Completed">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;" onclick="return confirm('Confirm settlement and mark transaction as Completed?')">
-                            <span>✅</span> Mark as Completed (Settled)
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Confirm settlement and mark transaction as Completed?')">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                            Mark as Completed (Settled)
                         </button>
                     </form>
 
-                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Failed" style="margin-bottom: 12px;">
+                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Failed">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center;" onclick="return confirm('Mark this transaction as Failed / Voided?')">
-                            <span>❌</span> Mark as Failed / Voided
+                        <button type="submit" class="btn-admin btn-admin-danger" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Mark this transaction as Failed / Voided?')">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
+                            Mark as Failed / Voided
                         </button>
                     </form>
                 }
                 else if (isCompleted)
                 {
-                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Refunded" style="margin-bottom: 12px;">
+                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Refunded">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-warning" style="width: 100%; justify-content: center;" onclick="return confirm('Issue refund and flag this transaction as Refunded?')">
-                            <span>🔄</span> Mark as Refunded
+                        <button type="submit" class="btn-admin btn-admin-warning" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Issue refund and flag this transaction as Refunded?')">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">undo</span>
+                            Mark as Refunded
                         </button>
                     </form>
 
                     <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Pending">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center;">
-                            <span>⏳</span> Revert to Pending
+                        <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">pending</span>
+                            Revert to Pending
                         </button>
                     </form>
                 }
                 else
                 {
-                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Completed" style="margin-bottom: 12px;">
+                    <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Completed">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;">
-                            <span>✅</span> Re-open as Completed
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                            Re-open as Completed
                         </button>
                     </form>
                 }
@@ -215,7 +225,9 @@
         {
             <div class="admin-card">
                 <div class="card-header-styled">
-                    <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🏢</div>
+                    <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success);">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">domain</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Tenant Context</h3>
                         <p class="card-header-subtitle">Quick access to organization details.</p>
@@ -223,15 +235,17 @@
                 </div>
 
                 <div style="padding: 20px;">
-                    <div style="font-weight: 600; font-size: 15px; color: #fff;">@Model.Transaction.Tenant.OrganizationName</div>
+                    <div style="font-weight: 700; font-size: 15px; color: var(--admin-text);">@Model.Transaction.Tenant.OrganizationName</div>
                     <div style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 16px 0;">Domain: @Model.Transaction.Tenant.PrimaryDomain</div>
 
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <a href="/centralwks/tenants/details/@Model.Transaction.Tenant.Id" class="btn-admin btn-admin-secondary" style="justify-content: center;">
+                        <a href="/centralwks/tenants/details?id=@Model.Transaction.Tenant.Id" class="btn-admin btn-admin-secondary" style="justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                             View Tenant Details
                         </a>
-                        <a href="/centralwks/tenants/features/@Model.Transaction.Tenant.Id" class="btn-admin btn-admin-secondary" style="justify-content: center;">
-                            Manage Subscriptions
+                        <a href="/centralwks/tenants/features?tenantId=@Model.Transaction.Tenant.Id" class="btn-admin btn-admin-secondary" style="justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">tune</span>
+                            Manage Capabilities
                         </a>
                     </div>
                 </div>

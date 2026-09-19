@@ -15,16 +15,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.EmailLogs
     public class DetailsModel : PageModel
     {
         private readonly MasterCatalogDbContext _context;
+        private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService _postmarkEmailService;
         private readonly ILogger<DetailsModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DetailsModel"/> class.
         /// </summary>
         /// <param name="context">Master catalog database context.</param>
+        /// <param name="postmarkEmailService">Postmark delivery provider service.</param>
         /// <param name="logger">Structured logging service.</param>
-        public DetailsModel(MasterCatalogDbContext context, ILogger<DetailsModel> logger)
+        public DetailsModel(
+            MasterCatalogDbContext context,
+            Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService postmarkEmailService,
+            ILogger<DetailsModel> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _postmarkEmailService = postmarkEmailService ?? throw new ArgumentNullException(nameof(postmarkEmailService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -75,17 +81,43 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.EmailLogs
                 RecipientEmail = log.RecipientEmail,
                 Subject = log.Subject,
                 BodyHtml = log.BodyHtml,
-                Provider = log.Provider ?? "DefaultSMTP",
-                Status = "Sent",
-                ErrorMessage = null,
-                SentAtUtc = DateTime.UtcNow
+                Provider = "Postmark",
+                SentAtUtc = DateTime.UtcNow,
+                Status = "NotSent"
             };
+
+            try
+            {
+                var response = await _postmarkEmailService.SendHtmlEmailAsync(
+                    to: log.RecipientEmail,
+                    subject: log.Subject,
+                    htmlBody: log.BodyHtml,
+                    tag: "central-resend");
+
+                if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+                {
+                    retryLog.Status = "Sent";
+                    retryLog.ErrorMessage = null;
+                    StatusMessage = $"Successfully re-transmitted email to '{log.RecipientEmail}' via Postmark.";
+                }
+                else
+                {
+                    retryLog.Status = "Failed";
+                    retryLog.ErrorMessage = response.Message ?? "Postmark rejected re-transmission attempt.";
+                    StatusMessage = $"Error: Re-transmission failed: {retryLog.ErrorMessage}";
+                }
+            }
+            catch (Exception ex)
+            {
+                retryLog.Status = "Failed";
+                retryLog.ErrorMessage = ex.Message;
+                StatusMessage = $"Error: Re-transmission failed with exception: {ex.Message}";
+            }
 
             _context.MasterEmailLogs.Add(retryLog);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Re-dispatched email to {Recipient} from log details view.", log.RecipientEmail);
-            StatusMessage = $"Email re-dispatched. New delivery record created with ID {retryLog.Id}.";
+            _logger.LogInformation("Re-dispatched email to {Recipient} from log details view with status {Status}.", log.RecipientEmail, retryLog.Status);
             return RedirectToPage(new { id = retryLog.Id });
         }
     }

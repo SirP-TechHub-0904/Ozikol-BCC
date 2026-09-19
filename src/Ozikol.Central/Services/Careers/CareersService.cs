@@ -470,7 +470,7 @@ public class CareersService : ICareersService
                 SortOrder = 6,
                 Summary = "Architect and maintain isolated cryptographic partitions, automated zero-downtime deployments, and Bring-Your-Own-Key (BYOK) privacy pipelines.",
                 DescriptionHtml = @"
-                    <p>Ozikol operates on a strict dedicated fleet isolation architecture with Bring-Your-Own-Key (BYOK) cryptographic boundaries and localized data partitioning. We are seeking a senior Cloud Infrastructure & BYOK Security Engineer to maintain our zero-trust infrastructure, automated CI/CD pipelines, and high-availability database replication.</p>
+                    <p>Ozikol operates on a strict dedicated tenant isolation architecture with Bring-Your-Own-Key (BYOK) cryptographic boundaries and localized data partitioning. We are seeking a senior Cloud Infrastructure & BYOK Security Engineer to maintain our zero-trust infrastructure, automated CI/CD pipelines, and high-availability database replication.</p>
                     <h3>The Opportunity</h3>
                     <p>You will have complete ownership over cloud reliability, disaster recovery orchestration, and automated vulnerability mitigations across our international data centers.</p>",
                 ResponsibilitiesJson = JsonSerializer.Serialize(new[]

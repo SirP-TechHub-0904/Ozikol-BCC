@@ -43,11 +43,17 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Tenant persistence lives strictly in `Ozikol-BCC.Domain` and `Ozikol-BCC.Persistence.EF.SQL`.
   * Never cross-contaminate models, contexts, or migrations between Master and Tenant.
 * **Planning Before Modification**: Always provide a structured implementation plan and obtain user approval before modifying, deleting, or moving files across project boundaries.
+* **No Unauthorized Database Operations (CRITICAL)**: NEVER execute any SQL command (`ALTER TABLE`, `INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `CREATE`, `EXEC`, `dotnet ef database update`, `Update-Database`, or any raw DDL/DML) against **any** database (Master, Tenant, or otherwise) without the user's **explicit, written go-ahead** in the current conversation. This applies to:
+  * Direct SQL scripts or ad-hoc queries.
+  * EF Core migration application (`dotnet ef database update`, `Update-Database`).
+  * Seed data scripts or data manipulation commands.
+  * Any command that reads, modifies, alters, or destroys production or development database content or schema.
+  * **Generating** migration files via `dotnet ef migrations add` is permitted, but **applying** them is not without written approval.
 
 ---
 
 ## 4. UI Form & Placeholder Standards (Mandatory)
-* **Standard Professional Placeholders**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format (e.g., `e.g. John Doe`, `name@company.com`, `e.g. Acme Corporation`, `e.g. +1 (555) 000-0000`, `e.g. @@username`, `e.g. mycompany`).
+* **Standard Professional Placeholders**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format (e.g., `e.g. First Last`, `name@company.com`, `e.g. Your Organization Name`, `e.g. +0 (000) 000-0000`, `e.g. @@username`, `e.g. mycompany`). **No real names or company names** may be used in placeholder text.
 * **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
 * **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
 
@@ -56,6 +62,8 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ## 5. Central Database Migrations & Schema Changes (Mandatory)
 * **No Ad-Hoc Runtime Schema Scripts**: Do not embed ad-hoc `ALTER TABLE` or raw DDL statements inside application startup or seeder classes.
 * **Standard EF Core Migrations**: Whenever a model or schema changes in `Ozikol.MasterDomain` or `Ozikol.Central`, always generate the official EF Core migration in `Ozikol.MasterPersistence.EF.MasterSQL`.
+* **Zero Retroactive Migration Editing**: NEVER manually edit already-generated EF Core migration files (`.cs` or `.Designer.cs`) to patch schema drift or bypass discrepancies. Migrations must remain immutable historical records. If schema changes occur, generate a new forward migration or perform an explicit approved reset.
+* **Zero Automated Database Execution**: NEVER execute `dotnet ef database update`, `Update-Database`, or any DDL/DML script against the database. Migration generation (`dotnet ef migrations add`) is permitted, but applying migrations is strictly reserved for the user.
 * **Explicit User Migration Notification**: Always inform the user clearly: *"I have added the migration. Please update both your local and production database."* (e.g. via `dotnet ef database update` or Package Manager Console `Update-Database`).
 
 ---
@@ -67,5 +75,12 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **Spam Trigger Words & Phrases**: Maintain an active blacklist of high-risk spam words/phrases (e.g., `100% Free`, `Earn Money Fast`, `No Risk`, `Act Now`, `Guaranteed Return`, `Click Here Now`, `Winner`, `Risk Free`, `Double Your Cash`, `Million Dollars`) and display intuitive warnings/suggestions.
   * **Image-to-Text Ratio**: Warn the author if an email is image-heavy with negligible text content, which triggers SpamAssassin filters and hurts sender reputation.
   * **Suspicious & Shortened Links**: Detect and warn against URL shorteners (e.g., `bit.ly`, `tinyurl`) or unencrypted HTTP links inside email bodies to safeguard domain sender reputation across mailbox providers (Gmail, Yahoo, Outlook).
+
+---
+
+## 7. Product Terminology & Domain Language (Mandatory)
+* **Feature & Capability Terminology (No "Fleet")**: Always use **Features**, **Modular Capabilities**, **Tenants**, or **Tenant Organizations**. NEVER use the word "fleet" in UI text, headings, badges, telemetry labels, code comments, documentation, or implementation plans.
+* **MRR (Monthly Recurring Revenue)**: Clearly represent MRR as Monthly Subscription Revenue / Recurring Feature Revenue generated from paid feature add-ons and tenant plans.
+
 
 

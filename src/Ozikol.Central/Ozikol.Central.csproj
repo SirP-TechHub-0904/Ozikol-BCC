@@ -8,11 +8,12 @@
     <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.EmailServices.Postmark\Ozikol-BCC.EmailServices.Postmark.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Telemetry.Sentry\Ozikol-BCC.Telemetry.Sentry.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Application\Ozikol-BCC.Application.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.CloudinaryServices\Ozikol-BCC.CloudinaryServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
-    <PackageReference Include="CloudinaryDotNet" Version="1.29.2" />
     <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />

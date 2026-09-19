@@ -21,6 +21,7 @@ namespace Ozikol.Central.Pages.Support
         private readonly ISupportService _supportService;
         private readonly IRecaptchaService _recaptchaService;
         private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
         private readonly ILogger<ContactModel> _logger;
 
         /// <summary>
@@ -30,11 +31,13 @@ namespace Ozikol.Central.Pages.Support
             ISupportService supportService,
             IRecaptchaService recaptchaService,
             IStringLocalizer<SharedResource> localizer,
+            Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
             ILogger<ContactModel> logger)
         {
             _supportService = supportService ?? throw new ArgumentNullException(nameof(supportService));
             _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
             _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+            _emailValidationService = emailValidationService ?? throw new ArgumentNullException(nameof(emailValidationService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -115,6 +118,11 @@ namespace Ozikol.Central.Pages.Support
             if (!isCaptchaValid)
             {
                 ModelState.AddModelError(string.Empty, _localizer["Careers_Error_Captcha"]);
+            }
+
+            if (!_emailValidationService.IsValidEmail(Input.Email, out var emailError))
+            {
+                ModelState.AddModelError("Input.Email", emailError ?? "Please provide a valid business or personal email address.");
             }
 
             if (!ModelState.IsValid)

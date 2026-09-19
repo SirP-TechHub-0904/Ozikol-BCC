@@ -47,6 +47,24 @@
                 </div>
 
                 <div class="topbar-right">
+@inject Ozikol.Central.Services.Notifications.ICentralNotificationService NotificationService
+@inject Microsoft.AspNetCore.Identity.UserManager<Ozikol.MasterDomain.Models.CentralUser> UserManager
+@{
+    var topbarUserId = UserManager.GetUserId(User);
+    var topbarUnreadCount = 0;
+    IList<Ozikol.MasterDomain.Models.MasterNotification> topbarRecentNotifs = new List<Ozikol.MasterDomain.Models.MasterNotification>();
+    if (!string.IsNullOrEmpty(topbarUserId))
+    {
+        try
+        {
+            var topbarUserRoles = User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+            topbarUnreadCount = await NotificationService.GetUnreadCountAsync(topbarUserId, topbarUserRoles);
+            topbarRecentNotifs = await NotificationService.GetRecentNotificationsAsync(topbarUserId, topbarUserRoles, 5);
+        }
+        catch { }
+    }
+}
+
                     <div class="topbar-search">
                         <span class="search-icon">
                             <span class="material-symbols-outlined">search</span>
@@ -57,6 +75,89 @@
                     <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark/light theme" aria-label="Toggle Theme">
                         <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                     </button>
+
+                    <div class="topbar-notifications" style="position: relative;">
+                        <button class="theme-toggle-btn" id="notificationsDropdownBtn" title="Platform Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" style="position: relative; cursor: pointer;">
+                            <span class="material-symbols-outlined">notifications</span>
+                            @if (topbarUnreadCount > 0)
+                            {
+                                <span style="position: absolute; top: 4px; right: 4px; min-width: 17px; height: 17px; padding: 0 4px; background: var(--admin-primary); color: #ffffff; border-radius: 9999px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--admin-bg-surface); line-height: 1;">
+                                    @(topbarUnreadCount > 9 ? "9+" : topbarUnreadCount.ToString())
+                                </span>
+                            }
+                        </button>
+                        <div class="notifications-menu-dropdown" id="notificationsDropdownMenu" role="menu" style="display: none; position: absolute; right: -60px; top: calc(100% + 10px); width: 360px; max-width: 90vw; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); z-index: 1050; overflow: hidden;">
+                            <div style="padding: 14px 18px; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; background: var(--admin-bg-surface-elevated);">
+                                <div style="font-size: 13.5px; font-weight: 700; color: var(--admin-text); display: flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-primary);">notifications</span>
+                                    Notifications
+                                    @if (topbarUnreadCount > 0)
+                                    {
+                                        <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9999px; background: var(--admin-primary); color: #fff;">@topbarUnreadCount new</span>
+                                    }
+                                </div>
+                                <a href="/centralwks/notifications" style="font-size: 11.5px; font-weight: 600; color: var(--admin-primary); text-decoration: none;">View All</a>
+                            </div>
+
+                            <div style="max-height: 320px; overflow-y: auto;">
+                                @if (!topbarRecentNotifs.Any())
+                                {
+                                    <div style="text-align: center; padding: 32px 16px; color: var(--admin-text-muted); font-size: 12.5px;">
+                                        <span class="material-symbols-outlined" style="font-size: 28px; display: block; margin-bottom: 6px; color: var(--admin-text-dim);">notifications_none</span>
+                                        No recent notifications
+                                    </div>
+                                }
+                                else
+                                {
+                                    @foreach (var item in topbarRecentNotifs)
+                                    {
+                                        var targetUrl = !string.IsNullOrWhiteSpace(item.ActionUrl) 
+                                            ? $"/centralwks/notifications?handler=Route&id={item.Id}" 
+                                            : "/centralwks/notifications";
+                                        
+                                        var iconBg = item.Severity switch
+                                        {
+                                            "Danger" => "rgba(220, 38, 38, 0.12)",
+                                            "Warning" => "rgba(217, 119, 6, 0.12)",
+                                            "Success" => "rgba(5, 150, 105, 0.12)",
+                                            _ => "rgba(37, 99, 235, 0.12)"
+                                        };
+                                        var iconCol = item.Severity switch
+                                        {
+                                            "Danger" => "var(--admin-danger)",
+                                            "Warning" => "#d97706",
+                                            "Success" => "#059669",
+                                            _ => "#2563eb"
+                                        };
+
+                                        <a href="@targetUrl" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; text-decoration: none; border-bottom: 1px solid var(--admin-border); background: @(!item.IsRead ? "var(--admin-bg-surface-elevated)" : "transparent"); transition: background 0.15s ease;">
+                                            <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: @iconBg; color: @iconCol; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                                <span class="material-symbols-outlined" style="font-size: 18px;">@item.Icon</span>
+                                            </div>
+                                            <div style="flex: 1; min-width: 0;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px;">
+                                                    <span style="font-size: 11px; font-weight: 700; color: var(--admin-primary); text-transform: uppercase;">@item.Category</span>
+                                                    <span style="font-size: 10.5px; color: var(--admin-text-dim);">@item.CreatedUtc.ToString("HH:mm") UTC</span>
+                                                </div>
+                                                <div style="font-size: 12.5px; font-weight: 600; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">@Html.Raw(item.Title)</div>
+                                                <div style="font-size: 11.5px; color: var(--admin-text-muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@item.Message</div>
+                                            </div>
+                                        </a>
+                                    }
+                                }
+                            </div>
+
+                            <div style="padding: 10px 16px; background: var(--admin-bg-surface-elevated); border-top: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center;">
+                                <a href="/centralwks/notifications/compose" style="font-size: 12px; font-weight: 600; color: var(--admin-primary); text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">campaign</span>
+                                    Broadcast Alert
+                                </a>
+                                <a href="/centralwks/notifications" style="font-size: 12px; color: var(--admin-text-muted); text-decoration: none;">
+                                    Notification Center &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="topbar-user">
                         <button class="user-badge" id="userBadgeBtn" aria-haspopup="true" aria-expanded="false">
@@ -70,17 +171,13 @@
                             <span class="material-symbols-outlined user-chevron">expand_more</span>
                         </button>
                         <div class="user-menu-dropdown" role="menu">
-                            <a href="/centralwks/users" role="menuitem">
-                                <span class="material-symbols-outlined">manage_accounts</span>
-                                User Accounts
+                            <a href="/centralwks/profile" role="menuitem">
+                                <span class="material-symbols-outlined">person</span>
+                                My Profile &amp; Security
                             </a>
-                            <a href="/centralwks/platform-settings" role="menuitem">
-                                <span class="material-symbols-outlined">settings</span>
-                                Platform Settings
-                            </a>
-                            <a href="/centralwks/audit-log" role="menuitem">
-                                <span class="material-symbols-outlined">history</span>
-                                Audit Trail
+                            <a href="/centralwks/notifications" role="menuitem">
+                                <span class="material-symbols-outlined">notifications</span>
+                                Notifications
                             </a>
                             <div class="user-menu-divider"></div>
                             <form method="post" action="/centralwks/logout" style="margin:0;">
@@ -146,6 +243,157 @@
 
     <!-- Scripts -->
     <script src="~/js/admin.js" asp-append-version="true"></script>
+
+    @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+    @{
+        var oneSignalAppId = Configuration["ONESIGNAL_APP_ID"]
+                          ?? Configuration["OneSignal__AppId"]
+                          ?? Configuration["OneSignal:AppId"]
+                          ?? Environment.GetEnvironmentVariable("ONESIGNAL_APP_ID");
+    }
+
+    @if (!string.IsNullOrWhiteSpace(oneSignalAppId) && oneSignalAppId != "your-onesignal-app-id-here")
+    {
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+        <script>
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.init({
+                    appId: "@oneSignalAppId",
+                    autoRegister: false, // Prevents aggressive auto-popup on page load
+                    notifyButton: {
+                        enable: false // We use our custom UI buttons instead
+                    }
+                });
+
+                @if (!string.IsNullOrEmpty(topbarUserId))
+                {
+                    <text>
+                    // Synchronize the logged-in operator user ID with OneSignal
+                    await OneSignal.login("@topbarUserId");
+                    </text>
+                }
+
+                // Dispatches custom event whenever push permission state changes
+                OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
+                    window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: permission } }));
+                });
+            });
+
+            // Global Push Helper for Profile and Notifications Pages with OneSignal
+            window.OzikolPush = {
+                async isSupported() {
+                    return ('Notification' in window);
+                },
+                async getPermission() {
+                    if (!('Notification' in window)) return 'unsupported';
+                    return Notification.permission; // 'default', 'granted', 'denied'
+                },
+                async enablePush() {
+                    if (!('Notification' in window)) {
+                        alert('Your browser does not support desktop push notifications.');
+                        return 'unsupported';
+                    }
+                    try {
+                        if (window.OneSignalDeferred) {
+                            return new Promise((resolve) => {
+                                window.OneSignalDeferred.push(async function(OneSignal) {
+                                    try {
+                                        await OneSignal.Notifications.requestPermission();
+                                        const perm = Notification.permission;
+                                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                                        resolve(perm);
+                                    } catch (err) {
+                                        console.warn('OneSignal request error, falling back to browser prompt:', err);
+                                        const perm = await Notification.requestPermission();
+                                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                                        resolve(perm);
+                                    }
+                                });
+                            });
+                        } else {
+                            const perm = await Notification.requestPermission();
+                            window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                            return perm;
+                        }
+                    } catch (err) {
+                        console.error('Push opt-in error:', err);
+                        return 'denied';
+                    }
+                },
+                async sendTestNotification() {
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            new Notification('Ozikol Central Operations', {
+                                body: 'Push notification engine is operational on this workstation.',
+                                icon: '/favicon.ico'
+                            });
+                            return true;
+                        } catch (err) {
+                            console.error('Test notification error:', err);
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            };
+        </script>
+    }
+    else
+    {
+        <script>
+            // Global Push Helper for Profile and Notifications Pages (Direct Native Web Notifications)
+            window.OzikolPush = {
+                async isSupported() {
+                    return ('Notification' in window);
+                },
+                async getPermission() {
+                    if (!('Notification' in window)) return 'unsupported';
+                    return Notification.permission; // 'default', 'granted', 'denied'
+                },
+                async enablePush() {
+                    if (!('Notification' in window)) {
+                        alert('Your browser does not support desktop push notifications.');
+                        return 'unsupported';
+                    }
+                    try {
+                        const perm = await Notification.requestPermission();
+                        window.dispatchEvent(new CustomEvent('ozikol-push-changed', { detail: { permission: perm } }));
+                        if (perm === 'granted') {
+                            try {
+                                new Notification('Ozikol Central Operations', {
+                                    body: 'Desktop push notifications enabled successfully for your workstation.',
+                                    icon: '/favicon.ico'
+                                });
+                            } catch (e) {
+                                console.warn('Native notification spawn note:', e);
+                            }
+                        }
+                        return perm;
+                    } catch (err) {
+                        console.error('Native push permission error:', err);
+                        return 'denied';
+                    }
+                },
+                async sendTestNotification() {
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            new Notification('Ozikol Central Operations Test', {
+                                body: 'Live push notification test successful! Your workstation is connected.',
+                                icon: '/favicon.ico'
+                            });
+                            return true;
+                        } catch (err) {
+                            console.error('Test notification error:', err);
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+            };
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

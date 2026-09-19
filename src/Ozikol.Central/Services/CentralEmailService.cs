@@ -26,6 +26,10 @@ public interface ICentralEmailService
     Task SendNewsletterSubscriptionAsync(string email, CancellationToken cancellationToken = default);
     Task SendVoucherApplicationDualAsync(MasterVoucherApplication app, CancellationToken cancellationToken = default);
     Task<bool> SendVoucherApprovedEmailAsync(MasterVoucherApplication app, string couponCode, int durationDays, string? featuresSummary, decimal discountPercentage = 100.00m, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Dispatches an official platform operator invitation email containing account details, assigned roles, and secure password activation link.
+    /// </summary>
+    Task<bool> SendOperatorInvitationEmailAsync(string toEmail, string fullName, string userName, string department, IList<string> roles, string setupUrl, CancellationToken cancellationToken = default);
 }
 
 public class CentralEmailService : ICentralEmailService
@@ -33,43 +37,87 @@ public class CentralEmailService : ICentralEmailService
     private readonly MasterCatalogDbContext _masterCatalogDbContext;
     private readonly ILogger<CentralEmailService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly Ozikol.Central.Services.Validation.IEmailValidationService _emailValidationService;
+    private readonly Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService _postmarkEmailService;
 
     public CentralEmailService(
         MasterCatalogDbContext masterCatalogDbContext,
         ILogger<CentralEmailService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Ozikol.Central.Services.Validation.IEmailValidationService emailValidationService,
+        Ozikol_BCC.EmailServices.Postmark.Interfaces.IPostmarkEmailService postmarkEmailService)
     {
         _masterCatalogDbContext = masterCatalogDbContext;
         _logger = logger;
         _configuration = configuration;
+        _emailValidationService = emailValidationService;
+        _postmarkEmailService = postmarkEmailService;
     }
 
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody, string? provider = null, CancellationToken cancellationToken = default)
     {
+        // Safety Gate: Reject malformed emails, single-letter TLDs (e.g. .j), and disposable test emails from queueing into database audit logs
+        if (!_emailValidationService.IsValidEmail(toEmail, out var validationError))
+        {
+            _logger.LogWarning("⚠️ [CentralEmailService] Dropped email dispatch to invalid/test address '{Recipient}': {Error}", toEmail, validationError);
+            return false;
+        }
+
         var log = new MasterEmailLog
         {
+            Id = Guid.NewGuid(),
             RecipientEmail = toEmail,
             Subject = subject,
             BodyHtml = htmlBody,
-            Provider = provider,
+            Provider = provider ?? "Postmark",
             SentAtUtc = DateTime.UtcNow,
             Status = "NotSent"
         };
 
         try
         {
-            _logger.LogInformation("📧 [CentralEmailService] Queued email '{Subject}' to [{Recipient}] with status 'NotSent'", subject, toEmail);
-            
-            // Record in Master DB pool with Status 'NotSent'
-            _masterCatalogDbContext.MasterEmailLogs.Add(log);
-            await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
-            return true;
+            _logger.LogInformation("📧 [CentralEmailService] Dispatching email '{Subject}' to [{Recipient}] via Postmark...", subject, toEmail);
+
+            // Dispatch via real Postmark API service
+            var response = await _postmarkEmailService.SendHtmlEmailAsync(
+                to: toEmail,
+                subject: subject,
+                htmlBody: htmlBody,
+                tag: "central-transactional");
+
+            if (response.Status == PostmarkDotNet.PostmarkStatus.Success)
+            {
+                log.Status = "Sent";
+                log.ErrorMessage = null;
+                _logger.LogInformation("✅ [CentralEmailService] Postmark successfully delivered email to [{Recipient}] (MessageID: {MessageId})", toEmail, response.MessageID);
+            }
+            else
+            {
+                log.Status = "Failed";
+                log.ErrorMessage = response.Message ?? "Postmark delivery status returned non-success.";
+                _logger.LogWarning("⚠️ [CentralEmailService] Postmark delivery unsuccessful for [{Recipient}]: {Message}", toEmail, response.Message);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to record email to pool for {Recipient}", toEmail);
-            return false;
+            log.Status = "Failed";
+            log.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "❌ [CentralEmailService] Exception during Postmark delivery for {Recipient}", toEmail);
         }
+        finally
+        {
+            try
+            {
+                _masterCatalogDbContext.MasterEmailLogs.Add(log);
+                await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogError(dbEx, "Failed to persist MasterEmailLog for {Recipient}", toEmail);
+            }
+        }
+
+        return log.Status == "Sent";
     }
 
     public async Task<bool> SendTwoFactorCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
@@ -230,7 +278,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.SupportAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.SupportAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Staff Alert] New Ticket #{inquiry.ReferenceNumber} - {inquiry.Subject} ({inquiry.Organization})";
@@ -282,7 +330,7 @@ public class CentralEmailService : ICentralEmailService
             var settings = await GetPlatformSettingAsync(cancellationToken);
             if (settings.EnableAdminNotifications)
             {
-                var adminEmails = ParseEmailPool(settings.SupportAdminEmails);
+                var adminEmails = ResolveAdminEmails(settings.SupportAdminEmails);
                 if (adminEmails.Count > 0)
                 {
                     var subject = $"[Customer Reply] Ticket #{inquiry.ReferenceNumber} - {reply.SenderName}";
@@ -325,7 +373,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.PartnerAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.PartnerAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Partner Alert] New Partner Application: {partner.FullName} (#{partner.PartnerCode})";
@@ -368,7 +416,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CreatorAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CreatorAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Creator Alert] New Creator Application: {application.FullName} ({application.Specialization})";
@@ -411,7 +459,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CareersAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CareersAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Talent Alert] New Candidate for {openingTitle}: {application.FullName}";
@@ -462,7 +510,7 @@ public class CentralEmailService : ICentralEmailService
         var settings = await GetPlatformSettingAsync(cancellationToken);
         if (settings.EnableAdminNotifications)
         {
-            var adminEmails = ParseEmailPool(settings.CertificationAdminEmails);
+            var adminEmails = ResolveAdminEmails(settings.CertificationAdminEmails);
             if (adminEmails.Count > 0)
             {
                 var adminSubject = $"[Academy Alert] New Exam Booking: {candidateName} ({examTitle})";
@@ -535,7 +583,7 @@ public class CentralEmailService : ICentralEmailService
         // 2. Admin Pool Notification
         if (settings.EnableAdminNotifications)
         {
-            var adminPool = ParseEmailPool(settings.PartnerAdminEmails ?? settings.SupportAdminEmails);
+            var adminPool = ResolveAdminEmails(settings.PartnerAdminEmails ?? settings.SupportAdminEmails);
             if (adminPool.Any())
             {
                 var adminSubject = $"[New Voucher Application] #{app.ReferenceNumber} - {app.OrganizationName}";
@@ -624,6 +672,8 @@ public class CentralEmailService : ICentralEmailService
         return await SendEmailAsync(app.WorkEmail, subject, body, null, cancellationToken);
     }
 
+
+
     private async Task<MasterPlatformSetting> GetPlatformSettingAsync(CancellationToken cancellationToken)
     {
         try
@@ -680,11 +730,91 @@ public class CentralEmailService : ICentralEmailService
         return list;
     }
 
-    private async Task SendToAdminPoolAsync(List<string> adminEmails, string subject, string body, CancellationToken cancellationToken)
+    private List<string> ResolveAdminEmails(string? specificPool)
     {
-        foreach (var email in adminEmails)
+        var emails = ParseEmailPool(specificPool);
+        if (emails.Count == 0)
         {
-            await SendEmailAsync(email, subject, body, null, cancellationToken);
+            var fallback = _configuration["POSTMARK_ADMIN_EMAIL"]
+                        ?? _configuration["Postmark:AdminEmail"]
+                        ?? _configuration["ErrorAlertSettings:RecipientEmails"]
+                        ?? _configuration["EmailSettings:AdminEmail"];
+
+            emails = ParseEmailPool(fallback);
         }
+        return emails;
+    }
+
+    private async Task SendToAdminPoolAsync(List<string> adminEmails, string subject, string htmlBody, CancellationToken cancellationToken)
+    {
+        if (adminEmails == null || adminEmails.Count == 0) return;
+        foreach (var adminEmail in adminEmails)
+        {
+            try
+            {
+                await SendEmailAsync(adminEmail, subject, htmlBody, provider: null, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to deliver administrative notification to {Email}", adminEmail);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendOperatorInvitationEmailAsync(
+        string toEmail,
+        string fullName,
+        string userName,
+        string department,
+        IList<string> roles,
+        string setupUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = "Welcome to Ozikol Central — Activate Your Operator Account";
+        var rolesHtml = string.Join(" ", roles.Select(r => 
+            $"<span style='display:inline-block; padding:3px 10px; margin:2px; background:#ede9fe; color:#6d28d9; border-radius:4px; font-size:12px; font-weight:bold;'>{r}</span>"));
+
+        var htmlBody = $@"
+            <div style='font-family: Arial, -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h1 style='color: #4f46e5; font-size: 24px; margin: 0;'>Ozikol Central Command</h1>
+                    <p style='color: #64748b; font-size: 14px; margin: 4px 0 0 0;'>Administrative Operator Onboarding</p>
+                </div>
+
+                <div style='background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);'>
+                    <h2 style='font-size: 18px; color: #0f172a; margin-top: 0;'>Hello {fullName},</h2>
+                    <p style='font-size: 14px; color: #475569; line-height: 1.6;'>
+                        An administrative operator account has been created for you on <strong>Ozikol Central</strong>. To activate your account and establish your secret login password, please use the secure link below:
+                    </p>
+
+                    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;'>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Username:</strong> <code style='color: #4f46e5; background: #e0e7ff; padding: 2px 6px; border-radius: 4px;'>{userName}</code></div>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Work Email:</strong> <span style='color: #334155;'>{toEmail}</span></div>
+                        <div style='margin-bottom: 8px;'><strong style='color: #334155; font-size: 13px;'>Department:</strong> <span style='color: #334155;'>{department}</span></div>
+                        <div><strong style='color: #334155; font-size: 13px;'>Assigned Roles:</strong><div style='margin-top: 4px;'>{rolesHtml}</div></div>
+                    </div>
+
+                    <div style='text-align: center; margin: 28px 0;'>
+                        <a href='{setupUrl}' style='display: inline-block; padding: 14px 28px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);'>
+                            Set Up Password &amp; Activate Account &rarr;
+                        </a>
+                    </div>
+
+                    <p style='font-size: 12px; color: #94a3b8; line-height: 1.5; margin-bottom: 6px;'>
+                        If the button above does not work, copy and paste this link into your browser:
+                    </p>
+                    <div style='background: #f1f5f9; padding: 10px; border-radius: 6px; word-break: break-all; font-family: monospace; font-size: 11.5px; color: #475569;'>
+                        {setupUrl}
+                    </div>
+                </div>
+
+                <div style='text-align: center; margin-top: 24px; color: #94a3b8; font-size: 12px;'>
+                    <p style='margin: 0;'>This activation link is unique to your account and valid for 24 hours.</p>
+                    <p style='margin: 4px 0 0 0;'>&copy; {DateTime.UtcNow.Year} Ozikol Central Management Suite. All rights reserved.</p>
+                </div>
+            </div>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody, provider: null, cancellationToken: cancellationToken);
     }
 }

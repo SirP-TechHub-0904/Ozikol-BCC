@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -2513,7 +2513,7 @@
     <value>Core Infrastructure &amp; DevOps</value>
   </data>
   <data name="Leadership_Div2_Desc" xml:space="preserve">
-    <value>Overseeing multi-region cloud fleet deployment, private storage segregation, zero-downtime releases, and edge network acceleration.</value>
+    <value>Overseeing multi-region cloud infrastructure deployment, private storage segregation, zero-downtime releases, and edge network acceleration.</value>
   </data>
   <data name="Leadership_Div3_Badge" xml:space="preserve">
     <value>Product &amp; Ecosystem</value>
@@ -4145,11 +4145,11 @@
     <comment>Enterprise pricing section key (en)</comment>
   </data>
   <data name="Pricing_Enterprise_Feature1_Title" xml:space="preserve">
-    <value>Dedicated Fleet Isolation</value>
+    <value>Dedicated Tenant Isolation</value>
     <comment>Enterprise pricing section key (en)</comment>
   </data>
   <data name="Pricing_Enterprise_Feature1_Desc" xml:space="preserve">
-    <value>Fully isolated computational fleets, air-gapped data residency options, and single-tenant database ring topologies.</value>
+    <value>Fully isolated computational environments, air-gapped data residency options, and single-tenant database ring topologies.</value>
     <comment>Enterprise pricing section key (en)</comment>
   </data>
   <data name="Pricing_Enterprise_Feature2_Title" xml:space="preserve">
@@ -5005,7 +5005,7 @@
     <value>Full Name *</value>
   </data>
   <data name="Voucher_Field_FullName_Placeholder" xml:space="preserve">
-    <value>e.g. John Doe</value>
+    <value>e.g. First Last</value>
   </data>
   <data name="Voucher_Field_Email" xml:space="preserve">
     <value>Email Address *</value>
@@ -5017,7 +5017,7 @@
     <value>Organization / Company Name *</value>
   </data>
   <data name="Voucher_Field_OrgName_Placeholder" xml:space="preserve">
-    <value>e.g. Acme Corporation</value>
+    <value>e.g. Your Organization Name</value>
   </data>
   <data name="Voucher_Field_Phone" xml:space="preserve">
     <value>Contact Phone Number</value>

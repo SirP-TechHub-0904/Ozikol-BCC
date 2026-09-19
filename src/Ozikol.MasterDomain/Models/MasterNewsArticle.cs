@@ -107,6 +107,11 @@ public class MasterNewsArticle
     public bool IsPublished { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the total number of times this article has been viewed and read.
+    /// </summary>
+    public long ReadCount { get; set; } = 0;
+
+    /// <summary>
     /// Gets or sets the record creation timestamp in UTC.
     /// </summary>
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

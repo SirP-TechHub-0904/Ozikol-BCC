@@ -69,6 +69,26 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// </summary>
     public DbSet<MasterBillingTransaction> MasterBillingTransactions { get; set; } = null!;
 
+    /// <summary>
+    /// Registered background jobs for Central platform and Tenant automation.
+    /// </summary>
+    public DbSet<MasterBackgroundJob> MasterBackgroundJobs { get; set; } = null!;
+
+    /// <summary>
+    /// Execution logs for background jobs.
+    /// </summary>
+    public DbSet<MasterBackgroundJobLog> MasterBackgroundJobLogs { get; set; } = null!;
+
+    /// <summary>
+    /// Central platform notifications and alerts.
+    /// </summary>
+    public DbSet<MasterNotification> MasterNotifications { get; set; } = null!;
+
+    /// <summary>
+    /// Operator alert and notification channel preferences.
+    /// </summary>
+    public DbSet<MasterNotificationPreference> MasterNotificationPreferences { get; set; } = null!;
+
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
     }
@@ -554,6 +574,43 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.WorkEmail);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedAtUtc);
+        });
+
+        // ── Background Jobs Hub Configurations ──
+        modelBuilder.Entity<MasterBackgroundJob>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.JobKey).IsUnique();
+            entity.HasIndex(e => e.Scope);
+            entity.HasIndex(e => e.IsEnabled);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.NextRunUtc);
+            entity.HasIndex(e => e.TargetTenantCatalogId);
+
+            entity.HasOne(e => e.TargetTenantCatalog)
+                .WithMany()
+                .HasForeignKey(e => e.TargetTenantCatalogId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.ExecutionLogs)
+                .WithOne(e => e.Job)
+                .HasForeignKey(e => e.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MasterBackgroundJobLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.JobId);
+            entity.HasIndex(e => e.StartedAtUtc);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.TenantKey);
+            entity.HasIndex(e => e.TargetTenantCatalogId);
+
+            entity.HasOne(e => e.TargetTenantCatalog)
+                .WithMany()
+                .HasForeignKey(e => e.TargetTenantCatalogId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

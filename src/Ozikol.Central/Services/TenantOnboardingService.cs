@@ -30,6 +30,16 @@ public class TenantOnboardingRequest
     public List<Guid> SelectedFeatureIds { get; set; } = new();
 
     /// <summary>
+    /// Dictionary mapping selected feature IDs to chosen billing frequency ("Monthly" or "Yearly").
+    /// </summary>
+    public Dictionary<Guid, string> SelectedFeatureCadences { get; set; } = new();
+
+    /// <summary>
+    /// Configurable trial days granted upon onboarding (default is 14 days).
+    /// </summary>
+    public int TrialDays { get; set; } = 14;
+
+    /// <summary>
     /// Optional promotional coupon or voucher code entered during registration (e.g. "LAUNCH100").
     /// </summary>
     public string? CouponCode { get; set; }
@@ -426,7 +436,23 @@ public class TenantOnboardingService : ITenantOnboardingService
 
             await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);
 
-            // Step F: Automatically Provision Compulsory Core Feature Subscriptions ($0 / Base Tier)
+            var now = DateTime.UtcNow;
+            var trialDays = request.TrialDays > 0 ? request.TrialDays : 14;
+            var trialOffsetDate = now.AddDays(trialDays);
+
+            // Pre-evaluate coupon if provided
+            MasterCoupon? appliedCoupon = null;
+            if (!string.IsNullOrWhiteSpace(request.CouponCode))
+            {
+                var validation = await ValidateCouponAsync(request.CouponCode, null, cancellationToken);
+                if (validation.IsValid && validation.Coupon != null)
+                {
+                    appliedCoupon = await _masterCatalogDbContext.MasterCoupons
+                        .FirstOrDefaultAsync(c => c.Id == validation.Coupon.Id, cancellationToken);
+                }
+            }
+
+            // Step F: Automatically Provision Compulsory Core Feature Subscriptions ($0 / Annual Base Plan)
             var compulsoryFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.IsCompulsory && f.IsActive)
@@ -441,16 +467,16 @@ public class TenantOnboardingService : ITenantOnboardingService
                     MasterFeatureCatalogId = coreFeature.Id,
                     DurationType = SubscriptionBillingDuration.Yearly,
                     RecurringPrice = 0.00m,
-                    StartsAtUtc = DateTime.UtcNow,
-                    ExpiresAtUtc = DateTime.UtcNow.AddYears(10), // Core features stay active
+                    StartsAtUtc = now,
+                    ExpiresAtUtc = trialOffsetDate.AddYears(1), // 1-Year maximum annual renewal
                     AutoRenew = true,
                     IsActive = true,
                     Status = "Active",
-                    CreatedUtc = DateTime.UtcNow
+                    CreatedUtc = now
                 });
             }
 
-            // Step G: Provision Optional Add-on Features Selected by Tenant
+            // Step G: Provision Optional Add-on Features Selected by Tenant with Per-Feature Cadence & Single Line-Item Pricing
             var selectedFeatureGuids = (request.SelectedFeatureIds ?? new List<Guid>())
                 .Distinct()
                 .Where(id => compulsoryFeatures.All(c => c.Id != id))
@@ -464,59 +490,82 @@ public class TenantOnboardingService : ITenantOnboardingService
 
                 foreach (var addon in selectedFeatures)
                 {
+                    // Check user-selected billing cadence for this specific feature ("Monthly" vs "Yearly")
+                    bool isYearly = false;
+                    if (request.SelectedFeatureCadences != null &&
+                        request.SelectedFeatureCadences.TryGetValue(addon.Id, out var cadenceStr))
+                    {
+                        isYearly = cadenceStr.Equals("Yearly", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    var durationType = isYearly ? SubscriptionBillingDuration.Yearly : SubscriptionBillingDuration.Monthly;
+                    var basePrice = isYearly
+                        ? (addon.YearlyPrice > 0 ? addon.YearlyPrice : addon.MonthlyPrice * 10)
+                        : addon.MonthlyPrice;
+
+                    decimal effectivePrice = basePrice;
+
+                    // Evaluate single line-item coupon discount if applicable
+                    if (appliedCoupon != null)
+                    {
+                        bool couponApplies = !appliedCoupon.SpecificFeatureId.HasValue || appliedCoupon.SpecificFeatureId.Value == addon.Id;
+                        if (couponApplies)
+                        {
+                            if (appliedCoupon.IsPercentage)
+                            {
+                                effectivePrice = Math.Max(0.00m, basePrice * (1m - (appliedCoupon.DiscountPercentage / 100m)));
+                            }
+                            else
+                            {
+                                effectivePrice = Math.Max(0.00m, basePrice - appliedCoupon.DiscountAmount);
+                            }
+                        }
+                    }
+
+                    var expiryDate = isYearly ? trialOffsetDate.AddYears(1) : trialOffsetDate.AddMonths(1);
+
                     _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
                     {
                         Id = Guid.NewGuid(),
                         MasterTenantCatalogId = catalogEntry.Id,
                         MasterFeatureCatalogId = addon.Id,
-                        DurationType = SubscriptionBillingDuration.Monthly,
-                        RecurringPrice = addon.MonthlyPrice,
-                        StartsAtUtc = DateTime.UtcNow,
-                        ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
+                        DurationType = durationType,
+                        RecurringPrice = effectivePrice,
+                        StartsAtUtc = now,
+                        ExpiresAtUtc = expiryDate,
                         AutoRenew = true,
                         IsActive = true,
                         Status = "Active",
-                        CreatedUtc = DateTime.UtcNow
+                        CreatedUtc = now
                     });
                 }
             }
 
             // Step H: Redeem Promotional Coupon if provided
-            if (!string.IsNullOrWhiteSpace(request.CouponCode))
+            if (appliedCoupon != null)
             {
-                var validation = await ValidateCouponAsync(request.CouponCode, null, cancellationToken);
-                if (validation.IsValid && validation.Coupon != null)
+                appliedCoupon.TimesRedeemed += 1;
+
+                const decimal assumedBasePrice = 199.00m;
+                decimal discountAmount = appliedCoupon.IsPercentage
+                    ? (assumedBasePrice * (appliedCoupon.DiscountPercentage / 100m))
+                    : Math.Min(appliedCoupon.DiscountAmount, assumedBasePrice);
+
+                decimal finalPrice = Math.Max(0.00m, assumedBasePrice - discountAmount);
+
+                _masterCatalogDbContext.MasterCouponRedemptions.Add(new MasterCouponRedemption
                 {
-                    var coupon = await _masterCatalogDbContext.MasterCoupons
-                        .FirstOrDefaultAsync(c => c.Id == validation.Coupon.Id, cancellationToken);
-
-                    if (coupon != null)
-                    {
-                        coupon.TimesRedeemed += 1;
-
-                        const decimal assumedBasePrice = 199.00m;
-                        decimal discountAmount = coupon.IsPercentage
-                            ? (assumedBasePrice * (coupon.DiscountPercentage / 100m))
-                            : Math.Min(coupon.DiscountAmount, assumedBasePrice);
-
-                        decimal finalPrice = Math.Max(0.00m, assumedBasePrice - discountAmount);
-
-                        _masterCatalogDbContext.MasterCouponRedemptions.Add(new MasterCouponRedemption
-                        {
-                            Id = Guid.NewGuid(),
-                            MasterCouponId = coupon.Id,
-                            MasterTenantCatalogId = catalogEntry.Id,
-                            MasterFeatureCatalogId = coupon.SpecificFeatureId,
-                            OriginalPrice = assumedBasePrice,
-                            DiscountApplied = discountAmount,
-                            FinalPricePaid = finalPrice,
-                            RedeemedAtUtc = DateTime.UtcNow
-                        });
-
-                        _logger.LogInformation("🎟️ Coupon [{Code}] redeemed by Tenant [{TenantKey}]. Discount: ${Discount:F2}",
-                            coupon.Code, cleanKey, discountAmount);
-                    }
-                }
+                    Id = Guid.NewGuid(),
+                    MasterCouponId = appliedCoupon.Id,
+                    MasterTenantCatalogId = catalogEntry.Id,
+                    MasterFeatureCatalogId = appliedCoupon.SpecificFeatureId,
+                    OriginalPrice = assumedBasePrice,
+                    DiscountApplied = discountAmount,
+                    FinalPricePaid = finalPrice,
+                    RedeemedAtUtc = now
+                });
+                _logger.LogInformation("🎟️ Coupon [{Code}] redeemed by Tenant [{TenantKey}]. Discount: ${Discount:F2}",
+                    appliedCoupon.Code, cleanKey, discountAmount);
             }
 
             await _masterCatalogDbContext.SaveChangesAsync(cancellationToken);

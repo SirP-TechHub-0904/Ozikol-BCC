@@ -30,11 +30,12 @@ public interface INewsService
     Task<NewsArticle?> GetFeaturedArticleAsync();
 
     /// <summary>
-    /// Finds a news article by its URL permalink slug.
+    /// Finds a news article by its URL permalink slug and optionally increments the read count.
     /// </summary>
     /// <param name="slug">The article slug.</param>
+    /// <param name="trackRead">Whether to atomically record a reader impression / read count.</param>
     /// <returns>The matching article or null if not found.</returns>
-    Task<NewsArticle?> GetArticleBySlugAsync(string slug);
+    Task<NewsArticle?> GetArticleBySlugAsync(string slug, bool trackRead = true);
 
     /// <summary>
     /// Retrieves related articles belonging to the same category, excluding the current article.

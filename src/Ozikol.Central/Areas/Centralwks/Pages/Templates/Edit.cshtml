@@ -11,11 +11,11 @@
         <p class="admin-subtitle">Modify blueprint markup, scoped stylesheets, preview presentation card, and publishing status.</p>
     </div>
     <div class="admin-actions">
-        <a href="/centralwks/templates/details/@Model.Id" class="btn-admin btn-admin-secondary">
-            <span>👁️</span> View Details & Code
+        <a href="/centralwks/templates/details/@Model.Id" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span> View Details & Code
         </a>
         <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
-            <span>&larr;</span> Back to Templates
+            &larr; Back to Templates
         </a>
     </div>
 </div>
@@ -35,7 +35,9 @@
         <div>
             <div class="admin-card" style="margin-bottom: 24px;">
                 <div class="card-header-styled">
-                    <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">🎨</div>
+                    <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">palette</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Identity & Categorization</h3>
                         <p class="card-header-subtitle">Basic metadata, variant key, and category placement.</p>
@@ -48,7 +50,7 @@
                             <label asp-for="Input.Name" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Template Name <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                             </label>
-                            <input asp-for="Input.Name" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;" />
+                            <input asp-for="Input.Name" class="form-control" />
                             <span asp-validation-for="Input.Name" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                         </div>
 
@@ -56,7 +58,7 @@
                             <label asp-for="Input.VariantCode" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Programmatic Variant Code <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                             </label>
-                            <input asp-for="Input.VariantCode" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px; font-family: monospace;" />
+                            <input asp-for="Input.VariantCode" class="form-control" style="font-family: monospace;" />
                             <span asp-validation-for="Input.VariantCode" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                         </div>
                     </div>
@@ -66,7 +68,7 @@
                             <label asp-for="Input.CategoryId" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Category <span style="color: var(--admin-danger); font-weight: bold;">*</span>
                             </label>
-                            <select asp-for="Input.CategoryId" asp-items="Model.CategoryOptions" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;">
+                            <select asp-for="Input.CategoryId" asp-items="Model.CategoryOptions" class="form-select">
                             </select>
                             <span asp-validation-for="Input.CategoryId" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
                         </div>
@@ -75,7 +77,7 @@
                             <label asp-for="Input.Tag" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Style Tag
                             </label>
-                            <select asp-for="Input.Tag" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;">
+                            <select asp-for="Input.Tag" class="form-select">
                                 <option value="modern">Modern & Clean</option>
                                 <option value="dark">Dark & Futuristic</option>
                                 <option value="minimal">Minimalist</option>
@@ -90,7 +92,7 @@
                         <label asp-for="Input.Description" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                             Template Description
                         </label>
-                        <textarea asp-for="Input.Description" rows="2" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; color: var(--admin-text); font-size: 14px;"></textarea>
+                        <textarea asp-for="Input.Description" rows="2" class="form-control"></textarea>
                     </div>
                 </div>
             </div>
@@ -98,7 +100,9 @@
             @* ── Code Markup Tabs ── *@
             <div class="admin-card" style="margin-bottom: 24px;">
                 <div class="card-header-styled">
-                    <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💻</div>
+                    <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">code</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Template Code & Stylesheets</h3>
                         <p class="card-header-subtitle">Semantic markup with Mustache tokens, isolated CSS rules, and client scripts.</p>
@@ -143,7 +147,9 @@
         <div>
             <div class="admin-card" style="margin-bottom: 24px;">
                 <div class="card-header-styled">
-                    <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">🖼️</div>
+                    <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">preview</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Marketplace Card Preview</h3>
                         <p class="card-header-subtitle">Card parameters and thumbnail appearance.</p>
@@ -155,22 +161,22 @@
                         <label asp-for="Input.ThumbnailGradient" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                             Thumbnail Gradient (CSS)
                         </label>
-                        <input asp-for="Input.ThumbnailGradient" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px; font-family: monospace;" />
+                        <input asp-for="Input.ThumbnailGradient" class="form-control" style="font-family: monospace;" />
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                         <div class="form-group">
                             <label asp-for="Input.PreviewIcon" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
-                                Icon / Emoji
+                                Icon
                             </label>
-                            <input asp-for="Input.PreviewIcon" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                            <input asp-for="Input.PreviewIcon" class="form-control" />
                         </div>
 
                         <div class="form-group">
                             <label asp-for="Input.Badge" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Badge (Optional)
                             </label>
-                            <input asp-for="Input.Badge" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                            <input asp-for="Input.Badge" class="form-control" />
                         </div>
                     </div>
 
@@ -178,21 +184,23 @@
                         <label asp-for="Input.PreviewTitle" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                             Preview Title
                         </label>
-                        <input asp-for="Input.PreviewTitle" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                        <input asp-for="Input.PreviewTitle" class="form-control" />
                     </div>
 
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label asp-for="Input.PreviewImageUrl" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                             Demo Image URL (Optional)
                         </label>
-                        <input asp-for="Input.PreviewImageUrl" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                        <input asp-for="Input.PreviewImageUrl" class="form-control" />
                     </div>
                 </div>
             </div>
 
             <div class="admin-card" style="margin-bottom: 24px;">
                 <div class="card-header-styled">
-                    <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">⚙️</div>
+                    <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
+                    </div>
                     <div>
                         <h3 class="card-header-title">Publishing & Version</h3>
                         <p class="card-header-subtitle">Release settings and sorting.</p>
@@ -205,14 +213,14 @@
                             <label asp-for="Input.Version" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Version
                             </label>
-                            <input asp-for="Input.Version" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px; font-family: monospace;" />
+                            <input asp-for="Input.Version" class="form-control" style="font-family: monospace;" />
                         </div>
 
                         <div class="form-group">
                             <label asp-for="Input.SortOrder" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: var(--admin-text-muted);">
                                 Sort Order
                             </label>
-                            <input asp-for="Input.SortOrder" type="number" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 12px; color: var(--admin-text); font-size: 13px;" />
+                            <input asp-for="Input.SortOrder" type="number" class="form-control" />
                         </div>
                     </div>
 
@@ -224,8 +232,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="submit" class="btn-admin btn-admin-primary" style="justify-content: center; width: 100%;">
-                    <span>💾</span> Save Modifications
+                <button type="submit" class="btn-admin btn-admin-primary" style="justify-content: center; width: 100%; display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">save</span> Save Modifications
                 </button>
                 <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="justify-content: center; width: 100%;">
                     Cancel

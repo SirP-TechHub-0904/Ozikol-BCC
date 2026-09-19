@@ -11,8 +11,8 @@
         <p class="admin-subtitle">Curate UI sections, hero banners, navigation bars, pricing tables, and modular blocks available for tenant site builders.</p>
     </div>
     <div class="admin-actions">
-        <a href="/centralwks/templates/create" class="btn-admin btn-admin-primary">
-            <span>+</span> Create Template
+        <a href="/centralwks/templates/create" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Create Template
         </a>
     </div>
 </div>
@@ -27,21 +27,27 @@
 @* ── Template Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">🎨</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">palette</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Total Templates</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Active & Public</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ActiveCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px; font-size: 18px;">📁</div>
+        <div class="stat-icon-wrapper stat-icon-info" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">folder</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Categories</span>
             <span class="stat-value" style="font-size: 22px;">@Model.TotalCategoriesCount</span>
@@ -54,22 +60,22 @@
     <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 220px;">
             <input type="text" name="Search" value="@Model.Search" placeholder="Search templates by name, variant code, tag..." 
-                   class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;" />
+                   class="form-control" />
         </div>
         <div style="min-width: 160px;">
-            <select name="CategoryKey" asp-items="Model.CategoryOptions" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
+            <select name="CategoryKey" asp-items="Model.CategoryOptions" class="form-select">
                 <option value="">All Categories</option>
             </select>
         </div>
         <div style="min-width: 140px;">
-            <select name="Status" class="form-control" style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px 14px; color: var(--admin-text); font-size: 13px;">
+            <select name="Status" class="form-select">
                 <option value="">All Statuses</option>
                 <option value="active" selected="@(Model.Status == "active")">Active Only</option>
                 <option value="inactive" selected="@(Model.Status == "inactive")">Hidden Only</option>
             </select>
         </div>
-        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px;">
-            <span>🔍</span> Filter
+        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 8px 16px; display: inline-flex; align-items: center; gap: 4px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">search</span> Filter
         </button>
         @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.CategoryKey) || !string.IsNullOrWhiteSpace(Model.Status))
         {
@@ -153,22 +159,22 @@
                             </td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 6px;">
-                                    <a href="/centralwks/templates/details/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="View Details & Code">
-                                        👁️
+                                    <a href="/centralwks/templates/details/@t.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Details & Code">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                                     </a>
-                                    <a href="/centralwks/templates/edit/@t.Id" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="Edit Template">
-                                        ✏️
+                                    <a href="/centralwks/templates/edit/@t.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Template">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
                                     </a>
                                     <form method="post" asp-page-handler="ToggleActive" asp-route-id="@t.Id" style="display: inline;">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px;" title="@(t.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")">
-                                            @(t.IsActive ? "⏸️" : "▶️")
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" title="@(t.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">@(t.IsActive ? "pause" : "play_arrow")</span>
                                         </button>
                                     </form>
                                     <form method="post" asp-page-handler="Delete" asp-route-id="@t.Id" style="display: inline;" onsubmit="return confirm('Permanently delete template @t.Name?');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-danger" style="padding: 4px 8px; font-size: 12px;" title="Delete Template">
-                                            🗑️
+                                        <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" title="Delete Template">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
                                         </button>
                                     </form>
                                 </div>
@@ -180,7 +186,7 @@
                 {
                     <tr>
                         <td colspan="8" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <div style="font-size: 32px; margin-bottom: 8px;">🎨</div>
+                            <span class="material-symbols-outlined" style="font-size: 36px; margin-bottom: 8px; color: var(--admin-text-dim);">palette</span>
                             <div style="font-size: 16px; font-weight: 500; color: #fff;">No Templates Found</div>
                             <div style="font-size: 13px; margin-top: 4px;">No marketplace templates match your active filters.</div>
                         </td>

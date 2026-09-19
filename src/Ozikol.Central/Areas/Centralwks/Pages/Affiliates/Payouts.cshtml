@@ -18,8 +18,8 @@
         {
             <form method="post" asp-page-handler="DisburseAll" style="display: inline;" onsubmit="return confirm('Execute batch payout of $@Model.TotalPendingBalance.ToString("N2") across @Model.EligiblePartnerCount partners?');">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn-admin btn-admin-primary">
-                    <span>⚡</span> Settle All Payouts ($@Model.TotalPendingBalance.ToString("N2"))
+                <button type="submit" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span> Settle All Payouts ($@Model.TotalPendingBalance.ToString("N2"))
                 </button>
             </form>
         }
@@ -36,21 +36,27 @@
 @* ── Payout Metrics ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px; font-size: 18px;">⏳</div>
+        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">hourglass_top</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Pending Total Due</span>
             <span class="stat-value" style="font-size: 22px; color: #f59e0b;">$@Model.TotalPendingBalance.ToString("N2")</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px; font-size: 18px;">👥</div>
+        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">groups</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Eligible Partners</span>
             <span class="stat-value" style="font-size: 22px;">@Model.EligiblePartnerCount</span>
         </div>
     </div>
     <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px; font-size: 18px;">✅</div>
+        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+        </div>
         <div class="stat-details">
             <span class="stat-label">Historically Paid Out</span>
             <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalHistoricalPaid.ToString("N2")</span>
@@ -61,7 +67,9 @@
 @* ── Eligible Partners Payout Table ── *@
 <div class="admin-card">
     <div class="card-header-styled" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-        <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">💸</div>
+        <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">payments</span>
+        </div>
         <div>
             <h3 class="card-header-title">Partners Awaiting Commission Disbursement</h3>
             <p class="card-header-subtitle">Review payout accounts and mark funds as transferred.</p>
@@ -116,8 +124,8 @@
                                     </a>
                                     <form method="post" asp-page-handler="DisburseIndividual" asp-route-partnerId="@p.Id" style="display: inline;" onsubmit="return confirm('Mark payout of $@p.PendingBalance.ToString("N2") as disbursed to @p.FullName?');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-primary" style="padding: 6px 12px; font-size: 12px;">
-                                            <span>✅</span> Mark Disbursed
+                                        <button type="submit" class="btn-admin btn-admin-primary" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Mark Disbursed
                                         </button>
                                     </form>
                                 </div>
@@ -129,7 +137,9 @@
                 {
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+                            <div style="font-size: 32px; margin-bottom: 8px;">
+                                <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-muted);">celebration</span>
+                            </div>
                             <div style="font-size: 16px; font-weight: 500; color: #fff;">Payouts Queue Clear</div>
                             <div style="font-size: 13px; margin-top: 4px;">There are no pending affiliate commissions awaiting disbursement at this time.</div>
                         </td>
