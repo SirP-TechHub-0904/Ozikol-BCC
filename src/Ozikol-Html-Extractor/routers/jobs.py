@@ -12,13 +12,17 @@ DELETE /jobs/{job_id}               Delete a job
 """
 
 import logging
+from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from models.schemas import (
+    AiTokenizeRequest,
+    AiTokenizeResult,
     ApplySelectionsRequest,
     ApplySelectionsResult,
     AuditResult,
     ErrorResponse,
+    ImportableSuitePackage,
     JobStatus,
     JobStatusResponse,
     StartJobRequest,
@@ -28,6 +32,7 @@ from models.schemas import (
 from pipeline.scraper import run_audit
 from pipeline.cleaner import apply_selections
 from pipeline.uploader import run_upload
+from pipeline.ai_tokenizer import run_ai_tokenization
 import store.job_store as job_store
 
 logger = logging.getLogger(__name__)
@@ -108,7 +113,7 @@ async def get_job_status(job_id: str):
 async def get_audit(job_id: str):
     job = _get_job_or_404(job_id)
 
-    if job["status"] == JobStatus.AUDITING:
+    if job["status"] in (JobStatus.PENDING, JobStatus.AUDITING):
         raise HTTPException(status_code=202, detail="Audit still in progress. Try again shortly.")
 
     if job["status"] == JobStatus.FAILED:
@@ -219,6 +224,78 @@ async def get_output(job_id: str):
         )
 
     return UploadResult(**job["upload"])
+
+
+# ---------------------------------------------------------------------------
+# POST /jobs/{job_id}/ai-tokenize (Phase 4 — DeepSeek AI Debranding & Slicing)
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{job_id}/ai-tokenize",
+    response_model=AiTokenizeResult,
+    summary="Debrand and tokenize extracted website with DeepSeek AI",
+    description=(
+        "Executes DeepSeek LLM debranding, strips original proprietary branding, "
+        "and slices HTML into modular Ozikol section blueprints with dynamic tokens."
+    ),
+)
+async def tokenize_job_with_ai(job_id: str, body: Optional[AiTokenizeRequest] = None):
+    job = _get_job_or_404(job_id)
+
+    if not job.get("cleaned") and not job.get("audit"):
+        raise HTTPException(
+            status_code=400,
+            detail="Run Phase 1 audit and Phase 2 apply before AI tokenization.",
+        )
+
+    req = body or AiTokenizeRequest()
+    job_store.update_status(job_id, JobStatus.TOKENIZING)
+
+    try:
+        audit = AuditResult(**job["audit"])
+        cleaned = ApplySelectionsResult(**job["cleaned"]) if job.get("cleaned") else None
+        upload = UploadResult(**job["upload"]) if job.get("upload") else None
+
+        suite = await run_ai_tokenization(
+            audit=audit,
+            cleaned=cleaned,
+            upload=upload,
+            job_id=job_id,
+            suite_name=req.suite_name or "Imported Modern Suite",
+            brand_name=req.brand_name or "Enterprise Workspace",
+            custom_api_key=req.api_key,
+        )
+
+        job_store.set_ai_blueprint(job_id, suite.model_dump())
+        return AiTokenizeResult(
+            job_id=job_id,
+            status=JobStatus.TOKENIZED,
+            suite=suite,
+            message="Debranding and Ozikol template tokenization completed.",
+        )
+    except Exception as exc:
+        logger.exception("AI tokenization failed for job %s", job_id)
+        job_store.update_status(job_id, JobStatus.FAILED, error=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# GET /jobs/{job_id}/ai-blueprint
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{job_id}/ai-blueprint",
+    response_model=ImportableSuitePackage,
+    summary="Get AI-generated template suite package",
+)
+async def get_ai_blueprint(job_id: str):
+    job = _get_job_or_404(job_id)
+    if not job.get("ai_blueprint"):
+        raise HTTPException(
+            status_code=404,
+            detail="AI tokenization not performed yet. Call POST /jobs/{job_id}/ai-tokenize first.",
+        )
+    return ImportableSuitePackage(**job["ai_blueprint"])
 
 
 # ---------------------------------------------------------------------------

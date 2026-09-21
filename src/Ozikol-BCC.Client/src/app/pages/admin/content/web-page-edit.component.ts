@@ -126,14 +126,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <div class="card-header-bar">
               <div>
                 <h3>Banner & Media Image</h3>
-                <p class="card-sub">Upload high-resolution header images via Cloudinary.</p>
+                <p class="card-sub">Upload high-resolution header image or enter media URL.</p>
               </div>
             </div>
 
             <div class="form-grid">
               <div class="form-group full-width">
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="page.imageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="page.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/banner.jpg">
                   <label class="btn-upload" [class.uploading]="uploading">
                     <input type="file" (change)="uploadImage($event)" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>

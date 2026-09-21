@@ -9,6 +9,7 @@ using Ozikol_BCC.Application.Services.Cloudflare;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol_BCC.Persistence.EF.SQL.Extensions;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -1232,8 +1233,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Sets a specific installed template as active (e.g. switching active menu or footer).
+        /// Sets a specific installed template as active (e.g. switching active menu, hero, breadcrumb, or footer).
+        /// Automatically deactivates competing templates within the same singleton category.
         /// </summary>
+        /// <param name="id">The unique identifier of the template to activate.</param>
+        /// <returns>The activated template record.</returns>
         [HttpPost("templates/{id:guid}/set-active")]
         public async Task<IActionResult> SetActiveTemplate(Guid id)
         {
@@ -1241,8 +1245,12 @@ namespace Ozikol_BCC.Api.Controllers
             if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
 
             var catKey = template.CategoryKey.Trim().ToLowerInvariant();
+            var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+            };
 
-            if (catKey == "menu" || catKey == "footer")
+            if (singletonCategories.Contains(catKey))
             {
                 var sameCategory = await _context.TenantInstalledTemplates
                     .Where(t => t.CategoryKey.ToLower() == catKey && t.Id != id && t.IsActive)
@@ -1262,18 +1270,483 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Uninstalls / removes a template from the tenant database.
+        /// Activates all structural layout templates (Menu, Hero, Breadcrumb, Footer, Blog, Ecommerce)
+        /// belonging to the specified Theme Suite, while safely deactivating competing structural templates.
         /// </summary>
-        [HttpDelete("templates/installed/{id:guid}")]
-        public async Task<IActionResult> UninstallTemplate(Guid id)
+        /// <param name="suiteCode">The theme suite code identifier (e.g., 'suite_apexmodern', 'suite_corporate').</param>
+        /// <returns>Summary of the activated suite.</returns>
+        [HttpPost("templates/activate-suite/{suiteCode}")]
+        public async Task<IActionResult> ActivateThemeSuite(string suiteCode)
+        {
+            if (string.IsNullOrWhiteSpace(suiteCode))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Suite code is required."));
+            }
+
+            try
+            {
+                var cleanCode = suiteCode.Trim().ToLowerInvariant();
+                var allTemplates = await _context.TenantInstalledTemplates.ToListAsync();
+                var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+                };
+
+                // Helper to resolve the canonical theme suite code for any installed template
+                string GetTemplateSuiteCode(TenantInstalledTemplate t)
+                {
+                    var vCode = (t.VariantCode ?? string.Empty).ToUpperInvariant();
+                    var tKey = (t.TemplateKey ?? string.Empty).ToUpperInvariant();
+                    var name = (t.Name ?? string.Empty).ToUpperInvariant();
+
+                    if (vCode.Contains("SUITE_APEXMODERN") || tKey.Contains("SUITE_APEXMODERN") || name.Contains("APEX MODERN"))
+                    {
+                        return "suite_apexmodern";
+                    }
+
+                    var match = System.Text.RegularExpressions.Regex.Match(vCode, @"SUITE_([A-Z0-9]+)");
+                    if (!match.Success)
+                    {
+                        match = System.Text.RegularExpressions.Regex.Match(tKey, @"SUITE_([A-Z0-9]+)");
+                    }
+
+                    if (match.Success)
+                    {
+                        return $"suite_{match.Groups[1].Value.ToLowerInvariant()}";
+                    }
+
+                    return "suite_corporate";
+                }
+
+                // Helper to check if a template belongs to the requested suite
+                bool BelongsToSuite(TenantInstalledTemplate t)
+                {
+                    var templateSuite = GetTemplateSuiteCode(t);
+                    return string.Equals(templateSuite, cleanCode, StringComparison.OrdinalIgnoreCase)
+                        || cleanCode.Contains(templateSuite)
+                        || templateSuite.Contains(cleanCode);
+                }
+
+                int activatedCount = 0;
+                var suiteSingletons = allTemplates
+                    .Where(t => BelongsToSuite(t) && singletonCategories.Contains(t.CategoryKey))
+                    .ToList();
+
+                var suiteSingletonCategories = suiteSingletons.Select(s => s.CategoryKey.ToLowerInvariant()).ToHashSet();
+
+                // Deactivate competing singletons and activate suite singletons
+                foreach (var item in allTemplates.Where(t => singletonCategories.Contains(t.CategoryKey)))
+                {
+                    if (BelongsToSuite(item))
+                    {
+                        item.IsActive = true;
+                        item.LastUpdatedUtc = DateTime.UtcNow;
+                        activatedCount++;
+                    }
+                    else if (suiteSingletonCategories.Contains(item.CategoryKey.ToLowerInvariant()))
+                    {
+                        item.IsActive = false;
+                        item.LastUpdatedUtc = DateTime.UtcNow;
+                    }
+                }
+
+                // Synchronize SiteCodeInjectionTags (Head stylesheets, fonts, footer scripts)
+                var allTags = await _context.SiteCodeInjectionTags.ToListAsync();
+                foreach (var tag in allTags)
+                {
+                    var tagSuite = (tag.SuiteCode ?? string.Empty).ToLowerInvariant();
+                    if (tagSuite == "global" || string.IsNullOrWhiteSpace(tagSuite))
+                    {
+                        // Global tags (e.g. general analytics, universal meta tags) stay active
+                        tag.IsActive = true;
+                    }
+                    else if (tagSuite.Equals(cleanCode, StringComparison.OrdinalIgnoreCase) ||
+                             (cleanCode == "suite_corporate" && (tagSuite == "suite_corporate" || tag.IsDefault)))
+                    {
+                        tag.IsActive = true;
+                        tag.UpdatedAtUtc = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        // Deactivate competing suite-specific stylesheets and scripts
+                        tag.IsActive = false;
+                        tag.UpdatedAtUtc = DateTime.UtcNow;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    SuiteCode = suiteCode,
+                    ActivatedCount = activatedCount
+                }, $"Theme suite '{suiteCode}' activated successfully with {activatedCount} core components and isolated code injections."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to activate theme suite: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all CMS content entities (WebPages, PageSections) that are currently linked to and rendered by a specific template.
+        /// Powers the interactive deletion modal allowing admins to preview affected content.
+        /// </summary>
+        /// <param name="id">The unique identifier of the installed template.</param>
+        /// <returns>A collection of linked PageSections with parent WebPage details.</returns>
+        [HttpGet("templates/{id:guid}/linked-content")]
+        public async Task<IActionResult> GetTemplateLinkedContent(Guid id)
         {
             var template = await _context.TenantInstalledTemplates.FindAsync(id);
             if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
 
+            var matchingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(template.TemplateKey)) matchingKeys.Add(template.TemplateKey);
+            if (!string.IsNullOrWhiteSpace(template.VariantCode)) matchingKeys.Add(template.VariantCode);
+
+            var linkedSections = await _context.PageSections
+                .Include(s => s.WebPage)
+                .Include(s => s.PageSectionLists)
+                .Where(s => s.TemplateKey != null && matchingKeys.Contains(s.TemplateKey))
+                .Select(s => new
+                {
+                    SectionId = s.Id,
+                    SectionTitle = s.Title ?? "(Untitled Section)",
+                    MiniTitle = s.MiniTitle,
+                    WebPageId = s.WebPageId,
+                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : (s.ShowInHome ? "Homepage" : "Unassigned Page"),
+                    WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
+                    ShowInHome = s.ShowInHome,
+                    SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                TemplateId = template.Id,
+                TemplateName = template.Name,
+                TemplateKey = template.TemplateKey,
+                CategoryKey = template.CategoryKey,
+                IsDefault = template.IsDefault,
+                LinkedSectionCount = linkedSections.Count,
+                LinkedSections = linkedSections
+            }, "Linked content inventory retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Uninstalls / removes a template from the tenant database, with optional cascading deletion of linked page sections.
+        /// </summary>
+        /// <param name="id">The unique identifier of the installed template.</param>
+        /// <param name="deleteLinkedContent">If true, permanently deletes all PageSections linked to this template. If false, unlinks the TemplateKey.</param>
+        /// <returns>Confirmation of the deletion operation.</returns>
+        [HttpDelete("templates/installed/{id:guid}")]
+        public async Task<IActionResult> UninstallTemplate(Guid id, [FromQuery] bool deleteLinkedContent = false)
+        {
+            var template = await _context.TenantInstalledTemplates.FindAsync(id);
+            if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
+
+            var matchingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(template.TemplateKey)) matchingKeys.Add(template.TemplateKey);
+            if (!string.IsNullOrWhiteSpace(template.VariantCode)) matchingKeys.Add(template.VariantCode);
+
+            var linkedSections = await _context.PageSections
+                .Include(s => s.PageSectionLists)
+                .Where(s => s.TemplateKey != null && matchingKeys.Contains(s.TemplateKey))
+                .ToListAsync();
+
+            int affectedSectionCount = linkedSections.Count;
+
+            if (deleteLinkedContent)
+            {
+                // Cascade delete linked sections and their sub-items
+                if (linkedSections.Count > 0)
+                {
+                    var sectionIds = linkedSections.Select(s => s.Id).ToList();
+                    var childLists = await _context.PageSectionLists
+                        .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
+                        .ToListAsync();
+
+                    if (childLists.Count > 0)
+                    {
+                        _context.PageSectionLists.RemoveRange(childLists);
+                    }
+
+                    _context.PageSections.RemoveRange(linkedSections);
+                }
+            }
+            else
+            {
+                // Preserve section content; unassign template key
+                foreach (var sec in linkedSections)
+                {
+                    sec.TemplateKey = null;
+                }
+            }
+
             _context.TenantInstalledTemplates.Remove(template);
             await _context.SaveChangesAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Template '{template.Name}' removed from tenant library."));
+            string msg = deleteLinkedContent && affectedSectionCount > 0
+                ? $"Template '{template.Name}' and {affectedSectionCount} linked page section(s) were permanently deleted."
+                : $"Template '{template.Name}' removed from library. {affectedSectionCount} page section(s) were unlinked and preserved.";
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, msg));
+        }
+
+        /// <summary>
+        /// Clears all installed templates and site code injections from the tenant database.
+        /// Provides a clean slate for fresh website template imports.
+        /// </summary>
+        /// <param name="wipeContent">If true, permanently wipes all PageSections and unpublishes WebPages.</param>
+        /// <returns>A confirmation of the vault purge.</returns>
+        [HttpDelete("templates/clear-all")]
+        public async Task<IActionResult> ClearAllTemplatesAndInjections([FromQuery] bool wipeContent = false)
+        {
+            try
+            {
+                await DefaultThemeSeeder.ClearAllTemplatesAndInjectionsAsync(_context, wipeContent);
+                string msg = wipeContent
+                    ? "All installed templates, code injections, and website page sections have been permanently wiped."
+                    : "All installed templates and code injections have been successfully cleared from the tenant database.";
+                return Ok(ApiResponse<object>.SuccessResponse(null, msg));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to clear templates: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the complete inventory of installed templates, code injections, and linked page sections for a specific Theme Suite.
+        /// Powers the suite deletion safety modal and inventory inspector.
+        /// </summary>
+        /// <param name="suiteCode">The theme suite code identifier (e.g. 'suite_pincret', 'suite_corporate').</param>
+        /// <returns>Summary of templates, code injections, and linked content for the suite.</returns>
+        [HttpGet("templates/suites/{suiteCode}/linked-content")]
+        public async Task<IActionResult> GetThemeSuiteLinkedContent(string suiteCode)
+        {
+            if (string.IsNullOrWhiteSpace(suiteCode))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Suite code is required."));
+            }
+
+            var cleanCode = suiteCode.Trim().ToLowerInvariant();
+            var allTemplates = await _context.TenantInstalledTemplates.ToListAsync();
+
+            string GetTemplateSuiteCode(TenantInstalledTemplate t)
+            {
+                var vCode = (t.VariantCode ?? string.Empty).ToUpperInvariant();
+                var tKey = (t.TemplateKey ?? string.Empty).ToUpperInvariant();
+                var name = (t.Name ?? string.Empty).ToUpperInvariant();
+
+                if (vCode.Contains("SUITE_APEXMODERN") || tKey.Contains("SUITE_APEXMODERN") || name.Contains("APEX MODERN"))
+                    return "suite_apexmodern";
+
+                var match = System.Text.RegularExpressions.Regex.Match(vCode, @"SUITE_([A-Z0-9]+)");
+                if (!match.Success)
+                    match = System.Text.RegularExpressions.Regex.Match(tKey, @"SUITE_([A-Z0-9]+)");
+
+                if (match.Success)
+                    return $"suite_{match.Groups[1].Value.ToLowerInvariant()}";
+
+                return "suite_corporate";
+            }
+
+            bool BelongsToSuite(TenantInstalledTemplate t)
+            {
+                var templateSuite = GetTemplateSuiteCode(t);
+                return string.Equals(templateSuite, cleanCode, StringComparison.OrdinalIgnoreCase)
+                    || cleanCode.Contains(templateSuite)
+                    || templateSuite.Contains(cleanCode);
+            }
+
+            var suiteTemplates = allTemplates.Where(BelongsToSuite).ToList();
+            var templateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in suiteTemplates)
+            {
+                if (!string.IsNullOrWhiteSpace(t.TemplateKey)) templateKeys.Add(t.TemplateKey);
+                if (!string.IsNullOrWhiteSpace(t.VariantCode)) templateKeys.Add(t.VariantCode);
+            }
+
+            var suiteTags = await _context.SiteCodeInjectionTags
+                .Where(t => t.SuiteCode != null && t.SuiteCode.ToLower() == cleanCode)
+                .ToListAsync();
+
+            var linkedSections = await _context.PageSections
+                .Include(s => s.WebPage)
+                .Include(s => s.PageSectionLists)
+                .Where(s => s.TemplateKey != null && templateKeys.Contains(s.TemplateKey))
+                .Select(s => new
+                {
+                    SectionId = s.Id,
+                    SectionTitle = s.Title ?? "(Untitled Section)",
+                    MiniTitle = s.MiniTitle,
+                    TemplateKey = s.TemplateKey,
+                    WebPageId = s.WebPageId,
+                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : (s.ShowInHome ? "Homepage" : "Unassigned Page"),
+                    WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
+                    ShowInHome = s.ShowInHome,
+                    SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
+                })
+                .ToListAsync();
+
+            var suiteName = suiteTemplates.FirstOrDefault()?.Name?.Split('(')[0]?.Trim() ?? suiteCode;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                SuiteCode = suiteCode,
+                SuiteName = suiteName,
+                TemplateCount = suiteTemplates.Count,
+                Templates = suiteTemplates.Select(t => new { t.Id, t.Name, t.CategoryKey, t.VariantCode, t.TemplateKey, t.IsActive }),
+                CodeInjectionCount = suiteTags.Count,
+                CodeInjections = suiteTags.Select(tg => new { tg.Id, tg.Name, tg.Zone, tg.TagType, tg.SortOrder }),
+                LinkedSectionCount = linkedSections.Count,
+                LinkedSections = linkedSections
+            }, "Theme suite linked content inventory retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Uninstalls / deletes all templates and code injections belonging to a specific Theme Suite,
+        /// with an optional parameter to also cascade delete associated page sections.
+        /// </summary>
+        /// <param name="suiteCode">The theme suite code identifier (e.g. 'suite_pincret', 'suite_corporate').</param>
+        /// <param name="deleteLinkedContent">If true, deletes all associated PageSections; if false, unlinks them.</param>
+        /// <returns>Confirmation of the suite deletion.</returns>
+        [HttpDelete("templates/suites/{suiteCode}")]
+        public async Task<IActionResult> DeleteThemeSuite(string suiteCode, [FromQuery] bool deleteLinkedContent = false)
+        {
+            if (string.IsNullOrWhiteSpace(suiteCode))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Suite code is required."));
+            }
+
+            try
+            {
+                var cleanCode = suiteCode.Trim().ToLowerInvariant();
+                var allTemplates = await _context.TenantInstalledTemplates.ToListAsync();
+
+                string GetTemplateSuiteCode(TenantInstalledTemplate t)
+                {
+                    var vCode = (t.VariantCode ?? string.Empty).ToUpperInvariant();
+                    var tKey = (t.TemplateKey ?? string.Empty).ToUpperInvariant();
+                    var name = (t.Name ?? string.Empty).ToUpperInvariant();
+
+                    if (vCode.Contains("SUITE_APEXMODERN") || tKey.Contains("SUITE_APEXMODERN") || name.Contains("APEX MODERN"))
+                        return "suite_apexmodern";
+
+                    var match = System.Text.RegularExpressions.Regex.Match(vCode, @"SUITE_([A-Z0-9]+)");
+                    if (!match.Success)
+                        match = System.Text.RegularExpressions.Regex.Match(tKey, @"SUITE_([A-Z0-9]+)");
+
+                    if (match.Success)
+                        return $"suite_{match.Groups[1].Value.ToLowerInvariant()}";
+
+                    return "suite_corporate";
+                }
+
+                bool BelongsToSuite(TenantInstalledTemplate t)
+                {
+                    var templateSuite = GetTemplateSuiteCode(t);
+                    return string.Equals(templateSuite, cleanCode, StringComparison.OrdinalIgnoreCase)
+                        || cleanCode.Contains(templateSuite)
+                        || templateSuite.Contains(cleanCode);
+                }
+
+                var suiteTemplates = allTemplates.Where(BelongsToSuite).ToList();
+                if (suiteTemplates.Count == 0)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse($"No installed templates found for suite '{suiteCode}'."));
+                }
+
+                var templateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var t in suiteTemplates)
+                {
+                    if (!string.IsNullOrWhiteSpace(t.TemplateKey)) templateKeys.Add(t.TemplateKey);
+                    if (!string.IsNullOrWhiteSpace(t.VariantCode)) templateKeys.Add(t.VariantCode);
+                }
+
+                var linkedSections = await _context.PageSections
+                    .Include(s => s.PageSectionLists)
+                    .Where(s => s.TemplateKey != null && templateKeys.Contains(s.TemplateKey))
+                    .ToListAsync();
+
+                int affectedSectionCount = linkedSections.Count;
+
+                if (deleteLinkedContent)
+                {
+                    if (linkedSections.Count > 0)
+                    {
+                        var sectionIds = linkedSections.Select(s => s.Id).ToList();
+                        var childLists = await _context.PageSectionLists
+                            .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
+                            .ToListAsync();
+
+                        if (childLists.Count > 0)
+                        {
+                            _context.PageSectionLists.RemoveRange(childLists);
+                        }
+
+                        _context.PageSections.RemoveRange(linkedSections);
+                    }
+                }
+                else
+                {
+                    foreach (var sec in linkedSections)
+                    {
+                        sec.TemplateKey = null;
+                    }
+                }
+
+                // Delete Suite Code Injections
+                var suiteTags = await _context.SiteCodeInjectionTags
+                    .Where(t => t.SuiteCode != null && t.SuiteCode.ToLower() == cleanCode)
+                    .ToListAsync();
+
+                if (suiteTags.Count > 0)
+                {
+                    _context.SiteCodeInjectionTags.RemoveRange(suiteTags);
+                }
+
+                // Delete Suite Templates
+                _context.TenantInstalledTemplates.RemoveRange(suiteTemplates);
+
+                await _context.SaveChangesAsync();
+
+                string msg = deleteLinkedContent && affectedSectionCount > 0
+                    ? $"Theme suite '{suiteCode}' ({suiteTemplates.Count} templates, {suiteTags.Count} tags) and {affectedSectionCount} linked page section(s) were permanently deleted."
+                    : $"Theme suite '{suiteCode}' ({suiteTemplates.Count} templates, {suiteTags.Count} tags) removed from vault. {affectedSectionCount} page section(s) were unlinked and preserved.";
+
+                return Ok(ApiResponse<object>.SuccessResponse(null, msg));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to delete theme suite: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Reinstalls the complete turnkey default Corporate Theme Suite (16 templates) and default 3-zone code injections.
+        /// </summary>
+        /// <returns>A confirmation of the reinstallation.</returns>
+        [HttpPost("templates/reinstall-defaults")]
+        public async Task<IActionResult> ReinstallDefaultTemplates()
+        {
+            try
+            {
+                var config = await _context.ConfigSettings.FirstOrDefaultAsync();
+                var brandName = !string.IsNullOrWhiteSpace(config?.CompanyName) ? config.CompanyName : "Organization";
+
+                await DefaultThemeSeeder.ReinstallDefaultsAsync(_context, brandName);
+                return Ok(ApiResponse<object>.SuccessResponse(null, "Default Corporate Theme Suite (16 templates) and default code injections have been cleanly restored."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to reinstall default templates: {msg}"));
+            }
         }
 
         // ==========================================
@@ -1747,6 +2220,375 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         // ==========================================
+        // 13.1. IMPORT & ADOPT FULL WEBSITE TEMPLATE SUITE
+        // ==========================================
+
+        /// <summary>
+        /// Atomically imports a complete AI-debranded website template suite package into the tenant database.
+        /// Installs or updates TenantInstalledTemplates, SiteCodeInjectionTags, PageCategories, WebPages, Sliders, PageSections, and PageSectionLists.
+        /// </summary>
+        /// <param name="request">The complete suite payload containing templates, code injection tags, categories, pages, and layout sections.</param>
+        /// <returns>Execution summary with imported entity counts.</returns>
+        [HttpPost("templates/import-website-suite")]
+        public async Task<IActionResult> ImportWebsiteSuite([FromBody] ImportWebsiteSuiteRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid payload. Request body cannot be empty."));
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                int templatesImported = 0;
+                int tagsImported = 0;
+                int categoriesImported = 0;
+                int pagesImported = 0;
+                int sectionsImported = 0;
+
+                var suiteName = string.IsNullOrWhiteSpace(request.SuiteName) ? "Imported Modern Suite" : request.SuiteName.Trim();
+                var groupCode = string.IsNullOrWhiteSpace(request.GroupCode) ? "SUITE_IMPORTED" : request.GroupCode.Trim();
+
+                var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+                };
+
+                // If adopting / overriding, deactivate previous competing singleton templates
+                if (request.OverrideExisting)
+                {
+                    var incomingSingletonCats = (request.Templates ?? new List<ImportableTemplateDto>())
+                        .Where(t => singletonCategories.Contains(t.CategoryKey))
+                        .Select(t => t.CategoryKey.ToLowerInvariant())
+                        .ToHashSet();
+
+                    if (incomingSingletonCats.Any())
+                    {
+                        var activeSingletons = await _context.TenantInstalledTemplates
+                            .Where(t => incomingSingletonCats.Contains(t.CategoryKey.ToLower()) && t.IsActive)
+                            .ToListAsync();
+
+                        foreach (var oldSingleton in activeSingletons)
+                        {
+                            oldSingleton.IsActive = false;
+                        }
+                    }
+                }
+
+                // 1. Process TenantInstalledTemplates
+                if (request.Templates != null && request.Templates.Any())
+                {
+                    foreach (var t in request.Templates)
+                    {
+                        var existing = await _context.TenantInstalledTemplates
+                            .FirstOrDefaultAsync(x => x.TemplateKey == t.TemplateKey || x.VariantCode == t.VariantCode);
+
+                        if (existing != null)
+                        {
+                            if (request.OverrideExisting)
+                            {
+                                existing.Name = t.Name;
+                                existing.CategoryKey = t.CategoryKey;
+                                existing.HtmlTemplate = t.HtmlTemplate;
+                                existing.CssStyles = t.CssStyles ?? string.Empty;
+                                existing.JsScript = t.JsScript;
+                                existing.DefaultContentJson = t.DefaultContentJson;
+                                existing.IsCustomized = true;
+                                existing.IsActive = true;
+                                existing.LastUpdatedUtc = DateTime.UtcNow;
+                                templatesImported++;
+                            }
+                        }
+                        else
+                        {
+                            var newTemplate = new TenantInstalledTemplate
+                            {
+                                Id = Guid.NewGuid(),
+                                TemplateKey = t.TemplateKey,
+                                CategoryKey = t.CategoryKey,
+                                Name = t.Name,
+                                VariantCode = t.VariantCode,
+                                HtmlTemplate = t.HtmlTemplate,
+                                CssStyles = t.CssStyles ?? string.Empty,
+                                JsScript = t.JsScript,
+                                DefaultContentJson = t.DefaultContentJson,
+                                InstalledVersion = "1.0.0",
+                                IsCustomized = true,
+                                IsActive = true,
+                                InstalledUtc = DateTime.UtcNow
+                            };
+                            _context.TenantInstalledTemplates.Add(newTemplate);
+                            templatesImported++;
+                        }
+                    }
+                }
+
+                var cleanSuiteCode = groupCode.StartsWith("SUITE_", StringComparison.OrdinalIgnoreCase)
+                    ? $"suite_{groupCode.Substring(6).ToLowerInvariant()}"
+                    : $"suite_{groupCode.ToLowerInvariant()}";
+
+                // 2. Process SiteCodeInjectionTags (Head, Body Open, Footer)
+                if (request.CodeInjections != null && request.CodeInjections.Any())
+                {
+                    // If adopting with override, deactivate competing suite-specific stylesheets/scripts
+                    if (request.OverrideExisting)
+                    {
+                        var competingTags = await _context.SiteCodeInjectionTags
+                            .Where(t => t.SuiteCode != null && t.SuiteCode != cleanSuiteCode && t.SuiteCode != "global" && t.IsActive)
+                            .ToListAsync();
+
+                        foreach (var ct in competingTags)
+                        {
+                            ct.IsActive = false;
+                        }
+                    }
+
+                    foreach (var tag in request.CodeInjections)
+                    {
+                        var targetSuiteCode = !string.IsNullOrWhiteSpace(tag.SuiteCode) ? tag.SuiteCode.Trim().ToLowerInvariant() : cleanSuiteCode;
+
+                        var existingTag = await _context.SiteCodeInjectionTags
+                            .FirstOrDefaultAsync(x => x.Name == tag.Name && x.Zone == tag.Zone);
+
+                        if (existingTag != null)
+                        {
+                            if (request.OverrideExisting)
+                            {
+                                existingTag.Content = tag.Content;
+                                existingTag.TagType = tag.TagType;
+                                existingTag.SuiteCode = targetSuiteCode;
+                                existingTag.SortOrder = tag.SortOrder;
+                                existingTag.IsActive = true;
+                                existingTag.UpdatedAtUtc = DateTime.UtcNow;
+                                tagsImported++;
+                            }
+                        }
+                        else
+                        {
+                            var newTag = new SiteCodeInjectionTag
+                            {
+                                Id = Guid.NewGuid(),
+                                Name = tag.Name,
+                                Zone = tag.Zone,
+                                TagType = tag.TagType,
+                                SuiteCode = targetSuiteCode,
+                                Content = tag.Content,
+                                SortOrder = tag.SortOrder,
+                                IsActive = true,
+                                CreatedAtUtc = DateTime.UtcNow
+                            };
+                            _context.SiteCodeInjectionTags.Add(newTag);
+                            tagsImported++;
+                        }
+                    }
+                }
+
+                // 3. Process PageCategories
+                var categoryMap = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+                if (request.Categories != null && request.Categories.Any())
+                {
+                    foreach (var cat in request.Categories)
+                    {
+                        var existingCat = await _context.PageCategories
+                            .FirstOrDefaultAsync(x => x.Title == cat.Title);
+
+                        if (existingCat == null)
+                        {
+                            var newCat = new PageCategory
+                            {
+                                Id = Guid.NewGuid(),
+                                Title = cat.Title,
+                                MenuSortOrder = cat.MenuSortOrder,
+                                Publish = true,
+                                ShowInFooter = cat.ShowInFooter,
+                                FooterDisplayTitle = cat.FooterDisplayTitle ?? cat.Title
+                            };
+                            _context.PageCategories.Add(newCat);
+                            categoryMap[cat.Title] = newCat.Id;
+                            categoriesImported++;
+                        }
+                        else
+                        {
+                            categoryMap[cat.Title] = existingCat.Id;
+                        }
+                    }
+                }
+
+                // 3.5. Unpublish existing pages and disable existing sections to prevent content contradiction
+                if (request.OverrideExisting)
+                {
+                    var allExistingPages = await _context.WebPages.ToListAsync();
+                    foreach (var oldPage in allExistingPages)
+                    {
+                        oldPage.Publish = false;
+                    }
+
+                    var allExistingSections = await _context.PageSections.ToListAsync();
+                    foreach (var oldSec in allExistingSections)
+                    {
+                        oldSec.Disable = true;
+                        oldSec.ShowInHome = false;
+                    }
+                }
+
+                // 4. Process WebPages and their PageSections
+                if (request.Pages != null && request.Pages.Any())
+                {
+                    foreach (var p in request.Pages)
+                    {
+                        var existingPage = await _context.WebPages
+                            .Include(wp => wp.PageSections)
+                            .FirstOrDefaultAsync(x => x.DirectUrl == p.Slug || x.Title == p.Title);
+
+                        Guid pageId;
+
+                        if (existingPage != null)
+                        {
+                            pageId = existingPage.Id;
+                            existingPage.Title = p.Title;
+                            existingPage.DirectUrl = p.Slug;
+                            existingPage.EnableDirectUrl = !string.IsNullOrWhiteSpace(p.Slug);
+                            existingPage.MetaDescription = p.Summary;
+                            existingPage.ShowInMainMenu = p.ShowInMainMenu;
+                            existingPage.ShowInMenuDropDown = p.ShowInMenuDropDown;
+                            existingPage.ShowInFooter = p.ShowInFooter;
+                            existingPage.IsLegal = p.IsLegal;
+                            existingPage.IsMenuCTA = p.IsMenuCTA;
+                            existingPage.SortOrder = p.SortOrder;
+                            existingPage.Publish = true;
+
+                            if (!string.IsNullOrWhiteSpace(p.CategoryTitle) && categoryMap.TryGetValue(p.CategoryTitle, out var catId))
+                            {
+                                existingPage.PageCategoryId = catId;
+                            }
+                        }
+                        else
+                        {
+                            var newPage = new WebPage
+                            {
+                                Id = Guid.NewGuid(),
+                                Title = p.Title,
+                                DirectUrl = p.Slug,
+                                EnableDirectUrl = !string.IsNullOrWhiteSpace(p.Slug),
+                                MetaDescription = p.Summary,
+                                ShowInMainMenu = p.ShowInMainMenu,
+                                ShowInMenuDropDown = p.ShowInMenuDropDown,
+                                ShowInFooter = p.ShowInFooter,
+                                IsLegal = p.IsLegal,
+                                IsMenuCTA = p.IsMenuCTA,
+                                SortOrder = p.SortOrder,
+                                Publish = true
+                            };
+
+                            if (!string.IsNullOrWhiteSpace(p.CategoryTitle) && categoryMap.TryGetValue(p.CategoryTitle, out var catId))
+                            {
+                                newPage.PageCategoryId = catId;
+                            }
+
+                            _context.WebPages.Add(newPage);
+                            pageId = newPage.Id;
+                            pagesImported++;
+                        }
+
+                        // If overriding existing page, purge old page sections to avoid merging old and new layouts
+                        if (existingPage != null && request.OverrideExisting)
+                        {
+                            if (existingPage.PageSections != null && existingPage.PageSections.Any())
+                            {
+                                _context.PageSections.RemoveRange(existingPage.PageSections);
+                            }
+
+                            // If this is the Homepage, also remove other legacy orphan home sections
+                            if (p.Slug != null && p.Slug.Equals("home", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var otherHomeSections = await _context.PageSections
+                                    .Where(s => s.ShowInHome && s.WebPageId != pageId)
+                                    .ToListAsync();
+
+                                foreach (var ohs in otherHomeSections)
+                                {
+                                    ohs.ShowInHome = false;
+                                }
+                            }
+                        }
+
+                        // Attach sections if provided
+                        if (p.Sections != null && p.Sections.Any())
+                        {
+                            foreach (var s in p.Sections)
+                            {
+                                var matchingTemplate = request.Templates?.FirstOrDefault(t => t.TemplateKey == s.TemplateKey);
+                                var section = new PageSection
+                                {
+                                    Id = Guid.NewGuid(),
+                                    WebPageId = pageId,
+                                    TemplateKey = s.TemplateKey,
+                                    Title = s.Title ?? matchingTemplate?.Name ?? "Section",
+                                    MiniTitle = s.MiniTitle,
+                                    Description = s.Description,
+                                    ImageUrl = s.ImageUrl,
+                                    ButtonText = s.ButtonText,
+                                    ButtonLink = s.ButtonLink,
+                                    HtmlTemplate = matchingTemplate?.HtmlTemplate ?? string.Empty,
+                                    CssStyles = matchingTemplate?.CssStyles ?? string.Empty,
+                                    ShowInHome = s.ShowInHome || (p.Slug != null && p.Slug.Equals("home", StringComparison.OrdinalIgnoreCase)),
+                                    PageSortOrder = s.PageSortOrder,
+                                    HomePageSortOrder = s.PageSortOrder,
+                                    Disable = false,
+                                    IsCustomized = true
+                                };
+
+                                _context.PageSections.Add(section);
+                                sectionsImported++;
+
+                                if (s.Items != null && s.Items.Any())
+                                {
+                                    int itemSort = 1;
+                                    foreach (var item in s.Items)
+                                    {
+                                        var child = new PageSectionList
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            PageSectionId = section.Id,
+                                            Title = item.Title ?? $"Item {itemSort}",
+                                            MiniTitle = item.MiniTitle,
+                                            Description = item.Description,
+                                            ImageUrl = item.ImageUrl,
+                                            ButtonText = item.ButtonText,
+                                            ButtonLink = item.ButtonLink,
+                                            SortOrder = itemSort++
+                                        };
+                                        _context.PageSectionLists.Add(child);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    suiteName = suiteName,
+                    groupCode = groupCode,
+                    templatesImported = templatesImported,
+                    tagsImported = tagsImported,
+                    categoriesImported = categoriesImported,
+                    pagesImported = pagesImported,
+                    sectionsImported = sectionsImported
+                }, $"Website template suite '{suiteName}' imported and adopted successfully."));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to import website template suite: {msg}"));
+            }
+        }
+
+        // ==========================================
         // 14. 3-ZONE CODE INJECTION (HEAD, BODY OPEN, FOOTER)
         // ==========================================
 
@@ -1755,9 +2597,14 @@ namespace Ozikol_BCC.Api.Controllers
         /// Sorted by SortOrder ascending.
         /// </summary>
         /// <param name="zone">Optional zone filter: "head", "body_open", or "footer".</param>
+        /// <summary>
+        /// Retrieves all ordered code injection tags for the tenant, with optional zone or suite filtering.
+        /// </summary>
+        /// <param name="zone">Optional filter: 'head', 'body_open', or 'footer'.</param>
+        /// <param name="suiteCode">Optional theme suite code filter (e.g. 'suite_pincretthe', 'suite_corporate', or 'all').</param>
         /// <returns>List of SiteCodeInjectionTag items.</returns>
         [HttpGet("code-injections")]
-        public async Task<IActionResult> GetCodeInjections([FromQuery] string? zone = null)
+        public async Task<IActionResult> GetCodeInjections([FromQuery] string? zone = null, [FromQuery] string? suiteCode = null)
         {
             try
             {
@@ -1767,6 +2614,12 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     var cleanZone = zone.Trim().ToLowerInvariant();
                     query = query.Where(t => t.Zone.ToLower() == cleanZone);
+                }
+
+                if (!string.IsNullOrWhiteSpace(suiteCode) && suiteCode.ToLowerInvariant() != "all")
+                {
+                    var cleanSuite = suiteCode.Trim().ToLowerInvariant();
+                    query = query.Where(t => t.SuiteCode == null || t.SuiteCode == "global" || t.SuiteCode.ToLower() == cleanSuite);
                 }
 
                 var list = await query
@@ -1809,6 +2662,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Name = request.Name.Trim(),
                     Zone = cleanZone,
                     TagType = string.IsNullOrWhiteSpace(request.TagType) ? "raw_html" : request.TagType.Trim().ToLowerInvariant(),
+                    SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant(),
                     Content = request.Content.Trim(),
                     SortOrder = request.SortOrder,
                     IsActive = request.IsActive,
@@ -1855,6 +2709,10 @@ namespace Ozikol_BCC.Api.Controllers
             tag.Name = request.Name.Trim();
             tag.Zone = cleanZone;
             tag.TagType = string.IsNullOrWhiteSpace(request.TagType) ? tag.TagType : request.TagType.Trim().ToLowerInvariant();
+            if (request.SuiteCode != null)
+            {
+                tag.SuiteCode = string.IsNullOrWhiteSpace(request.SuiteCode) ? "global" : request.SuiteCode.Trim().ToLowerInvariant();
+            }
             tag.Content = request.Content.Trim();
             tag.SortOrder = request.SortOrder;
             tag.IsActive = request.IsActive;
@@ -1968,6 +2826,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string Name { get; set; } = string.Empty;
         public string Zone { get; set; } = "head";
         public string TagType { get; set; } = "raw_html";
+        public string? SuiteCode { get; set; } = "global";
         public string Content { get; set; } = string.Empty;
         public int SortOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
@@ -1978,6 +2837,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string Name { get; set; } = string.Empty;
         public string Zone { get; set; } = "head";
         public string TagType { get; set; } = "raw_html";
+        public string? SuiteCode { get; set; } = "global";
         public string Content { get; set; } = string.Empty;
         public int SortOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
@@ -2064,5 +2924,92 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public IFormFile File { get; set; } = null!;
         public string Folder { get; set; } = "bcp-cms";
+    }
+
+    /// <summary>
+    /// Payload representing a complete AI-debranded website template suite package for atomic tenant database import.
+    /// </summary>
+    public class ImportWebsiteSuiteRequest
+    {
+        public string SuiteName { get; set; } = "Imported Modern Suite";
+        public string GroupCode { get; set; } = "SUITE_IMPORTED";
+        public string SourceUrl { get; set; } = string.Empty;
+        public bool OverrideExisting { get; set; } = true;
+        public List<ImportableTemplateDto>? Templates { get; set; }
+        public List<ImportableTagDto>? CodeInjections { get; set; }
+        public List<ImportableCategoryDto>? Categories { get; set; }
+        public List<ImportablePageDto>? Pages { get; set; }
+    }
+
+    public class ImportableTemplateDto
+    {
+        public string TemplateKey { get; set; } = string.Empty;
+        public string CategoryKey { get; set; } = "body";
+        public string Name { get; set; } = string.Empty;
+        public string VariantCode { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string HtmlTemplate { get; set; } = string.Empty;
+        public string? CssStyles { get; set; }
+        public string? JsScript { get; set; }
+        public string? DefaultContentJson { get; set; }
+    }
+
+    public class ImportableTagDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Zone { get; set; } = "head";
+        public string TagType { get; set; } = "link_stylesheet";
+        public string? SuiteCode { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public int SortOrder { get; set; } = 10;
+    }
+
+    public class ImportableCategoryDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int MenuSortOrder { get; set; } = 10;
+        public bool ShowInMenuDropDown { get; set; } = true;
+        public bool ShowInFooter { get; set; } = true;
+        public string? FooterDisplayTitle { get; set; }
+    }
+
+    public class ImportablePageSectionDto
+    {
+        public string TemplateKey { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? MiniTitle { get; set; }
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ButtonText { get; set; }
+        public string? ButtonLink { get; set; }
+        public bool ShowInHome { get; set; } = false;
+        public int PageSortOrder { get; set; } = 1;
+        public List<ImportablePageSectionItemDto>? Items { get; set; }
+    }
+
+    public class ImportablePageSectionItemDto
+    {
+        public string? Title { get; set; }
+        public string? MiniTitle { get; set; }
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ButtonText { get; set; }
+        public string? ButtonLink { get; set; }
+    }
+
+    public class ImportablePageDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public string? Summary { get; set; }
+        public string? CategoryTitle { get; set; }
+        public bool ShowInMainMenu { get; set; } = true;
+        public bool ShowInMenuDropDown { get; set; } = false;
+        public bool ShowInFooter { get; set; } = false;
+        public bool IsLegal { get; set; } = false;
+        public bool IsMenuCTA { get; set; } = false;
+        public int SortOrder { get; set; } = 10;
+        public List<ImportablePageSectionDto>? Sections { get; set; }
     }
 }

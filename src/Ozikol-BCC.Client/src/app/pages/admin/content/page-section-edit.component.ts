@@ -22,7 +22,7 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="current">Edit Section</span>
           </div>
           <h1>Edit Section: {{ section?.title }}</h1>
-          <p class="subtitle">Complete configuration of template layout key, rich descriptions, Cloudinary media assets, and ribbon settings.</p>
+          <p class="subtitle">Complete configuration of template layout key, rich descriptions, media assets, and ribbon settings.</p>
         </div>
         <div class="header-actions">
           <a [routerLink]="['/admin/content/sections/details', sectionId]" class="btn btn-outline">
@@ -115,12 +115,12 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 3: Media & Video Assets (Cloudinary) -->
+          <!-- Card 3: Media & Video Assets -->
           <div class="cms-card">
             <div class="card-header-bar">
               <div>
-                <h3>Media Assets & Cloudinary Uploads</h3>
-                <p class="card-sub">Upload high-resolution images or videos directly to Cloudinary.</p>
+                <h3>Media Assets & Image Uploads</h3>
+                <p class="card-sub">Upload high-resolution images, videos, or media assets.</p>
               </div>
             </div>
 
@@ -135,7 +135,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </span>
                 </div>
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="section.imageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/feature-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingPrimary">
                     <input type="file" (change)="uploadMedia($event, 'primary')" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>
@@ -160,7 +160,7 @@ import { ToastService } from '../../../core/services/toast.service';
                   </span>
                 </div>
                 <div class="input-with-upload">
-                  <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="https://res.cloudinary.com/...">
+                  <input type="text" [(ngModel)]="section.secondImageUrl" class="form-control" placeholder="e.g. https://yourdomain.com/secondary-image.jpg">
                   <label class="btn-upload" [class.uploading]="uploadingSecondary">
                     <input type="file" (change)="uploadMedia($event, 'secondary')" accept="image/*" style="display:none">
                     <span class="material-symbols-outlined">cloud_upload</span>

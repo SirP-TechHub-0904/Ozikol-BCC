@@ -51,8 +51,11 @@ async def preview_page_raw(job_id: str, page_id: str):
     summary="Render original page HTML in browser",
 )
 async def preview_page_render(job_id: str, page_id: str):
+    job = _get_job_or_404(job_id)
     page = _find_page(job_id, page_id)
-    html = page.get("html", "<p>No HTML available.</p>")
+    raw_html = page.get("html", "<p>No HTML available.</p>")
+    source_url = job.get("url") or ""
+    html = _inject_base_tag(raw_html, source_url)
     return HTMLResponse(content=html)
 
 
@@ -139,7 +142,9 @@ async def preview_cleaned_page(job_id: str, page_id: str):
     if not diff:
         raise HTTPException(status_code=404, detail=f"Cleaned page '{page_id}' not found.")
 
-    html = diff.cleaned_html or "<p>No cleaned HTML available.</p>"
+    raw_html = diff.cleaned_html or "<p>No cleaned HTML available.</p>"
+    source_url = job.get("url") or ""
+    html = _inject_base_tag(raw_html, source_url)
     return HTMLResponse(content=html)
 
 
@@ -172,6 +177,29 @@ async def preview_final_page(job_id: str, page_id: str):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _inject_base_tag(html: str, base_url: str) -> str:
+    """Inject a <base href="..."> tag into <head> so relative assets resolve properly in iframe sandbox."""
+    if not base_url:
+        return html
+    if not base_url.endswith("/"):
+        base_url += "/"
+
+    base_tag = f'<base href="{base_url}">'
+
+    # If <base already exists in html, don't duplicate
+    if "<base " in html.lower():
+        return html
+
+    # Inject right after <head>
+    if "<head>" in html:
+        return html.replace("<head>", f"<head>\n    {base_tag}", 1)
+    elif "<head " in html:
+        import re
+        return re.sub(r"(<head[^>]*>)", r"\1\n    " + base_tag, html, count=1, flags=re.IGNORECASE)
+    else:
+        return f"{base_tag}\n{html}"
+
 
 def _get_job_or_404(job_id: str) -> dict:
     job = job_store.get_job(job_id)

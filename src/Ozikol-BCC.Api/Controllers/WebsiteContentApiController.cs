@@ -330,11 +330,23 @@ namespace Ozikol_BCC.Api.Controllers
         /// with guaranteed fallbacks to prevent empty attribute references.
         /// </summary>
         /// <returns>Grouped active code injection tags.</returns>
+        /// <summary>
+        /// Retrieves public active code injections (Head, Body Open, Footer) for the storefront and preview.
+        /// </summary>
+        /// <param name="suiteCode">Optional theme suite code filter for preview simulation.</param>
+        /// <returns>Grouped active code injection tags.</returns>
         [HttpGet("code-injections")]
-        public async Task<IActionResult> GetPublicCodeInjections()
+        public async Task<IActionResult> GetPublicCodeInjections([FromQuery] string? suiteCode = null)
         {
-            var activeTags = await _context.SiteCodeInjectionTags
-                .Where(t => t.IsActive)
+            var query = _context.SiteCodeInjectionTags.Where(t => t.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(suiteCode) && suiteCode.ToLowerInvariant() != "all")
+            {
+                var cleanSuite = suiteCode.Trim().ToLowerInvariant();
+                query = query.Where(t => t.SuiteCode == null || t.SuiteCode == "global" || t.SuiteCode.ToLower() == cleanSuite);
+            }
+
+            var activeTags = await query
                 .OrderBy(t => t.SortOrder)
                 .ThenBy(t => t.CreatedAtUtc)
                 .ToListAsync();

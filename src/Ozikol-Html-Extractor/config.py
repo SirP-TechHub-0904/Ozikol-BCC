@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""
 
+    # DeepSeek AI Engine
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    deepseek_model: str = "deepseek-chat"
+
     # Crawl limits
     max_pages: int = 100
     request_timeout: int = 20
@@ -45,6 +50,10 @@ class Settings(BaseSettings):
             self.cloudinary_api_key and
             self.cloudinary_api_secret
         )
+
+    @property
+    def deepseek_configured(self) -> bool:
+        return bool(self.deepseek_api_key)
 
 
 settings = Settings()

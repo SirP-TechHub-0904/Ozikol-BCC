@@ -6,16 +6,19 @@ Returns a complete AuditResult with CSS, JS, fonts, pages, broken links,
 meta tags, trackers, and external resources.
 """
 
+import asyncio
 import hashlib
 import logging
 from collections import defaultdict
 from urllib.parse import urljoin, urlparse
 
 import httpx
+import re
 from bs4 import BeautifulSoup
 
 from models.schemas import (
     AuditResult,
+    AuditSectionItem,
     BrokenLinkItem,
     CssItem,
     ExternalItem,
@@ -41,8 +44,18 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 MAX_PAGES = 100  # safety cap
@@ -72,6 +85,58 @@ def _absolute(href: str, base: str) -> str:
     return urljoin(base, href)
 
 
+async def _fetch_with_retry(client: httpx.AsyncClient, target_url: str, max_retries: int = 4) -> httpx.Response:
+    """
+    Fetches a URL with automatic retry and exponential backoff for transient server
+    errors (503 Service Unavailable, 502 Bad Gateway, 504 Gateway Timeout, 429 Too Many Requests)
+    such as sleeping cloud containers (Render, Heroku, Fly.io, Railway) waking up.
+    """
+    last_exc = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = await client.get(target_url)
+            # If server returned 503/502/504/429, retry with backoff unless last attempt
+            if resp.status_code in (503, 502, 504, 429) and attempt < max_retries:
+                wait_secs = attempt * 3  # 3s, 6s, 9s
+                logger.warning(
+                    "Target %s returned HTTP %s (service may be waking up/spinning up). Retrying in %ss (attempt %s/%s)...",
+                    target_url, resp.status_code, wait_secs, attempt, max_retries
+                )
+                await asyncio.sleep(wait_secs)
+                continue
+
+            resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (503, 502, 504, 429) and attempt < max_retries:
+                last_exc = exc
+                wait_secs = attempt * 3
+                logger.warning(
+                    "Target %s returned HTTP %s (service may be waking up/spinning up). Retrying in %ss (attempt %s/%s)...",
+                    target_url, exc.response.status_code, wait_secs, attempt, max_retries
+                )
+                await asyncio.sleep(wait_secs)
+            else:
+                raise
+        except (httpx.ConnectError, httpx.TimeoutException) as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                wait_secs = attempt * 3
+                logger.warning(
+                    "Transient connection error fetching %s (%s). Retrying in %ss (attempt %s/%s)...",
+                    target_url, exc, wait_secs, attempt, max_retries
+                )
+                await asyncio.sleep(wait_secs)
+            else:
+                raise
+        except Exception:
+            raise
+
+    if last_exc:
+        raise last_exc
+    raise RuntimeError(f"Failed to fetch {target_url} after {max_retries} attempts.")
+
+
 async def run_audit(url: str, job_id: str) -> AuditResult:
     """
     Crawl the site starting at `url` and return a full AuditResult.
@@ -81,6 +146,7 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
     base_domain = base_netloc.lstrip("www.")
 
     visited_pages: dict[str, PageItem] = {}   # normalized_url -> PageItem
+    sections_list: list[AuditSectionItem] = []
     css_map: dict[str, CssItem] = {}
     js_map: dict[str, JsItem] = {}
     font_map: dict[str, FontItem] = {}
@@ -96,7 +162,7 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
     async with httpx.AsyncClient(
         headers=HEADERS,
         follow_redirects=True,
-        timeout=20,
+        timeout=30,
         verify=False,
     ) as client:
 
@@ -107,8 +173,7 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
             # Fetch page
             # ----------------------------------------------------------------
             try:
-                resp = await client.get(current_url)
-                resp.raise_for_status()
+                resp = await _fetch_with_retry(client, current_url)
             except Exception as exc:
                 logger.warning("Failed to fetch %s: %s", current_url, exc)
                 broken_links.append(BrokenLinkItem(
@@ -120,21 +185,38 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
                 ))
                 continue
 
-            content_type = resp.headers.get("content-type", "")
-            if "html" not in content_type:
+            content_type = resp.headers.get("content-type", "").lower()
+            html_content = resp.text
+            is_probably_html = (
+                "html" in content_type
+                or "text" in content_type
+                or "xml" in content_type
+                or "<!doctype" in html_content[:400].lower()
+                or "<html" in html_content[:400].lower()
+            )
+            if not is_probably_html:
                 continue
 
-            html = resp.text
-            soup = BeautifulSoup(html, "html.parser")
+            soup = BeautifulSoup(html_content, "html.parser")
             page_title = soup.title.string.strip() if soup.title and soup.title.string else current_url
 
             page_id = _make_id("page", current_url)
+
+            # ----------------------------------------------------------------
+            # Extract and Tag Page Sections (Menu, Hero, Body, Footer)
+            # ----------------------------------------------------------------
+            page_sections = _extract_page_sections(soup, current_url, page_id)
+            sections_list.extend(page_sections)
+
+            # Save soup with data-oz-section-id attributes injected
+            tagged_html = str(soup)
+
             visited_pages[current_url] = PageItem(
                 id=page_id,
                 url=current_url,
                 label=page_title,
                 title=page_title,
-                html=html,
+                html=tagged_html,
                 preview_url=f"/jobs/{job_id}/preview/page/{page_id}",
             )
 
@@ -284,15 +366,40 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
                         found_on_page=None,
                     ))
 
+    if not visited_pages:
+        fail_reason = broken_links[0].reason if broken_links else "No HTML content could be retrieved from the target URL"
+        raise RuntimeError(
+            f"Failed to crawl target website '{url}': {fail_reason}. "
+            f"Please verify that the website is online, publicly accessible, and not blocking automated requests."
+        )
+
     pages_list = list(visited_pages.values())
     total_assets = (
         len(css_map) + len(js_map) + len(font_map) +
         len(tracker_map) + len(external_map)
     )
 
+    # ----------------------------------------------------------------
+    # Cross-Page Section Duplicate Detection
+    # ----------------------------------------------------------------
+    seen_section_fingerprints: dict[str, list[AuditSectionItem]] = defaultdict(list)
+    for sec in sections_list:
+        clean_selector = (sec.css_selector or "").strip().lower()
+        clean_heading = (sec.heading or "").strip().lower()
+        fingerprint = f"{sec.category_key}::{clean_selector}::{clean_heading}"
+        seen_section_fingerprints[fingerprint].append(sec)
+
+    for fingerprint, sec_group in seen_section_fingerprints.items():
+        total_count = len(sec_group)
+        for idx, sec in enumerate(sec_group):
+            sec.appearance_count = total_count
+            if idx > 0:
+                sec.is_duplicate = True
+
     return AuditResult(
         job_id=job_id,
         source_url=url,
+        sections=sections_list,
         css_files=list(css_map.values()),
         js_files=list(js_map.values()),
         fonts=list(font_map.values()),
@@ -304,6 +411,136 @@ async def run_audit(url: str, job_id: str) -> AuditResult:
         total_pages=len(pages_list),
         total_assets=total_assets,
     )
+
+
+# ---------------------------------------------------------------------------
+# Section Extraction Helper (Phase 1)
+# ---------------------------------------------------------------------------
+
+def _extract_page_sections(soup: BeautifulSoup, page_url: str, page_id: str) -> list[AuditSectionItem]:
+    """
+    Scans the DOM for all structural section containers (<header>, <nav>, <section>,
+    <footer>, <article>, and section-like <div> elements).
+    Assigns unique tracking IDs (data-oz-section-id) and categorizes each block.
+    """
+    sections: list[AuditSectionItem] = []
+    candidates = []
+
+    # 1. Structural semantic tags
+    for tag_name in ["header", "nav", "section", "article", "footer"]:
+        for el in soup.find_all(tag_name):
+            if el not in candidates and not any(el in c.descendants for c in candidates):
+                candidates.append(el)
+
+    # 2. Section-like <div> elements
+    section_pattern = re.compile(
+        r'(?:^|\s|-|_)(section|hero|banner|about|service|feature|pricing|team|testimonial|contact|footer|cta|portfolio|gallery|counter|slider|header|navbar)(?:$|\s|-|_)',
+        re.I
+    )
+    for div in soup.find_all("div", class_=section_pattern):
+        if div not in candidates and not any(div in c.descendants for c in candidates):
+            if not any(c in div.parents for c in candidates):
+                candidates.append(div)
+
+    # 3. Fallback: direct top-level children of <main> or <body>
+    if not candidates:
+        container = soup.find("main") or soup.find("body")
+        if container:
+            for child in container.find_all(recursive=False):
+                if child.name and child.name not in ["script", "style", "svg", "noscript", "meta", "link", "template"]:
+                    candidates.append(child)
+
+    for idx, el in enumerate(candidates):
+        sec_id = f"sec_{page_id}_{idx}"
+        el["data-oz-section-id"] = sec_id
+
+        # Determine category with strict tag precedence
+        tag_name = el.name.lower() if el.name else "div"
+        classes = " ".join(el.get("class", [])) if isinstance(el.get("class"), list) else str(el.get("class", ""))
+        el_id = str(el.get("id", ""))
+        combined_meta = f"{tag_name} {classes} {el_id}".lower()
+        is_subpage = urlparse(page_url).path.strip("/") != "" and urlparse(page_url).path.strip("/") != "index.html"
+        
+        is_explicit_breadcrumb = (
+            bool(el.find(class_=re.compile(r'\bbreadcrumb\b|\bbread-crumb\b', re.I)))
+            or bool(el.find("ol", class_=re.compile(r'breadcrumb', re.I)))
+            or bool(el.find("nav", attrs={"aria-label": re.compile(r'breadcrumb', re.I)}))
+            or ("breadcrumb" in combined_meta and tag_name not in ["header", "footer"])
+        )
+
+        # 1. Strict Footer Detection
+        if tag_name == "footer" or any(k in combined_meta for k in ["main-footer", "site-footer", "footer-area", "footer-section", "socket", "copyright"]):
+            category_key = "footer"
+        # 2. Strict Menu / Navigation Header Detection
+        elif (tag_name in ["header", "nav"] or any(k in combined_meta for k in ["navbar", "main-header", "site-header", "page-header", "header-area", "navigation", "top-nav"])) and not is_explicit_breadcrumb:
+            category_key = "menu"
+        # 3. Breadcrumb / Inner Page Header Detection
+        elif is_explicit_breadcrumb or (is_subpage and idx <= 2 and any(k in combined_meta for k in ["page-title", "inner-banner", "page-banner", "sub-banner", "title-area", "breadcrumb-area"])):
+            category_key = "breadcrumb"
+        # 4. Hero Showcase / Masthead Slider Detection
+        elif (not is_subpage and (idx <= 1 or any(k in combined_meta for k in ["hero", "slider", "banner", "carousel", "intro", "masthead", "main-banner"]))) or any(k in combined_meta for k in ["hero-section", "main-hero", "hero-slider", "banner-slider"]):
+            category_key = "hero"
+        # 5. Modular Body Content Section
+        else:
+            category_key = "body"
+
+        # Determine heading
+        heading = None
+        for h in el.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "span"], class_=re.compile(r'title|heading|subtitle', re.I)):
+            text = h.get_text(strip=True)
+            if text and len(text) > 2:
+                heading = text[:80]
+                break
+        if not heading:
+            for h in el.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
+                text = h.get_text(strip=True)
+                if text and len(text) > 2:
+                    heading = text[:80]
+                    break
+        if not heading:
+            if category_key == "menu":
+                heading = "Site Navigation & Header"
+            elif category_key == "hero":
+                heading = "Hero Showcase Banner"
+            elif category_key == "breadcrumb":
+                heading = "Page Title & Breadcrumb Trail"
+            elif category_key == "footer":
+                heading = "Website Footer & Links"
+            else:
+                clean_cls = classes.replace("sis-", "").replace("-section", "").replace("section-", "").replace("container", "").strip()
+                heading = f"{clean_cls.title() or 'Content Block'} Section"
+
+        # CSS Selector signature
+        css_sel = tag_name
+        if el_id:
+            css_sel += f"#{el_id}"
+        if el.get("class"):
+            cls_list = el.get("class") if isinstance(el.get("class"), list) else [el.get("class")]
+            css_sel += "." + ".".join(cls_list[:2])
+
+        # Count child repeating items / cards
+        child_cards = len(el.find_all(class_=re.compile(r'col-|card|item|slide|member|service|feature', re.I)))
+
+        # Text snippet
+        text_snippet = " ".join(el.get_text(separator=" ", strip=True).split())[:160]
+
+        sections.append(AuditSectionItem(
+            id=sec_id,
+            url=page_url,
+            label=heading,
+            page_url=page_url,
+            page_id=page_id,
+            category_key=category_key,
+            heading=heading,
+            css_selector=css_sel,
+            dom_tag=tag_name,
+            preview_snippet=text_snippet,
+            child_card_count=child_cards,
+            raw_html=str(el),
+            checked=True
+        ))
+
+    return sections
 
 
 # ---------------------------------------------------------------------------

@@ -40,6 +40,10 @@ def apply_selections(
     selection_map: dict[str, bool] = {s.id: s.checked for s in selections}
 
     # Determine which URLs/ids are kept
+    kept_section_ids: set[str] = {
+        item.id for item in audit.sections
+        if selection_map.get(item.id, item.checked)
+    }
     kept_css_urls: set[str] = {
         item.url for item in audit.css_files
         if selection_map.get(item.id, item.checked) and item.url
@@ -90,6 +94,18 @@ def apply_selections(
 
         diff = PageDiff(page_url=page.url or "", page_id=page.id)
         soup = BeautifulSoup(page.html or "", "html.parser")
+
+        # --------------------------------------------------------------------
+        # Remove unchecked Sections (tagged with data-oz-section-id)
+        # --------------------------------------------------------------------
+        for tag in soup.find_all(attrs={"data-oz-section-id": True}):
+            sec_id = tag.get("data-oz-section-id")
+            if sec_id and sec_id not in kept_section_ids:
+                diff.removed_sections.append(sec_id)
+                tag.decompose()
+            else:
+                # Keep section and strip the internal tracking attribute from clean HTML
+                del tag["data-oz-section-id"]
 
         # --------------------------------------------------------------------
         # Remove unchecked CSS <link> tags
@@ -171,6 +187,7 @@ def apply_selections(
         })
 
     removed_total = (
+        sum(len(d.removed_sections) for d in page_diffs) +
         sum(len(d.removed_css) for d in page_diffs) +
         sum(len(d.removed_js) for d in page_diffs) +
         sum(len(d.removed_trackers) for d in page_diffs) +
@@ -180,6 +197,7 @@ def apply_selections(
     return ApplySelectionsResult(
         job_id=job_id,
         status=JobStatus.CLEANED,
+        kept_sections=list(kept_section_ids),
         kept_css=list(kept_css_urls),
         kept_js=list(kept_js_urls),
         kept_pages=[p["url"] for p in cleaned_pages],

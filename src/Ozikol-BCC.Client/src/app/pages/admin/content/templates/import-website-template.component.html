@@ -1,0 +1,1027 @@
+<div class="import-studio-container">
+  <!-- Top Page Header & Breadcrumbs -->
+  <div class="studio-header-card">
+    <div class="header-main-row">
+      <div class="header-left">
+        <div class="breadcrumb-trail">
+          <a routerLink="/admin/dashboard">Console</a>
+          <span class="sep">/</span>
+          <a routerLink="/content/console">CMS Studio</a>
+          <span class="sep">/</span>
+          <a routerLink="/content/console/templates">My Templates</a>
+          <span class="sep">/</span>
+          <span class="current">Website Template Importer</span>
+        </div>
+
+        <div class="title-with-icon">
+          <div class="header-icon-box">
+            <span class="material-symbols-outlined">cloud_download</span>
+          </div>
+          <div class="title-text-wrap">
+            <div class="title-row">
+              <h1 class="page-title">Website Template Importer & Debranding Engine</h1>
+              <span class="badge-ai-engine">
+                <span class="material-symbols-outlined engine-icon">public</span>
+                Live Importer
+              </span>
+            </div>
+            <p class="page-subtitle">
+              Crawl any live website, audit and prune unwanted scripts, preview the cleaned site in an interactive sandbox, debrand markup, and adopt modular section blueprints directly into your template vault.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/content/console/templates" class="btn btn-outline-cancel">
+          <span class="material-symbols-outlined btn-icon">arrow_back</span>
+          <span>Back to My Templates</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 5-Step Visual Stepper Bar -->
+    <div class="studio-stepper-bar">
+      <div class="step-item" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+        <div class="step-number">1</div>
+        <div class="step-info">
+          <span class="step-label">Target & Setup</span>
+          <span class="step-sub">URL & Identity</span>
+        </div>
+      </div>
+      <div class="step-line" [class.completed]="currentStep > 1"></div>
+
+      <div class="step-item" [class.active]="currentStep === 2" [class.completed]="currentStep > 2">
+        <div class="step-number">2</div>
+        <div class="step-info">
+          <span class="step-label">Audit Checklist</span>
+          <span class="step-sub">Prune Trackers & Assets</span>
+        </div>
+      </div>
+      <div class="step-line" [class.completed]="currentStep > 2"></div>
+
+      <div class="step-item" [class.active]="currentStep === 3" [class.completed]="currentStep > 3">
+        <div class="step-number">3</div>
+        <div class="step-info">
+          <span class="step-label">Sandbox Preview</span>
+          <span class="step-sub">Cleaned Live Demo</span>
+        </div>
+      </div>
+      <div class="step-line" [class.completed]="currentStep > 3"></div>
+
+      <div class="step-item" [class.active]="currentStep === 4" [class.completed]="currentStep > 4">
+        <div class="step-number">4</div>
+        <div class="step-info">
+          <span class="step-label">Debrand & Blueprint</span>
+          <span class="step-sub">Modular Generation</span>
+        </div>
+      </div>
+      <div class="step-line" [class.completed]="currentStep > 4"></div>
+
+      <div class="step-item" [class.active]="currentStep === 5" [class.completed]="currentStep === 5">
+        <div class="step-number">5</div>
+        <div class="step-info">
+          <span class="step-label">Vault Adoption</span>
+          <span class="step-sub">Save to Database</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STEP 1: TARGET URL & SUITE SETUP                                          -->
+  <!-- ========================================================================= -->
+  <div class="step-content-pane" *ngIf="currentStep === 1">
+    <div class="setup-grid-layout">
+      <!-- Left Config Card -->
+      <div class="config-card">
+        <div class="card-header-clean">
+          <span class="material-symbols-outlined card-header-icon">link</span>
+          <div>
+            <h2 class="card-title">Target Website Configuration</h2>
+            <p class="card-subtitle">Specify the external website URL to extract, clean, and convert into modular Ozikol templates.</p>
+          </div>
+        </div>
+
+        <div class="form-body">
+          <!-- Target Website URL -->
+          <div class="form-group mb-4">
+            <label class="form-label">TARGET WEBSITE URL <span class="text-danger">*</span></label>
+            <div class="input-with-icon">
+              <span class="material-symbols-outlined input-icon">public</span>
+              <input
+                type="url"
+                [(ngModel)]="targetUrl"
+                class="form-control config-input"
+                placeholder="e.g. https://example.com"
+                [disabled]="crawling"
+              />
+            </div>
+            <span class="form-hint">Enter the home page or any landing page URL. The crawler will discover linked pages and assets on the domain.</span>
+          </div>
+
+          <!-- Theme Suite Name -->
+          <div class="form-group mb-4">
+            <label class="form-label">THEME SUITE NAME <span class="text-danger">*</span></label>
+            <div class="input-with-icon">
+              <span class="material-symbols-outlined input-icon">style</span>
+              <input
+                type="text"
+                [(ngModel)]="suiteName"
+                class="form-control config-input"
+                placeholder="e.g. Apex Corporate Dark"
+                [disabled]="crawling"
+              />
+            </div>
+            <span class="form-hint">Name of the template blueprint suite when imported into your vault.</span>
+          </div>
+
+          <!-- New Tenant Brand Name -->
+          <div class="form-group mb-4">
+            <label class="form-label">NEW TENANT BRAND NAME <span class="text-danger">*</span></label>
+            <div class="input-with-icon">
+              <span class="material-symbols-outlined input-icon">corporate_fare</span>
+              <input
+                type="text"
+                [(ngModel)]="brandName"
+                class="form-control config-input"
+                placeholder="e.g. Enterprise Workspace"
+                [disabled]="crawling"
+              />
+            </div>
+            <span class="form-hint">All extracted company names and proprietary brands will be stripped and replaced with this brand name.</span>
+          </div>
+
+          <div class="d-flex justify-content-end gap-3 mt-4">
+            <button
+              type="button"
+              class="btn btn-primary-start-crawl"
+              (click)="startCrawl()"
+              [disabled]="crawling || !targetUrl.trim()"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!crawling">travel_explore</span>
+              <span class="spinner-border spinner-border-sm btn-icon" *ngIf="crawling"></span>
+              <span>{{ crawling ? 'Crawling Website & Auditing...' : 'Start Website Crawl & Audit →' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Feature Info Card -->
+      <div class="info-card">
+        <h3 class="info-title">How the Template Importer Works</h3>
+        <ul class="info-list">
+          <li>
+            <div class="info-icon bg-primary-subtle text-primary"><span class="material-symbols-outlined">travel_explore</span></div>
+            <div>
+              <strong>Phase 1: Deep Site Crawl</strong>
+              <p>Audits all CSS, JS, fonts, media, meta tags, and discovers tracking scripts.</p>
+            </div>
+          </li>
+          <li>
+            <div class="info-icon bg-success-subtle text-success"><span class="material-symbols-outlined">filter_alt</span></div>
+            <div>
+              <strong>Phase 2: Prune & Clean</strong>
+              <p>Uncheck unwanted analytics or third-party trackers with 1 click before building.</p>
+            </div>
+          </li>
+          <li>
+            <div class="info-icon bg-info-subtle text-info"><span class="material-symbols-outlined">cloud_upload</span></div>
+            <div>
+              <strong>Phase 3: CDN Asset Migration</strong>
+              <p>Uploads kept stylesheets, fonts, and images to high-speed cloud CDN for persistent delivery.</p>
+            </div>
+          </li>
+          <li>
+            <div class="info-icon bg-warning-subtle text-warning"><span class="material-symbols-outlined">branding_watermark</span></div>
+            <div>
+              <strong>Phase 4: Debrand & Blueprint Generation</strong>
+              <p>Replaces original brand names with your workspace identity and injects dynamic Ozikol CMS tokens.</p>
+            </div>
+          </li>
+          <li>
+            <div class="info-icon bg-danger-subtle text-danger"><span class="material-symbols-outlined">verified</span></div>
+            <div>
+              <strong>Phase 5: Instant Adoption</strong>
+              <p>Installs the complete suite directly into your tenant database ready for live publishing.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FULL SCREEN GLASSMORPHISM CRAWL & AUDIT LOADING OVERLAY                   -->
+  <!-- ========================================================================= -->
+  <div class="crawl-overlay-backdrop" *ngIf="crawling">
+    <div class="crawl-overlay-modal">
+      <div class="crawler-pulse-ring">
+        <div class="spinner-ring"></div>
+        <span class="material-symbols-outlined crawler-center-icon">travel_explore</span>
+      </div>
+
+      <h3 class="crawler-modal-title">Deep Site Crawl & Asset Audit</h3>
+      <div class="crawler-target-badge font-mono">
+        <span class="material-symbols-outlined badge-icon">public</span>
+        <span>{{ targetUrl }}</span>
+      </div>
+
+      <div class="crawler-dynamic-status">
+        <div class="pulse-dot"></div>
+        <span class="status-msg">{{ crawlProgressMessage }}</span>
+      </div>
+
+      <div class="crawler-steps-mini">
+        <div class="step-mini active">
+          <span class="mini-icon material-symbols-outlined">dataset</span>
+          <span>DOM Tree</span>
+        </div>
+        <div class="step-mini active">
+          <span class="mini-icon material-symbols-outlined">style</span>
+          <span>CSS & JS Files</span>
+        </div>
+        <div class="step-mini active">
+          <span class="mini-icon material-symbols-outlined">security</span>
+          <span>Trackers & Pixels</span>
+        </div>
+      </div>
+
+      <p class="crawler-modal-hint">Scanning domain and mapping discovered pages and stylesheets...</p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FULL SCREEN CLEANING / PRUNING LOADING OVERLAY                            -->
+  <!-- ========================================================================= -->
+  <div class="crawl-overlay-backdrop" *ngIf="cleaning">
+    <div class="crawl-overlay-modal">
+      <div class="crawler-pulse-ring ring-cleaning">
+        <div class="spinner-ring ring-cleaning-spin"></div>
+        <span class="material-symbols-outlined crawler-center-icon text-info">filter_alt</span>
+      </div>
+
+      <h3 class="crawler-modal-title">Pruning & Cleaning Website Markup</h3>
+      <div class="crawler-dynamic-status">
+        <div class="pulse-dot pulse-info"></div>
+        <span class="status-msg">Stripping unselected tracking scripts and compiling clean sandbox preview...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STEP 2: AUDIT CHECKLIST & ASSET PRUNING                                   -->
+  <!-- ========================================================================= -->
+  <div class="step-content-pane" *ngIf="currentStep === 2 && auditResult">
+    <!-- Audit Metrics Row -->
+    <div class="audit-metrics-row mb-4">
+      <div class="metric-card highlight-primary">
+        <span class="metric-val">{{ getTabCount('sections') }}</span>
+        <span class="metric-lbl">Discovered Sections</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-val">{{ auditResult.total_pages }}</span>
+        <span class="metric-lbl">Discovered Pages</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-val">{{ getTabCount('css') }}</span>
+        <span class="metric-lbl">CSS Stylesheets</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-val">{{ getTabCount('js') }}</span>
+        <span class="metric-lbl">JavaScript Files</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-val">{{ getTabCount('fonts') }}</span>
+        <span class="metric-lbl">Web Fonts</span>
+      </div>
+      <div class="metric-card highlight-danger">
+        <span class="metric-val">{{ getTabCount('trackers') }}</span>
+        <span class="metric-lbl">Trackers (Default: Off)</span>
+      </div>
+    </div>
+
+    <!-- Main Checklist Container -->
+    <div class="checklist-card">
+      <div class="checklist-header">
+        <div class="checklist-tabs">
+          <button type="button" class="tab-btn highlight-primary-tab" [class.active]="activeAuditTab === 'sections'" (click)="activeAuditTab = 'sections'">
+            <span class="material-symbols-outlined tab-icon">layers</span>
+            <span>Sections ({{ getCheckedCount('sections') }}/{{ getTabCount('sections') }})</span>
+          </button>
+          <button type="button" class="tab-btn" [class.active]="activeAuditTab === 'css'" (click)="activeAuditTab = 'css'">
+            <span class="material-symbols-outlined tab-icon">css</span>
+            <span>CSS ({{ getCheckedCount('css') }}/{{ getTabCount('css') }})</span>
+          </button>
+          <button type="button" class="tab-btn" [class.active]="activeAuditTab === 'js'" (click)="activeAuditTab = 'js'">
+            <span class="material-symbols-outlined tab-icon">javascript</span>
+            <span>JavaScript ({{ getCheckedCount('js') }}/{{ getTabCount('js') }})</span>
+          </button>
+          <button type="button" class="tab-btn" [class.active]="activeAuditTab === 'fonts'" (click)="activeAuditTab = 'fonts'">
+            <span class="material-symbols-outlined tab-icon">font_download</span>
+            <span>Fonts ({{ getCheckedCount('fonts') }}/{{ getTabCount('fonts') }})</span>
+          </button>
+          <button type="button" class="tab-btn" [class.active]="activeAuditTab === 'pages'" (click)="activeAuditTab = 'pages'">
+            <span class="material-symbols-outlined tab-icon">web</span>
+            <span>Pages ({{ getCheckedCount('pages') }}/{{ getTabCount('pages') }})</span>
+          </button>
+          <button type="button" class="tab-btn" [class.active]="activeAuditTab === 'meta'" (click)="activeAuditTab = 'meta'">
+            <span class="material-symbols-outlined tab-icon">tag</span>
+            <span>Meta Tags ({{ getCheckedCount('meta') }}/{{ getTabCount('meta') }})</span>
+          </button>
+          <button type="button" class="tab-btn highlight-tab" [class.active]="activeAuditTab === 'trackers'" (click)="activeAuditTab = 'trackers'">
+            <span class="material-symbols-outlined tab-icon">policy</span>
+            <span>Trackers ({{ getCheckedCount('trackers') }}/{{ getTabCount('trackers') }})</span>
+          </button>
+        </div>
+
+        <div class="checklist-actions">
+          <div class="search-input-wrap">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input
+              type="text"
+              [(ngModel)]="auditSearchQuery"
+              class="form-control templates-search"
+              placeholder="Filter items..."
+            />
+            <button
+              type="button"
+              *ngIf="auditSearchQuery"
+              (click)="auditSearchQuery = ''"
+              class="btn-clear-search"
+            >✕</button>
+          </div>
+          <button type="button" class="btn btn-select-action" (click)="toggleAllInTab(true)">Select All</button>
+          <button type="button" class="btn btn-select-action" (click)="toggleAllInTab(false)">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- Items List -->
+      <div class="checklist-body">
+        
+        <!-- SPECIAL RICH VIEW: Sections Tab -->
+        <div class="audit-sections-grid" *ngIf="activeAuditTab === 'sections'">
+          <div
+            class="audit-section-card"
+            *ngFor="let sec of getFilteredTabList()"
+            [class.card-unchecked]="!sec.checked"
+          >
+            <div class="sec-card-header">
+              <label class="checkbox-container">
+                <input type="checkbox" [(ngModel)]="sec.checked" />
+                <span class="checkmark"></span>
+              </label>
+
+              <div class="sec-cat-badge font-mono" [class.cat-menu]="sec.category_key === 'menu'" [class.cat-hero]="sec.category_key === 'hero'" [class.cat-footer]="sec.category_key === 'footer'">
+                <span class="material-symbols-outlined me-1 sec-cat-icon">{{ getSectionCategoryIcon(sec.category_key) }}</span>
+                {{ (sec.category_key || 'BODY') | uppercase }}
+              </div>
+
+              <!-- Orange Duplicate Badge -->
+              <span class="badge badge-duplicate font-mono" *ngIf="sec.is_duplicate" [title]="'Identical section HTML repeated across ' + (sec.appearance_count || 2) + ' pages'">
+                <span class="material-symbols-outlined duplicate-icon">content_copy</span>
+                DUPLICATE ({{ sec.appearance_count }}x)
+              </span>
+
+              <span class="badge bg-light text-muted font-mono ms-auto" *ngIf="sec.child_card_count && sec.child_card_count > 0">
+                {{ sec.child_card_count }} Cards
+              </span>
+            </div>
+
+            <div class="sec-card-body">
+              <h4 class="sec-title">{{ sec.heading || sec.label }}</h4>
+              
+              <div class="sec-meta-row">
+                <code class="sec-selector-pill font-mono">{{ sec.css_selector || sec.dom_tag }}</code>
+                <span class="sec-page-pill" *ngIf="sec.page_url">
+                  <span class="material-symbols-outlined me-1" style="font-size: 13px;">link</span>
+                  {{ sec.page_url.split('/').pop() || '/' }}
+                </span>
+              </div>
+
+              <p class="sec-snippet" *ngIf="sec.preview_snippet">
+                "{{ sec.preview_snippet }}"
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SPECIAL RICH VIEW: Pages Tab Table -->
+        <div class="audit-pages-table-wrap" *ngIf="activeAuditTab === 'pages' && getFilteredTabList().length > 0">
+          <table class="audit-pages-table">
+            <thead>
+              <tr>
+                <th style="width: 48px;"><span class="th-label">SELECT</span></th>
+                <th><span class="th-label">PAGE TITLE & RELATIVE PATH</span></th>
+                <th><span class="th-label">PUBLIC URL</span></th>
+                <th><span class="th-label">STRUCTURAL ELEMENTS</span></th>
+                <th class="text-end"><span class="th-label">CONTENT SECTIONS</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let page of getFilteredTabList()" [class.row-unchecked]="!page.checked">
+                <td>
+                  <label class="checkbox-container">
+                    <input type="checkbox" [(ngModel)]="page.checked" />
+                    <span class="checkmark"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="page-title-wrap">
+                    <span class="page-name">{{ page.title || page.label }}</span>
+                    <span class="page-rel-path font-mono">{{ page.url ? (page.url.split('/').pop() || '/') : '/' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <a [href]="page.url" target="_blank" rel="noopener" class="page-url-link font-mono" *ngIf="page.url">
+                    <span class="text-truncate" style="max-width: 240px;">{{ page.url }}</span>
+                    <span class="material-symbols-outlined link-icon">open_in_new</span>
+                  </a>
+                </td>
+                <td>
+                  <div class="structural-elements-row">
+                    <span class="struct-pill struct-menu" *ngIf="hasPageStructuralElement(page.url, 'menu')" title="Navigation Header">
+                      <span class="material-symbols-outlined me-1 struct-icon">menu</span>Header
+                    </span>
+                    <span class="struct-pill struct-hero" *ngIf="hasPageStructuralElement(page.url, 'hero')" title="Top Hero Banner">
+                      <span class="material-symbols-outlined me-1 struct-icon">view_carousel</span>Hero
+                    </span>
+                    <span class="struct-pill struct-breadcrumb" *ngIf="hasPageStructuralElement(page.url, 'breadcrumb')" title="Breadcrumb trail">
+                      <span class="material-symbols-outlined me-1 struct-icon">conversion_path</span>Breadcrumb
+                    </span>
+                    <span class="struct-pill struct-footer" *ngIf="hasPageStructuralElement(page.url, 'footer')" title="Site Footer">
+                      <span class="material-symbols-outlined me-1 struct-icon">dock_to_bottom</span>Footer
+                    </span>
+                    <span class="text-muted small" *ngIf="!hasPageStructuralElement(page.url, 'menu') && !hasPageStructuralElement(page.url, 'hero') && !hasPageStructuralElement(page.url, 'breadcrumb') && !hasPageStructuralElement(page.url, 'footer')">
+                      Standard Layout
+                    </span>
+                  </div>
+                </td>
+                <td class="text-end">
+                  <span class="badge bg-primary-subtle text-primary font-mono fw-bold px-2 py-1 sec-count-badge">
+                    <span class="material-symbols-outlined me-1" style="font-size: 13px;">widgets</span>
+                    {{ getPageBodySectionCount(page.url) }} Sections
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="table-total-row">
+                <td colspan="2" class="total-col-label">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">functions</span>
+                    <strong>TOTAL PAGES: {{ getCheckedCount('pages') }} / {{ getTabCount('pages') }} Selected</strong>
+                  </div>
+                </td>
+                <td colspan="2" class="total-note">
+                  <span class="text-muted small">Excludes non-generic header, hero, breadcrumbs & footer elements</span>
+                </td>
+                <td class="text-end total-val">
+                  <span class="badge bg-primary text-white font-mono px-3 py-2 fs-6">
+                    {{ getTotalCheckedPagesBodySectionsCount() }} Total Sections
+                  </span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- STANDARD VIEW: CSS, JS, Fonts, Meta, Trackers -->
+        <div class="checklist-items-table" *ngIf="activeAuditTab !== 'sections' && activeAuditTab !== 'pages'">
+          <div class="checklist-row" *ngFor="let item of getFilteredTabList()">
+            <label class="checkbox-container">
+              <input type="checkbox" [(ngModel)]="item.checked" />
+              <span class="checkmark"></span>
+            </label>
+            <div class="item-details">
+              <span class="item-label">{{ item.label }}</span>
+              <span class="item-url text-truncate font-mono" *ngIf="item.url">{{ item.url }}</span>
+            </div>
+            <div class="item-meta ms-auto">
+              <span class="badge bg-light text-muted font-mono" *ngIf="item.size_bytes">{{ (item.size_bytes / 1024).toFixed(1) }} KB</span>
+              <span class="badge bg-danger-subtle text-danger" *ngIf="item.type === 'tracker'">Tracker</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty tab placeholder -->
+        <div class="empty-tab-state text-center py-5" *ngIf="getFilteredTabList().length === 0">
+          <span class="material-symbols-outlined text-muted" style="font-size: 40px;">info</span>
+          <p class="text-muted mt-2 mb-0">No items found in this category.</p>
+        </div>
+
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="checklist-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="currentStep = 1">
+          <span class="material-symbols-outlined btn-icon">arrow_back</span>
+          <span>Back</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary-clean ms-auto"
+          (click)="applySelectionsAndPreview()"
+          [disabled]="cleaning"
+        >
+          <span class="material-symbols-outlined btn-icon" *ngIf="!cleaning">filter_alt</span>
+          <span class="spinner-border spinner-border-sm btn-icon" *ngIf="cleaning"></span>
+          <span>{{ cleaning ? 'Cleaning HTML & Building Preview...' : 'Apply Selections & Open Sandbox Preview →' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STEP 3: CLEANED SANDBOX PREVIEW                                           -->
+  <!-- ========================================================================= -->
+  <div class="step-content-pane" *ngIf="currentStep === 3">
+    <div class="sandbox-preview-container">
+      <!-- Toolbar: Viewport & Page Switcher in Single Clean Line -->
+      <div class="sandbox-toolbar">
+        <div class="sandbox-toolbar-left">
+          <div class="page-selector-group">
+            <label class="toolbar-label">PAGE PREVIEW:</label>
+            <div class="page-select-wrapper">
+              <span class="material-symbols-outlined select-icon">web</span>
+              <select
+                [(ngModel)]="selectedPreviewPageId"
+                (ngModelChange)="updateCleanedPreview()"
+                class="form-select page-select-custom"
+              >
+                <option *ngFor="let p of auditResult?.pages" [value]="p.id">
+                  {{ p.label || p.url }}
+                </option>
+              </select>
+              <span class="material-symbols-outlined select-arrow">expand_more</span>
+            </div>
+          </div>
+
+          <!-- Viewport Switcher -->
+          <div class="viewport-toggle-group">
+            <button
+              type="button"
+              class="viewport-btn"
+              [class.active]="previewViewport === 'desktop'"
+              (click)="previewViewport = 'desktop'"
+              title="Desktop 100%"
+            >
+              <span class="material-symbols-outlined">desktop_windows</span>
+              <span>Desktop</span>
+            </button>
+            <button
+              type="button"
+              class="viewport-btn"
+              [class.active]="previewViewport === 'tablet'"
+              (click)="previewViewport = 'tablet'"
+              title="Tablet (768px)"
+            >
+              <span class="material-symbols-outlined">tablet</span>
+              <span>Tablet</span>
+            </button>
+            <button
+              type="button"
+              class="viewport-btn"
+              [class.active]="previewViewport === 'mobile'"
+              (click)="previewViewport = 'mobile'"
+              title="Mobile (390px)"
+            >
+              <span class="material-symbols-outlined">smartphone</span>
+              <span>Mobile</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sandbox-actions">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="currentStep = 2">
+            <span class="material-symbols-outlined btn-icon">tune</span>
+            <span>Adjust Selections</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary-ai-tokenize"
+            (click)="startAiTokenization()"
+          >
+            <span class="material-symbols-outlined btn-icon">branding_watermark</span>
+            <span>Debrand & Generate Template Suite →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Iframe Sandbox Window -->
+      <div class="sandbox-stage" [class.viewport-tablet]="previewViewport === 'tablet'" [class.viewport-mobile]="previewViewport === 'mobile'">
+        <iframe
+          *ngIf="safePreviewUrl"
+          [src]="safePreviewUrl"
+          class="sandbox-iframe"
+          title="Cleaned Template Sandbox Preview"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STEP 4: DEBRANDING & BLUEPRINT GENERATION (In Progress)                   -->
+  <!-- ========================================================================= -->
+  <div class="step-content-pane" *ngIf="currentStep === 4">
+    <div class="processing-wizard-card shadow-sm mx-auto">
+      
+      <!-- Top Animated Header & Icon -->
+      <div class="processing-hero-section text-center d-flex flex-column align-items-center justify-content-center">
+        <div class="processing-radar-wrapper mx-auto mb-3">
+          <div class="processing-radar-ring"></div>
+          <div class="processing-radar-ring-delayed"></div>
+          <div class="processing-radar-ring-tertiary"></div>
+          <div class="processing-icon-circle">
+            <span class="material-symbols-outlined main-process-icon">branding_watermark</span>
+          </div>
+        </div>
+        
+        <h2 class="processing-main-title text-center">Debranding & Blueprint Generation in Progress</h2>
+        <p class="processing-sub-description text-center mx-auto">
+          Analyzing DOM structures, stripping proprietary branding, and preparing modular section blueprints.
+        </p>
+      </div>
+
+      <!-- Warning / Do Not Refresh Notice Banner -->
+      <div class="processing-do-not-close-banner">
+        <div class="notice-icon-box">
+          <span class="material-symbols-outlined notice-icon">shield_lock</span>
+        </div>
+        <div class="notice-text-wrap">
+          <div class="notice-heading-row">
+            <strong class="notice-heading">Process in Progress — Do Not Refresh or Close Window</strong>
+            <span class="notice-live-tag">Live Execution</span>
+          </div>
+          <p class="notice-sub">The engine is actively transferring assets to high-speed cloud CDN, sanitizing brand markers, and compiling modular blueprint layouts. Your screen will transition automatically once complete.</p>
+        </div>
+      </div>
+
+      <!-- Real-Time Progress Bar Track -->
+      <div class="processing-progress-box">
+        <div class="progress-meta-row">
+          <span class="progress-status-label font-semibold text-dark d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+            <span>Running Task: Phase {{ tokenizationProgressStep }} of 3</span>
+          </span>
+          <span class="progress-percentage-badge">{{ tokenizationPercentage }}%</span>
+        </div>
+
+        <div class="progress custom-process-progress-track">
+          <div
+            class="progress-bar progress-bar-striped progress-bar-animated custom-process-progress-bar"
+            role="progressbar"
+            [style.width]="tokenizationPercentage + '%'"
+            [attr.aria-valuenow]="tokenizationPercentage"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></div>
+        </div>
+      </div>
+
+      <!-- 3 Visual Milestone Pipeline Cards -->
+      <div class="processing-milestones-grid">
+        
+        <!-- Milestone 1 -->
+        <div class="milestone-card" [class.completed]="tokenizationProgressStep > 1" [class.active]="tokenizationProgressStep === 1">
+          <div class="milestone-icon-wrap">
+            <span class="material-symbols-outlined milestone-icon">cloud_upload</span>
+          </div>
+          <div class="milestone-content">
+            <div class="milestone-header-row">
+              <h4 class="milestone-title">1. CDN Asset Migration</h4>
+              <div class="milestone-status-badge">
+                <span class="material-symbols-outlined status-indicator-icon" *ngIf="tokenizationProgressStep > 1">check_circle</span>
+                <span class="spinner-border spinner-border-sm status-spinner" *ngIf="tokenizationProgressStep === 1"></span>
+                <span class="material-symbols-outlined status-indicator-icon pending" *ngIf="tokenizationProgressStep < 1">radio_button_unchecked</span>
+              </div>
+            </div>
+            <p class="milestone-desc">Uploads stylesheets, fonts, and graphics to high-speed cloud CDN with permanent URL mapping.</p>
+          </div>
+        </div>
+
+        <!-- Milestone 2 -->
+        <div class="milestone-card" [class.completed]="tokenizationProgressStep > 2" [class.active]="tokenizationProgressStep === 2">
+          <div class="milestone-icon-wrap">
+            <span class="material-symbols-outlined milestone-icon">branding_watermark</span>
+          </div>
+          <div class="milestone-content">
+            <div class="milestone-header-row">
+              <h4 class="milestone-title">2. Brand Scrubbing</h4>
+              <div class="milestone-status-badge">
+                <span class="material-symbols-outlined status-indicator-icon" *ngIf="tokenizationProgressStep > 2">check_circle</span>
+                <span class="spinner-border spinner-border-sm status-spinner" *ngIf="tokenizationProgressStep === 2"></span>
+                <span class="material-symbols-outlined status-indicator-icon pending" *ngIf="tokenizationProgressStep < 2">radio_button_unchecked</span>
+              </div>
+            </div>
+            <p class="milestone-desc">Scrubs proprietary logos, trademarks & copyrights and injects workspace identity.</p>
+          </div>
+        </div>
+
+        <!-- Milestone 3 -->
+        <div class="milestone-card" [class.completed]="tokenizationProgressStep >= 3" [class.active]="tokenizationProgressStep === 3">
+          <div class="milestone-icon-wrap">
+            <span class="material-symbols-outlined milestone-icon">layers</span>
+          </div>
+          <div class="milestone-content">
+            <div class="milestone-header-row">
+              <h4 class="milestone-title">3. Modular Blueprints</h4>
+              <div class="milestone-status-badge">
+                <span class="material-symbols-outlined status-indicator-icon" *ngIf="tokenizationProgressStep >= 3">check_circle</span>
+                <span class="spinner-border spinner-border-sm status-spinner" *ngIf="tokenizationProgressStep === 3"></span>
+                <span class="material-symbols-outlined status-indicator-icon pending" *ngIf="tokenizationProgressStep < 3">radio_button_unchecked</span>
+              </div>
+            </div>
+            <p class="milestone-desc">Slices DOM sections into reusable Menus, Hero Banners, Feature Grids & Footers.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Activity Console Status Pill -->
+      <div class="processing-live-terminal">
+        <div class="live-dot-pulse"></div>
+        <span class="terminal-prefix">Activity:</span>
+        <span class="terminal-text">{{ tokenizationStatusText }}</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STEP 5: BLUEPRINT REVIEW & 1-CLICK VAULT ADOPTION                         -->
+  <!-- ========================================================================= -->
+  <div class="step-content-pane" *ngIf="currentStep === 5 && generatedSuite">
+    <!-- Executive Suite Summary Header Card (Balanced Full-Width 3-Column Layout) -->
+    <div class="blueprint-summary-card mb-4">
+      <div class="suite-header-grid">
+        <!-- Col 1: Theme Identity & Source Info -->
+        <div class="suite-info-col">
+          <div class="suite-icon-box">
+            <span class="material-symbols-outlined">auto_awesome_mosaic</span>
+          </div>
+          <div class="suite-info-text">
+            <div class="suite-title-row">
+              <h2 class="suite-name">{{ generatedSuite.suite_name }}</h2>
+              <span class="group-code-pill font-mono">{{ generatedSuite.group_code }}</span>
+            </div>
+            <div class="suite-source-link">
+              <span class="material-symbols-outlined link-icon">public</span>
+              <span class="source-url-text" [title]="generatedSuite.source_url">{{ generatedSuite.source_url }}</span>
+            </div>
+            <p class="suite-desc-mini">Debranded & synthesized for instant tenant workspace adoption.</p>
+          </div>
+        </div>
+
+        <!-- Col 2: Central Metric Stats Tiles -->
+        <div class="suite-stats-col">
+          <div class="suite-stat-tile">
+            <div class="stat-icon-wrap bg-primary-subtle text-primary">
+              <span class="material-symbols-outlined">layers</span>
+            </div>
+            <div class="stat-data">
+              <span class="stat-number">{{ generatedSuite.templates.length }}</span>
+              <span class="stat-text">Modular Blueprints</span>
+            </div>
+          </div>
+
+          <div class="suite-stat-tile">
+            <div class="stat-icon-wrap bg-success-subtle text-success">
+              <span class="material-symbols-outlined">article</span>
+            </div>
+            <div class="stat-data">
+              <span class="stat-number">{{ generatedSuite.pages.length }}</span>
+              <span class="stat-text">Database Pages</span>
+            </div>
+          </div>
+
+          <div class="suite-stat-tile">
+            <div class="stat-icon-wrap bg-info-subtle text-info">
+              <span class="material-symbols-outlined">code</span>
+            </div>
+            <div class="stat-data">
+              <span class="stat-number">{{ generatedSuite.code_injections.length }}</span>
+              <span class="stat-text">Code Injections</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3: Adoption Actions Box -->
+        <div class="suite-actions-col">
+          <div class="action-box-inner">
+            <div class="form-check form-switch mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="overrideTemplatesToggle"
+                [(ngModel)]="overrideExistingTemplates"
+              />
+              <label class="form-check-label fw-semibold text-dark small" for="overrideTemplatesToggle">
+                Set as Live Active Theme
+              </label>
+              <small class="text-muted d-block" style="font-size: 11px; line-height: 1.2; margin-top: 2px;">
+                Unpublishes conflicting legacy pages &amp; sections cleanly.
+              </small>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-adopt-database"
+              (click)="importSuiteToDatabase()"
+              [disabled]="importingToDatabase"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!importingToDatabase">save_alt</span>
+              <span class="spinner-border spinner-border-sm btn-icon" *ngIf="importingToDatabase"></span>
+              <span>{{ importingToDatabase ? 'Importing...' : 'Adopt & Save to Vault →' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="blueprint-filters-bar mb-4 pb-2">
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'all'"
+        (click)="activeBlueprintCategory = 'all'"
+      >
+        All Components ({{ getCategoryCount('all') }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'menu'"
+        (click)="activeBlueprintCategory = 'menu'"
+      >
+        <span class="material-symbols-outlined me-1">menu</span>
+        Navigation Bar ({{ getCategoryCount('menu') }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'hero'"
+        (click)="activeBlueprintCategory = 'hero'"
+      >
+        <span class="material-symbols-outlined me-1">view_carousel</span>
+        Hero Banners ({{ getCategoryCount('hero') }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'breadcrumb'"
+        (click)="activeBlueprintCategory = 'breadcrumb'"
+      >
+        <span class="material-symbols-outlined me-1">signpost</span>
+        Breadcrumbs ({{ getCategoryCount('breadcrumb') }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'body'"
+        (click)="activeBlueprintCategory = 'body'"
+      >
+        <span class="material-symbols-outlined me-1">view_quilt</span>
+        Body Features & Grids ({{ getCategoryCount('body') }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeBlueprintCategory === 'footer'"
+        (click)="activeBlueprintCategory = 'footer'"
+      >
+        <span class="material-symbols-outlined me-1">dock_to_bottom</span>
+        Footers ({{ getCategoryCount('footer') }})
+      </button>
+    </div>
+
+    <!-- Generated Templates Dual-Tab Card Grid -->
+    <div class="blueprint-grid">
+      <div class="blueprint-card" *ngFor="let t of getFilteredTemplates()">
+        <!-- Card Top Bar -->
+        <div class="blueprint-header">
+          <div class="cat-pill">
+            <span class="material-symbols-outlined me-1">{{ getCategoryIcon(t.category_key) }}</span>
+            {{ t.category_key | uppercase }}
+          </div>
+          <div class="header-right-meta">
+            <code class="variant-code font-mono">{{ t.variant_code }}</code>
+            <button
+              type="button"
+              class="btn-copy-mini"
+              title="Copy Template Code"
+              (click)="copyCode(t.html_template, $event)"
+            >
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="blueprint-body">
+          <div class="blueprint-title-row">
+            <h3 class="blueprint-title">{{ t.name }}</h3>
+            <p class="blueprint-desc">{{ t.description || 'Debranded Ozikol section blueprint' }}</p>
+          </div>
+
+          <!-- Dual Tab Switcher -->
+          <div class="card-tab-switcher">
+            <button
+              type="button"
+              class="card-tab-btn"
+              [class.active]="getCardTab(t.variant_code) === 'html'"
+              (click)="setCardTab(t.variant_code, 'html')"
+            >
+              <span class="material-symbols-outlined tab-icon">code</span>
+              <span>HTML Blueprint</span>
+            </button>
+            <button
+              type="button"
+              class="card-tab-btn"
+              [class.active]="getCardTab(t.variant_code) === 'content'"
+              (click)="setCardTab(t.variant_code, 'content')"
+            >
+              <span class="material-symbols-outlined tab-icon">article</span>
+              <span>Extracted Content</span>
+              <span class="tab-instance-pill">{{ getTemplateContentInstances(t).length }}</span>
+            </button>
+          </div>
+
+          <!-- Tab 1: HTML Blueprint Code View -->
+          <div class="card-tab-pane" *ngIf="getCardTab(t.variant_code) === 'html'">
+            <div class="template-preview-code">
+              <pre><code>{{ t.html_template }}</code></pre>
+            </div>
+          </div>
+
+          <!-- Tab 2: Extracted Live Content View (With Repeated Instances Support) -->
+          <div class="card-tab-pane" *ngIf="getCardTab(t.variant_code) === 'content'">
+            <div class="content-instances-scroll">
+              <div
+                class="content-instance-card"
+                *ngFor="let inst of getTemplateContentInstances(t); let i = index"
+              >
+                <!-- Instance Header -->
+                <div class="instance-header">
+                  <div class="instance-badge-row">
+                    <span class="instance-num-badge">Instance #{{ i + 1 }}</span>
+                    <span class="instance-page-badge" [class.home-badge]="inst.isHome">
+                      <span class="material-symbols-outlined page-icon">web</span>
+                      <span>{{ inst.pageTitle }} (<code>/{{ inst.pageSlug }}</code>)</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Content Key-Value Matrix -->
+                <div class="instance-fields-list">
+                  <div class="field-row" *ngIf="inst.miniTitle">
+                    <span class="field-label">Mini Title:</span>
+                    <span class="field-value mini-title-text">{{ inst.miniTitle }}</span>
+                  </div>
+
+                  <div class="field-row">
+                    <span class="field-label">Title:</span>
+                    <span class="field-value fw-bold text-dark">{{ inst.title }}</span>
+                  </div>
+
+                  <div class="field-row" *ngIf="inst.description">
+                    <span class="field-label">Description:</span>
+                    <span class="field-value text-muted small">{{ inst.description }}</span>
+                  </div>
+
+                  <div class="field-row" *ngIf="inst.buttonText">
+                    <span class="field-label">Action Link:</span>
+                    <span class="field-value">
+                      <span class="btn-preview-tag">{{ inst.buttonText }}</span>
+                      <code class="link-url-tag" *ngIf="inst.buttonLink">{{ inst.buttonLink }}</code>
+                    </span>
+                  </div>
+
+                  <!-- Sub-Items List (Cards / Features / Services) -->
+                  <div class="instance-items-block" *ngIf="inst.items && inst.items.length > 0">
+                    <div class="items-header-mini">
+                      <span class="material-symbols-outlined">dataset</span>
+                      <strong>Section Items ({{ inst.items.length }})</strong>
+                    </div>
+                    <div class="sub-items-grid">
+                      <div class="sub-item-card" *ngFor="let sub of inst.items; let subIdx = index">
+                        <span class="sub-item-index">{{ subIdx + 1 }}</span>
+                        <div class="sub-item-content">
+                          <strong class="sub-item-title">{{ sub.title || sub.name || sub.heading || 'Item ' + (subIdx + 1) }}</strong>
+                          <p class="sub-item-desc" *ngIf="sub.description || sub.subtitle || sub.text">
+                            {{ sub.description || sub.subtitle || sub.text }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
