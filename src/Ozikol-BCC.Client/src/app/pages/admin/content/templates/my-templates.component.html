@@ -475,21 +475,21 @@
               <p class="zone-desc">{{ getZoneDescription(activeMainTab) }}</p>
             </div>
           </div>
-          <div class="zone-banner-actions" style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" class="btn btn-outline" (click)="normalizeTagOrders()" title="Normalize execution orders cleanly to 10, 20, 30, 40..." style="display: inline-flex; align-items: center; gap: 6px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569;">
-              <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">reorder</span>
+          <div class="zone-banner-actions">
+            <button type="button" class="btn zone-toolbar-btn btn-normalize" (click)="normalizeTagOrders()" title="Normalize execution orders cleanly to 10, 20, 30, 40...">
+              <span class="material-symbols-outlined icon-blue">reorder</span>
               <span>Normalize (10, 20...)</span>
             </button>
-            <button type="button" class="btn btn-outline" (click)="openFontUploadModal()" title="Upload and host custom icon/typography webfonts (.woff2, .woff, .ttf)" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
-              <span class="material-symbols-outlined" style="font-size: 20px; color: #8b5cf6;">font_download</span>
+            <button type="button" class="btn zone-toolbar-btn btn-font-vault" (click)="openFontUploadModal()" title="Upload and host custom icon/typography webfonts (.woff2, .woff, .ttf)">
+              <span class="material-symbols-outlined icon-purple">font_download</span>
               <span>Upload Fonts</span>
             </button>
-            <button type="button" class="btn btn-outline" (click)="openBulkUploadModal(activeMainTab)" title="Upload multiple CSS/JS/Font files and auto-inject tags" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
-              <span class="material-symbols-outlined" style="font-size: 20px; color: #0050e5;">drive_folder_upload</span>
+            <button type="button" class="btn zone-toolbar-btn btn-bulk-upload" (click)="openBulkUploadModal(activeMainTab)" title="Upload multiple CSS/JS/Font files and auto-inject tags">
+              <span class="material-symbols-outlined icon-blue">drive_folder_upload</span>
               <span>Bulk Upload Assets</span>
             </button>
-            <button type="button" class="btn btn-primary" (click)="openCreateTagModal(activeMainTab)" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700;">
-              <span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+            <button type="button" class="btn btn-primary zone-toolbar-btn btn-add-tag" (click)="openCreateTagModal(activeMainTab)">
+              <span class="material-symbols-outlined">add</span>
               <span>Add {{ getZoneShortTitle(activeMainTab) }} Tag</span>
             </button>
           </div>
