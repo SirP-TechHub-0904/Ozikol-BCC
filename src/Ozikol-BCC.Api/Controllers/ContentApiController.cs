@@ -2681,6 +2681,151 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Uploads multiple CSS or JS asset files to Cloudflare R2 Object Storage in bulk,
+        /// automatically extracts the tag name from the filename prefix (before the first dot),
+        /// generates global CDN URLs, and creates active SiteCodeInjectionTag entries with incrementing SortOrders.
+        /// </summary>
+        /// <param name="files">The collection of files to upload.</param>
+        /// <param name="zone">Target browser zone: 'head', 'body_open', or 'footer'. Defaults to 'head'.</param>
+        /// <param name="suiteCode">Theme suite scope: 'global' or a specific theme suite code. Defaults to 'global'.</param>
+        /// <param name="startSortOrder">Starting sort order. Defaults to 10.</param>
+        /// <param name="sortIncrement">Sort order increment per item. Defaults to 10.</param>
+        /// <returns>List of newly created and injected SiteCodeInjectionTag entities.</returns>
+        [HttpPost("code-injections/bulk-upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> BulkUploadCodeInjections(
+            [FromForm] List<IFormFile> files,
+            [FromForm] string zone = "head",
+            [FromForm] string suiteCode = "global",
+            [FromForm] int startSortOrder = 10,
+            [FromForm] int sortIncrement = 10)
+        {
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No files were provided for bulk upload."));
+            }
+
+            var cleanZone = (zone ?? "head").Trim().ToLowerInvariant();
+            if (cleanZone != "head" && cleanZone != "body_open" && cleanZone != "footer")
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
+            }
+
+            var cleanSuite = string.IsNullOrWhiteSpace(suiteCode) ? "global" : suiteCode.Trim().ToLowerInvariant();
+            var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+
+            var createdTags = new List<SiteCodeInjectionTag>();
+            int currentSort = startSortOrder;
+
+            // Get maximum existing sort order in this zone to append cleanly if startSortOrder is default
+            if (startSortOrder == 10)
+            {
+                var maxSort = await _context.SiteCodeInjectionTags
+                    .Where(t => t.Zone == cleanZone)
+                    .Select(t => (int?)t.SortOrder)
+                    .MaxAsync();
+                if (maxSort.HasValue && maxSort.Value >= 10)
+                {
+                    currentSort = maxSort.Value + sortIncrement;
+                }
+            }
+
+            foreach (var file in files)
+            {
+                if (file == null || file.Length == 0) continue;
+
+                var fileName = file.FileName;
+                // Auto-Naming Rule: use string before the first dot as the tag name
+                var nameBeforeDot = fileName.Contains('.') ? fileName.Substring(0, fileName.IndexOf('.')) : fileName;
+                var tagName = string.IsNullOrWhiteSpace(nameBeforeDot) ? fileName : nameBeforeDot.Trim();
+
+                var ext = Path.GetExtension(fileName).ToLowerInvariant();
+                var isJs = ext == ".js";
+                var isFont = ext == ".woff2" || ext == ".woff" || ext == ".ttf" || ext == ".otf" || ext == ".eot" || ext == ".svg";
+                var tagType = isJs 
+                    ? (cleanZone == "footer" ? "footer_script_url" : "script_url") 
+                    : (isFont ? "raw_css" : "link_stylesheet");
+
+                try
+                {
+                    using var stream = file.OpenReadStream();
+                    CloudflareR2UploadResult result;
+                    if (isJs)
+                    {
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", "js");
+                    }
+                    else if (isFont)
+                    {
+                        var contentType = ext switch
+                        {
+                            ".woff2" => "font/woff2",
+                            ".woff" => "font/woff",
+                            ".ttf" => "font/ttf",
+                            ".otf" => "font/otf",
+                            ".eot" => "application/vnd.ms-fontobject",
+                            ".svg" => "image/svg+xml",
+                            _ => "application/octet-stream"
+                        };
+                        result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
+                    }
+                    else
+                    {
+                        result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+                    }
+
+                    var cdnUrl = result.Url;
+                    string tagContent;
+                    if (isJs)
+                    {
+                        tagContent = $"<script src=\"{cdnUrl}\"></script>";
+                    }
+                    else if (isFont)
+                    {
+                        var fontFormat = ext switch
+                        {
+                            ".woff2" => "woff2",
+                            ".woff" => "woff",
+                            ".ttf" => "truetype",
+                            ".otf" => "opentype",
+                            ".eot" => "embedded-opentype",
+                            ".svg" => "svg",
+                            _ => "woff2"
+                        };
+                        tagContent = $"<style>\n@font-face {{\n  font-family: '{tagName}';\n  src: url('{cdnUrl}') format('{fontFormat}');\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n}}\n</style>";
+                    }
+                    else
+                    {
+                        tagContent = $"<link rel=\"stylesheet\" href=\"{cdnUrl}\" />";
+                    }
+
+                    var tag = new SiteCodeInjectionTag
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = tagName,
+                        Zone = cleanZone,
+                        TagType = tagType,
+                        SuiteCode = cleanSuite,
+                        Content = tagContent,
+                        SortOrder = currentSort,
+                        IsActive = true,
+                        CreatedAtUtc = DateTime.UtcNow
+                    };
+
+                    _context.SiteCodeInjectionTags.Add(tag);
+                    createdTags.Add(tag);
+                    currentSort += sortIncrement;
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to upload file '{fileName}': {ex.Message}"));
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(createdTags, $"{createdTags.Count} code injection tag(s) uploaded and injected successfully."));
+        }
+
+        /// <summary>
         /// Updates an existing code injection tag.
         /// </summary>
         /// <param name="id">Tag identifier.</param>
@@ -2762,6 +2907,223 @@ namespace Ozikol_BCC.Api.Controllers
 
             return Ok(ApiResponse<object>.SuccessResponse(tag, $"Tag '{tag.Name}' status set to {(tag.IsActive ? "Active" : "Disabled")}."));
         }
+
+        /// <summary>
+        /// Retrieves the raw text content of a code injection asset (either inline HTML/CSS/JS or fetched from Cloudflare R2 / CDN).
+        /// </summary>
+        /// <param name="id">Tag identifier.</param>
+        /// <returns>Raw content text payload, URL, and asset metadata.</returns>
+        [HttpGet("code-injections/{id:guid}/raw-content")]
+        public async Task<IActionResult> GetCodeInjectionRawContent(Guid id)
+        {
+            var tag = await _context.SiteCodeInjectionTags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Code injection tag not found."));
+            }
+
+            var extractedUrl = ExtractUrlFromTag(tag.Content);
+            if (!string.IsNullOrWhiteSpace(extractedUrl))
+            {
+                var content = await _r2Storage.GetAssetTextAsync(extractedUrl);
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    tagId = tag.Id,
+                    name = tag.Name,
+                    tagType = tag.TagType,
+                    zone = tag.Zone,
+                    suiteCode = tag.SuiteCode,
+                    isExternalCdn = true,
+                    assetUrl = extractedUrl,
+                    rawContent = content ?? string.Empty,
+                    originalTagContent = tag.Content
+                }, "Asset content retrieved successfully."));
+            }
+
+            // Inline content
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                tagId = tag.Id,
+                name = tag.Name,
+                tagType = tag.TagType,
+                zone = tag.Zone,
+                suiteCode = tag.SuiteCode,
+                isExternalCdn = false,
+                assetUrl = (string?)null,
+                rawContent = tag.Content,
+                originalTagContent = tag.Content
+            }, "Inline code content retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Saves updated raw text content for a code injection tag. If the tag links to a Cloudflare R2 asset,
+        /// overwrites the asset in R2 object storage with updated CDN headers.
+        /// </summary>
+        /// <param name="id">Tag identifier.</param>
+        /// <param name="request">Payload containing the updated raw text content.</param>
+        /// <returns>Updated tag details and asset metadata.</returns>
+        [HttpPut("code-injections/{id:guid}/save-asset-content")]
+        public async Task<IActionResult> SaveCodeInjectionAssetContent(Guid id, [FromBody] SaveAssetContentRequest request)
+        {
+            var tag = await _context.SiteCodeInjectionTags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Code injection tag not found."));
+            }
+
+            var updatedText = request?.RawContent ?? string.Empty;
+            var extractedUrl = ExtractUrlFromTag(tag.Content);
+
+            if (!string.IsNullOrWhiteSpace(extractedUrl))
+            {
+                var isJs = tag.TagType.Contains("script") || extractedUrl.EndsWith(".js", StringComparison.OrdinalIgnoreCase);
+                var contentType = isJs ? "application/javascript" : "text/css";
+
+                var saveResult = await _r2Storage.SaveAssetTextAsync(extractedUrl, updatedText, contentType);
+                if (!saveResult.Success)
+                {
+                    return StatusCode(500, ApiResponse<object>.FailureResponse(saveResult.Message));
+                }
+
+                tag.UpdatedAtUtc = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    tagId = tag.Id,
+                    name = tag.Name,
+                    cdnUrl = saveResult.Url,
+                    fileSizeBytes = saveResult.FileSizeBytes,
+                    updatedAt = tag.UpdatedAtUtc
+                }, "Asset file successfully saved and updated on Cloudflare CDN."));
+            }
+
+            // Inline tag content update
+            tag.Content = updatedText;
+            tag.UpdatedAtUtc = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                tagId = tag.Id,
+                name = tag.Name,
+                updatedAt = tag.UpdatedAtUtc
+            }, "Inline code injection tag updated successfully."));
+        }
+
+        /// <summary>
+        /// Uploads font files (.woff2, .woff, .ttf, .eot, .otf, .svg) to Cloudflare R2 object storage under the tenant fonts repository.
+        /// Returns public CDN URLs and pre-formatted @font-face CSS snippets.
+        /// </summary>
+        /// <param name="files">Collection of font files.</param>
+        /// <returns>List of uploaded font assets with public CDN links and CSS snippets.</returns>
+        [HttpPost("fonts/upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadFonts([FromForm] List<IFormFile> files)
+        {
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No font files were provided for upload."));
+            }
+
+            if (!_r2Storage.IsConfigured())
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Cloudflare R2 storage is not configured. Please define CloudflareR2 credentials in environment settings."));
+            }
+
+            var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+            var fontFolder = $"tenants/{tenantSlug.Trim().ToLowerInvariant()}/fonts";
+            var results = new List<object>();
+
+            foreach (var file in files)
+            {
+                if (file == null || file.Length == 0) continue;
+
+                var fileName = file.FileName;
+                var ext = Path.GetExtension(fileName).ToLowerInvariant();
+                var contentType = ext switch
+                {
+                    ".woff2" => "font/woff2",
+                    ".woff" => "font/woff",
+                    ".ttf" => "font/ttf",
+                    ".otf" => "font/otf",
+                    ".eot" => "application/vnd.ms-fontobject",
+                    ".svg" => "image/svg+xml",
+                    _ => "application/octet-stream"
+                };
+
+                try
+                {
+                    await using var stream = file.OpenReadStream();
+                    var uploadResult = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, fontFolder);
+                    if (uploadResult.Success)
+                    {
+                        var fontFamilyName = Path.GetFileNameWithoutExtension(fileName).Split('.')[0];
+                        var fontFormat = ext switch
+                        {
+                            ".woff2" => "woff2",
+                            ".woff" => "woff",
+                            ".ttf" => "truetype",
+                            ".otf" => "opentype",
+                            ".eot" => "embedded-opentype",
+                            ".svg" => "svg",
+                            _ => "woff2"
+                        };
+
+                        var fontFaceSnippet = $"@font-face {{\n  font-family: '{fontFamilyName}';\n  src: url('{uploadResult.Url}') format('{fontFormat}');\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n}}";
+
+                        results.Add(new
+                        {
+                            fileName,
+                            fontFamilyName,
+                            cdnUrl = uploadResult.Url,
+                            fileSizeBytes = uploadResult.FileSizeBytes,
+                            format = fontFormat,
+                            fontFaceSnippet
+                        });
+                    }
+                    else
+                    {
+                        return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to upload font '{fileName}': {uploadResult.Message}"));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to upload font '{fileName}': {ex.Message}"));
+                }
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(results, $"{results.Count} font file(s) uploaded successfully to Cloudflare CDN."));
+        }
+
+        /// <summary>
+        /// Extracts an HTTP/HTTPS URL from a HTML tag or string.
+        /// </summary>
+        private static string? ExtractUrlFromTag(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return null;
+            var trimmed = content.Trim();
+            if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            var hrefMatch = System.Text.RegularExpressions.Regex.Match(content, @"href=[""']([^""']+)[""']", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (hrefMatch.Success) return hrefMatch.Groups[1].Value;
+
+            var srcMatch = System.Text.RegularExpressions.Regex.Match(content, @"src=[""']([^""']+)[""']", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (srcMatch.Success) return srcMatch.Groups[1].Value;
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Payload model for saving updated asset code content.
+    /// </summary>
+    public class SaveAssetContentRequest
+    {
+        public string RawContent { get; set; } = string.Empty;
     }
 
     /// <summary>

@@ -314,7 +314,10 @@ namespace Ozikol_BCC.Persistence.EF.SQL.Extensions
             </li>
           {{/each}}
         </ul>
-        <div class=""d-flex align-items-center gap-2"">
+        <div class=""d-flex align-items-center gap-3"">
+          <a href=""{{ LoginUrl }}"" class=""btn btn-link text-decoration-none fw-semibold text-secondary px-2 oz-login-btn"">
+            {{ LoginText }}
+          </a>
           {{#each MenuCtaButtons}}
             <a href=""{{ Url }}"" class=""btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm"">
               {{ Title }}
@@ -330,6 +333,8 @@ namespace Ozikol_BCC.Persistence.EF.SQL.Extensions
 .oz-nav-header .navbar-brand { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -0.03em; }
 .oz-nav-header .nav-link { font-size: 14.5px; font-weight: 600; color: #475569 !important; padding: 8px 4px !important; transition: color 0.15s ease; }
 .oz-nav-header .nav-link:hover, .oz-nav-header .nav-link.active { color: #0050e5 !important; }
+.oz-nav-header .oz-login-btn { font-size: 14px; color: #475569 !important; text-decoration: none !important; transition: color 0.15s ease; }
+.oz-nav-header .oz-login-btn:hover { color: #0050e5 !important; }
 .oz-nav-header .btn-primary { background-color: #0050e5; border-color: #0050e5; font-size: 13.5px; transition: all 0.2s ease; }
 .oz-nav-header .btn-primary:hover { background-color: #003bb5; border-color: #003bb5; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35) !important; }"
                 },

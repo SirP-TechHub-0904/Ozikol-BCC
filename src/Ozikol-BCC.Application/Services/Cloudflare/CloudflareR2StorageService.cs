@@ -223,6 +223,140 @@ namespace Ozikol_BCC.Application.Services.Cloudflare
         }
 
         /// <summary>
+        /// Retrieves the raw text content of an asset from Cloudflare R2 given its object key or public CDN URL.
+        /// </summary>
+        /// <param name="keyOrUrl">The object key or public CDN URL of the asset.</param>
+        /// <returns>The raw text content, or <c>null</c> if not found or unreadable.</returns>
+        public async Task<string?> GetAssetTextAsync(string keyOrUrl)
+        {
+            if (string.IsNullOrWhiteSpace(keyOrUrl)) return null;
+
+            var objectKey = ExtractObjectKey(keyOrUrl);
+
+            if (IsConfigured())
+            {
+                try
+                {
+                    var credentials = new BasicAWSCredentials(_settings.AccessKeyId, _settings.SecretAccessKey);
+                    var s3Config = new AmazonS3Config
+                    {
+                        ServiceURL = $"https://{_settings.AccountId.Trim()}.r2.cloudflarestorage.com",
+                        AuthenticationRegion = "auto",
+                        ForcePathStyle = true
+                    };
+
+                    using var s3Client = new AmazonS3Client(credentials, s3Config);
+                    var getRequest = new GetObjectRequest
+                    {
+                        BucketName = _settings.BucketName,
+                        Key = objectKey
+                    };
+
+                    using var response = await s3Client.GetObjectAsync(getRequest);
+                    using var reader = new StreamReader(response.ResponseStream, Encoding.UTF8);
+                    return await reader.ReadToEndAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to read asset directly from Cloudflare R2 S3: {Key}. Attempting CDN fallback.", objectKey);
+                }
+            }
+
+            // Fallback: If URL is public or R2 direct S3 read fails, try HTTP GET
+            if (Uri.TryCreate(keyOrUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                try
+                {
+                    using var httpClient = new System.Net.Http.HttpClient();
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+                    return await httpClient.GetStringAsync(uri);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "HTTP fallback fetch failed for asset URL: {Url}", keyOrUrl);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Saves updated raw text content to Cloudflare R2, overwriting or creating the object key with appropriate cache headers.
+        /// </summary>
+        /// <param name="keyOrUrl">The object key or public CDN URL of the asset to overwrite/update.</param>
+        /// <param name="textContent">The updated raw text content (CSS, JS, SVG, etc.).</param>
+        /// <param name="contentType">The MIME content type (e.g., text/css, application/javascript).</param>
+        /// <returns>A <see cref="CloudflareR2UploadResult"/> containing the updated CDN URL and metadata.</returns>
+        public async Task<CloudflareR2UploadResult> SaveAssetTextAsync(string keyOrUrl, string textContent, string contentType)
+        {
+            if (!IsConfigured())
+            {
+                return new CloudflareR2UploadResult
+                {
+                    Success = false,
+                    Message = "Cloudflare R2 storage credentials are not configured."
+                };
+            }
+
+            try
+            {
+                var objectKey = ExtractObjectKey(keyOrUrl);
+                var contentBytes = Encoding.UTF8.GetBytes(textContent ?? string.Empty);
+                using var memoryStream = new MemoryStream(contentBytes);
+
+                var credentials = new BasicAWSCredentials(_settings.AccessKeyId, _settings.SecretAccessKey);
+                var s3Config = new AmazonS3Config
+                {
+                    ServiceURL = $"https://{_settings.AccountId.Trim()}.r2.cloudflarestorage.com",
+                    AuthenticationRegion = "auto",
+                    ForcePathStyle = true
+                };
+
+                using var s3Client = new AmazonS3Client(credentials, s3Config);
+                var putRequest = new PutObjectRequest
+                {
+                    InputStream = memoryStream,
+                    Key = objectKey,
+                    BucketName = _settings.BucketName,
+                    ContentType = string.IsNullOrWhiteSpace(contentType) ? "text/plain" : contentType,
+                    CannedACL = S3CannedACL.NoACL,
+                    DisablePayloadSigning = true,
+                    UseChunkEncoding = false
+                };
+
+                // Enable public edge cache with revalidation
+                putRequest.Headers.CacheControl = "public, max-age=300, must-revalidate";
+
+                await s3Client.PutObjectAsync(putRequest);
+                var cdnUrl = GetPublicCdnUrl(objectKey);
+
+                _logger.LogInformation("Successfully saved updated text asset to Cloudflare R2: {Key}", objectKey);
+
+                return new CloudflareR2UploadResult
+                {
+                    Success = true,
+                    Url = cdnUrl,
+                    Key = objectKey,
+                    BucketName = _settings.BucketName,
+                    OriginalFileName = Path.GetFileName(objectKey),
+                    SafeFileName = Path.GetFileName(objectKey),
+                    FileSizeBytes = contentBytes.Length,
+                    ContentPreview = textContent,
+                    Message = "Asset content updated and published to Cloudflare CDN successfully."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save asset text content to Cloudflare R2 for {KeyOrUrl}", keyOrUrl);
+                return new CloudflareR2UploadResult
+                {
+                    Success = false,
+                    Message = $"Failed to save asset: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
         /// Computes the public Cloudflare CDN URL for an object key.
         /// Uses the configured custom domain or pub-*.r2.dev edge domain.
         /// </summary>
@@ -238,6 +372,24 @@ namespace Ozikol_BCC.Application.Services.Cloudflare
 
             // Fallback to standard Cloudflare R2 dev URL pattern if PublicCdnUrl is not yet set
             return $"https://pub-{_settings.AccountId}.r2.dev/{cleanKey}";
+        }
+
+        /// <summary>
+        /// Extracts the bucket object key from a full URL or relative path.
+        /// </summary>
+        /// <param name="keyOrUrl">Input URL or key string.</param>
+        /// <returns>Cleaned bucket object key.</returns>
+        private static string ExtractObjectKey(string keyOrUrl)
+        {
+            if (string.IsNullOrWhiteSpace(keyOrUrl)) return "asset";
+
+            var trimmed = keyOrUrl.Trim();
+            if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+            {
+                return uri.AbsolutePath.TrimStart('/');
+            }
+
+            return trimmed.TrimStart('/');
         }
     }
 }
