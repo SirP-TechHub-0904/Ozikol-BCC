@@ -741,8 +741,8 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
 
     // Authentication, Portal & Role-Aware Placeholders (Console vs. My Workspace vs. Sign In)
-    const loginUrl = ctx.LoginUrl || ctx.loginUrl || '/auth/login';
-    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || 'Sign In';
+    const loginUrl = ctx.LoginUrl || ctx.loginUrl || opts.previewMenuContent?.loginUrl || '/auth/login';
+    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || opts.previewMenuContent?.loginText || 'Sign In';
     const loginBtnHtml = ctx.LoginButtonHtml || ctx.loginButtonHtml || 
       `<a href="${loginUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><span>${loginText}</span></a>`;
 

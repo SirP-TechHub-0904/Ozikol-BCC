@@ -475,9 +475,17 @@
               <p class="zone-desc">{{ getZoneDescription(activeMainTab) }}</p>
             </div>
           </div>
-          <div class="zone-banner-actions">
-            <button type="button" class="btn btn-primary" (click)="openCreateTagModal(activeMainTab)">
-              <span class="material-symbols-outlined">add</span>
+          <div class="zone-banner-actions" style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn btn-outline" (click)="openFontUploadModal()" title="Upload and host custom icon/typography webfonts (.woff2, .woff, .ttf)" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #8b5cf6;">font_download</span>
+              <span>Upload Fonts</span>
+            </button>
+            <button type="button" class="btn btn-outline" (click)="openBulkUploadModal(activeMainTab)" title="Upload multiple CSS/JS/Font files and auto-inject tags" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #0050e5;">drive_folder_upload</span>
+              <span>Bulk Upload Assets</span>
+            </button>
+            <button type="button" class="btn btn-primary" (click)="openCreateTagModal(activeMainTab)" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700;">
+              <span class="material-symbols-outlined" style="font-size: 20px;">add</span>
               <span>Add {{ getZoneShortTitle(activeMainTab) }} Tag</span>
             </button>
           </div>
@@ -495,7 +503,7 @@
                   <th style="width: 150px;">Type</th>
                   <th>Code Snippet Preview</th>
                   <th style="width: 110px;">Status</th>
-                  <th style="text-align: right; width: 140px;">Actions</th>
+                  <th style="text-align: right; width: 170px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -532,8 +540,11 @@
                   </td>
                   <td>
                     <div class="table-actions">
-                      <button type="button" class="btn-tbl-action preview" (click)="openEditTagModal(tag)" title="Edit Tag">
-                        <span class="material-symbols-outlined">edit</span>
+                      <button type="button" class="btn-tbl-action preview" (click)="openAssetEditor(tag)" title="Edit Asset File / Raw Content" style="background: rgba(99, 102, 241, 0.1); color: #6366f1; border-color: rgba(99, 102, 241, 0.3);">
+                        <span class="material-symbols-outlined">edit_note</span>
+                      </button>
+                      <button type="button" class="btn-tbl-action preview" (click)="openEditTagModal(tag)" title="Tag Settings">
+                        <span class="material-symbols-outlined">settings</span>
                       </button>
                       <button type="button" class="btn-tbl-action delete" (click)="openDeleteTagModal(tag)" title="Delete Tag">
                         <span class="material-symbols-outlined">delete</span>
@@ -2428,10 +2439,16 @@
                     </div>
                   </div>
                   <input type="file" #cssFileInput accept=".css" (change)="onCssFileSelected($event)" style="display: none;" />
-                  <button type="button" class="btn-choose-css" (click)="cssFileInput.click()">
-                    <span class="material-symbols-outlined">folder_open</span>
-                    <span>Choose .CSS File</span>
-                  </button>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-choose-css" (click)="cssFileInput.click()">
+                      <span class="material-symbols-outlined">folder_open</span>
+                      <span>Choose .CSS File</span>
+                    </button>
+                    <button type="button" class="btn-choose-css" (click)="closeTagModal(); openBulkUploadModal('head')" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe;" title="Upload multiple CSS files at once">
+                      <span class="material-symbols-outlined">drive_folder_upload</span>
+                      <span>Bulk Upload (.CSS)</span>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Selected File Status Bar -->
@@ -2768,3 +2785,420 @@
         </div>
       </div>
     </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL 10: BULK ASSET UPLOAD & AUTO-INJECTION MODAL      -->
+    <!-- ======================================================= -->
+    <div class="modal-backdrop" *ngIf="showBulkUploadModal" (click)="closeBulkUploadModal()">
+      <div class="modal-card bulk-upload-modal-card" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="preview-modal-header">
+          <div class="preview-title-info">
+            <span class="material-symbols-outlined preview-modal-badge-icon" style="background: #eef2ff; color: #4338ca;">drive_folder_upload</span>
+            <div>
+              <h3 class="preview-modal-name">Bulk Upload Stylesheets &amp; Scripts</h3>
+              <span class="preview-modal-sub">
+                Cloudflare R2 + Global CDN • Auto-Tag Naming from filename prefix before the first dot
+              </span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeBulkUploadModal()">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-scrollable" style="padding: 24px; max-height: 72vh; overflow-y: auto;">
+          <!-- Scope Configuration Row -->
+          <div class="custom-tpl-form-grid mb-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-lbl">TARGET BROWSER INJECTION ZONE *</label>
+              <select [(ngModel)]="bulkUploadZone" class="form-ctrl">
+                <option value="head">Header Tags (&lt;head&gt;) — Stylesheets &amp; Fonts</option>
+                <option value="body_open">Body Open (&lt;body&gt;) — Trackers &amp; Noscripts</option>
+                <option value="footer">Footer Scripts (&lt;/body&gt;) — JavaScript Bundles</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-lbl">THEME SUITE SCOPE *</label>
+              <select [(ngModel)]="bulkUploadSuiteCode" class="form-ctrl">
+                <option value="global">Global (Universal / All Themes)</option>
+                <option *ngFor="let suite of getAvailableSuites()" [value]="suite.code">
+                  {{ suite.name }} ({{ suite.code }})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Drag & Drop Zone Card -->
+          <div
+            class="bulk-dropzone-card"
+            (dragover)="onBulkDragOver($event)"
+            (drop)="onBulkFilesDropped($event)"
+            (click)="bulkFileInput.click()"
+          >
+            <input
+              type="file"
+              #bulkFileInput
+              multiple
+              accept=".css,.js"
+              (change)="onBulkFilesSelected($event)"
+              style="display: none;"
+            />
+            <div class="bulk-dropzone-inner">
+              <div class="bulk-drop-icon-box">
+                <span class="material-symbols-outlined">cloud_upload</span>
+              </div>
+              <h4 class="bulk-drop-title">Choose Files or Drag &amp; Drop Here</h4>
+              <p class="bulk-drop-sub">
+                Select multiple <strong>.css</strong> or <strong>.js</strong> files simultaneously (e.g. animate.min.css, bootstrap.min.css, swiper.min.css)
+              </p>
+              <div class="bulk-naming-tip">
+                <span class="material-symbols-outlined text-primary fs-6">auto_awesome</span>
+                <span><strong>Auto-Naming Rule:</strong> Tag names are automatically derived from the file name before the first dot (e.g. <code>animate.min.css</code> &rarr; <strong>animate</strong>, <code>bexon-icons.css</code> &rarr; <strong>bexon-icons</strong>).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Queue Table (Shown when files are selected) -->
+          <div class="bulk-queue-section mt-4" *ngIf="bulkUploadFiles.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <strong class="text-dark fs-6">Selected Files Queue:</strong>
+                <span class="badge bg-primary rounded-pill px-3 py-1">{{ bulkUploadFiles.length }} file(s)</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none fw-semibold p-0" (click)="clearBulkQueue()" [disabled]="uploadingBulk">
+                Clear All
+              </button>
+            </div>
+
+            <div class="table-responsive border rounded-3 overflow-hidden">
+              <table class="table table-hover align-middle mb-0" style="font-size: 13.5px;">
+                <thead class="bg-light">
+                  <tr>
+                    <th style="width: 35px;">#</th>
+                    <th style="width: 200px;">Original File</th>
+                    <th>Auto-Derived Tag Name (Editable)</th>
+                    <th style="width: 90px;">Size</th>
+                    <th style="width: 130px;">Status</th>
+                    <th style="width: 45px; text-align: center;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of bulkUploadFiles; let idx = index">
+                    <td class="text-muted small">{{ idx + 1 }}</td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined fs-5 text-secondary">{{ item.file.name.endsWith('.js') ? 'javascript' : 'css' }}</span>
+                        <code class="fw-semibold text-dark">{{ item.file.name }}</code>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        [(ngModel)]="item.name"
+                        class="form-control form-control-sm"
+                        placeholder="Tag Name"
+                        [disabled]="uploadingBulk"
+                        style="font-size: 13px; font-weight: 600;"
+                      />
+                    </td>
+                    <td class="text-muted small">{{ item.size }}</td>
+                    <td>
+                      <span class="badge bg-secondary" *ngIf="item.status === 'pending'">Pending</span>
+                      <span class="badge bg-info text-dark d-inline-flex align-items-center gap-1" *ngIf="item.status === 'uploading'">
+                        <span class="material-symbols-outlined spin-icon fs-6">sync</span> Uploading...
+                      </span>
+                      <span class="badge bg-success d-inline-flex align-items-center gap-1" *ngIf="item.status === 'success'">
+                        <span class="material-symbols-outlined fs-6">check_circle</span> Injected
+                      </span>
+                      <span class="badge bg-danger" *ngIf="item.status === 'error'">Failed</span>
+                    </td>
+                    <td style="text-align: center;">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-link text-muted p-0"
+                        (click)="removeBulkFile(idx)"
+                        [disabled]="uploadingBulk"
+                        title="Remove from queue"
+                      >
+                        <span class="material-symbols-outlined fs-5">close</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="preview-modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline" (click)="closeBulkUploadModal()" [disabled]="uploadingBulk">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="executeBulkUpload()"
+            [disabled]="uploadingBulk || bulkUploadFiles.length === 0"
+            style="background: #0050e5; border-color: #0050e5; border-radius: 8px; padding: 10px 24px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;"
+          >
+            <span class="material-symbols-outlined" *ngIf="!uploadingBulk">cloud_upload</span>
+            <span class="material-symbols-outlined spin-icon" *ngIf="uploadingBulk">sync</span>
+            <span>{{ uploadingBulk ? 'Uploading to Cloudflare R2...' : ('Upload &amp; Inject (' + bulkUploadFiles.length + ') Tags') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 11: IN-BROWSER ASSET FILE CONTENT EDITOR & LIVE CDN SAVE -->
+    <!-- ============================================================== -->
+    <div class="modal-backdrop" *ngIf="showAssetEditorModal && editingAssetTag" (click)="closeAssetEditorModal()">
+      <div class="modal-card asset-editor-modal-card" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="preview-modal-header" style="background: #0b1120; border-bottom: 1.5px solid #1e293b; color: #ffffff;">
+          <div class="preview-title-info">
+            <div class="header-icon-box" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">
+              <span class="material-symbols-outlined">edit_note</span>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h3 class="preview-modal-name" style="color: #f8fafc; margin: 0;">{{ editingAssetTag.name }}</h3>
+                <span class="badge bg-primary-subtle text-primary border" style="font-size: 11px; text-transform: uppercase;">
+                  {{ editingAssetTag.tagType }}
+                </span>
+                <span class="badge bg-dark border text-info" *ngIf="editingAssetIsCdn" style="font-size: 10.5px;">
+                  Cloudflare R2 CDN
+                </span>
+              </div>
+              <span class="preview-modal-sub" style="color: #94a3b8; font-size: 12px;" *ngIf="editingAssetUrl">
+                Live URL: <a [href]="editingAssetUrl" target="_blank" style="color: #38bdf8; text-decoration: underline;">{{ editingAssetUrl }}</a>
+              </span>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button
+              type="button"
+              class="btn-save-template-code"
+              (click)="saveAssetContent()"
+              [disabled]="savingAssetContent || loadingAssetContent"
+              title="Save modifications directly to Cloudflare R2 Object Storage"
+              style="background: #10b981; border-color: #059669; font-weight: 700; height: 36px; padding: 0 16px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; color: #ffffff; cursor: pointer;"
+            >
+              <span class="material-symbols-outlined" *ngIf="!savingAssetContent" style="font-size: 18px;">save</span>
+              <span class="material-symbols-outlined spin-icon" *ngIf="savingAssetContent" style="font-size: 18px;">sync</span>
+              <span>{{ savingAssetContent ? 'Saving to CDN...' : 'Save &amp; Update CDN Asset' }}</span>
+            </button>
+            <button type="button" class="btn-close-modal" (click)="closeAssetEditorModal()" style="color: #94a3b8;">✕</button>
+          </div>
+        </div>
+
+        <!-- Secondary Toolbar: Font Helper & Copy -->
+        <div class="modal-token-ribbon" style="background: #0f172a; border-bottom: 1px solid #1e293b; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div class="d-flex align-items-center gap-2">
+            <span class="ribbon-label" style="color: #94a3b8; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: #818cf8;">font_download</span>
+              <span>Font Reference Tool:</span>
+            </span>
+
+            <!-- Uploaded Fonts Dropdown Menu -->
+            <div class="dropdown d-inline-block" *ngIf="uploadedFonts.length > 0">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle text-light border-secondary" type="button" data-bs-toggle="dropdown" style="font-size: 11.5px; padding: 3px 10px;">
+                Insert @font-face ({{ uploadedFonts.length }})
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark shadow" style="font-size: 12px; max-height: 240px; overflow-y: auto;">
+                <li *ngFor="let font of uploadedFonts">
+                  <button class="dropdown-item d-flex justify-content-between align-items-center py-2" (click)="insertFontSnippetIntoAsset(font)">
+                    <span>{{ font.fontFamilyName }} ({{ font.format }})</span>
+                    <span class="badge bg-secondary ms-2">{{ (font.fileSizeBytes / 1024).toFixed(1) }} KB</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-link text-info text-decoration-none" (click)="openFontUploadModal()" style="font-size: 11.5px; padding: 0;">
+              + Upload Webfont
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-dark text-light border-secondary d-inline-flex align-items-center gap-1" (click)="copyFontSnippet(editingAssetContent, 'Asset Source Code')" style="font-size: 11.5px; padding: 3px 10px;">
+              <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Body / Code Canvas -->
+        <div class="asset-editor-body" style="background: #090d16; min-height: 480px; position: relative; display: flex; flex-direction: column;">
+          <div *ngIf="loadingAssetContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; color: #94a3b8; gap: 12px;">
+            <span class="material-symbols-outlined spin-icon" style="font-size: 32px; color: #38bdf8;">sync</span>
+            <span>Fetching asset content from Cloudflare CDN...</span>
+          </div>
+
+          <textarea
+            *ngIf="!loadingAssetContent"
+            [(ngModel)]="editingAssetContent"
+            class="modal-code-textarea"
+            style="flex: 1; width: 100%; min-height: 480px; background: #090d16; color: #e2e8f0; font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 18px 20px; border: none; outline: none; resize: none; box-sizing: border-box;"
+            placeholder="/* Enter or edit your stylesheet/script code here... */"
+            spellcheck="false"
+          ></textarea>
+        </div>
+
+        <!-- Footer -->
+        <div class="preview-modal-footer" style="background: #0b1120; border-top: 1px solid #1e293b; color: #94a3b8; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 11.5px; color: #64748b;">
+            <span *ngIf="editingAssetIsCdn">Changes overwrite the live asset file in your tenant bucket with zero downtime.</span>
+            <span *ngIf="!editingAssetIsCdn">Editing inline code injection tag snippet.</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-outline" (click)="closeAssetEditorModal()" style="border-color: #334155; color: #cbd5e1;" [disabled]="savingAssetContent">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="saveAssetContent()"
+              [disabled]="savingAssetContent || loadingAssetContent"
+              style="background: #10b981; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              <span class="material-symbols-outlined" *ngIf="!savingAssetContent" style="font-size: 18px;">save</span>
+              <span class="material-symbols-outlined spin-icon" *ngIf="savingAssetContent" style="font-size: 18px;">sync</span>
+              <span>{{ savingAssetContent ? 'Saving...' : 'Save &amp; Update CDN Asset' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 12: CUSTOM WEBFONT & TYPOGRAPHY VAULT (CLOUDFLARE CDN)   -->
+    <!-- ============================================================== -->
+    <div class="modal-backdrop" *ngIf="showFontUploadModal" (click)="closeFontUploadModal()">
+      <div class="modal-card" style="max-width: 780px; width: 100%; border-radius: 16px; overflow: hidden; background: #ffffff;" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="preview-modal-header" style="background: #ffffff; border-bottom: 1.5px solid #e2e8f0; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div class="preview-title-info">
+            <div class="header-icon-box" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+              <span class="material-symbols-outlined">font_download</span>
+            </div>
+            <div>
+              <h3 class="preview-modal-name" style="color: #0f172a; margin: 0; font-size: 18px; font-weight: 800;">
+                Custom Webfonts &amp; Icon Typography Vault
+              </h3>
+              <span class="preview-modal-sub" style="color: #64748b; font-size: 12.5px;">
+                Upload <code>.woff2</code>, <code>.woff</code>, <code>.ttf</code>, <code>.otf</code>, or <code>.eot</code> files to Cloudflare R2 and copy instant CDN URLs.
+              </span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeFontUploadModal()">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body-scrollable" style="padding: 24px; max-height: 72vh; overflow-y: auto;">
+          <!-- Font Dropzone -->
+          <div
+            class="bulk-dropzone-card"
+            (click)="fontFileInput.click()"
+            style="border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; padding: 26px 20px; text-align: center; cursor: pointer;"
+          >
+            <input
+              type="file"
+              #fontFileInput
+              multiple
+              accept=".woff2,.woff,.ttf,.otf,.eot,.svg"
+              (change)="onFontFilesSelected($event)"
+              style="display: none;"
+            />
+            <div class="bulk-dropzone-inner">
+              <div class="bulk-drop-icon-box" style="width: 48px; height: 48px; border-radius: 10px; background: #ede9fe; color: #8b5cf6; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">cloud_upload</span>
+              </div>
+              <h4 class="bulk-drop-title" style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0;">
+                Choose Font Files or Drag &amp; Drop Here
+              </h4>
+              <p class="bulk-drop-sub" style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">
+                Supports <strong>.woff2</strong> (recommended), <strong>.woff</strong>, <strong>.ttf</strong>, <strong>.otf</strong>, and <strong>.eot</strong> icon/web fonts.
+              </p>
+            </div>
+          </div>
+
+          <div *ngIf="uploadingFonts" class="text-center py-3 text-primary fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <span class="material-symbols-outlined spin-icon">sync</span>
+            <span>Uploading webfonts to Cloudflare R2 Storage...</span>
+          </div>
+
+          <!-- Uploaded Fonts Reference List -->
+          <div class="mt-4" *ngIf="uploadedFonts.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="text-dark fs-6">Uploaded Font Assets ({{ uploadedFonts.length }}):</strong>
+              <span class="badge bg-success">Hosted on CDN</span>
+            </div>
+
+            <div class="table-responsive border rounded-3 overflow-hidden">
+              <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                <thead class="bg-light">
+                  <tr>
+                    <th>Font Family</th>
+                    <th style="width: 80px;">Format</th>
+                    <th style="width: 80px;">Size</th>
+                    <th style="width: 220px;">CDN Link &amp; Snippet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let font of uploadedFonts">
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined text-primary fs-5">font_download</span>
+                        <div>
+                          <strong class="text-dark">{{ font.fontFamilyName }}</strong>
+                          <div class="text-muted small">{{ font.fileName }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge bg-purple text-white" style="background: #8b5cf6;">{{ font.format | uppercase }}</span>
+                    </td>
+                    <td class="text-muted small">{{ (font.fileSizeBytes / 1024).toFixed(1) }} KB</td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                          (click)="copyFontSnippet(font.cdnUrl, 'Font CDN URL')"
+                          title="Copy Direct CDN URL"
+                          style="font-size: 11px; padding: 2px 8px;"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 13px;">link</span>
+                          <span>Copy URL</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                          (click)="copyFontSnippet(font.fontFaceSnippet, '@font-face CSS snippet')"
+                          title="Copy @font-face CSS rule"
+                          style="font-size: 11px; padding: 2px 8px;"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 13px;">code</span>
+                          <span>Copy @font-face</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="preview-modal-footer" style="padding: 14px 24px; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-outline" (click)="closeFontUploadModal()">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+

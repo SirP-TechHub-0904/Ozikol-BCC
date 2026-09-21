@@ -143,6 +143,45 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   uploadedCssUrl: string = '';
   uploadedCssStorage: string = '';
 
+  // Bulk CSS / JS Asset Upload State
+  showBulkUploadModal: boolean = false;
+  uploadingBulk: boolean = false;
+  bulkUploadZone: 'head' | 'body_open' | 'footer' = 'head';
+  bulkUploadSuiteCode: string = 'global';
+  bulkUploadStartSort: number = 10;
+  bulkUploadSortIncrement: number = 10;
+  bulkUploadFiles: Array<{
+    file: File;
+    name: string;
+    size: string;
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    cdnUrl?: string;
+    error?: string;
+  }> = [];
+  @ViewChild('bulkFileInput') bulkFileInput?: ElementRef<HTMLInputElement>;
+
+  // Asset File Content Editor State (Modal 11)
+  showAssetEditorModal: boolean = false;
+  editingAssetTag: any = null;
+  editingAssetContent: string = '';
+  editingAssetUrl: string = '';
+  editingAssetIsCdn: boolean = false;
+  loadingAssetContent: boolean = false;
+  savingAssetContent: boolean = false;
+
+  // Font Asset Upload & Management State (Modal 12)
+  showFontUploadModal: boolean = false;
+  uploadingFonts: boolean = false;
+  uploadedFonts: Array<{
+    fileName: string;
+    fontFamilyName: string;
+    cdnUrl: string;
+    fileSizeBytes: number;
+    format: string;
+    fontFaceSnippet: string;
+  }> = [];
+  @ViewChild('fontFileInput') fontFileInput?: ElementRef<HTMLInputElement>;
+
   // 1-Click Popular Framework & CDN Presets
   readonly frameworkPresets: Array<{
     name: string;
@@ -503,12 +542,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   previewMenuContent: {
     brandName: string;
     logoUrl: string;
+    loginUrl?: string;
+    loginText?: string;
     topMenuItems: Array<{ title: string; url: string }>;
     dropdowns: Array<{ title: string; pages: Array<{ title: string; url: string }> }>;
     menuCtaButtons: Array<{ title: string; url: string }>;
   } = {
     brandName: 'Acme Global',
     logoUrl: '',
+    loginUrl: '/auth/login',
+    loginText: 'Sign In',
     topMenuItems: [
       { title: 'Home', url: '/' },
       { title: 'Blog', url: '/blog' },
@@ -1579,6 +1622,284 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       this.toast.error('Failed to read CSS file from disk.');
     };
     reader.readAsText(this.selectedCssFile);
+  }
+
+  /**
+   * Opens the dedicated Bulk Asset Upload modal for uploading and auto-injecting multiple stylesheets/scripts.
+   * @param zone Optional initial zone ('head', 'body_open', 'footer'). Defaults to 'head'.
+   */
+  openBulkUploadModal(zone?: 'head' | 'body_open' | 'footer'): void {
+    if (zone) this.bulkUploadZone = zone;
+    this.bulkUploadFiles = [];
+    this.uploadingBulk = false;
+    this.bulkUploadSuiteCode = this.getActiveSuiteCode() || 'global';
+    this.showBulkUploadModal = true;
+  }
+
+  /**
+   * Closes the Bulk Asset Upload modal and clears the upload queue.
+   */
+  closeBulkUploadModal(): void {
+    if (this.uploadingBulk) return;
+    this.showBulkUploadModal = false;
+    this.bulkUploadFiles = [];
+    this.uploadingBulk = false;
+  }
+
+  /**
+   * Handles multi-file selection from standard HTML file input.
+   */
+  onBulkFilesSelected(event: any): void {
+    const files: FileList | null = event.target.files;
+    if (!files || files.length === 0) return;
+    this.addFilesToBulkQueue(Array.from(files));
+    if (event.target) event.target.value = '';
+  }
+
+  /**
+   * Handles drag-and-drop file drop onto the bulk upload dropzone.
+   */
+  onBulkFilesDropped(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+    this.addFilesToBulkQueue(Array.from(files));
+  }
+
+  /**
+   * Prevents default browser dragover behavior on the dropzone.
+   */
+  onBulkDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  /**
+   * Adds valid .css, .js, and font files (.woff2, .woff, .ttf, .otf, .eot, .svg) to the bulk queue,
+   * auto-deriving the Tag Name from the filename before the first dot.
+   * Example: 'animate.min.css' -> 'animate', 'bexon-icons.css' -> 'bexon-icons', 'bootstrap.min.css' -> 'bootstrap'.
+   */
+  addFilesToBulkQueue(files: File[]): void {
+    let addedCount = 0;
+    for (const f of files) {
+      const ext = f.name.toLowerCase();
+      const isValid = ext.endsWith('.css') || ext.endsWith('.js') || 
+                      ext.endsWith('.woff2') || ext.endsWith('.woff') || 
+                      ext.endsWith('.ttf') || ext.endsWith('.otf') || 
+                      ext.endsWith('.eot') || ext.endsWith('.svg');
+
+      if (!isValid) {
+        this.toast.warning(`Skipped '${f.name}': only .css, .js, and font files (.woff2, .woff, .ttf, .otf, .eot, .svg) are supported.`);
+        continue;
+      }
+
+      // Auto-naming rule: Take the part before the first dot
+      const nameBeforeDot = f.name.includes('.') ? f.name.split('.')[0] : f.name;
+      const derivedName = nameBeforeDot.trim() || f.name;
+
+      this.bulkUploadFiles.push({
+        file: f,
+        name: derivedName,
+        size: (f.size / 1024).toFixed(1) + ' KB',
+        status: 'pending'
+      });
+      addedCount++;
+    }
+
+    if (addedCount > 0) {
+      this.toast.info(`Added ${addedCount} file(s) to upload queue.`);
+    }
+  }
+
+  /**
+   * Removes a specific file from the bulk upload queue by index.
+   */
+  removeBulkFile(index: number): void {
+    if (this.uploadingBulk) return;
+    this.bulkUploadFiles.splice(index, 1);
+  }
+
+  /**
+   * Clears all files currently queued for bulk upload.
+   */
+  clearBulkQueue(): void {
+    if (this.uploadingBulk) return;
+    this.bulkUploadFiles = [];
+  }
+
+  /**
+   * Executes bulk upload of all queued files to Cloudflare R2 and injects corresponding code tags.
+   */
+  executeBulkUpload(): void {
+    if (this.bulkUploadFiles.length === 0) {
+      this.toast.warning('Please select at least one file to upload.');
+      return;
+    }
+
+    this.uploadingBulk = true;
+    this.bulkUploadFiles.forEach(f => f.status = 'uploading');
+
+    const formData = new FormData();
+    this.bulkUploadFiles.forEach(item => {
+      formData.append('files', item.file);
+    });
+    formData.append('zone', this.bulkUploadZone);
+    formData.append('suiteCode', this.bulkUploadSuiteCode || 'global');
+    formData.append('startSortOrder', this.bulkUploadStartSort.toString());
+    formData.append('sortIncrement', this.bulkUploadSortIncrement.toString());
+
+    this.api.post<any>('ContentApi/code-injections/bulk-upload', formData).subscribe({
+      next: (res) => {
+        this.uploadingBulk = false;
+        this.bulkUploadFiles.forEach(f => f.status = 'success');
+        this.toast.success(res?.message || `${this.bulkUploadFiles.length} asset(s) uploaded to Cloudflare R2 and injected!`);
+        this.loadAllCodeInjections();
+        setTimeout(() => {
+          this.closeBulkUploadModal();
+        }, 1200);
+      },
+      error: (err) => {
+        this.uploadingBulk = false;
+        this.bulkUploadFiles.forEach(f => {
+          if (f.status === 'uploading') f.status = 'error';
+        });
+        const msg = err?.error?.message || err?.message || 'Bulk upload failed.';
+        this.toast.error(msg);
+      }
+    });
+  }
+
+  /**
+   * Opens the in-browser Asset Content Editor (Modal 11) to inspect and edit raw CSS/JS file contents.
+   * @param tag The CodeInjectionTag entity to edit.
+   */
+  openAssetEditor(tag: any): void {
+    this.editingAssetTag = tag;
+    this.editingAssetContent = '';
+    this.editingAssetUrl = '';
+    this.editingAssetIsCdn = false;
+    this.loadingAssetContent = true;
+    this.showAssetEditorModal = true;
+
+    this.api.get<any>(`ContentApi/code-injections/${tag.id}/raw-content`).subscribe({
+      next: (res) => {
+        this.loadingAssetContent = false;
+        if (res?.data) {
+          this.editingAssetContent = res.data.rawContent || '';
+          this.editingAssetUrl = res.data.assetUrl || '';
+          this.editingAssetIsCdn = !!res.data.isExternalCdn;
+        }
+      },
+      error: (err) => {
+        this.loadingAssetContent = false;
+        this.toast.error('Failed to fetch asset content: ' + (err?.error?.message || err?.message));
+      }
+    });
+  }
+
+  /**
+   * Closes the Asset Content Editor modal.
+   */
+  closeAssetEditorModal(): void {
+    if (this.savingAssetContent) return;
+    this.showAssetEditorModal = false;
+    this.editingAssetTag = null;
+    this.editingAssetContent = '';
+    this.editingAssetUrl = '';
+  }
+
+  /**
+   * Saves the edited asset text back to Cloudflare R2 / tag content.
+   */
+  saveAssetContent(): void {
+    if (!this.editingAssetTag) return;
+
+    this.savingAssetContent = true;
+    this.api.put<any>(`ContentApi/code-injections/${this.editingAssetTag.id}/save-asset-content`, {
+      rawContent: this.editingAssetContent
+    }).subscribe({
+      next: (res) => {
+        this.savingAssetContent = false;
+        this.toast.success(res?.message || 'Asset file updated and published to Cloudflare CDN successfully!');
+        this.loadAllCodeInjections();
+        this.closeAssetEditorModal();
+      },
+      error: (err) => {
+        this.savingAssetContent = false;
+        this.toast.error('Failed to save asset: ' + (err?.error?.message || err?.message));
+      }
+    });
+  }
+
+  /**
+   * Copies text or font snippets to clipboard.
+   * @param text String to copy.
+   * @param label Descriptive label for toast.
+   */
+  copyFontSnippet(text: string, label: string = 'Font Snippet'): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success(`${label} copied to clipboard!`);
+    }).catch(() => {
+      this.toast.info(text);
+    });
+  }
+
+  /**
+   * Inserts an @font-face rule for a selected font directly into the currently edited asset.
+   * @param font The uploaded font entity.
+   */
+  insertFontSnippetIntoAsset(font: any): void {
+    if (!font || !font.fontFaceSnippet) return;
+    const snippet = `/* ==========================================\n   Custom Font: ${font.fontFamilyName}\n   ========================================== */\n${font.fontFaceSnippet}\n\n`;
+    this.editingAssetContent = snippet + this.editingAssetContent;
+    this.toast.success(`Inserted @font-face for '${font.fontFamilyName}' at top of stylesheet.`);
+  }
+
+  /**
+   * Opens the Font Upload Management modal (Modal 12).
+   */
+  openFontUploadModal(): void {
+    this.showFontUploadModal = true;
+  }
+
+  /**
+   * Closes the Font Upload Management modal.
+   */
+  closeFontUploadModal(): void {
+    if (this.uploadingFonts) return;
+    this.showFontUploadModal = false;
+  }
+
+  /**
+   * Handles multi-file font uploads to Cloudflare R2 storage.
+   * @param event File input change event.
+   */
+  onFontFilesSelected(event: any): void {
+    const files: FileList | null = event.target.files;
+    if (!files || files.length === 0) return;
+
+    this.uploadingFonts = true;
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    this.api.post<any>('ContentApi/fonts/upload', formData).subscribe({
+      next: (res) => {
+        this.uploadingFonts = false;
+        if (Array.isArray(res?.data)) {
+          this.uploadedFonts.push(...res.data);
+        }
+        this.toast.success(res?.message || `${files.length} font file(s) uploaded to Cloudflare CDN!`);
+        if (event.target) event.target.value = '';
+      },
+      error: (err) => {
+        this.uploadingFonts = false;
+        this.toast.error('Font upload failed: ' + (err?.error?.message || err?.message));
+      }
+    });
   }
 
   /**
