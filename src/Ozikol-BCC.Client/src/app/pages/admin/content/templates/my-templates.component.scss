@@ -2245,9 +2245,73 @@
       justify-content: center;
       color: #38bdf8;
     }
-    .zone-icon-box .material-symbols-outlined { font-size: 26px; }
     .zone-title { font-size: 18px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
     .zone-desc { font-size: 13px; color: #94a3b8; margin: 0; }
+
+    .zone-banner-actions {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .zone-toolbar-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 7px !important;
+      height: 40px !important;
+      padding: 0 16px !important;
+      border-radius: 10px !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1 !important;
+
+      span {
+        white-space: nowrap !important;
+      }
+
+      .material-symbols-outlined {
+        font-size: 19px !important;
+        line-height: 1 !important;
+      }
+
+      .icon-blue { color: #0284c7; }
+      .icon-purple { color: #8b5cf6; }
+
+      &.btn-normalize,
+      &.btn-font-vault,
+      &.btn-bulk-upload {
+        background: #ffffff !important;
+        color: #1e293b !important;
+        border: 1.5px solid #cbd5e1 !important;
+
+        &:hover {
+          background: #f8fafc !important;
+          border-color: #94a3b8 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+      }
+
+      &.btn-add-tag {
+        background: #0050e5 !important;
+        color: #ffffff !important;
+        border: 1.5px solid #0050e5 !important;
+
+        &:hover {
+          background: #003fc0 !important;
+          border-color: #003fc0 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
+        }
+      }
+    }
 
     .order-pill {
       background: #f1f5f9;
