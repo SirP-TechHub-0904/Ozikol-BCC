@@ -182,6 +182,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }> = [];
   @ViewChild('fontFileInput') fontFileInput?: ElementRef<HTMLInputElement>;
 
+  // Tag Reordering & Drag-and-Drop State
+  draggedTagIndex: number | null = null;
+  dragOverTagIndex: number | null = null;
+  savingTagOrder: boolean = false;
+
   // 1-Click Popular Framework & CDN Presets
   readonly frameworkPresets: Array<{
     name: string;
@@ -1351,6 +1356,140 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return this.getFilteredZoneTags(this.activeMainTab);
     }
     return [];
+  }
+
+  /**
+   * Moves a code injection tag one step up in execution order.
+   * @param index Current index in the active zone list.
+   */
+  moveTagUp(index: number): void {
+    if (index <= 0) return;
+    const tags = [...this.getActiveZoneTags()];
+    const temp = tags[index];
+    tags[index] = tags[index - 1];
+    tags[index - 1] = temp;
+    this.applyAndSaveTagReorder(tags);
+  }
+
+  /**
+   * Moves a code injection tag one step down in execution order.
+   * @param index Current index in the active zone list.
+   */
+  moveTagDown(index: number): void {
+    const tags = [...this.getActiveZoneTags()];
+    if (index >= tags.length - 1) return;
+    const temp = tags[index];
+    tags[index] = tags[index + 1];
+    tags[index + 1] = temp;
+    this.applyAndSaveTagReorder(tags);
+  }
+
+  /**
+   * Handles drag start on a code injection table row.
+   * @param event Drag event.
+   * @param index Row index.
+   */
+  onTagDragStart(event: DragEvent, index: number): void {
+    this.draggedTagIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', index.toString());
+    }
+  }
+
+  /**
+   * Handles drag over on a code injection table row.
+   * @param event Drag event.
+   * @param index Row index.
+   */
+  onTagDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dragOverTagIndex = index;
+  }
+
+  /**
+   * Handles drag leave on a code injection table row.
+   * @param event Drag event.
+   * @param index Row index.
+   */
+  onTagDragLeave(event: DragEvent, index: number): void {
+    if (this.dragOverTagIndex === index) {
+      this.dragOverTagIndex = null;
+    }
+  }
+
+  /**
+   * Handles dropping a dragged tag onto a target row index.
+   * @param event Drag event.
+   * @param targetIndex Destination row index.
+   */
+  onTagDrop(event: DragEvent, targetIndex: number): void {
+    event.preventDefault();
+    this.dragOverTagIndex = null;
+    if (this.draggedTagIndex === null || this.draggedTagIndex === targetIndex) {
+      this.draggedTagIndex = null;
+      return;
+    }
+
+    const tags = [...this.getActiveZoneTags()];
+    const [movedItem] = tags.splice(this.draggedTagIndex, 1);
+    tags.splice(targetIndex, 0, movedItem);
+    this.draggedTagIndex = null;
+
+    this.applyAndSaveTagReorder(tags);
+  }
+
+  /**
+   * Normalizes all sort orders in the current zone to clean increments of 10 (10, 20, 30, 40...).
+   */
+  normalizeTagOrders(): void {
+    const tags = [...this.getActiveZoneTags()];
+    this.applyAndSaveTagReorder(tags, true);
+  }
+
+  /**
+   * Applies new sort orders to local state and persists the changes to the database.
+   * @param orderedTags The newly ordered tag list.
+   * @param showNotice Whether to show a success toast.
+   */
+  applyAndSaveTagReorder(orderedTags: CodeInjectionTag[], showNotice: boolean = false): void {
+    const reorderPayload: Array<{ id: string; sortOrder: number }> = [];
+
+    orderedTags.forEach((tag, idx) => {
+      const newOrder = (idx + 1) * 10;
+      tag.sortOrder = newOrder;
+      reorderPayload.push({ id: tag.id, sortOrder: newOrder });
+
+      // Update in master list
+      const masterTag = this.allCodeInjections.find(t => t.id === tag.id);
+      if (masterTag) {
+        masterTag.sortOrder = newOrder;
+      }
+    });
+
+    // Re-sort local arrays
+    this.headTags.sort((a, b) => a.sortOrder - b.sortOrder);
+    this.bodyOpenTags.sort((a, b) => a.sortOrder - b.sortOrder);
+    this.footerTags.sort((a, b) => a.sortOrder - b.sortOrder);
+    localStorage.setItem('oz_code_injections_cache', JSON.stringify(this.allCodeInjections));
+
+    this.savingTagOrder = true;
+    this.api.put<any>('ContentApi/code-injections/reorder', reorderPayload).subscribe({
+      next: () => {
+        this.savingTagOrder = false;
+        if (showNotice) {
+          this.toast.success('Execution order normalized to 10, 20, 30, 40... successfully!');
+        }
+      },
+      error: (err) => {
+        this.savingTagOrder = false;
+        this.toast.error('Failed to save order: ' + (err?.error?.message || err?.message));
+        this.loadAllCodeInjections();
+      }
+    });
   }
 
   getSuiteNameByCode(suiteCode?: string): string {

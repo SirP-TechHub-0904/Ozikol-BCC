@@ -3629,5 +3629,81 @@
       color: #ffffff !important;
     }
 
+    /* Tag Drag-and-Drop & Arrow Reordering Styling */
+    .tag-order-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .drag-grip-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        color: #94a3b8;
+        padding: 2px;
+        border-radius: 4px;
+        transition: all 0.15s ease;
+
+        &:hover {
+          color: #4f46e5;
+          background: #eef2ff;
+        }
+
+        &:active {
+          cursor: grabbing;
+        }
+
+        .material-symbols-outlined {
+          font-size: 18px;
+        }
+      }
+
+      .arrow-sort-group {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+
+        .btn-sort-arrow {
+          background: transparent;
+          border: none;
+          padding: 0;
+          line-height: 1;
+          height: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #94a3b8;
+          cursor: pointer;
+          transition: all 0.12s ease;
+
+          .material-symbols-outlined {
+            font-size: 16px;
+          }
+
+          &:hover:not(:disabled) {
+            color: #0284c7;
+            transform: scale(1.15);
+          }
+
+          &:disabled {
+            opacity: 0.25;
+            cursor: default;
+          }
+        }
+      }
+    }
+
+    tr.row-dragged {
+      opacity: 0.45;
+      background: #f1f5f9 !important;
+    }
+
+    tr.row-drag-over {
+      border-top: 2.5px solid #4f46e5 !important;
+      background: #eef2ff !important;
+    }
+
+
 
 

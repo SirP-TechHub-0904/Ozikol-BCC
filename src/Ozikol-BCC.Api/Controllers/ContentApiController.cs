@@ -2868,6 +2868,38 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Batch reorders multiple code injection tags atomically with updated SortOrder values.
+        /// </summary>
+        /// <param name="items">List of tag IDs and their newly assigned sort orders.</param>
+        /// <returns>Success response.</returns>
+        [HttpPut("code-injections/reorder")]
+        public async Task<IActionResult> ReorderCodeInjections([FromBody] List<ReorderCodeInjectionItem> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No reorder items provided."));
+            }
+
+            var ids = items.Select(i => i.Id).ToList();
+            var tags = await _context.SiteCodeInjectionTags
+                .Where(t => ids.Contains(t.Id))
+                .ToListAsync();
+
+            var itemMap = items.ToDictionary(i => i.Id, i => i.SortOrder);
+            foreach (var tag in tags)
+            {
+                if (itemMap.TryGetValue(tag.Id, out var newSortOrder))
+                {
+                    tag.SortOrder = newSortOrder;
+                    tag.UpdatedAtUtc = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"{tags.Count} tag(s) reordered successfully."));
+        }
+
+        /// <summary>
         /// Deletes a code injection tag.
         /// </summary>
         /// <param name="id">Tag identifier.</param>
@@ -3374,4 +3406,14 @@ namespace Ozikol_BCC.Api.Controllers
         public int SortOrder { get; set; } = 10;
         public List<ImportablePageSectionDto>? Sections { get; set; }
     }
+
+    /// <summary>
+    /// Payload item for updating the SortOrder of an individual code injection tag during batch reordering.
+    /// </summary>
+    public class ReorderCodeInjectionItem
+    {
+        public Guid Id { get; set; }
+        public int SortOrder { get; set; }
+    }
 }
+
