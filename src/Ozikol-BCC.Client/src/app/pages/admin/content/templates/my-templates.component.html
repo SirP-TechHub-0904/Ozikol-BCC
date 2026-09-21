@@ -476,6 +476,10 @@
             </div>
           </div>
           <div class="zone-banner-actions" style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn btn-outline" (click)="normalizeTagOrders()" title="Normalize execution orders cleanly to 10, 20, 30, 40..." style="display: inline-flex; align-items: center; gap: 6px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #475569;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">reorder</span>
+              <span>Normalize (10, 20...)</span>
+            </button>
             <button type="button" class="btn btn-outline" (click)="openFontUploadModal()" title="Upload and host custom icon/typography webfonts (.woff2, .woff, .ttf)" style="display: inline-flex; align-items: center; gap: 7px; height: 42px; border-radius: 10px; font-weight: 700; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
               <span class="material-symbols-outlined" style="font-size: 20px; color: #8b5cf6;">font_download</span>
               <span>Upload Fonts</span>
@@ -497,8 +501,8 @@
             <table class="table-modern">
               <thead>
                 <tr>
-                  <th style="width: 75px;">Order</th>
-                  <th style="width: 210px;">Name</th>
+                  <th style="width: 125px;">Order / Arrange</th>
+                  <th style="width: 200px;">Name</th>
                   <th style="width: 140px;">Suite Scope</th>
                   <th style="width: 150px;">Type</th>
                   <th>Code Snippet Preview</th>
@@ -507,9 +511,43 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let tag of getActiveZoneTags()">
+                <tr
+                  *ngFor="let tag of getActiveZoneTags(); let i = index; let first = first; let last = last"
+                  draggable="true"
+                  (dragstart)="onTagDragStart($event, i)"
+                  (dragover)="onTagDragOver($event, i)"
+                  (dragleave)="onTagDragLeave($event, i)"
+                  (drop)="onTagDrop($event, i)"
+                  [class.row-dragged]="draggedTagIndex === i"
+                  [class.row-drag-over]="dragOverTagIndex === i"
+                >
                   <td>
-                    <span class="order-pill">#{{ tag.sortOrder }}</span>
+                    <div class="tag-order-cell">
+                      <span class="drag-grip-handle" title="Drag up or down to re-order execution priority">
+                        <span class="material-symbols-outlined">drag_indicator</span>
+                      </span>
+                      <span class="order-pill">#{{ tag.sortOrder }}</span>
+                      <div class="arrow-sort-group">
+                        <button
+                          type="button"
+                          class="btn-sort-arrow"
+                          (click)="moveTagUp(i)"
+                          [disabled]="first"
+                          title="Move tag up (execute earlier)"
+                        >
+                          <span class="material-symbols-outlined">expand_less</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-sort-arrow"
+                          (click)="moveTagDown(i)"
+                          [disabled]="last"
+                          title="Move tag down (execute later)"
+                        >
+                          <span class="material-symbols-outlined">expand_more</span>
+                        </button>
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <strong class="tag-name-cell">{{ tag.name }}</strong>
