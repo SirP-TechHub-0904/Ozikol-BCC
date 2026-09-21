@@ -1,0 +1,431 @@
+<div class="template-maintenance-container">
+  <!-- Top Navigation / Breadcrumb Header -->
+  <div class="page-header-card">
+    <div class="header-main-row">
+      <div class="header-left">
+        <div class="breadcrumb-trail">
+          <a routerLink="/admin/dashboard">Console</a>
+          <span class="sep">/</span>
+          <a routerLink="/content/console">CMS Studio</a>
+          <span class="sep">/</span>
+          <a routerLink="/content/console/templates">My Templates</a>
+          <span class="sep">/</span>
+          <span class="current">Vault Maintenance &amp; Reset</span>
+        </div>
+
+        <div class="title-with-icon">
+          <div class="header-icon-box danger-icon-box">
+            <span class="material-symbols-outlined">delete_sweep</span>
+          </div>
+          <div class="title-text-wrap">
+            <div class="title-row">
+              <h1 class="page-title">Template Vault Reset &amp; Maintenance</h1>
+              <span class="badge-danger-pill">Permanent Danger Zone</span>
+            </div>
+            <p class="page-subtitle">
+              Manage deep vault maintenance, restore factory default corporate templates, or permanently wipe your template vault to start from a clean slate.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/content/console/templates" class="btn btn-outline-secondary">
+          <span class="material-symbols-outlined btn-icon">arrow_back</span>
+          <span>Back to My Templates</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical Warning Banner (Irreversible Action) -->
+  <div class="critical-danger-banner">
+    <div class="banner-icon-col">
+      <span class="material-symbols-outlined danger-alert-icon">warning</span>
+    </div>
+    <div class="banner-content-col">
+      <h2 class="banner-title">CRITICAL SAFETY WARNING: THIS ACTION CANNOT BE REVERSED</h2>
+      <p class="banner-desc">
+        Purging your vault will <strong>permanently destroy all installed website templates, custom section templates, and global code injection tags (&lt;head&gt;, &lt;body&gt;, &lt;footer&gt;)</strong> stored in your organization's tenant database.
+      </p>
+      <div class="banner-consequences-grid">
+        <div class="consequence-item">
+          <span class="material-symbols-outlined item-bullet">close</span>
+          <span><strong>All {{ stats.totalTemplates }} Installed Section Templates</strong> will be deleted immediately.</span>
+        </div>
+        <div class="consequence-item">
+          <span class="material-symbols-outlined item-bullet">close</span>
+          <span><strong>All {{ stats.headTagsCount + stats.bodyOpenTagsCount + stats.footerTagsCount }} Code Injections</strong> (CSS, Fonts, CDN scripts) will be purged.</span>
+        </div>
+        <div class="consequence-item">
+          <span class="material-symbols-outlined item-bullet">close</span>
+          <span>Your live website header, layout sections, and theme styling will become <strong>completely blank</strong> until a new theme is imported or restored.</span>
+        </div>
+        <div class="consequence-item">
+          <span class="material-symbols-outlined item-bullet">close</span>
+          <span>This operation cannot be undone. Database backups or factory reinstallation will be required to recover standard components.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post-Purge Success Card -->
+  <div class="purge-success-banner" *ngIf="purgeCompleted">
+    <div class="success-icon-box">
+      <span class="material-symbols-outlined">check_circle</span>
+    </div>
+    <div class="success-content">
+      <h3 class="success-title">Vault Successfully Purged &amp; Reset to Blank</h3>
+      <p class="success-desc">
+        Your template vault has been wiped clean. You can now perform a fresh website template import or restore standard system blueprints.
+      </p>
+      <div class="success-actions-row">
+        <a routerLink="/content/console/templates/import" class="btn btn-import-primary">
+          <span class="material-symbols-outlined btn-icon">cloud_download</span>
+          <span>Import New Website Template</span>
+        </a>
+        <button type="button" class="btn btn-restore-secondary" (click)="executeReinstallDefaults()" [disabled]="reinstalling">
+          <span class="material-symbols-outlined btn-icon">restart_alt</span>
+          <span>{{ reinstalling ? 'Restoring Defaults...' : 'Restore Factory Defaults' }}</span>
+        </button>
+        <a routerLink="/content/console/templates/create" class="btn btn-create-outline">
+          <span class="material-symbols-outlined btn-icon">add_circle</span>
+          <span>Create Custom Section</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance Grid Layout -->
+  <!-- Row 1: Delete Specific Theme Suite Card (Moved to Top for targeted individual deletion) -->
+  <div class="suite-delete-section mb-4" *ngIf="installedSuites.length > 0">
+    <div class="maintenance-card specific-suite-card">
+      <div class="card-header-styled warning-header">
+        <div class="card-header-icon-wrap">
+          <span class="material-symbols-outlined">delete_sweep</span>
+        </div>
+        <div>
+          <h3 class="card-title text-warning-dark">Delete Specific Theme Suite</h3>
+          <span class="card-subtitle">Select and remove an individual theme suite (e.g. Pincret Theme, Apex Modern Theme) without wiping your entire template vault.</span>
+        </div>
+      </div>
+
+      <div class="card-body-content">
+        <div class="suite-layout-grid">
+          <!-- Left: Suite Selector & Options -->
+          <div class="suite-control-column">
+            <div class="form-group-custom mb-3">
+              <label class="custom-field-label" for="themeSuiteSelector">
+                <span class="material-symbols-outlined label-icon">palette</span>
+                <span>Select Theme Suite to Delete:</span>
+              </label>
+              <div class="select-wrapper">
+                <select
+                  id="themeSuiteSelector"
+                  class="custom-suite-select"
+                  [ngModel]="selectedSuiteCode"
+                  (ngModelChange)="onSuiteSelected($event)"
+                >
+                  <option *ngFor="let s of installedSuites" [value]="s.code">
+                    {{ s.name }} ({{ s.templateCount }} components){{ s.isDefault ? ' — [Factory Default]' : ' — [Imported]' }}
+                  </option>
+                </select>
+                <span class="material-symbols-outlined select-arrow">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Suite Inventory Stats Pills -->
+            <div class="suite-stats-pills mb-3" *ngIf="suiteLinkedContent">
+              <div class="suite-pill">
+                <span class="suite-pill-num">{{ suiteLinkedContent.templateCount }}</span>
+                <span class="suite-pill-txt">Templates</span>
+              </div>
+              <div class="suite-pill">
+                <span class="suite-pill-num">{{ suiteLinkedContent.codeInjectionCount }}</span>
+                <span class="suite-pill-txt">Suite Scripts</span>
+              </div>
+              <div class="suite-pill highlight">
+                <span class="suite-pill-num">{{ suiteLinkedContent.linkedSectionCount }}</span>
+                <span class="suite-pill-txt">Linked Page Sections</span>
+              </div>
+            </div>
+
+            <!-- Checkbox: Include Content in Deletion (Unchecked by default) -->
+            <div class="cascade-toggle-card mb-3" [class.is-danger-checked]="deleteSuiteLinkedContentCheckbox">
+              <label class="cascade-toggle-label" for="deleteSuiteContentCheckbox">
+                <input
+                  type="checkbox"
+                  id="deleteSuiteContentCheckbox"
+                  class="custom-cascade-checkbox"
+                  [(ngModel)]="deleteSuiteLinkedContentCheckbox"
+                />
+                <div class="cascade-toggle-text">
+                  <strong class="toggle-title">
+                    Also delete associated website pages &amp; content sections ({{ suiteLinkedContent?.linkedSectionCount || 0 }} in CMS)
+                  </strong>
+                  <span class="toggle-desc" *ngIf="!deleteSuiteLinkedContentCheckbox">
+                    <strong>Safe mode (Unchecked):</strong> Only the template blueprints and stylesheets are deleted. Your written page text and sections remain safe in CMS Studio.
+                  </span>
+                  <span class="toggle-desc text-danger" *ngIf="deleteSuiteLinkedContentCheckbox">
+                    <strong>Cascading delete (Checked):</strong> All {{ suiteLinkedContent?.linkedSectionCount || 0 }} page section(s) and their content will be permanently removed from your website pages.
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            <button
+              type="button"
+              class="btn-execute-suite-delete"
+              [class.btn-cascading-active]="deleteSuiteLinkedContentCheckbox"
+              [disabled]="!selectedSuiteCode || deletingSuite || loadingSuiteLinkedContent"
+              (click)="executeDeleteSelectedSuite()"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!deletingSuite">delete</span>
+              <span class="material-symbols-outlined btn-icon spin-icon" *ngIf="deletingSuite">sync</span>
+              <span>{{ deletingSuite ? 'Deleting Theme Suite...' : (deleteSuiteLinkedContentCheckbox ? 'Delete Suite & Associated Content' : 'Delete Suite Blueprints Only') }}</span>
+            </button>
+          </div>
+
+          <!-- Right: Discovered Linked Content Inspector -->
+          <div class="suite-inspector-column">
+            <div class="linked-content-inspector-box">
+              <div class="inspector-header">
+                <div class="inspector-title">
+                  <span class="material-symbols-outlined icon">link</span>
+                  <span>Discovered Linked Content in CMS Studio:</span>
+                </div>
+                <span class="inspector-badge" *ngIf="!loadingSuiteLinkedContent">
+                  {{ suiteLinkedContent?.linkedSectionCount || 0 }} Sections Found
+                </span>
+                <span class="inspector-badge scanning" *ngIf="loadingSuiteLinkedContent">
+                  <span class="material-symbols-outlined spin-icon mini-spin">sync</span> Scanning...
+                </span>
+              </div>
+
+              <!-- List of linked sections -->
+              <div class="suite-sections-scroll" *ngIf="!loadingSuiteLinkedContent && suiteLinkedContent && suiteLinkedContent.linkedSections.length > 0">
+                <div class="linked-item-row" *ngFor="let sec of suiteLinkedContent.linkedSections">
+                  <div class="item-left-info">
+                    <span class="material-symbols-outlined sec-icon">web</span>
+                    <div class="sec-text-group">
+                      <strong class="sec-title">{{ sec.sectionTitle }}</strong>
+                      <span class="sec-page-path">Page: <strong>{{ sec.webPageTitle }}</strong> <code>/{{ sec.webPageSlug }}</code></span>
+                    </div>
+                  </div>
+                  <span class="template-key-badge">{{ sec.templateKey }}</span>
+                </div>
+              </div>
+
+              <!-- No Linked Sections State -->
+              <div class="inspector-empty-state" *ngIf="!loadingSuiteLinkedContent && suiteLinkedContent && suiteLinkedContent.linkedSections.length === 0">
+                <span class="material-symbols-outlined empty-icon">check_circle</span>
+                <p class="empty-title">No active page sections are currently linked to this suite.</p>
+                <small class="empty-subtitle">You can safely delete this theme suite without affecting any live page content.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Maintenance Grid Layout -->
+  <div class="maintenance-grid">
+    <!-- Left Column: Irreversible Purge Card with Safety Typing Lock -->
+    <div class="maintenance-card purge-card">
+      <div class="card-header-styled danger-header">
+        <div class="card-header-icon-wrap">
+          <span class="material-symbols-outlined">mop</span>
+        </div>
+        <div>
+          <h3 class="card-title text-danger">Purge &amp; Reset Entire Template Vault</h3>
+          <span class="card-subtitle">Zero out all template blueprints, section layouts, and 3-zone script injections.</span>
+        </div>
+      </div>
+
+      <div class="card-body-content">
+        <!-- Live Inventory Matrix -->
+        <div class="inventory-section-title">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <span>Current Database Records Subject to Immediate Deletion:</span>
+        </div>
+
+        <div class="inventory-stats-grid">
+          <div class="stat-pill-item highlight-item">
+            <span class="stat-label">Total Templates</span>
+            <span class="stat-value">{{ stats.totalTemplates }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Factory Defaults</span>
+            <span class="stat-value text-primary font-weight-bold">{{ stats.defaultTemplatesCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Custom / Imported</span>
+            <span class="stat-value text-success font-weight-bold">{{ stats.customTemplatesCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Navigation Headers</span>
+            <span class="stat-value">{{ stats.menuCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Hero Banners</span>
+            <span class="stat-value">{{ stats.heroCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Body Sections</span>
+            <span class="stat-value">{{ stats.bodyCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Footers</span>
+            <span class="stat-value">{{ stats.footerCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Blog Layouts</span>
+            <span class="stat-value">{{ stats.blogCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">Breadcrumbs</span>
+            <span class="stat-value">{{ stats.breadcrumbCount }}</span>
+          </div>
+          <div class="stat-pill-item">
+            <span class="stat-label">E-Commerce Blocks</span>
+            <span class="stat-value">{{ stats.ecommerceCount }}</span>
+          </div>
+          <div class="stat-pill-item injection-pill">
+            <span class="stat-label">&lt;head&gt; Injections</span>
+            <span class="stat-value">{{ stats.headTagsCount }}</span>
+          </div>
+          <div class="stat-pill-item injection-pill">
+            <span class="stat-label">&lt;body&gt; Injections</span>
+            <span class="stat-value">{{ stats.bodyOpenTagsCount }}</span>
+          </div>
+          <div class="stat-pill-item injection-pill">
+            <span class="stat-label">&lt;footer&gt; Injections</span>
+            <span class="stat-value">{{ stats.footerTagsCount }}</span>
+          </div>
+          <div class="stat-pill-item highlight-item">
+            <span class="stat-label">Active Theme</span>
+            <span class="stat-value text-truncate" [title]="stats.activeThemeSuiteName">{{ stats.activeThemeSuiteName }}</span>
+          </div>
+        </div>
+
+        <!-- Wipe Content Toggle Option in General Purge -->
+        <div class="vault-wipe-content-box mb-3" [class.is-danger-active]="wipeContentOnPurgeAll">
+          <label class="wipe-content-label" for="wipeContentToggle">
+            <input
+              type="checkbox"
+              id="wipeContentToggle"
+              class="wipe-content-checkbox"
+              [(ngModel)]="wipeContentOnPurgeAll"
+            />
+            <div class="wipe-content-text">
+              <strong class="wipe-content-title">
+                Also permanently delete all website page sections and CMS content
+              </strong>
+              <span class="wipe-content-desc" *ngIf="!wipeContentOnPurgeAll">
+                <strong>Templates Only (Unchecked):</strong> Wipes blueprints and script tags. Your written pages and section data stay in CMS Studio.
+              </span>
+              <span class="wipe-content-desc text-danger" *ngIf="wipeContentOnPurgeAll">
+                <strong>Nuclear Wipe (Checked):</strong> Permanently deletes all page layout blocks, loop sub-items, and text content from your organization database.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Safety Confirmation Typing Lock -->
+        <div class="safety-confirmation-box">
+          <label class="safety-label" for="purgeConfirmInput">
+            <span class="material-symbols-outlined text-danger">lock</span>
+            <span>Safety Confirmation Lock: Type <strong>{{ REQUIRED_CONFIRM_WORD }}</strong> below to unlock the purge button:</span>
+          </label>
+          <input
+            id="purgeConfirmInput"
+            type="text"
+            class="form-control safety-input"
+            [(ngModel)]="confirmationInput"
+            placeholder="Type 'PURGE ALL' to confirm"
+            autocomplete="off"
+          />
+          <div class="safety-hint" [class.hint-valid]="isConfirmed">
+            <span class="material-symbols-outlined">{{ isConfirmed ? 'check_circle' : 'info' }}</span>
+            <span *ngIf="!isConfirmed">Button is locked until <strong>{{ REQUIRED_CONFIRM_WORD }}</strong> is typed exactly.</span>
+            <span *ngIf="isConfirmed">Safety lock bypassed. You may now execute the permanent purge.</span>
+          </div>
+        </div>
+
+        <div class="action-footer">
+          <button
+            type="button"
+            class="btn btn-execute-purge"
+            [disabled]="!isConfirmed || clearing"
+            (click)="executePurgeAll()"
+          >
+            <span class="material-symbols-outlined btn-icon" [class.spin-icon]="clearing">
+              {{ clearing ? 'sync' : 'delete_forever' }}
+            </span>
+            <span>{{ clearing ? 'Permanently Purging Database...' : 'Permanently Purge All Vault Data' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Factory Defaults & Clean Recovery Card -->
+    <div class="maintenance-card defaults-card">
+      <div class="card-header-styled primary-header">
+        <div class="card-header-icon-wrap">
+          <span class="material-symbols-outlined">restart_alt</span>
+        </div>
+        <div>
+          <h3 class="card-title text-primary">Restore Factory Default Blueprints</h3>
+          <span class="card-subtitle">Safe, automated restore of official corporate templates and core code injections.</span>
+        </div>
+      </div>
+
+      <div class="card-body-content">
+        <div class="defaults-explanation">
+          <p>
+            If you made unwanted changes, deleted essential blueprints, or want a clean starting point with pre-built components, this tool re-seeds:
+          </p>
+
+          <ul class="defaults-feature-list">
+            <li>
+              <span class="material-symbols-outlined text-success">verified</span>
+              <div>
+                <strong>16 Factory Corporate Suite Templates (IsDefault)</strong>
+                <p>Restores or updates standard navigation bars, hero sliders, body grids, and footers without overwriting custom templates.</p>
+              </div>
+            </li>
+            <li>
+              <span class="material-symbols-outlined text-success">verified</span>
+              <div>
+                <strong>3-Zone Standard Code Injections</strong>
+                <p>Restores default Inter font family, Bootstrap CSS, FontAwesome icons, and core layout scripts.</p>
+              </div>
+            </li>
+            <li>
+              <span class="material-symbols-outlined text-success">verified</span>
+              <div>
+                <strong>Custom &amp; Imported Templates Preserved</strong>
+                <p>Your custom created or imported templates (non-defaults) are kept safe in your vault during factory restoration.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="action-footer">
+          <button
+            type="button"
+            class="btn btn-restore-defaults-action"
+            [disabled]="reinstalling"
+            (click)="executeReinstallDefaults()"
+          >
+            <span class="material-symbols-outlined btn-icon" [class.spin-icon]="reinstalling">
+              {{ reinstalling ? 'sync' : 'restart_alt' }}
+            </span>
+            <span>{{ reinstalling ? 'Restoring Corporate Suite...' : 'Reinstall Factory Corporate Suite' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

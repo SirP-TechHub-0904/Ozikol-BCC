@@ -47,13 +47,16 @@ def _url_to_public_id(url: str, job_id: str) -> str:
     return f"ozikol/{job_id}/{path}"
 
 
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
 async def run_upload(
     audit: AuditResult,
     cleaned: ApplySelectionsResult,
     job_id: str,
 ) -> UploadResult:
     """
-    Upload all kept CSS/JS/font assets to Cloudinary,
+    Upload all kept CSS/JS/font/image assets to Cloud CDN,
     rewrite URLs in cleaned page HTML, return UploadResult.
     """
     _configure_cloudinary()
@@ -65,6 +68,35 @@ async def run_upload(
     for font in audit.fonts:
         if font.url and font.font_provider == "self-hosted":
             assets_to_upload.append(font.url)
+
+    # Collect all image URLs from cleaned page HTMLs
+    image_urls: set[str] = set()
+    for diff in cleaned.page_diffs:
+        p_html = diff.cleaned_html or ""
+        p_soup = BeautifulSoup(p_html, "html.parser")
+        p_base = diff.page_url
+
+        # 1. <img> and <source>
+        for tag in p_soup.find_all(["img", "source"]):
+            src = tag.get("src") or tag.get("data-src")
+            if src and not src.startswith(("data:", "blob:", "javascript:")):
+                abs_url = urljoin(p_base, src)
+                image_urls.add(abs_url)
+            srcset = tag.get("srcset")
+            if srcset:
+                for part in srcset.split(","):
+                    chunk = part.strip().split(" ")[0]
+                    if chunk and not chunk.startswith(("data:", "blob:")):
+                        image_urls.add(urljoin(p_base, chunk))
+
+        # 2. background-image in inline styles
+        bg_matches = re.findall(r'url\s*\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)', p_html, re.I)
+        for bg in bg_matches:
+            if bg and not bg.startswith(("data:", "blob:", "#")):
+                if not any(bg.endswith(ext) for ext in (".css", ".js", ".json")):
+                    image_urls.add(urljoin(p_base, bg))
+
+    assets_to_upload.extend(list(image_urls))
 
     cdn_assets: list[CdnAsset] = []
     url_map: dict[str, str] = {}  # original_url -> cdn_url
@@ -88,6 +120,12 @@ async def run_upload(
         html = diff.cleaned_html or ""
         for orig_url, cdn_url in url_map.items():
             html = html.replace(orig_url, cdn_url)
+            # Also replace relative versions
+            parsed_orig = urlparse(orig_url)
+            if parsed_orig.path:
+                html = html.replace(parsed_orig.path, cdn_url)
+                html = html.replace(parsed_orig.path.lstrip("/"), cdn_url)
+
         final_pages.append({
             "page_id": diff.page_id,
             "url": diff.page_url,
@@ -117,7 +155,8 @@ async def _upload_asset(client: httpx.AsyncClient, url: str, job_id: str) -> str
 
         try:
             public_id = _url_to_public_id(url, job_id)
-            resource_type = "raw"  # CSS/JS/fonts are raw files in Cloudinary
+            detected = _detect_type(url)
+            resource_type = "image" if detected == "image" else "raw"
 
             result = cloudinary.uploader.upload(
                 tmp_path,
@@ -139,6 +178,8 @@ async def _upload_asset(client: httpx.AsyncClient, url: str, job_id: str) -> str
 
 def _detect_type(url: str) -> str:
     lower = url.lower()
+    if any(lower.endswith(ext) or ext in lower for ext in (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".ico", ".avif")):
+        return "image"
     if ".css" in lower:
         return "css"
     if ".js" in lower:

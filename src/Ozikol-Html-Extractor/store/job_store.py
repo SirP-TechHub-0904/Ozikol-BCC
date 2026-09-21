@@ -28,6 +28,7 @@ def create_job(url: str) -> str:
             "selections": None,     # list of SelectionItem after Phase 2
             "cleaned": None,        # ApplySelectionsResult dict after Phase 2
             "upload": None,         # UploadResult dict after Phase 3
+            "ai_blueprint": None,   # ImportableSuitePackage dict after AI Tokenize
             "error": None,
         }
     return job_id
@@ -75,6 +76,14 @@ def set_upload(job_id: str, upload: dict[str, Any]) -> None:
         if job_id in _store:
             _store[job_id]["upload"] = upload
             _store[job_id]["status"] = JobStatus.COMPLETE
+            _store[job_id]["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+
+def set_ai_blueprint(job_id: str, blueprint: dict[str, Any]) -> None:
+    with _lock:
+        if job_id in _store:
+            _store[job_id]["ai_blueprint"] = blueprint
+            _store[job_id]["status"] = JobStatus.TOKENIZED
             _store[job_id]["updated_at"] = datetime.now(timezone.utc).isoformat()
 
 

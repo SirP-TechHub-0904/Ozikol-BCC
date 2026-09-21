@@ -450,7 +450,7 @@ export interface MarketComponentItem {
               <span class="material-symbols-outlined text-purple">photo_camera</span>
               <div>
                 <h3 class="modal-title">Clone Layout from Screenshot (Vision AI)</h3>
-                <p class="modal-sub">Paste or upload an image of any website section. Vision AI will generate the responsive HTML, scoped CSS, and upload assets to Cloudinary.</p>
+                <p class="modal-sub">Paste or upload an image of any website section. Vision AI will generate the responsive HTML, scoped CSS, and optimize asset media.</p>
               </div>
             </div>
             <button type="button" class="btn-close-modal" (click)="showAiVisionModal = false">✕</button>
@@ -504,7 +504,7 @@ export interface MarketComponentItem {
               <span class="material-symbols-outlined text-indigo">auto_awesome</span>
               <div>
                 <h3 class="modal-title">Generate Section with AI Prompt</h3>
-                <p class="modal-sub">Describe what section you need in plain English. The AI engine will create HTML, scoped CSS, copy, and Cloudinary graphics.</p>
+                <p class="modal-sub">Describe what section you need in plain English. The AI engine will create HTML, scoped CSS, copy, and visual media.</p>
               </div>
             </div>
             <button type="button" class="btn-close-modal" (click)="showAiPromptModal = false">✕</button>
@@ -2174,7 +2174,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
             <p>We are dedicated to building digital bridges that empower member organizations, alumni networks, and corporate governing bodies with transparent tools.</p>
             <ul class="oz-check-list">
               <li><i class="fa-solid fa-check text-success me-1"></i> Bank-grade cryptographic security and audit trails</li>
-              <li><i class="fa-solid fa-check text-success me-1"></i> Seamless Cloudinary media asset delivery and CDN speed</li>
+              <li><i class="fa-solid fa-check text-success me-1"></i> Optimized media asset delivery and global caching speed</li>
               <li><i class="fa-solid fa-check text-success me-1"></i> 24/7 dedicated support team and institutional SLAs</li>
             </ul>
           </div>
@@ -3775,7 +3775,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       this.aiGenerating = false;
       this.showAiVisionModal = false;
       this.aiScreenshotPreview = '';
-      this.toast.success('Vision AI analyzed screenshot, generated HTML/CSS & uploaded graphics to Cloudinary!');
+      this.toast.success('Vision AI analyzed screenshot, generated HTML/CSS & configured section assets!');
     }, 1500);
   }
 
@@ -3789,7 +3789,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       this.aiGenerating = false;
       this.showAiPromptModal = false;
       this.aiPromptText = '';
-      this.toast.success('AI successfully generated new section block with copy & Cloudinary images!');
+      this.toast.success('AI successfully generated new section block with responsive copy & media assets!');
     }, 1500);
   }
 }

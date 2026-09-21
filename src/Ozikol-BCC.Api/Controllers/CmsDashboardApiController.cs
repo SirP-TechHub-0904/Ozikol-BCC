@@ -27,26 +27,56 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("stats")]
         public async Task<IActionResult> GetCmsStats([FromQuery] string range = "24h")
         {
-            // 1. Real Counts from Database
+            // 1. Web Pages Metrics
             var totalPages = await _context.WebPages.CountAsync();
             var publishedPages = await _context.WebPages.CountAsync(p => p.Publish);
-            var unpublishedPages = totalPages - publishedPages;
+            var draftPages = totalPages - publishedPages;
+            var legalAndSecurityPages = await _context.WebPages.CountAsync(p => p.IsLegal || p.SecurityPage);
+            var menuCtaPages = await _context.WebPages.CountAsync(p => p.IsMenuCTA);
 
+            // 2. Page Sections Metrics
+            var totalSections = await _context.PageSections.CountAsync();
+            var activeSections = await _context.PageSections.CountAsync(s => !s.Disable);
+            var disabledSections = totalSections - activeSections;
+            var homeSections = await _context.PageSections.CountAsync(s => s.ShowInHome && !s.Disable);
+
+            // 3. Menu Categories & Navigation Metrics
             var totalCategories = await _context.PageCategories.CountAsync();
             var publishedCategories = await _context.PageCategories.CountAsync(c => c.Publish);
-            var unpublishedCategories = totalCategories - publishedCategories;
+            var topMenuItems = await _context.WebPages.CountAsync(p => p.ShowInMainMenu && p.Publish);
+            var dropdownItems = await _context.WebPages.CountAsync(p => p.ShowInMenuDropDown && p.Publish);
+            var footerLinks = await _context.WebPages.CountAsync(p => p.ShowInFooter && p.Publish);
 
+            // 4. Sliders, FAQs, Blogs
             var totalSliders = await _context.Sliders.CountAsync();
             var publishedSliders = await _context.Sliders.CountAsync(s => s.Show);
-
             var totalFaqs = await _context.FAQs.CountAsync();
             var publishedFaqs = await _context.FAQs.CountAsync(f => f.Show);
             var totalFaqCategories = await _context.FAQCategories.CountAsync();
-
             var totalBlogs = await _context.Blogs.CountAsync();
             var totalBlogCategories = await _context.BlogCategories.CountAsync();
 
-            // 2. Real Most Visited Web Pages from Database
+            // 5. Active Theme Suite & Blueprints
+            var blueprintCount = await _context.TenantInstalledTemplates.CountAsync();
+            var activeInjections = await _context.SiteCodeInjectionTags.CountAsync(t => t.IsActive);
+
+            var activeHeroOrMenu = await _context.TenantInstalledTemplates
+                .FirstOrDefaultAsync(t => (t.CategoryKey.ToLower() == "hero" || t.CategoryKey.ToLower() == "menu") && t.IsActive);
+
+            string activeTemplateName = activeHeroOrMenu != null && !string.IsNullOrWhiteSpace(activeHeroOrMenu.Name)
+                ? activeHeroOrMenu.Name
+                : "Corporate Suite";
+
+            // 6. Content Health Diagnostics
+            var emptyPages = await _context.WebPages
+                .AsNoTracking()
+                .Include(p => p.PageSections)
+                .Where(p => p.Publish && (p.PageSections == null || !p.PageSections.Any() || p.PageSections.All(s => s.Disable)))
+                .ToListAsync();
+
+            var emptyPagesCount = emptyPages.Count;
+
+            // 7. Real Most Visited Web Pages from Database
             var mostVisitedPages = await _context.WebPages
                 .AsNoTracking()
                 .OrderByDescending(p => p.ViewCount)
@@ -62,10 +92,11 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
-            // 3. Real Broken / Inaccessible Pages Alert Detector from Database
+            // 8. Real Broken / Inaccessible Pages Alert Detector from Database
             var brokenPages = await _context.WebPages
                 .AsNoTracking()
-                .Where(p => string.IsNullOrWhiteSpace(p.DirectUrl) || !p.Publish || (p.PageSections == null || !p.PageSections.Any()))
+                .Include(p => p.PageSections)
+                .Where(p => string.IsNullOrWhiteSpace(p.DirectUrl) || (p.Publish && (p.PageSections == null || !p.PageSections.Any())))
                 .Take(5)
                 .Select(p => new
                 {
@@ -73,12 +104,12 @@ namespace Ozikol_BCC.Api.Controllers
                     title = p.Title ?? "Untitled Page",
                     slug = p.DirectUrl ?? "(No Direct URL)",
                     issue = string.IsNullOrWhiteSpace(p.DirectUrl) ? "Missing URL Slug" :
-                            !p.Publish ? "Unpublished / Draft Mode" : "No Layout Sections Attached",
+                            !p.Publish ? "Unpublished / Draft Mode" : "Published but 0 Layout Sections Attached",
                     updatedUtc = p.UpdatedAtUtc ?? p.CreatedAtUtc
                 })
                 .ToListAsync();
 
-            // 4. Real Timeframe Range Cutoff
+            // 9. Real Timeframe Range Cutoff
             DateTime cutoff = range?.ToLowerInvariant() switch
             {
                 "7d" => DateTime.UtcNow.AddDays(-7),
@@ -93,10 +124,10 @@ namespace Ozikol_BCC.Api.Controllers
                 .Where(l => l.CreatedAtUtc >= cutoff)
                 .ToListAsync();
 
-            // 5. Build Real Histogram from Database Logs
+            // 10. Build Real Histogram from Database Logs
             var histogram = BuildRealDatabaseHistogram(range ?? "24h", recentLogs);
 
-            // 6. Build Real Device Breakdown from Database Logs
+            // 11. Build Real Device Breakdown from Database Logs
             var totalRecentLogs = recentLogs.Count;
             var deviceGroups = recentLogs
                 .GroupBy(l => l.DeviceType ?? "Desktop")
@@ -112,7 +143,6 @@ namespace Ozikol_BCC.Api.Controllers
                 deviceStats.Add(new { name = d, percentage = pct, count });
             }
 
-            // If no logs yet in brand new DB, provide clean 0 baseline
             if (totalRecentLogs == 0)
             {
                 deviceStats = new List<object>
@@ -124,7 +154,7 @@ namespace Ozikol_BCC.Api.Controllers
                 };
             }
 
-            // 7. Build Real Browser Breakdown from Database Logs
+            // 12. Build Real Browser Breakdown from Database Logs
             var browserGroups = recentLogs
                 .GroupBy(l => l.Browser ?? "Google Chrome")
                 .ToDictionary(g => g.Key, g => g.Count());
@@ -153,10 +183,20 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     totalPages,
                     publishedPages,
-                    unpublishedPages,
+                    draftPages,
+                    unpublishedPages = draftPages,
+                    legalAndSecurityPages,
+                    menuCtaPages,
+                    totalSections,
+                    activeSections,
+                    disabledSections,
+                    homeSections,
                     totalCategories,
                     publishedCategories,
-                    unpublishedCategories,
+                    unpublishedCategories = totalCategories - publishedCategories,
+                    topMenuItems,
+                    dropdownItems,
+                    footerLinks,
                     totalSliders,
                     publishedSliders,
                     totalFaqs,
@@ -164,7 +204,10 @@ namespace Ozikol_BCC.Api.Controllers
                     totalFaqCategories,
                     totalBlogs,
                     totalBlogCategories,
-                    templateName = "Ozikol Enterprise Clean Pro"
+                    blueprintCount,
+                    activeInjections,
+                    emptyPagesCount,
+                    templateName = activeTemplateName
                 },
                 mostVisitedPages,
                 brokenPages,

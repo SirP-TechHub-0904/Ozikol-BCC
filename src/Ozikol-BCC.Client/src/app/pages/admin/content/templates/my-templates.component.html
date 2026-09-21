@@ -29,6 +29,14 @@
 
           <div class="header-actions">
             <a
+              routerLink="/content/console/templates/import"
+              class="btn btn-import-website"
+              title="Import, crawl, clean, debrand, and adopt any external website template"
+            >
+              <span class="material-symbols-outlined btn-icon">cloud_download</span>
+              <span>Import Website</span>
+            </a>
+            <a
               routerLink="/content/console/templates/create"
               class="btn btn-add-custom-template"
               title="Create a custom section template directly with HTML placeholders"
@@ -50,6 +58,15 @@
               <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
               <span>Explore Marketplace (36+)</span>
             </a>
+            <!-- Direct Link to Dedicated Maintenance Page -->
+            <a
+              routerLink="/content/console/templates/maintenance"
+              class="btn btn-vault-settings-trigger"
+              title="Template Vault Reset, Factory Restore &amp; Deep Maintenance"
+            >
+              <span class="material-symbols-outlined btn-icon">tune</span>
+              <span>Maintenance</span>
+            </a>
           </div>
         </div>
       </div>
@@ -59,22 +76,22 @@
         <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'vault'" (click)="activeMainTab = 'vault'">
           <span class="material-symbols-outlined">layers</span>
           <span>Section Templates</span>
-          <span class="tab-count-pill">{{ installedTemplates.length }}</span>
+          <span class="tab-count-pill">{{ getFilteredTemplatesCount() }}</span>
         </button>
         <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'head'" (click)="activeMainTab = 'head'">
           <span class="material-symbols-outlined">code</span>
           <span>Header Tags (&lt;head&gt;)</span>
-          <span class="tab-count-pill">{{ headTags.length }}</span>
+          <span class="tab-count-pill">{{ getZoneTagCount('head') }}</span>
         </button>
         <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'body_open'" (click)="activeMainTab = 'body_open'">
           <span class="material-symbols-outlined">transit_enterexit</span>
           <span>Body Open (&lt;body&gt;)</span>
-          <span class="tab-count-pill">{{ bodyOpenTags.length }}</span>
+          <span class="tab-count-pill">{{ getZoneTagCount('body_open') }}</span>
         </button>
         <button type="button" class="main-tab-item" [class.active]="activeMainTab === 'footer'" (click)="activeMainTab = 'footer'">
           <span class="material-symbols-outlined">dock_to_bottom</span>
           <span>Footer Scripts (&lt;/body&gt;)</span>
-          <span class="tab-count-pill">{{ footerTags.length }}</span>
+          <span class="tab-count-pill">{{ getZoneTagCount('footer') }}</span>
         </button>
       </div>
 
@@ -119,18 +136,56 @@
             </div>
           </div>
 
-          <!-- Theme Suite Filter Bar -->
+          <!-- Theme Suite Manager & Dropdown Switcher -->
+          <div class="theme-suite-manager-bar">
+            <div class="active-suite-status">
+              <span class="pulse-status-dot"></span>
+              <span class="status-title">Live Active Theme:</span>
+              <span class="status-theme-name">{{ activeThemeSuiteName }}</span>
+            </div>
+
+            <div class="theme-switcher-control ms-auto">
+              <label class="control-label">
+                <span class="material-symbols-outlined label-icon">tune</span>
+                <span>Switch Theme Suite:</span>
+              </label>
+              <select
+                class="form-select suite-dropdown-select"
+                [ngModel]="selectedThemeSuiteToActivate"
+                (ngModelChange)="onSuiteDropdownChange($event)"
+              >
+                <option *ngFor="let suite of getAvailableSuites()" [value]="suite.code">
+                  {{ suite.name }} ({{ suite.count }} components)
+                </option>
+              </select>
+              <button
+                type="button"
+                class="btn-activate-suite-primary"
+                [class.btn-suite-already-active]="isCurrentThemeSuiteActive()"
+                [disabled]="activatingSuite || isCurrentThemeSuiteActive()"
+                (click)="activateThemeSuite(selectedThemeSuiteToActivate)"
+                [title]="isCurrentThemeSuiteActive() ? 'This theme suite is already active and powering your live website' : 'Activate all structural components and scripts for this theme suite'"
+              >
+                <span class="material-symbols-outlined btn-icon" [class.spin-icon]="activatingSuite">
+                  {{ isCurrentThemeSuiteActive() ? 'verified' : 'bolt' }}
+                </span>
+                <span>{{ activatingSuite ? 'Activating...' : (isCurrentThemeSuiteActive() ? '✓ Currently Active' : 'Activate Theme') }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Theme Suite Filter Chips Bar -->
           <div class="theme-suite-filter-bar">
             <div class="suite-filter-label">
-              <span class="material-symbols-outlined suite-icon">inventory_2</span>
-              <span>Theme Suite:</span>
+              <span class="material-symbols-outlined suite-icon">category</span>
+              <span>Vault View:</span>
             </div>
             <div class="suite-chips">
               <button
                 type="button"
                 class="suite-chip"
                 [class.active]="selectedGroup === 'all'"
-                (click)="selectedGroup = 'all'; applyFilters()"
+                (click)="selectSuiteGroup('all')"
               >
                 All Suites ({{ installedTemplates.length }})
               </button>
@@ -139,20 +194,12 @@
                 class="suite-chip"
                 *ngFor="let suite of getAvailableSuites()"
                 [class.active]="selectedGroup === suite.code"
-                (click)="selectedGroup = suite.code; applyFilters()"
+                (click)="selectSuiteGroup(suite.code)"
               >
-                <i class="fa-solid fa-cube me-1 text-primary"></i> {{ suite.name }} ({{ suite.count }})
-              </button>
-            </div>
-            <div class="suite-adopt-actions ms-auto" *ngIf="selectedGroup !== 'all'">
-              <button
-                type="button"
-                class="btn-adopt-suite-inline"
-                (click)="adoptSuite(selectedGroup)"
-                title="Adopt all companion blocks from this suite"
-              >
-                <span class="material-symbols-outlined btn-icon">auto_fix_high</span>
-                <span>Adopt Complete Suite</span>
+                <i class="fa-solid fa-cube me-1" [class.text-success]="suite.name === activeThemeSuiteName" [class.text-primary]="suite.name !== activeThemeSuiteName"></i>
+                <span>{{ suite.name }}</span>
+                <span class="suite-count-badge">({{ suite.count }})</span>
+                <span class="live-pill ms-1" *ngIf="suite.name === activeThemeSuiteName">Active</span>
               </button>
             </div>
           </div>
@@ -442,9 +489,10 @@
             <table class="table-modern">
               <thead>
                 <tr>
-                  <th style="width: 80px;">Order</th>
-                  <th style="width: 240px;">Name</th>
-                  <th style="width: 170px;">Type</th>
+                  <th style="width: 75px;">Order</th>
+                  <th style="width: 210px;">Name</th>
+                  <th style="width: 140px;">Suite Scope</th>
+                  <th style="width: 150px;">Type</th>
                   <th>Code Snippet Preview</th>
                   <th style="width: 110px;">Status</th>
                   <th style="text-align: right; width: 140px;">Actions</th>
@@ -457,6 +505,12 @@
                   </td>
                   <td>
                     <strong class="tag-name-cell">{{ tag.name }}</strong>
+                  </td>
+                  <td>
+                    <span class="group-badge" [class.active-badge]="tag.suiteCode !== 'global'" [style.background]="tag.suiteCode === 'global' ? 'rgba(148, 163, 184, 0.15)' : ''" [style.color]="tag.suiteCode === 'global' ? '#94a3b8' : ''">
+                      <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 3px;">{{ tag.suiteCode === 'global' ? 'public' : 'palette' }}</span>
+                      {{ getSuiteNameByCode(tag.suiteCode) }}
+                    </span>
                   </td>
                   <td>
                     <span class="tag-type-badge">{{ getTagTypeLabel(tag.tagType) }}</span>
@@ -783,7 +837,7 @@
               </div>
               <div class="form-group">
                 <label class="form-lbl" [innerText]="'PRIMARY SLIDE IMAGE URL ({{ Url }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://res.cloudinary.com/... or https://images.unsplash.com/..." />
+                <input type="text" [(ngModel)]="previewHeroContent.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. https://yourdomain.com/hero-image.jpg" />
               </div>
               <div class="form-group full-width">
                 <label class="form-lbl" [innerText]="'SLIDE TEXT / SUMMARY ({{ Text }})'"></label>
@@ -1964,7 +2018,13 @@
           <div class="full-demo-title-wrap">
             <span class="material-symbols-outlined full-demo-icon">public</span>
             <div>
-              <h3 class="full-demo-title">Simulated Multi-Page Live Theme Demo</h3>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <h3 class="full-demo-title" style="margin: 0;">Simulated Multi-Page Live Theme Demo</h3>
+                <span class="badge-demo-active-theme">
+                  <span class="pulse-dot"></span>
+                  <span>Active Suite: <strong>{{ getDemoActiveThemeName() }}</strong></span>
+                </span>
+              </div>
               <span class="full-demo-subtitle">
                 Assemble and test your website's home and inner pages interactively.
               </span>
@@ -2189,7 +2249,16 @@
               <input type="text" [(ngModel)]="tagForm.name" class="form-ctrl" placeholder="e.g. Google Tag Manager Head, Bootstrap 5.3 CDN, Theme Init" />
             </div>
 
-            <div class="form-group" [class.full-width]="tagForm.tagType !== 'meta_tag'">
+            <div class="form-group">
+              <label class="form-lbl">THEME SUITE SCOPE *</label>
+              <select [(ngModel)]="tagForm.suiteCode" class="form-ctrl">
+                <option value="global">Global (Universal / Social Meta / Analytics)</option>
+                <option *ngFor="let suite of getAvailableSuites()" [value]="suite.code">{{ suite.name }}</option>
+              </select>
+              <small class="form-hint">Global tags execute for all suites; suite-scoped tags execute only when active.</small>
+            </div>
+
+            <div class="form-group">
               <label class="form-lbl">TAG CATEGORY / TYPE *</label>
               <select [(ngModel)]="tagForm.tagType" class="form-ctrl" (change)="onTagTypeChanged()">
                 <!-- Header Zone Types -->
@@ -2458,7 +2527,7 @@
     <!-- MODAL 6: MODERN UNINSTALL CONFIRMATION MODAL   -->
     <!-- ============================================== -->
     <div class="modal-backdrop" *ngIf="showUninstallModal && itemToUninstall" (click)="closeUninstallModal()">
-      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-card confirm-modal-card template-delete-modal-card" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="confirm-modal-header">
           <div class="confirm-danger-badge">
@@ -2469,9 +2538,9 @@
 
         <!-- Body -->
         <div class="confirm-modal-body">
-          <h3 class="confirm-modal-title">Uninstall Template Blueprint?</h3>
+          <h3 class="confirm-modal-title">Delete Template Blueprint?</h3>
           <p class="confirm-modal-subtitle">
-            Are you sure you want to uninstall this template from your library?
+            Are you sure you want to remove this template blueprint from your library?
           </p>
 
           <!-- Highlight Preview Card -->
@@ -2484,15 +2553,81 @@
               <div class="confirm-item-meta">
                 <span class="confirm-category-badge">{{ getCategoryName(itemToUninstall.category) }}</span>
                 <code class="confirm-variant-code">{{ itemToUninstall.variantCode }}</code>
+                <span class="confirm-origin-badge default" *ngIf="itemToUninstall.isDefault">
+                  <span class="material-symbols-outlined origin-icon">verified</span> Factory Default
+                </span>
+                <span class="confirm-origin-badge custom" *ngIf="!itemToUninstall.isDefault">
+                  <span class="material-symbols-outlined origin-icon">person</span> Custom / Imported
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Safe Note Alert -->
-          <div class="confirm-warning-box">
+          <!-- Linked Content Inventory Section -->
+          <div class="linked-content-section">
+            <div class="linked-content-header">
+              <span class="material-symbols-outlined header-icon">link</span>
+              <strong class="header-title">Linked CMS Page Sections</strong>
+              <span class="count-badge" *ngIf="!loadingLinkedContent">{{ linkedSectionsList.length }} section(s)</span>
+              <span class="loading-badge" *ngIf="loadingLinkedContent">
+                <span class="material-symbols-outlined spin-icon">sync</span> Scanning...
+              </span>
+            </div>
+
+            <!-- Loading State -->
+            <div class="linked-loading-box" *ngIf="loadingLinkedContent">
+              <span class="material-symbols-outlined spin-icon">sync</span>
+              <span>Checking active pages and sections using this template...</span>
+            </div>
+
+            <!-- Linked Sections Found -->
+            <div class="linked-sections-scroll" *ngIf="!loadingLinkedContent && linkedSectionsList.length > 0">
+              <div class="linked-section-row" *ngFor="let sec of linkedSectionsList">
+                <div class="sec-icon-box">
+                  <span class="material-symbols-outlined">web</span>
+                </div>
+                <div class="sec-details">
+                  <div class="sec-title-line">
+                    <strong class="sec-name">{{ sec.sectionTitle }}</strong>
+                    <span class="sec-sub-count" *ngIf="sec.subItemCount > 0">{{ sec.subItemCount }} item(s)</span>
+                  </div>
+                  <div class="sec-page-meta">
+                    <span class="page-label">Page:</span>
+                    <span class="page-name">{{ sec.webPageTitle }}</span>
+                    <code class="page-slug">/{{ sec.webPageSlug }}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Linked Sections -->
+            <div class="linked-empty-box" *ngIf="!loadingLinkedContent && linkedSectionsList.length === 0">
+              <span class="material-symbols-outlined check-icon">check_circle</span>
+              <span>No active page sections are currently linked to this template.</span>
+            </div>
+          </div>
+
+          <!-- Cascade Delete Checkbox Option (Unchecked by default) -->
+          <div class="cascade-checkbox-card" *ngIf="!loadingLinkedContent && linkedSectionsList.length > 0" [class.active-checked]="deleteLinkedContentCheckbox">
+            <label class="cascade-label">
+              <input type="checkbox" [(ngModel)]="deleteLinkedContentCheckbox" class="cascade-input" />
+              <div class="cascade-text">
+                <strong class="cascade-title">Also delete the {{ linkedSectionsList.length }} linked page section(s) and content from CMS Studio</strong>
+                <span class="cascade-description" *ngIf="!deleteLinkedContentCheckbox">
+                  <strong>Recommended:</strong> Unchecked by default. Section titles and text remain safe in CMS Studio (layout blueprint unassigned).
+                </span>
+                <span class="cascade-description danger" *ngIf="deleteLinkedContentCheckbox">
+                  <strong>Warning:</strong> All {{ linkedSectionsList.length }} page section(s) and their sub-items will be permanently deleted from CMS pages.
+                </span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Safe Note Alert (When not deleting content) -->
+          <div class="confirm-warning-box" *ngIf="!deleteLinkedContentCheckbox">
             <span class="material-symbols-outlined warn-icon">shield</span>
             <span>
-              <strong>Safe Removal:</strong> This removes the blueprint from your active vault. Any pages where this section has already been published or added will remain completely intact.
+              <strong>Safe Removal:</strong> Deleting only uninstalls the template layout blueprint. Any text and section content will stay preserved in your CMS pages.
             </span>
           </div>
         </div>
@@ -2502,9 +2637,9 @@
           <button type="button" class="btn btn-outline" (click)="closeUninstallModal()">
             Cancel
           </button>
-          <button type="button" class="btn btn-danger-action" (click)="confirmUninstallTemplate()" [disabled]="uninstallingTemplate">
+          <button type="button" class="btn btn-danger-action" (click)="confirmUninstallTemplate()" [disabled]="uninstallingTemplate || loadingLinkedContent">
             <span class="material-symbols-outlined">delete</span>
-            <span>{{ uninstallingTemplate ? 'Uninstalling...' : 'Yes, Uninstall Template' }}</span>
+            <span>{{ uninstallingTemplate ? 'Deleting...' : (deleteLinkedContentCheckbox ? 'Delete Template & Content' : 'Delete Template Only') }}</span>
           </button>
         </div>
       </div>
@@ -2552,6 +2687,83 @@
           <button type="button" class="btn btn-danger-action" (click)="confirmDeleteTag()" [disabled]="deletingTag">
             <span class="material-symbols-outlined">delete</span>
             <span>{{ deletingTag ? 'Deleting...' : 'Delete Tag' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL 8: CLEAR ALL TEMPLATES & INJECTIONS MODAL         -->
+    <!-- ======================================================= -->
+    <div class="modal-backdrop" *ngIf="showClearAllModal" (click)="closeClearAllModal()">
+      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+        <div class="confirm-modal-header">
+          <div class="confirm-danger-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+            <span class="material-symbols-outlined confirm-icon">mop</span>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeClearAllModal()">✕</button>
+        </div>
+
+        <div class="confirm-modal-body">
+          <h3 class="confirm-modal-title">Clear All Templates &amp; Injections?</h3>
+          <p class="confirm-modal-subtitle">
+            This will permanently remove <strong>all {{ installedTemplates.length }} installed section templates</strong> and <strong>all {{ headTags.length + bodyOpenTags.length + footerTags.length }} code injection tags</strong> from your tenant database.
+          </p>
+          <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 p-3 rounded-3" style="background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; font-size: 13.5px;">
+            <span class="material-symbols-outlined fs-5">warning</span>
+            <span>Your vault will be completely blank. You can perform a clean website import afterwards or click <strong>Reinstall Defaults</strong> anytime.</span>
+          </div>
+        </div>
+
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeClearAllModal()" [disabled]="clearingVault">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger-action" (click)="confirmClearAll()" [disabled]="clearingVault">
+            <span class="material-symbols-outlined">mop</span>
+            <span>{{ clearingVault ? 'Purging Vault...' : 'Yes, Clear All' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL 9: REINSTALL DEFAULT CORPORATE SUITE MODAL        -->
+    <!-- ======================================================= -->
+    <div class="modal-backdrop" *ngIf="showReinstallDefaultsModal" (click)="closeReinstallDefaultsModal()">
+      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+        <div class="confirm-modal-header">
+          <div class="confirm-danger-badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5;">
+            <span class="material-symbols-outlined confirm-icon">restart_alt</span>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeReinstallDefaultsModal()">✕</button>
+        </div>
+
+        <div class="confirm-modal-body">
+          <h3 class="confirm-modal-title">Restore Default Corporate Theme Suite?</h3>
+          <p class="confirm-modal-subtitle">
+            This will reset your template vault and restore the <strong>16 standard turnkey Corporate Suite components</strong> and standard 3-zone code injection tags.
+          </p>
+          <div class="p-3 rounded-3 mt-3" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 13px; color: #475569;">
+            <div class="d-flex align-items-center gap-2 mb-1 fw-semibold text-dark">
+              <span class="material-symbols-outlined text-primary fs-5">verified</span>
+              <span>Included in Corporate Suite:</span>
+            </div>
+            • Classic Light Corporate Navbar &amp; Modern Corporate Split Hero<br>
+            • 6 Modular Body Sections (Features, Mission, Metrics, Testimonials, FAQ, CTA)<br>
+            • Storefront Product Grid, Newsletter Bar, Contact &amp; Service Request forms<br>
+            • Blog Card Grid &amp; Article Detail with Sticky Sidebar<br>
+            • Centered Breadcrumb Banner &amp; 4-Column Corporate Footer
+          </div>
+        </div>
+
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeReinstallDefaultsModal()" [disabled]="reinstallingDefaults">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" (click)="confirmReinstallDefaults()" [disabled]="reinstallingDefaults" style="background: #0050e5; border-color: #0050e5; border-radius: 8px; padding: 10px 20px; font-weight: 600;">
+            <span class="material-symbols-outlined me-1">restart_alt</span>
+            <span>{{ reinstallingDefaults ? 'Restoring Defaults...' : 'Restore Defaults' }}</span>
           </button>
         </div>
       </div>

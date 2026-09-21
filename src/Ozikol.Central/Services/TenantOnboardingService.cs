@@ -1394,7 +1394,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "link_stylesheet",
                 Content = "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" integrity=\"sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH\" crossorigin=\"anonymous\">",
                 SortOrder = 10,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "suite_corporate"
             },
             new()
             {
@@ -1404,7 +1405,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "link_stylesheet",
                 Content = "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" integrity=\"sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />",
                 SortOrder = 20,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "suite_corporate"
             },
             new()
             {
@@ -1414,7 +1416,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "google_fonts",
                 Content = "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">",
                 SortOrder = 30,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "suite_corporate"
             },
             new()
             {
@@ -1424,7 +1427,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "meta_tag",
                 Content = "<meta name=\"description\" content=\"{{ MetaDescription }}\" />\n<meta name=\"keywords\" content=\"{{ Keywords }}\" />\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"{{ CanonicalUrl }}\" />",
                 SortOrder = 40,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1434,7 +1438,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "meta_tag",
                 Content = "<meta property=\"og:type\" content=\"website\" />\n<meta property=\"og:site_name\" content=\"{{ BrandName }}\" />\n<meta property=\"og:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta property=\"og:description\" content=\"{{ MetaDescription }}\" />\n<meta property=\"og:url\" content=\"{{ CanonicalUrl }}\" />\n<meta property=\"og:image\" content=\"{{ LogoUrl }}\" />",
                 SortOrder = 50,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1444,7 +1449,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "meta_tag",
                 Content = "<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta name=\"twitter:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta name=\"twitter:description\" content=\"{{ MetaDescription }}\" />\n<meta name=\"twitter:image\" content=\"{{ LogoUrl }}\" />\n<meta name=\"twitter:site\" content=\"@{{ BrandName }}\" />",
                 SortOrder = 60,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1454,7 +1460,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "meta_tag",
                 Content = "<meta name=\"theme-color\" content=\"#0050e5\" />\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\" />\n<meta name=\"apple-mobile-web-app-title\" content=\"{{ BrandName }}\" />",
                 SortOrder = 70,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1464,7 +1471,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "raw_html",
                 Content = "<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Organization\",\n  \"name\": \"{{ BrandName }}\",\n  \"url\": \"{{ CanonicalUrl }}\",\n  \"logo\": \"{{ LogoUrl }}\",\n  \"description\": \"{{ MetaDescription }}\"\n}\n</script>",
                 SortOrder = 80,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1474,7 +1482,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "raw_html",
                 Content = "<link rel=\"shortcut icon\" href=\"{{ FaviconUrl }}\" type=\"image/x-icon\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"{{ FaviconUrl }}\" />\n<link rel=\"apple-touch-icon\" href=\"{{ LogoUrl }}\" />",
                 SortOrder = 90,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "global"
             },
             new()
             {
@@ -1484,7 +1493,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 TagType = "script_url",
                 Content = "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz\" crossorigin=\"anonymous\"></script>",
                 SortOrder = 10,
-                IsActive = true
+                IsActive = true,
+                SuiteCode = "suite_corporate"
             }
         };
 

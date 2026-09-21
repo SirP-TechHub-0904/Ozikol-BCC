@@ -183,6 +183,11 @@ namespace Ozikol_BCC.Domain.Models
         public bool IsCustomized { get; set; } = false;
 
         /// <summary>
+        /// Indicates whether this is an out-of-the-box system factory default starter section.
+        /// </summary>
+        public bool IsDefault { get; set; } = false;
+
+        /// <summary>
         /// Local editable copy of HTML template markup.
         /// </summary>
         public string? HtmlTemplate { get; set; }

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiService } from '../../../../core/services/api.service';
@@ -30,6 +30,7 @@ export interface InstalledTemplateItem {
   version: string;
   installedUtc: string;
   isCustomized?: boolean;
+  isDefault?: boolean;
   defaultContentJson?: string;
 }
 
@@ -38,9 +39,11 @@ export interface CodeInjectionTag {
   name: string;
   zone: 'head' | 'body_open' | 'footer';
   tagType: string;
+  suiteCode?: string;
   content: string;
   sortOrder: number;
   isActive: boolean;
+  isDefault?: boolean;
   createdAtUtc?: string;
 }
 
@@ -74,8 +77,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   currentTenantBrandName: string = localStorage.getItem('tenant_name') || localStorage.getItem('tenant_company_name') || 'Enterprise Workspace';
   currentTenantSubdomain: string = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_subdomain') || 'portal';
 
+  // Active Theme Suite State
+  activeThemeSuiteCode: string = 'suite_corporate';
+  activeThemeSuiteName: string = 'Corporate Suite';
+  selectedThemeSuiteToActivate: string = 'suite_corporate';
+  activatingSuite: boolean = false;
+  showVaultSettingsDropdown: boolean = false;
+
   // Active Main Tab
   activeMainTab: 'vault' | 'head' | 'body_open' | 'footer' = 'vault';
+  allCodeInjections: CodeInjectionTag[] = [];
   headTags: CodeInjectionTag[] = [];
   bodyOpenTags: CodeInjectionTag[] = [];
   footerTags: CodeInjectionTag[] = [];
@@ -95,6 +106,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     jsScript: ''
   };
 
+  // Vault Reset & Defaults State
+  showClearAllModal: boolean = false;
+  clearingVault: boolean = false;
+  showReinstallDefaultsModal: boolean = false;
+  reinstallingDefaults: boolean = false;
+
   // Code Injection Modal State
   showTagModal: boolean = false;
   isEditingTag: boolean = false;
@@ -104,6 +121,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     name: '',
     zone: 'head',
     tagType: 'link_stylesheet',
+    suiteCode: 'global',
     content: '',
     sortOrder: 10,
     isActive: true
@@ -539,14 +557,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     secondaryButtonText?: string;
     secondaryButtonLink?: string;
   } = {
-    title: 'Next-Generation Infrastructure for Forward-Thinking Organizations',
-    miniTitle: 'OFFICIAL PORTAL',
-    text: 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
-    buttonText: 'Explore Solutions',
-    buttonLink: '/services',
+    title: '',
+    miniTitle: '',
+    text: '',
+    buttonText: '',
+    buttonLink: '',
     videoButtonText: '',
     videoLink: '',
-    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+    url: '',
     secondUrl: '',
     youtubeVideo: ''
   };
@@ -1080,6 +1098,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   showUninstallModal: boolean = false;
   itemToUninstall: InstalledTemplateItem | null = null;
   uninstallingTemplate: boolean = false;
+  loadingLinkedContent: boolean = false;
+  linkedSectionsList: any[] = [];
+  deleteLinkedContentCheckbox: boolean = false;
 
   showDeleteTagModal: boolean = false;
   tagToDelete: CodeInjectionTag | null = null;
@@ -1096,6 +1117,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private api: ApiService,
     private toast: ToastService,
     private sanitizer: DomSanitizer,
@@ -1107,6 +1129,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.cleanupLeakedStyles();
     const savedView = localStorage.getItem('oz_templates_view_mode') as 'grid' | 'table';
     if (savedView) this.viewMode = savedView;
+
+    // Listen to query parameters to focus on newly imported/adopted suites
+    this.route.queryParams.subscribe(params => {
+      if (params && params['suite']) {
+        this.selectedGroup = params['suite'];
+        this.selectedThemeSuiteToActivate = params['suite'];
+        this.applyFilters();
+      }
+    });
 
     // Resolve active tenant business name and portal subdomain dynamically
     this.api.get<any>('SettingsApi/brand').subscribe({
@@ -1251,11 +1282,42 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Returns all code injection tags for the specified zone filtered by the active theme suite selection.
+   * Enables clean isolation between suites while preserving global tags across all themes.
+   */
+  getFilteredZoneTags(zone: 'head' | 'body_open' | 'footer'): CodeInjectionTag[] {
+    const list = this.allCodeInjections.filter(t => t.zone === zone);
+    if (this.selectedGroup === 'all') {
+      return list.sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+    return list
+      .filter(t => (t.suiteCode || 'suite_corporate') === this.selectedGroup || t.suiteCode === 'global' || !t.suiteCode)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  /**
+   * Computes dynamic tag count for each zone tab respecting the active suite filter.
+   */
+  getZoneTagCount(zone: 'head' | 'body_open' | 'footer'): number {
+    return this.getFilteredZoneTags(zone).length;
+  }
+
   getActiveZoneTags(): CodeInjectionTag[] {
-    if (this.activeMainTab === 'head') return this.headTags;
-    if (this.activeMainTab === 'body_open') return this.bodyOpenTags;
-    if (this.activeMainTab === 'footer') return this.footerTags;
+    if (this.activeMainTab === 'head' || this.activeMainTab === 'body_open' || this.activeMainTab === 'footer') {
+      return this.getFilteredZoneTags(this.activeMainTab);
+    }
     return [];
+  }
+
+  getSuiteNameByCode(suiteCode?: string): string {
+    if (!suiteCode || suiteCode === 'global') return 'Global (All Themes)';
+    const found = this.getAvailableSuites().find(s => s.code === suiteCode);
+    if (found) return found.name;
+    if (suiteCode === 'suite_corporate') return 'Corporate Suite';
+    if (suiteCode === 'suite_apexmodern') return 'Apex Modern Theme';
+    const rawTag = suiteCode.replace(/^suite_/i, '');
+    return rawTag.charAt(0).toUpperCase() + rawTag.slice(1) + ' Theme';
   }
 
   getTagTypeLabel(tagType: string): string {
@@ -1282,6 +1344,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (cached) {
       try {
         const parsed: CodeInjectionTag[] = JSON.parse(cached);
+        this.allCodeInjections = parsed;
         this.headTags = parsed.filter(t => t.zone === 'head').sort((a, b) => a.sortOrder - b.sortOrder);
         this.bodyOpenTags = parsed.filter(t => t.zone === 'body_open').sort((a, b) => a.sortOrder - b.sortOrder);
         this.footerTags = parsed.filter(t => t.zone === 'footer').sort((a, b) => a.sortOrder - b.sortOrder);
@@ -1293,6 +1356,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.loadingTags = false;
         if (res?.data && Array.isArray(res.data)) {
           const tags: CodeInjectionTag[] = res.data;
+          this.allCodeInjections = tags;
           this.headTags = tags.filter(t => t.zone === 'head').sort((a, b) => a.sortOrder - b.sortOrder);
           this.bodyOpenTags = tags.filter(t => t.zone === 'body_open').sort((a, b) => a.sortOrder - b.sortOrder);
           this.footerTags = tags.filter(t => t.zone === 'footer').sort((a, b) => a.sortOrder - b.sortOrder);
@@ -1332,7 +1396,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (targetZone === 'body_open') defaultType = 'gtm_noscript';
     if (targetZone === 'footer') defaultType = 'script_url';
 
-    const currentCount = (targetZone === 'head' ? this.headTags : targetZone === 'body_open' ? this.bodyOpenTags : this.footerTags).length;
+    const currentCount = this.getZoneTagCount(targetZone);
 
     this.tagFormZone = targetZone;
     this.tagForm = {
@@ -1340,6 +1404,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: '',
       zone: targetZone,
       tagType: defaultType,
+      suiteCode: this.selectedGroup !== 'all' ? this.selectedGroup : 'global',
       content: this.tagBoilerplates[defaultType] || '',
       sortOrder: (currentCount + 1) * 10,
       isActive: true
@@ -1790,6 +1855,26 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             }
           });
 
+          // Infer currently active theme suite
+          const activeItem = this.installedTemplates.find(t => t.badge === 'Active' && (t.category === 'menu' || t.category === 'hero' || t.category === 'footer')) ||
+                             this.installedTemplates.find(t => t.badge === 'Active');
+          if (activeItem) {
+            this.activeThemeSuiteName = activeItem.groupName || 'Corporate Suite';
+            this.activeThemeSuiteCode = activeItem.groupCode || 'suite_corporate';
+            if (this.selectedGroup === 'all') {
+              this.selectedThemeSuiteToActivate = this.activeThemeSuiteCode;
+            }
+          } else {
+            const suites = this.getAvailableSuites();
+            if (suites.length > 0) {
+              this.activeThemeSuiteName = suites[0].name;
+              this.activeThemeSuiteCode = suites[0].code;
+              if (this.selectedGroup === 'all') {
+                this.selectedThemeSuiteToActivate = suites[0].code;
+              }
+            }
+          }
+
           this.applyFilters();
         } else {
           this.installedTemplates = [];
@@ -1813,6 +1898,37 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const cat = (apiT.categoryKey || 'body').toLowerCase();
     const meta = this.getCategoryVisualMeta(cat);
 
+    // Extract dynamic Suite Code and Name from variantCode, templateKey, or name
+    const vCode = (apiT.variantCode || apiT.templateKey || '').toUpperCase();
+    const tKey = (apiT.templateKey || '').toUpperCase();
+    const rawName = (apiT.name || '').trim();
+
+    let groupCode = 'suite_corporate';
+    let groupName = 'Corporate Suite';
+
+    if (vCode.includes('SUITE_APEXMODERN') || tKey.includes('SUITE_APEXMODERN') || rawName.toUpperCase().includes('APEX MODERN')) {
+      groupCode = 'suite_apexmodern';
+      groupName = 'Apex Modern Theme';
+    } else {
+      // Robust detection: Match SUITE_([A-Z0-9]+) anywhere in variant code or template key (e.g., BODY_SUITE_PINCRETTHE_...)
+      const match = vCode.match(/SUITE_([A-Z0-9]+)/) || tKey.match(/SUITE_([A-Z0-9]+)/);
+      if (match) {
+        const rawTag = match[1].toLowerCase();
+        groupCode = `suite_${rawTag}`;
+
+        // Extract clean theme suite name from template name (e.g. "Pincret Theme 1. Agreement..." -> "Pincret Theme")
+        const nameMatch = rawName.match(/^(.+?\b(?:Theme|Suite|Pro|Portal)\b)/i);
+        if (nameMatch) {
+          groupName = nameMatch[1].trim();
+        } else {
+          groupName = rawTag.charAt(0).toUpperCase() + rawTag.slice(1) + ' Theme';
+        }
+      } else if (rawName.toUpperCase().includes('CORPORATE')) {
+        groupCode = 'suite_corporate';
+        groupName = 'Corporate Suite';
+      }
+    }
+
     return {
       id: apiT.templateKey || apiT.variantCode || apiT.id,
       dbId: apiT.id,
@@ -1821,8 +1937,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       variantCode: apiT.variantCode || apiT.templateKey || 'Section_Custom',
       badge: apiT.isActive ? 'Active' : meta.badge,
       tag: cat,
-      groupCode: 'apex-corporate',
-      groupName: 'Corporate Suite',
+      groupCode: groupCode,
+      groupName: groupName,
       description: apiT.description || `${apiT.name} component blueprint installed in tenant database.`,
       thumbnailGradient: meta.gradient,
       previewIcon: meta.icon,
@@ -1835,6 +1951,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       version: apiT.installedVersion || '1.0.0',
       installedUtc: apiT.installedUtc || new Date().toISOString(),
       isCustomized: apiT.isCustomized,
+      isDefault: apiT.isDefault ?? false,
       defaultContentJson: apiT.defaultContentJson
     };
   }
@@ -1901,15 +2018,17 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   /**
    * Returns the curated sequence of body sections that belong specifically on the Home page.
-   * Strictly excludes dedicated landing/intake forms (e.g. Body_RequestService, Contact_SplitDetails)
-   * and single-article blog detail views.
+   * Strictly isolates sections belonging to the active theme suite and limits to top 5 showcase blocks.
    * @returns Array of body blocks designated for the Home page.
    */
   getHomeBodyBlocks(): InstalledTemplateItem[] {
-    return this.getAllBodyBlocks().filter(t => 
+    const activeSuiteCode = this.selectedGroup !== 'all' ? this.selectedGroup : this.selectedThemeSuiteToActivate;
+    const suiteItems = this.getAllBodyBlocks().filter(t => 
+      ((t.groupCode || 'suite_corporate') === activeSuiteCode || t.badge === 'Active') &&
       t.variantCode !== 'Body_RequestService' &&
       t.variantCode !== 'Contact_SplitDetails'
     );
+    return suiteItems.slice(0, 5);
   }
 
   getActiveFooter(): InstalledTemplateItem | undefined {
@@ -1986,6 +2105,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (item.category === 'breadcrumb') { this.activeBreadcrumbId = item.id; localStorage.setItem('oz_active_breadcrumb_id', item.id); }
     if (item.category === 'ecommerce') { this.activeEcommerceId = item.id; localStorage.setItem('oz_active_ecommerce_id', item.id); }
 
+    if (this.singletonCategories.includes(item.category)) {
+      this.installedTemplates.forEach(t => {
+        if (t.category === item.category) {
+          t.badge = (t.id === item.id) ? 'Active' : this.getCategoryVisualMeta(t.category).badge;
+        }
+      });
+    }
+
     if (item.dbId) {
       this.api.post<any>(`ContentApi/templates/${item.dbId}/set-active`, {}).subscribe({
         next: () => {},
@@ -2005,7 +2132,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   getAvailableSuites(): { code: string; name: string; count: number }[] {
     const map = new Map<string, { code: string; name: string; count: number }>();
     this.installedTemplates.forEach(t => {
-      const code = t.groupCode || 'apex-corporate';
+      const code = t.groupCode || 'suite_corporate';
       const name = t.groupName || 'Corporate Suite';
       if (!map.has(code)) {
         map.set(code, { code, name, count: 0 });
@@ -2016,33 +2143,215 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Adopts and activates all companion layout templates (Navbar, Hero, Footer, Blog, etc.) for a specified Theme Suite.
-   * This provides the turnkey 1-click theme experience while preserving mix-and-match capabilities.
+   * Returns the canonical suite code of the currently active live theme.
+   */
+  getActiveSuiteCode(): string {
+    const activeSuite = this.getAvailableSuites().find(s => s.code === this.activeThemeSuiteCode || s.name === this.activeThemeSuiteName);
+    return activeSuite ? activeSuite.code : (this.activeThemeSuiteCode || 'suite_corporate');
+  }
+
+  /**
+   * Checks whether the currently selected theme suite in the dropdown is already the live active suite.
+   */
+  isCurrentThemeSuiteActive(): boolean {
+    if (!this.selectedThemeSuiteToActivate) return true;
+    return this.selectedThemeSuiteToActivate === this.getActiveSuiteCode();
+  }
+
+  /**
+   * Handles user changing the theme suite select dropdown.
+   * @param suiteCode The selected suite code from the dropdown.
+   */
+  onSuiteDropdownChange(suiteCode: string): void {
+    this.selectedThemeSuiteToActivate = suiteCode;
+  }
+
+  /**
+   * Computes the display name of the theme suite currently rendering the simulated live demo.
+   */
+  getDemoActiveThemeName(): string {
+    const activeSuite = this.getAvailableSuites().find(s => s.name === this.activeThemeSuiteName || s.code === this.activeThemeSuiteCode);
+    const suiteCode = (this.selectedGroup && this.selectedGroup !== 'all')
+      ? this.selectedGroup
+      : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
+    const matched = this.getAvailableSuites().find(s => s.code === suiteCode);
+    return matched ? matched.name : (this.activeThemeSuiteName || 'Active Theme');
+  }
+
+  /**
+   * Toggles the vault options/maintenance dropdown.
+   * @param event The mouse click event.
+   */
+  toggleVaultSettingsDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showVaultSettingsDropdown = !this.showVaultSettingsDropdown;
+  }
+
+  /**
+   * Triggers the reinstall defaults modal from the dropdown.
+   */
+  onMenuReinstallDefaults(): void {
+    this.showVaultSettingsDropdown = false;
+    this.openReinstallDefaultsModal();
+  }
+
+  /**
+   * Navigates to the dedicated Vault Maintenance & Purge page.
+   */
+  onMenuClearAll(): void {
+    this.showVaultSettingsDropdown = false;
+    this.router.navigate(['/content/console/templates/maintenance']);
+  }
+
+  /**
+   * Closes dropdown menus when clicking anywhere outside.
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.showVaultSettingsDropdown) {
+      this.showVaultSettingsDropdown = false;
+    }
+  }
+
+  /**
+   * Synchronizes both the vault tab filtering and the theme switcher dropdown when clicking a suite chip.
+   * @param code The theme suite code or 'all'.
+   */
+  selectSuiteGroup(code: string): void {
+    this.selectedGroup = code;
+    if (code !== 'all') {
+      this.selectedThemeSuiteToActivate = code;
+    }
+    this.applyFilters();
+  }
+
+  /**
+   * Returns total template count for the active vault view filter.
+   */
+  getFilteredTemplatesCount(): number {
+    if (this.selectedGroup === 'all') {
+      return this.installedTemplates.length;
+    }
+    return this.installedTemplates.filter(t => (t.groupCode || 'suite_corporate') === this.selectedGroup).length;
+  }
+
+  /**
+   * Activates all structural components of a theme suite in one atomic action.
+   * Calls the backend activate-suite API to persist active state across the database.
+   * @param suiteCode The unique identifier for the theme suite.
+   */
+  activateThemeSuite(suiteCode?: string): void {
+    const code = suiteCode || this.selectedThemeSuiteToActivate;
+    if (!code) return;
+
+    const suiteItems = this.installedTemplates.filter(t => t.groupCode === code);
+    const suiteName = suiteItems[0]?.groupName || 'Selected Theme Suite';
+
+    this.activatingSuite = true;
+    this.api.post<any>(`ContentApi/templates/activate-suite/${code}`, {}).subscribe({
+      next: () => {
+        this.activatingSuite = false;
+        this.activeThemeSuiteName = suiteName;
+        this.activeThemeSuiteCode = code;
+        this.selectedThemeSuiteToActivate = code;
+
+        // Synchronize local active IDs and badges
+        this.installedTemplates.forEach(t => {
+          if (this.singletonCategories.includes(t.category)) {
+            if (t.groupCode === code) {
+              t.badge = 'Active';
+              if (t.category === 'menu') { this.activeMenuId = t.id; localStorage.setItem('oz_active_menu_id', t.id); }
+              if (t.category === 'hero') { this.activeHeroId = t.id; localStorage.setItem('oz_active_hero_id', t.id); }
+              if (t.category === 'footer') { this.activeFooterId = t.id; localStorage.setItem('oz_active_footer_id', t.id); }
+              if (t.category === 'blog') { this.activeBlogId = t.id; localStorage.setItem('oz_active_blog_id', t.id); }
+              if (t.category === 'breadcrumb') { this.activeBreadcrumbId = t.id; localStorage.setItem('oz_active_breadcrumb_id', t.id); }
+              if (t.category === 'ecommerce') { this.activeEcommerceId = t.id; localStorage.setItem('oz_active_ecommerce_id', t.id); }
+            } else {
+              const meta = this.getCategoryVisualMeta(t.category);
+              t.badge = meta.badge;
+            }
+          }
+        });
+
+        this.applyFilters();
+        this.toast.success(`⚡ '${suiteName}' is now your live active website theme!`);
+      },
+      error: (err) => {
+        this.activatingSuite = false;
+        this.toast.error('Failed to activate theme suite: ' + (err?.message || 'Server error'));
+      }
+    });
+  }
+
+  /**
+   * Adopts and activates all companion layout templates for a specified Theme Suite.
    * @param groupCode The unique code of the theme suite to adopt.
    */
   adoptSuite(groupCode: string): void {
-    const suiteItems = this.installedTemplates.filter(t => (t.groupCode || 'apex-corporate') === groupCode);
-    if (!suiteItems.length) return;
+    this.activateThemeSuite(groupCode);
+  }
 
-    let activatedCount = 0;
-    suiteItems.forEach(item => {
-      if (this.singletonCategories.includes(item.category)) {
-        this.activateTemplate(item);
-        activatedCount++;
+  // ========================================================
+  // VAULT RESET & FACTORY DEFAULTS ACTIONS
+  // ========================================================
+
+  openClearAllModal(): void {
+    this.showClearAllModal = true;
+  }
+
+  closeClearAllModal(): void {
+    this.showClearAllModal = false;
+  }
+
+  confirmClearAll(): void {
+    this.clearingVault = true;
+    this.api.delete<any>('ContentApi/templates/clear-all').subscribe({
+      next: (res) => {
+        this.clearingVault = false;
+        this.showClearAllModal = false;
+        this.toast.success(res?.message || 'All templates and code injections cleared successfully.');
+        this.loadInstalledTemplates();
+        this.loadAllCodeInjections();
+      },
+      error: (err) => {
+        this.clearingVault = false;
+        this.toast.error('Failed to clear templates: ' + (err?.message || 'Server error'));
       }
     });
+  }
 
-    const suiteName = suiteItems[0]?.groupName || 'Selected Suite';
-    this.toast.success(`Adopted ${suiteName}: ${activatedCount} core components activated across your website blueprint.`);
+  openReinstallDefaultsModal(): void {
+    this.showReinstallDefaultsModal = true;
+  }
+
+  closeReinstallDefaultsModal(): void {
+    this.showReinstallDefaultsModal = false;
+  }
+
+  confirmReinstallDefaults(): void {
+    this.reinstallingDefaults = true;
+    this.api.post<any>('ContentApi/templates/reinstall-defaults', {}).subscribe({
+      next: (res) => {
+        this.reinstallingDefaults = false;
+        this.showReinstallDefaultsModal = false;
+        this.toast.success(res?.message || 'Default Corporate Theme Suite and code injections restored.');
+        this.loadInstalledTemplates();
+        this.loadAllCodeInjections();
+      },
+      error: (err) => {
+        this.reinstallingDefaults = false;
+        this.toast.error('Failed to reinstall defaults: ' + (err?.message || 'Server error'));
+      }
+    });
   }
 
   applyFilters(): void {
     let list = [...this.installedTemplates];
+    if (this.selectedGroup !== 'all') {
+      list = list.filter(t => (t.groupCode || 'suite_corporate') === this.selectedGroup);
+    }
     if (this.selectedCategory !== 'all') {
       list = list.filter(t => t.category === this.selectedCategory);
-    }
-    if (this.selectedGroup !== 'all') {
-      list = list.filter(t => (t.groupCode || 'apex-corporate') === this.selectedGroup);
     }
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
@@ -2062,7 +2371,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   getCategoryCount(catId: string): number {
-    return this.installedTemplates.filter(t => t.category === catId).length;
+    if (this.selectedGroup === 'all') {
+      return this.installedTemplates.filter(t => t.category === catId).length;
+    }
+    return this.installedTemplates.filter(t => t.category === catId && (t.groupCode || 'suite_corporate') === this.selectedGroup).length;
   }
 
   getCategoryName(catId: string): string {
@@ -2160,14 +2472,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         } catch (e) {}
       }
       this.previewHeroContent = {
-        title: defaultHeroData?.title || defaultHeroData?.Title || item.previewTitle || item.name || 'Innovating the Future of Community Empowerment',
-        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || defaultHeroData?.badgeText || item.previewSubtitle || 'OFFICIAL PORTAL',
-        text: defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || item.previewBody || item.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
-        buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || 'Explore Solutions',
-        buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '/services',
+        title: defaultHeroData?.title || defaultHeroData?.Title || item.previewTitle || item.name || '',
+        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || defaultHeroData?.badgeText || item.previewSubtitle || '',
+        text: defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || item.previewBody || item.description || '',
+        buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || '',
+        buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '',
         videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
         videoLink: defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
-        url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+        url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || '',
         secondUrl: defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
         youtubeVideo: defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
       };
@@ -3704,20 +4016,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
 
     if (this.activePreviewItem?.category === 'hero') {
+      let defaultHeroData: any = null;
+      if (this.activePreviewItem.defaultContentJson) {
+        try { defaultHeroData = JSON.parse(this.activePreviewItem.defaultContentJson); } catch (e) {}
+      }
       this.previewHeroContent = {
-        title: this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || 'Innovating the Future of Community Empowerment',
-        miniTitle: 'OFFICIAL PORTAL',
-        text: this.activePreviewItem?.previewBody || this.activePreviewItem?.description || 'Empower your institution with resilient cloud infrastructure, automated governance, secure e-voting, and real-time operational telemetry in one unified workspace.',
-        buttonText: 'Explore Solutions',
-        buttonLink: '/services',
-        videoButtonText: '',
-        videoLink: '',
-        url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
-        secondUrl: '',
-        youtubeVideo: ''
+        title: defaultHeroData?.title || defaultHeroData?.Title || this.activePreviewItem?.previewTitle || this.activePreviewItem?.name || '',
+        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || 'OFFICIAL',
+        text: defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || this.activePreviewItem?.previewBody || this.activePreviewItem?.description || '',
+        buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || 'Explore Solutions',
+        buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '/services',
+        videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
+        videoLink: defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
+        url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || '',
+        secondUrl: defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
+        youtubeVideo: defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
       };
       this.onPreviewContentChange();
-      this.toast.info('Hero slider sample content restored to defaults.');
+      this.toast.info('Hero slider sample content restored to template defaults.');
       return;
     }
 
@@ -3874,142 +4190,84 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     menuBlockOverride?: InstalledTemplateItem,
     menuContextOverride?: any
   ): { combinedStyles: string; combinedHtml: string; combinedJs: string } {
-    const menuBlock = menuBlockOverride || this.getActiveMenu();
-    const heroBlock = this.getActiveHero();
-    const homeBodyBlocks = this.getHomeBodyBlocks();
-    const allBodyBlocks = this.getAllBodyBlocks();
-    const footerBlock = this.getActiveFooter();
+    const activeSuite = this.getAvailableSuites().find(s => s.name === this.activeThemeSuiteName);
+    const suiteCode = (this.selectedGroup && this.selectedGroup !== 'all')
+      ? this.selectedGroup
+      : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
 
-    const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
-    const blogListBlock = this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3') || this.installedTemplates.find(t => t.category === 'blog' && !this.isBlogDetailTemplate(t));
-    const blogDetailBlock = this.installedTemplates.find(t => this.isBlogDetailTemplate(t)) || this.installedTemplates.find(t => t.variantCode === 'Blog_ArticleDetail');
-    const contactBlock = this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails') || this.installedTemplates.find(t => t.category === 'contact');
-    const requestServiceBlock = this.installedTemplates.find(t => t.variantCode === 'Body_RequestService');
-    const newsletterBlock = this.installedTemplates.find(t => t.variantCode === 'News_MinimalBar');
+    const suiteTemplates = this.installedTemplates.filter(t => (t.groupCode || 'suite_corporate') === suiteCode);
+
+    const menuBlock = menuBlockOverride ||
+      suiteTemplates.find(t => t.category === 'menu' && (t.badge === 'Active' || t.id === this.activeMenuId)) ||
+      suiteTemplates.find(t => t.category === 'menu') ||
+      this.getActiveMenu();
+
+    const heroBlock =
+      suiteTemplates.find(t => t.category === 'hero' && (t.badge === 'Active' || t.id === this.activeHeroId)) ||
+      suiteTemplates.find(t => t.category === 'hero') ||
+      this.getActiveHero();
+
+    const footerBlock =
+      suiteTemplates.find(t => t.category === 'footer' && (t.badge === 'Active' || t.id === this.activeFooterId)) ||
+      suiteTemplates.find(t => t.category === 'footer') ||
+      this.getActiveFooter();
+
+    const suiteBodyBlocks = suiteTemplates.filter(t =>
+      t.category === 'body' &&
+      !this.isBlogDetailTemplate(t)
+    );
+
+    const allBodyBlocks = this.getAllBodyBlocks();
+
+    const breadcrumbBlock = suiteTemplates.find(t => t.category === 'breadcrumb') ||
+      this.installedTemplates.find(t => t.category === 'breadcrumb');
 
     let activeBlocks: { block: InstalledTemplateItem; contextOverride?: any }[] = [];
 
     if (pageSlug === 'home') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (heroBlock) activeBlocks.push({ block: heroBlock });
-      homeBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
-      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
+      const homeBody = suiteBodyBlocks.length > 0 ? suiteBodyBlocks : this.getHomeBodyBlocks();
+      homeBody.forEach(b => activeBlocks.push({ block: b }));
       if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'about') {
+    } else {
+      // Dynamic subpage resolution without hardcoded strings
+      const matchedPage = (this.availablePages || []).find(p => p.slug === pageSlug);
+      const dynamicTitle = matchedPage?.title || pageSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const dynamicDesc = matchedPage?.summary || matchedPage?.metaDescription || 'Detailed information and resources.';
+
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (breadcrumbBlock) {
         activeBlocks.push({
           block: breadcrumbBlock,
           contextOverride: {
-            title: 'About Our Organization',
-            miniTitle: 'MISSION & LEADERSHIP',
-            description: 'Founded on principles of integrity, innovation, and client excellence, dedicated to delivering measurable value and long-term partnerships.'
+            title: dynamicTitle,
+            miniTitle: 'PAGE',
+            description: dynamicDesc
           }
         });
       }
-      const missionBlock = allBodyBlocks.find(b => b.variantCode === 'Body_MissionSplit') || allBodyBlocks[0];
-      const metricBlock = allBodyBlocks.find(b => b.variantCode === 'Body_MetricsCounter');
-      const testBlock = allBodyBlocks.find(b => b.variantCode === 'Body_Testimonials');
-      const ctaBlock = allBodyBlocks.find(b => b.variantCode === 'Body_CtaBanner');
-      if (missionBlock) activeBlocks.push({ block: missionBlock });
-      if (metricBlock) activeBlocks.push({ block: metricBlock });
-      if (testBlock) activeBlocks.push({ block: testBlock });
-      if (ctaBlock) activeBlocks.push({ block: ctaBlock });
-      if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'services') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
-      if (breadcrumbBlock) {
-        activeBlocks.push({
-          block: breadcrumbBlock,
-          contextOverride: {
-            title: 'Our Enterprise Services & Solutions',
-            miniTitle: 'SERVICES & CAPABILITIES',
-            description: 'Comprehensive institutional capabilities designed for seamless governance, compliance, and growth.'
-          }
-        });
-      }
-      const featureBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FeatureGrid3') || allBodyBlocks[0];
-      const missionBlock = allBodyBlocks.find(b => b.variantCode === 'Body_MissionSplit');
-      const metricBlock = allBodyBlocks.find(b => b.variantCode === 'Body_MetricsCounter');
-      const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
-      if (featureBlock) activeBlocks.push({ block: featureBlock });
-      if (missionBlock) activeBlocks.push({ block: missionBlock });
-      if (metricBlock) activeBlocks.push({ block: metricBlock });
-      if (faqBlock) activeBlocks.push({ block: faqBlock });
-      if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'request-service') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
-      if (breadcrumbBlock) {
-        activeBlocks.push({
-          block: breadcrumbBlock,
-          contextOverride: {
-            title: 'Request a Service & Consultation',
-            miniTitle: 'SERVICE INTAKE',
-            description: 'Submit your project specifications to initiate a formal strategic consultation with our enterprise advisory team.'
-          }
-        });
-      }
-      if (requestServiceBlock) {
-        activeBlocks.push({ block: requestServiceBlock });
-      } else if (contactBlock) {
-        activeBlocks.push({ block: contactBlock });
-      }
-      const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
-      if (faqBlock) activeBlocks.push({ block: faqBlock });
-      if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'blog') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
-      if (breadcrumbBlock) {
-        activeBlocks.push({
-          block: breadcrumbBlock,
-          contextOverride: {
-            title: 'Newsroom & Insights',
-            miniTitle: 'DISPATCHES',
-            description: 'Read the latest updates, event reports, policy releases, and organizational announcements.'
-          }
-        });
-      }
-      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
-      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
-      if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'blog-detail') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
-      if (breadcrumbBlock) {
-        activeBlocks.push({
-          block: breadcrumbBlock,
-          contextOverride: {
-            title: this.previewBlogDetailContent.title || 'Article Detail',
-            miniTitle: (this.previewBlogDetailContent.category || 'ARTICLE').toUpperCase(),
-            description: 'Deep-dive analysis, technical breakdown, and enterprise reference implementation.'
-          }
-        });
-      }
-      if (blogDetailBlock) {
-        activeBlocks.push({ block: blogDetailBlock });
-      } else if (blogListBlock) {
-        activeBlocks.push({ block: blogListBlock });
-      }
-      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
-      if (footerBlock) activeBlocks.push({ block: footerBlock });
-    } else if (pageSlug === 'contact') {
-      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
-      if (breadcrumbBlock) {
-        activeBlocks.push({
-          block: breadcrumbBlock,
-          contextOverride: {
-            title: 'Contact Administrative Headquarters',
-            miniTitle: 'HELP & SUPPORT',
-            description: 'Reach our executive secretariat, membership registrar, and technical support team.'
-          }
-        });
-      }
-      if (contactBlock) activeBlocks.push({ block: contactBlock });
-      const faqBlock = allBodyBlocks.find(b => b.variantCode === 'Body_FaqAccordion');
-      if (faqBlock) activeBlocks.push({ block: faqBlock });
+      const subpageBody = suiteBodyBlocks.length > 0 ? suiteBodyBlocks : (allBodyBlocks.length > 0 ? [allBodyBlocks[0]] : []);
+      subpageBody.forEach(b => {
+        if (b && !activeBlocks.some(ab => ab.block.id === b.id)) activeBlocks.push({ block: b });
+      });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     }
 
+    let headStyles = '';
+    if (this.headTags && this.headTags.length > 0) {
+      this.headTags.forEach(tag => {
+        if (tag.isActive) {
+          const match = tag.content?.match(/href=["']([^"']+)["']/i);
+          if (match && match[1]) {
+            headStyles += `@import url('${match[1]}');\n`;
+          }
+        }
+      });
+    }
+
     let combinedStyles = `
+      ${headStyles}
       @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
       @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -4040,6 +4298,18 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }
     `;
 
+    // Inject active head stylesheets into preview
+    if (this.headTags && this.headTags.length > 0) {
+      this.headTags.forEach(tag => {
+        if (tag.isActive) {
+          const match = tag.content?.match(/href=["']([^"']+)["']/i);
+          if (match && match[1]) {
+            combinedStyles = `@import url('${match[1]}');\n` + combinedStyles;
+          }
+        }
+      });
+    }
+
     let combinedHtml = '';
     let combinedJs = '';
 
@@ -4064,19 +4334,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           ctx = { ...ctx, ...this.previewMenuContent };
         }
       } else if (b.category === 'hero') {
+        let defaultHeroData: any = null;
+        if (b.defaultContentJson) {
+          try { defaultHeroData = JSON.parse(b.defaultContentJson); } catch (e) {}
+        }
         ctx = {
           ...ctx,
-          ...this.previewHeroContent,
-          title: contextOverride?.title || this.previewHeroContent.title || b.previewTitle || b.name,
-          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.miniTitle || b.previewSubtitle?.toUpperCase() || 'OFFICIAL PORTAL',
-          text: contextOverride?.description || this.previewHeroContent.text || b.previewBody || b.description,
-          buttonText: this.previewHeroContent.buttonText,
-          buttonLink: this.previewHeroContent.buttonLink,
-          videoButtonText: this.previewHeroContent.videoButtonText,
-          videoLink: this.previewHeroContent.videoLink,
-          url: this.previewHeroContent.url,
-          secondUrl: this.previewHeroContent.secondUrl,
-          youtubeVideo: this.previewHeroContent.youtubeVideo
+          title: contextOverride?.title || this.previewHeroContent.title || defaultHeroData?.title || defaultHeroData?.Title || b.previewTitle || b.name,
+          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.miniTitle || defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || b.previewSubtitle?.toUpperCase() || 'OFFICIAL',
+          text: contextOverride?.description || this.previewHeroContent.text || defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || b.previewBody || b.description || '',
+          buttonText: this.previewHeroContent.buttonText || defaultHeroData?.buttonText || defaultHeroData?.ButtonText || 'Explore Solutions',
+          buttonLink: this.previewHeroContent.buttonLink || defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '/services',
+          videoButtonText: this.previewHeroContent.videoButtonText || defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
+          videoLink: this.previewHeroContent.videoLink || defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
+          url: this.previewHeroContent.url || defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || '',
+          secondUrl: this.previewHeroContent.secondUrl || defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
+          youtubeVideo: this.previewHeroContent.youtubeVideo || defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
         };
       } else if (b.category === 'footer') {
         ctx = {
@@ -4096,6 +4369,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             if (parsed?.email) ctx.email = parsed.email;
             if (parsed?.phone) ctx.phone = parsed.phone;
             if (parsed?.description) ctx.description = parsed.description;
+          } catch (e) {}
+        }
+      } else if (b.category === 'body') {
+        if (b.defaultContentJson) {
+          try {
+            const parsed = JSON.parse(b.defaultContentJson);
+            if (parsed?.title) ctx.title = parsed.title;
+            if (parsed?.miniTitle) ctx.miniTitle = parsed.miniTitle;
+            if (parsed?.description) ctx.description = parsed.description;
+            if (parsed?.items && Array.isArray(parsed.items)) ctx.items = parsed.items;
           } catch (e) {}
         }
       } else if (b.category === 'blog') {
@@ -4189,6 +4472,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const combinedHtml = sim.combinedHtml;
     const combinedJs = sim.combinedJs;
 
+    const activeSuite = this.getAvailableSuites().find(s => s.name === this.activeThemeSuiteName);
+    const suiteCode = (this.selectedGroup && this.selectedGroup !== 'all')
+      ? this.selectedGroup
+      : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
+
+    // Dynamic suite-specific + global head stylesheets, Google Fonts, and footer scripts
+    const activeHeadTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'head' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
+    const activeBodyOpenTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'body_open' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
+    const activeFooterTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'footer' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
     this.safeFullDemoHtml = this.sanitizer.bypassSecurityTrustHtml(`<style>${combinedStyles}</style>\n${combinedHtml}`);
 
     const iframeHtmlDoc = `<!DOCTYPE html>
@@ -4196,9 +4503,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  ${activeHeadTagsMarkup ? activeHeadTagsMarkup : `
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  `}
   <style>
     html, body {
       margin: 0;
@@ -4245,6 +4554,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ${combinedStyles}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+  ${activeBodyOpenTagsMarkup}
+  ${combinedHtml}
+  ${activeFooterTagsMarkup}
   <script>
     document.addEventListener('click', function(e) {
       // 1. Dropdown Toggle Click Handler
@@ -4450,17 +4764,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   openUninstallModal(item: InstalledTemplateItem): void {
     this.itemToUninstall = item;
     this.showUninstallModal = true;
+    this.deleteLinkedContentCheckbox = false;
+    this.linkedSectionsList = [];
+    if (item.dbId) {
+      this.loadingLinkedContent = true;
+      this.api.get<any>(`ContentApi/templates/${item.dbId}/linked-content`).subscribe({
+        next: (res) => {
+          this.loadingLinkedContent = false;
+          if (res?.data?.linkedSections) {
+            this.linkedSectionsList = res.data.linkedSections;
+          }
+        },
+        error: () => {
+          this.loadingLinkedContent = false;
+        }
+      });
+    }
   }
 
   closeUninstallModal(): void {
     this.showUninstallModal = false;
     this.itemToUninstall = null;
     this.uninstallingTemplate = false;
+    this.loadingLinkedContent = false;
+    this.linkedSectionsList = [];
+    this.deleteLinkedContentCheckbox = false;
   }
 
   confirmUninstallTemplate(): void {
     if (!this.itemToUninstall) return;
     const item = this.itemToUninstall;
+    const cascade = this.deleteLinkedContentCheckbox;
+    const count = this.linkedSectionsList.length;
     this.uninstallingTemplate = true;
 
     this.installedTemplates = this.installedTemplates.filter(t => t.id !== item.id);
@@ -4468,10 +4803,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.applyFilters();
 
     if (item.dbId) {
-      this.api.delete<any>(`ContentApi/templates/installed/${item.dbId}`).subscribe({
+      this.api.delete<any>(`ContentApi/templates/installed/${item.dbId}?deleteLinkedContent=${cascade}`).subscribe({
         next: () => {
           this.uninstallingTemplate = false;
-          this.toast.success(`Template '${item.name}' uninstalled.`);
+          if (cascade && count > 0) {
+            this.toast.success(`Template '${item.name}' and ${count} linked section(s) deleted.`);
+          } else {
+            this.toast.success(`Template '${item.name}' uninstalled (linked content preserved).`);
+          }
           this.closeUninstallModal();
         },
         error: () => {

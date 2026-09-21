@@ -421,7 +421,7 @@ Chart.register(...registerables);
               </div>
               <div class="form-group" style="margin-bottom:12px;">
                 <label class="form-label">Background Image URL</label>
-                <input type="url" [(ngModel)]="sliderForm.imageUrl" name="sImg" placeholder="https://res.cloudinary.com/..." class="form-control" />
+                <input type="url" [(ngModel)]="sliderForm.imageUrl" name="sImg" placeholder="e.g. https://yourdomain.com/banner.jpg" class="form-control" />
               </div>
               <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label">Action Button Label</label>
