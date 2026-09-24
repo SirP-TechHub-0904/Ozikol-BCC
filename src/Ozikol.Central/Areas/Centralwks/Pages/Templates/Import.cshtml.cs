@@ -23,25 +23,46 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
     public class ImportModel : PageModel
     {
         private readonly ISectionsBuilderClientService _sectionsBuilderClient;
+        private readonly ISectionAiStudioService _sectionAiStudioService;
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ILogger<ImportModel> _logger;
 
         public ImportModel(
             ISectionsBuilderClientService sectionsBuilderClient,
+            ISectionAiStudioService sectionAiStudioService,
             MasterCatalogDbContext dbContext,
             ILogger<ImportModel> logger)
         {
             _sectionsBuilderClient = sectionsBuilderClient;
+            _sectionAiStudioService = sectionAiStudioService;
             _dbContext = dbContext;
             _logger = logger;
             ExtractorBaseUrl = _sectionsBuilderClient.GetExtractorBaseUrl();
         }
 
         /// <summary>
-        /// Currently active extraction tab: "url" (Live Website URL) or "source" (Paste Page Source / HTML).
+        /// Currently active extraction tab: "url" (Live Website URL), "source" (Paste Page Source / HTML), or "image" (UI Screenshot / Mockup).
         /// </summary>
         [BindProperty]
         public string ActiveTab { get; set; } = "url";
+
+        /// <summary>
+        /// Uploaded UI mockup / screenshot image file for Gemini Vision decomposition.
+        /// </summary>
+        [BindProperty]
+        public Microsoft.AspNetCore.Http.IFormFile? ImageMockupFile { get; set; }
+
+        /// <summary>
+        /// Custom suite name for image mockup extraction.
+        /// </summary>
+        [BindProperty]
+        public string? ImageSuiteName { get; set; }
+
+        /// <summary>
+        /// Brand identity name for image mockup extraction.
+        /// </summary>
+        [BindProperty]
+        public string? ImageBrandName { get; set; }
 
         /// <summary>
         /// Target website URL to crawl and decompose into modular sections.
@@ -322,6 +343,84 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             }
 
             return Page();
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to decompose an uploaded UI mockup/screenshot into modular sections using Gemini Multimodal Vision.
+        /// </summary>
+        public async Task<IActionResult> OnPostExtractFromImageAsync(CancellationToken cancellationToken)
+        {
+            ActiveTab = "image";
+            if (ImageMockupFile == null || ImageMockupFile.Length == 0)
+            {
+                ErrorMessage = "Please select a UI mockup or screenshot image file to upload.";
+                CurrentStep = 1;
+                return Page();
+            }
+
+            try
+            {
+                _logger.LogInformation("Starting UI Image-to-Section Vision decomposition for file: {FileName}", ImageMockupFile.FileName);
+
+                ExtractionResult = await _sectionAiStudioService.DecomposeImageToSectionsAsync(
+                    ImageMockupFile,
+                    ImageSuiteName,
+                    ImageBrandName,
+                    "Gemini",
+                    cancellationToken);
+
+                if (ExtractionResult != null && ExtractionResult.Sections.Any())
+                {
+                    ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
+                        WriteIndented = false
+                    });
+
+                    CurrentStep = 3;
+                    StatusMessage = $"Vision AI decomposition complete! Generated {ExtractionResult.TotalSections} modular sections with isolated scoped CSS and placeholders.";
+                }
+                else
+                {
+                    ErrorMessage = "Vision AI was unable to generate sections from this image. Please ensure the image shows clear UI components.";
+                    CurrentStep = 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UI Image decomposition failed");
+                ErrorMessage = $"Vision decomposition failed: {ex.Message}";
+                CurrentStep = 1;
+            }
+
+            return Page();
+        }
+
+        /// <summary>
+        /// AJAX endpoint for conversational in-preview AI section tweaking (HTML, Scoped CSS, Placeholders).
+        /// </summary>
+        public async Task<IActionResult> OnPostTweakSectionWithAiAsync([FromBody] SectionAiTweakRequestDto request, CancellationToken cancellationToken)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.UserPrompt))
+            {
+                return BadRequest(new { success = false, errorMessage = "Please provide an AI instruction prompt." });
+            }
+
+            try
+            {
+                var result = await _sectionAiStudioService.TweakSectionAsync(request, cancellationToken);
+                return new JsonResult(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to tweak section with AI");
+                return StatusCode(500, new SectionAiTweakResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = ex.Message
+                });
+            }
         }
 
         /// <summary>

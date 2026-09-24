@@ -75,6 +75,75 @@ namespace Ozikol.Central.Services
     }
 
     /// <summary>
+    /// Request payload for tweaking an individual section's layout, CSS, and placeholders using AI.
+    /// </summary>
+    public class SectionAiTweakRequestDto
+    {
+        [JsonPropertyName("section_key")]
+        public string SectionKey { get; set; } = string.Empty;
+
+        [JsonPropertyName("category_key")]
+        public string CategoryKey { get; set; } = "bodysections";
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("html_template")]
+        public string HtmlTemplate { get; set; } = string.Empty;
+
+        [JsonPropertyName("scoped_css")]
+        public string? ScopedCss { get; set; }
+
+        [JsonPropertyName("user_prompt")]
+        public string UserPrompt { get; set; } = string.Empty;
+
+        [JsonPropertyName("provider")]
+        public string Provider { get; set; } = "Gemini";
+    }
+
+    /// <summary>
+    /// Response payload from an AI section tweak operation.
+    /// </summary>
+    public class SectionAiTweakResponseDto
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("html_template")]
+        public string HtmlTemplate { get; set; } = string.Empty;
+
+        [JsonPropertyName("scoped_css")]
+        public string ScopedCss { get; set; } = string.Empty;
+
+        [JsonPropertyName("placeholders")]
+        public List<string> Placeholders { get; set; } = new List<string>();
+
+        [JsonPropertyName("explanation")]
+        public string? Explanation { get; set; }
+
+        [JsonPropertyName("error_message")]
+        public string? ErrorMessage { get; set; }
+    }
+
+    /// <summary>
+    /// Request payload for decomposing an uploaded UI screenshot or Figma mockup into modular sections.
+    /// </summary>
+    public class SectionsBuilderFromImageRequestDto
+    {
+        [JsonPropertyName("image_url")]
+        public string ImageUrl { get; set; } = string.Empty;
+
+        [JsonPropertyName("suite_name")]
+        public string? SuiteName { get; set; } = "Visual Mockup Suite";
+
+        [JsonPropertyName("brand_name")]
+        public string? BrandName { get; set; } = "Enterprise Workspace";
+
+        [JsonPropertyName("provider")]
+        public string Provider { get; set; } = "Gemini";
+    }
+
+    /// <summary>
     /// Request payload for discovering menu pages.
     /// </summary>
     public class DiscoverPagesRequestDto
