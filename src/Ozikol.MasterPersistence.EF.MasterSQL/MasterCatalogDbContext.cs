@@ -85,9 +85,14 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterNotification> MasterNotifications { get; set; } = null!;
 
     /// <summary>
-    /// Operator alert and notification channel preferences.
+    /// Registered AI provider API keys for Central key rotation pool and telemetry.
     /// </summary>
-    public DbSet<MasterNotificationPreference> MasterNotificationPreferences { get; set; } = null!;
+    public DbSet<MasterAiApiKey> MasterAiApiKeys { get; set; } = null!;
+
+    /// <summary>
+    /// Telemetry and audit log entries for all AI requests processed through the key pool.
+    /// </summary>
+    public DbSet<MasterAiApiKeyUsageLog> MasterAiApiKeyUsageLogs { get; set; } = null!;
 
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
@@ -611,6 +616,29 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                 .WithMany()
                 .HasForeignKey(e => e.TargetTenantCatalogId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<MasterAiApiKey>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Provider);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.RateLimitCooldownUntilUtc);
+
+            entity.HasMany(e => e.UsageLogs)
+                .WithOne(e => e.MasterAiApiKey)
+                .HasForeignKey(e => e.MasterAiApiKeyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MasterAiApiKeyUsageLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MasterAiApiKeyId);
+            entity.HasIndex(e => e.RequestTimestampUtc);
+            entity.HasIndex(e => e.StatusCode);
+            entity.HasIndex(e => e.ActionName);
         });
     }
 }
