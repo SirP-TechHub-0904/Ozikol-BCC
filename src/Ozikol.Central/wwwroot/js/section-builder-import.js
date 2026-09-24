@@ -163,7 +163,25 @@ function clearSelectedImage(event) {
     if (previewImg) previewImg.src = '';
 }
 
-function showImageVisionLoading() {
+function showImageVisionLoading(event) {
+    var form = document.getElementById('extractImageForm');
+    if (form) {
+        if (form.getAttribute('data-submitting') === 'true') {
+            if (event) event.preventDefault();
+            return false;
+        }
+        form.setAttribute('data-submitting', 'true');
+    }
+
+    var btn = document.getElementById('btnExtractImageAction');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px; animation: spin 1s linear infinite;">sync</span> <span>Analyzing &amp; Decomposing UI...</span>';
+    }
+
     var loader = document.getElementById('slicingLoadingState');
     if (loader) {
         var h3 = loader.querySelector('h3');
@@ -171,7 +189,9 @@ function showImageVisionLoading() {
         if (h3) h3.innerText = 'Analyzing UI Screenshot with Gemini Vision AI...';
         if (p) p.innerText = 'Decomposing visual components into modular sections, generating isolated scoped CSS, and creating dynamic placeholders.';
         loader.style.display = 'block';
+        loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    return true;
 }
 
 /**
@@ -370,23 +390,56 @@ function updateHtmlCharCount() {
     }
 }
 
-function showInspectionLoading() {
+function showInspectionLoading(event) {
+    var form = document.getElementById('inspectAssetsForm');
+    if (form) {
+        if (form.getAttribute('data-submitting') === 'true') {
+            if (event) event.preventDefault();
+            return false;
+        }
+        form.setAttribute('data-submitting', 'true');
+    }
+
     var btn = document.getElementById('btnFetchInspectAssets');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px; animation: spin 1s linear infinite;">sync</span> <span>Fetching Code & Assets...</span>';
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px; animation: spin 1s linear infinite;">sync</span> <span>Fetching Code &amp; Assets...</span>';
     }
+    return true;
 }
 
-function showSlicingLoading() {
+function showSlicingLoading(event) {
+    var form = document.getElementById('sliceAndScopeForm');
+    if (form) {
+        if (form.getAttribute('data-submitting') === 'true') {
+            if (event) event.preventDefault();
+            return false;
+        }
+        form.setAttribute('data-submitting', 'true');
+    }
+
     var loader = document.getElementById('slicingLoadingState');
-    if (loader) loader.style.display = 'block';
+    if (loader) {
+        var h3 = loader.querySelector('h3');
+        var p = loader.querySelector('p');
+        if (h3) h3.innerText = 'Slicing Modular Sections & Scoping CSS...';
+        if (p) p.innerText = 'Decomposing the confirmed HTML markup, matching class-specific CSS rules, injecting typography CDN fonts, and preparing live sandbox previews.';
+        loader.style.display = 'block';
+        loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     var btn = document.getElementById('btnSliceSectionsAction');
     if (btn) {
         btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
         btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px; animation: spin 1s linear infinite;">sync</span> <span>Slicing Sections...</span>';
     }
+    return true;
 }
 
 /**
