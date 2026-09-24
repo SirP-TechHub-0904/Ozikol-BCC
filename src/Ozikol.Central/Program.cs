@@ -247,6 +247,8 @@ builder.Services.AddScoped<ILegalService, LegalService>();
 builder.Services.AddSingleton<IGeoLocationService, GeoLocationService>();
 builder.Services.AddSingleton<ICurrencyService, CurrencyService>();
 builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidationService, Ozikol.Central.Services.Validation.EmailValidationService>();
+builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
+builder.Services.AddHttpClient<SectionsBuilderClientService>();
 
 // 7a. Register Central Notification & OneSignal Push Engine
 builder.Services.AddHttpClient<Ozikol.Central.Services.Notifications.IOneSignalPushService, Ozikol.Central.Services.Notifications.OneSignalPushService>();

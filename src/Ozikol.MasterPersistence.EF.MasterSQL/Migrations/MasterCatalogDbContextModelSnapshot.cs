@@ -381,6 +381,117 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterAffiliateReferrals");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DailyQuotaLimit")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("KeyAlias")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastUsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("RateLimitCooldownUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TodayRequestsCount")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalRequestsCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Provider");
+
+                    b.HasIndex("RateLimitCooldownUntilUtc");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("MasterAiApiKeys");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKeyUsageLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("MasterAiApiKeyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestTimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ResponseTimeMs")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionName");
+
+                    b.HasIndex("MasterAiApiKeyId");
+
+                    b.HasIndex("RequestTimestampUtc");
+
+                    b.HasIndex("StatusCode");
+
+                    b.ToTable("MasterAiApiKeyUsageLogs");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2494,42 +2605,6 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterNotifications");
                 });
 
-            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterNotificationPreference", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<bool>("EmailDigestEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("InAppEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("InstantEmailEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PushEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MasterNotificationPreferences");
-                });
-
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterPlatformSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -3460,6 +3535,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("AffiliatePartner");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKeyUsageLog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterAiApiKey", "MasterAiApiKey")
+                        .WithMany("UsageLogs")
+                        .HasForeignKey("MasterAiApiKeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MasterAiApiKey");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TargetTenantCatalog")
@@ -3811,6 +3897,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAffiliatePartner", b =>
                 {
                     b.Navigation("Referrals");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAiApiKey", b =>
+                {
+                    b.Navigation("UsageLogs");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
