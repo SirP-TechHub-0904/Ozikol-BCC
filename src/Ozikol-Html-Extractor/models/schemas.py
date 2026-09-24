@@ -314,3 +314,179 @@ class AiTokenizeResult(BaseModel):
     suite: ImportableSuitePackage
     message: str = "AI debranding and tokenization completed successfully."
 
+
+# ---------------------------------------------------------------------------
+# Section-Based URL Builder Models (`sectionsbuilderfromurl`)
+# ---------------------------------------------------------------------------
+
+class DiscoverPagesRequest(BaseModel):
+    """
+    Request to discover menu pages from a website URL without full extraction.
+    """
+    url: str
+
+
+class DiscoveredPageSummaryItem(BaseModel):
+    """
+    Represents a page discovered via the website's navigation menu.
+    """
+    title: str
+    slug: str
+    url: str
+    is_home: bool = False
+    menu_sort_order: int = 10
+
+
+class DiscoverPagesResponse(BaseModel):
+    """
+    Response listing all pages discovered in the navigation menu.
+    """
+    source_url: str
+    total_pages: int
+    pages: list[DiscoveredPageSummaryItem] = []
+    message: str = "Pages discovered from navigation menu."
+
+
+class SectionsBuilderRequest(BaseModel):
+    """
+    Request payload for extracting modular, section-based templates from a URL.
+    """
+    url: str
+    suite_name: Optional[str] = "Extracted Suite"
+    brand_name: Optional[str] = "Enterprise Workspace"
+    crawl_subpages: bool = True
+    max_subpages: int = 5
+    selected_page_urls: Optional[list[str]] = None
+    deep_debrand: bool = True
+    include_code_injections: bool = True
+
+
+class SectionsBuilderFromSourceRequest(BaseModel):
+    """
+    Request payload for extracting modular, section-based templates directly from raw HTML page source.
+    """
+    html_source: str
+    base_url: Optional[str] = None
+    suite_name: Optional[str] = "Pasted Source Suite"
+    brand_name: Optional[str] = "Enterprise Workspace"
+    custom_css: Optional[str] = None
+    css_urls: Optional[list[str]] = None
+    page_title: Optional[str] = "Custom Page"
+    page_slug: Optional[str] = "custom-page"
+    deep_debrand: bool = True
+    include_code_injections: bool = True
+
+
+
+class RawAssetItem(BaseModel):
+    """
+    Represents an individual extracted stylesheet, script, or font resource.
+    """
+    name: str                      # e.g. "main.css", "bootstrap.min.css", "swiper.min.js"
+    url: str                       # Resolved URL or relative path
+    asset_type: str                # "css" | "js" | "font"
+    size_kb: float = 0.0           # Size in Kilobytes
+    content: Optional[str] = None  # Full code string
+
+
+class RawAssetsInspectRequest(BaseModel):
+    """
+    Request payload to fetch and inspect raw HTML, CSS, JS, and Font assets before slicing.
+    """
+    html_source: str
+    base_url: Optional[str] = None
+    suite_name: Optional[str] = "Pasted Source Suite"
+    brand_name: Optional[str] = "Enterprise Workspace"
+
+
+class RawAssetsInspectResponse(BaseModel):
+    """
+    Response containing all inspected raw code and assets for the Step 2 Workbench.
+    """
+    job_id: str
+    base_url: Optional[str] = None
+    suite_name: str
+    brand_name: str
+    page_title: str
+    page_slug: str
+    html_source: str
+    stylesheets: list[RawAssetItem] = []
+    scripts: list[RawAssetItem] = []
+    fonts: list[str] = []
+    total_css_kb: float = 0.0
+    total_js_kb: float = 0.0
+    message: str = "Raw assets fetched and inspected successfully."
+
+
+class SliceAndScopeRequest(BaseModel):
+    """
+    Request payload to slice confirmed/edited HTML & CSS from Step 2 into modular sections.
+    """
+    html_source: str
+    combined_css: Optional[str] = None
+    custom_css: Optional[str] = None
+    stylesheets: Optional[list[RawAssetItem]] = None
+    base_url: Optional[str] = None
+    suite_name: Optional[str] = "Source Suite"
+    brand_name: Optional[str] = "Enterprise Workspace"
+    page_title: Optional[str] = "Custom Page"
+    page_slug: Optional[str] = "custom-page"
+    deep_debrand: bool = True
+    include_code_injections: bool = True
+
+
+class ExtractedSectionItem(BaseModel):
+    """
+    Represents an independently previewable, modular section template extracted from a web page.
+    Contains isolated scoped CSS, sandboxed JS, and Mustache dynamic tokens.
+    """
+    id: str
+    category_key: str              # "menu" | "hero" | "body" | "footer" | "blog" | "ecommerce" | "breadcrumb"
+    variant_code: str              # e.g. "Menu_HeaderNav", "Hero_Slider", "Body_FeatureGrid3Col"
+    name: str                      # e.g. "Corporate Header Navigation & Brand Logo"
+    label: str                     # e.g. "Navigation", "Hero Showcase", "Feature Grid", "Pricing", "Footer"
+    description: Optional[str] = None
+    dom_tag: str = "section"
+    html_template: str             # Semantic markup with {{ Tokens }} and {{#each Loops}}
+    scoped_css: str                # Extracted CSS rules matching only the classes in this section
+    js_script: Optional[str] = None
+    sample_content_json: Optional[str] = None  # Pre-hydrated mock data for instant preview
+    preview_icon: str = "widgets"
+    thumbnail_gradient: str = "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)"
+    parent_page_slugs: list[str] = []  # List of page slugs where this section appears
+    sort_order: int = 10
+
+
+class DiscoveredPageItem(BaseModel):
+    """
+    Represents a page discovered via the website's navigation menu.
+    Maintains an ordered list of section IDs that constitute the page.
+    """
+    title: str                     # e.g. "Home", "About Us", "Services", "Contact"
+    slug: str                      # e.g. "home", "about", "services", "contact"
+    url: str
+    is_home: bool = False
+    menu_sort_order: int = 10
+    section_ids: list[str] = []    # Ordered list of ExtractedSectionItem.id values
+
+
+class SectionsBuilderResponse(BaseModel):
+    """
+    Comprehensive response containing all extracted section templates, discovered pages,
+    CSS code injections, and page-to-section relationship mappings.
+    """
+    job_id: str
+    status: JobStatus = JobStatus.COMPLETE
+    group_code: str                # e.g. "suite_extracted_apex"
+    suite_name: str
+    source_url: str
+    total_sections: int
+    total_pages: int
+    pages: list[DiscoveredPageItem] = []
+    sections: list[ExtractedSectionItem] = []
+    code_injections: list[ImportableTagItem] = []
+    category_breakdown: dict[str, int] = {}
+    message: str = "Sections and pages extracted and scoped successfully."
+
+
+
