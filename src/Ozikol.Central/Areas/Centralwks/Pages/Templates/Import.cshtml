@@ -1,0 +1,915 @@
+@page "/centralwks/templates/import"
+@model Ozikol.Central.Areas.Centralwks.Pages.Templates.ImportModel
+@{
+    ViewData["Title"] = "Website Extractor & Section Builder Studio";
+    ViewData["BreadcrumbSection"] = "Marketplace";
+}
+
+<div class="admin-page-header">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="color: #6366f1; font-size: 32px;">view_in_ar</span>
+            <span>Website Extractor &amp; Section Builder Studio</span>
+        </h1>
+        <p class="admin-subtitle">Unified 5-step studio: Ingest raw source, inspect code &amp; assets, slice into modular sections with scoped CSS, preview in sandbox, and install to Marketplace.</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
+        <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">storefront</span>
+            <span>Back to Marketplace</span>
+        </a>
+        <a href="/centralwks/templates/create" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+            <span>Create Section Manually</span>
+        </a>
+    </div>
+</div>
+
+<div class="admin-content-body" id="section-builder-app">
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">error</span>
+            <div style="flex: 1; font-size: 14px;">@Model.ErrorMessage</div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">check_circle</span>
+            <div style="flex: 1; font-size: 14px;">@Model.StatusMessage</div>
+        </div>
+    }
+
+    <!-- 5-Step Progress Stepper -->
+    <div class="studio-stepper-bar">
+        <div class="step-pill @(Model.CurrentStep == 1 ? "active" : (Model.CurrentStep > 1 ? "completed" : ""))" onclick="jumpToStep(1)">
+            <span class="step-number">1</span>
+            <span class="step-label">Input Source &amp; URL</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-pill @(Model.CurrentStep == 2 ? "active" : (Model.CurrentStep > 2 ? "completed" : ""))" onclick="jumpToStep(2)">
+            <span class="step-number">2</span>
+            <span class="step-label">Inspect Code &amp; Assets</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-pill @(Model.CurrentStep == 3 ? "active" : (Model.CurrentStep > 3 ? "completed" : ""))" onclick="jumpToStep(3)">
+            <span class="step-number">3</span>
+            <span class="step-label">Slice Sections &amp; Scope CSS</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-pill @(Model.CurrentStep == 4 ? "active" : (Model.CurrentStep > 4 ? "completed" : ""))" onclick="jumpToStep(4)">
+            <span class="step-number">4</span>
+            <span class="step-label">Live Preview Sandbox</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-pill @(Model.CurrentStep == 5 ? "active" : "")" onclick="jumpToStep(5)">
+            <span class="step-number">5</span>
+            <span class="step-label">Install to Market</span>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STEP 1: Input Source & Asset Target -->
+    <!-- ========================================================================= -->
+    <div id="stepPanel1" style="@(Model.CurrentStep == 1 ? "display: block;" : "display: none;")">
+        <!-- Ingestion Mode Tabs -->
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+            <button type="button" class="tab-mode-btn @(Model.ActiveTab == "source" ? "active" : "")" id="tabBtnSource" onclick="switchImportTab('source')">
+                <span class="material-symbols-outlined" style="font-size: 20px;">code_blocks</span>
+                <span style="font-weight: 700;">Paste Page Source / Upload HTML</span>
+                <span class="badge-tab-mode badge-source">Recommended (Zero Latency)</span>
+            </button>
+
+            <button type="button" class="tab-mode-btn @(Model.ActiveTab == "url" ? "active" : "")" id="tabBtnUrl" onclick="switchImportTab('url')">
+                <span class="material-symbols-outlined" style="font-size: 20px;">language</span>
+                <span style="font-weight: 700;">Live Website URL Crawler</span>
+                <span class="badge-tab-mode badge-url">Automated Discovery</span>
+            </button>
+        </div>
+
+        <!-- Mode A: Paste Page Source / HTML File Form -->
+        <div id="panelSourceExtractor" style="@(Model.ActiveTab == "source" ? "display: block;" : "display: none;")">
+            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
+                <div class="card-header-styled" style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: var(--admin-card-bg, #ffffff);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <span class="material-symbols-outlined" style="font-size: 22px;">code</span>
+                        </div>
+                        <div>
+                            <h3 class="card-header-title" style="margin: 0; font-size: 17px; font-weight: 700; color: var(--admin-text, #0f172a);">Step 1: Paste Raw HTML Page Source &amp; Asset URL</h3>
+                            <p class="card-header-subtitle" style="margin: 2px 0 0; font-size: 13px; color: var(--admin-text-muted, #64748b);">Upload a <code>.html</code> file or paste page markup (Ctrl+U). In Step 2, you will inspect all extracted CSS files and scripts.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 7px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
+                            <span>Upload .html File</span>
+                            <input type="file" id="sourceFileInput" accept=".html,.htm,.txt" onchange="handleSourceFileUpload(event)" style="display: none;" />
+                        </label>
+                    </div>
+                </div>
+
+                <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
+                    <form method="post" asp-page-handler="InspectAssets" id="inspectAssetsForm" onsubmit="showInspectionLoading()">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ActiveTab" value="source" />
+                        <input type="hidden" asp-for="CurrentStep" value="2" />
+                        
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a); margin: 0;">
+                                    HTML Page Source Markup <span style="color: #ef4444; font-weight: bold;">*</span>
+                                </label>
+                                <span style="font-size: 12px; color: var(--admin-text-muted, #64748b);">Tip: Press Ctrl+U on the website, select all (Ctrl+A), copy and paste here</span>
+                            </div>
+                            <textarea asp-for="HtmlSource" id="inputHtmlSource" class="form-control" rows="10" 
+                                      style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.5; border-radius: 10px; background: #0f172a; color: #f8fafc; padding: 14px;" 
+                                      placeholder="Paste full HTML page source code here (e.g. from Ctrl+U or View Page Source)..." required></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Target Website Base URL (For Relative CSS &amp; Images)
+                                </label>
+                                <div style="position: relative; display: flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; color: #94a3b8; font-size: 20px;">language</span>
+                                    <input type="url" asp-for="SourceBaseUrl" id="inputSourceBaseUrl" class="form-control" style="padding-left: 44px; height: 46px; border-radius: 10px; font-size: 14px;" 
+                                           placeholder="https://example.com/demo/index.html" />
+                                </div>
+                                <div style="font-size: 12px; color: var(--admin-text-muted, #64748b); margin-top: 6px;">
+                                    Used in Step 2 to download all referenced stylesheets (e.g. <code>bootstrap.min.css</code>, <code>main.css</code>).
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Suite Name (Theme Family)
+                                </label>
+                                <input type="text" asp-for="SourceSuiteName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
+                                       placeholder="e.g. Corporate Theme Suite" />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Debrand Name
+                                </label>
+                                <input type="text" asp-for="SourceBrandName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
+                                       placeholder="e.g. Organization Name" />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 20px; flex-wrap: wrap; gap: 12px;">
+                            <button type="submit" class="btn-admin btn-admin-primary" id="btnFetchInspectAssets" style="height: 46px; padding: 0 32px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; background: #6366f1; border-color: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">manage_search</span>
+                                <span>Step 2: Fetch &amp; Inspect Raw Code &amp; Assets &rarr;</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode B: Live Website URL Crawler Form -->
+        <div id="panelUrlExtractor" style="@(Model.ActiveTab == "url" ? "display: block;" : "display: none;")">
+            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
+                <div class="card-header-styled" style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: var(--admin-card-bg, #ffffff);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <span class="material-symbols-outlined" style="font-size: 22px;">link</span>
+                        </div>
+                        <div>
+                            <h3 class="card-header-title" style="margin: 0; font-size: 17px; font-weight: 700; color: var(--admin-text, #0f172a);">Live Website Crawler &amp; Menu Discovery</h3>
+                            <p class="card-header-subtitle" style="margin: 2px 0 0; font-size: 13px; color: var(--admin-text-muted, #64748b);">Crawls the demo website homepage and navigation menu automatically.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
+                    <form method="post" asp-page-handler="Extract" id="extractForm" onsubmit="showExtractionLoading()">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ActiveTab" value="url" />
+                        <input type="hidden" asp-for="SelectedPageUrlsJson" id="hiddenSelectedPageUrlsJson" />
+                        
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Target Website URL <span style="color: #ef4444; font-weight: bold;">*</span>
+                                </label>
+                                <div style="position: relative; display: flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; color: #94a3b8; font-size: 20px;">globe</span>
+                                    <input type="url" asp-for="TargetUrl" id="inputTargetUrl" class="form-control" style="padding-left: 44px; height: 46px; border-radius: 10px; font-size: 14px;" 
+                                           placeholder="https://example.com/demo" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Suite Name (Theme Family)
+                                </label>
+                                <input type="text" asp-for="SuiteName" id="inputSuiteName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
+                                       placeholder="e.g. Theme Suite Name" />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
+                                    Debrand Name
+                                </label>
+                                <input type="text" asp-for="BrandName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
+                                       placeholder="e.g. Organization Name" />
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 20px; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button type="button" class="btn-admin btn-admin-primary" id="btnDiscoverPages" onclick="triggerPageDiscovery()" style="height: 44px; padding: 0 24px; border-radius: 10px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">explore</span>
+                                    <span id="btnDiscoverPagesText">Discover Pages from Menu</span>
+                                </button>
+                                <span style="font-size: 13px; color: var(--admin-text-muted, #64748b);">— or —</span>
+                                <button type="submit" class="btn-admin btn-admin-secondary" id="btnDirectExtract" style="height: 44px; padding: 0 20px; border-radius: 10px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
+                                    <span>Extract Direct</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Discovered Menu Pages Checklist Card -->
+            <div id="discoveredPagesCard" style="display: none; margin-bottom: 24px; background: var(--admin-card-bg, #ffffff); border-radius: 16px; border: 1px solid var(--admin-border, #e2e8f0); box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); background: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: #10b981;">checklist</span>
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a);" id="discoveryHeaderTitle">Discovered Pages</h3>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="toggleAllDiscoveredPages(true)">Select All</button>
+                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="toggleAllDiscoveredPages(false)">Deselect All</button>
+                    </div>
+                </div>
+                <div style="padding: 20px 24px;">
+                    <div id="discoveredPagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-height: 280px; overflow-y: auto; margin-bottom: 20px;"></div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 16px;">
+                        <div id="selectedPagesCountText" style="font-size: 13px; color: var(--admin-text-muted, #64748b);">Selected 0 pages</div>
+                        <button type="button" class="btn-admin btn-admin-primary" id="btnExtractSelectedPages" onclick="submitExtractionForSelectedPages()">Extract Sections from Selected Pages</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STEP 2: Raw Code & Asset Inspection Workbench -->
+    <!-- ========================================================================= -->
+    <div id="stepPanel2" style="@(Model.CurrentStep == 2 ? "display: block;" : "display: none;")">
+        <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.06); border: 1px solid var(--admin-border, #e2e8f0);">
+            
+            <!-- Workbench Header Toolbar -->
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #ffffff; flex-wrap: wrap; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(99, 102, 241, 0.25); color: #818cf8; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">terminal</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #ffffff;">Step 2: Raw Code &amp; Asset Inspection Workbench</h3>
+                        <p style="margin: 2px 0 0; font-size: 13px; color: #94a3b8;">Review extracted HTML, individual CSS stylesheets, scripts, and fonts before section slicing.</p>
+                    </div>
+                </div>
+
+                <!-- Asset Metrics Badges -->
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" id="workbenchAssetBadges">
+                    @if (Model.InspectResult != null)
+                    {
+                        <span style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">css</span>
+                            @Model.InspectResult.Stylesheets.Count CSS Files (@Model.InspectResult.TotalCssKb KB)
+                        </span>
+                        <span style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">javascript</span>
+                            @Model.InspectResult.Scripts.Count Scripts
+                        </span>
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">font_download</span>
+                            @Model.InspectResult.Fonts.Count Web Fonts
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Workbench Navigation Tabs -->
+            <div style="background: #1e293b; padding: 8px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px; overflow-x: auto;">
+                <button type="button" class="wb-tab-btn active" id="wbTab_html" onclick="switchWorkbenchTab('html')">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">code</span>
+                    <span>Raw HTML Source</span>
+                </button>
+                <button type="button" class="wb-tab-btn" id="wbTab_css" onclick="switchWorkbenchTab('css')">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">css</span>
+                    <span id="wbCssTabTitle">CSS Stylesheets</span>
+                </button>
+                <button type="button" class="wb-tab-btn" id="wbTab_js" onclick="switchWorkbenchTab('js')">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">javascript</span>
+                    <span id="wbJsTabTitle">JS Scripts</span>
+                </button>
+                <button type="button" class="wb-tab-btn" id="wbTab_fonts" onclick="switchWorkbenchTab('fonts')">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">font_download</span>
+                    <span id="wbFontsTabTitle">Font &amp; Icon CDNs</span>
+                </button>
+                <button type="button" class="wb-tab-btn" id="wbTab_overrides" onclick="switchWorkbenchTab('overrides')">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">edit_note</span>
+                    <span>Custom CSS Overrides</span>
+                </button>
+            </div>
+
+            <form method="post" asp-page-handler="SliceAndScope" id="sliceAndScopeForm" onsubmit="showSlicingLoading()">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="HtmlSource" id="wbFormHtmlSource" />
+                <input type="hidden" asp-for="EditedHtmlSource" id="wbFormEditedHtmlSource" />
+                <input type="hidden" asp-for="EditedStylesheetsJson" id="wbFormEditedStylesheetsJson" />
+                <input type="hidden" asp-for="SourceBaseUrl" id="wbFormSourceBaseUrl" />
+                <input type="hidden" asp-for="SourceSuiteName" id="wbFormSourceSuiteName" />
+                <input type="hidden" asp-for="SourceBrandName" id="wbFormSourceBrandName" />
+                <input type="hidden" asp-for="CurrentStep" value="3" />
+
+                <div style="padding: 20px; background: #0f172a; min-height: 480px;">
+                    
+                    <!-- Workbench Pane 1: Raw HTML Source -->
+                    <div id="wbPane_html" class="wb-pane" style="display: block;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #94a3b8; font-size: 12px;">
+                            <span>Editable HTML markup (will be sliced into modular sections):</span>
+                            <span id="wbHtmlCharCount">0 characters</span>
+                        </div>
+                        <textarea id="wbHtmlEditor" class="form-control" rows="18" 
+                                  style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); width: 100%; padding: 14px;"
+                                  oninput="handleWbHtmlChange()">@(Model.InspectResult?.HtmlSource ?? Model.HtmlSource ?? "")</textarea>
+                    </div>
+
+                    <!-- Workbench Pane 2: Extracted CSS Stylesheets -->
+                    <div id="wbPane_css" class="wb-pane" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; height: 460px;">
+                            <!-- Stylesheets Sidebar List -->
+                            <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); overflow-y: auto; padding: 10px;" id="wbCssFilesList">
+                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; padding: 6px 10px; font-weight: 700;">Downloaded Stylesheets</div>
+                                <!-- Dynamically populated by JS -->
+                            </div>
+
+                            <!-- Selected Stylesheet Code Viewer/Editor -->
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #94a3b8; font-size: 12px;">
+                                    <span id="wbCurrentCssFileName">Select a stylesheet</span>
+                                    <span id="wbCurrentCssSize">0 KB</span>
+                                </div>
+                                <textarea id="wbCssEditor" class="form-control" rows="17" 
+                                          style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); flex: 1; padding: 14px;"
+                                          oninput="handleWbCssChange()"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workbench Pane 3: JS Scripts -->
+                    <div id="wbPane_js" class="wb-pane" style="display: none;">
+                        <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); padding: 16px; max-height: 460px; overflow-y: auto;" id="wbJsScriptsContainer">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Workbench Pane 4: Font & Icon CDNs -->
+                    <div id="wbPane_fonts" class="wb-pane" style="display: none;">
+                        <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); padding: 20px;" id="wbFontsContainer">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Workbench Pane 5: Custom CSS Overrides -->
+                    <div id="wbPane_overrides" class="wb-pane" style="display: none;">
+                        <div style="margin-bottom: 8px; color: #94a3b8; font-size: 12px;">Add optional CSS variables, resets, or overrides to combine with the extracted stylesheets:</div>
+                        <textarea asp-for="SourceCustomCss" id="wbCustomCssEditor" class="form-control" rows="18" 
+                                  style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); width: 100%; padding: 14px;"
+                                  placeholder="/* Optional custom stylesheet content or design system variables */"></textarea>
+                    </div>
+                </div>
+
+                <!-- Workbench Footer Actions -->
+                <div style="padding: 18px 24px; background: #0f172a; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                    <button type="button" class="btn-admin btn-admin-secondary" onclick="jumpToStep(1)" style="color: #cbd5e1; border-color: rgba(255,255,255,0.2);">
+                        &larr; Back to Step 1: Input Source
+                    </button>
+
+                    <button type="submit" class="btn-admin btn-admin-primary" id="btnSliceSectionsAction" style="height: 46px; padding: 0 32px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; background: #10b981; border-color: #10b981; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">pie_chart</span>
+                        <span>Step 3: Slice Modular Sections &amp; Scope CSS &rarr;</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay for Slicing / Extraction -->
+    <div id="slicingLoadingState" style="display: none; background: var(--admin-card-bg, #ffffff); border-radius: 16px; padding: 50px 30px; text-align: center; margin-bottom: 28px; border: 1px solid var(--admin-border, #e2e8f0); box-shadow: 0 8px 30px rgba(0,0,0,0.06);">
+        <div class="spinner-pulse" style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--admin-text, #0f172a);">Slicing Modular Sections &amp; Scoping CSS...</h3>
+        <p style="color: var(--admin-text-muted, #64748b); max-width: 580px; margin: 0 auto; font-size: 14px; line-height: 1.6;">
+            Decomposing the confirmed HTML markup, matching class-specific CSS rules, injecting typography CDN fonts, and preparing live sandbox previews.
+        </p>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STEP 3 & 4: Sliced Sections Gallery & Live Preview -->
+    <!-- ========================================================================= -->
+    <div id="stepPanel3" style="@(Model.ExtractionResult != null && Model.ExtractionResult.Sections.Any() ? "display: block;" : "display: none;")">
+        @if (Model.ExtractionResult != null && Model.ExtractionResult.Sections.Any())
+        {
+            var res = Model.ExtractionResult;
+            
+            <!-- Summary Banner -->
+            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; padding: 24px; background: var(--admin-card-bg, #ffffff); box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: var(--admin-text, #0f172a);">@res.SuiteName</h2>
+                            
+                            <!-- Suite Group Code Badge -->
+                            <span style="background: #0f172a; color: #ffffff; font-family: monospace; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.5px;">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: #38bdf8;">style</span>
+                                <span>SUITE: @res.GroupCode.ToUpperInvariant()</span>
+                            </span>
+
+                            <span style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
+                                @res.TotalSections Modular Sections Sliced
+                            </span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--admin-text-muted, #64748b);">
+                            Source: <a href="@res.SourceUrl" target="_blank" style="color: #6366f1; text-decoration: none; font-weight: 500;">@res.SourceUrl</a>
+                        </div>
+                    </div>
+
+                    <!-- Batch Actions (Step 5) -->
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px;" onclick="selectAllSections(true)">Select All</button>
+                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px;" onclick="selectAllSections(false)">Deselect All</button>
+                        <button type="button" class="btn-admin" style="background: #10b981; color: #ffffff; border: none; font-size: 13px; font-weight: 600; padding: 9px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onclick="publishSelectedBatch()">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">publish</span>
+                            <span id="btnBatchPublishText">Publish Selected to Marketplace</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Page Groups -->
+                <div style="background: rgba(241, 245, 249, 0.6); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: 16px 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--admin-text, #0f172a); display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: #6366f1;">account_tree</span>
+                            <span>Discovered Pages &bull; @res.TotalPages Pages:</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="pageFilterGroup">
+                        <button type="button" class="page-filter-pill active" onclick="filterByPage('all', this)" style="border: 1px solid #0f172a; background: #0f172a; color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <span>All Pages</span>
+                            <span style="background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 10px; font-size: 11px;">@res.TotalSections</span>
+                        </button>
+
+                        @foreach (var pageItem in res.Pages)
+                        {
+                            var pageCode = $"PAGE_{pageItem.Slug.ToUpperInvariant()}";
+                            <button type="button" class="page-filter-pill" onclick="filterByPage('@pageItem.Slug', this)" style="border: 1px solid var(--admin-border, #cbd5e1); background: #ffffff; color: var(--admin-text, #334155); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <span>@pageItem.Title</span>
+                                <span style="background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;">@pageItem.SectionIds.Count</span>
+                                <span style="font-family: monospace; font-size: 10px; color: #94a3b8;">@pageCode</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 6px;" id="categoryFilterBar">
+                <button type="button" class="cat-filter-btn active" onclick="filterByCategory('all', this)">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">apps</span>
+                    <span>All Sections</span>
+                    <span class="cat-count">@res.TotalSections</span>
+                </button>
+
+                @foreach (var cat in new[] {
+                    new { Key = "menu", Name = "Navigation", Icon = "menu" },
+                    new { Key = "hero", Name = "Hero Sliders", Icon = "view_carousel" },
+                    new { Key = "body", Name = "Body Features", Icon = "view_quilt" },
+                    new { Key = "footer", Name = "Footers", Icon = "dock_to_bottom" },
+                    new { Key = "blog", Name = "Blogs & News", Icon = "newspaper" },
+                    new { Key = "ecommerce", Name = "E-Commerce", Icon = "shopping_bag" },
+                    new { Key = "breadcrumb", Name = "Breadcrumbs", Icon = "linear_scale" }
+                })
+                {
+                    var count = res.CategoryBreakdown.ContainsKey(cat.Key) ? res.CategoryBreakdown[cat.Key] : 0;
+                    if (count > 0)
+                    {
+                        <button type="button" class="cat-filter-btn" onclick="filterByCategory('@cat.Key', this)">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">@cat.Icon</span>
+                            <span>@cat.Name</span>
+                            <span class="cat-count">@count</span>
+                        </button>
+                    }
+                }
+            </div>
+
+            <!-- Section Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;" id="sectionsGridContainer">
+                @for (int i = 0; i < res.Sections.Count; i++)
+                {
+                    var sec = res.Sections[i];
+                    var pagesStr = string.Join(",", sec.ParentPageSlugs);
+                    var cssKb = Math.Round(sec.ScopedCss.Length / 1024.0, 1);
+
+                    <div class="section-card-col" 
+                         data-category="@sec.CategoryKey" 
+                         data-pages="@pagesStr" 
+                         data-section-id="@sec.Id">
+                        <div class="admin-card section-card-item" style="border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; height: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                            
+                            <!-- Card Header Banner with Gradient -->
+                            <div style="background: @sec.ThumbnailGradient; min-height: 80px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; position: relative; color: #ffffff;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input class="section-select-check" type="checkbox" data-index="@i" checked onchange="updateBatchPublishCount()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #6366f1;" />
+                                    <span style="background: rgba(0,0,0,0.4); color: #ffffff; text-transform: uppercase; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px;">
+                                        @sec.CategoryKey
+                                    </span>
+                                    <span style="background: #ffffff; color: #0f172a; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">
+                                        @sec.Label
+                                    </span>
+                                </div>
+
+                                <span style="background: rgba(255,255,255,0.25); color: #ffffff; font-family: monospace; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 8px;">
+                                    @sec.VariantCode
+                                </span>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; background: var(--admin-card-bg, #ffffff);">
+                                <h4 style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a);">@sec.Name</h4>
+                                <p style="margin: 0 0 16px; font-size: 13px; color: var(--admin-text-muted, #64748b); line-height: 1.5; flex-grow: 1;">@sec.Description</p>
+
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;">
+                                    <span style="background: rgba(241, 245, 249, 0.8); color: #334155; border: 1px solid #cbd5e1; font-family: monospace; font-size: 11px; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">style</span> @res.GroupCode
+                                    </span>
+                                    <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">
+                                        Scoped CSS: @cssKb KB
+                                    </span>
+                                </div>
+
+                                <!-- Actions -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 16px; gap: 10px; margin-top: auto;">
+                                    <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" onclick="openSectionPreviewModal(@i)">
+                                        <span class="material-symbols-outlined" style="font-size: 16px; color: #6366f1;">visibility</span>
+                                        <span>Live Preview</span>
+                                    </button>
+
+                                    <button type="button" class="btn-admin btn-admin-primary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" id="btnPublish_@sec.Id" onclick="publishSingleSection(@i, this)">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">add_shopping_cart</span>
+                                        <span>Add to Market</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Multi-Tab Live Preview Sandbox Modal -->
+<!-- ========================================================================= -->
+<div id="sectionPreviewModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.75); z-index: 9999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border-radius: 20px; width: 100%; max-width: 1200px; height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+        
+        <!-- Modal Header Toolbar -->
+        <div style="padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; background: #0f172a;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 24px;" id="modalPreviewIcon">view_in_ar</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #ffffff;" id="modalPreviewTitle">Section Preview</h3>
+                    <div style="font-family: monospace; font-size: 12px; color: #94a3b8;" id="modalPreviewSubtitle">Category &bull; VariantCode &bull; Scoped CSS</div>
+                </div>
+            </div>
+
+            <!-- Viewport Controls & Close -->
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="background: rgba(0,0,0,0.4); padding: 4px; border-radius: 24px; display: flex; gap: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                    <button type="button" class="vp-toggle-btn active" id="btnVpDesktop" onclick="setPreviewViewport('desktop')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop
+                    </button>
+                    <button type="button" class="vp-toggle-btn" id="btnVpTablet" onclick="setPreviewViewport('tablet')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">tablet</span> Tablet (768px)
+                    </button>
+                    <button type="button" class="vp-toggle-btn" id="btnVpMobile" onclick="setPreviewViewport('mobile')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile (375px)
+                    </button>
+                </div>
+
+                <button type="button" onclick="closeSectionPreviewModal()" style="background: rgba(255,255,255,0.1); border: none; color: #cbd5e1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Navigation Tabs -->
+        <div style="background: #1e293b; padding: 8px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px;">
+            <button type="button" class="modal-tab-btn active" id="tabBtn_sandbox" onclick="switchPreviewTab('sandbox')">
+                <span class="material-symbols-outlined" style="font-size: 18px;">play_circle</span> Live Sandbox
+            </button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_html" onclick="switchPreviewTab('html')">
+                <span class="material-symbols-outlined" style="font-size: 18px;">code</span> HTML Markup
+            </button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_css" onclick="switchPreviewTab('css')">
+                <span class="material-symbols-outlined" style="font-size: 18px;">css</span> Scoped CSS
+            </button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_js" onclick="switchPreviewTab('js')">
+                <span class="material-symbols-outlined" style="font-size: 18px;">javascript</span> Script (JS)
+            </button>
+            <button type="button" class="modal-tab-btn" id="tabBtn_content" onclick="switchPreviewTab('content')">
+                <span class="material-symbols-outlined" style="font-size: 18px;">data_object</span> Mock Content (JSON)
+            </button>
+        </div>
+
+        <!-- Modal Content Body -->
+        <div style="flex: 1; overflow-y: auto; background: #0f172a; position: relative;">
+            <div id="pane_sandbox" class="modal-tab-pane" style="height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; background: #334155;">
+                <div id="iframeWrapper" style="width: 100%; height: 100%; max-height: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: width 0.3s ease;">
+                    <iframe id="sectionPreviewIframe" src="about:blank" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+            </div>
+
+            <div id="pane_html" class="modal-tab-pane" style="display: none; padding: 24px;">
+                <pre style="margin: 0; background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockHtml"></code></pre>
+            </div>
+
+            <div id="pane_css" class="modal-tab-pane" style="display: none; padding: 24px;">
+                <pre style="margin: 0; background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockCss"></code></pre>
+            </div>
+
+            <div id="pane_js" class="modal-tab-pane" style="display: none; padding: 24px;">
+                <pre style="margin: 0; background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockJs">// No interactive script required for this section</code></pre>
+            </div>
+
+            <div id="pane_content" class="modal-tab-pane" style="display: none; padding: 24px;">
+                <pre style="margin: 0; background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockJson"></code></pre>
+            </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0f172a;">
+            <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 18px; border-radius: 8px; color: #ffffff;" onclick="closeSectionPreviewModal()">Close</button>
+            
+            <button type="button" class="btn-admin btn-admin-primary" style="font-size: 14px; font-weight: 600; padding: 10px 24px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;" id="btnModalPublishAction">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add_shopping_cart</span>
+                <span>Publish Section to Marketplace</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .studio-stepper-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+        background: var(--admin-card-bg, #ffffff);
+        border: 1px solid var(--admin-border, #e2e8f0);
+        border-radius: 16px;
+        padding: 14px 24px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        overflow-x: auto;
+    }
+    .step-pill {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        padding: 6px 14px;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .step-pill .step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        font-weight: 700;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .step-pill .step-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--admin-text-muted, #64748b);
+    }
+    .step-pill.active {
+        background: rgba(99, 102, 241, 0.1);
+    }
+    .step-pill.active .step-number {
+        background: #6366f1;
+        color: #ffffff;
+    }
+    .step-pill.active .step-label {
+        color: #6366f1;
+    }
+    .step-pill.completed .step-number {
+        background: #10b981;
+        color: #ffffff;
+    }
+    .step-pill.completed .step-label {
+        color: var(--admin-text, #0f172a);
+    }
+    .step-connector {
+        flex: 1;
+        height: 2px;
+        background: #e2e8f0;
+        margin: 0 10px;
+        min-width: 15px;
+    }
+    .wb-tab-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 10px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .wb-tab-btn:hover {
+        color: #ffffff;
+    }
+    .wb-tab-btn.active {
+        color: #818cf8;
+        border-bottom-color: #818cf8;
+    }
+    .css-file-pill {
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: #cbd5e1;
+        transition: all 0.15s ease;
+    }
+    .css-file-pill:hover {
+        background: rgba(255,255,255,0.08);
+        color: #ffffff;
+    }
+    .css-file-pill.active {
+        background: #6366f1 !important;
+        color: #ffffff !important;
+    }
+    .tab-mode-btn {
+        background: #ffffff;
+        border: 1px solid var(--admin-border, #e2e8f0);
+        color: var(--admin-text, #0f172a);
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .tab-mode-btn:hover {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.02);
+    }
+    .tab-mode-btn.active {
+        background: #6366f1;
+        border-color: #6366f1;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+    .badge-tab-mode {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+    }
+    .badge-url {
+        background: rgba(99, 102, 241, 0.15);
+        color: #6366f1;
+    }
+    .tab-mode-btn.active .badge-url {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+    .badge-source {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+    .tab-mode-btn.active .badge-source {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+    .cat-filter-btn {
+        background: var(--admin-card-bg, #ffffff);
+        border: 1px solid var(--admin-border, #e2e8f0);
+        color: var(--admin-text, #334155);
+        padding: 8px 18px;
+        border-radius: 24px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .cat-filter-btn:hover {
+        border-color: #6366f1;
+        color: #6366f1;
+    }
+    .cat-filter-btn.active {
+        background: #6366f1 !important;
+        border-color: #6366f1 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .cat-filter-btn .cat-count {
+        background: rgba(0,0,0,0.06);
+        color: inherit;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+    }
+    .cat-filter-btn.active .cat-count {
+        background: rgba(255,255,255,0.25) !important;
+        color: #ffffff !important;
+    }
+    .vp-toggle-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 6px 14px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+    .vp-toggle-btn.active {
+        background: #6366f1;
+        color: #ffffff;
+    }
+    .modal-tab-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 10px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .modal-tab-btn:hover {
+        color: #ffffff;
+    }
+    .modal-tab-btn.active {
+        color: #38bdf8;
+        border-bottom-color: #38bdf8;
+    }
+    #iframeWrapper.vp-tablet { width: 768px !important; }
+    #iframeWrapper.vp-mobile { width: 375px !important; }
+</style>
+
+<script type="application/json" id="rawInspectionJsonData">@Html.Raw(Model.InspectResultJson)</script>
+<script type="application/json" id="rawExtractionJsonData">@Html.Raw(Model.ExtractionResultJson)</script>
+<script src="~/js/section-builder-import.js" asp-append-version="true"></script>

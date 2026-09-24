@@ -45,6 +45,11 @@ builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Storage.IFileStorageService, Ozikol.Central.Services.Storage.CloudinaryFileStorageService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Careers.ICareersService, Ozikol.Central.Services.Careers.CareersService>();
 builder.Services.AddScoped<Ozikol.Central.Services.Support.ISupportService, Ozikol.Central.Services.Support.SupportService>();
+builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(10);
+});
+builder.Services.AddScoped<ITemplateHydrationService, TemplateHydrationService>();
 
 // Register Enterprise Postmark Email Suite & Automated Crash Alerting Options
 builder.Services.AddPostmarkEmailServices(builder.Configuration);
