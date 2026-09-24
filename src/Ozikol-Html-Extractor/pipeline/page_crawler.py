@@ -599,15 +599,123 @@ async def crawl_website_and_discover_pages(
 ) -> Tuple[List[dict], str, List[str]]:
     """
     Crawls the target homepage and discovers all internal pages in the navigation menu.
-    Uses thread-safe single-session browser crawling for fast, authenticated retrieval.
+    Uses thread-safe single-session browser crawling with graceful HTTPX fallback.
     """
-    return await asyncio.to_thread(
-        _crawl_all_pages_playwright_sync,
-        start_url,
-        max_subpages,
-        allowed_urls,
-        timeout_seconds
-    )
+    try:
+        return await asyncio.to_thread(
+            _crawl_all_pages_playwright_sync,
+            start_url,
+            max_subpages,
+            allowed_urls,
+            timeout_seconds
+        )
+    except Exception as pw_err:
+        logger.warning("Playwright crawler encountered error: %s. Falling back to HTTPX crawling...", pw_err)
+        return await _crawl_all_pages_httpx_async(start_url, max_subpages, allowed_urls, timeout_seconds)
+
+
+async def _crawl_all_pages_httpx_async(
+    start_url: str,
+    max_subpages: int = 5,
+    allowed_urls: Optional[List[str]] = None,
+    timeout_seconds: float = 30.0
+) -> Tuple[List[dict], str, List[str]]:
+    """
+    Pure HTTPX-based crawler fallback in the event of missing or disabled browser engines.
+    """
+    start_url = start_url.strip()
+    parsed_base = urlparse(start_url)
+    base_domain = parsed_base.netloc.lower()
+
+    discovered_pages: List[dict] = []
+    combined_css_parts: List[str] = []
+    external_fonts: List[str] = []
+    visited_urls: Set[str] = set()
+
+    allowed_norm_set = {_normalize_url(u) for u in allowed_urls} if allowed_urls else None
+
+    async with httpx.AsyncClient(headers=BROWSER_HEADERS, timeout=timeout_seconds, follow_redirects=True) as client:
+        try:
+            resp = await client.get(start_url)
+            home_html = resp.text
+            final_home_url = str(resp.url)
+        except Exception as e:
+            logger.error("HTTPX home page fetch failed for '%s': %s", start_url, e)
+            return [], "", []
+
+        norm_home = _normalize_url(final_home_url)
+        visited_urls.add(norm_home)
+
+        home_soup = BeautifulSoup(home_html, "lxml")
+        home_title = _extract_page_title(home_soup) or "Home"
+        home_css, home_fonts, _ = await _extract_css_and_fonts(home_soup, final_home_url, client)
+        if home_css:
+            combined_css_parts.append(home_css)
+        external_fonts.extend(home_fonts)
+
+        if allowed_norm_set is None or norm_home in allowed_norm_set:
+            discovered_pages.append({
+                "title": home_title,
+                "slug": "home",
+                "url": final_home_url,
+                "html": home_html,
+                "is_home": True,
+                "menu_sort_order": 10
+            })
+
+        candidate_links = _extract_navigation_links(home_soup, final_home_url, base_domain)
+        if allowed_urls is not None:
+            for a_url in allowed_urls:
+                norm_a = _normalize_url(a_url)
+                if norm_a != norm_home and not any(_normalize_url(cl[1]) == norm_a for cl in candidate_links):
+                    p_slug = _generate_slug("Page", a_url)
+                    candidate_links.append((p_slug.title(), a_url))
+
+        fetched_count = 0
+        menu_order = 20
+        for link_title, link_url in candidate_links:
+            norm_url = _normalize_url(link_url)
+            if norm_url in visited_urls:
+                continue
+            if allowed_norm_set is not None:
+                if norm_url not in allowed_norm_set:
+                    continue
+            else:
+                if fetched_count >= max_subpages:
+                    continue
+
+            visited_urls.add(norm_url)
+            slug = _generate_slug(link_title, link_url)
+
+            try:
+                sub_resp = await client.get(link_url)
+                sub_html = sub_resp.text
+                sub_final_url = str(sub_resp.url)
+                sub_soup = BeautifulSoup(sub_html, "lxml")
+                sub_title = _extract_page_title(sub_soup) or link_title
+
+                sub_css, sub_fonts, _ = await _extract_css_and_fonts(sub_soup, sub_final_url, client)
+                if sub_css:
+                    combined_css_parts.append(sub_css)
+                if sub_fonts:
+                    external_fonts.extend(sub_fonts)
+
+                discovered_pages.append({
+                    "title": sub_title,
+                    "slug": slug,
+                    "url": sub_final_url,
+                    "html": sub_html,
+                    "is_home": False,
+                    "menu_sort_order": menu_order
+                })
+                menu_order += 10
+                fetched_count += 1
+            except Exception as sub_exc:
+                logger.warning("Could not fetch subpage '%s' via HTTPX: %s", link_url, sub_exc)
+
+    combined_css = "\n\n".join(combined_css_parts)
+    unique_fonts = list(dict.fromkeys(external_fonts))
+    return discovered_pages, combined_css, unique_fonts
 
 
 def _extract_navigation_links(soup: BeautifulSoup, base_url: str, base_domain: str) -> List[Tuple[str, str]]:
