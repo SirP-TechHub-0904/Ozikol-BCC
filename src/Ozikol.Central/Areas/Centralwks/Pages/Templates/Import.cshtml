@@ -112,7 +112,7 @@
                 </div>
 
                 <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
-                    <form method="post" enctype="multipart/form-data" asp-page-handler="ExtractFromImage" id="extractImageForm" onsubmit="showImageVisionLoading()">
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="ExtractFromImage" id="extractImageForm" onsubmit="return showImageVisionLoading(event)">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="ActiveTab" value="image" />
                         <input type="hidden" asp-for="CurrentStep" value="3" />
@@ -191,7 +191,7 @@
                 </div>
 
                 <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
-                    <form method="post" asp-page-handler="InspectAssets" id="inspectAssetsForm" onsubmit="showInspectionLoading()">
+                    <form method="post" asp-page-handler="InspectAssets" id="inspectAssetsForm" onsubmit="return showInspectionLoading(event)">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="ActiveTab" value="source" />
                         <input type="hidden" asp-for="CurrentStep" value="2" />
@@ -403,7 +403,7 @@
                 </button>
             </div>
 
-            <form method="post" asp-page-handler="SliceAndScope" id="sliceAndScopeForm" onsubmit="showSlicingLoading()">
+            <form method="post" asp-page-handler="SliceAndScope" id="sliceAndScopeForm" onsubmit="return showSlicingLoading(event)">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="HtmlSource" id="wbFormHtmlSource" />
                 <input type="hidden" asp-for="EditedHtmlSource" id="wbFormEditedHtmlSource" />
