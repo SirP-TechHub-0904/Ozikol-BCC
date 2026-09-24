@@ -97,24 +97,80 @@ function jumpToStep(step) {
 }
 
 /**
- * Switches between "Paste Page Source / HTML" and "Live Website URL" tabs in Step 1.
+ * Switches between "Paste Page Source / HTML", "Live Website URL", and "UI Mockup Image" tabs in Step 1.
  */
 function switchImportTab(tabName) {
     var panelUrl = document.getElementById('panelUrlExtractor');
     var panelSource = document.getElementById('panelSourceExtractor');
+    var panelImage = document.getElementById('panelImageExtractor');
     var btnUrl = document.getElementById('tabBtnUrl');
     var btnSource = document.getElementById('tabBtnSource');
+    var btnImage = document.getElementById('tabBtnImage');
+
+    if (panelUrl) panelUrl.style.display = 'none';
+    if (panelSource) panelSource.style.display = 'none';
+    if (panelImage) panelImage.style.display = 'none';
+
+    if (btnUrl) btnUrl.classList.remove('active');
+    if (btnSource) btnSource.classList.remove('active');
+    if (btnImage) btnImage.classList.remove('active');
 
     if (tabName === 'source') {
-        if (panelUrl) panelUrl.style.display = 'none';
         if (panelSource) panelSource.style.display = 'block';
-        if (btnUrl) btnUrl.classList.remove('active');
         if (btnSource) btnSource.classList.add('active');
+    } else if (tabName === 'image') {
+        if (panelImage) panelImage.style.display = 'block';
+        if (btnImage) btnImage.classList.add('active');
     } else {
         if (panelUrl) panelUrl.style.display = 'block';
-        if (panelSource) panelSource.style.display = 'none';
         if (btnUrl) btnUrl.classList.add('active');
-        if (btnSource) btnSource.classList.remove('active');
+    }
+}
+
+/**
+ * Handles image selection for Gemini Vision Decomposition.
+ */
+function handleImageFileSelect(event) {
+    var file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    var previewBox = document.getElementById('imageSelectedPreview');
+    var previewImg = document.getElementById('imagePreviewImg');
+    var previewName = document.getElementById('imagePreviewName');
+    var previewSize = document.getElementById('imagePreviewSize');
+
+    if (previewName) previewName.innerText = file.name;
+    if (previewSize) previewSize.innerText = Math.round(file.size / 1024) + ' KB';
+
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        if (previewImg) previewImg.src = e.target.result;
+        if (previewBox) previewBox.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearSelectedImage(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    var input = document.getElementById('imageMockupFileInput');
+    if (input) input.value = '';
+    var previewBox = document.getElementById('imageSelectedPreview');
+    if (previewBox) previewBox.style.display = 'none';
+    var previewImg = document.getElementById('imagePreviewImg');
+    if (previewImg) previewImg.src = '';
+}
+
+function showImageVisionLoading() {
+    var loader = document.getElementById('slicingLoadingState');
+    if (loader) {
+        var h3 = loader.querySelector('h3');
+        var p = loader.querySelector('p');
+        if (h3) h3.innerText = 'Analyzing UI Screenshot with Gemini Vision AI...';
+        if (p) p.innerText = 'Decomposing visual components into modular sections, generating isolated scoped CSS, and creating dynamic placeholders.';
+        loader.style.display = 'block';
     }
 }
 
@@ -525,6 +581,9 @@ function updateBatchPublishCount() {
     }
 }
 
+var currentSandboxScope = 'single';
+var backupOriginalSectionCode = null;
+
 /**
  * Step 4: Opens the Live Preview Sandbox Modal with scoped CSS, JS, and Viewports.
  */
@@ -535,16 +594,15 @@ function openSectionPreviewModal(index) {
     }
 
     activePreviewIndex = index;
-    var sec = rawExtractionData.sections[index];
+    currentSandboxScope = 'single';
+    backupOriginalSectionCode = null;
 
+    var sec = rawExtractionData.sections[index];
     var name = sec.name || 'Section Preview';
     var categoryKey = sec.categoryKey || sec.category_key || 'body';
     var variantCode = sec.variantCode || sec.variant_code || '';
     var previewIcon = sec.previewIcon || sec.preview_icon || 'view_in_ar';
-    var htmlTemplate = sec.htmlTemplate || sec.html_template || '';
     var scopedCss = sec.scopedCss || sec.scoped_css || '';
-    var jsScript = sec.jsScript || sec.js_script || '';
-    var sampleContentJson = sec.sampleContentJson || sec.sample_content_json || '{}';
     var secId = sec.id || ('sec_' + index);
 
     var titleEl = document.getElementById('modalPreviewTitle');
@@ -553,50 +611,22 @@ function openSectionPreviewModal(index) {
 
     if (titleEl) titleEl.innerText = name;
     if (subtitleEl) {
-        var sizeKb = Math.round(scopedCss.length / 1024);
+        var sizeKb = Math.round((scopedCss || '').length / 1024);
         subtitleEl.innerText = categoryKey.toUpperCase() + ' • ' + variantCode + ' • Scoped CSS (' + sizeKb + ' KB)';
     }
     if (iconEl) iconEl.innerText = previewIcon;
 
-    var blockHtml = document.getElementById('codeBlockHtml');
-    var blockCss = document.getElementById('codeBlockCss');
-    var blockJs = document.getElementById('codeBlockJs');
-    var blockJson = document.getElementById('codeBlockJson');
+    // Reset scope pills
+    document.querySelectorAll('.preview-scope-pill').forEach(function (b) { b.classList.remove('active'); });
+    var btnSingle = document.getElementById('scopeBtn_single');
+    if (btnSingle) btnSingle.classList.add('active');
 
-    if (blockHtml) blockHtml.innerText = htmlTemplate;
-    if (blockCss) blockCss.innerText = scopedCss || '/* Zero extra CSS rules required */';
-    if (blockJs) blockJs.innerText = jsScript || '// No interactive script required';
-    if (blockJson) blockJson.innerText = sampleContentJson;
+    // Reset AI Tweak Card
+    var resultCard = document.getElementById('aiTweakResultCard');
+    if (resultCard) resultCard.style.display = 'none';
 
-    // Build standalone HTML document for iframe sandbox
-    var docHtml = '<!DOCTYPE html>\n' +
-        '<html>\n' +
-        '<head>\n' +
-        '    <meta charset="UTF-8">\n' +
-        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-        '    <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
-        '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-        '    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\n' +
-        '    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />\n' +
-        '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />\n' +
-        '    <style>\n' +
-        '        *, *::before, *::after { box-sizing: border-box; }\n' +
-        '        body { margin: 0; padding: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; color: #0f172a; }\n' +
-        '        img, svg { max-width: 100%; height: auto; }\n' +
-        '        a { color: inherit; text-decoration: none; }\n' +
-        scopedCss + '\n' +
-        '    </style>\n' +
-        '</head>\n' +
-        '<body>\n' +
-        htmlTemplate + '\n' +
-        (jsScript ? '<script>' + jsScript + '<\/script>\n' : '') +
-        '</body>\n' +
-        '</html>';
-
-    var iframe = document.getElementById('sectionPreviewIframe');
-    if (iframe) {
-        iframe.srcdoc = docHtml;
-    }
+    updateModalCodeBlocks(sec);
+    renderSandboxDoc();
 
     switchPreviewTab('sandbox');
     setPreviewViewport('desktop');
@@ -613,6 +643,241 @@ function openSectionPreviewModal(index) {
     if (modalOverlay) {
         modalOverlay.style.display = 'flex';
     }
+}
+
+function updateModalCodeBlocks(sec) {
+    var blockHtml = document.getElementById('codeBlockHtml');
+    var blockCss = document.getElementById('codeBlockCss');
+    var blockJs = document.getElementById('codeBlockJs');
+    var blockJson = document.getElementById('codeBlockJson');
+
+    var htmlTemplate = sec.htmlTemplate || sec.html_template || '';
+    var scopedCss = sec.scopedCss || sec.scoped_css || '';
+    var jsScript = sec.jsScript || sec.js_script || '';
+    var sampleContentJson = sec.sampleContentJson || sec.sample_content_json || '{}';
+
+    if (blockHtml) blockHtml.innerText = htmlTemplate;
+    if (blockCss) blockCss.innerText = scopedCss || '/* Zero extra CSS rules required */';
+    if (blockJs) blockJs.innerText = jsScript || '// No interactive script required';
+    if (blockJson) blockJson.innerText = sampleContentJson;
+}
+
+/**
+ * Renders the standalone sandbox HTML into the iframe based on currentSandboxScope.
+ */
+function renderSandboxDoc() {
+    if (!rawExtractionData || !rawExtractionData.sections || !rawExtractionData.sections[activePreviewIndex]) return;
+
+    var sec = rawExtractionData.sections[activePreviewIndex];
+    var renderedHtml = '';
+    var combinedCss = '';
+    var combinedJs = '';
+
+    if (currentSandboxScope === 'single') {
+        renderedHtml = sec.htmlTemplate || sec.html_template || '';
+        combinedCss = sec.scopedCss || sec.scoped_css || '';
+        combinedJs = sec.jsScript || sec.js_script || '';
+    } else if (currentSandboxScope === 'page') {
+        // Collect all sections belonging to this page
+        var pageSlug = (sec.parentPageSlugs && sec.parentPageSlugs[0]) || (sec.parent_page_slugs && sec.parent_page_slugs[0]) || 'home';
+        var pageSections = rawExtractionData.sections.filter(function (s) {
+            var pSlugs = s.parentPageSlugs || s.parent_page_slugs || [];
+            return pSlugs.includes(pageSlug) || pageSlug === 'home';
+        });
+
+        if (pageSections.length === 0) pageSections = [sec];
+
+        pageSections.forEach(function (s) {
+            renderedHtml += (s.htmlTemplate || s.html_template || '') + '\n';
+            combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
+            if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
+        });
+    } else {
+        // Full Suite Sandbox
+        rawExtractionData.sections.forEach(function (s) {
+            renderedHtml += (s.htmlTemplate || s.html_template || '') + '\n';
+            combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
+            if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
+        });
+    }
+
+    var docHtml = '<!DOCTYPE html>\n' +
+        '<html>\n' +
+        '<head>\n' +
+        '    <meta charset="UTF-8">\n' +
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+        '    <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+        '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+        '    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\n' +
+        '    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />\n' +
+        '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />\n' +
+        '    <style>\n' +
+        '        *, *::before, *::after { box-sizing: border-box; }\n' +
+        '        body { margin: 0; padding: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; color: #0f172a; }\n' +
+        '        img, svg { max-width: 100%; height: auto; }\n' +
+        '        a { color: inherit; text-decoration: none; }\n' +
+        combinedCss + '\n' +
+        '    </style>\n' +
+        '</head>\n' +
+        '<body>\n' +
+        renderedHtml + '\n' +
+        (combinedJs ? '<script>' + combinedJs + '<\/script>\n' : '') +
+        '</body>\n' +
+        '</html>';
+
+    var iframe = document.getElementById('sectionPreviewIframe');
+    if (iframe) {
+        iframe.srcdoc = docHtml;
+    }
+}
+
+function setSandboxScope(scope) {
+    currentSandboxScope = scope;
+    document.querySelectorAll('.preview-scope-pill').forEach(function (b) { b.classList.remove('active'); });
+    var activeBtn = document.getElementById('scopeBtn_' + scope);
+    if (activeBtn) activeBtn.classList.add('active');
+    renderSandboxDoc();
+}
+
+/**
+ * Sets quick prompt from chips into the AI textarea.
+ */
+function setAiQuickPrompt(promptText) {
+    var textarea = document.getElementById('aiTweakUserPrompt');
+    if (textarea) {
+        textarea.value = promptText;
+        textarea.focus();
+    }
+}
+
+/**
+ * Executes in-preview AI section tweak via AJAX endpoint.
+ */
+function executeSectionAiTweak() {
+    if (!rawExtractionData || !rawExtractionData.sections || !rawExtractionData.sections[activePreviewIndex]) return;
+
+    var sec = rawExtractionData.sections[activePreviewIndex];
+    var promptEl = document.getElementById('aiTweakUserPrompt');
+    var providerEl = document.getElementById('aiModelProviderSelect');
+    var prompt = promptEl ? promptEl.value.trim() : '';
+    var provider = providerEl ? providerEl.value : 'Gemini';
+
+    if (!prompt) {
+        alert('Please enter an instruction prompt for the AI Co-Pilot.');
+        if (promptEl) promptEl.focus();
+        return;
+    }
+
+    var btn = document.getElementById('btnExecuteAiTweak');
+    var btnText = document.getElementById('aiTweakBtnText');
+    var btnIcon = document.getElementById('aiTweakBtnIcon');
+
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.innerText = 'AI Thinking & Generating...';
+    if (btnIcon) {
+        btnIcon.innerText = 'sync';
+        btnIcon.style.animation = 'spin 1s linear infinite';
+    }
+
+    // Save backup before tweaking
+    backupOriginalSectionCode = {
+        htmlTemplate: sec.htmlTemplate || sec.html_template,
+        scopedCss: sec.scopedCss || sec.scoped_css
+    };
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var token = tokenEl ? tokenEl.value : '';
+
+    var payload = {
+        section_key: sec.id || ('sec_' + activePreviewIndex),
+        category_key: sec.categoryKey || sec.category_key || 'body',
+        title: sec.name || 'Section',
+        html_template: sec.htmlTemplate || sec.html_template || '',
+        scoped_css: sec.scopedCss || sec.scoped_css || '',
+        user_prompt: prompt,
+        provider: provider
+    };
+
+    fetch('/centralwks/templates/import?handler=TweakSectionWithAi', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = 'Execute AI Tweak';
+        if (btnIcon) {
+            btnIcon.innerText = 'magic_button';
+            btnIcon.style.animation = 'none';
+        }
+
+        if (data.success && data.html_template) {
+            // Update active section
+            sec.htmlTemplate = data.html_template;
+            sec.html_template = data.html_template;
+            sec.scopedCss = data.scoped_css;
+            sec.scoped_css = data.scoped_css;
+
+            updateModalCodeBlocks(sec);
+            renderSandboxDoc();
+
+            // Display explanation card
+            var resultCard = document.getElementById('aiTweakResultCard');
+            var explText = document.getElementById('aiTweakExplanationText');
+            var placeholdersList = document.getElementById('aiTweakPlaceholdersList');
+
+            if (explText) explText.innerText = data.explanation || 'Updated HTML structure, responsive scoped CSS, and standardized placeholders.';
+            
+            if (placeholdersList) {
+                placeholdersList.innerHTML = '';
+                var placeholders = data.placeholders || [];
+                if (placeholders.length === 0) {
+                    placeholders = ['Hero_Title', 'Company_Name', 'Button_Text'];
+                }
+                placeholders.forEach(function (ph) {
+                    placeholdersList.innerHTML += '<span style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 6px;">{{' + escapeHtml(ph) + '}}</span>';
+                });
+            }
+
+            if (resultCard) resultCard.style.display = 'block';
+        } else {
+            alert('AI Tweak failed: ' + (data.error_message || data.errorMessage || 'Unknown error.'));
+        }
+    })
+    .catch(function (err) {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = 'Execute AI Tweak';
+        if (btnIcon) {
+            btnIcon.innerText = 'magic_button';
+            btnIcon.style.animation = 'none';
+        }
+        alert('Network error during AI Tweak: ' + err);
+    });
+}
+
+function applyAiTweakAndShowSandbox() {
+    switchPreviewTab('sandbox');
+}
+
+function revertAiTweak() {
+    if (!backupOriginalSectionCode || !rawExtractionData || !rawExtractionData.sections[activePreviewIndex]) return;
+
+    var sec = rawExtractionData.sections[activePreviewIndex];
+    sec.htmlTemplate = backupOriginalSectionCode.htmlTemplate;
+    sec.html_template = backupOriginalSectionCode.htmlTemplate;
+    sec.scopedCss = backupOriginalSectionCode.scopedCss;
+    sec.scoped_css = backupOriginalSectionCode.scopedCss;
+
+    updateModalCodeBlocks(sec);
+    renderSandboxDoc();
+
+    var resultCard = document.getElementById('aiTweakResultCard');
+    if (resultCard) resultCard.style.display = 'none';
+    alert('Reverted to original section markup.');
 }
 
 function closeSectionPreviewModal() {
