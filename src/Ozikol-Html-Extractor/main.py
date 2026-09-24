@@ -6,6 +6,11 @@ Interactive docs: http://localhost:8001/docs
 """
 
 import logging
+import sys
+import asyncio
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 import uvicorn
 from fastapi import FastAPI
@@ -13,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import settings
-from routers import jobs, preview
+from routers import jobs, preview, sections_builder, qwen_router
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -31,16 +36,16 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="Ozikol HTML Extractor",
+    title="Ozikol HTML Extractor & Section Builder",
     description=(
-        "A website extraction pipeline API.\n\n"
-        "**Phase 1** — Crawl a URL and return a full audit: CSS, JS, fonts, pages, "
-        "broken links, meta tags, tracking scripts, and external resources.\n\n"
-        "**Phase 2** — Apply selections: remove anything unchecked, clean HTML.\n\n"
-        "**Phase 3** — Upload kept assets to Cloudinary CDN and rewrite URLs.\n\n"
-        "All endpoints return JSON. Preview endpoints return raw HTML/CSS/JS."
+        "A modular website extraction and section builder pipeline API.\n\n"
+        "**SectionsBuilder (`/sections-builder-from-url`)** — Crawls a URL, discovers menu-linked pages, "
+        "decomposes the DOM into classified section templates (Menu, Hero, Body Features, Footers, Blogs), "
+        "extracts class-matched scoped CSS and JS, and enables independent section previewing.\n\n"
+        "**AI Engine (`/api/ai/qwen`, `/v1/chat/completions`)** — On-device Qwen 2.5 (1.5B) local inference.\n\n"
+        "**Phase 1-4 Pipeline (`/jobs`)** — Crawl, audit, clean, upload to CDN, and DeepSeek AI tokenization."
     ),
-    version="1.0.0",
+    version="1.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -62,6 +67,8 @@ app.add_middleware(
 # Routers
 # ---------------------------------------------------------------------------
 
+app.include_router(sections_builder.router)
+app.include_router(qwen_router.router)
 app.include_router(jobs.router)
 app.include_router(preview.router)
 
