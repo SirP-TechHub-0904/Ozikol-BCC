@@ -31,9 +31,13 @@ public class MasterMigrationsDbContextFactory : IDesignTimeDbContextFactory<Mast
         var root = FindRepositoryRoot();
         LoadEnvFile(Path.Combine(root, ".env"));
         LoadEnvFile(Path.Combine(root, "src", "Ozikol.Central", ".env"));
+        LoadEnvFile(Path.Combine(root, "src", "Ozikol-BCC.Api", ".env"));
 
-        var fromEnv = Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+        var fromEnv = Environment.GetEnvironmentVariable("TenantConfiguration:ConnectionString")
+            ?? Environment.GetEnvironmentVariable("TenantConfiguration__ConnectionString")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings:MasterCatalogConnection")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__MasterCatalogConnection")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings:DefaultConnection")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
         if (!string.IsNullOrWhiteSpace(fromEnv))
@@ -43,21 +47,36 @@ public class MasterMigrationsDbContextFactory : IDesignTimeDbContextFactory<Mast
 
         throw new InvalidOperationException(
             "Design-time Master Catalog database connection string not found. " +
-            "Please ensure 'TenantConfiguration__ConnectionString' or 'ConnectionStrings__MasterCatalogConnection' is set in your .env file or environment variables.");
+            "Please ensure 'TenantConfiguration:ConnectionString' or 'TenantConfiguration__ConnectionString' is set in your .env file or environment variables.");
     }
 
     private static string FindRepositoryRoot()
     {
-        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-
-        while (directory != null)
+        var candidates = new[]
         {
-            if (File.Exists(Path.Combine(directory.FullName, "Ozikol-BCC.sln")))
+            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
+            typeof(MasterMigrationsDbContextFactory).Assembly.Location
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
             {
-                return directory.FullName;
+                continue;
             }
 
-            directory = directory.Parent;
+            var directory = new DirectoryInfo(candidate);
+            while (directory != null)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "Ozikol-BCC.sln")) ||
+                    Directory.Exists(Path.Combine(directory.FullName, "src", "Ozikol.Central")))
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
         }
 
         return Directory.GetCurrentDirectory();
@@ -87,9 +106,16 @@ public class MasterMigrationsDbContextFactory : IDesignTimeDbContextFactory<Mast
             var key = line[..separatorIndex].Trim();
             var value = line[(separatorIndex + 1)..].Trim().Trim('"');
 
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+            Environment.SetEnvironmentVariable(key, value);
+
+            // Also normalize colon and double-underscore equivalents for cross-compatibility
+            if (key.Contains(':'))
             {
-                Environment.SetEnvironmentVariable(key, value);
+                Environment.SetEnvironmentVariable(key.Replace(":", "__"), value);
+            }
+            else if (key.Contains("__"))
+            {
+                Environment.SetEnvironmentVariable(key.Replace("__", ":"), value);
             }
         }
     }

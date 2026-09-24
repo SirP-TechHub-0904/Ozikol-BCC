@@ -179,17 +179,9 @@ namespace Ozikol.Central.Services
 
                 if (provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Call official Google Gemini 1.5 Flash generateContent API
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-                    var payload = new
-                    {
-                        contents = new[]
-                        {
-                            new { parts = new[] { new { text = "Ping. Reply with 'Pong'." } } }
-                        }
-                    };
-
-                    var response = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
+                    // Official Google Gemini ModelService lightweight authentication verification probe
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey}";
+                    var response = await client.GetAsync(geminiUrl, cancellationToken);
                     sw.Stop();
 
                     if (response.IsSuccessStatusCode)

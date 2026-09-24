@@ -2,156 +2,182 @@
 @model Ozikol.Central.Areas.Centralwks.Pages.AiKeys.IndexModel
 @{
     ViewData["Title"] = "AI Key Pool & Telemetry Hub";
-    Layout = "_Layout";
+    ViewData["BreadcrumbSection"] = "System";
 }
 
-<div class="container-fluid px-4 py-4">
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="admin-page-container" style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
         <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                    <i class="fa-brands fa-google me-1"></i> Google Gemini Free Pool
-                </span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                    <i class="fa-solid fa-shield-halved me-1"></i> 429 Cooldown Failover Active
-                </span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-primary, #e11d48);">psychology</span>
+                <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">
+                    Google Gemini Key Pool &amp; Telemetry Hub
+                </h1>
             </div>
-            <h2 class="fw-bold mb-1">Google Gemini Key Pool &amp; Telemetry Hub</h2>
-            <p class="text-muted small mb-0">Manage rotating free Google Gemini API keys (1,500 reqs/day per key), monitor live quota consumption, and review execution latency.</p>
+            <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0;">
+                Manage rotating free Google Gemini API keys (1,500 reqs/day per key), monitor live quota consumption, and review execution latency.
+            </p>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#logsModal">
-                <i class="fa-solid fa-list-check me-1"></i> Request Telemetry Logs
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" onclick="openLogsModal()" class="action-btn-hover" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b;">receipt_long</span>
+                <span>Request Telemetry Logs</span>
             </button>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addKeyModal">
-                <i class="fa-solid fa-plus me-1"></i> Register New API Key
+            <button type="button" onclick="openAddKeyModal()" class="action-btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; padding: 9px 18px; border-radius: 8px; border: none; background: var(--admin-primary, #e11d48); color: #ffffff; cursor: pointer; box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25); transition: all 0.15s ease;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                <span>Register New API Key</span>
             </button>
         </div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.StatusMessage))
     {
-        <div class="alert alert-@(Model.StatusMessageType ?? "info") alert-dismissible fade show mb-4" role="alert">
-            <i class="fa-solid fa-circle-info me-2"></i> @Model.StatusMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        var isError = Model.StatusMessageType == "danger" || Model.StatusMessageType == "error";
+        <div style="background: @(isError ? "#fef2f2" : "#ecfdf5"); border-left: 4px solid @(isError ? "#ef4444" : "#10b981"); padding: 14px 18px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: @(isError ? "#991b1b" : "#065f46"); font-weight: 600; display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">@(isError ? "error" : "check_circle")</span>
+            <span>@Model.StatusMessage</span>
         </div>
     }
 
-    <!-- Top KPI Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-medium">Active Key Pool</span>
-                        <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></span>
+    <!-- Stat Metric Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- Card 1: Active Key Pool -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Key Pool</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">key</span>
                     </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold mb-0">@Model.Summary.ActiveKeys</h3>
-                        <span class="text-muted small">/ @Model.Summary.TotalKeys Total Keys</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.ActiveKeys
+                    <span style="font-size: 14px; font-weight: 600; color: #64748b;">/ @Model.Summary.TotalKeys Total</span>
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12.5px; font-weight: 600;">
+                @if (Model.Summary.CoolingDownKeys > 0)
+                {
+                    <span style="color: #d97706; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">warning</span> @Model.Summary.CoolingDownKeys in Cooldown
+                    </span>
+                }
+                else
+                {
+                    <span style="color: #059669; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span> All keys operational
+                    </span>
+                }
+            </div>
+        </div>
+
+        <!-- Card 2: Daily Capacity -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Daily Request Capacity</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">speed</span>
                     </div>
-                    <div class="text-muted small mt-2">
-                        @if (Model.Summary.CoolingDownKeys > 0)
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.TotalDailyCapacity.ToString("N0")
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">reqs/day</span>
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12.5px; color: #64748b;">
+                Free tier quota pool
+            </div>
+        </div>
+
+        <!-- Card 3: Today's Requests -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Today's Requests</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">trending_up</span>
+                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.TotalRequestsToday.ToString("N0")
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">
+                        @if (Model.Summary.TotalDailyCapacity > 0)
                         {
-                            <span class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>@Model.Summary.CoolingDownKeys in Cooldown</span>
+                            @($"({((double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100):F1}%)")
                         }
-                        else
-                        {
-                            <span class="text-success"><i class="fa-solid fa-bolt me-1"></i>All keys operational</span>
-                        }
-                    </div>
+                    </span>
+                </div>
+            </div>
+            <div style="margin-top: 14px;">
+                <div style="width: 100%; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;">
+                    <div style="width: @(Model.Summary.TotalDailyCapacity > 0 ? Math.Min(100, (double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100) : 0)%; height: 100%; background: #0284c7; border-radius: 99px;"></div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-medium">Daily Request Capacity</span>
-                        <span class="badge bg-primary-subtle text-primary"><i class="fa-solid fa-gauge-high"></i></span>
+        <!-- Card 4: Avg Latency -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Avg Latency (7 Days)</span>
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(168, 85, 247, 0.12); color: #9333ea; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">timer</span>
                     </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold mb-0">@Model.Summary.TotalDailyCapacity.ToString("N0")</h3>
-                        <span class="text-muted small">reqs/day</span>
-                    </div>
-                    <div class="text-muted small mt-2">
-                        <span>Free tier quota pool</span>
-                    </div>
+                </div>
+                <div style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1;">
+                    @Model.Summary.AverageLatencyMs
+                    <span style="font-size: 13.5px; font-weight: 600; color: #64748b;">ms</span>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-medium">Today's Usage</span>
-                        <span class="badge bg-info-subtle text-info"><i class="fa-solid fa-chart-line"></i></span>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold mb-0">@Model.Summary.TotalRequestsToday</h3>
-                        <span class="text-muted small">
-                            @if (Model.Summary.TotalDailyCapacity > 0)
-                            {
-                                @($"{((double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100):F1}% utilized")
-                            }
-                        </span>
-                    </div>
-                    <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: @(Model.Summary.TotalDailyCapacity > 0 ? Math.Min(100, (double)Model.Summary.TotalRequestsToday / Model.Summary.TotalDailyCapacity * 100) : 0)%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small fw-medium">Avg Latency (7 Days)</span>
-                        <span class="badge bg-secondary-subtle text-secondary"><i class="fa-solid fa-stopwatch"></i></span>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <h3 class="fw-bold mb-0">@Model.Summary.AverageLatencyMs</h3>
-                        <span class="text-muted small">ms</span>
-                    </div>
-                    <div class="text-muted small mt-2">
-                        <span>Across @Model.Summary.TotalLifetimeRequests.ToString("N0") lifetime requests</span>
-                    </div>
-                </div>
+            <div style="margin-top: 14px; font-size: 12.5px; color: #64748b;">
+                @Model.Summary.TotalLifetimeRequests.ToString("N0") lifetime AI calls
             </div>
         </div>
     </div>
 
-    <!-- Key Registry Table -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
-        <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0"><i class="fa-solid fa-key text-primary me-2"></i>Active Key Pool Registry</h5>
-            <span class="badge bg-light text-dark border">@Model.Summary.Keys.Count Registered</span>
+    <!-- Key Registry Table Card -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #fafafa;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 22px; color: var(--admin-primary, #e11d48);">vpn_key</span>
+                <div>
+                    <h2 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0;">Active Key Pool Registry</h2>
+                    <p style="font-size: 12.5px; color: #64748b; margin: 2px 0 0 0;">Configured API keys participating in the least-used round-robin rotation engine.</p>
+                </div>
+            </div>
+            <span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 4px 12px; font-size: 12px; font-weight: 700; border-radius: 99px;">
+                @Model.Summary.Keys.Count Registered
+            </span>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-3">Provider</th>
-                        <th>Alias & Key ID</th>
-                        <th>API Key (Masked)</th>
-                        <th>Today's Quota</th>
-                        <th>Lifetime Usage</th>
-                        <th>Status</th>
-                        <th>Last Used</th>
-                        <th class="text-end pe-3">Actions</th>
+
+        <div style="overflow-x: auto; width: 100%;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 12px 20px; font-weight: 700;">Provider</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Alias &amp; Identifier</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Masked Key</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Today's Quota</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Lifetime</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Status</th>
+                        <th style="padding: 12px 20px; font-weight: 700;">Last Used</th>
+                        <th style="padding: 12px 20px; font-weight: 700; text-align: right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Summary.Keys.Any())
                     {
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-key fa-2x mb-2 d-block opacity-25"></i>
-                                No AI API keys registered yet. Click <strong>"Register New API Key"</strong> above to add your first key.
+                            <td colspan="8" style="text-align: center; padding: 56px 20px; color: #64748b;">
+                                <span class="material-symbols-outlined" style="font-size: 48px; opacity: 0.3; display: block; margin-bottom: 8px; color: #64748b;">vpn_key_off</span>
+                                <div style="font-weight: 800; font-size: 15px; color: #0f172a; margin-bottom: 4px;">No API Keys Registered</div>
+                                <div style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">Add Google Gemini free tier API keys to the rotation pool to enable automated key failover.</div>
+                                <button type="button" onclick="openAddKeyModal()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--admin-primary, #e11d48); color: #ffffff; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+                                    <span>Register New API Key</span>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -161,82 +187,69 @@
                         var isCooling = key.RateLimitCooldownUntilUtc.HasValue && key.RateLimitCooldownUntilUtc.Value > DateTime.UtcNow;
                         var isExhausted = key.TodayRequestsCount >= key.DailyQuotaLimit;
 
-                        <tr>
-                            <td class="ps-3">
-                                @if (key.Provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                        <i class="fa-brands fa-google me-1"></i> Google Gemini
-                                    </span>
-                                }
-                                else if (key.Provider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
-                                        <i class="fa-solid fa-brain me-1"></i> DeepSeek
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
-                                        <i class="fa-solid fa-robot me-1"></i> @key.Provider
-                                    </span>
-                                }
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                            <td style="padding: 14px 20px;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">auto_awesome</span> @key.Provider
+                                </span>
                             </td>
-                            <td>
-                                <div class="fw-semibold">@key.KeyAlias</div>
-                                <div class="text-muted font-monospace" style="font-size: 0.75rem;">ID: @key.Id.ToString().Substring(0, 8)...</div>
+                            <td style="padding: 14px 20px;">
+                                <div style="font-weight: 700; color: #0f172a;">@key.KeyAlias</div>
+                                <div style="font-size: 11.5px; font-family: monospace; color: #94a3b8;">ID: @key.Id.ToString().Substring(0, 8)...</div>
                             </td>
-                            <td>
-                                <span class="font-monospace text-muted small bg-light px-2 py-1 rounded border">@maskedKey</span>
+                            <td style="padding: 14px 20px;">
+                                <code style="font-size: 12px; font-family: monospace; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">@maskedKey</code>
                             </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height: 6px; width: 80px;">
-                                        <div class="progress-bar @(isExhausted ? "bg-danger" : "bg-success")" role="progressbar" style="width: @Math.Min(100, (double)key.TodayRequestsCount / key.DailyQuotaLimit * 100)%"></div>
+                            <td style="padding: 14px 20px; min-width: 170px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex-grow: 1; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;">
+                                        <div style="width: @Math.Min(100, (double)key.TodayRequestsCount / key.DailyQuotaLimit * 100)%; height: 100%; background: @(isExhausted ? "#ef4444" : "#10b981");"></div>
                                     </div>
-                                    <span class="small fw-medium">@key.TodayRequestsCount / @key.DailyQuotaLimit</span>
+                                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; white-space: nowrap;">@key.TodayRequestsCount / @key.DailyQuotaLimit</span>
                                 </div>
                             </td>
-                            <td>
-                                <span class="badge bg-light text-dark border">@key.TotalRequestsCount.ToString("N0") reqs</span>
+                            <td style="padding: 14px 20px;">
+                                <span style="font-size: 13px; color: #475569; font-weight: 600;">@key.TotalRequestsCount.ToString("N0") reqs</span>
                             </td>
-                            <td>
+                            <td style="padding: 14px 20px;">
                                 @if (!key.IsActive)
                                 {
-                                    <span class="badge bg-secondary-subtle text-secondary border">Disabled</span>
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">
+                                        Disabled
+                                    </span>
                                 }
                                 else if (isCooling)
                                 {
-                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
-                                        <i class="fa-solid fa-clock me-1"></i> Cooldown (@Math.Ceiling((key.RateLimitCooldownUntilUtc!.Value - DateTime.UtcNow).TotalSeconds)s)
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">schedule</span> Cooldown (@Math.Ceiling((key.RateLimitCooldownUntilUtc!.Value - DateTime.UtcNow).TotalSeconds)s)
                                     </span>
                                 }
                                 else if (isExhausted)
                                 {
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Quota Full</span>
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">
+                                        Quota Full
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                        <i class="fa-solid fa-circle-check me-1"></i> Ready
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                        <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Ready
                                     </span>
                                 }
                             </td>
-                            <td>
-                                <span class="text-muted small">
-                                    @(key.LastUsedAtUtc.HasValue ? key.LastUsedAtUtc.Value.ToString("MMM dd, HH:mm UTC") : "Never")
-                                </span>
+                            <td style="padding: 14px 20px; font-size: 12.5px; color: #64748b;">
+                                @(key.LastUsedAtUtc.HasValue ? key.LastUsedAtUtc.Value.ToString("dd MMM, HH:mm UTC") : "Never")
                             </td>
-                            <td class="text-end pe-3">
-                                <div class="btn-group btn-group-sm">
-                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@key.Id" class="d-inline">
-                                        <button type="submit" class="btn btn-outline-secondary" title="@(key.IsActive ? "Pause Key" : "Activate Key")">
-                                            <i class="fa-solid @(key.IsActive ? "fa-pause text-warning" : "fa-play text-success")"></i>
+                            <td style="padding: 14px 20px; text-align: right;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@key.Id" style="display: inline;">
+                                        <button type="submit" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; cursor: pointer; display: inline-flex; align-items: center;" title="@(key.IsActive ? "Pause Key" : "Activate Key")">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: @(key.IsActive ? "#d97706" : "#059669");">@(key.IsActive ? "pause" : "play_arrow")</span>
                                         </button>
                                     </form>
-                                    <form method="post" asp-page-handler="DeleteKey" asp-route-id="@key.Id" class="d-inline" onsubmit="return confirm('Are you sure you want to delete @key.KeyAlias from the pool?');">
-                                        <button type="submit" class="btn btn-outline-danger" title="Delete Key">
-                                            <i class="fa-solid fa-trash-can"></i>
+                                    <form method="post" asp-page-handler="DeleteKey" asp-route-id="@key.Id" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete @key.KeyAlias from the pool?');">
+                                        <button type="submit" style="padding: 6px 10px; border: 1px solid #fecaca; border-radius: 6px; background: #fff5f5; cursor: pointer; display: inline-flex; align-items: center;" title="Delete Key">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: #dc2626;">delete</span>
                                         </button>
                                     </form>
                                 </div>
@@ -249,176 +262,257 @@
     </div>
 </div>
 
-<!-- Modal: Add New API Key -->
-<div class="modal fade" id="addKeyModal" tabindex="-1" aria-labelledby="addKeyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <form method="post" asp-page-handler="AddKey" id="addKeyForm">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold" id="addKeyModalLabel"><i class="fa-brands fa-google text-primary me-2"></i>Register Google Gemini Free API Key</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" asp-for="Input.Provider" value="Gemini" id="inputProvider" />
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Key Alias / Label</label>
-                        <input asp-for="Input.KeyAlias" class="form-control" placeholder="e.g. Gemini Free Key #1" />
-                        <div class="form-text">A friendly name to identify this key in metrics.</div>
+<!-- ============================================================== -->
+<!-- MODAL 1: REGISTER NEW API KEY MODAL (OVERLAY)                  -->
+<!-- ============================================================== -->
+<div id="addKeyModal" onclick="if (event.target === this) closeAddKeyModal();" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <form method="post" asp-page-handler="AddKey" id="addKeyForm">
+            @Html.AntiForgeryToken()
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(225, 29, 72, 0.12); color: var(--admin-primary, #e11d48); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">vpn_key</span>
                     </div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Register Google Gemini Free Key</h3>
+                </div>
+                <button type="button" onclick="closeAddKeyModal();" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#64748b;'">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+                </button>
+            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">API Key Secret</label>
-                        <div class="input-group">
-                            <input asp-for="Input.ApiKey" id="inputApiKey" type="password" class="form-control font-monospace" placeholder="e.g. AIzaSyD-xxxxxxxxxxxxxx" required />
-                            <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility()"><i class="fa-solid fa-eye" id="eyeIcon"></i></button>
+            <div style="padding: 24px;">
+                <input type="hidden" asp-for="Input.Provider" value="Gemini" id="inputProvider" />
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        Key Alias / Label <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input asp-for="Input.KeyAlias" placeholder="e.g. Gemini Free Pool #1" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Friendly name to identify this key in metrics.</div>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        API Key Secret <span style="color: #ef4444;">*</span>
+                    </label>
+                    <div style="display: flex; gap: 6px;">
+                        <input asp-for="Input.ApiKey" id="inputApiKey" type="password" placeholder="e.g. AIzaSyD-xxxxxxxxxxxxxx" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: monospace; font-size: 13px; box-sizing: border-box;" required />
+                        <button type="button" onclick="togglePasswordVisibility()" style="padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #475569; cursor: pointer; display: flex; align-items: center;">
+                            <span class="material-symbols-outlined" id="eyeIcon" style="font-size: 18px;">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" asp-for="Input.DailyQuotaLimit" value="1500" />
+
+                <!-- Pre-flight Test Area -->
+                <div style="padding: 14px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <div>
+                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">Pre-flight Verification</div>
+                            <div style="font-size: 12px; color: #64748b;" id="testResultText">Test authentication before adding to the pool.</div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Daily Request Quota</label>
-                        <input asp-for="Input.DailyQuotaLimit" class="form-control" type="number" value="1500" />
-                        <div class="form-text">Default is 1,500 requests/day for Gemini Free Tier.</div>
-                    </div>
-
-                    <!-- Connection Test Area -->
-                    <div class="p-3 bg-light rounded-3 border mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-semibold small">Pre-flight Verification</div>
-                                <div class="text-muted small" id="testResultText">Test authentication before saving to pool.</div>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="btnTestConn" onclick="testKeyConnection()">
-                                <i class="fa-solid fa-plug me-1"></i> Test Key
-                            </button>
-                        </div>
+                        <button type="button" id="btnTestConn" onclick="testKeyConnection()" style="padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">cable</span>
+                            <span>Test Key</span>
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i> Register to Pool</button>
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; padding: 16px 24px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeAddKeyModal();" style="padding: 9px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="padding: 9px 20px; border: none; border-radius: 8px; background: var(--admin-primary, #e11d48); color: #ffffff; font-weight: 800; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(225, 29, 72, 0.25);">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                    <span>Register to Pool</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 2: TELEMETRY REQUEST LOGS MODAL (OVERLAY)                -->
+<!-- ============================================================== -->
+<div id="logsModal" onclick="if (event.target === this) closeLogsModal();" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 900px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">receipt_long</span>
                 </div>
-            </form>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Recent AI Request Telemetry (Last 50)</h3>
+            </div>
+            <button type="button" onclick="closeLogsModal();" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#64748b;'">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <div style="padding: 0; max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; font-family: monospace; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 11.5px; text-transform: uppercase;">
+                        <th style="padding: 10px 16px; font-weight: 700;">Timestamp (UTC)</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Key Alias</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Action / Endpoint</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Latency</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Status</th>
+                        <th style="padding: 10px 16px; font-weight: 700;">Tokens</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.RecentLogs.Any())
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px 16px; color: #64748b;">
+                                No telemetry logs recorded yet.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var log in Model.RecentLogs)
+                    {
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px 16px; color: #64748b;">@log.RequestTimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td style="padding: 10px 16px; font-weight: 700; color: #0f172a;">@(log.MasterAiApiKey?.KeyAlias ?? "Local/Deleted")</td>
+                            <td style="padding: 10px 16px;"><span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">@log.ActionName</span></td>
+                            <td style="padding: 10px 16px; color: #0f172a; font-weight: 600;">@log.ResponseTimeMs ms</td>
+                            <td style="padding: 10px 16px;">
+                                @if (log.StatusCode == 200)
+                                {
+                                    <span style="color: #047857; font-weight: 800;">200 OK</span>
+                                }
+                                else if (log.StatusCode == 429)
+                                {
+                                    <span style="color: #b45309; font-weight: 800;">429 Rate Limited</span>
+                                }
+                                else
+                                {
+                                    <span style="color: #b91c1c; font-weight: 800;">@log.StatusCode Error</span>
+                                }
+                            </td>
+                            <td style="padding: 10px 16px; color: #64748b;">@(log.PromptTokens.HasValue ? $"{log.PromptTokens}+{log.CompletionTokens}" : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding: 14px 24px; background: #f8fafc; display: flex; justify-content: flex-end;">
+            <button type="button" onclick="closeLogsModal();" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer;">
+                Close
+            </button>
         </div>
     </div>
 </div>
 
-<!-- Modal: Telemetry Request Logs -->
-<div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="logsModalLabel"><i class="fa-solid fa-list-check text-primary me-2"></i>Recent AI Request Telemetry (Last 50)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 font-monospace small">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-3">Timestamp (UTC)</th>
-                                <th>Key Alias</th>
-                                <th>Action / Endpoint</th>
-                                <th>Latency</th>
-                                <th>Status</th>
-                                <th>Tokens</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.RecentLogs.Any())
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">No telemetry logs recorded yet.</td>
-                                </tr>
-                            }
-                            @foreach (var log in Model.RecentLogs)
-                            {
-                                <tr>
-                                    <td class="ps-3 text-muted">@log.RequestTimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                    <td class="fw-semibold">@(log.MasterAiApiKey?.KeyAlias ?? "Local/Deleted")</td>
-                                    <td><span class="badge bg-light text-dark border">@log.ActionName</span></td>
-                                    <td>@log.ResponseTimeMs ms</td>
-                                    <td>
-                                        @if (log.StatusCode == 200)
-                                        {
-                                            <span class="badge bg-success">200 OK</span>
-                                        }
-                                        else if (log.StatusCode == 429)
-                                        {
-                                            <span class="badge bg-warning text-dark">429 Rate Limited</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">@log.StatusCode Error</span>
-                                        }
-                                    </td>
-                                    <td class="text-muted">@(log.PromptTokens.HasValue ? $"{log.PromptTokens}+{log.CompletionTokens}" : "-")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+    @@keyframes modalPop {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .action-btn-hover:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+    }
+    .action-btn-primary:hover {
+        opacity: 0.92;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35) !important;
+    }
+</style>
 
-@section Scripts {
-    <script>
-        function togglePasswordVisibility() {
-            const input = document.getElementById('inputApiKey');
-            const icon = document.getElementById('eyeIcon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+<script>
+    function openAddKeyModal() {
+        var el = document.getElementById('addKeyModal');
+        if (el) el.style.display = 'flex';
+    }
+
+    function closeAddKeyModal() {
+        var el = document.getElementById('addKeyModal');
+        if (el) el.style.display = 'none';
+    }
+
+    function openLogsModal() {
+        var el = document.getElementById('logsModal');
+        if (el) el.style.display = 'flex';
+    }
+
+    function closeLogsModal() {
+        var el = document.getElementById('logsModal');
+        if (el) el.style.display = 'none';
+    }
+
+    // Escape key listener to close modals
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            closeAddKeyModal();
+            closeLogsModal();
+        }
+    });
+
+    function togglePasswordVisibility() {
+        const input = document.getElementById('inputApiKey');
+        const icon = document.getElementById('eyeIcon');
+        if (!input || !icon) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    }
+
+    async function testKeyConnection() {
+        const providerEl = document.getElementById('inputProvider');
+        const apiKeyEl = document.getElementById('inputApiKey');
+        const resultText = document.getElementById('testResultText');
+        const btn = document.getElementById('btnTestConn');
+
+        const provider = providerEl ? providerEl.value : 'Gemini';
+        const apiKey = apiKeyEl ? apiKeyEl.value : '';
+
+        if (!apiKey || apiKey.trim() === '') {
+            if (resultText) resultText.innerHTML = '<span style="color: #ef4444; font-weight: 700;">Please enter an API key first.</span>';
+            return;
         }
 
-        async function testKeyConnection() {
-            const provider = document.getElementById('inputProvider').value;
-            const apiKey = document.getElementById('inputApiKey').value;
-            const resultText = document.getElementById('testResultText');
-            const btn = document.getElementById('btnTestConn');
-
-            if (!apiKey || apiKey.trim() === '') {
-                resultText.innerHTML = '<span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Please enter an API key first.</span>';
-                return;
-            }
-
+        if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Testing...';
-            resultText.innerHTML = '<span class="text-muted">Verifying credentials with provider...</span>';
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Testing...';
+        }
+        if (resultText) resultText.innerHTML = '<span style="color: #64748b;">Verifying credentials with provider...</span>';
 
-            try {
-                const response = await fetch('?handler=TestConnection', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                    },
-                    body: JSON.stringify({ provider: provider, apiKey: apiKey })
-                });
+        try {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
 
-                const data = await response.json();
+            const response = await fetch('?handler=TestConnection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ provider: provider, apiKey: apiKey })
+            });
+
+            const data = await response.json();
+            if (resultText) {
                 if (data.success) {
-                    resultText.innerHTML = `<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>${data.message}</span>`;
+                    resultText.innerHTML = `<span style="color: #059669; font-weight: 700;">${data.message}</span>`;
                 } else {
-                    resultText.innerHTML = `<span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>${data.message}</span>`;
+                    resultText.innerHTML = `<span style="color: #ef4444; font-weight: 700;">${data.message}</span>`;
                 }
-            } catch (err) {
-                resultText.innerHTML = `<span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Failed to connect: ${err.message}</span>`;
-            } finally {
+            }
+        } catch (err) {
+            if (resultText) resultText.innerHTML = `<span style="color: #ef4444; font-weight: 700;">Failed to connect: ${err.message}</span>`;
+        } finally {
+            if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-plug me-1"></i> Test Key';
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">cable</span> <span>Test Key</span>';
             }
         }
-    </script>
-}
+    }
+</script>
