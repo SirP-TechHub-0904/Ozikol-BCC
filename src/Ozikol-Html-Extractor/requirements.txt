@@ -7,3 +7,4 @@ cloudinary==1.40.0
 pydantic==2.7.1
 pydantic-settings==2.2.1
 python-dotenv==1.0.1
+playwright>=1.40.0
