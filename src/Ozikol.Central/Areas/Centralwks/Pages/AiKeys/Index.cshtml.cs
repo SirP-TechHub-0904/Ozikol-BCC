@@ -87,19 +87,29 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
             var cleanKey = Input.ApiKey.Trim();
 
             // Check duplicate key
-            var exists = await _dbContext.MasterAiApiKeys.AnyAsync(k => k.ApiKey == cleanKey);
-            if (exists)
+            var existingKey = await _dbContext.MasterAiApiKeys.FirstOrDefaultAsync(k => k.ApiKey == cleanKey);
+            if (existingKey != null)
             {
-                StatusMessage = "This API key has already been added to the pool.";
-                StatusMessageType = "warning";
+                StatusMessage = $"Duplicate Key Blocked: This API key is already active in the pool as '{existingKey.KeyAlias}'.";
+                StatusMessageType = "danger";
                 await LoadDataAsync();
                 return Page();
+            }
+
+            var cleanAlias = string.IsNullOrWhiteSpace(Input.KeyAlias) 
+                ? $"{Input.Provider} Key #{Summary.TotalKeys + 1}" 
+                : Input.KeyAlias.Trim();
+
+            var aliasExists = await _dbContext.MasterAiApiKeys.AnyAsync(k => k.KeyAlias == cleanAlias);
+            if (aliasExists)
+            {
+                cleanAlias = $"{cleanAlias} ({Guid.NewGuid().ToString().Substring(0, 4)})";
             }
 
             var newKey = new MasterAiApiKey
             {
                 Provider = Input.Provider,
-                KeyAlias = string.IsNullOrWhiteSpace(Input.KeyAlias) ? $"{Input.Provider} Key #{Summary.TotalKeys + 1}" : Input.KeyAlias.Trim(),
+                KeyAlias = cleanAlias,
                 ApiKey = cleanKey,
                 DailyQuotaLimit = Input.DailyQuotaLimit > 0 ? Input.DailyQuotaLimit : 1500,
                 IsActive = true,
@@ -151,7 +161,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
         }
 
         /// <summary>
-        /// AJAX handler to test key connection before saving.
+        /// AJAX handler to test key connection before saving with duplicate detection.
         /// </summary>
         public async Task<IActionResult> OnPostTestConnectionAsync([FromBody] TestConnectionRequest req)
         {
@@ -160,7 +170,23 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.AiKeys
                 return new JsonResult(new { success = false, message = "API Key cannot be empty." });
             }
 
-            var result = await _keyPoolService.TestKeyConnectionAsync(req.Provider ?? "Gemini", req.ApiKey);
+            var cleanKey = req.ApiKey.Trim();
+
+            // Immediate proactive duplicate key check
+            var existingKey = await _dbContext.MasterAiApiKeys
+                .FirstOrDefaultAsync(k => k.ApiKey == cleanKey);
+
+            if (existingKey != null)
+            {
+                return new JsonResult(new
+                {
+                    success = false,
+                    isDuplicate = true,
+                    message = $"Duplicate Key: This API key is already registered in the pool as '{existingKey.KeyAlias}' ({existingKey.Provider})."
+                });
+            }
+
+            var result = await _keyPoolService.TestKeyConnectionAsync(req.Provider ?? "Gemini", cleanKey);
             return new JsonResult(new
             {
                 success = result.Success,
