@@ -250,6 +250,7 @@ builder.Services.AddSingleton<Ozikol.Central.Services.Validation.IEmailValidatio
 builder.Services.AddScoped<IAiKeyPoolManagerService, AiKeyPoolManagerService>();
 builder.Services.AddScoped<ISectionAiStudioService, SectionAiStudioService>();
 builder.Services.AddHttpClient<ISectionsBuilderClientService, SectionsBuilderClientService>();
+builder.Services.AddHttpClient<Ozikol.Central.Services.Extraction.INativeSectionExtractorService, Ozikol.Central.Services.Extraction.NativeSectionExtractorService>();
 
 // 7a. Register Central Notification & OneSignal Push Engine
 builder.Services.AddHttpClient<Ozikol.Central.Services.Notifications.IOneSignalPushService, Ozikol.Central.Services.Notifications.OneSignalPushService>();

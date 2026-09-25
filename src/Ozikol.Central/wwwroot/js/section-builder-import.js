@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (extText && extText !== 'null') {
             try {
                 rawExtractionData = JSON.parse(extText);
+                if (rawExtractionData && rawExtractionData.sections && rawExtractionData.sections.length > 0) {
+                    jumpToStep(3);
+                }
             } catch (e) {
                 console.error('[SectionBuilder] Failed to parse extraction result JSON:', e);
             }
@@ -76,9 +79,11 @@ function jumpToStep(step) {
         if (p2) p2.style.display = 'block';
         if (p3) p3.style.display = 'none';
     } else if (step >= 3) {
-        if (!rawExtractionData || !rawExtractionData.sections || rawExtractionData.sections.length === 0) {
-            alert('Please slice modular sections in Step 2 first.');
-            jumpToStep(2);
+        var hasSectionsInDom = document.querySelectorAll('.section-card-col').length > 0;
+        var hasExtractionData = rawExtractionData && rawExtractionData.sections && rawExtractionData.sections.length > 0;
+        if (!hasSectionsInDom && !hasExtractionData) {
+            alert('Please extract or slice modular sections first.');
+            jumpToStep(1);
             return;
         }
         if (p1) p1.style.display = 'none';

@@ -80,6 +80,7 @@ async def discover_menu_pages(body: DiscoverPagesRequest) -> DiscoverPagesRespon
         )
 
     try:
+        logger.info("--> [DiscoverPages] Starting menu discovery for: %s", url)
         pages_raw = await discover_menu_pages_only(url)
         items = [
             DiscoveredPageSummaryItem(
@@ -91,6 +92,7 @@ async def discover_menu_pages(body: DiscoverPagesRequest) -> DiscoverPagesRespon
             )
             for p in pages_raw
         ]
+        logger.info("<-- [DiscoverPages] Discovered %d pages successfully for: %s", len(items), url)
         return DiscoverPagesResponse(
             source_url=url,
             total_pages=len(items),
@@ -135,8 +137,10 @@ async def extract_sections_from_url(body: SectionsBuilderRequest) -> SectionsBui
         )
 
     try:
+        logger.info("--> [Extract] Starting section extraction for: %s (Suite: %s, MaxSubpages: %s)", url, body.suite_name, body.max_subpages)
         response = await run_sections_builder_pipeline(body)
         SECTIONS_BUILDER_STORE[response.job_id] = response
+        logger.info("<-- [Extract] Extracted %d sections across %d pages for: %s", response.total_sections, response.total_pages, url)
         return response
     except Exception as exc:
         logger.exception("SectionsBuilder extraction failed for '%s'", url)
