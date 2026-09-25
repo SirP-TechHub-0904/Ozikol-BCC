@@ -42,29 +42,29 @@
     .details-hero-card {
         background: var(--admin-bg-surface, #ffffff);
         border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        border-radius: 16px;
-        padding: 28px;
+        border-radius: 14px;
+        padding: 24px;
         position: relative;
         overflow: hidden;
-        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
-        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+        margin-bottom: 20px;
     }
     .details-hero-glow {
         position: absolute;
-        width: 320px;
-        height: 320px;
+        width: 280px;
+        height: 280px;
         border-radius: 50%;
-        background: radial-gradient(circle, @(categoryBadgeColor)10 0%, transparent 70%);
-        top: -120px;
-        right: -80px;
+        background: radial-gradient(circle, @(categoryBadgeColor)12 0%, transparent 70%);
+        top: -100px;
+        right: -60px;
         pointer-events: none;
     }
     .details-tab-nav {
         display: flex;
-        gap: 6px;
+        gap: 4px;
         border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        padding: 0 20px;
-        background: var(--admin-bg-surface-elevated, #f1f5f9);
+        padding: 0 16px;
+        background: var(--admin-bg-surface-elevated, #f8fafc);
         overflow-x: auto;
     }
     .details-tab-btn {
@@ -72,13 +72,13 @@
         border: none;
         border-bottom: 2px solid transparent;
         color: var(--admin-text-muted, #64748b);
-        padding: 14px 18px;
+        padding: 13px 16px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         white-space: nowrap;
         transition: all 0.15s ease;
     }
@@ -88,14 +88,80 @@
     .details-tab-btn.active {
         color: var(--admin-primary, #e5173f);
         border-bottom-color: var(--admin-primary, #e5173f);
-        background: var(--admin-primary-light, rgba(229, 23, 63, 0.08));
+        background: var(--admin-primary-light, rgba(229, 23, 63, 0.06));
     }
     .details-tab-pane {
         display: none;
-        padding: 24px;
     }
     .details-tab-pane.active {
         display: block;
+    }
+    .studio-sub-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 18px;
+        background: var(--admin-bg-surface, #ffffff);
+        border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .toolbar-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--admin-bg-surface-elevated, #f1f5f9);
+        padding: 3px;
+        border-radius: 8px;
+        border: 1px solid var(--admin-border, rgba(0,0,0,0.06));
+    }
+    .viewport-btn-pill {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--admin-text-muted, #64748b);
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .viewport-btn-pill:hover {
+        color: var(--admin-text, #0f172a);
+    }
+    .viewport-btn-pill.active {
+        background: var(--admin-bg-surface, #ffffff);
+        color: var(--admin-primary, #e5173f);
+        border-color: rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        font-weight: 600;
+    }
+    .canvas-theme-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--admin-text-muted, #64748b);
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .canvas-theme-btn:hover {
+        color: var(--admin-text, #0f172a);
+    }
+    .canvas-theme-btn.active {
+        background: var(--admin-bg-surface, #ffffff);
+        color: #2563eb;
+        border-color: rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        font-weight: 600;
     }
     .code-viewer-header {
         display: flex;
@@ -111,7 +177,7 @@
     .code-pre-box {
         margin: 0;
         padding: 18px;
-        background: #020617;
+        background: #090e1a;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-bottom-left-radius: 10px;
         border-bottom-right-radius: 10px;
@@ -138,85 +204,77 @@
         background: var(--admin-bg-hover, #e2e8f0);
         color: var(--admin-text, #0f172a);
     }
-    .viewport-btn-pill {
-        background: var(--admin-bg-surface, #ffffff);
-        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
-        color: var(--admin-text-muted, #64748b);
-        padding: 6px 14px;
-        border-radius: 8px;
-        font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-    .viewport-btn-pill.active {
-        background: var(--admin-primary-light, rgba(229, 23, 63, 0.1));
-        color: var(--admin-primary, #e5173f);
-        border-color: var(--admin-primary, #e5173f);
-    }
 </style>
 
-<div class="admin-page-header">
-    <div class="admin-title-group">
-        <h1 class="admin-title">@Model.Template.Name</h1>
-        <p class="admin-subtitle">Programmatic Variant Code: <code style="color: #38bdf8; font-size: 13px;">@Model.Template.VariantCode</code></p>
+@* ── Top Breadcrumb Navigation & Global Actions ── *@
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+        <a href="/centralwks/templates" style="color: var(--admin-text-muted, #64748b); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span> Back to Templates
+        </a>
+        <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
+        <span style="color: var(--admin-text-muted, #64748b);">Marketplace</span>
+        <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
+        <span style="color: var(--admin-text, #0f172a); font-weight: 600;">@Model.Template.VariantCode</span>
     </div>
-    <div class="admin-actions">
-        <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
             <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
         </a>
-        <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
-            &larr; Back to Templates
-        </a>
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Template.Id" style="display: inline;" onsubmit="return confirm('Permanently delete this template?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px; color: #dc2626;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">delete</span> Delete
+            </button>
+        </form>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
-    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px;">
+    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669; border-radius: 8px; padding: 12px 18px; margin-bottom: 20px;">
         @Model.StatusMessage
     </div>
 }
 
-@* ── Template Identity Hero Card (Bright Theme) ── *@
+@* ── Template Identity Header Card ── *@
 <div class="details-hero-card">
     <div class="details-hero-glow"></div>
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2;">
-        <div style="display: flex; gap: 20px; align-items: center;">
-            <div style="width: 64px; height: 64px; border-radius: 14px; background: @(categoryBadgeColor)12; border: 1px solid @(categoryBadgeColor)28; display: flex; align-items: center; justify-content: center; color: @categoryBadgeColor; box-shadow: 0 4px 12px @(categoryBadgeColor)18;">
-                <span class="material-symbols-outlined" style="font-size: 32px;">@categoryIcon</span>
+        <div style="display: flex; gap: 18px; align-items: center;">
+            <div style="width: 56px; height: 56px; border-radius: 12px; background: @(categoryBadgeColor)12; border: 1px solid @(categoryBadgeColor)28; display: flex; align-items: center; justify-content: center; color: @categoryBadgeColor; box-shadow: 0 2px 8px @(categoryBadgeColor)14;">
+                <span class="material-symbols-outlined" style="font-size: 28px;">@categoryIcon</span>
             </div>
             <div>
-                <h2 style="font-size: 24px; font-weight: 800; color: var(--admin-text, #0f172a); margin: 0 0 6px 0; letter-spacing: -0.01em;">
+                <h1 style="font-size: 22px; font-weight: 800; color: var(--admin-text, #0f172a); margin: 0 0 6px 0; letter-spacing: -0.01em;">
                     @Model.Template.Name
-                </h2>
+                </h1>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: @(categoryBadgeColor)14; color: @categoryBadgeColor; border: 1px solid @(categoryBadgeColor)30;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: @(categoryBadgeColor)14; color: @categoryBadgeColor; border: 1px solid @(categoryBadgeColor)30;">
                         <span class="material-symbols-outlined" style="font-size: 13px;">@categoryIcon</span>
                         @(Model.Template.Category?.Name ?? Model.Template.CategoryKey)
                     </span>
-                    <span style="font-size: 12px; color: var(--admin-text-muted, #475569); background: var(--admin-bg-surface-elevated, #f1f5f9); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--admin-border, rgba(0,0,0,0.08)); font-family: monospace;">
+                    <span style="font-size: 12px; color: var(--admin-text-muted, #475569); background: var(--admin-bg-surface-elevated, #f1f5f9); padding: 3px 10px; border-radius: 6px; border: 1px solid var(--admin-border, rgba(0,0,0,0.08)); font-family: monospace;">
                         #@Model.Template.Tag
                     </span>
-                    <span style="font-size: 12px; font-family: monospace; color: var(--admin-text-muted, #475569); background: var(--admin-bg-surface-elevated, #f1f5f9); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--admin-border, rgba(0,0,0,0.08));">
+                    <span style="font-size: 12px; font-family: monospace; color: var(--admin-text-muted, #475569); background: var(--admin-bg-surface-elevated, #f1f5f9); padding: 3px 10px; border-radius: 6px; border: 1px solid var(--admin-border, rgba(0,0,0,0.08));">
                         v@(string.IsNullOrWhiteSpace(Model.Template.Version) ? "1.0.0" : Model.Template.Version)
                     </span>
-                    <span style="font-size: 12px; font-family: monospace; color: #2563eb; background: #eff6ff; padding: 4px 10px; border-radius: 6px; border: 1px solid #dbeafe; font-weight: 600;">
+                    <span style="font-size: 12px; font-family: monospace; color: #2563eb; background: #eff6ff; padding: 3px 10px; border-radius: 6px; border: 1px solid #dbeafe; font-weight: 600;">
                         Sort Order: #@Model.Template.SortOrder
                     </span>
                 </div>
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <span class="badge @(Model.Template.IsActive ? "badge-success" : "badge-secondary")" style="font-size: 12px; padding: 7px 16px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="badge @(Model.Template.IsActive ? "badge-success" : "badge-secondary")" style="font-size: 11.5px; padding: 6px 14px;">
                 @(Model.Template.IsActive ? "Active & Published" : "Hidden Blueprint")
             </span>
             @if (!string.IsNullOrWhiteSpace(Model.Template.Badge))
             {
-                <span class="badge badge-warning" style="font-size: 12px; padding: 7px 14px;">
+                <span class="badge badge-warning" style="font-size: 11.5px; padding: 6px 12px;">
                     @Model.Template.Badge
                 </span>
             }
@@ -225,13 +283,13 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.Template.Description))
     {
-        <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); font-size: 14px; color: var(--admin-text-muted, #475569); line-height: 1.6; max-width: 900px;">
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); font-size: 13.5px; color: var(--admin-text-muted, #475569); line-height: 1.5; max-width: 900px;">
             @Model.Template.Description
         </div>
     }
 </div>
 
-@* ── Deep Inspection Workspace with Tabs ── *@
+@* ── Deep Inspection Studio Workspace ── *@
 <div class="admin-card" style="margin-bottom: 24px; overflow: hidden;">
     <div class="details-tab-nav">
         <button type="button" class="details-tab-btn active" onclick="switchDetailsTab('live-preview', this)">
@@ -261,9 +319,9 @@
     </div>
 
     @* ── Tab 1: Live Preview ── *@
-    <div id="tab-live-preview" class="details-tab-pane active" style="background: #f8fafc; padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; gap: 6px;">
+    <div id="tab-live-preview" class="details-tab-pane active" style="background: #f8fafc;">
+        <div class="studio-sub-toolbar">
+            <div class="toolbar-group">
                 <button type="button" class="viewport-btn-pill active" onclick="setDetailsViewport('desktop', this)">
                     <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop (100%)
                 </button>
@@ -275,7 +333,16 @@
                 </button>
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div class="toolbar-group">
+                <button type="button" class="canvas-theme-btn active" onclick="setCanvasTheme('light', this)">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">light_mode</span> Light Canvas
+                </button>
+                <button type="button" class="canvas-theme-btn" onclick="setCanvasTheme('dark', this)">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">dark_mode</span> Dark Canvas
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="reloadPreviewIframe()" title="Refresh Preview Sandbox">
                     <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Refresh
                 </button>
@@ -285,15 +352,17 @@
             </div>
         </div>
 
-        <div id="detailsViewportBox" style="max-width: 100%; margin: 0 auto; transition: max-width 0.25s ease;">
-            <iframe id="detailsPreviewFrame" 
-                    src="/centralwks/templates/details/@Model.Template.Id?handler=LivePreviewFrame" 
-                    style="width: 100%; height: 560px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.06);"></iframe>
+        <div style="padding: 24px; min-height: 580px; display: flex; align-items: flex-start; justify-content: center;">
+            <div id="detailsViewportBox" style="width: 100%; max-width: 100%; margin: 0 auto; transition: max-width 0.25s ease;">
+                <iframe id="detailsPreviewFrame" 
+                        src="/centralwks/templates/details/@Model.Template.Id?handler=LivePreviewFrame" 
+                        style="width: 100%; height: 560px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.06);"></iframe>
+            </div>
         </div>
     </div>
 
     @* ── Tab 2: HTML Code ── *@
-    <div id="tab-html-code" class="details-tab-pane">
+    <div id="tab-html-code" class="details-tab-pane" style="padding: 20px;">
         <div class="code-viewer-header">
             <span style="font-size: 12px; font-weight: 700; color: #0284c7; text-transform: uppercase;">HTML (Mustache Syntax)</span>
             <button type="button" class="copy-btn" onclick="copyTextToClipboard('htmlContentCode')">
@@ -304,7 +373,7 @@
     </div>
 
     @* ── Tab 3: CSS Styles ── *@
-    <div id="tab-css-code" class="details-tab-pane">
+    <div id="tab-css-code" class="details-tab-pane" style="padding: 20px;">
         <div class="code-viewer-header">
             <span style="font-size: 12px; font-weight: 700; color: #7c3aed; text-transform: uppercase;">Scoped CSS Rules</span>
             <button type="button" class="copy-btn" onclick="copyTextToClipboard('cssContentCode')">
@@ -317,7 +386,7 @@
     @* ── Tab 4: JS Script ── *@
     @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
     {
-        <div id="tab-js-code" class="details-tab-pane">
+        <div id="tab-js-code" class="details-tab-pane" style="padding: 20px;">
             <div class="code-viewer-header">
                 <span style="font-size: 12px; font-weight: 700; color: #d97706; text-transform: uppercase;">Sandboxed JavaScript</span>
                 <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsContentCode')">
@@ -331,7 +400,7 @@
     @* ── Tab 5: Mock JSON ── *@
     @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
     {
-        <div id="tab-json-mock" class="details-tab-pane">
+        <div id="tab-json-mock" class="details-tab-pane" style="padding: 20px;">
             <div class="code-viewer-header">
                 <span style="font-size: 12px; font-weight: 700; color: #059669; text-transform: uppercase;">Default Section List Items (JSON)</span>
                 <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsonContentCode')">
@@ -411,6 +480,17 @@
         if (device === 'mobile') container.style.maxWidth = '375px';
         else if (device === 'tablet') container.style.maxWidth = '768px';
         else container.style.maxWidth = '100%';
+    }
+
+    function setCanvasTheme(theme, btn) {
+        document.querySelectorAll('.canvas-theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const frame = document.getElementById('detailsPreviewFrame');
+        if (theme === 'dark') {
+            frame.style.background = '#0b1120';
+        } else {
+            frame.style.background = '#ffffff';
+        }
     }
 
     function reloadPreviewIframe() {
