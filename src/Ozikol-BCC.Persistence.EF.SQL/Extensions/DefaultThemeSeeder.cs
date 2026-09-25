@@ -56,28 +56,10 @@ namespace Ozikol_BCC.Persistence.EF.SQL.Extensions
                     dbContext.WebPages.RemoveRange(pages);
                 }
 
-                var sliders = await dbContext.Sliders.ToListAsync(cancellationToken);
-                if (sliders.Count > 0)
-                {
-                    dbContext.Sliders.RemoveRange(sliders);
-                }
-
                 var categories = await dbContext.PageCategories.ToListAsync(cancellationToken);
                 if (categories.Count > 0)
                 {
                     dbContext.PageCategories.RemoveRange(categories);
-                }
-
-                var faqs = await dbContext.FAQs.ToListAsync(cancellationToken);
-                if (faqs.Count > 0)
-                {
-                    dbContext.FAQs.RemoveRange(faqs);
-                }
-
-                var faqCategories = await dbContext.FAQCategories.ToListAsync(cancellationToken);
-                if (faqCategories.Count > 0)
-                {
-                    dbContext.FAQCategories.RemoveRange(faqCategories);
                 }
 
                 var blogs = await dbContext.Blogs.ToListAsync(cancellationToken);
