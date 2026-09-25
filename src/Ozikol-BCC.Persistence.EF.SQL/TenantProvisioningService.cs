@@ -448,44 +448,44 @@ END";
                 dbContext.WebPages.AddRange(homePage, aboutPage, servicesPage, requestServicePage, contactPage);
             }
 
-            // 6. Seed Default Hero Slider
-            if (!await dbContext.Sliders.AnyAsync(cancellationToken))
-            {
-                dbContext.Sliders.Add(new Slider
-                {
-                    Id = Guid.NewGuid(),
-                    Title = $"Welcome to {request.OrganizationName}",
-                    Text = "Modern workspace management, member governance, and dynamic digital experience.",
-                    ButtonText = "Get Started",
-                    ButtonLink = "/auth/login",
-                    Show = true,
-                    SortOrder = 1
-                });
-            }
-
-            // 7. Seed Default Page Sections
+            // 6. Seed Starter Page Sections attached to the Home Page
             if (!await dbContext.PageSections.AnyAsync(cancellationToken))
             {
+                var home = await dbContext.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home", cancellationToken);
+                var targetPageId = home?.Id ?? Guid.NewGuid();
+
                 dbContext.PageSections.AddRange(
                     new PageSection
                     {
                         Id = Guid.NewGuid(),
-                        Title = $"About {request.OrganizationName}",
-                        MiniTitle = "Who We Are",
-                        Description = $"{request.OrganizationName} provides modern community and organizational management.",
-                        ShowInHome = true,
-                        HomePageSortOrder = 1,
-                        TemplateKey = "_About"
+                        WebPageId = targetPageId,
+                        Title = $"Welcome to {request.OrganizationName}",
+                        MiniTitle = "Enterprise Solutions",
+                        Description = "Modern workspace management, member governance, and dynamic digital experience.",
+                        ButtonText = "Get Started",
+                        ButtonLink = "/auth/login",
+                        PageSortOrder = 1,
+                        TemplateKey = "Hero_CorporateSplit"
                     },
                     new PageSection
                     {
                         Id = Guid.NewGuid(),
+                        WebPageId = targetPageId,
+                        Title = $"About {request.OrganizationName}",
+                        MiniTitle = "Who We Are",
+                        Description = $"{request.OrganizationName} provides modern community and organizational management.",
+                        PageSortOrder = 2,
+                        TemplateKey = "Body_MissionSplit"
+                    },
+                    new PageSection
+                    {
+                        Id = Guid.NewGuid(),
+                        WebPageId = targetPageId,
                         Title = "Our Services & Features",
                         MiniTitle = "What We Do",
                         Description = "Explore the full suite of services and modules available on our platform.",
-                        ShowInHome = true,
-                        HomePageSortOrder = 2,
-                        TemplateKey = "_Service"
+                        PageSortOrder = 3,
+                        TemplateKey = "Body_FeatureGrid3"
                     }
                 );
             }

@@ -15,6 +15,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 {
     private readonly ITenantProvider _tenantProvider;
     // Site and platform configuration tables shared by the website and BCP runtime.
+    public DbSet<UiSetting> UiSettings { get; set; } = null!;
     public DbSet<ConfigSetting> ConfigSettings { get; set; } = null!;
     public DbSet<ManagementSetting> ManagementSettings { get; set; } = null!;
     public DbSet<BcpSetting> BcpSettings { get; set; } = null!;
@@ -55,10 +56,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<TemplateCategory> TemplateCategories { get; set; } = null!;
     public DbSet<TemplateType> TemplateTypes { get; set; } = null!;
     public DbSet<MailingSystem> MailingSystems { get; set; } = null!;
-    public DbSet<Slider> Sliders { get; set; }
-    public DbSet<WebPage> WebPages { get; set; }
-    public DbSet<FAQ> FAQs { get; set; }
-    public DbSet<FAQCategory> FAQCategories { get; set; }
+    public DbSet<WebPage> WebPages { get; set; } = null!;
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<BlogCategory> BlogCategories { get; set; }
     public DbSet<PageSection> PageSections { get; set; }

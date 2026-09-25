@@ -1,255 +1,256 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using static Ozikol_BCC.Domain.Enum.Enum;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Ozikol_BCC.Domain.Models
 {
     /// <summary>
-    /// Represents a flexible UI block or layout section that belongs to a WebPage or Homepage.
+    /// Represents an individual modular UI slice or layout section belonging to a WebPage.
+    /// Connects to a template blueprint (via TemplateKey or raw HtmlTemplate/CssStyles/JsScript),
+    /// houses child repeatable items (PageSectionList), and can embed dynamic interactive forms (PageForm).
     /// </summary>
+    [Table("PageSections")]
     public class PageSection
     {
         /// <summary>
-        /// Primary Key.
+        /// Unique primary key identifier for the page section.
         /// </summary>
-        public Guid Id { get; set; }
+        [Key]
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
-        /// URL to a video file hosted externally or on Cloudinary.
-        /// </summary>
-        public string? VideoUrl { get; set; }
-
-        /// <summary>
-        /// Cloudinary key for the video.
-        /// </summary>
-        public string? VideoKey { get; set; }
-
-        /// <summary>
-        /// Main background or foreground image for the section.
-        /// </summary>
-        public string? ImageUrl { get; set; }
-
-        /// <summary>
-        /// Cloudinary key for the main image.
-        /// </summary>
-        public string? ImageKey { get; set; }
-
-        /// <summary>
-        /// Secondary image used in complex layouts (e.g., overlapping images).
-        /// </summary>
-        public string? SecondImageUrl { get; set; }
-
-        /// <summary>
-        /// Cloudinary key for the secondary image.
-        /// </summary>
-        public string? SecondImageKey { get; set; }
-
-        /// <summary>
-        /// External YouTube embed link.
-        /// </summary>
-        [Display(Name = "Youtube Url Link")]
-        public string? YoutubeUrlLink { get; set; }
-
-        /// <summary>
-        /// The main heading of the section.
-        /// </summary>
-        [Display(Name = "Title")]
-        public string? Title { get; set; }
-
-        /// <summary>
-        /// The sub-heading or kicker text of the section.
-        /// </summary>
-        [Display(Name = "Mini Title")]
-        public string? MiniTitle { get; set; }
-
-        /// <summary>
-        /// Blockquote or highlighted text within the section.
-        /// </summary>
-        [Display(Name = "Qoute")]
-        public string? Qoute { get; set; }
-
-        /// <summary>
-        /// Short excerpt or plain text content.
-        /// </summary>
-        [Display(Name = "Description")]
-        public string? Description { get; set; }
-
-        /// <summary>
-        /// Full HTML body content for the section.
-        /// </summary>
-        [Display(Name = "Full Description")]
-        public string? FullDescription { get; set; }
-
-        /// <summary>
-        /// Call to action button text.
-        /// </summary>
-        [Display(Name = "Button Text")]
-        public string? ButtonText { get; set; }
-
-        /// <summary>
-        /// Call to action button URL.
-        /// </summary>
-        [Display(Name = "Button Link")]
-        public string? ButtonLink { get; set; }
-
-        /// <summary>
-        /// Custom routing string if this section links out.
-        /// </summary>
-        [Display(Name = "Direct Url")]
-        public string? DirectUrl { get; set; }
-
-        /// <summary>
-        /// Toggle to explicitly render this section on the homepage.
-        /// </summary>
-        [Display(Name = "Show In Home")]
-        public bool ShowInHome { get; set; }
-
-        /// <summary>
-        /// Toggle to hide the CTA button entirely.
-        /// </summary>
-        [Display(Name = "Disable Button")]
-        public bool DisableButton { get; set; }
-
-        /// <summary>
-        /// Toggle to completely hide this section from the UI.
-        /// </summary>
-        public bool Disable { get; set; }
-
-        /// <summary>
-        /// Render rule to pin this section at the bottom of the page (pre-footer).
-        /// </summary>
-        [Display(Name = "Fixed After Footer")]
-        public bool FixedAfterFooter { get; set; }
-
-        /// <summary>
-        /// Order in which this section appears on the homepage.
-        /// </summary>
-        [Display(Name = "Home Page Sort Order")]
-        public int HomePageSortOrder { get; set; }
-
-        /// <summary>
-        /// Enum sorting origin for the homepage layout.
-        /// </summary>
-        [Display(Name = "Home Sort From")]
-        public HomeSortFrom HomeSortFrom { get; set; }
-
-        /// <summary>
-        /// Order in which this section appears on its specific WebPage.
-        /// </summary>
-        [Display(Name = "Page Sort Order")]
-        public int PageSortOrder { get; set; }
-
-        /// <summary>
-        /// Enum for positioning this section inside blog post layouts.
-        /// </summary>
-        [Display(Name = "Blog Section Position")]
-        public BlogSectionPosition BlogSectionPosition { get; set; }
-
-        /// <summary>
-        /// Toggle to render this section globally inside blog posts.
-        /// </summary>
-        [Display(Name = "Show Section In Blog")]
-        public bool ShowSectionInBlog { get; set; }
-
-        /// <summary>
-        /// Foreign key to the parent WebPage.
+        /// Foreign key to the parent WebPage that contains this section.
         /// </summary>
         public Guid? WebPageId { get; set; }
 
         /// <summary>
         /// Navigation property to the parent WebPage.
         /// </summary>
+        [ForeignKey("WebPageId")]
         public WebPage? WebPage { get; set; }
 
         /// <summary>
-        /// Crucial string linking this data to a specific HTML/CSS UI design block in the Theme Engine.
+        /// Key matching an installed marketplace template (e.g. "Hero_CorporateSplit", "Body_FeatureGrid3", "Contact_SplitDetails").
         /// </summary>
+        [MaxLength(100)]
         public string? TemplateKey { get; set; }
 
         /// <summary>
-        /// Reference to original MasterMarketplaceTemplate.Id in MasterCatalogDbContext.
+        /// Reference to original MasterMarketplaceTemplate.Id in MasterCatalogDbContext for update sync.
         /// </summary>
         public Guid? MasterTemplateId { get; set; }
 
         /// <summary>
-        /// Installed template version (e.g., "1.0.0").
+        /// The main heading or title of this section.
+        /// Injected into templates via {{ Title }}.
         /// </summary>
-        public string? InstalledVersion { get; set; }
+        [MaxLength(300)]
+        [Display(Name = "Title")]
+        public string? Title { get; set; }
 
         /// <summary>
-        /// Flag set to true if local HTML/CSS is customized for this section.
+        /// The sub-heading or kicker badge text of this section.
+        /// Injected into templates via {{ MiniTitle }}.
         /// </summary>
-        public bool IsCustomized { get; set; } = false;
+        [MaxLength(200)]
+        [Display(Name = "Mini Title")]
+        public string? MiniTitle { get; set; }
 
         /// <summary>
-        /// Indicates whether this is an out-of-the-box system factory default starter section.
+        /// Blockquote, highlight banner, or callout text within the section.
+        /// Injected into templates via {{ Qoute }}.
         /// </summary>
-        public bool IsDefault { get; set; } = false;
+        [MaxLength(1000)]
+        [Display(Name = "Quote / Highlight")]
+        public string? Qoute { get; set; }
 
         /// <summary>
-        /// Local editable copy of HTML template markup.
+        /// Short excerpt, subtitle, or summary text content.
+        /// Injected into templates via {{ Description }}.
+        /// </summary>
+        [MaxLength(2000)]
+        [Display(Name = "Description")]
+        public string? Description { get; set; }
+
+        /// <summary>
+        /// Extended rich HTML body content for the section.
+        /// Injected into templates via {{ FullDescription }}.
+        /// </summary>
+        [Display(Name = "Full Description")]
+        public string? FullDescription { get; set; }
+
+        /// <summary>
+        /// Primary image URL for the section (hero image, split showcase graphic, background).
+        /// Injected into templates via {{ ImageUrl }}.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? ImageUrl { get; set; }
+
+        /// <summary>
+        /// Cloudinary/storage key for the primary image.
+        /// </summary>
+        [MaxLength(250)]
+        public string? ImageKey { get; set; }
+
+        /// <summary>
+        /// Secondary image URL for multi-image layouts (e.g. overlapping cards, team collage).
+        /// Injected into templates via {{ SecondImageUrl }}.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? SecondImageUrl { get; set; }
+
+        /// <summary>
+        /// Cloudinary/storage key for the secondary image.
+        /// </summary>
+        [MaxLength(250)]
+        public string? SecondImageKey { get; set; }
+
+        /// <summary>
+        /// Video URL for video hero sections or background players.
+        /// Injected into templates via {{ VideoUrl }}.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? VideoUrl { get; set; }
+
+        /// <summary>
+        /// Storage key for the video asset.
+        /// </summary>
+        [MaxLength(250)]
+        public string? VideoKey { get; set; }
+
+        /// <summary>
+        /// External YouTube/Vimeo embed URL.
+        /// Injected into templates via {{ YoutubeUrlLink }}.
+        /// </summary>
+        [MaxLength(1000)]
+        [Display(Name = "YouTube Video URL")]
+        public string? YoutubeUrlLink { get; set; }
+
+        /// <summary>
+        /// Action button display text.
+        /// Injected into templates via {{ ButtonText }}.
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Button Text")]
+        public string? ButtonText { get; set; }
+
+        /// <summary>
+        /// Action button destination URL.
+        /// Injected into templates via {{ ButtonLink }}.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "Button Link")]
+        public string? ButtonLink { get; set; }
+
+        /// <summary>
+        /// Optional direct routing string if this section anchors or links out.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "Direct Url")]
+        public string? DirectUrl { get; set; }
+
+        /// <summary>
+        /// Toggle to hide the CTA button inside the section.
+        /// </summary>
+        [Display(Name = "Disable Button")]
+        public bool DisableButton { get; set; } = false;
+
+        /// <summary>
+        /// Toggle to disable and hide this section completely from visitor view.
+        /// </summary>
+        public bool Disable { get; set; } = false;
+
+        /// <summary>
+        /// Render rule to pin this section at the bottom of the page (pre-footer/fixed bar).
+        /// </summary>
+        [Display(Name = "Fixed After Footer")]
+        public bool FixedAfterFooter { get; set; } = false;
+
+        /// <summary>
+        /// Order in which this section appears on its parent WebPage (ascending: 1, 2, 3...).
+        /// </summary>
+        [Display(Name = "Page Sort Order")]
+        public int PageSortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// Local editable copy of the HTML template markup containing {{ Mustache }} placeholders.
         /// </summary>
         public string? HtmlTemplate { get; set; }
 
         /// <summary>
-        /// Local editable copy of scoped CSS styles.
+        /// Local editable copy of scoped CSS styles for this section.
         /// </summary>
         public string? CssStyles { get; set; }
 
         /// <summary>
-        /// Optional sandboxed JavaScript for this section.
+        /// Optional sandboxed JavaScript for this section (e.g. Swiper sliders, counters, tabs).
         /// </summary>
         public string? JsScript { get; set; }
 
         /// <summary>
-        /// Custom CSS class injection for this specific block.
+        /// Custom CSS class string injected into this section's root container.
         /// </summary>
+        [MaxLength(150)]
         public string? CustomClass { get; set; }
 
         /// <summary>
         /// Optional background color or theme token override (e.g. '#ffffff', '#f8fafc', 'dark', 'primary').
         /// </summary>
+        [MaxLength(50)]
         public string? BackgroundColor { get; set; }
 
         /// <summary>
-        /// Toggle to push this section's title to the breaking news ribbon.
+        /// Flag set to true if local HTML/CSS has been customized for this specific section.
         /// </summary>
-        [Display(Name = "Add To Ribon")]
-        public bool AddToRibon { get; set; }
+        public bool IsCustomized { get; set; } = false;
 
         /// <summary>
-        /// Override title for the ribbon (defaults to Title if null).
+        /// Indicates whether this is an out-of-the-box factory default starter section.
         /// </summary>
-        [Display(Name = "Ribon Custom Display Title")]
+        public bool IsDefault { get; set; } = false;
+
+        /// <summary>
+        /// Toggle to push this section's title to the breaking news ribbon ticker.
+        /// </summary>
+        [Display(Name = "Add To Ribbon")]
+        public bool AddToRibon { get; set; } = false;
+
+        /// <summary>
+        /// Override display title for the news ribbon (defaults to Title if null).
+        /// </summary>
+        [MaxLength(300)]
+        [Display(Name = "Ribbon Custom Display Title")]
         public string? RibonCustomDisplayTitle { get; set; }
 
         /// <summary>
-        /// Sort order inside the news ribbon ticker.
+        /// Sorting order inside the news ribbon ticker.
         /// </summary>
-        [Display(Name = "Ribon Sort Order")]
-        public int RibonSortOrder { get; set; }
-
-        /// <summary>
-        /// Navigation property for all repeatable sub-items (e.g., list of services, core values) inside this block.
-        /// </summary>
-        public ICollection<PageSectionList>? PageSectionLists { get; set; }
+        [Display(Name = "Ribbon Sort Order")]
+        public int RibonSortOrder { get; set; } = 0;
 
         /// <summary>
         /// Optional attached dynamic PageForm identifier.
+        /// Injected into the section template via {{ PageFormHtml }} or {{ Form: "form-key" }}.
         /// </summary>
         public Guid? PageFormId { get; set; }
 
         /// <summary>
         /// Navigation property to the embedded dynamic PageForm.
         /// </summary>
+        [ForeignKey("PageFormId")]
         public PageForm? PageForm { get; set; }
 
         /// <summary>
-        /// Direct programmatic fallback form key (e.g. "service-request", "contact-us", "newsletter").
+        /// Programmatic form key shortcut (e.g. "contact-us", "service-request", "newsletter").
         /// </summary>
+        [MaxLength(100)]
         public string? FormKey { get; set; }
+
+        /// <summary>
+        /// Navigation collection of repeatable child items (slides, feature cards, pricing tiers, office locations).
+        /// Injected into templates via {{#each PageSectionLists}} loops.
+        /// </summary>
+        public ICollection<PageSectionList> PageSectionLists { get; set; } = new List<PageSectionList>();
     }
 }
-
-
