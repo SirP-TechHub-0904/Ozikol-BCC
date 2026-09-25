@@ -3,12 +3,166 @@
 @{
     ViewData["Title"] = $"Template: {Model.Template.Name}";
     ViewData["BreadcrumbSection"] = "Marketplace";
+
+    string categoryKey = Model.Template.CategoryKey ?? Model.Template.Category?.CategoryKey ?? "custom";
+    string categoryIcon = (categoryKey.ToLowerInvariant()) switch
+    {
+        "hero" => "view_carousel",
+        "menu" => "menu",
+        "footer" => "call_to_action",
+        "feature" or "features" or "body" => "grid_view",
+        "stats" or "counter" => "analytics",
+        "process" or "steps" => "timeline",
+        "cta" => "touch_app",
+        "contact" => "contact_mail",
+        "blog" or "news" => "article",
+        "pricing" => "payments",
+        "faq" or "faqs" => "help_center",
+        _ => "widgets"
+    };
+
+    string categoryBadgeColor = (categoryKey.ToLowerInvariant()) switch
+    {
+        "hero" => "#38bdf8",
+        "menu" => "#818cf8",
+        "footer" => "#c084fc",
+        "feature" or "features" or "body" => "#34d399",
+        "stats" or "counter" => "#fbbf24",
+        "process" or "steps" => "#f472b6",
+        "cta" => "#fb923c",
+        "contact" => "#2dd4bf",
+        "blog" or "news" => "#60a5fa",
+        "pricing" => "#a3e635",
+        "faq" or "faqs" => "#a78bfa",
+        _ => "#94a3b8"
+    };
 }
+
+<style>
+    .details-hero-card {
+        background: linear-gradient(135deg, #0b1120 0%, #1e293b 50%, #0f172a 100%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        margin-bottom: 24px;
+    }
+    .details-hero-glow {
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        background: radial-gradient(circle, @(categoryBadgeColor)22 0%, transparent 70%);
+        top: -120px;
+        right: -80px;
+        pointer-events: none;
+    }
+    .details-tab-nav {
+        display: flex;
+        gap: 6px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0 20px;
+        background: rgba(15, 23, 42, 0.6);
+        overflow-x: auto;
+    }
+    .details-tab-btn {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #94a3b8;
+        padding: 14px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    .details-tab-btn:hover {
+        color: #fff;
+    }
+    .details-tab-btn.active {
+        color: #38bdf8;
+        border-bottom-color: #38bdf8;
+        background: rgba(56, 189, 248, 0.05);
+    }
+    .details-tab-pane {
+        display: none;
+        padding: 24px;
+    }
+    .details-tab-pane.active {
+        display: block;
+    }
+    .code-viewer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 18px;
+        background: #090e1a;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: none;
+    }
+    .code-pre-box {
+        margin: 0;
+        padding: 18px;
+        background: #020617;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 12.5px;
+        line-height: 1.6;
+        overflow-x: auto;
+        max-height: 520px;
+    }
+    .copy-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #cbd5e1;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.3);
+    }
+    .viewport-btn-pill {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .viewport-btn-pill.active {
+        background: rgba(59, 130, 246, 0.25);
+        color: #38bdf8;
+        border-color: rgba(59, 130, 246, 0.5);
+    }
+</style>
 
 <div class="admin-page-header">
     <div class="admin-title-group">
         <h1 class="admin-title">@Model.Template.Name</h1>
-        <p class="admin-subtitle">Programmatic Variant Code: <code style="color: #38bdf8; font-size: 14px;">@Model.Template.VariantCode</code></p>
+        <p class="admin-subtitle">Programmatic Variant Code: <code style="color: #38bdf8; font-size: 13px;">@Model.Template.VariantCode</code></p>
     </div>
     <div class="admin-actions">
         <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -28,207 +182,252 @@
 }
 
 @* ── Template Identity Hero Card ── *@
-<div class="admin-card" style="margin-bottom: 24px; overflow: hidden;">
-    <div style="height: 120px; background: @Model.Template.ThumbnailGradient; position: relative; padding: 24px; display: flex; align-items: flex-end;">
-        <div style="position: absolute; top: 16px; right: 16px; display: flex; gap: 8px;">
-            <span class="badge @(Model.Template.IsActive ? "badge-success" : "badge-secondary")" style="font-size: 12px; padding: 6px 14px;">
+<div class="details-hero-card">
+    <div class="details-hero-glow"></div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2;">
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="width: 64px; height: 64px; border-radius: 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; color: @categoryBadgeColor; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                <span class="material-symbols-outlined" style="font-size: 32px;">@categoryIcon</span>
+            </div>
+            <div>
+                <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.01em;">
+                    @Model.Template.Name
+                </h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: rgba(15, 23, 42, 0.8); color: @categoryBadgeColor; border: 1px solid @(categoryBadgeColor)40;">
+                        <span class="material-symbols-outlined" style="font-size: 13px;">@categoryIcon</span>
+                        @(Model.Template.Category?.Name ?? Model.Template.CategoryKey)
+                    </span>
+                    <span style="font-size: 12px; color: #94a3b8; background: rgba(255, 255, 255, 0.06); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                        #@Model.Template.Tag
+                    </span>
+                    <span style="font-size: 12px; font-family: monospace; color: #cbd5e1; background: rgba(255, 255, 255, 0.06); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                        v@(string.IsNullOrWhiteSpace(Model.Template.Version) ? "1.0.0" : Model.Template.Version)
+                    </span>
+                    <span style="font-size: 12px; font-family: monospace; color: #93c5fd; background: rgba(59, 130, 246, 0.1); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        Order #@Model.Template.SortOrder
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="badge @(Model.Template.IsActive ? "badge-success" : "badge-secondary")" style="font-size: 12px; padding: 7px 16px;">
                 @(Model.Template.IsActive ? "Active & Published" : "Hidden Blueprint")
             </span>
             @if (!string.IsNullOrWhiteSpace(Model.Template.Badge))
             {
-                <span class="badge badge-warning" style="font-size: 12px; padding: 6px 12px;">
+                <span class="badge badge-warning" style="font-size: 12px; padding: 7px 14px;">
                     @Model.Template.Badge
                 </span>
             }
-        </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 56px; height: 56px; border-radius: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff;">
-                <span>◈</span>
-            </div>
-            <div>
-                <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);">
-                    @Model.Template.Name
-                </h2>
-                <div style="font-size: 13px; color: rgba(255, 255, 255, 0.8); margin-top: 2px;">
-                    Category: <strong style="color: #fff;">@(Model.Template.Category?.Name ?? Model.Template.CategoryKey)</strong> &bull;
-                    Tag: <span style="font-weight: 600;">#@Model.Template.Tag</span> &bull;
-                    Version: <span style="font-family: monospace;">v@Model.Template.Version</span>
-                </div>
-            </div>
         </div>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Template.Description))
     {
-        <div style="padding: 16px 24px; border-top: 1px solid var(--admin-card-border); font-size: 14px; color: var(--admin-text-muted); line-height: 1.6;">
+        <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 14px; color: #94a3b8; line-height: 1.6; max-width: 900px;">
             @Model.Template.Description
         </div>
     }
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-    @* ── Left: Source Code Inspector ── *@
-    <div>
-        <div class="admin-card" style="margin-bottom: 24px;">
-            <div class="card-header-styled" style="border-bottom: 1px solid var(--admin-card-border);">
-                <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">code</span>
-                </div>
-                <div>
-                    <h3 class="card-header-title">Source Markup & Code</h3>
-                    <p class="card-header-subtitle">Inspect the underlying template source code and stylesheets.</p>
-                </div>
+@* ── Deep Inspection Workspace with Tabs ── *@
+<div class="admin-card" style="margin-bottom: 24px; overflow: hidden;">
+    <div class="details-tab-nav">
+        <button type="button" class="details-tab-btn active" onclick="switchDetailsTab('live-preview', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #38bdf8;">bolt</span> Live Sandbox Preview
+        </button>
+        <button type="button" class="details-tab-btn" onclick="switchDetailsTab('html-code', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #38bdf8;">code</span> Semantic HTML (@Model.Template.HtmlTemplate.Length chars)
+        </button>
+        <button type="button" class="details-tab-btn" onclick="switchDetailsTab('css-code', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #a78bfa;">palette</span> Scoped CSS (@Model.Template.CssStyles.Length chars)
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
+        {
+            <button type="button" class="details-tab-btn" onclick="switchDetailsTab('js-code', this)">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #facc15;">javascript</span> Client JavaScript
+            </button>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
+        {
+            <button type="button" class="details-tab-btn" onclick="switchDetailsTab('json-mock', this)">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #4ade80;">data_object</span> Mock JSON
+            </button>
+        }
+        <button type="button" class="details-tab-btn" onclick="switchDetailsTab('blueprint-info', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #fbbf24;">settings</span> Blueprint Metadata
+        </button>
+    </div>
+
+    @* ── Tab 1: Live Sandbox Preview ── *@
+    <div id="tab-live-preview" class="details-tab-pane active" style="background: #030712; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 6px;">
+                <button type="button" class="viewport-btn-pill active" onclick="setDetailsViewport('desktop', this)">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop (100%)
+                </button>
+                <button type="button" class="viewport-btn-pill" onclick="setDetailsViewport('tablet', this)">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">tablet_mac</span> Tablet (768px)
+                </button>
+                <button type="button" class="viewport-btn-pill" onclick="setDetailsViewport('mobile', this)">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile (375px)
+                </button>
             </div>
 
-            <div style="padding: 20px;">
-                @* HTML Template *@
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                            Semantic HTML (Mustache Syntax)
-                        </span>
-                        <span style="font-size: 11px; font-family: monospace; color: #38bdf8;">@Model.Template.HtmlTemplate.Length chars</span>
-                    </div>
-                    <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #38bdf8; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 280px; margin: 0;"><code>@Model.Template.HtmlTemplate</code></pre>
-                </div>
-
-                @* Scoped CSS *@
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                            Scoped CSS Stylesheet
-                        </span>
-                        <span style="font-size: 11px; font-family: monospace; color: #a78bfa;">@Model.Template.CssStyles.Length chars</span>
-                    </div>
-                    <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #a78bfa; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 240px; margin: 0;"><code>@Model.Template.CssStyles</code></pre>
-                </div>
-
-                @* Sandboxed JS *@
-                @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
-                {
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                                Sandboxed JavaScript Execution
-                            </span>
-                            <span style="font-size: 11px; font-family: monospace; color: #facc15;">@Model.Template.JsScript.Length chars</span>
-                        </div>
-                        <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #facc15; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 180px; margin: 0;"><code>@Model.Template.JsScript</code></pre>
-                    </div>
-                }
-
-                @* Mock Lists JSON *@
-                @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
-                {
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-muted);">
-                                Mock Section List Items (JSON)
-                            </span>
-                        </div>
-                        <pre style="background: #0b1120; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; color: #4ade80; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 180px; margin: 0;"><code>@Model.Template.DefaultSectionListsJson</code></pre>
-                    </div>
-                }
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="reloadPreviewIframe()" title="Refresh Preview Sandbox">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Refresh
+                </button>
+                <a href="/centralwks/templates/details/@Model.Template.Id?handler=LivePreviewFrame" target="_blank" class="btn-admin btn-admin-secondary btn-admin-sm" title="Open Clean Preview in New Tab">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span> Popout
+                </a>
             </div>
         </div>
 
-        @* ── Simulated Preview ── *@
-        <div class="admin-card">
-            <div class="card-header-styled" style="border-bottom: 1px solid var(--admin-card-border);">
-                <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">preview</span>
-                </div>
-                <div>
-                    <h3 class="card-header-title">Rendered HTML Simulation</h3>
-                    <p class="card-header-subtitle">Substituted mock parameters evaluated against template markup.</p>
-                </div>
-            </div>
-
-            <div style="padding: 24px; background: rgba(0, 0, 0, 0.2); border-radius: 0 0 12px 12px;">
-                <div style="background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 24px; min-height: 160px;">
-                    <style>
-                        @Html.Raw(Model.Template.CssStyles)
-                    </style>
-                    @Html.Raw(Model.RenderedPreviewHtml)
-                </div>
-            </div>
+        <div id="detailsViewportBox" style="max-width: 100%; margin: 0 auto; transition: max-width 0.25s ease;">
+            <iframe id="detailsPreviewFrame" 
+                    src="/centralwks/templates/details/@Model.Template.Id?handler=LivePreviewFrame" 
+                    style="width: 100%; height: 560px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; background: #0b1120; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></iframe>
         </div>
     </div>
 
-    @* ── Right: Template Attributes & Actions ── *@
-    <div>
-        <div class="admin-card" style="margin-bottom: 24px;">
-            <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
-                </div>
-                <div>
-                    <h3 class="card-header-title">Blueprint Metrics</h3>
-                    <p class="card-header-subtitle">Configuration parameters.</p>
-                </div>
+    @* ── Tab 2: HTML Code ── *@
+    <div id="tab-html-code" class="details-tab-pane">
+        <div class="code-viewer-header">
+            <span style="font-size: 12px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">HTML (Mustache Syntax)</span>
+            <button type="button" class="copy-btn" onclick="copyTextToClipboard('htmlContentCode')">
+                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy HTML
+            </button>
+        </div>
+        <pre class="code-pre-box"><code id="htmlContentCode" style="color: #38bdf8;">@Model.Template.HtmlTemplate</code></pre>
+    </div>
+
+    @* ── Tab 3: CSS Styles ── *@
+    <div id="tab-css-code" class="details-tab-pane">
+        <div class="code-viewer-header">
+            <span style="font-size: 12px; font-weight: 700; color: #a78bfa; text-transform: uppercase;">Scoped CSS Rules</span>
+            <button type="button" class="copy-btn" onclick="copyTextToClipboard('cssContentCode')">
+                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy CSS
+            </button>
+        </div>
+        <pre class="code-pre-box"><code id="cssContentCode" style="color: #a78bfa;">@Model.Template.CssStyles</code></pre>
+    </div>
+
+    @* ── Tab 4: JS Script ── *@
+    @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
+    {
+        <div id="tab-js-code" class="details-tab-pane">
+            <div class="code-viewer-header">
+                <span style="font-size: 12px; font-weight: 700; color: #facc15; text-transform: uppercase;">Sandboxed JavaScript</span>
+                <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsContentCode')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JS
+                </button>
+            </div>
+            <pre class="code-pre-box"><code id="jsContentCode" style="color: #facc15;">@Model.Template.JsScript</code></pre>
+        </div>
+    }
+
+    @* ── Tab 5: Mock JSON ── *@
+    @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
+    {
+        <div id="tab-json-mock" class="details-tab-pane">
+            <div class="code-viewer-header">
+                <span style="font-size: 12px; font-weight: 700; color: #4ade80; text-transform: uppercase;">Default Section List Items (JSON)</span>
+                <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsonContentCode')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JSON
+                </button>
+            </div>
+            <pre class="code-pre-box"><code id="jsonContentCode" style="color: #4ade80;">@Model.Template.DefaultSectionListsJson</code></pre>
+        </div>
+    }
+
+    @* ── Tab 6: Blueprint Info ── *@
+    <div id="tab-blueprint-info" class="details-tab-pane">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Unique Blueprint Identifier</div>
+                <div style="font-family: monospace; font-size: 13px; color: #fff; margin-top: 4px; word-break: break-all;">@Model.Template.Id</div>
             </div>
 
-            <div style="padding: 20px;">
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Unique ID</div>
-                        <div style="font-family: monospace; font-size: 12px; color: #fff; margin-top: 2px;">@Model.Template.Id</div>
-                    </div>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Programmatic Variant Key</div>
+                <div style="font-family: monospace; font-size: 13px; color: #38bdf8; font-weight: 700; margin-top: 4px;">@Model.Template.VariantCode</div>
+            </div>
 
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Variant Code</div>
-                        <div style="font-family: monospace; font-size: 13px; color: #38bdf8; font-weight: 600; margin-top: 2px;">@Model.Template.VariantCode</div>
-                    </div>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Registered Timestamp</div>
+                <div style="font-size: 13px; color: #fff; margin-top: 4px;">@Model.Template.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+            </div>
 
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Display Sort Order</div>
-                        <div style="font-size: 14px; font-weight: 600; color: #fff; margin-top: 2px;">#@Model.Template.SortOrder</div>
-                    </div>
-
-                    <div>
-                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Registered Date</div>
-                        <div style="font-size: 13px; color: #fff; margin-top: 2px;">@Model.Template.CreatedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
-                    </div>
-
-                    @if (Model.Template.UpdatedUtc.HasValue)
-                    {
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Last Modified</div>
-                            <div style="font-size: 13px; color: #fff; margin-top: 2px;">@Model.Template.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC</div>
-                        </div>
-                    }
+            @if (Model.Template.UpdatedUtc.HasValue)
+            {
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Last Modified</div>
+                    <div style="font-size: 13px; color: #fff; margin-top: 4px;">@Model.Template.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
                 </div>
+            }
+
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Preview Title Override</div>
+                <div style="font-size: 13px; color: #fff; margin-top: 4px;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewTitle) ? "(Inherits Template Name)" : Model.Template.PreviewTitle)</div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Preview Image URL</div>
+                <div style="font-size: 13px; color: #38bdf8; margin-top: 4px; word-break: break-all;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewImageUrl) ? "(Default placeholder)" : Model.Template.PreviewImageUrl)</div>
             </div>
         </div>
 
-        <div class="admin-card">
-            <div class="card-header-styled">
-                <div class="card-header-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">bolt</span>
-                </div>
-                <div>
-                    <h3 class="card-header-title">Management Actions</h3>
-                    <p class="card-header-subtitle">Administrative controls.</p>
-                </div>
-            </div>
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 12px; align-items: center;">
+            <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template Details
+            </a>
 
-            <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
-                </a>
-
-                <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Template.Id">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn-admin btn-admin-secondary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">@(Model.Template.IsActive ? "pause" : "play_arrow")</span>
-                        @(Model.Template.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")
-                    </button>
-                </form>
-
-                <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="justify-content: center;">
-                    Back to All Templates
-                </a>
-            </div>
+            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@Model.Template.Id" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">@(Model.Template.IsActive ? "pause" : "play_arrow")</span>
+                    @(Model.Template.IsActive ? "Hide from Marketplace" : "Publish to Marketplace")
+                </button>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    function switchDetailsTab(tabId, btn) {
+        document.querySelectorAll('.details-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.details-tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById('tab-' + tabId);
+        if (target) target.classList.add('active');
+    }
+
+    function setDetailsViewport(device, btn) {
+        document.querySelectorAll('.viewport-btn-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const container = document.getElementById('detailsViewportBox');
+        if (device === 'mobile') container.style.maxWidth = '375px';
+        else if (device === 'tablet') container.style.maxWidth = '768px';
+        else container.style.maxWidth = '100%';
+    }
+
+    function reloadPreviewIframe() {
+        const frame = document.getElementById('detailsPreviewFrame');
+        if (frame) frame.src = frame.src;
+    }
+
+    function copyTextToClipboard(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.innerText || el.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Code copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+
