@@ -38,6 +38,11 @@
     };
 }
 
+<!-- CodeMirror 5 Dependencies -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
+
 <style>
     .details-hero-card {
         background: var(--admin-bg-surface, #ffffff);
@@ -61,34 +66,49 @@
     }
     .details-tab-nav {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        padding: 0 16px;
+        padding: 8px 16px;
         background: var(--admin-bg-surface-elevated, #f8fafc);
         overflow-x: auto;
     }
     .details-tab-btn {
         background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
+        border: 1px solid transparent;
+        border-radius: 8px;
         color: var(--admin-text-muted, #64748b);
-        padding: 13px 16px;
+        padding: 8px 16px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         white-space: nowrap;
-        transition: all 0.15s ease;
+        transition: all 0.18s ease;
     }
     .details-tab-btn:hover {
+        background: rgba(0, 0, 0, 0.04);
         color: var(--admin-text, #0f172a);
     }
     .details-tab-btn.active {
-        color: var(--admin-primary, #e5173f);
-        border-bottom-color: var(--admin-primary, #e5173f);
-        background: var(--admin-primary-light, rgba(229, 23, 63, 0.06));
+        background: #ffffff;
+        color: var(--admin-text, #0f172a);
+        border-color: rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .tab-badge {
+        font-size: 11px;
+        font-family: 'JetBrains Mono', monospace;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: var(--admin-bg-surface-elevated, #f1f5f9);
+        color: var(--admin-text-muted, #64748b);
+        font-weight: 500;
+    }
+    .details-tab-btn.active .tab-badge {
+        background: #eff6ff;
+        color: #2563eb;
     }
     .details-tab-pane {
         display: none;
@@ -174,18 +194,28 @@
         border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
         border-bottom: none;
     }
-    .code-pre-box {
-        margin: 0;
-        padding: 18px;
-        background: #090e1a;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+    .CodeMirror {
+        height: 520px;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 13px;
+        line-height: 1.6;
         border-bottom-left-radius: 10px;
         border-bottom-right-radius: 10px;
-        font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        font-size: 12.5px;
-        line-height: 1.6;
-        overflow-x: auto;
-        max-height: 520px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .sample-item-card {
+        background: var(--admin-bg-surface-elevated, #f8fafc);
+        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: all 0.15s ease;
+    }
+    .sample-item-card:hover {
+        border-color: rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .copy-btn {
         background: var(--admin-bg-surface, #ffffff);
@@ -296,23 +326,20 @@
             <span class="material-symbols-outlined" style="font-size: 18px; color: #2563eb;">visibility</span> Preview
         </button>
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('html-code', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">code</span> HTML (@Model.Template.HtmlTemplate.Length chars)
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">code</span> HTML
+            <span class="tab-badge">@Model.Template.HtmlTemplate.Length</span>
         </button>
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('css-code', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #7c3aed;">palette</span> CSS (@Model.Template.CssStyles.Length chars)
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #7c3aed;">palette</span> CSS
+            <span class="tab-badge">@Model.Template.CssStyles.Length</span>
         </button>
-        @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
-        {
-            <button type="button" class="details-tab-btn" onclick="switchDetailsTab('js-code', this)">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">javascript</span> JavaScript
-            </button>
-        }
-        @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
-        {
-            <button type="button" class="details-tab-btn" onclick="switchDetailsTab('json-mock', this)">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #059669;">data_object</span> Mock Data
-            </button>
-        }
+        <button type="button" class="details-tab-btn" onclick="switchDetailsTab('js-code', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">javascript</span> JavaScript
+            <span class="tab-badge">@(Model.Template.JsScript?.Length ?? 0)</span>
+        </button>
+        <button type="button" class="details-tab-btn" onclick="switchDetailsTab('sample-data', this)">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #059669;">data_object</span> Sample Data
+        </button>
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('blueprint-info', this)">
             <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">info</span> Metadata
         </button>
@@ -361,55 +388,78 @@
         </div>
     </div>
 
-    @* ── Tab 2: HTML Code ── *@
+    @* ── Tab 2: HTML Code Editor ── *@
     <div id="tab-html-code" class="details-tab-pane" style="padding: 20px;">
         <div class="code-viewer-header">
             <span style="font-size: 12px; font-weight: 700; color: #0284c7; text-transform: uppercase;">HTML (Mustache Syntax)</span>
-            <button type="button" class="copy-btn" onclick="copyTextToClipboard('htmlContentCode')">
+            <button type="button" class="copy-btn" onclick="copyEditorContent('htmlViewer')">
                 <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy HTML
             </button>
         </div>
-        <pre class="code-pre-box"><code id="htmlContentCode" style="color: #38bdf8;">@Model.Template.HtmlTemplate</code></pre>
+        <textarea id="htmlViewerCode">@Model.Template.HtmlTemplate</textarea>
     </div>
 
-    @* ── Tab 3: CSS Styles ── *@
+    @* ── Tab 3: CSS Styles Editor ── *@
     <div id="tab-css-code" class="details-tab-pane" style="padding: 20px;">
         <div class="code-viewer-header">
             <span style="font-size: 12px; font-weight: 700; color: #7c3aed; text-transform: uppercase;">Scoped CSS Rules</span>
-            <button type="button" class="copy-btn" onclick="copyTextToClipboard('cssContentCode')">
+            <button type="button" class="copy-btn" onclick="copyEditorContent('cssViewer')">
                 <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy CSS
             </button>
         </div>
-        <pre class="code-pre-box"><code id="cssContentCode" style="color: #a78bfa;">@Model.Template.CssStyles</code></pre>
+        <textarea id="cssViewerCode">@Model.Template.CssStyles</textarea>
     </div>
 
-    @* ── Tab 4: JS Script ── *@
-    @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
-    {
-        <div id="tab-js-code" class="details-tab-pane" style="padding: 20px;">
-            <div class="code-viewer-header">
-                <span style="font-size: 12px; font-weight: 700; color: #d97706; text-transform: uppercase;">Sandboxed JavaScript</span>
-                <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsContentCode')">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JS
-                </button>
-            </div>
-            <pre class="code-pre-box"><code id="jsContentCode" style="color: #facc15;">@Model.Template.JsScript</code></pre>
+    @* ── Tab 4: JS Script Editor ── *@
+    <div id="tab-js-code" class="details-tab-pane" style="padding: 20px;">
+        <div class="code-viewer-header">
+            <span style="font-size: 12px; font-weight: 700; color: #d97706; text-transform: uppercase;">Sandboxed JavaScript</span>
+            <button type="button" class="copy-btn" onclick="copyEditorContent('jsViewer')">
+                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JS
+            </button>
         </div>
-    }
+        <textarea id="jsViewerCode">@(Model.Template.JsScript ?? string.Empty)</textarea>
+    </div>
 
-    @* ── Tab 5: Mock JSON ── *@
-    @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
-    {
-        <div id="tab-json-mock" class="details-tab-pane" style="padding: 20px;">
-            <div class="code-viewer-header">
-                <span style="font-size: 12px; font-weight: 700; color: #059669; text-transform: uppercase;">Default Section List Items (JSON)</span>
-                <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsonContentCode')">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JSON
+    @* ── Tab 5: Sample Data (Visual Cards & Raw JSON) ── *@
+    <div id="tab-sample-data" class="details-tab-pane" style="padding: 20px;">
+        <div class="code-viewer-header">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 12px; font-weight: 700; color: #059669; text-transform: uppercase;">Sample Data (JSON Loop Items)</span>
+                <button type="button" class="viewport-btn-pill active" id="btnViewSampleCards" onclick="toggleSampleDataView('cards')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">grid_view</span> Visual Cards
+                </button>
+                <button type="button" class="viewport-btn-pill" id="btnViewSampleJson" onclick="toggleSampleDataView('json')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">code</span> Raw JSON
                 </button>
             </div>
-            <pre class="code-pre-box"><code id="jsonContentCode" style="color: #4ade80;">@Model.Template.DefaultSectionListsJson</code></pre>
+            <button type="button" class="copy-btn" onclick="copyEditorContent('jsonViewer')">
+                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JSON
+            </button>
         </div>
-    }
+
+        @* Visual Cards Sub-pane *@
+        <div id="sampleCardsContainer" style="padding: 20px; background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, rgba(0,0,0,0.08)); border-top: none; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+            <div id="sampleCardsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                <!-- Dynamically populated via JS -->
+            </div>
+            <div id="noSampleDataPlaceholder" style="display: none; text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-dim);">dataset</span>
+                <div style="font-size: 14px; font-weight: 600; color: var(--admin-text); margin-top: 8px;">No Sample Data Configured</div>
+                <div style="font-size: 12px; margin-top: 4px;">Click Edit Template to add visual sample cards or populate default loop JSON.</div>
+                <div style="margin-top: 14px;">
+                    <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary btn-admin-sm">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">add</span> Add Sample Items
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @* Raw JSON Sub-pane *@
+        <div id="sampleJsonContainer" style="display: none;">
+            <textarea id="jsonViewerCode">@(Model.Template.DefaultSectionListsJson ?? "[]")</textarea>
+        </div>
+    </div>
 
     @* ── Tab 6: Blueprint Metadata ── *@
     <div id="tab-blueprint-info" class="details-tab-pane" style="padding: 24px; background: var(--admin-bg-surface, #ffffff);">
@@ -464,13 +514,76 @@
     </div>
 </div>
 
+<!-- CodeMirror Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+
 <script>
+    const editors = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CodeMirror Highlighters
+        editors.html = CodeMirror.fromTextArea(document.getElementById('htmlViewerCode'), {
+            mode: 'htmlmixed',
+            theme: 'material-darker',
+            lineNumbers: true,
+            readOnly: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
+        });
+
+        editors.css = CodeMirror.fromTextArea(document.getElementById('cssViewerCode'), {
+            mode: 'css',
+            theme: 'material-darker',
+            lineNumbers: true,
+            readOnly: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
+        });
+
+        editors.js = CodeMirror.fromTextArea(document.getElementById('jsViewerCode'), {
+            mode: 'javascript',
+            theme: 'material-darker',
+            lineNumbers: true,
+            readOnly: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
+        });
+
+        editors.json = CodeMirror.fromTextArea(document.getElementById('jsonViewerCode'), {
+            mode: 'application/json',
+            theme: 'material-darker',
+            lineNumbers: true,
+            readOnly: true,
+            foldGutter: true,
+            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
+        });
+
+        renderVisualSampleCards();
+    });
+
     function switchDetailsTab(tabId, btn) {
         document.querySelectorAll('.details-tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.details-tab-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         const target = document.getElementById('tab-' + tabId);
-        if (target) target.classList.add('active');
+        if (target) {
+            target.classList.add('active');
+            // Refresh CodeMirror layout if tab was hidden
+            setTimeout(() => {
+                if (tabId === 'html-code' && editors.html) editors.html.refresh();
+                if (tabId === 'css-code' && editors.css) editors.css.refresh();
+                if (tabId === 'js-code' && editors.js) editors.js.refresh();
+                if (tabId === 'sample-data' && editors.json) editors.json.refresh();
+            }, 50);
+        }
     }
 
     function setDetailsViewport(device, btn) {
@@ -498,14 +611,89 @@
         if (frame) frame.src = frame.src;
     }
 
-    function copyTextToClipboard(elementId) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-        const text = el.innerText || el.textContent;
+    function toggleSampleDataView(view) {
+        const cardsCont = document.getElementById('sampleCardsContainer');
+        const jsonCont = document.getElementById('sampleJsonContainer');
+        const btnCards = document.getElementById('btnViewSampleCards');
+        const btnJson = document.getElementById('btnViewSampleJson');
+
+        if (view === 'cards') {
+            cardsCont.style.display = 'block';
+            jsonCont.style.display = 'none';
+            btnCards.classList.add('active');
+            btnJson.classList.remove('active');
+        } else {
+            cardsCont.style.display = 'none';
+            jsonCont.style.display = 'block';
+            btnCards.classList.remove('active');
+            btnJson.classList.add('active');
+            if (editors.json) editors.json.refresh();
+        }
+    }
+
+    function renderVisualSampleCards() {
+        const listEl = document.getElementById('sampleCardsList');
+        const emptyEl = document.getElementById('noSampleDataPlaceholder');
+        const rawJson = document.getElementById('jsonViewerCode').value;
+
+        if (!rawJson || rawJson.trim() === '' || rawJson.trim() === '[]') {
+            listEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            const items = JSON.parse(rawJson);
+            if (!Array.isArray(items) || items.length === 0) {
+                listEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            items.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'sample-item-card';
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase;">Item #${idx + 1}</span>
+                        ${item.Tag ? `<span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(5,150,105,0.1); color: #059669; font-weight: 600;">${escapeHtml(item.Tag)}</span>` : ''}
+                    </div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text, #0f172a);">${escapeHtml(item.Title || 'Untitled Item')}</div>
+                    ${item.Subtitle ? `<div style="font-size: 12.5px; color: var(--admin-text-muted, #64748b); line-height: 1.4;">${escapeHtml(item.Subtitle)}</div>` : ''}
+                    ${item.Description && item.Description !== item.Subtitle ? `<div style="font-size: 12px; color: var(--admin-text-muted, #64748b);">${escapeHtml(item.Description)}</div>` : ''}
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--admin-text-dim);">
+                        ${item.Icon ? `<span><i class="${escapeHtml(item.Icon)}"></i> ${escapeHtml(item.Icon)}</span>` : ''}
+                        ${item.ButtonText ? `<span style="color: #2563eb;">${escapeHtml(item.ButtonText)} &rarr;</span>` : ''}
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+
+            listEl.style.display = 'grid';
+            emptyEl.style.display = 'none';
+        } catch(e) {
+            listEl.style.display = 'none';
+            emptyEl.style.display = 'block';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function copyEditorContent(editorKey) {
+        let text = '';
+        if (editorKey === 'htmlViewer' && editors.html) text = editors.html.getValue();
+        else if (editorKey === 'cssViewer' && editors.css) text = editors.css.getValue();
+        else if (editorKey === 'jsViewer' && editors.js) text = editors.js.getValue();
+        else if (editorKey === 'jsonViewer' && editors.json) text = editors.json.getValue();
+
         navigator.clipboard.writeText(text).then(() => {
-            alert('Code copied to clipboard!');
+            alert('Copied to clipboard!');
         }).catch(err => {
-            console.error('Failed to copy: ', err);
+            console.error('Failed to copy:', err);
         });
     }
 </script>
