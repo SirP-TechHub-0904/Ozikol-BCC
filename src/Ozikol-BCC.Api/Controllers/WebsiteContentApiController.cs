@@ -153,7 +153,15 @@ namespace Ozikol_BCC.Api.Controllers
             }
             else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
             {
-                query = query.Where(s => s.ShowInHome).OrderBy(s => s.HomePageSortOrder);
+                var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                if (homePage != null)
+                {
+                    query = query.Where(s => s.WebPageId == homePage.Id).OrderBy(s => s.PageSortOrder);
+                }
+                else
+                {
+                    query = query.OrderBy(s => s.PageSortOrder);
+                }
             }
 
             var sections = await query.ToListAsync();

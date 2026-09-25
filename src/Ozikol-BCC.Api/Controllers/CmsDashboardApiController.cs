@@ -38,7 +38,8 @@ namespace Ozikol_BCC.Api.Controllers
             var totalSections = await _context.PageSections.CountAsync();
             var activeSections = await _context.PageSections.CountAsync(s => !s.Disable);
             var disabledSections = totalSections - activeSections;
-            var homeSections = await _context.PageSections.CountAsync(s => s.ShowInHome && !s.Disable);
+            var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+            var homeSections = homePage != null ? await _context.PageSections.CountAsync(s => s.WebPageId == homePage.Id && !s.Disable) : 0;
 
             // 3. Menu Categories & Navigation Metrics
             var totalCategories = await _context.PageCategories.CountAsync();
@@ -47,12 +48,12 @@ namespace Ozikol_BCC.Api.Controllers
             var dropdownItems = await _context.WebPages.CountAsync(p => p.ShowInMenuDropDown && p.Publish);
             var footerLinks = await _context.WebPages.CountAsync(p => p.ShowInFooter && p.Publish);
 
-            // 4. Sliders, FAQs, Blogs
-            var totalSliders = await _context.Sliders.CountAsync();
-            var publishedSliders = await _context.Sliders.CountAsync(s => s.Show);
-            var totalFaqs = await _context.FAQs.CountAsync();
-            var publishedFaqs = await _context.FAQs.CountAsync(f => f.Show);
-            var totalFaqCategories = await _context.FAQCategories.CountAsync();
+            // 4. Blogs & Sections
+            var totalSliders = 0;
+            var publishedSliders = 0;
+            var totalFaqs = 0;
+            var publishedFaqs = 0;
+            var totalFaqCategories = 0;
             var totalBlogs = await _context.Blogs.CountAsync();
             var totalBlogCategories = await _context.BlogCategories.CountAsync();
 
