@@ -1,4 +1,7 @@
 using System;
+using System.Linq;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -59,18 +62,206 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             }
 
             Template = template;
-
-            // Generate basic simulated markup replacing mustache placeholders
-            var mockHtml = template.HtmlTemplate ?? string.Empty;
-            mockHtml = mockHtml.Replace("{{ Title }}", template.PreviewTitle ?? template.Name);
-            mockHtml = mockHtml.Replace("{{ Subtitle }}", template.PreviewSubtitle ?? template.Description ?? "Experience effortless enterprise cloud management.");
-            mockHtml = mockHtml.Replace("{{ ImageUrl }}", template.PreviewImageUrl ?? "/assets/brand/hero-preview.webp");
-            mockHtml = mockHtml.Replace("{{ ButtonText }}", "Explore Platform");
-            mockHtml = mockHtml.Replace("{{ ButtonUrl }}", "#");
-
-            RenderedPreviewHtml = mockHtml;
+            RenderedPreviewHtml = RenderTemplateMarkup(template);
 
             return Page();
+        }
+
+        /// <summary>
+        /// Serves an isolated, sandboxed HTML document specifically for iframe live previews.
+        /// </summary>
+        /// <param name="id">Template unique identifier.</param>
+        public async Task<IActionResult> OnGetLivePreviewFrameAsync(Guid id)
+        {
+            var template = await _dbContext.MasterMarketplaceTemplates
+                .Include(t => t.Category)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (template == null)
+            {
+                return Content("<!DOCTYPE html><html><body style='background:#0b1120;color:#94a3b8;font-family:sans-serif;padding:30px;text-align:center;'>Template not found.</body></html>", "text/html");
+            }
+
+            var compiledHtml = RenderTemplateMarkup(template);
+            var safeJs = string.IsNullOrWhiteSpace(template.JsScript) ? string.Empty : $@"
+<script>
+document.addEventListener('DOMContentLoaded', function() {{
+    try {{
+        {template.JsScript}
+    }} catch(err) {{
+        console.warn('Sandboxed preview script error:', err);
+    }}
+}});
+</script>";
+
+            var fullDocument = $@"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>{template.Name} - Live Preview</title>
+    <link rel=""preconnect"" href=""https://fonts.googleapis.com"">
+    <link rel=""preconnect"" href=""https://fonts.gstatic.com"" crossorigin>
+    <link href=""https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"" rel=""stylesheet"">
+    <link rel=""stylesheet"" href=""https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"" />
+    <link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"" />
+    <style>
+        *, *::before, *::after {{
+            box-sizing: border-box;
+        }}
+        html, body {{
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b1120;
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }}
+        .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {{
+            width: 100%;
+            margin-right: auto;
+            margin-left: auto;
+            padding-right: 1.5rem;
+            padding-left: 1.5rem;
+        }}
+        @@media (min-width: 576px) {{ .container {{ max-width: 540px; }} }}
+        @@media (min-width: 768px) {{ .container {{ max-width: 720px; }} }}
+        @@media (min-width: 992px) {{ .container {{ max-width: 960px; }} }}
+        @@media (min-width: 1200px) {{ .container {{ max-width: 1140px; }} }}
+        @@media (min-width: 1400px) {{ .container {{ max-width: 1320px; }} }}
+        
+        .row {{
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -0.75rem;
+            margin-left: -0.75rem;
+        }}
+        .col-12 {{ flex: 0 0 auto; width: 100%; }}
+        .col-md-6 {{ flex: 0 0 auto; width: 50%; }}
+        .col-md-4 {{ flex: 0 0 auto; width: 33.333333%; }}
+        .col-md-3 {{ flex: 0 0 auto; width: 25%; }}
+        .col-lg-6 {{ flex: 0 0 auto; width: 50%; }}
+        .col-lg-4 {{ flex: 0 0 auto; width: 33.333333%; }}
+        .col-lg-3 {{ flex: 0 0 auto; width: 25%; }}
+        
+        a {{ text-decoration: none; color: inherit; }}
+        img {{ max-width: 100%; height: auto; }}
+        
+        /* Scoped Template Styles */
+        {template.CssStyles}
+    </style>
+</head>
+<body>
+    <main style=""width: 100%; overflow: hidden;"">
+        {compiledHtml}
+    </main>
+    {safeJs}
+</body>
+</html>";
+
+            return Content(fullDocument, "text/html");
+        }
+
+        /// <summary>
+        /// Renders realistic mock HTML replacing mustache tokens and loop blocks.
+        /// </summary>
+        private static string RenderTemplateMarkup(MasterMarketplaceTemplate template)
+        {
+            var html = template.HtmlTemplate ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(html))
+                return "<div style='padding:20px;color:#94a3b8;text-align:center;'>No HTML markup defined for this template.</div>";
+
+            // 1. Process SectionLists / PageSectionLists loop blocks
+            var listBlockRegex = new Regex(@"\{\{#each\s+(?:SectionLists|PageSectionLists)\}\}([\s\S]*?)\{\{/each\}\}", RegexOptions.IgnoreCase);
+            if (listBlockRegex.IsMatch(html))
+            {
+                html = listBlockRegex.Replace(html, match =>
+                {
+                    var itemTemplate = match.Groups[1].Value;
+                    return GenerateMockListItems(template, itemTemplate);
+                });
+            }
+
+            // 2. Substitute standard single tokens
+            html = html.Replace("{{ Title }}", template.PreviewTitle ?? template.Name, StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ MiniTitle }}", "Enterprise Platform", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ Subtitle }}", template.PreviewSubtitle ?? template.Description ?? "Accelerate digital growth with modular, high-performance architecture.", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ Description }}", template.Description ?? "Designed for scalable enterprise workloads with automated workflows and real-time telemetry.", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ ImageUrl }}", string.IsNullOrWhiteSpace(template.PreviewImageUrl) ? "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=800&auto=format&fit=crop" : template.PreviewImageUrl, StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ SecondaryImageUrl }}", "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&auto=format&fit=crop", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ ButtonText }}", "Explore Solutions", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ ButtonUrl }}", "#", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ SecondaryButtonText }}", "Book a Demo", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ SecondaryButtonUrl }}", "#", StringComparison.OrdinalIgnoreCase);
+            html = html.Replace("{{ VideoUrl }}", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", StringComparison.OrdinalIgnoreCase);
+
+            return html;
+        }
+
+        /// <summary>
+        /// Generates mock loop item instances based on template category and default JSON.
+        /// </summary>
+        private static string GenerateMockListItems(MasterMarketplaceTemplate template, string itemTemplate)
+        {
+            // If default JSON is present, attempt to parse items
+            if (!string.IsNullOrWhiteSpace(template.DefaultSectionListsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(template.DefaultSectionListsJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        var rendered = new System.Text.StringBuilder();
+                        foreach (var el in doc.RootElement.EnumerateArray())
+                        {
+                            var itemHtml = itemTemplate;
+                            if (el.TryGetProperty("Title", out var title))
+                                itemHtml = itemHtml.Replace("{{ Title }}", title.GetString() ?? "", StringComparison.OrdinalIgnoreCase);
+                            if (el.TryGetProperty("Description", out var desc))
+                                itemHtml = itemHtml.Replace("{{ Description }}", desc.GetString() ?? "", StringComparison.OrdinalIgnoreCase);
+                            if (el.TryGetProperty("Icon", out var icon))
+                                itemHtml = itemHtml.Replace("{{ IconName }}", icon.GetString() ?? "star", StringComparison.OrdinalIgnoreCase)
+                                                   .Replace("{{ Icon }}", icon.GetString() ?? "star", StringComparison.OrdinalIgnoreCase);
+                            if (el.TryGetProperty("ImageUrl", out var img))
+                                itemHtml = itemHtml.Replace("{{ ImageUrl }}", img.GetString() ?? "", StringComparison.OrdinalIgnoreCase);
+                            if (el.TryGetProperty("LinkUrl", out var link))
+                                itemHtml = itemHtml.Replace("{{ LinkUrl }}", link.GetString() ?? "#", StringComparison.OrdinalIgnoreCase);
+
+                            rendered.Append(itemHtml);
+                        }
+                        return rendered.ToString();
+                    }
+                }
+                catch
+                {
+                    // Fallback to default mock generation
+                }
+            }
+
+            // Default fallback 3 mock items
+            var mockCards = new[]
+            {
+                new { Title = "Cloud Orchestration", Desc = "Automate multi-tenant provisioning with zero downtime deployments.", Icon = "cloud_sync", Img = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=400&auto=format&fit=crop" },
+                new { Title = "Real-Time Telemetry", Desc = "Monitor system health, error traces, and performance metrics instantly.", Icon = "monitoring", Img = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=400&auto=format&fit=crop" },
+                new { Title = "Enterprise Security", Desc = "Bank-grade tenant data isolation, encrypted logs, and granular RBAC.", Icon = "security", Img = "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=400&auto=format&fit=crop" }
+            };
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var card in mockCards)
+            {
+                var itemHtml = itemTemplate
+                    .Replace("{{ Title }}", card.Title, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Description }}", card.Desc, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ IconName }}", card.Icon, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ Icon }}", card.Icon, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ ImageUrl }}", card.Img, StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ LinkUrl }}", "#", StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ ButtonText }}", "Learn More", StringComparison.OrdinalIgnoreCase)
+                    .Replace("{{ ButtonUrl }}", "#", StringComparison.OrdinalIgnoreCase);
+                sb.Append(itemHtml);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
@@ -94,3 +285,4 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
         }
     }
 }
+
