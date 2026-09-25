@@ -46,8 +46,16 @@ public class GlobalExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled server exception captured on route '{Path}' from IP {ClientIp}",
-                context.Request.Path, context.Connection.RemoteIpAddress);
+            try
+            {
+                _logger.LogError(ex, "Unhandled server exception captured on route '{Path}' from IP {ClientIp}",
+                    context.Request.Path, context.Connection.RemoteIpAddress);
+            }
+            catch
+            {
+                // Fallback in case logger console formatter encounters reflection issues during StackTrace generation
+                Console.WriteLine($"[CRITICAL ERROR] {ex.GetType().Name}: {ex.Message} at {context.Request.Path}");
+            }
 
             // Trigger asynchronous background email alert without blocking error page presentation
             _ = DispatchCrashAlertEmailAsync(context, ex);

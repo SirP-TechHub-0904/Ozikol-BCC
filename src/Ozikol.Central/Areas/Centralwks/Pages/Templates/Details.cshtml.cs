@@ -291,6 +291,25 @@ document.addEventListener('DOMContentLoaded', function() {{
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to permanently delete the template blueprint.
+        /// </summary>
+        /// <param name="id">Template unique identifier.</param>
+        public async Task<IActionResult> OnPostDeleteAsync(Guid id)
+        {
+            var template = await _dbContext.MasterMarketplaceTemplates.FindAsync(id);
+            if (template == null)
+            {
+                return NotFound();
+            }
+
+            _dbContext.MasterMarketplaceTemplates.Remove(template);
+            await _dbContext.SaveChangesAsync();
+
+            TempData["StatusMessage"] = $"Template '{template.Name}' was permanently deleted.";
+            return RedirectToPage("./Index");
+        }
+
+        /// <summary>
         /// Toggles template active/hidden state.
         /// </summary>
         /// <param name="id">Template identifier.</param>
