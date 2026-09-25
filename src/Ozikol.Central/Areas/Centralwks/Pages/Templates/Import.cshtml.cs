@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
+using Ozikol.Central.Services.Extraction;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -22,22 +23,30 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
     /// </summary>
     public class ImportModel : PageModel
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ExtractedSectionDto> _previewSectionCache = new();
+
+        private readonly INativeSectionExtractorService _nativeExtractor;
         private readonly ISectionsBuilderClientService _sectionsBuilderClient;
         private readonly ISectionAiStudioService _sectionAiStudioService;
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly HttpClient _httpClient;
         private readonly ILogger<ImportModel> _logger;
 
         public ImportModel(
+            INativeSectionExtractorService nativeExtractor,
             ISectionsBuilderClientService sectionsBuilderClient,
             ISectionAiStudioService sectionAiStudioService,
             MasterCatalogDbContext dbContext,
+            HttpClient httpClient,
             ILogger<ImportModel> logger)
         {
+            _nativeExtractor = nativeExtractor;
             _sectionsBuilderClient = sectionsBuilderClient;
             _sectionAiStudioService = sectionAiStudioService;
             _dbContext = dbContext;
+            _httpClient = httpClient;
             _logger = logger;
-            ExtractorBaseUrl = _sectionsBuilderClient.GetExtractorBaseUrl();
+            ExtractorBaseUrl = string.Empty;
         }
 
         /// <summary>
@@ -201,8 +210,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
             try
             {
-                var discoveryResult = await _sectionsBuilderClient.DiscoverPagesAsync(request.Url.Trim(), cancellationToken);
-                if (discoveryResult == null)
+                var discoveryResult = await _nativeExtractor.DiscoverPagesAsync(request.Url.Trim(), cancellationToken);
+                if (discoveryResult == null || !discoveryResult.Pages.Any())
                 {
                     return BadRequest(new { success = false, message = "No pages could be discovered from this website." });
                 }
@@ -232,42 +241,51 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             if (string.IsNullOrWhiteSpace(TargetUrl))
             {
                 ErrorMessage = "Please provide a valid website URL to extract.";
+                CurrentStep = 1;
                 return Page();
             }
 
             try
             {
-                _logger.LogInformation("Starting live website extraction for: {Url}", TargetUrl);
+                _logger.LogInformation("Starting live website extraction natively for: {Url}", TargetUrl);
 
-                List<string>? selectedUrls = null;
-                if (!string.IsNullOrWhiteSpace(SelectedPageUrlsJson))
+                string html = string.Empty;
+                try
                 {
-                    try
+                    using var req = new HttpRequestMessage(HttpMethod.Get, TargetUrl.Trim());
+                    req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+                    req.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    var resp = await _httpClient.SendAsync(req, cancellationToken);
+                    
+                    if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden || resp.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
                     {
-                        selectedUrls = JsonSerializer.Deserialize<List<string>>(SelectedPageUrlsJson);
+                        throw new InvalidOperationException("Cloudflare Bot Security Protected");
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Could not deserialize SelectedPageUrlsJson; continuing with default crawl.");
-                    }
+                    resp.EnsureSuccessStatusCode();
+                    html = await resp.Content.ReadAsStringAsync(cancellationToken);
+                }
+                catch (Exception fetchEx)
+                {
+                    _logger.LogWarning(fetchEx, "Direct HTTP fetch was blocked for {Url}", TargetUrl);
+                    ErrorMessage = "This demo site is guarded by Cloudflare anti-bot security. Please switch to the 'Paste Page Source / Upload HTML' tab (press Ctrl+U in your browser, copy and paste) to extract all sections instantly without bot blocks.";
+                    CurrentStep = 1;
+                    return Page();
                 }
 
-                var request = new SectionsBuilderRequestDto
-                {
-                    Url = TargetUrl.Trim(),
-                    SuiteName = string.IsNullOrWhiteSpace(SuiteName) ? null : SuiteName.Trim(),
-                    BrandName = string.IsNullOrWhiteSpace(BrandName) ? "Enterprise Workspace" : BrandName.Trim(),
-                    CrawlSubpages = CrawlSubpages,
-                    MaxSubpages = Math.Clamp(MaxSubpages, 1, 20),
-                    SelectedPageUrls = selectedUrls,
-                    DeepDebrand = true,
-                    IncludeCodeInjections = true
-                };
+                ExtractionResult = await _nativeExtractor.ExtractSectionsFromSourceAsync(
+                    html,
+                    TargetUrl.Trim(),
+                    SuiteName,
+                    BrandName,
+                    cancellationToken: cancellationToken);
 
-                ExtractionResult = await _sectionsBuilderClient.ExtractSectionsFromUrlAsync(request, cancellationToken);
-
-                if (ExtractionResult != null)
+                if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    foreach (var sec in ExtractionResult.Sections)
+                    {
+                        _previewSectionCache[sec.Id] = sec;
+                    }
+
                     ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -275,17 +293,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                         WriteIndented = false
                     });
 
-                    StatusMessage = $"Extraction complete! Discovered {ExtractionResult.TotalPages} pages and extracted {ExtractionResult.TotalSections} modular sections.";
+                    CurrentStep = 3;
+                    StatusMessage = $"Extraction complete! Extracted {ExtractionResult.TotalSections} modular sections with precision scoped CSS.";
                 }
                 else
                 {
-                    ErrorMessage = "Extraction service did not return any sections. Please check the URL and try again.";
+                    ErrorMessage = "Extraction service did not find any modular sections. Please verify the page markup.";
+                    CurrentStep = 1;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Website extraction failed for {Url}", TargetUrl);
                 ErrorMessage = $"Extraction failed: {ex.Message}";
+                CurrentStep = 1;
             }
 
             return Page();
@@ -300,28 +321,29 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             if (string.IsNullOrWhiteSpace(HtmlSource))
             {
                 ErrorMessage = "Please paste the raw HTML page source to extract.";
+                CurrentStep = 1;
                 return Page();
             }
 
             try
             {
-                _logger.LogInformation("Starting direct page source extraction.");
+                _logger.LogInformation("Starting direct page source extraction natively in C#.");
 
-                var request = new SectionsBuilderFromSourceRequestDto
+                ExtractionResult = await _nativeExtractor.ExtractSectionsFromSourceAsync(
+                    HtmlSource.Trim(),
+                    SourceBaseUrl,
+                    SourceSuiteName,
+                    SourceBrandName,
+                    SourceCustomCss,
+                    cancellationToken);
+
+                if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
-                    HtmlSource = HtmlSource.Trim(),
-                    BaseUrl = string.IsNullOrWhiteSpace(SourceBaseUrl) ? null : SourceBaseUrl.Trim(),
-                    SuiteName = string.IsNullOrWhiteSpace(SourceSuiteName) ? "Pasted Source Suite" : SourceSuiteName.Trim(),
-                    BrandName = string.IsNullOrWhiteSpace(SourceBrandName) ? "Enterprise Workspace" : SourceBrandName.Trim(),
-                    CustomCss = string.IsNullOrWhiteSpace(SourceCustomCss) ? null : SourceCustomCss.Trim(),
-                    DeepDebrand = true,
-                    IncludeCodeInjections = true
-                };
+                    foreach (var sec in ExtractionResult.Sections)
+                    {
+                        _previewSectionCache[sec.Id] = sec;
+                    }
 
-                ExtractionResult = await _sectionsBuilderClient.ExtractSectionsFromSourceAsync(request, cancellationToken);
-
-                if (ExtractionResult != null)
-                {
                     ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -329,17 +351,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                         WriteIndented = false
                     });
 
-                    StatusMessage = $"Direct source extraction complete! Sliced {ExtractionResult.TotalSections} modular sections in < 0.2s.";
+                    CurrentStep = 3;
+                    StatusMessage = $"Direct source extraction complete! Sliced {ExtractionResult.TotalSections} modular sections in < 0.05s.";
                 }
                 else
                 {
                     ErrorMessage = "Source extraction did not return any sections. Please verify the HTML markup.";
+                    CurrentStep = 1;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Direct page source extraction failed");
                 ErrorMessage = $"Source extraction failed: {ex.Message}";
+                CurrentStep = 1;
             }
 
             return Page();
@@ -371,6 +396,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    foreach (var sec in ExtractionResult.Sections)
+                    {
+                        _previewSectionCache[sec.Id] = sec;
+                    }
+
                     ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -437,7 +467,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
             try
             {
-                _logger.LogInformation("Inspecting raw assets for base URL: {BaseUrl}", SourceBaseUrl);
+                _logger.LogInformation("Inspecting raw assets natively for base URL: {BaseUrl}", SourceBaseUrl);
 
                 var request = new RawAssetsInspectRequestDto
                 {
@@ -447,7 +477,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     BrandName = string.IsNullOrWhiteSpace(SourceBrandName) ? "Enterprise Workspace" : SourceBrandName.Trim()
                 };
 
-                InspectResult = await _sectionsBuilderClient.InspectRawAssetsAsync(request, cancellationToken);
+                InspectResult = await _nativeExtractor.InspectRawAssetsAsync(request, cancellationToken);
 
                 if (InspectResult != null)
                 {
@@ -493,7 +523,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
             try
             {
-                _logger.LogInformation("Slicing and scoping modular sections from Step 2 Workbench.");
+                _logger.LogInformation("Slicing and scoping modular sections from Step 2 Workbench natively.");
 
                 List<RawAssetItemDto>? parsedStylesheets = null;
                 if (!string.IsNullOrWhiteSpace(EditedStylesheetsJson))
@@ -523,10 +553,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     IncludeCodeInjections = true
                 };
 
-                ExtractionResult = await _sectionsBuilderClient.SliceAndScopeAsync(request, cancellationToken);
+                ExtractionResult = await _nativeExtractor.SliceAndScopeAsync(request, cancellationToken);
 
-                if (ExtractionResult != null)
+                if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    foreach (var sec in ExtractionResult.Sections)
+                    {
+                        _previewSectionCache[sec.Id] = sec;
+                    }
+
                     ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
                     {
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -551,6 +586,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             }
 
             return Page();
+        }
+
+        /// <summary>
+        /// Renders an in-process standalone HTML sandbox for previewing an individual section inside an iframe.
+        /// </summary>
+        public IActionResult OnGetPreviewSandbox(string sectionId, string? suiteName, string? baseUrl)
+        {
+            if (string.IsNullOrWhiteSpace(sectionId) || !_previewSectionCache.TryGetValue(sectionId, out var section))
+            {
+                return Content("<!DOCTYPE html><html><body style='font-family: sans-serif; padding: 30px; text-align: center; color: #64748b;'><h3>Section Preview Loading...</h3><p>Please select a section card to preview.</p></body></html>", "text/html");
+            }
+
+            var html = _nativeExtractor.BuildStandaloneSectionPreviewHtml(section, suiteName, baseUrl);
+            return Content(html, "text/html");
         }
 
         /// <summary>

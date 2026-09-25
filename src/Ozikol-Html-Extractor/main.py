@@ -9,11 +9,15 @@ import logging
 import sys
 import asyncio
 
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+if sys.platform == "win32" and sys.version_info < (3, 14):
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    except Exception:
+        pass
 
+import time
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -49,6 +53,30 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# ---------------------------------------------------------------------------
+# Request Logging Middleware
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def log_requests_middleware(request: Request, call_next):
+    """
+    Logs all incoming HTTP requests, response status codes, and execution timings.
+    """
+    start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+    query_str = f"?{request.url.query}" if request.url.query else ""
+    logger.info(">>> INCOMING [%s] %s%s (client: %s)", request.method, request.url.path, query_str, client_ip)
+    
+    try:
+        response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000
+        logger.info("<<< COMPLETED [%s] %s -> HTTP %s (took %.1fms)", request.method, request.url.path, response.status_code, process_time)
+        return response
+    except Exception as ex:
+        process_time = (time.time() - start_time) * 1000
+        logger.error("!!! FAILED [%s] %s -> Exception: %s (took %.1fms)", request.method, request.url.path, ex, process_time)
+        raise
 
 # ---------------------------------------------------------------------------
 # CORS
