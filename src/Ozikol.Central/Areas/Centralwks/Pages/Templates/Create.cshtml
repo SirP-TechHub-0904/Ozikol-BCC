@@ -322,17 +322,46 @@
 
         @* ── Tab 1: HTML Editor ── *@
         <div id="studio-pane-html" class="studio-editor-pane active">
-            <div class="token-chip-bar">
-                <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Insert Token:</span>
-                <span class="token-chip" onclick="insertToken('{{ Title }}')">{{ Title }}</span>
-                <span class="token-chip" onclick="insertToken('{{ Subtitle }}')">{{ Subtitle }}</span>
-                <span class="token-chip" onclick="insertToken('{{ MiniTitle }}')">{{ MiniTitle }}</span>
-                <span class="token-chip" onclick="insertToken('{{ Description }}')">{{ Description }}</span>
-                <span class="token-chip" onclick="insertToken('{{ ImageUrl }}')">{{ ImageUrl }}</span>
-                <span class="token-chip" onclick="insertToken('{{ ButtonText }}')">{{ ButtonText }}</span>
-                <span class="token-chip" onclick="insertToken('{{ ButtonUrl }}')">{{ ButtonUrl }}</span>
-                <span class="token-chip" onclick="insertToken('{{ IconName }}')">{{ IconName }}</span>
-                <span class="token-chip" onclick="insertSectionSnippet()">{{#each SectionLists}}...{{/each}}</span>
+            <div class="token-chip-bar" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; margin-bottom: 12px; background: #020617; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
+                <!-- Row 1: Section Fields -->
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Section:</span>
+                    <span class="token-chip" onclick="insertToken('{{ Title }}')" title="Primary heading">{{ Title }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ MiniTitle }}')" title="Kicker / sub-heading badge">{{ MiniTitle }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ Subtitle }}')" title="Subtitle">{{ Subtitle }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ Description }}')" title="Summary / excerpt">{{ Description }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ FullDescription }}')" title="Extended rich HTML body">{{ FullDescription }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ Quote }}')" title="Blockquote / highlight">{{ Quote }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ ImageUrl }}')" title="Primary section image">{{ ImageUrl }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ SecondImageUrl }}')" title="Secondary image">{{ SecondImageUrl }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ VideoUrl }}')" title="Video stream URL">{{ VideoUrl }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ ButtonText }}')" title="CTA button label">{{ ButtonText }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ ButtonLink }}')" title="CTA destination link">{{ ButtonLink }}</span>
+                    <span class="token-chip" onclick="insertToken('{{ DirectUrl }}')" title="Direct section anchor / slug">{{ DirectUrl }}</span>
+                </div>
+
+                <!-- Row 2: Repeater Child Items -->
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Lists / Cards:</span>
+                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.35); color: #34d399;" onclick="insertSectionSnippet()" title="Insert repeating child items loop">{{#each SectionLists}}...{{/each}}</span>
+                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.25); color: #34d399;" onclick="insertToken('{{ IconText }}')" title="Bootstrap/FontAwesome icon class">{{ IconText }}</span>
+                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.25); color: #34d399;" onclick="insertToken('{{ MoreDescription }}')" title="Secondary role/detail">{{ MoreDescription }}</span>
+                </div>
+
+                <!-- Row 3: Tenant Organization & Contact -->
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Contact / Org:</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Phone }}')" title="Tenant phone number">{{ Organization.Phone }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Email }}')" title="Tenant contact email">{{ Organization.Email }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Address }}')" title="Physical address">{{ Organization.Address }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Name }}')" title="Organization / Brand name">{{ Organization.Name }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.WorkingHour }}')" title="Business operating hours">{{ Organization.WorkingHour }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.LogoUrl }}')" title="Brand logo URL">{{ Organization.LogoUrl }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Facebook }}')" title="Facebook URL">{{ Organization.Facebook }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Instagram }}')" title="Instagram URL">{{ Organization.Instagram }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Twitter }}')" title="Twitter / X URL">{{ Organization.Twitter }}</span>
+                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Youtube }}')" title="YouTube channel URL">{{ Organization.Youtube }}</span>
+                </div>
             </div>
 
             <textarea asp-for="Input.HtmlTemplate" id="htmlEditorTextarea"></textarea>
