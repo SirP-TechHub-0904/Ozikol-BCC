@@ -235,32 +235,32 @@
 <div class="admin-card" style="margin-bottom: 24px; overflow: hidden;">
     <div class="details-tab-nav">
         <button type="button" class="details-tab-btn active" onclick="switchDetailsTab('live-preview', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #38bdf8;">bolt</span> Live Sandbox Preview
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #2563eb;">visibility</span> Preview
         </button>
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('html-code', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #38bdf8;">code</span> Semantic HTML (@Model.Template.HtmlTemplate.Length chars)
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">code</span> HTML (@Model.Template.HtmlTemplate.Length chars)
         </button>
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('css-code', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #a78bfa;">palette</span> Scoped CSS (@Model.Template.CssStyles.Length chars)
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #7c3aed;">palette</span> CSS (@Model.Template.CssStyles.Length chars)
         </button>
         @if (!string.IsNullOrWhiteSpace(Model.Template.JsScript))
         {
             <button type="button" class="details-tab-btn" onclick="switchDetailsTab('js-code', this)">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #facc15;">javascript</span> Client JavaScript
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">javascript</span> JavaScript
             </button>
         }
         @if (!string.IsNullOrWhiteSpace(Model.Template.DefaultSectionListsJson))
         {
             <button type="button" class="details-tab-btn" onclick="switchDetailsTab('json-mock', this)">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #4ade80;">data_object</span> Mock JSON
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #059669;">data_object</span> Mock Data
             </button>
         }
         <button type="button" class="details-tab-btn" onclick="switchDetailsTab('blueprint-info', this)">
-            <span class="material-symbols-outlined" style="font-size: 18px; color: #fbbf24;">settings</span> Blueprint Metadata
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">info</span> Metadata
         </button>
     </div>
 
-    @* ── Tab 1: Live Sandbox Preview ── *@
+    @* ── Tab 1: Live Preview ── *@
     <div id="tab-live-preview" class="details-tab-pane active" style="background: #f8fafc; padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; gap: 6px;">
@@ -295,7 +295,7 @@
     @* ── Tab 2: HTML Code ── *@
     <div id="tab-html-code" class="details-tab-pane">
         <div class="code-viewer-header">
-            <span style="font-size: 12px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">HTML (Mustache Syntax)</span>
+            <span style="font-size: 12px; font-weight: 700; color: #0284c7; text-transform: uppercase;">HTML (Mustache Syntax)</span>
             <button type="button" class="copy-btn" onclick="copyTextToClipboard('htmlContentCode')">
                 <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy HTML
             </button>
@@ -306,7 +306,7 @@
     @* ── Tab 3: CSS Styles ── *@
     <div id="tab-css-code" class="details-tab-pane">
         <div class="code-viewer-header">
-            <span style="font-size: 12px; font-weight: 700; color: #a78bfa; text-transform: uppercase;">Scoped CSS Rules</span>
+            <span style="font-size: 12px; font-weight: 700; color: #7c3aed; text-transform: uppercase;">Scoped CSS Rules</span>
             <button type="button" class="copy-btn" onclick="copyTextToClipboard('cssContentCode')">
                 <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy CSS
             </button>
@@ -319,7 +319,7 @@
     {
         <div id="tab-js-code" class="details-tab-pane">
             <div class="code-viewer-header">
-                <span style="font-size: 12px; font-weight: 700; color: #facc15; text-transform: uppercase;">Sandboxed JavaScript</span>
+                <span style="font-size: 12px; font-weight: 700; color: #d97706; text-transform: uppercase;">Sandboxed JavaScript</span>
                 <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsContentCode')">
                     <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JS
                 </button>
@@ -333,7 +333,7 @@
     {
         <div id="tab-json-mock" class="details-tab-pane">
             <div class="code-viewer-header">
-                <span style="font-size: 12px; font-weight: 700; color: #4ade80; text-transform: uppercase;">Default Section List Items (JSON)</span>
+                <span style="font-size: 12px; font-weight: 700; color: #059669; text-transform: uppercase;">Default Section List Items (JSON)</span>
                 <button type="button" class="copy-btn" onclick="copyTextToClipboard('jsonContentCode')">
                     <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JSON
                 </button>
@@ -342,44 +342,44 @@
         </div>
     }
 
-    @* ── Tab 6: Blueprint Info ── *@
-    <div id="tab-blueprint-info" class="details-tab-pane">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+    @* ── Tab 6: Blueprint Metadata ── *@
+    <div id="tab-blueprint-info" class="details-tab-pane" style="padding: 24px; background: var(--admin-bg-surface, #ffffff);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Unique Blueprint Identifier</div>
-                <div style="font-family: monospace; font-size: 13px; color: #fff; margin-top: 4px; word-break: break-all;">@Model.Template.Id</div>
+                <div style="font-family: monospace; font-size: 13px; color: var(--admin-text, #0f172a); margin-top: 4px; word-break: break-all;">@Model.Template.Id</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+            <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Programmatic Variant Key</div>
-                <div style="font-family: monospace; font-size: 13px; color: #38bdf8; font-weight: 700; margin-top: 4px;">@Model.Template.VariantCode</div>
+                <div style="font-family: monospace; font-size: 13px; color: #2563eb; font-weight: 700; margin-top: 4px;">@Model.Template.VariantCode</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+            <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Registered Timestamp</div>
-                <div style="font-size: 13px; color: #fff; margin-top: 4px;">@Model.Template.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+                <div style="font-size: 13px; color: var(--admin-text, #0f172a); margin-top: 4px;">@Model.Template.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
             </div>
 
             @if (Model.Template.UpdatedUtc.HasValue)
             {
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+                <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                     <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Last Modified</div>
-                    <div style="font-size: 13px; color: #fff; margin-top: 4px;">@Model.Template.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+                    <div style="font-size: 13px; color: var(--admin-text, #0f172a); margin-top: 4px;">@Model.Template.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
                 </div>
             }
 
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+            <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Preview Title Override</div>
-                <div style="font-size: 13px; color: #fff; margin-top: 4px;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewTitle) ? "(Inherits Template Name)" : Model.Template.PreviewTitle)</div>
+                <div style="font-size: 13px; color: var(--admin-text, #0f172a); margin-top: 4px;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewTitle) ? "(Inherits Template Name)" : Model.Template.PreviewTitle)</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px;">
+            <div style="background: var(--admin-bg-surface-elevated, #f8fafc); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 10px; padding: 16px;">
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted);">Preview Image URL</div>
-                <div style="font-size: 13px; color: #38bdf8; margin-top: 4px; word-break: break-all;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewImageUrl) ? "(Default placeholder)" : Model.Template.PreviewImageUrl)</div>
+                <div style="font-size: 13px; color: #2563eb; margin-top: 4px; word-break: break-all;">@(string.IsNullOrWhiteSpace(Model.Template.PreviewImageUrl) ? "(Default placeholder)" : Model.Template.PreviewImageUrl)</div>
             </div>
         </div>
 
-        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 12px; align-items: center;">
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); display: flex; gap: 12px; align-items: center;">
             <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
                 <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template Details
             </a>
