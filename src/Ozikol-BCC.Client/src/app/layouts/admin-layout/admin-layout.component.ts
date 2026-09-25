@@ -138,26 +138,7 @@ interface PinnedItem {
                   </button>
                 </div>
               </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/sliders" [class.active]="isContentSlidersActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">view_carousel</span>Hero Sliders</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/sliders')" (click)="togglePin('Hero Sliders', '/content/console/sliders', 'view_carousel')" [title]="isPinned('/content/console/sliders') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/sliders') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/faqs" [class.active]="isParentActive('/content/console/faqs')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>FAQs & Categories</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/faqs')" (click)="togglePin('FAQs', '/content/console/faqs', 'quiz')" [title]="isPinned('/content/console/faqs') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/faqs') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
+
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/blogs" [class.active]="isParentActive('/content/console/blogs')" class="sub-nav-item">
@@ -1616,13 +1597,6 @@ export class AdminLayoutComponent implements OnInit {
     return this.currentRoute.startsWith('/admin/content/sections');
   }
 
-  isContentSlidersActive(): boolean {
-    return this.currentRoute.startsWith('/admin/content/sliders');
-  }
-
-  isContentFaqsActive(): boolean {
-    return this.currentRoute.startsWith('/admin/content/faqs');
-  }
 
   computeAbbreviation(name: string): string {
     if (!name || !name.trim()) return 'ORG';

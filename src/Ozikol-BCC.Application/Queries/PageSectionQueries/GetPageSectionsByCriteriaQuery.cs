@@ -49,18 +49,22 @@ namespace Ozikol_BCC.Application.Queries.PageSectionQueries
 
             if (!string.IsNullOrEmpty(request.Position) && !string.IsNullOrEmpty(request.PageSet))
             {
-                if (request.Position.ToLower() == "top" && request.PageSet.ToLower() == "home")
+                if (request.PageSet.ToLower() == "home")
                 {
-                    query = query.Where(x => x.ShowInHome == true && x.HomeSortFrom == HomeSortFrom.Top).OrderBy(x => x.HomePageSortOrder);
-                }
-                else if (request.Position.ToLower() == "bottom" && request.PageSet.ToLower() == "home")
-                {
-                    query = query.Where(x => x.ShowInHome == true && x.HomeSortFrom == HomeSortFrom.Bottom).OrderBy(x => x.HomePageSortOrder);
+                    var homePageId = await _context.WebPages
+                        .Where(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index")
+                        .Select(p => (Guid?)p.Id)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (homePageId.HasValue)
+                    {
+                        query = query.Where(x => x.WebPageId == homePageId.Value).OrderBy(x => x.PageSortOrder);
+                    }
                 }
             }
             else if (!string.IsNullOrEmpty(request.Position) && (request.Position.ToLower() == "fixed" || request.Position.ToLower() == "footer"))
             {
-                query = query.Where(x => x.FixedAfterFooter == true).OrderBy(x => x.HomePageSortOrder);
+                query = query.Where(x => x.FixedAfterFooter == true).OrderBy(x => x.PageSortOrder);
             }
             else if (request.WebPageId.HasValue && request.WebPageId != Guid.Empty)
             {
@@ -83,7 +87,7 @@ namespace Ozikol_BCC.Application.Queries.PageSectionQueries
                 TemplateKey = x.TemplateKey,
                 CustomClass = x.CustomClass,
                 DirectUrl = x.DirectUrl,
-                ShowInHome = x.ShowInHome,
+                PageSortOrder = x.PageSortOrder,
                 DisableButton = x.DisableButton,
                 ButtonText = x.ButtonText,
                 ButtonLink = x.ButtonLink,

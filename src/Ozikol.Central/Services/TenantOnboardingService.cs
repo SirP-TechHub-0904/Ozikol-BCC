@@ -1102,22 +1102,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             // 5e. Seed Structured Page Sections & Repeatable Child Lists
             await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, historyPage, teamPage, servicesPage, requestServicePage, contactPage, cancellationToken);
 
-            // 6. Seed Default Hero Slider
-            if (!await dbContext.Sliders.AnyAsync(cancellationToken))
-            {
-                dbContext.Sliders.Add(new Slider
-                {
-                    Id = Guid.NewGuid(),
-                    Title = $"Welcome to {request.OrganizationName}",
-                    Text = sectorDefaults.Slogan,
-                    ButtonText = "Explore Solutions",
-                    ButtonLink = "/services",
-                    Show = true,
-                    SortOrder = 1
-                });
-            }
-
-            // 7. Seed Default Global Code Injections (Bootstrap 5.3 CSS/JS & Font Awesome 6)
+            // 6. Seed Default Global Code Injections (Bootstrap 5.3 CSS/JS & Font Awesome 6)
             await SeedDefaultCodeInjectionsAsync(dbContext, cancellationToken);
 
             // 8. Seed Complete Turnkey Theme Suite (All 9 Categories, 7 Body Sections, Font Awesome Icons, Bootstrap 5)
@@ -2621,22 +2606,18 @@ public class TenantOnboardingService : ITenantOnboardingService
         var newsletterForm = await dbContext.PageForms.FirstOrDefaultAsync(f => f.FormKey == "newsletter", cancellationToken);
 
         var sections = new List<PageSection>();
-
-        // 1. HOME PAGE SECTIONS
         var homeHero = new PageSection
         {
             Id = Guid.NewGuid(),
             WebPageId = homePage.Id,
             TemplateKey = "Hero_CorporateSplit",
             Title = "Empowering Modern Organizations to Scale with Confidence.",
-            MiniTitle = $"OFFICIAL PORTAL \u2022 {abbreviation}",
+            MiniTitle = $"OFFICIAL PORTAL • {abbreviation}",
             Description = "Delivering innovative solutions, strategic consulting, and operational excellence to help your organization achieve sustainable, high-impact success.",
             FullDescription = sectorDefaults.Description,
             ButtonText = "Explore Services",
             ButtonLink = "/services",
             DirectUrl = "home-hero",
-            ShowInHome = true,
-            HomePageSortOrder = 1,
             PageSortOrder = 1
         };
         sections.Add(homeHero);
@@ -2652,8 +2633,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Explore Services",
             ButtonLink = "/services",
             DirectUrl = "home-features",
-            ShowInHome = true,
-            HomePageSortOrder = 2,
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2673,8 +2652,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "PROVEN RELIABILITY",
             Description = "Empowering organizations with verifiable uptime, rigorous compliance, and transparent operational oversight.",
             DirectUrl = "home-stats",
-            ShowInHome = true,
-            HomePageSortOrder = 3,
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2695,8 +2672,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "HOW WE ENGAGE",
             Description = "From exploratory consultation to continuous support, our standardized methodology guarantees predictability and measurable outcomes.",
             DirectUrl = "home-process",
-            ShowInHome = true,
-            HomePageSortOrder = 4,
             PageSortOrder = 4,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2719,8 +2694,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Request a Service",
             ButtonLink = "/request-service",
             DirectUrl = "home-cta",
-            ShowInHome = true,
-            HomePageSortOrder = 5,
             PageSortOrder = 5
         };
         sections.Add(homeCta);
@@ -2737,7 +2710,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Request a Consultation",
             ButtonLink = "/request-service",
             DirectUrl = "services-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(servicesHero);
@@ -2753,7 +2725,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Contact Our Team",
             ButtonLink = "/contact",
             DirectUrl = "services-grid",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2774,7 +2745,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "STRUCTURED DELIVERY",
             Description = "We employ standardized delivery phases to guarantee transparency, timely milestones, and superior outcome quality.",
             DirectUrl = "services-process",
-            ShowInHome = false,
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2797,7 +2767,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Schedule Consultation",
             ButtonLink = "/contact",
             DirectUrl = "services-cta",
-            ShowInHome = false,
             PageSortOrder = 4
         };
         sections.Add(servicesCta);
@@ -2814,7 +2783,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "View Our Capabilities",
             ButtonLink = "/services",
             DirectUrl = "about-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(aboutHero);
@@ -2828,7 +2796,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "GUIDING ETHICS",
             Description = "The bedrock principles that inform our decisions, guide our teamwork, and cultivate lasting trust.",
             DirectUrl = "about-values",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2848,7 +2815,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "MEASURABLE IMPACT",
             Description = "A consistent record of dependable execution, client satisfaction, and operational resilience.",
             DirectUrl = "about-stats",
-            ShowInHome = false,
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2871,7 +2837,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Reach Out Today",
             ButtonLink = "/contact",
             DirectUrl = "about-cta",
-            ShowInHome = false,
             PageSortOrder = 4
         };
         sections.Add(aboutCta);
@@ -2888,7 +2853,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Explore Milestones",
             ButtonLink = "#history-milestones",
             DirectUrl = "history-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(historyHero);
@@ -2902,7 +2866,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "THE JOURNEY",
             Description = "A timeline of strategic evolution, capability expansion, and lasting partnerships.",
             DirectUrl = "history-milestones",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2925,7 +2888,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Request a Service",
             ButtonLink = "/request-service",
             DirectUrl = "history-cta",
-            ShowInHome = false,
             PageSortOrder = 3
         };
         sections.Add(historyCta);
@@ -2942,7 +2904,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Connect with Our Team",
             ButtonLink = "/contact",
             DirectUrl = "team-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(teamHero);
@@ -2956,7 +2917,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "OUR STEWARDS",
             Description = "Cross-functional leaders committed to operational integrity, client satisfaction, and sustainable excellence.",
             DirectUrl = "team-grid",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
@@ -2978,7 +2938,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Schedule Consultation",
             ButtonLink = "/contact",
             DirectUrl = "team-cta",
-            ShowInHome = false,
             PageSortOrder = 3
         };
         sections.Add(teamCta);
@@ -2995,7 +2954,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Email Our Office",
             ButtonLink = $"mailto:{request.AdminEmail}",
             DirectUrl = "contact-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(contactHero);
@@ -3009,7 +2967,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "GET IN TOUCH",
             Description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
             DirectUrl = "contact-form",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageFormId = contactForm?.Id,
             FormKey = "contact-us",
@@ -3033,7 +2990,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Compose Email",
             ButtonLink = $"mailto:{request.AdminEmail}",
             DirectUrl = "contact-cta",
-            ShowInHome = false,
             PageSortOrder = 3
         };
         sections.Add(contactCta);
@@ -3050,7 +3006,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonText = "Start Intake Below",
             ButtonLink = "#request-service",
             DirectUrl = "request-hero",
-            ShowInHome = false,
             PageSortOrder = 1
         };
         sections.Add(requestHero);
@@ -3064,7 +3019,6 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "SERVICE CONSULTATION",
             Description = "Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.",
             DirectUrl = "request-service",
-            ShowInHome = false,
             PageSortOrder = 2,
             PageFormId = serviceRequestForm?.Id,
             FormKey = "service-request"
@@ -3080,9 +3034,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             MiniTitle = "NEWSLETTER",
             Description = "Subscribe to our periodic industry insights, corporate bulletins, and platform updates.",
             DirectUrl = "newsletter-bar",
-            ShowInHome = true,
             FixedAfterFooter = true,
-            HomePageSortOrder = 6,
             PageSortOrder = 99,
             PageFormId = newsletterForm?.Id,
             FormKey = "newsletter"

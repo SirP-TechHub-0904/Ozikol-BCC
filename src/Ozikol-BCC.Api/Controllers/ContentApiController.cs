@@ -258,7 +258,6 @@ namespace Ozikol_BCC.Api.Controllers
                     DirectUrl = uniqueSlug,
                     EnableDirectUrl = true,
                     PageCategoryId = categoryId,
-                    ShowInMainTop = request.ShowInMainTop,
                     ShowInMainMenu = request.ShowInMenu || request.ShowInMainMenu,
                     ShowInMenuDropDown = request.ShowInMenuDropDown,
                     ShowInFooter = request.ShowInFooter,
@@ -273,7 +272,6 @@ namespace Ozikol_BCC.Api.Controllers
                     MetaTitle = request.MetaTitle,
                     MetaDescription = request.MetaDescription,
                     MetaKeywords = request.MetaKeywords,
-                    HomeSortFrom = request.HomeSortFrom,
                     MainPageId = request.MainPageId,
                     CreatedAtUtc = DateTime.UtcNow
                 };
@@ -305,7 +303,6 @@ namespace Ozikol_BCC.Api.Controllers
             existing.EnableDirectUrl = updated.EnableDirectUrl;
             existing.Publish = updated.Publish;
             existing.SecurityPage = updated.SecurityPage;
-            existing.ShowInMainTop = updated.ShowInMainTop;
             existing.ShowInMainMenu = updated.ShowInMainMenu;
             existing.ShowInMenuDropDown = updated.ShowInMenuDropDown;
             existing.ShowInFooter = updated.ShowInFooter;
@@ -319,7 +316,6 @@ namespace Ozikol_BCC.Api.Controllers
             existing.MetaTitle = updated.MetaTitle;
             existing.MetaDescription = updated.MetaDescription;
             existing.MetaKeywords = updated.MetaKeywords;
-            existing.HomeSortFrom = updated.HomeSortFrom;
             existing.MainPageId = updated.MainPageId;
             existing.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -397,7 +393,6 @@ namespace Ozikol_BCC.Api.Controllers
                 Publish = request.Publish,
                 ParentId = request.ParentId,
                 Icon = request.Icon,
-                HomeSortFrom = request.HomeSortFrom,
                 CreatedAtUtc = DateTime.UtcNow
             };
 
@@ -418,7 +413,6 @@ namespace Ozikol_BCC.Api.Controllers
             existing.Publish = updated.Publish;
             existing.ParentId = updated.ParentId == Guid.Empty ? null : updated.ParentId;
             existing.Icon = updated.Icon;
-            existing.HomeSortFrom = updated.HomeSortFrom;
 
             await _context.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Category updated successfully."));
@@ -465,7 +459,15 @@ namespace Ozikol_BCC.Api.Controllers
             }
             else if (pageSet == "home" || string.IsNullOrEmpty(pageSet))
             {
-                query = query.Where(s => s.ShowInHome).OrderBy(s => s.HomePageSortOrder);
+                var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                if (homePage != null)
+                {
+                    query = query.Where(s => s.WebPageId == homePage.Id).OrderBy(s => s.PageSortOrder);
+                }
+                else
+                {
+                    query = query.OrderBy(s => s.PageSortOrder);
+                }
             }
 
             var sections = await query.ToListAsync();
@@ -522,14 +524,9 @@ namespace Ozikol_BCC.Api.Controllers
             existing.TemplateKey = updated.TemplateKey;
             existing.CustomClass = updated.CustomClass;
             existing.BackgroundColor = updated.BackgroundColor;
-            existing.ShowInHome = updated.ShowInHome;
             existing.Disable = updated.Disable;
             existing.FixedAfterFooter = updated.FixedAfterFooter;
-            existing.HomePageSortOrder = updated.HomePageSortOrder;
             existing.PageSortOrder = updated.PageSortOrder;
-            existing.HomeSortFrom = updated.HomeSortFrom;
-            existing.ShowSectionInBlog = updated.ShowSectionInBlog;
-            existing.BlogSectionPosition = updated.BlogSectionPosition;
             existing.AddToRibon = updated.AddToRibon;
             existing.RibonCustomDisplayTitle = updated.RibonCustomDisplayTitle;
             existing.RibonSortOrder = updated.RibonSortOrder;
@@ -613,190 +610,6 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, "Section sub-item deleted successfully."));
         }
 
-        // ==========================================
-        // 4. SLIDERS (Hero Carousel)
-        // ==========================================
-
-        [HttpGet("sliders")]
-        public async Task<IActionResult> GetSliders()
-        {
-            var sliders = await _context.Sliders
-                .OrderBy(s => s.SortOrder)
-                .ToListAsync();
-
-            return Ok(ApiResponse<object>.SuccessResponse(sliders, "Sliders retrieved successfully."));
-        }
-
-        [HttpGet("sliders/{id:guid}")]
-        public async Task<IActionResult> GetSliderById(Guid id)
-        {
-            var slider = await _context.Sliders.FindAsync(id);
-            if (slider == null) return NotFound(ApiResponse<object>.FailureResponse("Slider not found."));
-            return Ok(ApiResponse<object>.SuccessResponse(slider, "Slider details retrieved."));
-        }
-
-        [HttpPost("sliders")]
-        public async Task<IActionResult> CreateSlider([FromBody] Slider slider)
-        {
-            slider.Id = Guid.NewGuid();
-            slider.Show = true;
-            _context.Sliders.Add(slider);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(slider, "Slider created successfully."));
-        }
-
-        [HttpPut("sliders/{id:guid}")]
-        public async Task<IActionResult> UpdateSlider(Guid id, [FromBody] Slider updated)
-        {
-            var existing = await _context.Sliders.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Slider not found."));
-
-            existing.Title = updated.Title;
-            existing.MiniTitle = updated.MiniTitle;
-            existing.Text = updated.Text;
-            existing.ButtonText = updated.ButtonText;
-            existing.ButtonLink = updated.ButtonLink;
-            existing.Url = updated.Url;
-            existing.Key = updated.Key;
-            existing.SecondUrl = updated.SecondUrl;
-            existing.SecondKey = updated.SecondKey;
-            existing.YoutubeVideo = updated.YoutubeVideo;
-            existing.IsVideo = updated.IsVideo;
-            existing.DisableVideoButton = updated.DisableVideoButton;
-            existing.VideoLink = updated.VideoLink;
-            existing.VideoButtonText = updated.VideoButtonText;
-            existing.SortOrder = updated.SortOrder;
-            existing.Show = updated.Show;
-            existing.TemplateKey = updated.TemplateKey;
-
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(existing, "Slider updated successfully."));
-        }
-
-        [HttpDelete("sliders/{id:guid}")]
-        public async Task<IActionResult> DeleteSlider(Guid id)
-        {
-            var existing = await _context.Sliders.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Slider not found."));
-
-            _context.Sliders.Remove(existing);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Slider deleted successfully."));
-        }
-
-        // ==========================================
-        // 5. FAQ CATEGORIES & FAQs
-        // ==========================================
-
-        [HttpGet("faq-categories")]
-        public async Task<IActionResult> GetFaqCategories()
-        {
-            var categories = await _context.FAQCategories
-                .Include(c => c.FAQs!.OrderBy(f => f.SortOrder))
-                .OrderBy(c => c.SortOrder)
-                .ToListAsync();
-
-            return Ok(ApiResponse<object>.SuccessResponse(categories, "FAQ categories retrieved."));
-        }
-
-        [HttpPost("faq-categories")]
-        public async Task<IActionResult> CreateFaqCategory([FromBody] FAQCategory category)
-        {
-            if (string.IsNullOrWhiteSpace(category.Title))
-            {
-                return BadRequest(ApiResponse<object>.FailureResponse("FAQ Category Title is required."));
-            }
-
-            category.CreatedAtUtc = DateTime.UtcNow;
-            _context.FAQCategories.Add(category);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(category, "FAQ Category created successfully."));
-        }
-
-        [HttpPut("faq-categories/{id:int}")]
-        public async Task<IActionResult> UpdateFaqCategory(int id, [FromBody] FAQCategory updated)
-        {
-            var existing = await _context.FAQCategories.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("FAQ Category not found."));
-
-            existing.Title = updated.Title;
-            existing.SortOrder = updated.SortOrder;
-            existing.Publish = updated.Publish;
-
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(existing, "FAQ Category updated successfully."));
-        }
-
-        [HttpDelete("faq-categories/{id:int}")]
-        public async Task<IActionResult> DeleteFaqCategory(int id)
-        {
-            var existing = await _context.FAQCategories.Include(c => c.FAQs).FirstOrDefaultAsync(c => c.Id == id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("FAQ Category not found."));
-
-            _context.FAQCategories.Remove(existing);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, "FAQ Category deleted successfully."));
-        }
-
-        [HttpGet("faqs")]
-        public async Task<IActionResult> GetFaqs([FromQuery] int? categoryId = null)
-        {
-            var query = _context.FAQs.Include(f => f.FAQCategory).AsQueryable();
-
-            if (categoryId.HasValue)
-            {
-                query = query.Where(f => f.FAQCategoryId == categoryId.Value);
-            }
-
-            var faqs = await query.OrderBy(f => f.SortOrder).ToListAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(faqs, "FAQs retrieved successfully."));
-        }
-
-        [HttpGet("faqs/{id:int}")]
-        public async Task<IActionResult> GetFaqById(int id)
-        {
-            var faq = await _context.FAQs.Include(f => f.FAQCategory).FirstOrDefaultAsync(f => f.Id == id);
-            if (faq == null) return NotFound(ApiResponse<object>.FailureResponse("FAQ not found."));
-            return Ok(ApiResponse<object>.SuccessResponse(faq, "FAQ details retrieved."));
-        }
-
-        [HttpPost("faqs")]
-        public async Task<IActionResult> CreateFaq([FromBody] FAQ faq)
-        {
-            faq.CreatedAtUtc = DateTime.UtcNow;
-            if (faq.FAQCategoryId <= 0) faq.FAQCategoryId = null;
-
-            _context.FAQs.Add(faq);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(faq, "FAQ created successfully."));
-        }
-
-        [HttpPut("faqs/{id:int}")]
-        public async Task<IActionResult> UpdateFaq(int id, [FromBody] FAQ updated)
-        {
-            var existing = await _context.FAQs.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("FAQ not found."));
-
-            existing.Title = updated.Title;
-            existing.Message = updated.Message;
-            existing.SortOrder = updated.SortOrder;
-            existing.Show = updated.Show;
-            existing.FAQCategoryId = updated.FAQCategoryId <= 0 ? null : updated.FAQCategoryId;
-
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(existing, "FAQ updated successfully."));
-        }
-
-        [HttpDelete("faqs/{id:int}")]
-        public async Task<IActionResult> DeleteFaq(int id)
-        {
-            var existing = await _context.FAQs.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("FAQ not found."));
-
-            _context.FAQs.Remove(existing);
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, "FAQ deleted successfully."));
-        }
 
         // ==========================================
         // 8. BLOG CATEGORIES
@@ -1415,9 +1228,8 @@ namespace Ozikol_BCC.Api.Controllers
                     SectionTitle = s.Title ?? "(Untitled Section)",
                     MiniTitle = s.MiniTitle,
                     WebPageId = s.WebPageId,
-                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : (s.ShowInHome ? "Homepage" : "Unassigned Page"),
+                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : "Unassigned Page",
                     WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
-                    ShowInHome = s.ShowInHome,
                     SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
                 })
                 .ToListAsync();
@@ -1585,9 +1397,8 @@ namespace Ozikol_BCC.Api.Controllers
                     MiniTitle = s.MiniTitle,
                     TemplateKey = s.TemplateKey,
                     WebPageId = s.WebPageId,
-                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : (s.ShowInHome ? "Homepage" : "Unassigned Page"),
+                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : "Unassigned Page",
                     WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
-                    ShowInHome = s.ShowInHome,
                     SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
                 })
                 .ToListAsync();
@@ -1933,14 +1744,18 @@ namespace Ozikol_BCC.Api.Controllers
                 }
                 else if (isHomePage)
                 {
-                    var existingOrders = await _context.PageSections
-                        .Where(s => s.ShowInHome)
-                        .Select(s => s.HomePageSortOrder)
-                        .ToListAsync();
-
-                    if (existingOrders.Any())
+                    var homePage = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                    if (homePage != null)
                     {
-                        sortOrder = insertAtTop ? Math.Max(1, existingOrders.Min() - 5) : existingOrders.Max() + 10;
+                        var existingOrders = await _context.PageSections
+                            .Where(s => s.WebPageId == homePage.Id)
+                            .Select(s => s.PageSortOrder)
+                            .ToListAsync();
+
+                        if (existingOrders.Any())
+                        {
+                            sortOrder = insertAtTop ? Math.Max(1, existingOrders.Min() - 5) : existingOrders.Max() + 10;
+                        }
                     }
                 }
 
@@ -1972,7 +1787,6 @@ namespace Ozikol_BCC.Api.Controllers
                     WebPageId = targetPage?.Id,
                     TemplateKey = template?.TemplateKey ?? request.TemplateKey ?? template?.VariantCode ?? "Section_Custom",
                     MasterTemplateId = template?.MasterTemplateId,
-                    InstalledVersion = template?.InstalledVersion ?? "1.0.0",
                     IsCustomized = template?.IsCustomized ?? true,
                     HtmlTemplate = template?.HtmlTemplate ?? string.Empty,
                     CssStyles = template?.CssStyles ?? string.Empty,
@@ -1983,9 +1797,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ImageUrl = contentData?.ImageUrl,
                     ButtonText = contentData?.ButtonText,
                     ButtonLink = contentData?.ButtonLink,
-                    ShowInHome = isHomePage || (targetPage == null),
                     PageSortOrder = sortOrder,
-                    HomePageSortOrder = sortOrder,
                     Disable = false
                 };
 
@@ -2427,7 +2239,6 @@ namespace Ozikol_BCC.Api.Controllers
                     foreach (var oldSec in allExistingSections)
                     {
                         oldSec.Disable = true;
-                        oldSec.ShowInHome = false;
                     }
                 }
 
@@ -2497,19 +2308,6 @@ namespace Ozikol_BCC.Api.Controllers
                             {
                                 _context.PageSections.RemoveRange(existingPage.PageSections);
                             }
-
-                            // If this is the Homepage, also remove other legacy orphan home sections
-                            if (p.Slug != null && p.Slug.Equals("home", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var otherHomeSections = await _context.PageSections
-                                    .Where(s => s.ShowInHome && s.WebPageId != pageId)
-                                    .ToListAsync();
-
-                                foreach (var ohs in otherHomeSections)
-                                {
-                                    ohs.ShowInHome = false;
-                                }
-                            }
                         }
 
                         // Attach sections if provided
@@ -2531,9 +2329,7 @@ namespace Ozikol_BCC.Api.Controllers
                                     ButtonLink = s.ButtonLink,
                                     HtmlTemplate = matchingTemplate?.HtmlTemplate ?? string.Empty,
                                     CssStyles = matchingTemplate?.CssStyles ?? string.Empty,
-                                    ShowInHome = s.ShowInHome || (p.Slug != null && p.Slug.Equals("home", StringComparison.OrdinalIgnoreCase)),
                                     PageSortOrder = s.PageSortOrder,
-                                    HomePageSortOrder = s.PageSortOrder,
                                     Disable = false,
                                     IsCustomized = true
                                 };
@@ -3377,7 +3173,6 @@ namespace Ozikol_BCC.Api.Controllers
         public string? ImageUrl { get; set; }
         public string? ButtonText { get; set; }
         public string? ButtonLink { get; set; }
-        public bool ShowInHome { get; set; } = false;
         public int PageSortOrder { get; set; } = 1;
         public List<ImportablePageSectionItemDto>? Items { get; set; }
     }

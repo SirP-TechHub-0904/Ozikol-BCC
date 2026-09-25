@@ -111,7 +111,6 @@ namespace Ozikol.Central.Services
                             ButtonText = mSec.ButtonText,
                             ButtonLink = mSec.ButtonUrl,
                             PageSortOrder = mSec.SortOrder,
-                            HomePageSortOrder = mSec.SortOrder,
                             Disable = false,
                             HtmlTemplate = masterTemplate.HtmlTemplate,
                             CssStyles = masterTemplate.CssStyles,
