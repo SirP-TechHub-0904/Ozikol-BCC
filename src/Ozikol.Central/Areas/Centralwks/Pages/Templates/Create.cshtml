@@ -11,13 +11,18 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
 
 <style>
-    .studio-header-card {
+    .studio-hero-card {
         background: var(--admin-bg-surface, #ffffff);
         border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
         border-radius: 14px;
         padding: 20px 24px;
         margin-bottom: 20px;
-        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
     }
     .studio-tab-bar {
         display: flex;
@@ -84,6 +89,17 @@
         padding: 16px;
     }
     .studio-editor-pane.active {
+        display: block;
+    }
+    .studio-settings-pane {
+        display: none;
+        background: var(--admin-bg-surface, #ffffff);
+        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 24px;
+    }
+    .studio-settings-pane.active {
         display: block;
     }
     .CodeMirror {
@@ -192,160 +208,73 @@
         color: #34d399;
         border-color: rgba(5, 150, 105, 0.4);
     }
+    .settings-section-card {
+        background: var(--admin-bg-surface-elevated, #f8fafc);
+        border: 1px solid var(--admin-border, rgba(0,0,0,0.08));
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .settings-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--admin-text, #0f172a);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 </style>
 
 <form method="post" id="templateCreateForm">
     @Html.AntiForgeryToken()
 
-    @* ── Studio Top Action & Title Header ── *@
-    <div class="admin-page-header">
-        <div class="admin-title-group">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 13px;">
-                <a href="/centralwks/templates" style="color: var(--admin-text-muted, #64748b); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span> Back to Templates
-                </a>
-                <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
-                <span style="color: var(--admin-text, #0f172a); font-weight: 600;">New Template Blueprint</span>
-            </div>
-            <h1 class="admin-title">Create Marketplace Template</h1>
-            <p class="admin-subtitle">Author a modular UI block with semantic HTML tokens, scoped CSS, and sample data repeater.</p>
+    @* ── Top Breadcrumb Navigation ── *@
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <a href="/centralwks/templates" style="color: var(--admin-text-muted, #64748b); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span> Back to Templates
+            </a>
+            <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
+            <span style="color: var(--admin-text-muted, #64748b);">Marketplace</span>
+            <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
+            <span style="color: var(--admin-text, #0f172a); font-weight: 600;">New Blueprint</span>
         </div>
-        <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
-            <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="/centralwks/templates" class="btn-admin btn-admin-secondary btn-admin-sm">
                 Cancel
             </a>
-            <button type="submit" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 10px 22px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add_box</span> Create Blueprint
+            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 8px 18px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">add_box</span> Create Blueprint
             </button>
+        </div>
+    </div>
+
+    @* ── Compact Identity Hero Header ── *@
+    <div class="studio-hero-card">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(37, 99, 235, 0.1); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">library_add</span>
+            </div>
+            <div>
+                <h1 style="font-size: 20px; font-weight: 800; color: var(--admin-text, #0f172a); margin: 0 0 6px 0; line-height: 1.2;">Create Marketplace Template</h1>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 12px; color: var(--admin-text-muted, #64748b);">Author a modular UI block with semantic HTML tokens, scoped CSS, and sample data</span>
+                </div>
+            </div>
         </div>
     </div>
 
     @if (!ModelState.IsValid)
     {
-        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px;">
+        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
             <div asp-validation-summary="All" style="margin: 0; padding-left: 20px;"></div>
         </div>
     }
 
-    @* ── Compact Identity & Blueprint Metadata Bar ── *@
-    <div class="studio-header-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); padding-bottom: 12px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-outlined" style="color: var(--admin-primary, #e5173f); font-size: 20px;">tune</span>
-                <span style="font-size: 14px; font-weight: 700; color: var(--admin-text, #0f172a); text-transform: uppercase; letter-spacing: 0.03em;">Blueprint Parameters & Identity</span>
-            </div>
-            <button type="button" class="height-btn" onclick="toggleMetadataBar(this)">
-                <span id="metadataToggleIcon" class="material-symbols-outlined" style="font-size: 16px;">expand_less</span>
-                <span id="metadataToggleText">Collapse Settings</span>
-            </button>
-        </div>
-
-        <div id="metadataFieldsContainer">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px;">
-                <div class="form-group">
-                    <label asp-for="Input.Name" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Template Name <span style="color: var(--admin-danger);">*</span>
-                    </label>
-                    <input asp-for="Input.Name" class="form-control" placeholder="e.g. Modern Feature Grid Showcase" />
-                    <span asp-validation-for="Input.Name" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.VariantCode" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Programmatic Variant Code <span style="color: var(--admin-danger);">*</span>
-                    </label>
-                    <input asp-for="Input.VariantCode" class="form-control" style="font-family: monospace; color: #0284c7;" placeholder="e.g. BODY_09" />
-                    <span asp-validation-for="Input.VariantCode" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.CategoryId" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Category <span style="color: var(--admin-danger);">*</span>
-                    </label>
-                    <select asp-for="Input.CategoryId" asp-items="Model.CategoryOptions" class="form-select">
-                        <option value="">-- Select Category --</option>
-                    </select>
-                    <span asp-validation-for="Input.CategoryId" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.Tag" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Style Classification
-                    </label>
-                    <select asp-for="Input.Tag" class="form-select">
-                        <option value="modern">Modern & Clean</option>
-                        <option value="dark">Dark & Futuristic</option>
-                        <option value="minimal">Minimalist</option>
-                        <option value="corporate">Corporate & Enterprise</option>
-                        <option value="ecommerce">E-Commerce</option>
-                        <option value="creative">Creative & Portfolio</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                <div class="form-group">
-                    <label asp-for="Input.Description" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Short Summary Description
-                    </label>
-                    <input asp-for="Input.Description" class="form-control" placeholder="e.g. Modular body section with isolated scoped CSS and responsive items." />
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.Version" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Version
-                    </label>
-                    <input asp-for="Input.Version" class="form-control" style="font-family: monospace;" value="1.0.0" />
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.SortOrder" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Display Sort Order
-                    </label>
-                    <input asp-for="Input.SortOrder" type="number" class="form-control" value="10" />
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.Badge" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Badge (Optional)
-                    </label>
-                    <input asp-for="Input.Badge" class="form-control" placeholder="e.g. New" />
-                </div>
-
-                <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding-bottom: 10px;">
-                        <input asp-for="Input.IsActive" type="checkbox" checked style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
-                        <span style="font-size: 13px; font-weight: 600; color: #059669;">Active & Published</span>
-                    </label>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
-                <div class="form-group">
-                    <label asp-for="Input.PreviewTitle" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Preview Title Override (Optional)
-                    </label>
-                    <input asp-for="Input.PreviewTitle" class="form-control" placeholder="e.g. Default title in builder" />
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.PreviewImageUrl" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Demo Image URL (Optional)
-                    </label>
-                    <input asp-for="Input.PreviewImageUrl" class="form-control" placeholder="https://..." />
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Input.ThumbnailGradient" class="form-label" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 12px; color: var(--admin-text-muted);">
-                        Thumbnail Gradient (CSS)
-                    </label>
-                    <input asp-for="Input.ThumbnailGradient" class="form-control" style="font-family: monospace;" value="linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" />
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @* ── Full-Width Tabbed Code Studio ── *@
+    @* ── Full-Width 5-Tab Studio Workspace ── *@
     <div style="margin-bottom: 30px;">
         <div class="studio-tab-bar">
             <div class="studio-tab-group">
@@ -369,9 +298,14 @@
                     Sample Data
                     <span class="tab-badge" id="sampleItemsCountBadge">0 Items</span>
                 </button>
+                <button type="button" class="studio-tab-btn" onclick="switchStudioTab('settings', this)">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">tune</span>
+                    Blueprint Settings
+                    <span class="tab-badge">Config</span>
+                </button>
             </div>
 
-            <div style="display: flex; gap: 6px; align-items: center; padding: 4px 0;">
+            <div id="editorHeightControls" style="display: flex; gap: 6px; align-items: center; padding: 4px 0;">
                 <span style="font-size: 11px; color: var(--admin-text-muted); margin-right: 4px;">Editor Height:</span>
                 <button type="button" class="height-btn" onclick="setEditorHeight(320, this)" title="Minimise Editor View">
                     <span class="material-symbols-outlined" style="font-size: 14px;">compress</span> Compact
@@ -457,8 +391,8 @@
                 <div id="sampleItemsRepeaterList"></div>
                 <div id="noSampleItemsMsg" style="display: none; text-align: center; padding: 40px 20px; background: #020617; border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px;">
                     <span class="material-symbols-outlined" style="font-size: 36px; color: #64748b; margin-bottom: 8px; display: block;">dataset</span>
-                    <div style="font-weight: 600; font-size: 14px; color: #cbd5e1; margin-bottom: 4px;">No Sample Data Items</div>
-                    <p style="font-size: 12.5px; color: #64748b; margin-bottom: 16px;">Add sample items to preview repeating list elements such as features, cards, or team members.</p>
+                    <div style="font-weight: 600; font-size: 14px; color: #cbd5e1; margin-bottom: 4px;">No Sample Data Configured</div>
+                    <p style="font-size: 12.5px; color: #64748b; margin-bottom: 16px;">This template variant currently has no default repeating child items.</p>
                     <button type="button" class="btn-admin btn-admin-primary" onclick="addNewSampleItem()" style="font-size: 12px; padding: 6px 14px;">
                         <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add First Sample Item
                     </button>
@@ -473,6 +407,113 @@
                     </button>
                 </div>
                 <textarea asp-for="Input.DefaultSectionListsJson" id="jsonEditorTextarea"></textarea>
+            </div>
+        </div>
+
+        @* ── Tab 5: Blueprint Settings & Parameters ── *@
+        <div id="studio-pane-settings" class="studio-settings-pane">
+            <div class="settings-section-card">
+                <div class="settings-section-title">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 18px;">badge</span>
+                    Template Identity & Categorization
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.Name" class="form-label">
+                            Template Name <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input asp-for="Input.Name" class="form-control" placeholder="e.g. Modern Feature Grid Showcase" />
+                        <span asp-validation-for="Input.Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.VariantCode" class="form-label">
+                            Programmatic Variant Code <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <input asp-for="Input.VariantCode" class="form-control" style="font-family: monospace; color: #0284c7; font-weight: 600;" placeholder="e.g. BODY_09" />
+                        <span asp-validation-for="Input.VariantCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.CategoryId" class="form-label">
+                            Category <span style="color: var(--admin-danger);">*</span>
+                        </label>
+                        <select asp-for="Input.CategoryId" asp-items="Model.CategoryOptions" class="form-select">
+                            <option value="">-- Select Category --</option>
+                        </select>
+                        <span asp-validation-for="Input.CategoryId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.Tag" class="form-label">Style Classification</label>
+                        <select asp-for="Input.Tag" class="form-select">
+                            <option value="modern">Modern & Clean</option>
+                            <option value="dark">Dark & Futuristic</option>
+                            <option value="minimal">Minimalist</option>
+                            <option value="corporate">Corporate & Enterprise</option>
+                            <option value="ecommerce">E-Commerce</option>
+                            <option value="creative">Creative & Portfolio</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section-card">
+                <div class="settings-section-title">
+                    <span class="material-symbols-outlined" style="color: #7c3aed; font-size: 18px;">description</span>
+                    Blueprint Description & Release Control
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.Description" class="form-label">Short Summary Description</label>
+                        <input asp-for="Input.Description" class="form-control" placeholder="e.g. Modular body section with isolated scoped CSS and responsive items." />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.Version" class="form-label">Version</label>
+                        <input asp-for="Input.Version" class="form-control" style="font-family: monospace;" value="1.0.0" placeholder="e.g. 1.0.0" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.SortOrder" class="form-label">Display Sort Order</label>
+                        <input asp-for="Input.SortOrder" type="number" class="form-control" value="10" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.Badge" class="form-label">Badge Label (Optional)</label>
+                        <input asp-for="Input.Badge" class="form-control" placeholder="e.g. New" />
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; padding-top: 6px;">
+                    <input asp-for="Input.IsActive" type="checkbox" id="chkIsActive" checked style="width: 18px; height: 18px; accent-color: var(--admin-primary); cursor: pointer;" />
+                    <label for="chkIsActive" style="font-size: 13.5px; font-weight: 600; color: #059669; cursor: pointer; margin: 0;">
+                        Active & Published in Marketplace Catalog
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section-card">
+                <div class="settings-section-title">
+                    <span class="material-symbols-outlined" style="color: #d97706; font-size: 18px;">image</span>
+                    Card Thumbnail & Builder Showcase Overrides
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                    <div class="form-group">
+                        <label asp-for="Input.PreviewTitle" class="form-label">Showcase Title Override</label>
+                        <input asp-for="Input.PreviewTitle" class="form-control" placeholder="e.g. Default title in builder" />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.PreviewImageUrl" class="form-label">Demo Screenshot Image URL</label>
+                        <input asp-for="Input.PreviewImageUrl" class="form-control" placeholder="https://..." />
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Input.ThumbnailGradient" class="form-label">Thumbnail Gradient (CSS)</label>
+                        <input asp-for="Input.ThumbnailGradient" class="form-control" style="font-family: monospace;" value="linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" placeholder="linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)" />
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -561,7 +602,6 @@
         editors.html.on('change', updateCharCounts);
         editors.css.on('change', updateCharCounts);
         editors.json.on('change', function() {
-            // Sync JSON text to internal sampleItems model if valid
             try {
                 const val = editors.json.getValue();
                 if (val && val.trim()) {
@@ -605,10 +645,16 @@
 
     function switchStudioTab(tabId, btn) {
         document.querySelectorAll('.studio-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.studio-editor-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.studio-editor-pane, .studio-settings-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
+        
         const pane = document.getElementById('studio-pane-' + tabId);
         if (pane) pane.classList.add('active');
+
+        const heightControls = document.getElementById('editorHeightControls');
+        if (heightControls) {
+            heightControls.style.display = (tabId === 'settings') ? 'none' : 'flex';
+        }
 
         setTimeout(() => {
             if (tabId === 'html' && editors.html) editors.html.refresh();
@@ -630,21 +676,6 @@
         Object.values(editors).forEach(ed => {
             if (ed) ed.refresh();
         });
-    }
-
-    function toggleMetadataBar(btn) {
-        const container = document.getElementById('metadataFieldsContainer');
-        const icon = document.getElementById('metadataToggleIcon');
-        const text = document.getElementById('metadataToggleText');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            icon.textContent = 'expand_less';
-            text.textContent = 'Collapse Settings';
-        } else {
-            container.style.display = 'none';
-            icon.textContent = 'expand_more';
-            text.textContent = 'Expand Settings';
-        }
     }
 
     function insertToken(token) {
