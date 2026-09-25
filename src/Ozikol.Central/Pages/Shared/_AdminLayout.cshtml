@@ -394,6 +394,28 @@
         </script>
     }
 
+    <!-- Global Professional Confirmation & Action Modal -->
+    <div id="ozConfirmModalBackdrop" class="oz-modal-backdrop" style="display: none;">
+        <div class="oz-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ozConfirmModalTitle">
+            <div class="oz-modal-header">
+                <div id="ozConfirmModalIconContainer" class="oz-modal-icon-badge danger">
+                    <span id="ozConfirmModalIcon" class="material-symbols-outlined">delete_forever</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 id="ozConfirmModalTitle" class="oz-modal-title">Confirm Action</h3>
+                    <p id="ozConfirmModalMessage" class="oz-modal-message">Are you sure you want to proceed with this operation?</p>
+                </div>
+            </div>
+            <div class="oz-modal-actions">
+                <button type="button" id="ozConfirmModalCancelBtn" class="oz-modal-btn oz-modal-btn-cancel">Cancel</button>
+                <button type="button" id="ozConfirmModalProceedBtn" class="oz-modal-btn oz-modal-btn-danger">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Floating Toast Notification Container -->
+    <div id="ozToastContainer" class="oz-toast-container" aria-live="polite"></div>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

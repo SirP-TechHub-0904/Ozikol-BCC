@@ -252,7 +252,7 @@
         <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
             <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
         </a>
-        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Template.Id" style="display: inline;" onsubmit="return confirm('Permanently delete this template?');">
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Template.Id" style="display: inline;" data-confirm="Are you sure you want to permanently delete '@Model.Template.Name' (@Model.Template.VariantCode)? This action removes the template from the marketplace catalog and cannot be undone." data-confirm-title="Delete Template Blueprint" data-confirm-btn="Delete Template">
             @Html.AntiForgeryToken()
             <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px; color: #dc2626;">
                 <span class="material-symbols-outlined" style="font-size: 16px;">delete</span> Delete
@@ -688,7 +688,9 @@
         else if (editorKey === 'jsonViewer' && editors.json) text = editors.json.getValue();
 
         navigator.clipboard.writeText(text).then(() => {
-            alert('Copied to clipboard!');
+            if (window.ozToast) {
+                window.ozToast('Copied to clipboard!', 'success', 2500);
+            }
         }).catch(err => {
             console.error('Failed to copy:', err);
         });

@@ -1009,8 +1009,13 @@
             if (!raw.trim()) return;
             const parsed = JSON.parse(raw);
             editors.json.setValue(JSON.stringify(parsed, null, 4));
+            if (window.ozToast) {
+                window.ozToast('JSON formatted successfully!', 'success', 2500);
+            }
         } catch(e) {
-            alert('Invalid JSON syntax: ' + e.message);
+            if (window.ozToast) {
+                window.ozToast('Invalid JSON syntax: ' + e.message, 'error', 3500);
+            }
         }
     }
 
