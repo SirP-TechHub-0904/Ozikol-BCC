@@ -724,9 +724,153 @@
         }
     }
 
+    const categorySchemas = {
+        faq: {
+            title: 'e.g. How do I configure custom domains?',
+            subtitle: 'e.g. Add a CNAME record pointing to our edge proxy in your DNS provider.',
+            tag: 'e.g. Domain Setup',
+            icon: 'e.g. bi bi-question-circle',
+            imageUrl: '',
+            buttonText: 'e.g. View Guide',
+            url: 'e.g. /docs/cname'
+        },
+        pricing: {
+            title: 'e.g. Enterprise Tier',
+            subtitle: 'e.g. $199 / month - Dedicated cluster with custom SLA',
+            tag: 'e.g. Recommended',
+            icon: 'e.g. bi bi-check2-circle',
+            imageUrl: '',
+            buttonText: 'e.g. Select Plan',
+            url: 'e.g. /checkout/enterprise'
+        },
+        stats: {
+            title: 'e.g. 99.99%',
+            subtitle: 'e.g. SLA Availability',
+            tag: 'e.g. Performance',
+            icon: 'e.g. bi bi-speedometer2',
+            imageUrl: '',
+            buttonText: '',
+            url: ''
+        },
+        counter: {
+            title: 'e.g. 5,000,000+',
+            subtitle: 'e.g. Monthly API Transactions',
+            tag: 'e.g. Global Scale',
+            icon: 'e.g. bi bi-activity',
+            imageUrl: '',
+            buttonText: '',
+            url: ''
+        },
+        process: {
+            title: 'e.g. 01. Configure Workspace',
+            subtitle: 'e.g. Set up your branding and team permissions in under 2 minutes.',
+            tag: 'e.g. Step 1',
+            icon: 'e.g. bi bi-hdd-network',
+            imageUrl: '',
+            buttonText: 'e.g. Next Step',
+            url: '#'
+        },
+        steps: {
+            title: 'e.g. Step 02: Deploy Application',
+            subtitle: 'e.g. Connect your GitHub repository to trigger zero-downtime builds.',
+            tag: 'e.g. Phase 2',
+            icon: 'e.g. bi bi-rocket-takeoff',
+            imageUrl: '',
+            buttonText: 'e.g. Learn More',
+            url: '#'
+        },
+        blog: {
+            title: 'e.g. Modern Architecture for Multi-Tenant Systems',
+            subtitle: 'e.g. Strategies for database schema isolation and telemetry monitoring.',
+            tag: 'e.g. Engineering',
+            icon: 'e.g. bi bi-journal-text',
+            imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+            buttonText: 'e.g. Read Article',
+            url: 'e.g. /blog/multi-tenant-architecture'
+        },
+        news: {
+            title: 'e.g. Release 2.4: Real-time Spam Protection & Sentry Telemetry',
+            subtitle: 'e.g. Introducing enhanced deliverability analysis and instant crash notifications.',
+            tag: 'e.g. Updates',
+            icon: 'e.g. bi bi-broadcast',
+            imageUrl: '',
+            buttonText: 'e.g. Release Notes',
+            url: 'e.g. /changelog'
+        },
+        hero: {
+            title: 'e.g. Next-Gen Multi-Tenant Platform',
+            subtitle: 'e.g. Build, deploy, and scale enterprise tenant applications seamlessly.',
+            tag: 'e.g. Enterprise',
+            icon: 'e.g. bi bi-stars',
+            imageUrl: '',
+            buttonText: 'e.g. Get Started Free',
+            url: 'e.g. /register'
+        },
+        feature: {
+            title: 'e.g. Enterprise Data Encryption',
+            subtitle: 'e.g. Bank-grade 256-bit encryption protecting tenant data at rest and in transit.',
+            tag: 'e.g. Security',
+            icon: 'e.g. bi bi-shield-lock',
+            imageUrl: '',
+            buttonText: 'e.g. Learn More',
+            url: 'e.g. /features/security'
+        },
+        features: {
+            title: 'e.g. Automated Edge Routing',
+            subtitle: 'e.g. Ultra-low latency routing across global points of presence.',
+            tag: 'e.g. Performance',
+            icon: 'e.g. bi bi-lightning-charge',
+            imageUrl: '',
+            buttonText: 'e.g. Explore Capabilities',
+            url: 'e.g. /features/routing'
+        },
+        body: {
+            title: 'e.g. Modular Architecture Block',
+            subtitle: 'e.g. Fully customizable UI block with isolated stylesheets.',
+            tag: 'e.g. Modular',
+            icon: 'e.g. bi bi-grid',
+            imageUrl: '',
+            buttonText: 'e.g. Explore',
+            url: '#'
+        },
+        contact: {
+            title: 'e.g. 24/7 Global Solutions Desk',
+            subtitle: 'e.g. Guaranteed 15-minute response SLA from our solutions team.',
+            tag: 'e.g. Support',
+            icon: 'e.g. bi bi-headset',
+            imageUrl: '',
+            buttonText: 'e.g. Contact Us',
+            url: 'e.g. /contact'
+        },
+        cta: {
+            title: 'e.g. Ready to transform your infrastructure?',
+            subtitle: 'e.g. Start your 14-day free trial. No credit card required.',
+            tag: 'e.g. Get Started',
+            icon: 'e.g. bi bi-arrow-right-circle',
+            imageUrl: '',
+            buttonText: 'e.g. Start Free Trial',
+            url: 'e.g. /register'
+        }
+    };
+
+    function getActiveCategoryPlaceholders() {
+        const catSelect = document.querySelector('select[name="Input.CategoryId"]');
+        let selectedText = '';
+        if (catSelect && catSelect.selectedIndex >= 0) {
+            selectedText = (catSelect.options[catSelect.selectedIndex].text || '').toLowerCase();
+        }
+        for (const [key, schema] of Object.entries(categorySchemas)) {
+            if (selectedText.includes(key)) {
+                return schema;
+            }
+        }
+        return categorySchemas.feature;
+    }
+
     function renderSampleRepeater() {
         const list = document.getElementById('sampleItemsRepeaterList');
         const empty = document.getElementById('noSampleItemsMsg');
+        const placeholders = getActiveCategoryPlaceholders();
 
         if (!sampleItems || sampleItems.length === 0) {
             list.innerHTML = '';
@@ -745,7 +889,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 11px; font-weight: 700; color: #34d399; text-transform: uppercase;">Item #${index + 1}</span>
-                        <span style="font-size: 12px; font-weight: 600; color: #cbd5e1;">${escapeHtml(item.Title || 'Untitled Item')}</span>
+                        <span style="font-size: 12px; font-weight: 600; color: #cbd5e1;">${escapeHtml(item.Title || placeholders.title.replace('e.g. ', ''))}</span>
                     </div>
                     <div style="display: flex; gap: 4px;">
                         <button type="button" class="height-btn" onclick="moveSampleItem(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Up">
@@ -763,22 +907,22 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Title</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Title || '')}" placeholder="e.g. Modern Web Design" oninput="updateSampleItemField(${index}, 'Title', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Title || '')}" placeholder="${escapeHtml(placeholders.title)}" oninput="updateSampleItemField(${index}, 'Title', this.value)" />
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Subtitle / Short Desc</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Subtitle || '')}" placeholder="e.g. High performance web apps" oninput="updateSampleItemField(${index}, 'Subtitle', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Subtitle || '')}" placeholder="${escapeHtml(placeholders.subtitle)}" oninput="updateSampleItemField(${index}, 'Subtitle', this.value)" />
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Tag / Badge</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Tag || '')}" placeholder="e.g. Popular" oninput="updateSampleItemField(${index}, 'Tag', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Tag || '')}" placeholder="${escapeHtml(placeholders.tag)}" oninput="updateSampleItemField(${index}, 'Tag', this.value)" />
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Icon Class</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Icon || '')}" placeholder="e.g. bi bi-laptop" oninput="updateSampleItemField(${index}, 'Icon', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Icon || '')}" placeholder="${escapeHtml(placeholders.icon)}" oninput="updateSampleItemField(${index}, 'Icon', this.value)" />
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Image URL</label>
@@ -786,11 +930,11 @@
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Button / Link Text</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.ButtonText || '')}" placeholder="e.g. Learn More" oninput="updateSampleItemField(${index}, 'ButtonText', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.ButtonText || '')}" placeholder="${escapeHtml(placeholders.buttonText || 'e.g. Learn More')}" oninput="updateSampleItemField(${index}, 'ButtonText', this.value)" />
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Link URL</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Url || '')}" placeholder="e.g. /services" oninput="updateSampleItemField(${index}, 'Url', this.value)" />
+                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Url || '')}" placeholder="${escapeHtml(placeholders.url || 'e.g. /services')}" oninput="updateSampleItemField(${index}, 'Url', this.value)" />
                     </div>
                 </div>
             `;
@@ -802,16 +946,24 @@
 
     function addNewSampleItem() {
         sampleItems.push({
-            Title: 'New Item ' + (sampleItems.length + 1),
-            Subtitle: 'Description of sample capability or feature.',
-            Tag: 'Feature',
-            Icon: 'bi bi-check-circle',
+            Title: '',
+            Subtitle: '',
+            Tag: '',
+            Icon: '',
             ImageUrl: '',
-            Url: '#',
-            ButtonText: 'Learn More'
+            Url: '',
+            ButtonText: ''
         });
         renderSampleRepeater();
         syncRepeaterToJson();
+    }
+
+    // Attach category change listener to dynamically refresh placeholders
+    const catDropdown = document.querySelector('select[name="Input.CategoryId"]');
+    if (catDropdown) {
+        catDropdown.addEventListener('change', function() {
+            renderSampleRepeater();
+        });
     }
 
     function updateSampleItemField(index, field, value) {
