@@ -79,7 +79,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
             if (template == null)
             {
-                return Content("<!DOCTYPE html><html><body style='background:#0b1120;color:#94a3b8;font-family:sans-serif;padding:30px;text-align:center;'>Template not found.</body></html>", "text/html");
+                return Content("<!DOCTYPE html><html><body style='background:#ffffff;color:#64748b;font-family:sans-serif;padding:30px;text-align:center;'>Template not found.</body></html>", "text/html");
             }
 
             var compiledHtml = RenderTemplateMarkup(template);
@@ -94,17 +94,28 @@ document.addEventListener('DOMContentLoaded', function() {{
 }});
 </script>";
 
+            var variantClassUnderscore = $"sec-variant-{template.VariantCode.ToLowerInvariant()}";
+            var variantClassHyphen = $"sec-variant-{template.VariantCode.ToLowerInvariant().Replace('_', '-')}";
+
             var fullDocument = $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""utf-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>{template.Name} - Live Preview</title>
+    <!-- Fonts -->
     <link rel=""preconnect"" href=""https://fonts.googleapis.com"">
     <link rel=""preconnect"" href=""https://fonts.gstatic.com"" crossorigin>
-    <link href=""https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"" rel=""stylesheet"">
+    <link href=""https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap"" rel=""stylesheet"">
     <link rel=""stylesheet"" href=""https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"" />
+    
+    <!-- Core UI & Icon Frameworks -->
+    <link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"" />
+    <link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"" />
     <link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"" />
+    <link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"" />
+    <link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"" />
+    
     <style>
         *, *::before, *::after {{
             box-sizing: border-box;
@@ -113,38 +124,11 @@ document.addEventListener('DOMContentLoaded', function() {{
             margin: 0;
             padding: 0;
             font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #0b1120;
-            color: #f8fafc;
+            background-color: #ffffff;
+            color: #1e293b;
             min-height: 100vh;
             overflow-x: hidden;
         }}
-        .container, .container-fluid, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {{
-            width: 100%;
-            margin-right: auto;
-            margin-left: auto;
-            padding-right: 1.5rem;
-            padding-left: 1.5rem;
-        }}
-        @@media (min-width: 576px) {{ .container {{ max-width: 540px; }} }}
-        @@media (min-width: 768px) {{ .container {{ max-width: 720px; }} }}
-        @@media (min-width: 992px) {{ .container {{ max-width: 960px; }} }}
-        @@media (min-width: 1200px) {{ .container {{ max-width: 1140px; }} }}
-        @@media (min-width: 1400px) {{ .container {{ max-width: 1320px; }} }}
-        
-        .row {{
-            display: flex;
-            flex-wrap: wrap;
-            margin-right: -0.75rem;
-            margin-left: -0.75rem;
-        }}
-        .col-12 {{ flex: 0 0 auto; width: 100%; }}
-        .col-md-6 {{ flex: 0 0 auto; width: 50%; }}
-        .col-md-4 {{ flex: 0 0 auto; width: 33.333333%; }}
-        .col-md-3 {{ flex: 0 0 auto; width: 25%; }}
-        .col-lg-6 {{ flex: 0 0 auto; width: 50%; }}
-        .col-lg-4 {{ flex: 0 0 auto; width: 33.333333%; }}
-        .col-lg-3 {{ flex: 0 0 auto; width: 25%; }}
-        
         a {{ text-decoration: none; color: inherit; }}
         img {{ max-width: 100%; height: auto; }}
         
@@ -152,10 +136,14 @@ document.addEventListener('DOMContentLoaded', function() {{
         {template.CssStyles}
     </style>
 </head>
-<body>
-    <main style=""width: 100%; overflow: hidden;"">
+<body class=""preview-body"">
+    <div class=""{variantClassUnderscore} {variantClassHyphen}"" style=""width: 100%;"">
         {compiledHtml}
-    </main>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js""></script>
+    <script src=""https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js""></script>
     {safeJs}
 </body>
 </html>";
