@@ -23,18 +23,18 @@
 
     string categoryBadgeColor = (categoryKey.ToLowerInvariant()) switch
     {
-        "hero" => "#38bdf8",
-        "menu" => "#818cf8",
-        "footer" => "#c084fc",
-        "feature" or "features" or "body" => "#34d399",
-        "stats" or "counter" => "#fbbf24",
-        "process" or "steps" => "#f472b6",
-        "cta" => "#fb923c",
-        "contact" => "#2dd4bf",
-        "blog" or "news" => "#60a5fa",
-        "pricing" => "#a3e635",
-        "faq" or "faqs" => "#a78bfa",
-        _ => "#94a3b8"
+        "hero" => "#0284c7",
+        "menu" => "#4f46e5",
+        "footer" => "#7c3aed",
+        "feature" or "features" or "body" => "#059669",
+        "stats" or "counter" => "#d97706",
+        "process" or "steps" => "#db2777",
+        "cta" => "#ea580c",
+        "contact" => "#0d9488",
+        "blog" or "news" => "#2563eb",
+        "pricing" => "#65a30d",
+        "faq" or "faqs" => "#7c3aed",
+        _ => "#475569"
     };
 }
 
@@ -62,16 +62,16 @@
     .details-tab-nav {
         display: flex;
         gap: 6px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
         padding: 0 20px;
-        background: rgba(15, 23, 42, 0.6);
+        background: var(--admin-bg-surface-elevated, #f1f5f9);
         overflow-x: auto;
     }
     .details-tab-btn {
         background: transparent;
         border: none;
         border-bottom: 2px solid transparent;
-        color: #94a3b8;
+        color: var(--admin-text-muted, #64748b);
         padding: 14px 18px;
         font-size: 13px;
         font-weight: 600;
@@ -83,12 +83,12 @@
         transition: all 0.15s ease;
     }
     .details-tab-btn:hover {
-        color: #fff;
+        color: var(--admin-text, #0f172a);
     }
     .details-tab-btn.active {
-        color: #38bdf8;
-        border-bottom-color: #38bdf8;
-        background: rgba(56, 189, 248, 0.05);
+        color: var(--admin-primary, #e5173f);
+        border-bottom-color: var(--admin-primary, #e5173f);
+        background: var(--admin-primary-light, rgba(229, 23, 63, 0.08));
     }
     .details-tab-pane {
         display: none;
@@ -102,10 +102,10 @@
         justify-content: space-between;
         align-items: center;
         padding: 12px 18px;
-        background: #090e1a;
+        background: var(--admin-bg-surface-elevated, #f8fafc);
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
         border-bottom: none;
     }
     .code-pre-box {
@@ -122,9 +122,9 @@
         max-height: 520px;
     }
     .copy-btn {
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #cbd5e1;
+        background: var(--admin-bg-surface, #ffffff);
+        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+        color: var(--admin-text-muted, #475569);
         padding: 4px 10px;
         border-radius: 6px;
         font-size: 11px;
@@ -135,14 +135,13 @@
         transition: all 0.15s ease;
     }
     .copy-btn:hover {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        border-color: rgba(56, 189, 248, 0.3);
+        background: var(--admin-bg-hover, #e2e8f0);
+        color: var(--admin-text, #0f172a);
     }
     .viewport-btn-pill {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #94a3b8;
+        background: var(--admin-bg-surface, #ffffff);
+        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+        color: var(--admin-text-muted, #64748b);
         padding: 6px 14px;
         border-radius: 8px;
         font-size: 12px;
@@ -153,9 +152,9 @@
         transition: all 0.15s ease;
     }
     .viewport-btn-pill.active {
-        background: rgba(59, 130, 246, 0.25);
-        color: #38bdf8;
-        border-color: rgba(59, 130, 246, 0.5);
+        background: var(--admin-primary-light, rgba(229, 23, 63, 0.1));
+        color: var(--admin-primary, #e5173f);
+        border-color: var(--admin-primary, #e5173f);
     }
 </style>
 
