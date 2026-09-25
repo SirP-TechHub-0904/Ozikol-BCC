@@ -133,24 +133,24 @@ document.addEventListener('DOMContentLoaded', function() {{
         img {{ max-width: 100%; height: auto; }}
         
         /* Universal Icon Fallbacks for Vendor Themes (ThemeJunction, Bexon, etc.) */
-        [class*="tji-"]:before, [class^="tji-"]:before {{
+        [class*='tji-']:before, [class^='tji-']:before {{
             font-family: 'bootstrap-icons', 'Font Awesome 6 Free', sans-serif !important;
             font-style: normal;
             font-weight: 900;
             display: inline-block;
         }}
-        .tji-list:before, .tji-check:before {{ content: "\f26e" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-arrow-right-long:before, .tji-arrow-right:before, .tji-arrow-right-big:before {{ content: "\f138" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-arrow-left:before {{ content: "\f12f" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-service-1:before {{ content: "\f46b" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-service-2:before {{ content: "\f3e8" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-service-3:before {{ content: "\f562" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-service-4:before {{ content: "\f22d" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-clock:before {{ content: "\f293" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-quote:before {{ content: "\f50e" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-at:before {{ content: "\f147" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-phone:before {{ content: "\f5c1" !important; font-family: 'bootstrap-icons' !important; }}
-        .tji-mail:before, .tji-envelope:before {{ content: "\f32f" !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-list:before, .tji-check:before {{ content: '\f26e' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-arrow-right-long:before, .tji-arrow-right:before, .tji-arrow-right-big:before {{ content: '\f138' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-arrow-left:before {{ content: '\f12f' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-service-1:before {{ content: '\f46b' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-service-2:before {{ content: '\f3e8' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-service-3:before {{ content: '\f562' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-service-4:before {{ content: '\f22d' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-clock:before {{ content: '\f293' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-quote:before {{ content: '\f50e' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-at:before {{ content: '\f147' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-phone:before {{ content: '\f5c1' !important; font-family: 'bootstrap-icons' !important; }}
+        .tji-mail:before, .tji-envelope:before {{ content: '\f32f' !important; font-family: 'bootstrap-icons' !important; }}
 
         /* Dark Section Background Resilience */
         .tj-service-section.service-2,
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {{
         }}
 
         /* Neutralize scroll-animation opacity traps in preview mode */
-        .wow, .fadeInUp, [class*="fadein"], [class*="fade-in"], [class*="text-anim"], .tj-fadein-right-on-scroll, [data-wow-delay] {{
+        .wow, .fadeInUp, [class*='fadein'], [class*='fade-in'], [class*='text-anim'], .tj-fadein-right-on-scroll, [data-wow-delay] {{
             opacity: 1 !important;
             visibility: visible !important;
             transform: none !important;
