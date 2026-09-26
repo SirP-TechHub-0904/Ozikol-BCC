@@ -199,10 +199,10 @@ STRICT MANDATES:
    - Do NOT add, invent, or wrap the HTML in any artificial container class (e.g. do NOT invent '.sec-variant-...').
    - Keep the original root HTML tag and all existing class attributes EXACTLY as provided in the original markup.
 
-2. PURE 1-TO-1 CANONICAL TOKEN REPLACEMENT (NO INVENTED PLACEHOLDERS):
-   You must ONLY use the exact canonical Ozikol domain tokens below. NEVER invent custom names (e.g. do NOT create '{{{{#HomeDemos}}}}', '{{{{#MainPagesList}}}}', or '{{{{PromoTitle}}}}').
+2. PURE 1-TO-1 CANONICAL TOKEN REPLACEMENT (NEVER INVENT TOKENS):
+   You must strictly use ONLY the exact canonical Ozikol tokens from the 4 groups below. NEVER invent custom names (e.g. do NOT create '{{{{#HomeDemos}}}}', '{{{{#MainPagesList}}}}', '{{{{#ServicesList}}}}', or '{{{{PromoTitle}}}}').
 
-   === A. ROOT SECTION TOKENS (PageSection) ===
+   === GROUP 1: ROOT SECTION TOKENS (PageSection) ===
    - Main Section Headline: {{{{ Title }}}}
    - Sub-heading / Kicker / Eyebrow Badge: {{{{ MiniTitle }}}}
    - Short Summary / Subtitle Paragraph: {{{{ Description }}}}
@@ -221,7 +221,7 @@ STRICT MANDATES:
    - Custom Container Class: {{{{ CustomClass }}}}
    - Background Color Override: {{{{ BackgroundColor }}}}
 
-   === B. REPEATABLE CHILD ITEMS (PageSectionList) ===
+   === GROUP 2: REPEATABLE CHILD ITEMS (PageSectionList) ===
    All repeating cards, slides, nav items, pricing tiers, team members, or FAQs MUST be wrapped inside:
    {{{{#SectionLists}}}} ... {{{{/SectionLists}}}} (or {{{{#PageSectionLists}}}} ... {{{{/PageSectionLists}}}})
    Inside the loop, use ONLY these canonical child tokens:
@@ -236,11 +236,21 @@ STRICT MANDATES:
    - Item Button Link: href=""{{{{ ButtonLink }}}}""
    - Item Custom Class: {{{{ CustomClass }}}}
 
-   === C. GLOBAL TENANT CONTEXT ===
-   - Organization Name: {{{{ Organization.Name }}}}
-   - Organization Phone: href=""tel:{{{{ Organization.Phone }}}}""> {{{{ Organization.Phone }}}}
-   - Organization Email: href=""mailto:{{{{ Organization.Email }}}}""> {{{{ Organization.Email }}}}
-   - Organization Address: {{{{ Organization.Address }}}}
+   === GROUP 3: CMS SETTINGS & BRAND IDENTITY (ConfigSetting) ===
+   For site logos, brand name, and portal sign-in:
+   - Company / Brand Name: {{{{ CompanyName }}}} or {{{{ Brand.Name }}}}
+   - Company Abbreviation: {{{{ Brand.Abbreviation }}}}
+   - Standard Brand Logo: src=""{{{{ Brand.LogoUrl }}}}""
+   - White / Dark Mode Logo: src=""{{{{ Brand.WhiteLogoUrl }}}}""
+   - Favicon: href=""{{{{ Brand.FaviconUrl }}}}""
+   - Website Home Link: href=""{{{{ Brand.WebsiteUrl }}}}""
+   - Login CTA Text: {{{{ Brand.LoginButtonText }}}} (default: 'Sign In')
+
+   === GROUP 4: THE 3 CONTACT INSERTS (Dynamic Site-Wide Replacement) ===
+   When a raw phone, email, or physical address appears in header, footer, or contact blocks:
+   - Phone Insert: In markup, replace phone number with: 0000000000 (and href=""tel:0000000000"")
+   - Email Insert: In markup, replace email with: abc@domain.com (and href=""mailto:abc@domain.com"")
+   - Address Insert: In markup, replace address with: No 1 ABC Street, World
 
 3. REAL CONTENT EXTRACTION (NO INVENTED / HALLUCINATED TEXT):
    Extract the EXACT real values from the original HTML into sample_content_json (exact text, real URLs, real image paths, and real icon class strings like 'tji-arrow-right-long').
