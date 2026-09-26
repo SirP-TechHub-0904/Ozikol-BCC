@@ -18,11 +18,29 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         List<string> DetectLibraries(string htmlContent, string? rawJs = null);
 
         /// <summary>
-        /// Resolves the complete CDN assets and tags for a given detection request.
+        /// Resolves the complete CDN assets and tags for a given detection request synchronously.
         /// </summary>
         /// <param name="request">Detection request with HTML and optional JS.</param>
         /// <returns>Response with detected libraries, CDN links, and pre-rendered head/footer HTML.</returns>
         DetectLibrariesResponseDto ResolveAssets(DetectLibrariesRequestDto request);
+
+        /// <summary>
+        /// Resolves complete CDN assets using hybrid Static Catalog + AI Discovery (Gemini 2.5 Flash primary with DeepSeek failover).
+        /// Discovers rare or custom plugins (e.g. MeanMenu, NiceSelect, Animate.css, Slick, Magnific Popup, GSAP) and automatically pulls their CDN assets.
+        /// </summary>
+        /// <param name="request">Detection request with HTML and optional JS.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Response with detected libraries, resolved CDN links, and pre-rendered head/footer HTML.</returns>
+        System.Threading.Tasks.Task<DetectLibrariesResponseDto> ResolveAssetsAsync(DetectLibrariesRequestDto request, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Uses AI (Gemini 2.5 Flash with DeepSeek failover) to analyze code and discover third-party libraries and their CDN links.
+        /// </summary>
+        /// <param name="htmlContent">The HTML markup to inspect.</param>
+        /// <param name="rawJs">Optional JavaScript code to inspect.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>List of discovered library asset definitions with CDN URLs.</returns>
+        System.Threading.Tasks.Task<List<LibraryAssetDefinition>> DetectLibrariesWithAiAsync(string htmlContent, string? rawJs = null, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Generates deduplicated &lt;link rel="stylesheet"&gt; tags and scoped &lt;style&gt; blocks for insertion into &lt;head&gt;.
