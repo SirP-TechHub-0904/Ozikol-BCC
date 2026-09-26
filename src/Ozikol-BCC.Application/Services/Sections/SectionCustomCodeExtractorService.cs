@@ -199,28 +199,54 @@ STRICT MANDATES:
    - Do NOT add, invent, or wrap the HTML in any artificial container class (e.g. do NOT invent '.sec-variant-...').
    - Keep the original root HTML tag and all existing class attributes EXACTLY as provided in the original markup.
 
-2. PURE 1-TO-1 TOKEN REPLACEMENT:
-   Preserve the exact HTML tag hierarchy. ONLY replace the actual text, image sources, destination URLs, and icon classes with these canonical Ozikol tokens:
-   - Headings & Titles: {{{{ Title }}}}
-   - Badges, Kickers, Sub-headings: {{{{ MiniTitle }}}}
-   - Highlight Quotes: {{{{ Qoute }}}}
-   - Descriptions & Body Paragraphs: {{{{ Description }}}}
-   - Extended Rich Text: {{{{ FullDescription }}}}
-   - Images & Thumbnails: src=""{{{{ ImageUrl }}}}""
-   - Primary CTA Button: {{{{ ButtonText }}}} and href=""{{{{ ButtonLink }}}}""
-   - Secondary CTA Button (if dual buttons present): {{{{ SecondButtonText }}}} and href=""{{{{ SecondButtonLink }}}}""
-   - Anchors & Direct Routing: href=""{{{{ DirectUrl }}}}""
-   - Root & Item Icon Classes: <i class=""{{{{ IconText }}}}""></i> (Replace icon classes like 'tji-phone', 'fa-solid fa-rocket', 'bi bi-check' with {{{{ IconText }}}})
-   - Phone Numbers: {{{{ Organization.Phone }}}}
+2. PURE 1-TO-1 CANONICAL TOKEN REPLACEMENT (NO INVENTED PLACEHOLDERS):
+   You must ONLY use the exact canonical Ozikol domain tokens below. NEVER invent custom names (e.g. do NOT create '{{{{#HomeDemos}}}}', '{{{{#MainPagesList}}}}', or '{{{{PromoTitle}}}}').
 
-3. REPEATING LIST ITEMS:
-   For repeating cards/slides/nav-items, wrap ONE repeating instance inside {{{{#SectionLists}}}} ... {{{{/SectionLists}}}}.
-   Inside the loop use: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}, {{{{ ImageUrl }}}}, {{{{ IconText }}}}, {{{{ CustomClass }}}}.
+   === A. ROOT SECTION TOKENS (PageSection) ===
+   - Main Section Headline: {{{{ Title }}}}
+   - Sub-heading / Kicker / Eyebrow Badge: {{{{ MiniTitle }}}}
+   - Short Summary / Subtitle Paragraph: {{{{ Description }}}}
+   - Extended Rich Text / HTML Body: {{{{ FullDescription }}}}
+   - Blockquote / Highlight Callout: {{{{ Qoute }}}}
+   - Primary Image / Banner / Hero Graphic: src=""{{{{ ImageUrl }}}}""
+   - Secondary Image / Collage Graphic: src=""{{{{ SecondImageUrl }}}}""
+   - Direct Video URL: src=""{{{{ VideoUrl }}}}""
+   - YouTube / Vimeo Embed URL: src=""{{{{ YoutubeUrlLink }}}}""
+   - Root Section Icon Class: <i class=""{{{{ IconText }}}}""></i> (e.g. 'tji-phone', 'fa-solid fa-rocket', 'bi bi-shield-check')
+   - Primary CTA Button Label: {{{{ ButtonText }}}}
+   - Primary CTA Button Destination URL: href=""{{{{ ButtonLink }}}}""
+   - Secondary CTA Button Label (Dual CTA): {{{{ SecondButtonText }}}}
+   - Secondary CTA Button Destination URL: href=""{{{{ SecondButtonLink }}}}""
+   - Direct Routing / Anchor Link: href=""{{{{ DirectUrl }}}}""
+   - Custom Container Class: {{{{ CustomClass }}}}
+   - Background Color Override: {{{{ BackgroundColor }}}}
 
-4. REAL CONTENT EXTRACTION (NO INVENTED / HALLUCINATED TEXT):
+   === B. REPEATABLE CHILD ITEMS (PageSectionList) ===
+   All repeating cards, slides, nav items, pricing tiers, team members, or FAQs MUST be wrapped inside:
+   {{{{#SectionLists}}}} ... {{{{/SectionLists}}}} (or {{{{#PageSectionLists}}}} ... {{{{/PageSectionLists}}}})
+   Inside the loop, use ONLY these canonical child tokens:
+   - Item Title / Card Heading / Link Label: {{{{ Title }}}}
+   - Item Subtitle / Badge (e.g. 'HOT', 'NEW') / Price / Role: {{{{ MiniTitle }}}}
+   - Item Description / Card Excerpt: {{{{ Description }}}}
+   - Extended Note / Bullet Text: {{{{ MoreDescription }}}}
+   - Item Thumbnail / Avatar / Screenshot: src=""{{{{ ImageUrl }}}}""
+   - Item Video URL: src=""{{{{ VideoUrl }}}}""
+   - Item Icon Class: <i class=""{{{{ IconText }}}}""></i> (e.g. 'tji-service-1', 'bi bi-star')
+   - Item Button Label: {{{{ ButtonText }}}} (e.g. 'View Demo', 'Select Plan')
+   - Item Button Link: href=""{{{{ ButtonLink }}}}""
+   - Item Custom Class: {{{{ CustomClass }}}}
+
+   === C. GLOBAL TENANT CONTEXT ===
+   - Organization Name: {{{{ Organization.Name }}}}
+   - Organization Phone: href=""tel:{{{{ Organization.Phone }}}}""> {{{{ Organization.Phone }}}}
+   - Organization Email: href=""mailto:{{{{ Organization.Email }}}}""> {{{{ Organization.Email }}}}
+   - Organization Address: {{{{ Organization.Address }}}}
+
+3. REAL CONTENT EXTRACTION (NO INVENTED / HALLUCINATED TEXT):
    Extract the EXACT real values from the original HTML into sample_content_json (exact text, real URLs, real image paths, and real icon class strings like 'tji-arrow-right-long').
+   Every single placeholder present in html_template MUST exist in sample_content_json.
 
-5. CLEAN AUTHOR CSS EXTRACTION:
+4. CLEAN AUTHOR CSS EXTRACTION:
    Extract only the author's custom CSS rules matching classes present in this section. Do not alter or wrap selectors with artificial class names.
 
 OUTPUT SCHEMA: Return ONLY a raw JSON object matching:
@@ -228,7 +254,7 @@ OUTPUT SCHEMA: Return ONLY a raw JSON object matching:
   ""html_template"": ""<header class='...'>...</header>"",
   ""scoped_css"": "".header-area {{ ... }} .mainmenu {{ ... }}"",
   ""js_script"": ""/* isolated interactive scripts */"",
-  ""sample_content_json"": ""{{\""Title\"": \""Real Title\"", \""ButtonText\"": \""Let’s Talk\"", \""IconText\"": \""tji-phone\""}}"",
+  ""sample_content_json"": ""{{\""Title\"": \""Real Title\"", \""ButtonText\"": \""Let’s Talk\"", \""IconText\"": \""tji-phone\"", \""SectionLists\"": [{{\""Title\"": \""Item 1\""}}]}}"",
   ""placeholders"": [""Title"", ""ButtonText"", ""ButtonLink"", ""IconText"", ""ImageUrl"", ""SectionLists""]
 }}";
 
