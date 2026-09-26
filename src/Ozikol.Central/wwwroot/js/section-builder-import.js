@@ -261,11 +261,13 @@ function initWorkbench(data) {
         stylesheets.forEach(function (s, idx) {
             var name = s.name || ('stylesheet_' + (idx + 1) + '.css');
             var sizeKb = s.sizeKb || s.size_kb || 0;
+            var content = s.content || '';
+            var lineCount = content ? content.split('\n').length : 0;
             var activeClass = (idx === 0) ? 'active' : '';
 
             var itemHtml = '<div class="css-file-pill ' + activeClass + '" id="cssPill_' + idx + '" onclick="selectCssFile(' + idx + ')">' +
-                '<span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">' + escapeHtml(name) + '</span>' +
-                '<span style="background: rgba(255,255,255,0.15); font-size: 10px; padding: 2px 6px; border-radius: 4px;">' + sizeKb + ' KB</span>' +
+                '<span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px;" title="' + escapeHtmlAttr(name) + '">' + escapeHtml(name) + '</span>' +
+                '<span style="background: rgba(255,255,255,0.15); font-size: 10px; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">' + sizeKb + ' KB • ' + lineCount + ' L</span>' +
             '</div>';
             cssFilesContainer.innerHTML += itemHtml;
         });
@@ -276,29 +278,40 @@ function initWorkbench(data) {
         selectCssFile(0);
     }
 
-    // 3. Populate JS Scripts Tab
+    // 3. Populate JS Scripts Tab (Split-View Inspector & Code Editor)
     var scripts = data.scripts || [];
     var jsTabTitle = document.getElementById('wbJsTabTitle');
     if (jsTabTitle) {
         jsTabTitle.innerText = 'JS Scripts (' + scripts.length + ')';
     }
-    var jsContainer = document.getElementById('wbJsScriptsContainer');
-    if (jsContainer) {
-        jsContainer.innerHTML = '';
+
+    var jsFilesContainer = document.getElementById('wbJsFilesList');
+    if (jsFilesContainer) {
+        jsFilesContainer.innerHTML = '<div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; padding: 6px 10px; font-weight: 700;">Detected JavaScripts (' + scripts.length + ')</div>';
+        
         if (scripts.length === 0) {
-            jsContainer.innerHTML = '<div style="color: #94a3b8; font-size: 13px;">No external or inline scripts detected.</div>';
+            jsFilesContainer.innerHTML += '<div style="color: #94a3b8; font-size: 12px; padding: 10px;">No scripts detected.</div>';
         } else {
             scripts.forEach(function (sc, idx) {
-                var scName = sc.name || ('script_' + (idx + 1) + '.js');
-                var scUrl = sc.url || 'Inline Script';
-                jsContainer.innerHTML += '<div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">' +
-                    '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">' +
-                        '<span style="font-size: 13px; font-weight: 700; color: #fde047;">' + escapeHtml(scName) + '</span>' +
-                        '<span style="font-size: 11px; color: #94a3b8; font-family: monospace;">' + escapeHtml(scUrl) + '</span>' +
-                    '</div>' +
+                var rawName = sc.name || ('script_' + (idx + 1) + '.js');
+                var scName = rawName.replace(/\.download$/i, '').replace(/^.*?[_ -]files[\/\\]/i, '');
+                var sizeKb = sc.sizeKb || sc.size_kb || 0;
+                var content = sc.content || '';
+                var lineCount = content ? content.split('\n').length : 0;
+                var activeClass = (idx === 0) ? 'active' : '';
+
+                var itemHtml = '<div class="js-file-pill ' + activeClass + '" id="jsPill_' + idx + '" onclick="selectJsFile(' + idx + ')">' +
+                    '<span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px;" title="' + escapeHtmlAttr(scName) + '">' + escapeHtml(scName) + '</span>' +
+                    '<span style="background: rgba(234, 179, 8, 0.2); color: #fde047; font-size: 10px; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">' + sizeKb + ' KB • ' + lineCount + ' L</span>' +
                 '</div>';
+                jsFilesContainer.innerHTML += itemHtml;
             });
         }
+    }
+
+    // Select first JS script by default
+    if (scripts.length > 0) {
+        selectJsFile(0);
     }
 
     // 4. Populate Fonts Tab
@@ -353,9 +366,20 @@ function selectCssFile(index) {
     var sizeEl = document.getElementById('wbCurrentCssSize');
     var editor = document.getElementById('wbCssEditor');
 
+    var content = item.content || '';
+    var lines = content ? content.split('\n').length : 0;
+    var rules = (content.match(/\{/g) || []).length;
+    var props = (content.match(/[\w-]+\s*:\s*[^;]+;/g) || []).length;
+    var sizeKb = item.sizeKb || item.size_kb || Math.round(content.length / 1024);
+
     if (nameEl) nameEl.innerText = item.name || 'stylesheet.css';
-    if (sizeEl) sizeEl.innerText = (item.sizeKb || item.size_kb || 0) + ' KB';
-    if (editor) editor.value = item.content || '';
+    if (sizeEl) {
+        sizeEl.innerHTML = '<span style="color: #38bdf8; font-weight: 600;">' + sizeKb + ' KB</span> &bull; ' +
+                           '<span>' + lines.toLocaleString() + ' lines</span> &bull; ' +
+                           '<span>' + rules.toLocaleString() + ' rules</span> &bull; ' +
+                           '<span style="color: #a78bfa;">' + props.toLocaleString() + ' properties</span>';
+    }
+    if (editor) editor.value = content;
 }
 
 /**
@@ -378,10 +402,100 @@ function handleWbCssChange() {
     if (!editor || !rawInspectionData || !rawInspectionData.stylesheets) return;
 
     if (rawInspectionData.stylesheets[currentWbCssIndex]) {
-        rawInspectionData.stylesheets[currentWbCssIndex].content = editor.value;
+        var content = editor.value;
+        rawInspectionData.stylesheets[currentWbCssIndex].content = content;
         var hiddenStylesheets = document.getElementById('wbFormEditedStylesheetsJson');
         if (hiddenStylesheets) {
             hiddenStylesheets.value = JSON.stringify(rawInspectionData.stylesheets);
+        }
+
+        // Live update CSS header metrics and sidebar pill badge
+        var lines = content ? content.split('\n').length : 0;
+        var rules = (content.match(/\{/g) || []).length;
+        var props = (content.match(/[\w-]+\s*:\s*[^;]+;/g) || []).length;
+        var sizeKb = Math.round(content.length / 1024);
+
+        var sizeEl = document.getElementById('wbCurrentCssSize');
+        if (sizeEl) {
+            sizeEl.innerHTML = '<span style="color: #38bdf8; font-weight: 600;">' + sizeKb + ' KB</span> &bull; ' +
+                               '<span>' + lines.toLocaleString() + ' lines</span> &bull; ' +
+                               '<span>' + rules.toLocaleString() + ' rules</span> &bull; ' +
+                               '<span style="color: #a78bfa;">' + props.toLocaleString() + ' properties</span>';
+        }
+
+        var activePill = document.getElementById('cssPill_' + currentWbCssIndex);
+        if (activePill) {
+            var badge = activePill.querySelector('span:last-child');
+            if (badge) badge.innerText = sizeKb + ' KB • ' + lines + ' L';
+        }
+    }
+}
+
+var currentWbJsIndex = 0;
+
+/**
+ * Selects an individual JS file from the sidebar list in Step 2 and displays its code in the preview editor.
+ */
+function selectJsFile(index) {
+    currentWbJsIndex = index;
+    document.querySelectorAll('.js-file-pill').forEach(function (p) { p.classList.remove('active'); });
+    var activePill = document.getElementById('jsPill_' + index);
+    if (activePill) activePill.classList.add('active');
+
+    if (!rawInspectionData || !rawInspectionData.scripts || !rawInspectionData.scripts[index]) return;
+
+    var item = rawInspectionData.scripts[index];
+    var nameEl = document.getElementById('wbCurrentJsFileName');
+    var sizeEl = document.getElementById('wbCurrentJsSize');
+    var urlEl = document.getElementById('wbCurrentJsUrl');
+    var editor = document.getElementById('wbJsEditor');
+
+    var rawName = item.name || 'script.js';
+    var scName = rawName.replace(/\.download$/i, '').replace(/^.*?[_ -]files[\/\\]/i, '');
+    var scUrl = (item.url || 'Inline Script').replace(/\.download$/i, '');
+    var content = item.content || ('// Script Reference: ' + scUrl + '\n// Note: This script is configured for high-availability CDN or base asset execution.');
+    var lines = content ? content.split('\n').length : 0;
+    var funcs = (content.match(/\bfunction\b|\=\>\s*\{/g) || []).length;
+    var sizeKb = item.sizeKb || item.size_kb || Math.round(content.length / 1024);
+
+    if (nameEl) nameEl.innerText = scName;
+    if (sizeEl) {
+        sizeEl.innerHTML = '<span style="color: #fde047; font-weight: 600;">' + sizeKb + ' KB</span> &bull; ' +
+                           '<span>' + lines.toLocaleString() + ' lines</span>' +
+                           (funcs > 0 ? ' &bull; <span>' + funcs.toLocaleString() + ' functions</span>' : '');
+    }
+    if (urlEl) urlEl.innerText = scUrl;
+    if (editor) {
+        editor.value = content;
+    }
+}
+
+/**
+ * Syncs real-time JS edits for the selected script in Step 2.
+ */
+function handleWbJsChange() {
+    var editor = document.getElementById('wbJsEditor');
+    if (!editor || !rawInspectionData || !rawInspectionData.scripts) return;
+
+    if (rawInspectionData.scripts[currentWbJsIndex]) {
+        var content = editor.value;
+        rawInspectionData.scripts[currentWbJsIndex].content = content;
+
+        var lines = content ? content.split('\n').length : 0;
+        var funcs = (content.match(/\bfunction\b|\=\>\s*\{/g) || []).length;
+        var sizeKb = Math.round(content.length / 1024);
+
+        var sizeEl = document.getElementById('wbCurrentJsSize');
+        if (sizeEl) {
+            sizeEl.innerHTML = '<span style="color: #fde047; font-weight: 600;">' + sizeKb + ' KB</span> &bull; ' +
+                               '<span>' + lines.toLocaleString() + ' lines</span>' +
+                               (funcs > 0 ? ' &bull; <span>' + funcs.toLocaleString() + ' functions</span>' : '');
+        }
+
+        var activePill = document.getElementById('jsPill_' + currentWbJsIndex);
+        if (activePill) {
+            var badge = activePill.querySelector('span:last-child');
+            if (badge) badge.innerText = sizeKb + ' KB • ' + lines + ' L';
         }
     }
 }
@@ -391,7 +505,8 @@ function updateHtmlCharCount() {
     var countEl = document.getElementById('wbHtmlCharCount');
     if (editor && countEl) {
         var count = editor.value.length;
-        countEl.innerText = count.toLocaleString() + ' characters';
+        var lines = editor.value ? editor.value.split('\n').length : 0;
+        countEl.innerHTML = '<span>' + lines.toLocaleString() + ' lines</span> &bull; <span>' + count.toLocaleString() + ' characters</span>';
     }
 }
 
@@ -718,6 +833,152 @@ function updateModalCodeBlocks(sec) {
     if (blockCss) blockCss.innerText = scopedCss || '/* Zero extra CSS rules required */';
     if (blockJs) blockJs.innerText = jsScript || '// No interactive script required';
     if (blockJson) blockJson.innerText = sampleContentJson;
+
+    // Calculate line counts, rules, properties, and token counts
+    var htmlLines = htmlTemplate ? htmlTemplate.split('\n').length : 0;
+    var htmlChars = htmlTemplate.length;
+
+    var cssLines = scopedCss ? scopedCss.split('\n').length : 0;
+    var cssRules = (scopedCss.match(/\{/g) || []).length;
+    var cssProps = (scopedCss.match(/[\w-]+\s*:\s*[^;]+;/g) || []).length;
+
+    var jsLines = jsScript ? jsScript.split('\n').length : 0;
+    var jsonTokens = (sampleContentJson.match(/"\w+":/g) || []).length;
+
+    // Update Tab Badges
+    var tabHtml = document.getElementById('tabMetricHtml');
+    var tabCss = document.getElementById('tabMetricCss');
+    var tabJs = document.getElementById('tabMetricJs');
+    var tabJson = document.getElementById('tabMetricJson');
+
+    if (tabHtml) tabHtml.innerText = htmlLines + ' L';
+    if (tabCss) tabCss.innerText = cssLines + ' L • ' + cssRules + ' R';
+    if (tabJs) tabJs.innerText = jsLines > 0 ? (jsLines + ' L') : '0';
+    if (tabJson) tabJson.innerText = jsonTokens + ' T';
+
+    // Update Pane Info Headers
+    var infoHtml = document.getElementById('codeHeaderInfoHtml');
+    var infoCss = document.getElementById('codeHeaderInfoCss');
+    var infoJs = document.getElementById('codeHeaderInfoJs');
+    var infoJson = document.getElementById('codeHeaderInfoJson');
+
+    if (infoHtml) {
+        infoHtml.innerHTML = '<span>' + htmlLines.toLocaleString() + ' lines</span> &bull; <span>' + htmlChars.toLocaleString() + ' characters</span>';
+    }
+    if (infoCss) {
+        infoCss.innerHTML = '<span>' + cssLines.toLocaleString() + ' lines</span> &bull; <span>' + cssRules.toLocaleString() + ' rules</span> &bull; <span style="color: #a78bfa;">' + cssProps.toLocaleString() + ' properties</span>';
+    }
+    if (infoJs) {
+        infoJs.innerHTML = jsLines > 0 ? ('<span>' + jsLines.toLocaleString() + ' lines</span> &bull; <span style="color: #fde047;">Self-contained section interactive logic</span>') : '<span>0 lines (Pure CSS & HTML section)</span>';
+    }
+    if (infoJson) {
+        infoJson.innerHTML = '<span>' + jsonTokens.toLocaleString() + ' dynamic template tokens</span> &bull; <span>Mustache hydrated</span>';
+    }
+}
+
+/**
+ * Copies code from a code block element to the clipboard and gives visual feedback.
+ */
+function copyCodeFromBlock(elementId, btnEl) {
+    var el = document.getElementById(elementId);
+    if (!el) return;
+
+    var text = el.innerText || el.textContent || '';
+    if (!text) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+            showCopySuccess(btnEl);
+        }).catch(function () {
+            fallbackCopy(text, btnEl);
+        });
+    } else {
+        fallbackCopy(text, btnEl);
+    }
+}
+
+function fallbackCopy(text, btnEl) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showCopySuccess(btnEl);
+    } catch (e) {
+        alert('Could not copy to clipboard');
+    }
+    document.body.removeChild(ta);
+}
+
+function showCopySuccess(btnEl) {
+    if (!btnEl) return;
+    var origHtml = btnEl.innerHTML;
+    btnEl.classList.add('copied');
+    btnEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 14px; color: #34d399;">check</span> Copied!';
+    setTimeout(function () {
+        btnEl.classList.remove('copied');
+        btnEl.innerHTML = origHtml;
+    }, 2000);
+}
+
+/**
+ * Hydrates a Mustache-tokenized HTML template with structured sample data JSON for live preview.
+ */
+function hydrateMustacheTokens(templateHtml, sampleJsonStr) {
+    if (!templateHtml) return '';
+    if (!sampleJsonStr) return templateHtml;
+
+    try {
+        var data = (typeof sampleJsonStr === 'string') ? JSON.parse(sampleJsonStr) : sampleJsonStr;
+        var result = templateHtml;
+
+        // 1. Process Repeater Lists {{#each SectionLists}}...{{/each}}
+        var listRegex = /\{\{#each\s+(?:SectionLists|Features|Services|Items)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+        result = result.replace(listRegex, function (match, itemTemplate) {
+            var list = data.SectionLists || data.Features || data.Services || data.Items || [];
+            if (!Array.isArray(list) || list.length === 0) return '';
+
+            var renderedItems = '';
+            list.forEach(function (item) {
+                var itemHtml = itemTemplate;
+                itemHtml = itemHtml.replace(/\{\{\s*Title\s*\}\}/g, item.Title || '');
+                itemHtml = itemHtml.replace(/\{\{\s*Description\s*\}\}/g, item.Description || '');
+                itemHtml = itemHtml.replace(/\{\{\s*IconClass\s*\}\}/g, item.IconClass || 'material-symbols-outlined');
+                itemHtml = itemHtml.replace(/\{\{\s*IconText\s*\}\}/g, item.IconText || 'star');
+                itemHtml = itemHtml.replace(/\{\{\s*ImageUrl\s*\}\}/g, item.ImageUrl || '');
+                itemHtml = itemHtml.replace(/\{\{\s*ActionUrl\s*\}\}/g, item.ActionUrl || '#');
+                itemHtml = itemHtml.replace(/\{\{\s*ActionText\s*\}\}/g, item.ActionText || 'Learn More');
+                renderedItems += itemHtml;
+            });
+            return renderedItems;
+        });
+
+        // 2. Replace Single Value Tokens
+        result = result.replace(/\{\{\s*Title\s*\}\}/g, data.Title || 'Modular Section Title');
+        result = result.replace(/\{\{\s*MiniTitle\s*\}\}/g, data.MiniTitle || 'Featured Capability');
+        result = result.replace(/\{\{\s*FullDescription\s*\}\}/g, data.FullDescription || data.Description || '');
+        result = result.replace(/\{\{\s*Description\s*\}\}/g, data.Description || data.FullDescription || '');
+        result = result.replace(/\{\{\s*ActionText\s*\}\}/g, data.ActionText || 'Explore Features');
+        result = result.replace(/\{\{\s*ActionUrl\s*\}\}/g, data.ActionUrl || '#');
+        result = result.replace(/\{\{\s*ImageUrl\s*\}\}/g, data.ImageUrl || '');
+        result = result.replace(/\{\{\s*ImageAlt\s*\}\}/g, data.ImageAlt || 'Section Visual');
+
+        // 3. Replace Organization tokens
+        var org = data.Organization || {};
+        result = result.replace(/\{\{\s*Organization\.Name\s*\}\}/g, org.Name || 'Enterprise Workspace');
+        result = result.replace(/\{\{\s*Organization\.Phone\s*\}\}/g, org.Phone || '+0 (000) 000-0000');
+        result = result.replace(/\{\{\s*Organization\.Email\s*\}\}/g, org.Email || 'info@company.com');
+        result = result.replace(/\{\{\s*Organization\.Address\s*\}\}/g, org.Address || '100 Enterprise Way, Suite 400');
+        result = result.replace(/\{\{\s*Organization\.WorkingHour\s*\}\}/g, org.WorkingHour || 'Mon - Fri: 9:00 AM - 6:00 PM');
+
+        return result;
+    } catch (e) {
+        console.warn('[SectionBuilder] Could not hydrate Mustache tokens:', e);
+        return templateHtml;
+    }
 }
 
 /**
@@ -731,8 +992,20 @@ function renderSandboxDoc() {
     var combinedCss = '';
     var combinedJs = '';
 
+    // Collect extra discovered Font and Icon CDN injection tags from server response
+    var extraHeadTags = '';
+    if (rawExtractionData.codeInjections && Array.isArray(rawExtractionData.codeInjections)) {
+        rawExtractionData.codeInjections.forEach(function (tag) {
+            if (tag.zone === 'head' && tag.content) {
+                extraHeadTags += tag.content + '\n    ';
+            }
+        });
+    }
+
     if (currentSandboxScope === 'single') {
-        renderedHtml = sec.htmlTemplate || sec.html_template || '';
+        var rawHtml = sec.htmlTemplate || sec.html_template || '';
+        var sampleJson = sec.sampleContentJson || sec.sample_content_json || '{}';
+        renderedHtml = hydrateMustacheTokens(rawHtml, sampleJson);
         combinedCss = sec.scopedCss || sec.scoped_css || '';
         combinedJs = sec.jsScript || sec.js_script || '';
     } else if (currentSandboxScope === 'page') {
@@ -746,14 +1019,18 @@ function renderSandboxDoc() {
         if (pageSections.length === 0) pageSections = [sec];
 
         pageSections.forEach(function (s) {
-            renderedHtml += (s.htmlTemplate || s.html_template || '') + '\n';
+            var rawH = s.htmlTemplate || s.html_template || '';
+            var sampleJ = s.sampleContentJson || s.sample_content_json || '{}';
+            renderedHtml += hydrateMustacheTokens(rawH, sampleJ) + '\n';
             combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
             if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
         });
     } else {
         // Full Suite Sandbox
         rawExtractionData.sections.forEach(function (s) {
-            renderedHtml += (s.htmlTemplate || s.html_template || '') + '\n';
+            var rawH = s.htmlTemplate || s.html_template || '';
+            var sampleJ = s.sampleContentJson || s.sample_content_json || '{}';
+            renderedHtml += hydrateMustacheTokens(rawH, sampleJ) + '\n';
             combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
             if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
         });
@@ -766,12 +1043,16 @@ function renderSandboxDoc() {
         '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
         '    <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
         '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-        '    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\n' +
+        '    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\n' +
         '    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />\n' +
         '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />\n' +
+        '    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />\n' +
+        '    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" />\n' +
+        '    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" />\n' +
+        '    ' + extraHeadTags +
         '    <style>\n' +
         '        *, *::before, *::after { box-sizing: border-box; }\n' +
-        '        body { margin: 0; padding: 0; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; color: #0f172a; }\n' +
+        '        body { margin: 0; padding: 0; font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; color: #0f172a; }\n' +
         '        img, svg { max-width: 100%; height: auto; }\n' +
         '        a { color: inherit; text-decoration: none; }\n' +
         combinedCss + '\n' +
@@ -919,6 +1200,355 @@ function executeSectionAiTweak() {
 
 function applyAiTweakAndShowSandbox() {
     switchPreviewTab('sandbox');
+}
+
+/**
+ * Executes AI Precision Tree-Shaking and Filtering:
+ * Analyzes the section's HTML markup against source stylesheets/scripts and strips all unrelated CSS/JS
+ * without inventing or hallucinating new code.
+ */
+function triggerAiPrecisionFilter() {
+    if (!rawExtractionData || !rawExtractionData.sections || !rawExtractionData.sections[activePreviewIndex]) return;
+
+    var sec = rawExtractionData.sections[activePreviewIndex];
+    var btnCss = document.getElementById('btnAiFilterCssAction');
+    var btnJs = document.getElementById('btnAiFilterJsAction');
+    var iconEl = document.getElementById('aiFilterCssIcon');
+    var textEl = document.getElementById('aiFilterCssText');
+
+    var origCssBtnText = textEl ? textEl.innerText : 'AI Precision Tree-Shake & Filter';
+
+    if (btnCss) {
+        btnCss.disabled = true;
+        btnCss.style.opacity = '0.75';
+    }
+    if (btnJs) btnJs.disabled = true;
+    if (textEl) textEl.innerText = 'AI Tree-Shaking (Zero Hallucination)...';
+    if (iconEl) {
+        iconEl.innerText = 'sync';
+        iconEl.style.animation = 'spin 1s linear infinite';
+    }
+
+    // Save backup before filtering
+    backupOriginalSectionCode = {
+        htmlTemplate: sec.htmlTemplate || sec.html_template,
+        scopedCss: sec.scopedCss || sec.scoped_css,
+        jsScript: sec.jsScript || sec.js_script
+    };
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var token = tokenEl ? tokenEl.value : '';
+
+    // Collect all raw CSS (from current scoped CSS or full inspection stylesheets)
+    var rawCss = sec.scopedCss || sec.scoped_css || '';
+    if (rawInspectionData && rawInspectionData.stylesheets && rawInspectionData.stylesheets.length > 0) {
+        var allStyles = rawInspectionData.stylesheets.map(function (s) { return s.content || ''; }).join('\n');
+        if (allStyles.length > rawCss.length) {
+            rawCss = allStyles;
+        }
+    }
+
+    // Collect raw JS from inspection scripts
+    var rawJs = sec.jsScript || sec.js_script || '';
+    if (rawInspectionData && rawInspectionData.scripts && rawInspectionData.scripts.length > 0) {
+        var allScripts = rawInspectionData.scripts.map(function (sc) { return sc.content || ''; }).join('\n');
+        if (allScripts.length > rawJs.length) {
+            rawJs = allScripts;
+        }
+    }
+
+    var providerEl = document.getElementById('aiModelProviderSelect');
+    var provider = providerEl ? providerEl.value : 'Gemini';
+
+    var containerClass = 'sec-variant-' + (sec.variantCode || sec.variant_code || 'section').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+    var payload = {
+        section_key: sec.id || ('sec_' + activePreviewIndex),
+        category_key: sec.categoryKey || sec.category_key || 'body',
+        title: sec.name || 'Section',
+        html_template: sec.htmlTemplate || sec.html_template || '',
+        raw_css: rawCss,
+        raw_js: rawJs,
+        container_class: containerClass,
+        provider: provider
+    };
+
+    fetch('/centralwks/templates/import?handler=AiPrecisionFilter', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+        if (btnCss) {
+            btnCss.disabled = false;
+            btnCss.style.opacity = '1';
+        }
+        if (btnJs) btnJs.disabled = false;
+        if (textEl) textEl.innerText = origCssBtnText;
+        if (iconEl) {
+            iconEl.innerText = 'filter_alt';
+            iconEl.style.animation = 'none';
+        }
+
+        if (data.success && data.scoped_css) {
+            // Update active section's CSS and JS with the precision-filtered result
+            sec.scopedCss = data.scoped_css;
+            sec.scoped_css = data.scoped_css;
+            if (data.js_script !== undefined && data.js_script !== null) {
+                sec.jsScript = data.js_script;
+                sec.js_script = data.js_script;
+            }
+
+            updateModalCodeBlocks(sec);
+            renderSandboxDoc();
+
+            // Display explanation card in AI tab
+            var resultCard = document.getElementById('aiTweakResultCard');
+            var explText = document.getElementById('aiTweakExplanationText');
+            if (explText) {
+                explText.innerHTML = '<strong>Tree-Shake Complete:</strong> ' + escapeHtml(data.explanation || 'Filtered unused rules and isolated exact component styles.') +
+                    '<br/><span style="color: #38bdf8; font-weight: 700; margin-top: 6px; display: inline-block;">Reduced from ' + data.original_lines_css + ' lines &rarr; ' + data.filtered_lines_css + ' lines (' + (data.reduction_percentage || '0%') + ' reduction). Zero synthetic code invented.</span>';
+            }
+            if (resultCard) resultCard.style.display = 'block';
+
+            // Show feedback notification
+            alert('🎯 AI Precision Filter Complete!\n\n' +
+                  '• Original CSS: ' + data.original_lines_css + ' lines\n' +
+                  '• Filtered Scoped CSS: ' + data.filtered_lines_css + ' lines (' + data.reduction_percentage + ' reduction)\n' +
+                  '• Filtered JS: ' + (data.js_script ? 'Extracted exact component event handlers' : 'Pure CSS layout (no JS needed)') + '\n\n' +
+                  'All unrelated rules discarded with zero invented code.');
+        } else {
+            alert('AI Precision Filter failed: ' + (data.error_message || data.errorMessage || 'Unknown error.'));
+        }
+    })
+    .catch(function (err) {
+        if (btnCss) {
+            btnCss.disabled = false;
+            btnCss.style.opacity = '1';
+        }
+        if (btnJs) btnJs.disabled = false;
+        if (textEl) textEl.innerText = origCssBtnText;
+        if (iconEl) {
+            iconEl.innerText = 'filter_alt';
+            iconEl.style.animation = 'none';
+        }
+        alert('Network error during AI Precision Filter: ' + err);
+    });
+}
+
+/**
+ * Executes full 4-pillar AI cleanup on the currently active section in the studio:
+ * 1. Standardizes HTML with {{Mustache}} tokens.
+ * 2. Precision tree-shakes & scopes CSS (zero invented code).
+ * 3. Extracts real component interactive JavaScript.
+ * 4. Synthesizes realistic demo Mock Data JSON.
+ */
+function cleanActiveSectionWithAi() {
+    if (!rawExtractionData || !rawExtractionData.sections || !rawExtractionData.sections[activePreviewIndex]) return;
+
+    var sec = rawExtractionData.sections[activePreviewIndex];
+    var btn = document.getElementById('btnModalCleanSectionWithAi');
+    var iconEl = document.getElementById('modalAiCleanIcon');
+    var textEl = document.getElementById('modalAiCleanText');
+
+    if (btn) btn.disabled = true;
+    if (textEl) textEl.innerText = 'AI Cleaning & Tree-Shaking...';
+    if (iconEl) {
+        iconEl.innerText = 'sync';
+        iconEl.style.animation = 'spin 1s linear infinite';
+    }
+
+    // Save backup before cleaning
+    backupOriginalSectionCode = {
+        htmlTemplate: sec.htmlTemplate || sec.html_template,
+        scopedCss: sec.scopedCss || sec.scoped_css,
+        jsScript: sec.jsScript || sec.js_script,
+        sampleContentJson: sec.sampleContentJson || sec.sample_content_json
+    };
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var token = tokenEl ? tokenEl.value : '';
+
+    var rawCss = sec.scopedCss || sec.scoped_css || '';
+    if (rawInspectionData && rawInspectionData.stylesheets && rawInspectionData.stylesheets.length > 0) {
+        var allStyles = rawInspectionData.stylesheets.map(function (s) { return s.content || ''; }).join('\n');
+        if (allStyles.length > rawCss.length) rawCss = allStyles;
+    }
+
+    var rawJs = sec.jsScript || sec.js_script || '';
+    if (rawInspectionData && rawInspectionData.scripts && rawInspectionData.scripts.length > 0) {
+        var allScripts = rawInspectionData.scripts.map(function (sc) { return sc.content || ''; }).join('\n');
+        if (allScripts.length > rawJs.length) rawJs = allScripts;
+    }
+
+    var providerEl = document.getElementById('aiModelProviderSelect');
+    var provider = providerEl ? providerEl.value : 'Gemini';
+    var containerClass = 'sec-variant-' + (sec.variantCode || sec.variant_code || 'section').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+    var payload = {
+        section_key: sec.id || ('sec_' + activePreviewIndex),
+        category_key: sec.categoryKey || sec.category_key || 'body',
+        title: sec.name || 'Section',
+        html_template: sec.htmlTemplate || sec.html_template || '',
+        raw_css: rawCss,
+        raw_js: rawJs,
+        container_class: containerClass,
+        provider: provider
+    };
+
+    fetch('/centralwks/templates/import?handler=AiCleanSection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+        if (btn) btn.disabled = false;
+        if (textEl) textEl.innerText = 'Clean Section with AI';
+        if (iconEl) {
+            iconEl.innerText = 'auto_fix_high';
+            iconEl.style.animation = 'none';
+        }
+
+        if (data.success) {
+            sec.htmlTemplate = data.html_template || sec.htmlTemplate;
+            sec.html_template = data.html_template || sec.html_template;
+            sec.scopedCss = data.scoped_css || sec.scopedCss;
+            sec.scoped_css = data.scoped_css || sec.scoped_css;
+            sec.jsScript = data.js_script !== undefined ? data.js_script : sec.jsScript;
+            sec.js_script = data.js_script !== undefined ? data.js_script : sec.js_script;
+            sec.sampleContentJson = data.sample_content_json || sec.sampleContentJson;
+            sec.sample_content_json = data.sample_content_json || sec.sample_content_json;
+
+            updateModalCodeBlocks(sec);
+            renderSandboxDoc();
+            updateCardBadge(activePreviewIndex, sec.scopedCss);
+
+            alert('✨ AI Section Cleanup Complete!\n\n' +
+                  '• HTML: Parameterized with standard {{Mustache}} tokens\n' +
+                  '• Scoped CSS: ' + data.original_lines_css + ' lines \u2192 ' + data.filtered_lines_css + ' lines (' + (data.reduction_percentage || '0%') + ' reduction)\n' +
+                  '• Script JS: ' + (data.js_script ? 'Extracted component interactive logic' : 'Pure CSS layout (no JS needed)') + '\n' +
+                  '• Mock JSON: Synthesized realistic demo dataset matching all tokens.');
+        } else {
+            alert('AI Cleanup error: ' + (data.error_message || data.errorMessage || 'Unknown error.'));
+        }
+    })
+    .catch(function (err) {
+        if (btn) btn.disabled = false;
+        if (textEl) textEl.innerText = 'Clean Section with AI';
+        if (iconEl) {
+            iconEl.innerText = 'auto_fix_high';
+            iconEl.style.animation = 'none';
+        }
+        alert('Network error during AI cleanup: ' + err);
+    });
+}
+
+/**
+ * Batch-cleans all sliced sections in the suite sequentially using AI.
+ */
+async function batchCleanAllSectionsWithAi() {
+    if (!rawExtractionData || !rawExtractionData.sections || rawExtractionData.sections.length === 0) {
+        alert('No sliced sections available to clean.');
+        return;
+    }
+
+    var total = rawExtractionData.sections.length;
+    if (!confirm('Run complete AI Tree-Shaking & Cleanup across all ' + total + ' modular sections? This will clean HTML, filter CSS, extract JS, and synthesize mock JSON for each section.')) {
+        return;
+    }
+
+    var btn = document.getElementById('btnBatchAiClean');
+    var textEl = document.getElementById('batchAiCleanText');
+    var iconEl = document.getElementById('batchAiCleanIcon');
+
+    if (btn) btn.disabled = true;
+    if (iconEl) {
+        iconEl.innerText = 'sync';
+        iconEl.style.animation = 'spin 1s linear infinite';
+    }
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var token = tokenEl ? tokenEl.value : '';
+
+    var allStyles = (rawInspectionData && rawInspectionData.stylesheets) 
+        ? rawInspectionData.stylesheets.map(function (s) { return s.content || ''; }).join('\n') 
+        : '';
+    var allScripts = (rawInspectionData && rawInspectionData.scripts) 
+        ? rawInspectionData.scripts.map(function (sc) { return sc.content || ''; }).join('\n') 
+        : '';
+
+    var cleanedCount = 0;
+    for (var i = 0; i < total; i++) {
+        var sec = rawExtractionData.sections[i];
+        if (textEl) textEl.innerText = 'Cleaning ' + (i + 1) + ' of ' + total + ' (' + sec.name + ')...';
+
+        var containerClass = 'sec-variant-' + (sec.variantCode || sec.variant_code || ('sec_' + i)).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        var payload = {
+            section_key: sec.id || ('sec_' + i),
+            category_key: sec.categoryKey || sec.category_key || 'body',
+            title: sec.name || 'Section',
+            html_template: sec.htmlTemplate || sec.html_template || '',
+            raw_css: allStyles || sec.scopedCss || sec.scoped_css || '',
+            raw_js: allScripts || sec.jsScript || sec.js_script || '',
+            container_class: containerClass,
+            provider: 'Gemini'
+        };
+
+        try {
+            var response = await fetch('/centralwks/templates/import?handler=AiCleanSection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(payload)
+            });
+            var data = await response.json();
+            if (data.success) {
+                sec.htmlTemplate = data.html_template || sec.htmlTemplate;
+                sec.html_template = data.html_template || sec.html_template;
+                sec.scopedCss = data.scoped_css || sec.scopedCss;
+                sec.scoped_css = data.scoped_css || sec.scoped_css;
+                sec.jsScript = data.js_script !== undefined ? data.js_script : sec.jsScript;
+                sec.js_script = data.js_script !== undefined ? data.js_script : sec.js_script;
+                sec.sampleContentJson = data.sample_content_json || sec.sampleContentJson;
+                sec.sample_content_json = data.sample_content_json || sec.sample_content_json;
+                updateCardBadge(i, sec.scopedCss);
+                cleanedCount++;
+            }
+        } catch (e) {
+            console.warn('Batch clean error on section ' + i, e);
+        }
+    }
+
+    if (btn) btn.disabled = false;
+    if (textEl) textEl.innerText = 'AI Clean & Tree-Shake All';
+    if (iconEl) {
+        iconEl.innerText = 'auto_fix_high';
+        iconEl.style.animation = 'none';
+    }
+
+    alert('🎉 Batch AI Cleanup Complete!\nSuccessfully cleaned, tree-shook, and synthesized mock JSON for ' + cleanedCount + ' of ' + total + ' sections.');
+}
+
+function updateCardBadge(index, scopedCss) {
+    var badge = document.getElementById('cardCssBadge_' + index);
+    if (badge && scopedCss) {
+        var bytes = new Blob([scopedCss]).size;
+        var kb = (bytes / 1024).toFixed(1);
+        badge.innerHTML = '<span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">auto_fix_high</span> AI Cleaned: ' + kb + ' KB';
+        badge.style.background = 'rgba(99, 102, 241, 0.15)';
+        badge.style.borderColor = '#6366f1';
+        badge.style.color = '#818cf8';
+    }
 }
 
 function revertAiTweak() {

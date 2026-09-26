@@ -126,6 +126,135 @@ namespace Ozikol.Central.Services
     }
 
     /// <summary>
+    /// Request payload for filtering and tree-shaking CSS/JS rules using AI without inventing new code.
+    /// </summary>
+    public class SectionAiPrecisionFilterRequestDto
+    {
+        [JsonPropertyName("section_key")]
+        public string SectionKey { get; set; } = string.Empty;
+
+        [JsonPropertyName("category_key")]
+        public string CategoryKey { get; set; } = "body";
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("html_template")]
+        public string HtmlTemplate { get; set; } = string.Empty;
+
+        [JsonPropertyName("raw_css")]
+        public string RawCss { get; set; } = string.Empty;
+
+        [JsonPropertyName("raw_js")]
+        public string? RawJs { get; set; }
+
+        [JsonPropertyName("container_class")]
+        public string ContainerClass { get; set; } = string.Empty;
+
+        [JsonPropertyName("provider")]
+        public string Provider { get; set; } = "Gemini";
+    }
+
+    /// <summary>
+    /// Response payload from an AI precision filter / tree-shaking operation.
+    /// </summary>
+    public class SectionAiPrecisionFilterResponseDto
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("scoped_css")]
+        public string ScopedCss { get; set; } = string.Empty;
+
+        [JsonPropertyName("js_script")]
+        public string? JsScript { get; set; }
+
+        [JsonPropertyName("original_lines_css")]
+        public int OriginalLinesCss { get; set; }
+
+        [JsonPropertyName("filtered_lines_css")]
+        public int FilteredLinesCss { get; set; }
+
+        [JsonPropertyName("reduction_percentage")]
+        public string ReductionPercentage { get; set; } = string.Empty;
+
+        [JsonPropertyName("explanation")]
+        public string? Explanation { get; set; }
+
+        [JsonPropertyName("error_message")]
+        public string? ErrorMessage { get; set; }
+    }
+
+    /// <summary>
+    /// Request payload for complete AI section cleaning: HTML tokenization, CSS tree-shaking, JS extraction, and mock JSON synthesis.
+    /// </summary>
+    public class SectionAiFullCleanRequestDto
+    {
+        [JsonPropertyName("section_key")]
+        public string SectionKey { get; set; } = string.Empty;
+
+        [JsonPropertyName("category_key")]
+        public string CategoryKey { get; set; } = "body";
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("html_template")]
+        public string HtmlTemplate { get; set; } = string.Empty;
+
+        [JsonPropertyName("raw_css")]
+        public string RawCss { get; set; } = string.Empty;
+
+        [JsonPropertyName("raw_js")]
+        public string? RawJs { get; set; }
+
+        [JsonPropertyName("container_class")]
+        public string ContainerClass { get; set; } = string.Empty;
+
+        [JsonPropertyName("provider")]
+        public string Provider { get; set; } = "Gemini";
+    }
+
+    /// <summary>
+    /// Response payload from a complete AI section cleaning operation.
+    /// </summary>
+    public class SectionAiFullCleanResponseDto
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("html_template")]
+        public string HtmlTemplate { get; set; } = string.Empty;
+
+        [JsonPropertyName("scoped_css")]
+        public string ScopedCss { get; set; } = string.Empty;
+
+        [JsonPropertyName("js_script")]
+        public string? JsScript { get; set; }
+
+        [JsonPropertyName("sample_content_json")]
+        public string? SampleContentJson { get; set; }
+
+        [JsonPropertyName("placeholders")]
+        public List<string> Placeholders { get; set; } = new List<string>();
+
+        [JsonPropertyName("original_lines_css")]
+        public int OriginalLinesCss { get; set; }
+
+        [JsonPropertyName("filtered_lines_css")]
+        public int FilteredLinesCss { get; set; }
+
+        [JsonPropertyName("reduction_percentage")]
+        public string ReductionPercentage { get; set; } = string.Empty;
+
+        [JsonPropertyName("explanation")]
+        public string? Explanation { get; set; }
+
+        [JsonPropertyName("error_message")]
+        public string? ErrorMessage { get; set; }
+    }
+
+    /// <summary>
     /// Request payload for decomposing an uploaded UI screenshot or Figma mockup into modular sections.
     /// </summary>
     public class SectionsBuilderFromImageRequestDto

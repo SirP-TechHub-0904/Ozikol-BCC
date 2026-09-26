@@ -84,28 +84,43 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
           </div>
 
-          <!-- Card 2: Action Buttons & Direct Links -->
+          <!-- Card 2: Action Buttons, Root Icon & Direct Links -->
           <div class="cms-card">
             <div class="card-header-bar">
-              <h3>Call-to-Action Buttons & Links</h3>
+              <h3>Action Buttons, Root Icon & Links</h3>
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>BUTTON TEXT</label>
-                <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Join Now">
-              </div>
-
-              <div class="form-group">
-                <label>BUTTON TARGET LINK</label>
-                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="/programs or https://...">
+                <label>ROOT ICON CLASS (OPTIONAL)</label>
+                <input type="text" [(ngModel)]="section.iconText" class="form-control" placeholder="e.g. tji-phone or fa-solid fa-rocket">
               </div>
 
               <div class="form-group">
                 <label>DIRECT SECTION URL ROUTE</label>
-                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="core-programs">
+                <input type="text" [(ngModel)]="section.directUrl" class="form-control" placeholder="e.g. core-programs">
               </div>
 
               <div class="form-group">
+                <label>PRIMARY BUTTON TEXT</label>
+                <input type="text" [(ngModel)]="section.buttonText" class="form-control" placeholder="e.g. Discover More, Join Now">
+              </div>
+
+              <div class="form-group">
+                <label>PRIMARY BUTTON TARGET LINK</label>
+                <input type="text" [(ngModel)]="section.buttonLink" class="form-control" placeholder="e.g. /programs or https://...">
+              </div>
+
+              <div class="form-group">
+                <label>SECONDARY BUTTON TEXT (DUAL CTA)</label>
+                <input type="text" [(ngModel)]="section.secondButtonText" class="form-control" placeholder="e.g. Watch Demo, Learn More">
+              </div>
+
+              <div class="form-group">
+                <label>SECONDARY BUTTON TARGET LINK</label>
+                <input type="text" [(ngModel)]="section.secondButtonLink" class="form-control" placeholder="e.g. /about or https://...">
+              </div>
+
+              <div class="form-group full-width">
                 <label>BUTTON TOGGLE</label>
                 <div class="checkbox-card">
                   <input type="checkbox" [(ngModel)]="section.disableButton" id="disBtn">
