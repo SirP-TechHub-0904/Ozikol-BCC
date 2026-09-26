@@ -265,6 +265,12 @@ builder.Services.AddScoped<Ozikol.Central.Services.Jobs.IBackgroundJobHandler, O
 builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
 
+// 7c. Register Section Asset Pipeline & AI Custom Code Extractor Services
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol_BCC.Application.Services.Sections.SectionLibraryResolverService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol_BCC.Application.Services.Sections.SectionCustomCodeExtractorService>();
+
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 // 8. Seed Central Operator Roles & Default SuperAdmin
@@ -419,6 +425,7 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 app.MapRazorPages();
 
 app.Run();

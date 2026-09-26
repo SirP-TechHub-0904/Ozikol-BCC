@@ -510,8 +510,11 @@ namespace Ozikol_BCC.Api.Controllers
             existing.Qoute = updated.Qoute;
             existing.Description = updated.Description;
             existing.FullDescription = updated.FullDescription;
+            existing.IconText = updated.IconText;
             existing.ButtonText = updated.ButtonText;
             existing.ButtonLink = updated.ButtonLink;
+            existing.SecondButtonText = updated.SecondButtonText;
+            existing.SecondButtonLink = updated.SecondButtonLink;
             existing.DisableButton = updated.DisableButton;
             existing.DirectUrl = updated.DirectUrl;
             existing.ImageUrl = updated.ImageUrl;

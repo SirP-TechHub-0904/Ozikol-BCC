@@ -24,6 +24,31 @@ namespace Ozikol.Central.Services
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Precision-filters and tree-shakes CSS rules and JavaScript event handlers from raw assets
+        /// to isolate ONLY what applies directly to this section's HTML markup without inventing new code.
+        /// </summary>
+        /// <param name="request">The precision filter request payload containing HTML, CSS, JS, and container class.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The tree-shaken scoped CSS, filtered JS, and reduction metrics.</returns>
+        Task<SectionAiPrecisionFilterResponseDto> FilterAndIsolateSectionWithAiAsync(
+            SectionAiPrecisionFilterRequestDto request, 
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Executes a complete 4-pillar AI cleanup for an individual section:
+        /// 1) Standardizes HTML with {{Mustache}} tokens,
+        /// 2) Precision tree-shakes and scopes CSS (zero invented code),
+        /// 3) Extracts real interactive JS logic,
+        /// 4) Generates realistic mock content JSON.
+        /// </summary>
+        /// <param name="request">The full clean request payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The complete cleaned and isolated section package.</returns>
+        Task<SectionAiFullCleanResponseDto> CleanAndIsolateFullSectionWithAiAsync(
+            SectionAiFullCleanRequestDto request, 
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Decomposes an uploaded UI screenshot or Figma mockup into one or more modular,
         /// independent marketplace sections with isolated scoped CSS and standardized placeholders.
         /// Uploads the asset to Cloudinary and analyzes it with Gemini Multimodal Vision AI.

@@ -281,6 +281,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    await AutoCleanSectionsWithAiAsync(ExtractionResult, null, cancellationToken);
+
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -294,7 +296,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Extraction complete! Extracted {ExtractionResult.TotalSections} modular sections with precision scoped CSS.";
+                    StatusMessage = $"Extraction and AI cleanup complete! Extracted {ExtractionResult.TotalSections} modular sections with precision tree-shaking.";
                 }
                 else
                 {
@@ -339,6 +341,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    await AutoCleanSectionsWithAiAsync(ExtractionResult, SourceCustomCss, cancellationToken);
+
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -352,7 +356,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Direct source extraction complete! Sliced {ExtractionResult.TotalSections} modular sections in < 0.05s.";
+                    StatusMessage = $"Direct source extraction and AI cleanup complete! Sliced and tree-shook {ExtractionResult.TotalSections} modular sections.";
                 }
                 else
                 {
@@ -557,6 +561,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
+                    var allStylesheets = parsedStylesheets != null && parsedStylesheets.Any()
+                        ? string.Join("\n", parsedStylesheets.Select(s => s.Content))
+                        : (request.CustomCss ?? string.Empty);
+
+                    // Automatically clean, precision tree-shake, and tokenize all sliced sections with AI
+                    await AutoCleanSectionsWithAiAsync(ExtractionResult, allStylesheets, cancellationToken);
+
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -570,7 +581,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Sliced {ExtractionResult.TotalSections} modular sections with precision scoped CSS!";
+                    StatusMessage = $"Sliced and AI-cleaned {ExtractionResult.TotalSections} modular sections with precision tree-shaking!";
                 }
                 else
                 {
@@ -815,6 +826,31 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             }
         }
 
+
+        /// <summary>
+        /// AJAX endpoint for complete 4-pillar AI cleanup: HTML tokenization, CSS tree-shaking, JS extraction, and mock JSON synthesis.
+        /// </summary>
+        public async Task<IActionResult> OnPostAiCleanSectionAsync(
+            [FromBody] SectionAiFullCleanRequestDto payload, 
+            CancellationToken cancellationToken)
+        {
+            if (payload == null || string.IsNullOrWhiteSpace(payload.HtmlTemplate))
+            {
+                return BadRequest(new { success = false, message = "Invalid section payload for AI full clean." });
+            }
+
+            try
+            {
+                var result = await _sectionAiStudioService.CleanAndIsolateFullSectionWithAiAsync(payload, cancellationToken);
+                return new JsonResult(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to execute AI full clean for section {Key}", payload.SectionKey);
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
         private static string GetCategoryDisplayName(string key) => key switch
         {
             "menu" => "Navigation & Menus",
@@ -826,6 +862,58 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             "breadcrumb" => "Breadcrumbs & Page Headers",
             _ => "Modular Sections"
         };
+
+        /// <summary>
+        /// Automatically performs AI tree-shaking, Mustache tokenization, JS extraction, and mock data synthesis across all sliced sections.
+        /// </summary>
+        /// <param name="extractionResult">The sliced sections extraction result.</param>
+        /// <param name="rawCssSuite">The full raw stylesheet from workbench.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        private async Task AutoCleanSectionsWithAiAsync(
+            SectionsBuilderResponseDto extractionResult, 
+            string? rawCssSuite, 
+            CancellationToken cancellationToken)
+        {
+            if (extractionResult == null || !extractionResult.Sections.Any()) return;
+
+            foreach (var sec in extractionResult.Sections)
+            {
+                try
+                {
+                    var cssForSec = !string.IsNullOrWhiteSpace(rawCssSuite) && rawCssSuite.Length > (sec.ScopedCss?.Length ?? 0)
+                        ? rawCssSuite
+                        : (sec.ScopedCss ?? string.Empty);
+
+                    var containerClass = "sec-variant-" + (sec.VariantCode ?? "sec").ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
+
+                    var cleanReq = new SectionAiFullCleanRequestDto
+                    {
+                        SectionKey = sec.Id,
+                        CategoryKey = sec.CategoryKey,
+                        Title = sec.Name,
+                        HtmlTemplate = sec.HtmlTemplate,
+                        RawCss = cssForSec,
+                        RawJs = sec.JsScript,
+                        ContainerClass = containerClass,
+                        Provider = "Gemini"
+                    };
+
+                    var cleanRes = await _sectionAiStudioService.CleanAndIsolateFullSectionWithAiAsync(cleanReq, cancellationToken);
+                    if (cleanRes != null && cleanRes.Success)
+                    {
+                        if (!string.IsNullOrWhiteSpace(cleanRes.HtmlTemplate)) sec.HtmlTemplate = cleanRes.HtmlTemplate;
+                        if (!string.IsNullOrWhiteSpace(cleanRes.ScopedCss)) sec.ScopedCss = cleanRes.ScopedCss;
+                        if (cleanRes.JsScript != null) sec.JsScript = cleanRes.JsScript;
+                        if (!string.IsNullOrWhiteSpace(cleanRes.SampleContentJson)) sec.SampleContentJson = cleanRes.SampleContentJson;
+                        if (!string.IsNullOrWhiteSpace(cleanRes.Explanation)) sec.Description = cleanRes.Explanation;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Auto AI cleanup skipped for section {SectionName}", sec.Name);
+                }
+            }
+        }
 
         private static string GetCategoryIcon(string key) => key switch
         {

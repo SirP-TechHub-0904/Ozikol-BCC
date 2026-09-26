@@ -128,6 +128,14 @@ namespace Ozikol_BCC.Domain.Models
         public string? YoutubeUrlLink { get; set; }
 
         /// <summary>
+        /// FontAwesome or Bootstrap icon class string (e.g. 'tji-phone', 'fa-solid fa-rocket', 'bi bi-star').
+        /// Injected into templates via {{ IconText }}.
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Icon Class / Text")]
+        public string? IconText { get; set; }
+
+        /// <summary>
         /// Action button display text.
         /// Injected into templates via {{ ButtonText }}.
         /// </summary>
@@ -142,6 +150,22 @@ namespace Ozikol_BCC.Domain.Models
         [MaxLength(500)]
         [Display(Name = "Button Link")]
         public string? ButtonLink { get; set; }
+
+        /// <summary>
+        /// Secondary action button display text for dual-CTA sections.
+        /// Injected into templates via {{ SecondButtonText }}.
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Second Button Text")]
+        public string? SecondButtonText { get; set; }
+
+        /// <summary>
+        /// Secondary action button destination URL for dual-CTA sections.
+        /// Injected into templates via {{ SecondButtonLink }}.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "Second Button Link")]
+        public string? SecondButtonLink { get; set; }
 
         /// <summary>
         /// Optional direct routing string if this section anchors or links out.
