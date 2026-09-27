@@ -249,6 +249,9 @@
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
+        <a href="/templates/preview-suite/@(string.IsNullOrWhiteSpace(Model.Template.Tag) ? Model.Template.VariantCode : Model.Template.Tag)?focus=@Model.Template.VariantCode" target="_blank" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;" title="Preview this section in the full website suite">
+            <span class="material-symbols-outlined" style="font-size: 16px;">web</span> View Full Website Demo
+        </a>
         <a href="/centralwks/templates/edit/@Model.Template.Id" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
             <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Template
         </a>
@@ -370,6 +373,9 @@
             </div>
 
             <div style="display: flex; gap: 8px;">
+                <a href="/templates/preview-suite/@(string.IsNullOrWhiteSpace(Model.Template.Tag) ? Model.Template.VariantCode : Model.Template.Tag)?focus=@Model.Template.VariantCode" target="_blank" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe;" title="View Complete Multi-Section Website Suite">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">web</span> Full Website Demo
+                </a>
                 <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="reloadPreviewIframe()" title="Refresh Preview Sandbox">
                     <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> Refresh
                 </button>

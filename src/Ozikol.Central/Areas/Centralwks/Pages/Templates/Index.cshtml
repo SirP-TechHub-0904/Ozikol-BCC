@@ -389,7 +389,7 @@
                             <td style="text-align: center;">
                                 <div class="tmpl-preview-tile" 
                                      title="Click to Live Preview @t.Name"
-                                     onclick="openLivePreviewModal('@t.Id', '@Html.Raw(Html.Encode(t.Name))', '@catIcon', '@t.VariantCode', '@catKey')">
+                                     onclick="openLivePreviewModal('@t.Id', '@Html.Raw(Html.Encode(t.Name))', '@catIcon', '@t.VariantCode', '@catKey', '@t.Tag')">
                                     <span class="material-symbols-outlined" style="font-size: 20px;">@catIcon</span>
                                 </div>
                             </td>
@@ -449,6 +449,9 @@
                             </td>
                             <td style="text-align: right;">
                                 <div class="tmpl-action-btn-group">
+                                    <a href="/templates/preview-suite/@(string.IsNullOrWhiteSpace(t.Tag) ? t.VariantCode : t.Tag)?focus=@t.VariantCode" target="_blank" class="tmpl-action-btn" title="View Full Website Demo" style="color: #2563eb; background: #eff6ff;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">web</span>
+                                    </a>
                                     <a href="/centralwks/templates/details/@t.Id" class="tmpl-action-btn" title="View Details & Code">
                                         <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
                                     </a>
@@ -556,6 +559,9 @@
                         <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile
                     </button>
                 </div>
+                <a id="modalSuiteLink" href="#" target="_blank" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px; color: #1d4ed8; background: #eff6ff; border-color: #bfdbfe;" title="View Complete Multi-Section Website Suite">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">web</span> Full Website Demo
+                </a>
                 <a id="modalDetailsLink" href="#" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 4px;">
                     <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span> Deep Inspect
                 </a>
@@ -574,11 +580,13 @@
 </div>
 
 <script>
-    function openLivePreviewModal(templateId, templateName, categoryIcon, variantCode, categoryKey) {
+    function openLivePreviewModal(templateId, templateName, categoryIcon, variantCode, categoryKey, tag) {
         document.getElementById('modalTemplateName').textContent = templateName;
         document.getElementById('modalVariantCode').textContent = variantCode;
         document.getElementById('modalCategoryIcon').textContent = categoryIcon;
         document.getElementById('modalDetailsLink').href = '/centralwks/templates/details/' + templateId;
+        const suiteTag = tag || variantCode || 'modern';
+        document.getElementById('modalSuiteLink').href = '/templates/preview-suite/' + encodeURIComponent(suiteTag) + '?focus=' + encodeURIComponent(variantCode);
         
         // Load rendered preview iframe via details preview endpoint
         const iframe = document.getElementById('modalPreviewFrame');

@@ -1753,3 +1753,18 @@ function escapeHtmlAttr(str) {
     if (!str) return '';
     return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+
+/**
+ * Launches the full multi-section website demo sandbox in a popout window.
+ */
+function openFullSuiteDemoFromImport() {
+    var suiteInput = document.getElementById('inputSuiteCode') || document.getElementById('imageSuiteName');
+    var suiteCode = (suiteInput && suiteInput.value.trim()) ? suiteInput.value.trim() : (rawExtractionData && (rawExtractionData.groupCode || rawExtractionData.group_code)) || 'modern';
+    var focusKey = '';
+    if (rawExtractionData && rawExtractionData.sections && rawExtractionData.sections[activePreviewIndex]) {
+        var sec = rawExtractionData.sections[activePreviewIndex];
+        focusKey = sec.variantCode || sec.variant_code || sec.categoryKey || '';
+    }
+    window.open('/templates/preview-suite/' + encodeURIComponent(suiteCode) + '?focus=' + encodeURIComponent(focusKey), '_blank');
+}
+
