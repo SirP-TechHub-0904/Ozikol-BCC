@@ -268,6 +268,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Ser
 // 7c. Register Section Asset Pipeline & AI Custom Code Extractor Services
 builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol_BCC.Application.Services.Sections.SectionLibraryResolverService>();
 builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol_BCC.Application.Services.Sections.SectionCustomCodeExtractorService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateAssetBundlePipelineService, Ozikol_BCC.Application.Services.Sections.TemplateAssetBundlePipelineService>();
 
 builder.Services.AddControllers();
 
