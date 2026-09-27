@@ -574,10 +574,13 @@ Return the complete cleaned JSON object.";
                         }
                     };
 
-                    var response = await client.PostAsJsonAsync(geminiUrl, payload, cancellationToken);
+                    using var geminiCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    geminiCts.CancelAfter(TimeSpan.FromSeconds(20));
+
+                    var response = await client.PostAsJsonAsync(geminiUrl, payload, geminiCts.Token);
                     if (response.IsSuccessStatusCode)
                     {
-                        var geminiResponseText = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var geminiResponseText = await response.Content.ReadAsStringAsync(geminiCts.Token);
                         var parsedGemini = JsonDocument.Parse(geminiResponseText);
                         var candidates = parsedGemini.RootElement.GetProperty("candidates");
                         if (candidates.GetArrayLength() > 0)
@@ -597,10 +600,10 @@ Return the complete cleaned JSON object.";
                 }
                 catch (Exception netEx)
                 {
-                    _logger.LogWarning(netEx, "Gemini online endpoint unreachable. Trying local Ollama fallback...");
+                    _logger.LogWarning(netEx, "Gemini online endpoint unreachable or timed out. Trying local Ollama fallback...");
                 }
 
-                // If Gemini failed due to DNS/network or rate limit, attempt local Ollama fallback
+                // If Gemini failed due to DNS/network or rate limit, attempt local Ollama fallback with fast 3s probe
                 if (string.IsNullOrWhiteSpace(jsonText))
                 {
                     try
@@ -616,10 +619,13 @@ Return the complete cleaned JSON object.";
                             options = new { temperature = 0.1 }
                         };
 
-                        var ollamaResp = await client.PostAsJsonAsync(ollamaUrl, ollamaPayload, cancellationToken);
+                        using var ollamaCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        ollamaCts.CancelAfter(TimeSpan.FromSeconds(3));
+
+                        var ollamaResp = await client.PostAsJsonAsync(ollamaUrl, ollamaPayload, ollamaCts.Token);
                         if (ollamaResp.IsSuccessStatusCode)
                         {
-                            var oDoc = await ollamaResp.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: cancellationToken);
+                            var oDoc = await ollamaResp.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ollamaCts.Token);
                             if (oDoc != null && oDoc.RootElement.TryGetProperty("response", out var oProp))
                             {
                                 jsonText = oProp.GetString() ?? "{}";
