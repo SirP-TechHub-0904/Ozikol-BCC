@@ -189,9 +189,18 @@
 
                         <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
                             <td style="padding: 14px 20px;">
-                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
-                                    <span class="material-symbols-outlined" style="font-size: 14px;">auto_awesome</span> @key.Provider
-                                </span>
+                                @if (key.Provider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">smart_toy</span> DeepSeek (Paid Failover)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">auto_awesome</span> Google Gemini (Free Pool)
+                                    </span>
+                                }
                             </td>
                             <td style="padding: 14px 20px;">
                                 <div style="font-weight: 700; color: #0f172a;">@key.KeyAlias</div>
@@ -274,7 +283,7 @@
                     <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(225, 29, 72, 0.12); color: var(--admin-primary, #e11d48); display: flex; align-items: center; justify-content: center;">
                         <span class="material-symbols-outlined" style="font-size: 20px;">vpn_key</span>
                     </div>
-                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Register Google Gemini Free Key</h3>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Register AI Provider Key</h3>
                 </div>
                 <button type="button" onclick="closeAddKeyModal();" style="background: transparent; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#64748b;'">
                     <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
@@ -282,13 +291,22 @@
             </div>
 
             <div style="padding: 24px;">
-                <input type="hidden" asp-for="Input.Provider" value="Gemini" id="inputProvider" />
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        AI Provider <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select asp-for="Input.Provider" id="inputProvider" onchange="onProviderChanged(this.value)" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box; background: #ffffff; font-weight: 600;">
+                        <option value="Gemini">Google Gemini (Free Rotation Pool - 1,500 reqs/day)</option>
+                        <option value="DeepSeek">DeepSeek (Paid Failover Backup)</option>
+                    </select>
+                    <div id="providerHintText" style="font-size: 12px; color: #64748b; margin-top: 4px;">Google Gemini free tier keys rotate automatically under round-robin distribution.</div>
+                </div>
 
                 <div style="margin-bottom: 18px;">
                     <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
                         Key Alias / Label <span style="color: #ef4444;">*</span>
                     </label>
-                    <input asp-for="Input.KeyAlias" placeholder="e.g. Gemini Free Pool #1" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
+                    <input asp-for="Input.KeyAlias" id="inputKeyAlias" placeholder="e.g. Gemini Free Pool #1" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
                     <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Friendly name to identify this key in metrics.</div>
                 </div>
 
@@ -304,7 +322,13 @@
                     </div>
                 </div>
 
-                <input type="hidden" asp-for="Input.DailyQuotaLimit" value="1500" />
+                <div style="margin-bottom: 18px;" id="quotaContainer">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+                        Daily Quota Limit <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input asp-for="Input.DailyQuotaLimit" id="inputDailyQuota" type="number" value="1500" style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box;" required />
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Max daily requests allocated for this key (defaults: 1,500 for Gemini Free, 50,000 for DeepSeek Paid).</div>
+                </div>
 
                 <!-- Pre-flight Test Area -->
                 <div style="padding: 14px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
@@ -442,6 +466,25 @@
     function closeLogsModal() {
         var el = document.getElementById('logsModal');
         if (el) el.style.display = 'none';
+    }
+
+    function onProviderChanged(provider) {
+        var aliasInput = document.getElementById('inputKeyAlias');
+        var apiKeyInput = document.getElementById('inputApiKey');
+        var quotaInput = document.getElementById('inputDailyQuota');
+        var hintText = document.getElementById('providerHintText');
+
+        if (provider === 'DeepSeek') {
+            if (aliasInput) aliasInput.placeholder = 'e.g. DeepSeek Master Paid Key';
+            if (apiKeyInput) apiKeyInput.placeholder = 'e.g. sk-xxxxxxxxxxxxxxxxxxxxxxxx';
+            if (quotaInput) quotaInput.value = '50000';
+            if (hintText) hintText.textContent = 'Single paid DeepSeek key used as immediate failover when Gemini free pool is rate-limited.';
+        } else {
+            if (aliasInput) aliasInput.placeholder = 'e.g. Gemini Free Pool #1';
+            if (apiKeyInput) apiKeyInput.placeholder = 'e.g. AIzaSyD-xxxxxxxxxxxxxx';
+            if (quotaInput) quotaInput.value = '1500';
+            if (hintText) hintText.textContent = 'Google Gemini free tier keys rotate automatically under round-robin distribution (1,500 reqs/day).';
+        }
     }
 
     // Escape key listener to close modals
