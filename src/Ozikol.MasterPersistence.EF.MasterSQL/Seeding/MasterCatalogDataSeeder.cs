@@ -375,6 +375,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     TicketAutoCloseHours = 24,
                     EnableTicketAutoClose = true,
                     SupportCategories = "Support, Sales, Billing, Partnership, Enterprise, General, Security & Compliance",
+                    CloudinaryCloudName = "pcbhnjad",
+                    CloudinaryApiKey = "159842435718116",
+                    CloudinaryApiSecret = "EBGZQvy53v8GY0H-Oo1SpB0VKKQ",
                     UpdatedUtc = DateTime.UtcNow
                 };
 
@@ -383,9 +386,23 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
             }
             else
             {
+                var modified = false;
                 if (string.IsNullOrWhiteSpace(existingSetting.SupportCategories))
                 {
                     existingSetting.SupportCategories = "Support, Sales, Billing, Partnership, Enterprise, General, Security & Compliance";
+                    modified = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(existingSetting.CloudinaryCloudName))
+                {
+                    existingSetting.CloudinaryCloudName = "pcbhnjad";
+                    existingSetting.CloudinaryApiKey = "159842435718116";
+                    existingSetting.CloudinaryApiSecret = "EBGZQvy53v8GY0H-Oo1SpB0VKKQ";
+                    modified = true;
+                }
+
+                if (modified)
+                {
                     existingSetting.UpdatedUtc = DateTime.UtcNow;
                     await dbContext.SaveChangesAsync(ct);
                 }

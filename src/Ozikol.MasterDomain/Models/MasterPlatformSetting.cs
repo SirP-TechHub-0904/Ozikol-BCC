@@ -126,6 +126,24 @@ namespace Ozikol.MasterDomain.Models
         }
 
         /// <summary>
+        /// Gets or sets the Master platform Cloudinary Cloud Name used as the global default for media, assets, and templates.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryCloudName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Key.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Master platform Cloudinary API Secret.
+        /// </summary>
+        [MaxLength(255)]
+        public string? CloudinaryApiSecret { get; set; }
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

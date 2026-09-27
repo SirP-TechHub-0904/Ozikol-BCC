@@ -18,6 +18,7 @@ namespace Ozikol_BCC.Application.Services.Sections
     /// Production implementation of <see cref="ITemplateImageOptimizationService"/>.
     /// Handles image URL resolution, resilient downloading, fallback stock image resolution,
     /// and Cloudinary CDN optimization delivering lightweight WebP assets (max 300KB).
+    /// Supports both Master platform Cloudinary storage and autonomous tenant custom Cloudinary accounts.
     /// </summary>
     public class TemplateImageOptimizationService : ITemplateImageOptimizationService
     {
@@ -98,6 +99,9 @@ namespace Ozikol_BCC.Application.Services.Sections
             string? baseDomainUrl = null,
             string? categoryOrContext = null,
             string targetFolder = "templates/images",
+            string? customCloudName = null,
+            string? customApiKey = null,
+            string? customApiSecret = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(imageUrl))
@@ -119,8 +123,8 @@ namespace Ozikol_BCC.Application.Services.Sections
                 return trimmedUrl;
             }
 
-            // Check cache
-            if (_optimizedUrlCache.TryGetValue(trimmedUrl, out var cachedUrl))
+            var cacheKey = $"{customCloudName ?? "master"}:{trimmedUrl}";
+            if (_optimizedUrlCache.TryGetValue(cacheKey, out var cachedUrl))
             {
                 return cachedUrl;
             }
@@ -174,7 +178,7 @@ namespace Ozikol_BCC.Application.Services.Sections
                 catch
                 {
                     // If network fails completely, return direct fallback stock URL
-                    _optimizedUrlCache[trimmedUrl] = fallbackStockUrl;
+                    _optimizedUrlCache[cacheKey] = fallbackStockUrl;
                     return fallbackStockUrl;
                 }
             }
@@ -188,12 +192,18 @@ namespace Ozikol_BCC.Application.Services.Sections
                     var fileName = $"img_{Guid.NewGuid():N}{extension}";
                     var formFile = CreateFormFile(imageBytes, fileName, contentType);
 
-                    var uploadedUrl = await _cloudinaryService.UploadImageAsync(formFile, targetFolder);
+                    var uploadedUrl = await _cloudinaryService.UploadImageAsync(
+                        formFile, 
+                        targetFolder, 
+                        customCloudName, 
+                        customApiKey, 
+                        customApiSecret);
+
                     if (!string.IsNullOrWhiteSpace(uploadedUrl))
                     {
                         // Apply Cloudinary URL transformation to force WebP and lightweight compression (max ~300kb)
                         var optimizedWebpUrl = EnsureCloudinaryWebpTransformation(uploadedUrl);
-                        _optimizedUrlCache[trimmedUrl] = optimizedWebpUrl;
+                        _optimizedUrlCache[cacheKey] = optimizedWebpUrl;
                         return optimizedWebpUrl;
                     }
                 }
@@ -205,7 +215,7 @@ namespace Ozikol_BCC.Application.Services.Sections
 
             // Fallback if Cloudinary is not configured or fails
             var directFallback = GetCuratedFallbackUrl(categoryOrContext);
-            _optimizedUrlCache[trimmedUrl] = directFallback;
+            _optimizedUrlCache[cacheKey] = directFallback;
             return directFallback;
         }
 
@@ -215,6 +225,9 @@ namespace Ozikol_BCC.Application.Services.Sections
             string? baseDomainUrl = null,
             string? categoryOrContext = null,
             string targetFolder = "templates/images",
+            string? customCloudName = null,
+            string? customApiKey = null,
+            string? customApiSecret = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(htmlMarkup)) return htmlMarkup;
@@ -241,7 +254,15 @@ namespace Ozikol_BCC.Application.Services.Sections
             var tasks = uniqueUrls.Select(async url =>
             {
                 var context = DetectContextFromUrl(url, categoryOrContext);
-                var optimized = await OptimizeAndUploadImageAsync(url, baseDomainUrl, context, targetFolder, cancellationToken);
+                var optimized = await OptimizeAndUploadImageAsync(
+                    url, 
+                    baseDomainUrl, 
+                    context, 
+                    targetFolder, 
+                    customCloudName, 
+                    customApiKey, 
+                    customApiSecret, 
+                    cancellationToken);
                 replacementMap[url] = optimized;
             });
 
@@ -262,6 +283,9 @@ namespace Ozikol_BCC.Application.Services.Sections
             string cssMarkup,
             string? baseDomainUrl = null,
             string targetFolder = "templates/images",
+            string? customCloudName = null,
+            string? customApiKey = null,
+            string? customApiSecret = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(cssMarkup)) return cssMarkup;
@@ -285,7 +309,15 @@ namespace Ozikol_BCC.Application.Services.Sections
 
             var tasks = uniqueUrls.Select(async url =>
             {
-                var optimized = await OptimizeAndUploadImageAsync(url, baseDomainUrl, "feature", targetFolder, cancellationToken);
+                var optimized = await OptimizeAndUploadImageAsync(
+                    url, 
+                    baseDomainUrl, 
+                    "feature", 
+                    targetFolder, 
+                    customCloudName, 
+                    customApiKey, 
+                    customApiSecret, 
+                    cancellationToken);
                 replacementMap[url] = optimized;
             });
 

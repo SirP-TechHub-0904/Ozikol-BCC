@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -2616,6 +2616,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("CertificationAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CloudinaryApiKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudinaryApiSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CloudinaryCloudName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("CreatorAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
@@ -2909,6 +2921,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IconText")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
