@@ -28,6 +28,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
         private readonly INativeSectionExtractorService _nativeExtractor;
         private readonly ISectionsBuilderClientService _sectionsBuilderClient;
         private readonly ISectionAiStudioService _sectionAiStudioService;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService _imageOptimizer;
         private readonly MasterCatalogDbContext _dbContext;
         private readonly HttpClient _httpClient;
         private readonly ILogger<ImportModel> _logger;
@@ -36,6 +37,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             INativeSectionExtractorService nativeExtractor,
             ISectionsBuilderClientService sectionsBuilderClient,
             ISectionAiStudioService sectionAiStudioService,
+            Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService imageOptimizer,
             MasterCatalogDbContext dbContext,
             HttpClient httpClient,
             ILogger<ImportModel> logger)
@@ -43,6 +45,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
             _nativeExtractor = nativeExtractor;
             _sectionsBuilderClient = sectionsBuilderClient;
             _sectionAiStudioService = sectionAiStudioService;
+            _imageOptimizer = imageOptimizer;
             _dbContext = dbContext;
             _httpClient = httpClient;
             _logger = logger;
@@ -876,13 +879,38 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
         {
             if (extractionResult == null || !extractionResult.Sections.Any()) return;
 
+            var baseDomain = !string.IsNullOrWhiteSpace(SourceBaseUrl) ? SourceBaseUrl : TargetUrl;
+
             foreach (var sec in extractionResult.Sections)
             {
                 try
                 {
+                    // 1. Optimize and convert all images in HTML to lightweight WebP (<= 300KB) in Cloudinary
+                    if (!string.IsNullOrWhiteSpace(sec.HtmlTemplate))
+                    {
+                        sec.HtmlTemplate = await _imageOptimizer.ProcessAndReplaceImagesInHtmlAsync(
+                            sec.HtmlTemplate, 
+                            baseDomain, 
+                            sec.CategoryKey, 
+                            "templates/images", 
+                            null, null, null, 
+                            cancellationToken);
+                    }
+
                     var cssForSec = !string.IsNullOrWhiteSpace(rawCssSuite) && rawCssSuite.Length > (sec.ScopedCss?.Length ?? 0)
                         ? rawCssSuite
                         : (sec.ScopedCss ?? string.Empty);
+
+                    // 2. Optimize background images in CSS
+                    if (!string.IsNullOrWhiteSpace(cssForSec))
+                    {
+                        cssForSec = await _imageOptimizer.ProcessAndReplaceImagesInCssAsync(
+                            cssForSec, 
+                            baseDomain, 
+                            "templates/images", 
+                            null, null, null, 
+                            cancellationToken);
+                    }
 
                     var containerClass = "sec-variant-" + (sec.VariantCode ?? "sec").ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
 
