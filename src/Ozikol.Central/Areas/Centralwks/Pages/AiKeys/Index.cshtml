@@ -274,7 +274,7 @@
 <!-- ============================================================== -->
 <!-- MODAL 1: REGISTER NEW API KEY MODAL (OVERLAY)                  -->
 <!-- ============================================================== -->
-<div id="addKeyModal" onclick="if (event.target === this) closeAddKeyModal();" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+<div id="addKeyModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
     <div style="background: #ffffff; border-radius: 16px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
         <form method="post" asp-page-handler="AddKey" id="addKeyForm">
             @Html.AntiForgeryToken()
