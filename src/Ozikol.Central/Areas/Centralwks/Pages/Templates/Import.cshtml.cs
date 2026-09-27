@@ -284,8 +284,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
-                    await AutoCleanSectionsWithAiAsync(ExtractionResult, null, cancellationToken);
-
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -299,7 +297,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Extraction and AI cleanup complete! Extracted {ExtractionResult.TotalSections} modular sections with precision tree-shaking.";
+                    StatusMessage = $"Extraction complete! Discovered {ExtractionResult.TotalSections} modular sections with precision tree-shaking.";
                 }
                 else
                 {
@@ -344,8 +342,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
-                    await AutoCleanSectionsWithAiAsync(ExtractionResult, SourceCustomCss, cancellationToken);
-
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -359,7 +355,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Direct source extraction and AI cleanup complete! Sliced and tree-shook {ExtractionResult.TotalSections} modular sections.";
+                    StatusMessage = $"Direct source extraction complete! Sliced and scoped {ExtractionResult.TotalSections} modular sections.";
                 }
                 else
                 {
@@ -564,13 +560,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
                 if (ExtractionResult != null && ExtractionResult.Sections.Any())
                 {
-                    var allStylesheets = parsedStylesheets != null && parsedStylesheets.Any()
-                        ? string.Join("\n", parsedStylesheets.Select(s => s.Content))
-                        : (request.CustomCss ?? string.Empty);
-
-                    // Automatically clean, precision tree-shake, and tokenize all sliced sections with AI
-                    await AutoCleanSectionsWithAiAsync(ExtractionResult, allStylesheets, cancellationToken);
-
                     foreach (var sec in ExtractionResult.Sections)
                     {
                         _previewSectionCache[sec.Id] = sec;
@@ -584,7 +573,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                     });
 
                     CurrentStep = 3;
-                    StatusMessage = $"Sliced and AI-cleaned {ExtractionResult.TotalSections} modular sections with precision tree-shaking!";
+                    StatusMessage = $"Sliced and scoped {ExtractionResult.TotalSections} modular sections with precision class isolation!";
                 }
                 else
                 {
