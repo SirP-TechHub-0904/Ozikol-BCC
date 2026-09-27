@@ -52,6 +52,9 @@ namespace Ozikol_BCC.Api
             builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService, Ozikol_BCC.AiServices.Services.AiSmartAssistService>();
             builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IPaymentGatewayService, Ozikol_BCC.PaymentServices.Services.PaystackPaymentGatewayService>();
             builder.Services.AddScoped<Ozikol_BCC.Application.Services.IMemberIdGeneratorService, Ozikol_BCC.Application.Services.MemberIdGeneratorService>();
+            builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol_BCC.Application.Services.Sections.SectionLibraryResolverService>();
+            builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol_BCC.Application.Services.Sections.SectionCustomCodeExtractorService>();
+            builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateAssetBundlePipelineService, Ozikol_BCC.Application.Services.Sections.TemplateAssetBundlePipelineService>();
 
             builder.Services.AddDistributedMemoryCache();
 
