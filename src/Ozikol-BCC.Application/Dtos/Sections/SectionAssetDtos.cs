@@ -141,13 +141,27 @@ namespace Ozikol_BCC.Application.Dtos.Sections
 
         /// <summary>
         /// The template author's custom stylesheet(s) to extract specific rules from.
+        /// Optional if CustomCssUrl is provided instead.
         /// </summary>
         public string? RawCustomCss { get; set; }
 
         /// <summary>
+        /// Remote or Cloudinary CDN URL hosting the author's custom/compiled CSS bundle.
+        /// When provided, the extractor downloads and tree-shakes rules on-demand to bypass payload size limits.
+        /// </summary>
+        public string? CustomCssUrl { get; set; }
+
+        /// <summary>
         /// The template author's custom JavaScript script(s) to extract handlers from.
+        /// Optional if CustomJsUrl is provided instead.
         /// </summary>
         public string? RawCustomJs { get; set; }
+
+        /// <summary>
+        /// Remote or Cloudinary CDN URL hosting the author's custom/compiled JS bundle.
+        /// When provided, the extractor downloads and tree-shakes script handlers on-demand.
+        /// </summary>
+        public string? CustomJsUrl { get; set; }
     }
 
     /// <summary>

@@ -47,7 +47,35 @@ namespace Ozikol_BCC.Application.Services.Sections
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
 
-            // 1. Auto-detect external library dependencies from markup
+            // 1. Resolve remote CSS content if URL is provided and raw string is empty
+            if (string.IsNullOrWhiteSpace(request.RawCustomCss) && !string.IsNullOrWhiteSpace(request.CustomCssUrl))
+            {
+                try
+                {
+                    _logger.LogInformation("Fetching custom CSS from remote URL for section {Key}: {Url}", request.SectionKey, request.CustomCssUrl);
+                    request.RawCustomCss = await DownloadRemoteAssetAsync(request.CustomCssUrl, cancellationToken);
+                }
+                catch (Exception cssEx)
+                {
+                    _logger.LogWarning(cssEx, "Failed to download custom CSS from {Url} for section {Key}", request.CustomCssUrl, request.SectionKey);
+                }
+            }
+
+            // 2. Resolve remote JS content if URL is provided and raw string is empty
+            if (string.IsNullOrWhiteSpace(request.RawCustomJs) && !string.IsNullOrWhiteSpace(request.CustomJsUrl))
+            {
+                try
+                {
+                    _logger.LogInformation("Fetching custom JS from remote URL for section {Key}: {Url}", request.SectionKey, request.CustomJsUrl);
+                    request.RawCustomJs = await DownloadRemoteAssetAsync(request.CustomJsUrl, cancellationToken);
+                }
+                catch (Exception jsEx)
+                {
+                    _logger.LogWarning(jsEx, "Failed to download custom JS from {Url} for section {Key}", request.CustomJsUrl, request.SectionKey);
+                }
+            }
+
+            // 3. Auto-detect external library dependencies from markup
             var detectedLibs = _libraryResolver.DetectLibraries(request.HtmlMarkup, request.RawCustomJs);
 
             var systemPrompt = BuildSystemPrompt(request.ContainerClass);
@@ -293,7 +321,7 @@ Perform complete tokenization, content extraction, and CSS/JS isolation.";
 
         private static string FilterCandidateCssForHtml(string rawCss, string htmlMarkup)
         {
-            if (string.IsNullOrWhiteSpace(rawCss) || rawCss.Length < 30000) return rawCss;
+            if (string.IsNullOrWhiteSpace(rawCss) || rawCss.Length < 8000) return rawCss;
 
             var classMatches = Regex.Matches(htmlMarkup, @"class=[""']([^""']+)[""']");
             var classNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -328,11 +356,11 @@ Perform complete tokenization, content extraction, and CSS/JS isolation.";
                 {
                     sb.AppendLine(rm.Value);
                     matchedCount++;
-                    if (matchedCount >= 300) break;
+                    if (matchedCount >= 400) break;
                 }
             }
 
-            return sb.Length > 0 ? sb.ToString() : rawCss.Substring(0, Math.Min(rawCss.Length, 30000));
+            return sb.Length > 0 ? sb.ToString() : rawCss.Substring(0, Math.Min(rawCss.Length, 15000));
         }
 
         private static string FilterCandidateJsForHtml(string rawJs, string htmlMarkup)
@@ -512,6 +540,23 @@ Perform complete tokenization, content extraction, and CSS/JS isolation.";
                 DetectedLibraries = detectedLibs,
                 Message = "1-to-1 HTML tokenization and exact content extraction completed."
             };
+        }
+
+        /// <summary>
+        /// Downloads remote CSS or JS content from a public or Cloudinary CDN URL.
+        /// </summary>
+        private async Task<string> DownloadRemoteAssetAsync(string url, CancellationToken cancellationToken)
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(20);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
         private string? ResolveApiKey(params string[] configKeys)
