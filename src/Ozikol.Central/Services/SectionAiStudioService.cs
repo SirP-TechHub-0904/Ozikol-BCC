@@ -66,11 +66,17 @@ namespace Ozikol.Central.Services
                     };
                 }
 
+                _logger.LogInformation("[AI Key Pool] Selected Key '{Alias}' for 'SectionAiTweak' (Attempt {Attempt}/{MaxRetries}, Today: {Count}/{Limit})", 
+                    apiKeyObj.KeyAlias, attempt, maxRetries, apiKeyObj.TodayRequestsCount, apiKeyObj.DailyQuotaLimit);
+
                 var sw = Stopwatch.StartNew();
                 try
                 {
                     var result = await ExecuteTweakWithKeyAsync(apiKeyObj, request, cancellationToken);
                     sw.Stop();
+
+                    _logger.LogInformation("[AI Key Pool] 'SectionAiTweak' completed successfully using Key '{Alias}' in {Latency}ms", 
+                        apiKeyObj.KeyAlias, sw.ElapsedMilliseconds);
 
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
@@ -81,23 +87,23 @@ namespace Ozikol.Central.Services
 
                     return result;
                 }
-                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests || (int?)httpEx.StatusCode == 402 || (int?)httpEx.StatusCode == 401 || (int?)httpEx.StatusCode == 403)
                 {
                     sw.Stop();
-                    _logger.LogWarning("AI Key {Alias} hit HTTP 429 Rate Limit. Setting cooldown and failing over...", apiKeyObj.KeyAlias);
-                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 60, cancellationToken);
+                    _logger.LogWarning("[AI Key Pool] Key '{Alias}' hit error ({Status}). Setting cooldown and failing over to next key...", apiKeyObj.KeyAlias, httpEx.StatusCode);
+                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 120, cancellationToken);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "SectionAiTweak",
                         (int)sw.ElapsedMilliseconds,
-                        429,
-                        errorMessage: "HTTP 429 Too Many Requests",
+                        (int)(httpEx.StatusCode ?? System.Net.HttpStatusCode.TooManyRequests),
+                        errorMessage: $"Key Error: {httpEx.Message}",
                         cancellationToken: cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    _logger.LogError(ex, "AI section tweak failed for Key {Alias}", apiKeyObj.KeyAlias);
+                    _logger.LogError(ex, "[AI Key Pool] AI section tweak failed for Key '{Alias}' on attempt {Attempt}", apiKeyObj.KeyAlias, attempt);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "SectionAiTweak",
@@ -147,11 +153,17 @@ namespace Ozikol.Central.Services
                     };
                 }
 
+                _logger.LogInformation("[AI Key Pool] Selected Key '{Alias}' for 'SectionAiPrecisionFilter' (Attempt {Attempt}/{MaxRetries}, Today: {Count}/{Limit})", 
+                    apiKeyObj.KeyAlias, attempt, maxRetries, apiKeyObj.TodayRequestsCount, apiKeyObj.DailyQuotaLimit);
+
                 var sw = Stopwatch.StartNew();
                 try
                 {
                     var result = await ExecuteFilterWithKeyAsync(apiKeyObj, request, cancellationToken);
                     sw.Stop();
+
+                    _logger.LogInformation("[AI Key Pool] 'SectionAiPrecisionFilter' completed successfully using Key '{Alias}' in {Latency}ms", 
+                        apiKeyObj.KeyAlias, sw.ElapsedMilliseconds);
 
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
@@ -162,23 +174,23 @@ namespace Ozikol.Central.Services
 
                     return result;
                 }
-                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests || (int?)httpEx.StatusCode == 402 || (int?)httpEx.StatusCode == 401 || (int?)httpEx.StatusCode == 403)
                 {
                     sw.Stop();
-                    _logger.LogWarning("AI Key {Alias} hit HTTP 429 Rate Limit during precision filter. Failing over...", apiKeyObj.KeyAlias);
-                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 60, cancellationToken);
+                    _logger.LogWarning("[AI Key Pool] Key '{Alias}' hit error ({Status}) during precision filter. Failing over to next key...", apiKeyObj.KeyAlias, httpEx.StatusCode);
+                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 120, cancellationToken);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "SectionAiPrecisionFilter",
                         (int)sw.ElapsedMilliseconds,
-                        429,
-                        errorMessage: "HTTP 429 Too Many Requests",
+                        (int)(httpEx.StatusCode ?? System.Net.HttpStatusCode.TooManyRequests),
+                        errorMessage: $"Key Error: {httpEx.Message}",
                         cancellationToken: cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    _logger.LogError(ex, "AI section precision filter failed for Key {Alias}", apiKeyObj.KeyAlias);
+                    _logger.LogError(ex, "[AI Key Pool] AI section precision filter failed for Key '{Alias}' on attempt {Attempt}", apiKeyObj.KeyAlias, attempt);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "SectionAiPrecisionFilter",
@@ -334,11 +346,17 @@ Return the filtered JSON object.";
                     };
                 }
 
+                _logger.LogInformation("[AI Key Pool] Selected Key '{Alias}' for 'SectionAiFullClean' (Attempt {Attempt}/{MaxRetries}, Today: {Count}/{Limit})", 
+                    apiKeyObj.KeyAlias, attempt, maxRetries, apiKeyObj.TodayRequestsCount, apiKeyObj.DailyQuotaLimit);
+
                 var sw = Stopwatch.StartNew();
                 try
                 {
                     var result = await ExecuteFullCleanWithKeyAsync(apiKeyObj, request, cancellationToken);
                     sw.Stop();
+
+                    _logger.LogInformation("[AI Key Pool] 'SectionAiFullClean' completed successfully using Key '{Alias}' in {Latency}ms (CSS lines: {Orig} -> {Filtered}, reduction: {Red})", 
+                        apiKeyObj.KeyAlias, sw.ElapsedMilliseconds, result.OriginalLinesCss, result.FilteredLinesCss, result.ReductionPercentage);
 
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
@@ -349,10 +367,10 @@ Return the filtered JSON object.";
 
                     return result;
                 }
-                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests || (int?)httpEx.StatusCode == 402)
+                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests || (int?)httpEx.StatusCode == 402 || (int?)httpEx.StatusCode == 401 || (int?)httpEx.StatusCode == 403)
                 {
                     sw.Stop();
-                    _logger.LogWarning("AI Key {Alias} hit quota/rate limit ({Status}). Setting cooldown and failing over...", apiKeyObj.KeyAlias, httpEx.StatusCode);
+                    _logger.LogWarning("[AI Key Pool] Key '{Alias}' hit quota/rate limit ({Status}). Setting cooldown and failing over to next available key in pool...", apiKeyObj.KeyAlias, httpEx.StatusCode);
                     await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 120, cancellationToken);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
@@ -365,7 +383,7 @@ Return the filtered JSON object.";
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    _logger.LogError(ex, "AI section full clean failed for Key {Alias}", apiKeyObj.KeyAlias);
+                    _logger.LogError(ex, "[AI Key Pool] AI section full clean failed for Key '{Alias}' on attempt {Attempt}", apiKeyObj.KeyAlias, attempt);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "SectionAiFullClean",
@@ -595,12 +613,17 @@ Return the complete cleaned JSON object.";
                     else
                     {
                         var err = await response.Content.ReadAsStringAsync(cancellationToken);
-                        _logger.LogWarning("Gemini API error ({StatusCode}): {Err}", response.StatusCode, err);
+                        _logger.LogWarning("[AI Key Pool] Gemini API error ({StatusCode}) for Key '{Alias}': {Err}", response.StatusCode, key.KeyAlias, err);
+                        throw new HttpRequestException($"Gemini error {response.StatusCode}: {err}", null, response.StatusCode);
                     }
+                }
+                catch (HttpRequestException)
+                {
+                    throw; // Rethrow to trigger automatic key pool failover
                 }
                 catch (Exception netEx)
                 {
-                    _logger.LogWarning(netEx, "Gemini online endpoint unreachable or timed out. Trying local Ollama fallback...");
+                    _logger.LogWarning(netEx, "[AI Key Pool] Gemini online endpoint unreachable or timed out for Key '{Alias}'. Trying local Ollama fallback...", key.KeyAlias);
                 }
 
                 // If Gemini failed due to DNS/network or rate limit, attempt local Ollama fallback with fast 3s probe
@@ -805,6 +828,9 @@ Return the updated JSON object.";
                     throw new InvalidOperationException("All Gemini API keys are currently cooling down or quota exhausted. Please add keys in AI Key Hub.");
                 }
 
+                _logger.LogInformation("[AI Key Pool] Selected Key '{Alias}' for 'ImageToSectionVision' (Attempt {Attempt}/{MaxRetries}, Today: {Count}/{Limit})", 
+                    apiKeyObj.KeyAlias, attempt, maxRetries, apiKeyObj.TodayRequestsCount, apiKeyObj.DailyQuotaLimit);
+
                 var sw = Stopwatch.StartNew();
                 try
                 {
@@ -818,6 +844,9 @@ Return the updated JSON object.";
                         cancellationToken);
 
                     sw.Stop();
+                    _logger.LogInformation("[AI Key Pool] 'ImageToSectionVision' completed successfully using Key '{Alias}' in {Latency}ms ({TotalSections} sections generated)", 
+                        apiKeyObj.KeyAlias, sw.ElapsedMilliseconds, result.TotalSections);
+
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "ImageToSectionVision",
@@ -827,23 +856,23 @@ Return the updated JSON object.";
 
                     return result;
                 }
-                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.TooManyRequests || (int?)httpEx.StatusCode == 402 || (int?)httpEx.StatusCode == 401 || (int?)httpEx.StatusCode == 403)
                 {
                     sw.Stop();
-                    _logger.LogWarning("AI Key {Alias} hit HTTP 429 during Vision decomposition. Failing over...", apiKeyObj.KeyAlias);
-                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 60, cancellationToken);
+                    _logger.LogWarning("[AI Key Pool] Key '{Alias}' hit error ({Status}) during Vision decomposition. Failing over to next key...", apiKeyObj.KeyAlias, httpEx.StatusCode);
+                    await _keyPoolService.MarkRateLimitedAsync(apiKeyObj.Id, 120, cancellationToken);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "ImageToSectionVision",
                         (int)sw.ElapsedMilliseconds,
-                        429,
-                        errorMessage: "HTTP 429 Rate Limit",
+                        (int)(httpEx.StatusCode ?? System.Net.HttpStatusCode.TooManyRequests),
+                        errorMessage: $"Key Error: {httpEx.Message}",
                         cancellationToken: cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    _logger.LogError(ex, "Vision decomposition failed on attempt {Attempt}", attempt);
+                    _logger.LogError(ex, "[AI Key Pool] Vision decomposition failed for Key '{Alias}' on attempt {Attempt}", apiKeyObj.KeyAlias, attempt);
                     await _keyPoolService.LogUsageAsync(
                         apiKeyObj.Id,
                         "ImageToSectionVision",

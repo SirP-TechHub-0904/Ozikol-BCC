@@ -833,12 +833,19 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 
             try
             {
+                _logger.LogInformation("[Section Studio] Triggering on-demand AI Full Clean for section '{SectionKey}' ({Title})", 
+                    payload.SectionKey, payload.Title);
+
                 var result = await _sectionAiStudioService.CleanAndIsolateFullSectionWithAiAsync(payload, cancellationToken);
+                
+                _logger.LogInformation("[Section Studio] AI Full Clean for section '{SectionKey}' result: Success={Success}, CSS Lines={Lines}, Reduction={Reduction}", 
+                    payload.SectionKey, result.Success, result.FilteredLinesCss, result.ReductionPercentage);
+
                 return new JsonResult(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to execute AI full clean for section {Key}", payload.SectionKey);
+                _logger.LogError(ex, "[Section Studio] Failed to execute AI full clean for section {Key}", payload.SectionKey);
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
