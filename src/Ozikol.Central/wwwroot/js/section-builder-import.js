@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /**
- * Jump to specific studio step (1 to 5).
+ * Jump to specific studio step (1: Input Source, 2: Modular Section Workbench, 3: Live Preview Modal).
  */
 function jumpToStep(step) {
     var p1 = document.getElementById('stepPanel1');
@@ -66,29 +66,25 @@ function jumpToStep(step) {
         if (p2) p2.style.display = 'none';
         if (p3) p3.style.display = 'none';
     } else if (step === 2) {
-        if (!rawInspectionData) {
-            // If user hasn't fetched inspection yet, prompt
-            var html = document.getElementById('inputHtmlSource');
-            if (!html || !html.value.trim()) {
-                alert('Please provide HTML page source in Step 1 first.');
-                jumpToStep(1);
-                return;
-            }
-        }
-        if (p1) p1.style.display = 'none';
-        if (p2) p2.style.display = 'block';
-        if (p3) p3.style.display = 'none';
-    } else if (step >= 3) {
         var hasSectionsInDom = document.querySelectorAll('.section-card-col').length > 0;
         var hasExtractionData = rawExtractionData && rawExtractionData.sections && rawExtractionData.sections.length > 0;
         if (!hasSectionsInDom && !hasExtractionData) {
-            alert('Please extract or slice modular sections first.');
+            alert('Please provide an input source (HTML, URL, or Screenshot) to generate modular sections.');
             jumpToStep(1);
             return;
         }
         if (p1) p1.style.display = 'none';
         if (p2) p2.style.display = 'none';
         if (p3) p3.style.display = 'block';
+    } else if (step >= 3) {
+        var hasSections = (rawExtractionData && rawExtractionData.sections && rawExtractionData.sections.length > 0) || document.querySelectorAll('.section-card-col').length > 0;
+        if (hasSections) {
+            openSectionPreviewModal(activePreviewIndex || 0);
+        } else {
+            alert('Please extract modular sections first.');
+            jumpToStep(1);
+            return;
+        }
     }
 
     // Update stepper pills
