@@ -1005,7 +1005,13 @@ function renderSandboxDoc() {
     if (currentSandboxScope === 'single') {
         var rawHtml = sec.htmlTemplate || sec.html_template || '';
         var sampleJson = sec.sampleContentJson || sec.sample_content_json || '{}';
-        renderedHtml = hydrateMustacheTokens(rawHtml, sampleJson);
+        var containerClass = 'sec-variant-' + (sec.variantCode || sec.variant_code || 'section').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        var hydHtml = hydrateMustacheTokens(rawHtml, sampleJson);
+        if (!hydHtml.includes(containerClass)) {
+            renderedHtml = '<div class="' + containerClass + '">\n' + hydHtml + '\n</div>';
+        } else {
+            renderedHtml = hydHtml;
+        }
         combinedCss = sec.scopedCss || sec.scoped_css || '';
         combinedJs = sec.jsScript || sec.js_script || '';
     } else if (currentSandboxScope === 'page') {
@@ -1021,7 +1027,13 @@ function renderSandboxDoc() {
         pageSections.forEach(function (s) {
             var rawH = s.htmlTemplate || s.html_template || '';
             var sampleJ = s.sampleContentJson || s.sample_content_json || '{}';
-            renderedHtml += hydrateMustacheTokens(rawH, sampleJ) + '\n';
+            var cCls = 'sec-variant-' + (s.variantCode || s.variant_code || 'section').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+            var hydH = hydrateMustacheTokens(rawH, sampleJ);
+            if (!hydH.includes(cCls)) {
+                renderedHtml += '<div class="' + cCls + '">\n' + hydH + '\n</div>\n';
+            } else {
+                renderedHtml += hydH + '\n';
+            }
             combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
             if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
         });
@@ -1030,7 +1042,13 @@ function renderSandboxDoc() {
         rawExtractionData.sections.forEach(function (s) {
             var rawH = s.htmlTemplate || s.html_template || '';
             var sampleJ = s.sampleContentJson || s.sample_content_json || '{}';
-            renderedHtml += hydrateMustacheTokens(rawH, sampleJ) + '\n';
+            var cCls = 'sec-variant-' + (s.variantCode || s.variant_code || 'section').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+            var hydH = hydrateMustacheTokens(rawH, sampleJ);
+            if (!hydH.includes(cCls)) {
+                renderedHtml += '<div class="' + cCls + '">\n' + hydH + '\n</div>\n';
+            } else {
+                renderedHtml += hydH + '\n';
+            }
             combinedCss += (s.scopedCss || s.scoped_css || '') + '\n';
             if (s.jsScript || s.js_script) combinedJs += (s.jsScript || s.js_script) + '\n';
         });
@@ -1044,6 +1062,7 @@ function renderSandboxDoc() {
         '    <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
         '    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
         '    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\n' +
+        '    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />\n' +
         '    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />\n' +
         '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />\n' +
         '    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />\n' +
