@@ -702,7 +702,9 @@ namespace Ozikol.Central.Services.Extraction
         }
 
         /// <summary>
-        /// Extracts CSS rules matching the classes and IDs of the element and prefixes them for scoping.
+        /// <summary>
+        /// Extracts CSS rules matching the classes and IDs of the element and prefixes them for scoping,
+        /// fully supporting both root stylesheets and nested @media query rules.
         /// </summary>
         private static string ExtractAndScopeCssForElement(IElement element, string fullCss, string variantCode, string category = "body")
         {
@@ -717,7 +719,7 @@ namespace Ozikol.Central.Services.Extraction
 
             if (!string.IsNullOrWhiteSpace(element.ClassName))
             {
-                foreach (var c in element.ClassName.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var c in element.ClassName.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                     classNames.Add(c.Trim());
             }
 
@@ -731,7 +733,7 @@ namespace Ozikol.Central.Services.Extraction
             {
                 if (!string.IsNullOrWhiteSpace(child.ClassName))
                 {
-                    foreach (var c in child.ClassName.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var c in child.ClassName.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                         classNames.Add(c.Trim());
                 }
                 if (!string.IsNullOrWhiteSpace(child.Id))
@@ -742,38 +744,78 @@ namespace Ozikol.Central.Services.Extraction
 
             var scopeClass = $".sec-variant-{variantCode.ToLowerInvariant()}";
             var matchedRules = new StringBuilder();
-
-            // Simple fast CSS rule regex matching
-            var ruleRegex = new Regex(@"([^{]+)\{([^}]+)\}", RegexOptions.Compiled);
-            var matches = ruleRegex.Matches(fullCss);
-
             var seenSelectors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (Match m in matches)
-            {
-                var selector = m.Groups[1].Value.Trim();
-                var body = m.Groups[2].Value.Trim();
+            int i = 0;
+            int length = fullCss.Length;
 
-                if (selector.StartsWith("@") || selector.StartsWith("/*") || string.IsNullOrWhiteSpace(body))
+            while (i < length)
+            {
+                // Skip comments
+                if (i + 1 < length && fullCss[i] == '/' && fullCss[i + 1] == '*')
                 {
+                    int commentEnd = fullCss.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                    i = commentEnd == -1 ? length : commentEnd + 2;
                     continue;
                 }
 
-                // Check if selector touches any class or ID in this section
-                bool matchesSection = classNames.Any(c => selector.Contains("." + c)) ||
-                                     ids.Any(id => selector.Contains("#" + id));
+                int openBrace = fullCss.IndexOf('{', i);
+                if (openBrace == -1) break;
 
-                if (matchesSection && seenSelectors.Add(selector))
+                string header = fullCss.Substring(i, openBrace - i).Trim();
+
+                if (header.StartsWith("@media", StringComparison.OrdinalIgnoreCase) ||
+                    header.StartsWith("@supports", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Scope selector with section wrapper class for both child elements and root container
-                    var scopedSelectors = selector.Split(',')
-                        .Select(s => {
-                            var trimmed = s.Trim();
-                            return $"{scopeClass} {trimmed}, {scopeClass}{trimmed}";
-                        })
-                        .ToArray();
+                    // Find matching closing brace for the media query block
+                    int depth = 1;
+                    int j = openBrace + 1;
+                    while (j < length && depth > 0)
+                    {
+                        if (j + 1 < length && fullCss[j] == '/' && fullCss[j + 1] == '*')
+                        {
+                            int cEnd = fullCss.IndexOf("*/", j + 2, StringComparison.Ordinal);
+                            j = cEnd == -1 ? length : cEnd + 2;
+                            continue;
+                        }
+                        if (fullCss[j] == '{') depth++;
+                        else if (fullCss[j] == '}') depth--;
+                        j++;
+                    }
 
-                    matchedRules.AppendLine($"{string.Join(",\n", scopedSelectors)} {{\n    {body}\n}}\n");
+                    int mediaBlockEnd = j;
+                    string mediaContent = fullCss.Substring(openBrace + 1, (mediaBlockEnd - 1) - (openBrace + 1));
+
+                    var innerMatches = ParseAndScopeCssRules(mediaContent, classNames, ids, scopeClass);
+                    if (!string.IsNullOrWhiteSpace(innerMatches))
+                    {
+                        matchedRules.AppendLine($"{header} {{\n{innerMatches}\n}}\n");
+                    }
+
+                    i = mediaBlockEnd;
+                }
+                else
+                {
+                    int closeBrace = fullCss.IndexOf('}', openBrace);
+                    if (closeBrace == -1) break;
+
+                    string body = fullCss.Substring(openBrace + 1, closeBrace - openBrace - 1).Trim();
+                    if (!header.StartsWith("@") && !header.StartsWith("/*") && !string.IsNullOrWhiteSpace(body))
+                    {
+                        if (MatchesSection(header, classNames, ids) && seenSelectors.Add(header))
+                        {
+                            var scopedSelectors = header.Split(',')
+                                .Select(s => {
+                                    var trimmed = s.Trim();
+                                    return $"{scopeClass} {trimmed}, {scopeClass}{trimmed}";
+                                })
+                                .ToArray();
+
+                            matchedRules.AppendLine($"{string.Join(",\n", scopedSelectors)} {{\n    {body}\n}}\n");
+                        }
+                    }
+
+                    i = closeBrace + 1;
                 }
             }
 
@@ -821,6 +863,56 @@ namespace Ozikol.Central.Services.Extraction
             }
 
             return matchedRules.ToString();
+        }
+
+        private static bool MatchesSection(string selector, HashSet<string> classNames, HashSet<string> ids)
+        {
+            if (string.IsNullOrWhiteSpace(selector)) return false;
+            foreach (var cls in classNames)
+            {
+                if (selector.IndexOf("." + cls, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            foreach (var id in ids)
+            {
+                if (selector.IndexOf("#" + id, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            return false;
+        }
+
+        private static string ParseAndScopeCssRules(
+            string cssBlock, 
+            HashSet<string> classNames, 
+            HashSet<string> ids, 
+            string scopeClass)
+        {
+            var sb = new StringBuilder();
+            var ruleRegex = new Regex(@"([^{]+)\{([^}]+)\}", RegexOptions.Compiled);
+            var matches = ruleRegex.Matches(cssBlock);
+
+            foreach (Match m in matches)
+            {
+                var selector = m.Groups[1].Value.Trim();
+                var body = m.Groups[2].Value.Trim();
+
+                if (selector.StartsWith("@") || selector.StartsWith("/*") || string.IsNullOrWhiteSpace(body))
+                    continue;
+
+                if (MatchesSection(selector, classNames, ids))
+                {
+                    var scopedSelectors = selector.Split(',')
+                        .Select(s => {
+                            var trimmed = s.Trim();
+                            return $"    {scopeClass} {trimmed}, {scopeClass}{trimmed}";
+                        })
+                        .ToArray();
+
+                    sb.AppendLine($"{string.Join(",\n", scopedSelectors)} {{\n        {body}\n    }}\n");
+                }
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
