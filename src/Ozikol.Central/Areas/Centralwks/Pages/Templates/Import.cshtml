@@ -43,31 +43,21 @@
         </div>
     }
 
-    <!-- 5-Step Progress Stepper -->
+    <!-- Streamlined 3-Step Progress Stepper -->
     <div class="studio-stepper-bar">
         <div class="step-pill @(Model.CurrentStep == 1 ? "active" : (Model.CurrentStep > 1 ? "completed" : ""))" onclick="jumpToStep(1)">
             <span class="step-number">1</span>
-            <span class="step-label">Input Source &amp; URL</span>
+            <span class="step-label">Input Source (HTML, URL &amp; Image)</span>
         </div>
         <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep == 2 ? "active" : (Model.CurrentStep > 2 ? "completed" : ""))" onclick="jumpToStep(2)">
+        <div class="step-pill @(Model.CurrentStep >= 2 ? "active" : "")" onclick="jumpToStep(2)">
             <span class="step-number">2</span>
-            <span class="step-label">Inspect Code &amp; Assets</span>
+            <span class="step-label">Modular Section Workbench</span>
         </div>
         <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep == 3 ? "active" : (Model.CurrentStep > 3 ? "completed" : ""))" onclick="jumpToStep(3)">
+        <div class="step-pill @(Model.CurrentStep >= 4 ? "active" : "")" onclick="jumpToStep(3)">
             <span class="step-number">3</span>
-            <span class="step-label">Slice Sections &amp; Scope CSS</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep == 4 ? "active" : (Model.CurrentStep > 4 ? "completed" : ""))" onclick="jumpToStep(4)">
-            <span class="step-number">4</span>
-            <span class="step-label">Live Preview Sandbox</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep == 5 ? "active" : "")" onclick="jumpToStep(5)">
-            <span class="step-number">5</span>
-            <span class="step-label">Install to Market</span>
+            <span class="step-label">Live Preview &amp; Marketplace Publish</span>
         </div>
     </div>
 
