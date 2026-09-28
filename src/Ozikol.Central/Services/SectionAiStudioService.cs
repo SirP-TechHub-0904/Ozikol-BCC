@@ -417,35 +417,79 @@ Return the filtered JSON object.";
                 return rawCss;
             }
 
-            var blocks = Regex.Matches(rawCss, @"([^{}]+)\{([^{}]+)\}", RegexOptions.Singleline);
             var preserved = new List<string>();
+            int i = 0;
+            int length = rawCss.Length;
 
-            foreach (Match b in blocks)
+            while (i < length)
             {
-                var selector = b.Groups[1].Value.Trim();
-                var body = b.Groups[2].Value.Trim();
-
-                if (selector.StartsWith(":root", StringComparison.OrdinalIgnoreCase) ||
-                    selector.StartsWith("@font-face", StringComparison.OrdinalIgnoreCase) ||
-                    selector.StartsWith("@keyframes", StringComparison.OrdinalIgnoreCase))
+                if (i + 1 < length && rawCss[i] == '/' && rawCss[i + 1] == '*')
                 {
-                    preserved.Add($"{selector} {{ {body} }}");
+                    int commentEnd = rawCss.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                    i = commentEnd == -1 ? length : commentEnd + 2;
                     continue;
                 }
 
-                bool matches = false;
-                foreach (var cls in classesInHtml)
-                {
-                    if (selector.IndexOf(cls, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        matches = true;
-                        break;
-                    }
-                }
+                int openBrace = rawCss.IndexOf('{', i);
+                if (openBrace == -1) break;
 
-                if (matches)
+                string header = rawCss.Substring(i, openBrace - i).Trim();
+
+                if (header.StartsWith("@media", StringComparison.OrdinalIgnoreCase) ||
+                    header.StartsWith("@supports", StringComparison.OrdinalIgnoreCase))
                 {
-                    preserved.Add($"{selector} {{ {body} }}");
+                    int depth = 1;
+                    int j = openBrace + 1;
+                    while (j < length && depth > 0)
+                    {
+                        if (j + 1 < length && rawCss[j] == '/' && rawCss[j + 1] == '*')
+                        {
+                            int cEnd = rawCss.IndexOf("*/", j + 2, StringComparison.Ordinal);
+                            j = cEnd == -1 ? length : cEnd + 2;
+                            continue;
+                        }
+                        if (rawCss[j] == '{') depth++;
+                        else if (rawCss[j] == '}') depth--;
+                        j++;
+                    }
+
+                    int mediaBlockEnd = j;
+                    string mediaContent = rawCss.Substring(openBrace + 1, (mediaBlockEnd - 1) - (openBrace + 1));
+                    var innerRules = Regex.Matches(mediaContent, @"([^{}]+)\{([^{}]+)\}", RegexOptions.Singleline);
+                    var matchedInner = new List<string>();
+
+                    foreach (Match b in innerRules)
+                    {
+                        var sel = b.Groups[1].Value.Trim();
+                        var bdy = b.Groups[2].Value.Trim();
+                        if (classesInHtml.Any(cls => sel.IndexOf(cls, StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            matchedInner.Add($"    {sel} {{ {bdy} }}");
+                        }
+                    }
+
+                    if (matchedInner.Any())
+                    {
+                        preserved.Add($"{header} {{\n{string.Join("\n", matchedInner)}\n}}");
+                    }
+
+                    i = mediaBlockEnd;
+                }
+                else
+                {
+                    int closeBrace = rawCss.IndexOf('}', openBrace);
+                    if (closeBrace == -1) break;
+
+                    string body = rawCss.Substring(openBrace + 1, closeBrace - openBrace - 1).Trim();
+                    if (header.StartsWith(":root", StringComparison.OrdinalIgnoreCase) ||
+                        header.StartsWith("@font-face", StringComparison.OrdinalIgnoreCase) ||
+                        header.StartsWith("@keyframes", StringComparison.OrdinalIgnoreCase) ||
+                        classesInHtml.Any(cls => header.IndexOf(cls, StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        preserved.Add($"{header} {{ {body} }}");
+                    }
+
+                    i = closeBrace + 1;
                 }
             }
 
