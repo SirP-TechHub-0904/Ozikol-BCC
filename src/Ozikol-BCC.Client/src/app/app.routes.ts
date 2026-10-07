@@ -108,7 +108,7 @@ import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component
 
 export const routes: Routes = [
   // Public Landing
-  { path: '', component: LandingComponent },
+  { path: '', component: LandingComponent, pathMatch: 'full' },
 
   // Unified Authentication Shell & Flows
   {
@@ -142,7 +142,6 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       // 1. Unified Dashboards
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },

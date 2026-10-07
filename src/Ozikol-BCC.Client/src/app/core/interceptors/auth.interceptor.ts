@@ -9,7 +9,13 @@ import { TenantStateService } from '../services/tenant-state.service';
 export class AuthInterceptor implements HttpInterceptor {
 
   // These paths are always public and should never redirect to login
-  private readonly publicPaths = ['/api/Auth/', '/api/WebsiteContent/', '/api/WebsiteContent'];
+  private readonly publicPaths = [
+    '/api/Auth',
+    '/api/WebsiteContent',
+    '/api/WebsiteContentApi',
+    '/api/SettingsApi/brand',
+    '/api/SettingsApi/public-details'
+  ];
 
   constructor(
     private router: Router,
@@ -69,10 +75,16 @@ export class AuthInterceptor implements HttpInterceptor {
           localStorage.removeItem('access_token');
           if (!isPublic) {
             const currentUrl = this.router.url;
-            if (currentUrl && !currentUrl.startsWith('/auth') && !currentUrl.includes('login')) {
+            const isProtectedArea = currentUrl.startsWith('/admin') || 
+                                    currentUrl.startsWith('/dashboard') || 
+                                    currentUrl.startsWith('/workspace') || 
+                                    currentUrl.startsWith('/users') || 
+                                    currentUrl.startsWith('/identity') || 
+                                    currentUrl.startsWith('/content') || 
+                                    currentUrl.startsWith('/settings');
+
+            if (isProtectedArea) {
               this.router.navigate(['/auth/login'], { queryParams: { returnUrl: currentUrl } });
-            } else if (!currentUrl || currentUrl.startsWith('/auth')) {
-              this.router.navigate(['/auth/login']);
             }
           }
         }
