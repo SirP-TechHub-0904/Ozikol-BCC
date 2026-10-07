@@ -79,7 +79,7 @@ public class TenantScopeMiddleware
             {
                 statusCode = 404,
                 error = "TenantNotFound",
-                message = $"The workspace '{targetLookup}' does not exist or has not been activated. Please check your domain or register a new workspace.",
+                message = "Workspace not found.",
                 timestamp = DateTime.UtcNow
             }));
             return;
