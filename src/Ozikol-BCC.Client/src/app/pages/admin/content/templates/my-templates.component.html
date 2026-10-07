@@ -37,7 +37,7 @@
               <span>Import Website</span>
             </a>
             <a
-              routerLink="/content/console/templates/create"
+              routerLink="/content/console/templates/visuals"
               class="btn btn-add-custom-template"
               title="Create a custom section template directly with HTML placeholders"
             >
@@ -58,6 +58,18 @@
               <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
               <span>Explore Marketplace (36+)</span>
             </a>
+            <button
+              type="button"
+              class="btn btn-ai-debugger"
+              (click)="runAiWebsiteHealthCheck()"
+              [disabled]="isDiagnosingWebsite"
+              title="Run deep AI diagnostic on website scripts, fonts, CORS headers, and active template integrity"
+              style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);"
+            >
+              <span class="material-symbols-outlined btn-icon" style="font-size: 18px;">health_and_safety</span>
+              <span *ngIf="!isDiagnosingWebsite">Inspect &amp; Debug Website</span>
+              <span *ngIf="isDiagnosingWebsite">Diagnosing...</span>
+            </button>
             <!-- Direct Link to Dedicated Maintenance Page -->
             <a
               routerLink="/content/console/templates/maintenance"
@@ -617,6 +629,9 @@
     <!-- ============================================== -->
     <div class="modal-backdrop" *ngIf="showSinglePreviewModal && activePreviewItem" (click)="closeSinglePreviewModal()">
       <div class="modal-card preview-modal-card" (click)="$event.stopPropagation()">
+        <!-- Animated AI Transformation Top Progress Bar -->
+        <div *ngIf="isAiTransforming" class="ai-transform-progress-line"></div>
+
         <!-- Header -->
         <div class="preview-modal-header">
           <div class="preview-title-info">
@@ -1462,13 +1477,6 @@
               <span *ngIf="activePreviewItem?.category" class="badge-category-tag font-mono text-uppercase">
                 {{ activePreviewItem.category }}
               </span>
-              <div class="editor-syntax-legend" ngNonBindable>
-                <span class="syntax-chip chip-tag" title="HTML Tags (div, nav, header, a, etc.)">&lt;div&gt;</span>
-                <span class="syntax-chip chip-class" title="Class Attributes & CSS Selectors">class="hero-title"</span>
-                <span class="syntax-chip chip-token" title="Dynamic CMS Data Placeholders">&#123;&#123; BrandIdentity &#125;&#125;</span>
-                <span class="syntax-chip chip-block" title="Template Loops & Conditional Blocks">&#123;&#123;#each ...&#125;&#125;</span>
-                <span class="syntax-chip chip-content" title="Normal Content & Plain Text">Normal Content</span>
-              </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save HTML modifications to this installed template">
@@ -1476,7 +1484,7 @@
                 <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
                 <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
               </button>
-              <a [routerLink]="['/content/console/templates/create']" [queryParams]="{ editCode: activePreviewItem.variantCode, category: activePreviewItem.category }" class="btn-open-studio" title="Open full studio editor">
+              <a [routerLink]="['/content/console/templates/visuals', activePreviewItem.id || activePreviewItem.variantCode]" class="btn-open-studio" title="Open full studio editor">
                 <span class="material-symbols-outlined">open_in_new</span>
                 <span>Open Full Studio</span>
               </a>
@@ -1496,6 +1504,15 @@
 
             <!-- Menu Category Ribbon -->
             <ng-container *ngIf="activePreviewItem?.category === 'menu'">
+              <!-- AI / DOM Smart Auto-Injector Button -->
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-ai-magic" (click)="aiTransformMenuPlaceholders()" [disabled]="isAiTransforming" title="Intelligently analyzes pasted navbar HTML with AI and replaces static elements with clean Ozikol Handlebars placeholders">
+                  <span class="material-symbols-outlined chip-icon" [class.ai-spinning]="isAiTransforming">auto_awesome</span>
+                  <span>{{ isAiTransforming ? 'AI Transforming...' : '✨ Smart Auto-Inject Placeholders' }}</span>
+                </button>
+              </span>
+
+              <!-- Brand Identity Tokens -->
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
                   <span class="material-symbols-outlined chip-icon">storefront</span>
@@ -1508,23 +1525,49 @@
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ LogoUrl }}')" [innerText]="'+ {{ LogoUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LogoUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LogoUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ BrandLogo }}')" [innerText]="'+ {{ BrandLogo }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandLogo', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandLogo', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertMainMenuItemsLoopAtModalCursor()" title="Inserts loop for top menu pages">
-                  <span class="material-symbols-outlined chip-icon">link</span>
-                  <span>+ Main Menu Items Loop</span>
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ HomeUrl }}')" [innerText]="'+ {{ HomeUrl }}'"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('HomeUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('HomeUrl', $event)" title="Home Page Link"><span class="material-symbols-outlined">info</span></button>
+              </span>
+
+              <!-- Multi-Zone Navigation Loops -->
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('first')" title="Inserts Zone 1 First Loop (Direct pages + Dropdowns sorted by SortOrder)">
+                  <span class="material-symbols-outlined chip-icon">first_page</span>
+                  <span>+ NavItems="first"</span>
                 </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MainMenuItems', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MainMenuItems', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
               <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertMenuDropdownsLoopAtModalCursor()" title="Inserts dropdown navigation with nested child pages">
-                  <span class="material-symbols-outlined chip-icon">account_tree</span>
-                  <span>+ Dropdowns Loop (with nested Pages)</span>
+                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('middle')" title="Inserts Zone 2 Middle Loop (Direct pages + Dropdowns sorted by SortOrder)">
+                  <span class="material-symbols-outlined chip-icon">view_headline</span>
+                  <span>+ NavItems="middle"</span>
                 </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuDropdowns', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuDropdowns', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('last')" title="Inserts Zone 3 Last Loop (Direct pages + Dropdowns sorted by SortOrder)">
+                  <span class="material-symbols-outlined chip-icon">last_page</span>
+                  <span>+ NavItems="last"</span>
+                </button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('all')" title="Inserts Sequential All Items Loop (Ordered by MenuPosition, then SortOrder)">
+                  <span class="material-symbols-outlined chip-icon">menu</span>
+                  <span>+ NavItems (All)</span>
+                </button>
+              </span>
+
+              <!-- TopBar Utility Loop -->
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-repeater" (click)="insertTopBarPagesLoopAtModalCursor()" title="Inserts TopBar Utility Links Loop (MenuPosition.Top)">
+                  <span class="material-symbols-outlined chip-icon">vertical_align_top</span>
+                  <span>+ MainMenuItems="top"</span>
+                </button>
+              </span>
+
+              <!-- Menu CTA Buttons -->
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-repeater" (click)="insertMenuCtaButtonsLoopAtModalCursor()" title="Inserts dynamic CTA buttons from IsMenuCTA pages">
                   <span class="material-symbols-outlined chip-icon">smart_button</span>
@@ -1532,6 +1575,13 @@
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
+
+              <!-- Custom Class Token -->
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder from database model"></button>
+              </span>
+
+              <!-- Auth / Sign In Tokens -->
               <span class="token-chip-wrap">
                 <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
@@ -1906,6 +1956,27 @@
               <span class="spinner-border spinner-border-sm text-info me-2"></span>
               <span>Loading Monaco editor with code folding...</span>
             </div>
+
+            <!-- AI Transforming Loading Overlay (Visible until finish) -->
+            <div *ngIf="isAiTransforming" class="ai-transforming-overlay">
+              <div class="ai-transforming-card">
+                <div class="ai-spinner-container">
+                  <div class="ai-spinner-ring"></div>
+                  <span class="material-symbols-outlined ai-magic-icon">auto_awesome</span>
+                </div>
+                <div class="ai-transforming-info">
+                  <h5 class="ai-transforming-heading">AI Transforming Navbar Placeholders...</h5>
+                  <p class="ai-transforming-desc">
+                    Analyzing raw HTML structure, preserving 100% of styles &amp; classes, and injecting 3-Zone Handlebars placeholders.
+                  </p>
+                  <div class="ai-transforming-status-pill">
+                    <span class="spinner-border spinner-border-sm text-info me-2"></span>
+                    <span>Processing with Ozi AI Engine...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div #monacoHtmlContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
             <textarea
               *ngIf="!monacoReady && !loadingMonaco"
@@ -1927,6 +1998,11 @@
               <span>Scoped CSS Stylesheet</span>
             </div>
             <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save CSS modifications to this installed template">
+                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
+                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
+                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
+              </button>
               <button *ngIf="!activePreviewItem.cssStyles || !activePreviewItem.cssStyles.trim()" type="button" class="btn-copy-code" (click)="initializeTemplateCss()">
                 <span class="material-symbols-outlined">add</span>
                 <span>Add Starter CSS</span>
@@ -1955,6 +2031,11 @@
               <span>JavaScript Logic Script</span>
             </div>
             <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save JavaScript modifications to this installed template">
+                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
+                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
+                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
+              </button>
               <button *ngIf="!activePreviewItem.jsScript" type="button" class="btn-copy-code" (click)="initializeTemplateJs()">
                 <span class="material-symbols-outlined">add_code</span>
                 <span>Initialize JS</span>
@@ -1984,12 +2065,24 @@
         </div>
 
         <!-- Footer -->
-        <!-- Footer -->
         <div class="preview-modal-footer">
           <span class="footer-hint">
             <i class="fa-solid fa-lightbulb text-warning me-1"></i> This is a live preview rendering the exact scoped HTML and CSS bundle.
           </span>
           <div class="preview-footer-btns">
+            <!-- Save Changes in Modal Footer -->
+            <button
+              *ngIf="previewModalTab === 'html' || previewModalTab === 'css' || previewModalTab === 'js'"
+              type="button"
+              class="btn-save-template-code"
+              (click)="saveTemplateHtml()"
+              [disabled]="savingTemplateHtml"
+            >
+              <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
+              <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
+              <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
+            </button>
+
             <!-- Active Singleton Badge -->
             <span *ngIf="isSingletonCategory(activePreviewItem.category) && isActiveSingleton(activePreviewItem)" class="active-badge-preview">
               <span class="material-symbols-outlined">check_circle</span>
@@ -2434,7 +2527,7 @@
             </div>
 
             <!-- 1-Click Popular Framework & CDN Presets -->
-            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'external_js' || tagForm.tagType === 'google_fonts')">
+            <div class="form-group full-width" *ngIf="getFilteredFrameworkPresets().length > 0">
               <div class="framework-presets-studio-card">
                 <div class="presets-header">
                   <div class="presets-title-box">
@@ -2443,14 +2536,14 @@
                     </div>
                     <div>
                       <strong>1-Click Popular Framework &amp; CDN Presets</strong>
-                      <small>Instantly inject pre-configured production CDN stylesheets, fonts, and icon packs.</small>
+                      <small>Instantly inject pre-configured production CDN {{ isJsTagType() ? 'JavaScript bundles & libraries' : 'stylesheets, fonts, and icon packs' }}.</small>
                     </div>
                   </div>
                 </div>
                 <div class="preset-chips-scroll">
                   <button type="button" 
                           class="framework-preset-chip" 
-                          *ngFor="let preset of frameworkPresets" 
+                          *ngFor="let preset of getFilteredFrameworkPresets()" 
                           (click)="applyFrameworkPreset(preset)">
                     <span class="material-symbols-outlined preset-chip-icon">{{ preset.icon }}</span>
                     <span class="preset-chip-name">{{ preset.name }}</span>
@@ -2461,7 +2554,7 @@
             </div>
 
             <!-- Cloudflare R2 + Cloudflare CDN Custom CSS Studio -->
-            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
+            <div class="form-group full-width" *ngIf="isCssTagType()">
               <div class="cloudflare-r2-studio-card">
                 <div class="cloudflare-header">
                   <div class="cloudflare-title-box">
@@ -2476,7 +2569,7 @@
                       <small>Upload your stylesheet to Cloudflare R2 for worldwide edge distribution and sub-millisecond asset caching.</small>
                     </div>
                   </div>
-                  <input type="file" #cssFileInput accept=".css" (change)="onCssFileSelected($event)" style="display: none;" />
+                  <input type="file" #cssFileInput accept=".css,.download" (change)="onCssFileSelected($event)" style="display: none;" />
                   <div style="display: flex; gap: 8px; align-items: center;">
                     <button type="button" class="btn-choose-css" (click)="cssFileInput.click()">
                       <span class="material-symbols-outlined">folder_open</span>
@@ -2527,6 +2620,80 @@
                       <span>Copy URL</span>
                     </button>
                     <button type="button" class="btn-dismiss-bar" (click)="uploadedCssUrl = ''" title="Dismiss CDN ribbon">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cloudflare R2 + Cloudflare CDN Custom JavaScript Studio -->
+            <div class="form-group full-width" *ngIf="isJsTagType()">
+              <div class="cloudflare-r2-studio-card" style="border-color: rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(255, 255, 255, 0.95) 100%);">
+                <div class="cloudflare-header">
+                  <div class="cloudflare-title-box">
+                    <div class="cloudflare-icon-badge" style="background: #fef08a; color: #854d0e;">
+                      <span class="material-symbols-outlined">javascript</span>
+                    </div>
+                    <div>
+                      <div class="cloudflare-pill-row">
+                        <strong>Cloudflare R2 + Global CDN</strong>
+                        <span class="cf-badge-tag" style="background: #fef08a; color: #854d0e;">Edge Script Delivery</span>
+                      </div>
+                      <small>Upload your JavaScript file to Cloudflare R2 for worldwide edge distribution and fast script execution.</small>
+                    </div>
+                  </div>
+                  <input type="file" #jsFileInput accept=".js,.download" (change)="onJsFileSelected($event)" style="display: none;" />
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-choose-css" (click)="jsFileInput.click()" style="background: #fef9c3; color: #854d0e; border-color: #fde047;">
+                      <span class="material-symbols-outlined">folder_open</span>
+                      <span>Choose .JS File</span>
+                    </button>
+                    <button type="button" class="btn-choose-css" (click)="closeTagModal(); openBulkUploadModal(tagFormZone)" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe;" title="Upload multiple JS files at once">
+                      <span class="material-symbols-outlined">drive_folder_upload</span>
+                      <span>Bulk Upload (.JS)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Selected JS File Status Bar -->
+                <div class="css-file-status-bar" *ngIf="selectedJsFileName" style="background: #fffbeb; border-color: #fde047;">
+                  <div class="css-file-info">
+                    <span class="material-symbols-outlined icon-file" style="color: #ca8a04;">javascript</span>
+                    <span class="css-filename">{{ selectedJsFileName }}</span>
+                    <span class="css-filesize">({{ selectedJsFileSize }})</span>
+                  </div>
+                  <div class="css-action-buttons">
+                    <button type="button" class="btn-action-link-css" (click)="uploadAndLinkJsFile()" [disabled]="uploadingJs" style="background: #ca8a04;">
+                      <span class="material-symbols-outlined">{{ uploadingJs ? 'sync' : 'rocket_launch' }}</span>
+                      <span>{{ uploadingJs ? 'Uploading to R2...' : 'Upload to Cloudflare R2 &amp; Link' }}</span>
+                    </button>
+                    <button type="button" class="btn-action-import-css" (click)="importJsAsInlineScript()" [disabled]="uploadingJs" style="background: #64748b;">
+                      <span class="material-symbols-outlined">code</span>
+                      <span>Import as Inline Script (&lt;script&gt;)</span>
+                    </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="resetJsUploadState()" title="Remove chosen file">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Uploaded JS CDN URL Ribbon -->
+                <div class="cloudflare-cdn-result-bar" *ngIf="uploadedJsUrl" style="background: #f0fdf4; border-color: #86efac;">
+                  <div class="cdn-url-info">
+                    <span class="material-symbols-outlined icon-edge" style="color: #16a34a;">cloud_done</span>
+                    <span class="cdn-label">CDN Edge URL:</span>
+                    <a [href]="uploadedJsUrl" target="_blank" rel="noopener noreferrer" class="cdn-url-link" title="Open script directly in new tab">
+                      <span>{{ uploadedJsUrl }}</span>
+                      <span class="material-symbols-outlined icon-external">open_in_new</span>
+                    </a>
+                  </div>
+                  <div class="cdn-action-btns">
+                    <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedJsUrl)">
+                      <span class="material-symbols-outlined">content_copy</span>
+                      <span>Copy URL</span>
+                    </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="uploadedJsUrl = ''" title="Dismiss CDN ribbon">
                       <span class="material-symbols-outlined">close</span>
                     </button>
                   </div>
@@ -2877,7 +3044,7 @@
               type="file"
               #bulkFileInput
               multiple
-              accept=".css,.js"
+              accept=".css,.js,.download,.woff2,.woff,.ttf,.otf,.eot,.svg"
               (change)="onBulkFilesSelected($event)"
               style="display: none;"
             />
@@ -2887,11 +3054,11 @@
               </div>
               <h4 class="bulk-drop-title">Choose Files or Drag &amp; Drop Here</h4>
               <p class="bulk-drop-sub">
-                Select multiple <strong>.css</strong> or <strong>.js</strong> files simultaneously (e.g. animate.min.css, bootstrap.min.css, swiper.min.css)
+                Select multiple <strong>.css</strong> or <strong>.js</strong> files simultaneously (including Safari <code>.js.download</code>, <code>animate.min.css</code>, <code>bootstrap.min.js</code>)
               </p>
               <div class="bulk-naming-tip">
                 <span class="material-symbols-outlined text-primary fs-6">auto_awesome</span>
-                <span><strong>Auto-Naming Rule:</strong> Tag names are automatically derived from the file name before the first dot (e.g. <code>animate.min.css</code> &rarr; <strong>animate</strong>, <code>bexon-icons.css</code> &rarr; <strong>bexon-icons</strong>).</span>
+                <span><strong>Auto-Naming Rule:</strong> Tag names are automatically derived from the file name before the first dot (e.g. <code>main.js.download</code> &rarr; <strong>main</strong>, <code>bexon-icons.css</code> &rarr; <strong>bexon-icons</strong>).</span>
               </div>
             </div>
           </div>
@@ -2925,7 +3092,14 @@
                     <td class="text-muted small">{{ idx + 1 }}</td>
                     <td>
                       <div class="d-flex align-items-center gap-2">
-                        <span class="material-symbols-outlined fs-5 text-secondary">{{ item.file.name.endsWith('.js') ? 'javascript' : 'css' }}</span>
+                        <span
+                          class="material-symbols-outlined fs-5"
+                          [ngStyle]="{
+                            color: item.file.name.toLowerCase().includes('.js') ? '#d97706' : ((item.file.name.toLowerCase().includes('.woff') || item.file.name.toLowerCase().includes('.ttf') || item.file.name.toLowerCase().includes('.otf') || item.file.name.toLowerCase().includes('.eot')) ? '#7c3aed' : '#2563eb')
+                          }"
+                        >
+                          {{ item.file.name.toLowerCase().includes('.js') ? 'javascript' : ((item.file.name.toLowerCase().includes('.woff') || item.file.name.toLowerCase().includes('.ttf') || item.file.name.toLowerCase().includes('.otf') || item.file.name.toLowerCase().includes('.eot')) ? 'font_download' : 'css') }}
+                        </span>
                         <code class="fw-semibold text-dark">{{ item.file.name }}</code>
                       </div>
                     </td>
@@ -3236,6 +3410,180 @@
           <button type="button" class="btn btn-outline" (click)="closeFontUploadModal()">
             Done
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Website Health & Diagnostic Report Modal -->
+    <div class="custom-modal-backdrop" *ngIf="showAiHealthModal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div class="ai-health-card" style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 820px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid #cbd5e1;">
+        
+        <!-- Modal Header -->
+        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #ffffff; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #4338ca;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;">
+              <span class="material-symbols-outlined" style="font-size: 24px; color: #a5b4fc;">health_and_safety</span>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #ffffff;">Website AI Health &amp; Runtime Diagnostic</h3>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #c7d2fe;">Deep probe analysis on scripts, dependencies, CORS headers &amp; template integrity</p>
+            </div>
+          </div>
+          <button type="button" (click)="closeAiHealthModal()" style="background: transparent; border: none; color: #cbd5e1; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div style="padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Summary Score Card -->
+          <div *ngIf="diagnosticReport" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px 22px;">
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Overall Health Status</div>
+              <div style="font-size: 22px; font-weight: 800; margin-top: 4px;" [style.color]="diagnosticReport.healthScore >= 90 ? '#16a34a' : (diagnosticReport.healthScore >= 70 ? '#d97706' : '#dc2626')">
+                {{ diagnosticReport.statusTitle }} ({{ diagnosticReport.healthScore }}%)
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <span style="background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">error</span>
+                {{ diagnosticReport.criticalIssues.length }} Critical
+              </span>
+              <span style="background: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
+                {{ diagnosticReport.warnings.length }} Warnings
+              </span>
+              <span style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 12px; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                {{ diagnosticReport.passedChecks.length }} Healthy
+              </span>
+            </div>
+          </div>
+
+          <!-- Critical Issues List -->
+          <div *ngIf="diagnosticReport && diagnosticReport.criticalIssues.length > 0">
+            <h4 style="font-size: 14px; font-weight: 800; color: #991b1b; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">cancel</span>
+              Critical Issues Requiring Attention ({{ diagnosticReport.criticalIssues.length }})
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div *ngFor="let item of diagnosticReport.criticalIssues" style="background: #fff5f5; border: 1.5px solid #fecaca; border-radius: 10px; padding: 14px 18px;">
+                <div style="font-weight: 800; color: #b91c1c; font-size: 14px;">{{ item.title }}</div>
+                <div style="font-size: 13px; color: #475569; margin: 6px 0;"><strong>Root Cause:</strong> {{ item.rootCause }}</div>
+                <div style="font-size: 13px; color: #1e293b; background: #ffffff; border-left: 3px solid #dc2626; padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
+                  <strong>💡 How to Fix:</strong> {{ item.recommendation }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warnings List -->
+          <div *ngIf="diagnosticReport && diagnosticReport.warnings.length > 0">
+            <h4 style="font-size: 14px; font-weight: 800; color: #92400e; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
+              Warnings &amp; Deliverability Recommendations ({{ diagnosticReport.warnings.length }})
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div *ngFor="let item of diagnosticReport.warnings" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px 18px;">
+                <div style="font-weight: 800; color: #b45309; font-size: 14px;">{{ item.title }}</div>
+                <div style="font-size: 13px; color: #475569; margin: 6px 0;"><strong>Impact:</strong> {{ item.rootCause }}</div>
+                <div style="font-size: 13px; color: #1e293b; background: #ffffff; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
+                  <strong>💡 Recommendation:</strong> {{ item.recommendation }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passed Checks List -->
+          <div *ngIf="diagnosticReport && diagnosticReport.passedChecks.length > 0">
+            <h4 style="font-size: 14px; font-weight: 800; color: #15803d; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">task_alt</span>
+              Passed Health Checks ({{ diagnosticReport.passedChecks.length }})
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px;">
+              <div *ngFor="let check of diagnosticReport.passedChecks" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #166534; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: #22c55e;">check</span>
+                {{ check }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="padding: 14px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline" (click)="activeMainTab = 'head'; closeAiHealthModal()">
+            <span class="material-symbols-outlined">edit_note</span>
+            <span>Go to Header &amp; Footer Code Injections</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="closeAiHealthModal()">
+            Close Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pre-Save Dynamic Placeholder Architecture Warning Modal -->
+    <div class="modal-backdrop" *ngIf="showPreSaveWarningModal" (click)="closePreSaveWarningModal()" style="z-index: 9999999;">
+      <div class="modal-dialog-centered" (click)="$event.stopPropagation()" style="max-width: 640px; width: 92vw;">
+        <div style="background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35); overflow: hidden; border: 1.5px solid #fde68a;">
+          
+          <!-- Warning Header -->
+          <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 22px 26px; border-bottom: 1px solid #fde68a; display: flex; align-items: flex-start; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #fef08a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #b45309;">
+              <span class="material-symbols-outlined" style="font-size: 26px;">warning</span>
+            </div>
+            <div style="flex: 1;">
+              <h3 style="font-size: 18px; font-weight: 800; color: #92400e; margin: 0 0 4px;">Template Architecture Advisory</h3>
+              <p style="font-size: 13px; color: #78350f; margin: 0; line-height: 1.45;">
+                We analyzed your <strong>{{ activePreviewItem?.name }}</strong> ({{ activePreviewItem?.category | uppercase }}) template and found dynamic placeholders are missing.
+              </p>
+            </div>
+            <button type="button" (click)="closePreSaveWarningModal()" style="background: transparent; border: none; font-size: 20px; color: #92400e; cursor: pointer; padding: 0; line-height: 1;">✕</button>
+          </div>
+
+          <!-- Impact List Body -->
+          <div style="padding: 22px 26px; max-height: 52vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #ffffff;">
+            <p style="font-size: 13px; color: #475569; margin: 0 0 4px; font-weight: 600;">
+              If you save without these placeholders, the following live website capabilities will not work dynamically:
+            </p>
+
+            <div *ngFor="let item of preSaveValidationWarnings" style="background: #fffdf5; border: 1px solid #fef08a; border-radius: 12px; padding: 14px 16px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #92400e;">{{ item.title }}</span>
+                <code style="background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">{{ item.token }}</code>
+              </div>
+              <p style="font-size: 12.5px; color: #64748b; margin: 0; line-height: 1.45;">
+                {{ item.impact }}
+              </p>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #64748b; margin-top: 4px;">
+              💡 <em>If you are intentionally creating a custom/static section without dynamic loops, you can click <strong>"Proceed &amp; Save Anyway"</strong>.</em>
+            </div>
+          </div>
+
+          <!-- Action Footer -->
+          <div style="padding: 16px 26px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+            <button *ngIf="activePreviewItem?.category === 'menu' || activePreviewItem?.category === 'header'" 
+                    type="button" 
+                    class="btn btn-primary" 
+                    (click)="autoInjectFromAdvisory()"
+                    [disabled]="isAiTransforming"
+                    style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);">
+              <span class="spinner-border spinner-border-sm" *ngIf="isAiTransforming"></span>
+              <span class="material-symbols-outlined fs-6" *ngIf="!isAiTransforming">auto_awesome</span>
+              <span>✨ Auto-Inject Missing Placeholders with AI</span>
+            </button>
+            <button type="button" class="btn btn-outline" (click)="closePreSaveWarningModal()">
+              <span class="material-symbols-outlined fs-6 me-1">edit</span>
+              <span>Review &amp; Edit Manually</span>
+            </button>
+            <button type="button" class="btn btn-warning" (click)="saveTemplateHtml(true)" [disabled]="savingTemplateHtml" style="background: #f59e0b; border-color: #f59e0b; color: #ffffff; font-weight: 700;">
+              <span class="spinner-border spinner-border-sm me-1" *ngIf="savingTemplateHtml"></span>
+              <span>Proceed &amp; Save Anyway</span>
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
