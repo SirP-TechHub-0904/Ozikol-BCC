@@ -231,6 +231,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves brand identity settings (Logo, Favicon, Title, Colors, Login copy).
         /// </summary>
         [HttpGet("brand")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<BrandSettingsResponseDto>), 200)]
         public async Task<IActionResult> GetBrandSettings()
         {
