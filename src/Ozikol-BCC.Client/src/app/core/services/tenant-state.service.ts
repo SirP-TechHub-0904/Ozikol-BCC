@@ -1,23 +1,29 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 /**
- * Global service tracking tenant and subdomain resolution status across the entire application.
- * When a requested subdomain or workspace does not exist in the Master Catalog, this service
- * engages global 404 lock mode, suppressing all routing and rendering a minimal server 404 error.
+ * Global service managing tenant and subdomain resolution status across the entire application lifecycle.
+ * Prevents any child route (such as login UI, admin dashboard, or landing page) from rendering
+ * before the host subdomain is validated against the Central Master Catalog.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class TenantStateService {
   private tenantNotFoundSubject = new BehaviorSubject<boolean>(false);
+  private isCheckingSubject = new BehaviorSubject<boolean>(true);
 
   /**
-   * Observable stream emitting true when the workspace/subdomain is invalid or non-existent.
+   * Observable stream emitting true when the workspace/subdomain is confirmed non-existent.
    */
   public isTenantNotFound$: Observable<boolean> = this.tenantNotFoundSubject.asObservable();
+
+  /**
+   * Observable stream indicating whether the initial startup tenant validation is actively in progress.
+   */
+  public isCheckingTenant$: Observable<boolean> = this.isCheckingSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -27,6 +33,7 @@ export class TenantStateService {
    */
   public setTenantNotFound(notFound: boolean): void {
     this.tenantNotFoundSubject.next(notFound);
+    this.isCheckingSubject.next(false);
   }
 
   /**
@@ -38,19 +45,25 @@ export class TenantStateService {
   }
 
   /**
-   * Evaluates the current hostname upon application bootstrap and verifies if the tenant exists.
+   * Initializes tenant check before any route is rendered.
+   * Executed during APP_INITIALIZER to block UI flashing.
    */
-  public checkInitialTenant(): void {
-    if (typeof window === 'undefined') return;
+  public async initTenantCheck(): Promise<void> {
+    if (typeof window === 'undefined') {
+      this.isCheckingSubject.next(false);
+      return;
+    }
 
     const hostname = window.location.hostname;
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      this.isCheckingSubject.next(false);
       return;
     }
 
     const parts = hostname.split('.');
     const isSubdomain = parts.length > 1 && !['localhost', '127', 'www', 'api', 'central', 'admin'].includes(parts[0]);
     if (!isSubdomain && parts.length <= 1) {
+      this.isCheckingSubject.next(false);
       return;
     }
 
@@ -61,15 +74,16 @@ export class TenantStateService {
     });
 
     const url = `${(environment.apiUrl || '').replace(/\/+$/, '')}/SettingsApi/brand`;
-    this.http.get(url, { headers }).subscribe({
-      next: () => {
-        this.setTenantNotFound(false);
-      },
-      error: (err) => {
-        if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
-          this.setTenantNotFound(true);
-        }
+
+    try {
+      await firstValueFrom(this.http.get(url, { headers }));
+      this.tenantNotFoundSubject.next(false);
+    } catch (err: any) {
+      if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+        this.tenantNotFoundSubject.next(true);
       }
-    });
+    } finally {
+      this.isCheckingSubject.next(false);
+    }
   }
 }
