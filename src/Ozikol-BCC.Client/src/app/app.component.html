@@ -1,2 +1,13 @@
-<router-outlet></router-outlet>
-<app-toast-container></app-toast-container>
+<div class="server-not-found-container" *ngIf="isTenantNotFound$ | async">
+  <div class="server-not-found-content">
+    <h1 class="server-404-code">404</h1>
+    <h2 class="server-404-title">Not Found</h2>
+    <p class="server-404-description">The resource requested could not be found on this server!</p>
+  </div>
+</div>
+
+<ng-container *ngIf="!(isTenantNotFound$ | async)">
+  <router-outlet></router-outlet>
+  <app-toast-container></app-toast-container>
+</ng-container>
+
