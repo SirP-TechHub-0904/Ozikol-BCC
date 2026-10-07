@@ -49,6 +49,7 @@ import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.compo
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
 import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
+import { TemplateVisualsComponent } from './pages/admin/content/templates/template-visuals.component';
 import { ImportWebsiteTemplateComponent } from './pages/admin/content/templates/import-website-template.component';
 import { TemplateMaintenanceComponent } from './pages/admin/content/templates/template-maintenance.component';
 import { FormsListComponent } from './pages/admin/content/forms/forms-list.component';
@@ -215,6 +216,10 @@ export const routes: Routes = [
       { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
       { path: 'content/console/templates/import', component: ImportWebsiteTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/visuals', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/visuals/:id', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'templates/visuals', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
+      { path: 'templates/visuals/:id', redirectTo: 'content/console/templates/visuals/:id' },
       { path: 'content/console/templates/maintenance', component: TemplateMaintenanceComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates', component: MyTemplatesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/templates', redirectTo: 'content/console/templates', pathMatch: 'full' },
