@@ -10,7 +10,16 @@ import { ApiService } from '../../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="login-container">
-      <div class="login-card">
+      <!-- Dedicated Workspace Not Found State -->
+      <div class="login-card" *ngIf="workspaceNotFound" style="text-align: center; padding: 48px 32px;">
+        <div class="brand-avatar" style="margin: 0 auto 18px; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
+          <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">domain_disabled</span>
+        </div>
+        <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">Workspace not found.</h2>
+      </div>
+
+      <!-- Standard Login Card -->
+      <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
           <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
@@ -802,6 +811,7 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   loading = false;
   errorMessage = '';
+  workspaceNotFound = false;
 
   // Brand Logo, Icon & Name
   brandLogoUrl = '';
@@ -872,7 +882,11 @@ export class LoginComponent implements OnInit {
           this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
         }
       },
-      error: () => {}
+      error: (err) => {
+        if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+          this.workspaceNotFound = true;
+        }
+      }
     });
   }
 
@@ -947,6 +961,11 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
+        if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
+          this.workspaceNotFound = true;
+          return;
+        }
+
         // If unconfirmed email required by policy (403), open OTP verification dialog
         if (err.status === 403) {
           this.showOtpVerifyModal = true;
