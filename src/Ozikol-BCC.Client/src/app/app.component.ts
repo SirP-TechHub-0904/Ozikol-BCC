@@ -1,13 +1,27 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from './core/components/toast-container.component';
+import { TenantStateService } from './core/services/tenant-state.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent],
+  standalone: true,
+  imports: [CommonModule, RouterOutlet, ToastContainerComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'Ozikol-BCC.Client';
+  isTenantNotFound$: Observable<boolean>;
+
+  constructor(private tenantState: TenantStateService) {
+    this.isTenantNotFound$ = this.tenantState.isTenantNotFound$;
+  }
+
+  ngOnInit(): void {
+    this.tenantState.checkInitialTenant();
+  }
 }
+

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { TenantStateService } from '../../../core/services/tenant-state.service';
 
 @Component({
   selector: 'app-login',
@@ -852,7 +853,8 @@ export class LoginComponent implements OnInit {
   constructor(
     private api: ApiService, 
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private tenantState: TenantStateService
   ) {}
 
   ngOnInit(): void {
@@ -885,6 +887,7 @@ export class LoginComponent implements OnInit {
       error: (err) => {
         if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
           this.workspaceNotFound = true;
+          this.tenantState.setTenantNotFound(true);
         }
       }
     });
@@ -963,6 +966,7 @@ export class LoginComponent implements OnInit {
         this.loading = false;
         if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {
           this.workspaceNotFound = true;
+          this.tenantState.setTenantNotFound(true);
           return;
         }
 

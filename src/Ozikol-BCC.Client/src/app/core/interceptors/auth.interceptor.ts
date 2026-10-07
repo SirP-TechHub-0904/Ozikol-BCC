@@ -3,6 +3,7 @@ import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpErrorResponse
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { TenantStateService } from '../services/tenant-state.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -10,7 +11,10 @@ export class AuthInterceptor implements HttpInterceptor {
   // These paths are always public and should never redirect to login
   private readonly publicPaths = ['/api/Auth/', '/api/WebsiteContent/', '/api/WebsiteContent'];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private tenantState: TenantStateService
+  ) {}
 
   private isPublicUrl(url: string): boolean {
     return this.publicPaths.some(path => url.includes(path));
@@ -52,6 +56,12 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
         const isPublic = this.isPublicUrl(request.url);
+
+        // 404 Not Found — Workspace does not exist in Master Catalog
+        if (error.status === 404 && (error.error?.error === 'TenantNotFound' || error.error?.message === 'Workspace not found.')) {
+          console.warn(`[AuthInterceptor] TenantNotFound 404 for:`, request.url);
+          this.tenantState.setTenantNotFound(true);
+        }
 
         // 401 Unauthorized — token missing, invalid, or expired
         if (error.status === 401) {
