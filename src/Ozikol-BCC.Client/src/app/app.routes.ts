@@ -69,9 +69,6 @@ import { PageSectionListEditComponent } from './pages/admin/content/page-section
 import { PageSectionListDeleteComponent } from './pages/admin/content/page-section-list-delete.component';
 import { SlidersComponent } from './pages/admin/content/sliders.component';
 import { SliderEditComponent } from './pages/admin/content/slider-edit.component';
-import { FaqsComponent } from './pages/admin/content/faqs.component';
-import { FaqEditComponent } from './pages/admin/content/faq-edit.component';
-import { FaqDeleteComponent } from './pages/admin/content/faq-delete.component';
 import { BlogsManagementComponent } from './pages/admin/cms/blogs-management.component';
 import { BlogCategoriesManagementComponent } from './pages/admin/cms/blog-categories-management.component';
 import { BlogCategoryDeleteComponent } from './pages/admin/cms/blog-category-delete.component';
@@ -242,10 +239,6 @@ export const routes: Routes = [
       { path: 'content/console/sliders', component: SlidersComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sliders/edit/:id', component: SliderEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sliders/delete/:id', component: SliderDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs', component: FaqsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/edit/:id', component: FaqEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faqs/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/faq-categories/delete/:id', component: FaqDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs', component: BlogsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/create', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/edit/:id', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },

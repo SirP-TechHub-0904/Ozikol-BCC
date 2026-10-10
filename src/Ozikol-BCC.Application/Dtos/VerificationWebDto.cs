@@ -13,8 +13,7 @@ namespace Ozikol_BCC.Application.Dtos
         public string Area { get; set; }
         public bool Portfolio { get; set; }
         public string PortfolioPath { get; set; }
-        public ConfigSetting ConfigSetting { get; set; }
-        public ManagementSetting ManagementSetting { get; set; }
-        public BcpSetting BcpSetting { get; set; }
+        public MisWebsiteSetting? MisWebsiteSetting { get; set; }
+        public MisConfigurationSetting? MisConfigurationSetting { get; set; }
     }
 }

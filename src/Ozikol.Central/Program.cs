@@ -266,10 +266,11 @@ builder.Services.AddSingleton<Ozikol.Central.Services.Jobs.CentralBackgroundJobO
 builder.Services.AddHostedService(sp => sp.GetRequiredService<Ozikol.Central.Services.Jobs.CentralBackgroundJobOrchestrator>());
 
 // 7c. Register Section Asset Pipeline, Image Optimizer & AI Custom Code Extractor Services
-builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol_BCC.Application.Services.Sections.SectionLibraryResolverService>();
-builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol_BCC.Application.Services.Sections.SectionCustomCodeExtractorService>();
-builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateAssetBundlePipelineService, Ozikol_BCC.Application.Services.Sections.TemplateAssetBundlePipelineService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionLibraryResolverService, Ozikol.Central.Services.SectionLibraryResolverService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ISectionCustomCodeExtractorService, Ozikol.Central.Services.SectionCustomCodeExtractorService>();
+builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateAssetBundlePipelineService, Ozikol.Central.Services.TemplateAssetBundlePipelineService>();
 builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService, Ozikol_BCC.Application.Services.Sections.TemplateImageOptimizationService>();
+builder.Services.AddScoped<Ozikol.Central.Services.ISectionCompilerRendererService, Ozikol.Central.Services.SectionCompilerRendererService>();
 
 builder.Services.AddControllers();
 

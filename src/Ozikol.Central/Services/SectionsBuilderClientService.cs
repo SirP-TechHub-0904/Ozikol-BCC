@@ -190,6 +190,12 @@ namespace Ozikol.Central.Services
     /// </summary>
     public class SectionAiFullCleanRequestDto
     {
+        /// <summary>
+        /// Optional database staging draft entity ID.
+        /// </summary>
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
         [JsonPropertyName("section_key")]
         public string SectionKey { get; set; } = string.Empty;
 
@@ -210,6 +216,12 @@ namespace Ozikol.Central.Services
 
         [JsonPropertyName("container_class")]
         public string ContainerClass { get; set; } = string.Empty;
+
+        /// <summary>
+        /// User's natural-language refinement instruction (e.g. "Add dark mode styling and make buttons rounded").
+        /// </summary>
+        [JsonPropertyName("user_prompt")]
+        public string? UserPrompt { get; set; }
 
         [JsonPropertyName("provider")]
         public string Provider { get; set; } = "Gemini";
@@ -366,6 +378,21 @@ namespace Ozikol.Central.Services
 
         [JsonPropertyName("parent_page_slugs")]
         public List<string> ParentPageSlugs { get; set; } = new();
+
+        [JsonPropertyName("required_libraries")]
+        public List<string> RequiredLibraries { get; set; } = new();
+
+        [JsonPropertyName("required_css_libraries")]
+        public List<string> RequiredCssLibraries { get; set; } = new();
+
+        [JsonPropertyName("required_js_libraries")]
+        public List<string> RequiredJsLibraries { get; set; } = new();
+
+        [JsonPropertyName("required_css_urls")]
+        public List<string> RequiredCssUrls { get; set; } = new();
+
+        [JsonPropertyName("required_js_urls")]
+        public List<string> RequiredJsUrls { get; set; } = new();
 
         [JsonPropertyName("sort_order")]
         public int SortOrder { get; set; } = 10;

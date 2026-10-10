@@ -64,11 +64,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   categories = [
     { id: 'menu', name: 'Navigation', icon: 'menu' },
     { id: 'hero', name: 'Hero Sliders', icon: 'view_carousel' },
-    { id: 'body', name: 'Body Features', icon: 'view_quilt' },
+    { id: 'breadcrumb', name: 'Breadcrumbs & Page Banner', icon: 'alt_route' },
+    { id: 'body', name: 'Body Sections', icon: 'view_quilt' },
     { id: 'footer', name: 'Footers', icon: 'dock_to_bottom' },
-    { id: 'blog', name: 'Blogs', icon: 'newspaper' },
-    { id: 'ecommerce', name: 'E-Commerce', icon: 'shopping_bag' },
-    { id: 'breadcrumb', name: 'Breadcrumbs & Page Headers', icon: 'linear_scale' }
+    { id: 'blog', name: 'Blogs & Articles', icon: 'newspaper' }
   ];
 
   selectedGroup: string = 'all';
@@ -143,6 +142,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   uploadedCssUrl: string = '';
   uploadedCssStorage: string = '';
 
+  // JavaScript File Upload State (Cloudflare R2 + CDN)
+  @ViewChild('jsFileInput') jsFileInput?: ElementRef<HTMLInputElement>;
+  selectedJsFile: File | null = null;
+  selectedJsFileName: string = '';
+  selectedJsFileSize: string = '';
+  uploadingJs: boolean = false;
+  uploadedJsUrl: string = '';
+  uploadedJsStorage: string = '';
+
   // Bulk CSS / JS Asset Upload State
   showBulkUploadModal: boolean = false;
   uploadingBulk: boolean = false;
@@ -192,6 +200,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     name: string;
     description: string;
     tagType: string;
+    zone?: 'head' | 'footer' | 'any';
     icon: string;
     badge: string;
     content: string;
@@ -200,14 +209,34 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Bootstrap 5.3.3 (CSS)',
       description: 'Official production CSS with responsive grid and utility classes.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'grid_view',
       badge: 'CSS Framework',
       content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
     },
     {
+      name: 'Bootstrap 5.3.3 (JS Bundle)',
+      description: 'Official Popper + Bootstrap bundle for dropdowns, modals, and tooltips.',
+      tagType: 'script_url',
+      zone: 'footer',
+      icon: 'javascript',
+      badge: 'JS Bundle',
+      content: '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>'
+    },
+    {
+      name: 'Swiper 11 (Slider JS)',
+      description: 'Modern mobile-first touch carousel & slider engine.',
+      tagType: 'script_url',
+      zone: 'footer',
+      icon: 'swipe',
+      badge: 'Slider JS',
+      content: '<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>'
+    },
+    {
       name: 'FontAwesome 6.5.1 (Icons)',
       description: 'Global icon library with thousands of web icons.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'category',
       badge: 'Icon Suite',
       content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />'
@@ -216,14 +245,43 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Bootstrap Icons 1.11.3',
       description: 'Over 2,000 official SVG font icons for Bootstrap.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'token',
       badge: 'Icon Suite',
       content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">'
     },
     {
+      name: 'Alpine.js 3.14',
+      description: 'Lightweight reactive frontend framework directly in HTML attributes.',
+      tagType: 'script_url',
+      zone: 'head',
+      icon: 'dynamic_form',
+      badge: 'Micro Framework',
+      content: '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>'
+    },
+    {
+      name: 'GSAP 3.12 (GreenSock)',
+      description: 'Professional high-performance JavaScript web animation library.',
+      tagType: 'script_url',
+      zone: 'footer',
+      icon: 'motion_photos_on',
+      badge: 'Animations',
+      content: '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>'
+    },
+    {
+      name: 'jQuery 3.7.1',
+      description: 'Feature-rich JavaScript DOM manipulation library.',
+      tagType: 'script_url',
+      zone: 'footer',
+      icon: 'code_blocks',
+      badge: 'Utility JS',
+      content: '<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>'
+    },
+    {
       name: 'Tailwind CSS (Play CDN)',
       description: 'Utility-first CSS runtime engine via script tag for rapid development.',
       tagType: 'external_js',
+      zone: 'head',
       icon: 'palette',
       badge: 'Utility CSS',
       content: '<script src="https://cdn.tailwindcss.com"></script>'
@@ -232,6 +290,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Google Font (Inter)',
       description: 'Modern, highly legible sans-serif typography for clean interfaces.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'text_fields',
       badge: 'Typography',
       content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
@@ -240,6 +299,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Google Font (Poppins)',
       description: 'Geometric sans-serif with friendly curves and multiple weights.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'format_size',
       badge: 'Typography',
       content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
@@ -248,6 +308,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       name: 'Animate.css 4.1.1',
       description: 'Cross-browser CSS animations library for entrance and attention effects.',
       tagType: 'link_stylesheet',
+      zone: 'head',
       icon: 'animation',
       badge: 'Animations',
       content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />'
@@ -1161,7 +1222,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   activeBlogId: string = '';
   activeBreadcrumbId: string = '';
   activeEcommerceId: string = 'ecom-01';
-  singletonCategories: string[] = ['menu', 'hero', 'footer', 'blog', 'breadcrumb', 'ecommerce'];
+  singletonCategories: string[] = ['menu', 'hero', 'footer', 'blog'];
+
+  /** Flag indicating active background AI navbar analysis and placeholder transformation */
+  isAiTransforming: boolean = false;
 
   constructor(
     private router: Router,
@@ -1227,7 +1291,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (event.data.type === 'DEMO_NAV') {
       const href = (event.data.href || '').trim().toLowerCase();
       const text = (event.data.text || '').trim().toLowerCase();
-      if (!href || href === '#' || href.startsWith('javascript:')) return;
+      if (!href || href === '#' || href.startsWith('#') || href.startsWith('javascript:')) return;
       let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact' = 'home';
 
       if (href.includes('request') || text.includes('request')) {
@@ -1566,9 +1630,25 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Resets any active JavaScript upload selection and CDN URL status to ensure clean modal sessions.
+   */
+  resetJsUploadState(): void {
+    this.selectedJsFile = null;
+    this.selectedJsFileName = '';
+    this.selectedJsFileSize = '';
+    this.uploadedJsUrl = '';
+    this.uploadedJsStorage = '';
+    this.uploadingJs = false;
+    if (this.jsFileInput?.nativeElement) {
+      this.jsFileInput.nativeElement.value = '';
+    }
+  }
+
   openCreateTagModal(zone?: 'head' | 'body_open' | 'footer' | string): void {
     this.isEditingTag = false;
     this.resetCssUploadState();
+    this.resetJsUploadState();
     const targetZone: 'head' | 'body_open' | 'footer' =
       (zone === 'head' || zone === 'body_open' || zone === 'footer')
         ? zone
@@ -1597,6 +1677,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   openEditTagModal(tag: CodeInjectionTag): void {
     this.isEditingTag = true;
     this.resetCssUploadState();
+    this.resetJsUploadState();
     this.tagFormZone = tag.zone;
     this.tagForm = { ...tag };
     this.showTagModal = true;
@@ -1605,10 +1686,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   closeTagModal(): void {
     this.showTagModal = false;
     this.resetCssUploadState();
+    this.resetJsUploadState();
   }
 
   onTagTypeChanged(): void {
     this.resetCssUploadState();
+    this.resetJsUploadState();
 
     if (this.tagForm.tagType === 'meta_tag') {
       this.selectedMetaPreset = 'full_suite';
@@ -1662,19 +1745,71 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Checks whether the current tag form represents a JavaScript script tag.
+   */
+  isJsTagType(): boolean {
+    const t = this.tagForm.tagType;
+    return this.tagFormZone === 'footer' || 
+           t === 'script_url' || 
+           t === 'footer_script_url' || 
+           t === 'external_js' || 
+           t === 'inline_js' || 
+           t === 'defer_js' || 
+           t === 'async_js';
+  }
+
+  /**
+   * Checks whether the current tag form represents a CSS stylesheet tag.
+   */
+  isCssTagType(): boolean {
+    const t = this.tagForm.tagType;
+    return this.tagFormZone === 'head' && (t === 'link_stylesheet' || t === 'inline_css');
+  }
+
+  /**
+   * Retrieves contextual 1-click CDN presets matching the active zone and tag category.
+   */
+  getFilteredFrameworkPresets(): any[] {
+    if (this.isJsTagType()) {
+      return this.frameworkPresets.filter(p => p.zone === 'footer' || p.tagType === 'script_url' || p.tagType === 'external_js');
+    }
+    return this.frameworkPresets.filter(p => p.zone !== 'footer' && p.tagType !== 'script_url');
+  }
+
+  /**
    * Handles local CSS file selection.
    */
   onCssFileSelected(event: any): void {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.css')) {
-      this.toast.error('Please select a valid CSS file (.css).');
+    const lowerName = file.name.toLowerCase();
+    const cleanName = lowerName.endsWith('.download') ? lowerName.substring(0, lowerName.length - 9) : lowerName;
+    if (!cleanName.endsWith('.css')) {
+      this.toast.error('Please select a valid CSS file (.css or .css.download).');
       return;
     }
     this.selectedCssFile = file;
     this.selectedCssFileName = file.name;
     this.selectedCssFileSize = (file.size / 1024).toFixed(1) + ' KB';
     this.toast.info(`Selected CSS file: ${file.name}`);
+  }
+
+  /**
+   * Handles local JavaScript file selection.
+   */
+  onJsFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const lowerName = file.name.toLowerCase();
+    const cleanName = lowerName.endsWith('.download') ? lowerName.substring(0, lowerName.length - 9) : lowerName;
+    if (!cleanName.endsWith('.js')) {
+      this.toast.error('Please select a valid JavaScript file (.js or .js.download).');
+      return;
+    }
+    this.selectedJsFile = file;
+    this.selectedJsFileName = file.name;
+    this.selectedJsFileSize = (file.size / 1024).toFixed(1) + ' KB';
+    this.toast.info(`Selected JavaScript file: ${file.name}`);
   }
 
   /**
@@ -1725,7 +1860,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           this.uploadedCssUrl = url;
           this.uploadedCssStorage = storage;
           this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
-          this.tagForm.name = `Stylesheet: ${this.selectedCssFileName}`;
+          this.tagForm.name = `Stylesheet: ${this.selectedCssFileName.replace(/\.download$/i, '')}`;
           this.tagForm.tagType = 'link_stylesheet';
           this.toast.success(`Uploaded to ${storage} and edge CDN link generated!`);
         } else {
@@ -1734,6 +1869,47 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.uploadingCss = false;
+        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.toast.error(errMsg);
+      }
+    });
+  }
+
+  /**
+   * Uploads the selected JavaScript file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
+   */
+  uploadAndLinkJsFile(): void {
+    if (!this.selectedJsFile) {
+      this.toast.error('Please choose a .js file first.');
+      return;
+    }
+
+    this.uploadingJs = true;
+    const formData = new FormData();
+    formData.append('file', this.selectedJsFile);
+
+    this.api.post<any>('ContentApi/upload-js', formData).subscribe({
+      next: (res) => {
+        this.uploadingJs = false;
+        const url = res?.data?.url;
+        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
+        if (url) {
+          this.uploadedJsUrl = url;
+          this.uploadedJsStorage = storage;
+          const cleanName = this.selectedJsFileName.replace(/\.download$/i, '');
+          const isFooter = this.tagFormZone === 'footer';
+          this.tagForm.content = isFooter 
+            ? `<script src="${url}"></script>` 
+            : `<script src="${url}" defer></script>`;
+          this.tagForm.name = `Script: ${cleanName}`;
+          this.tagForm.tagType = isFooter ? 'footer_script_url' : 'script_url';
+          this.toast.success(`Uploaded to ${storage} and edge CDN script link generated!`);
+        } else {
+          this.toast.error('Failed to resolve uploaded JS URL.');
+        }
+      },
+      error: (err) => {
+        this.uploadingJs = false;
         const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
         this.toast.error(errMsg);
       }
@@ -1752,15 +1928,40 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const reader = new FileReader();
     reader.onload = () => {
       const cssText = reader.result as string;
-      this.tagForm.content = `<style>\n  /* Source: ${this.selectedCssFileName} */\n${cssText}\n</style>`;
-      this.tagForm.name = `Custom CSS: ${this.selectedCssFileName}`;
+      const cleanName = this.selectedCssFileName.replace(/\.download$/i, '');
+      this.tagForm.content = `<style>\n  /* Source: ${cleanName} */\n${cssText}\n</style>`;
+      this.tagForm.name = `Custom CSS: ${cleanName}`;
       this.tagForm.tagType = 'inline_css';
-      this.toast.success(`Imported ${this.selectedCssFileName} into inline <style>!`);
+      this.toast.success(`Imported ${cleanName} into inline <style>!`);
     };
     reader.onerror = () => {
       this.toast.error('Failed to read CSS file from disk.');
     };
     reader.readAsText(this.selectedCssFile);
+  }
+
+  /**
+   * Reads the selected JavaScript file and embeds its raw contents into an inline <script> tag.
+   */
+  importJsAsInlineScript(): void {
+    if (!this.selectedJsFile) {
+      this.toast.error('Please choose a .js file first.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const jsText = reader.result as string;
+      const cleanName = this.selectedJsFileName.replace(/\.download$/i, '');
+      this.tagForm.content = `<script>\n  /* Source: ${cleanName} */\n${jsText}\n</script>`;
+      this.tagForm.name = `Custom JS: ${cleanName}`;
+      this.tagForm.tagType = 'inline_js';
+      this.toast.success(`Imported ${cleanName} into inline <script>!`);
+    };
+    reader.onerror = () => {
+      this.toast.error('Failed to read JavaScript file from disk.');
+    };
+    reader.readAsText(this.selectedJsFile);
   }
 
   /**
@@ -1822,14 +2023,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   addFilesToBulkQueue(files: File[]): void {
     let addedCount = 0;
     for (const f of files) {
-      const ext = f.name.toLowerCase();
-      const isValid = ext.endsWith('.css') || ext.endsWith('.js') || 
-                      ext.endsWith('.woff2') || ext.endsWith('.woff') || 
-                      ext.endsWith('.ttf') || ext.endsWith('.otf') || 
-                      ext.endsWith('.eot') || ext.endsWith('.svg');
+      const lowerName = f.name.toLowerCase();
+      // Normalize .download extension (e.g. main.js.download -> main.js)
+      const cleanExt = lowerName.endsWith('.download') ? lowerName.substring(0, lowerName.length - 9) : lowerName;
+      const isValid = cleanExt.endsWith('.css') || cleanExt.endsWith('.js') || 
+                      cleanExt.endsWith('.woff2') || cleanExt.endsWith('.woff') || 
+                      cleanExt.endsWith('.ttf') || cleanExt.endsWith('.otf') || 
+                      cleanExt.endsWith('.eot') || cleanExt.endsWith('.svg');
 
       if (!isValid) {
-        this.toast.warning(`Skipped '${f.name}': only .css, .js, and font files (.woff2, .woff, .ttf, .otf, .eot, .svg) are supported.`);
+        this.toast.warning(`Skipped '${f.name}': only .css, .js (including .js.download), and font files (.woff2, .woff, .ttf, .otf, .eot, .svg) are supported.`);
         continue;
       }
 
@@ -1882,6 +2085,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const formData = new FormData();
     this.bulkUploadFiles.forEach(item => {
       formData.append('files', item.file);
+      formData.append('names', (item.name || '').trim());
     });
     formData.append('zone', this.bulkUploadZone);
     formData.append('suiteCode', this.bulkUploadSuiteCode || 'global');
@@ -1892,7 +2096,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingBulk = false;
         this.bulkUploadFiles.forEach(f => f.status = 'success');
-        this.toast.success(res?.message || `${this.bulkUploadFiles.length} asset(s) uploaded to Cloudflare R2 and injected!`);
+        this.toast.success(res?.message || `${this.bulkUploadFiles.length} asset(s) uploaded and injected successfully!`);
         this.loadAllCodeInjections();
         setTimeout(() => {
           this.closeBulkUploadModal();
@@ -1903,8 +2107,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.bulkUploadFiles.forEach(f => {
           if (f.status === 'uploading') f.status = 'error';
         });
-        const msg = err?.error?.message || err?.message || 'Bulk upload failed.';
-        this.toast.error(msg);
+        const msg = err?.error?.message || err?.error || err?.message || 'Bulk upload failed.';
+        this.toast.error(typeof msg === 'string' ? msg : 'Bulk upload failed.');
       }
     });
   }
@@ -2389,51 +2593,58 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       }
     }
 
+    const rawId = apiT.id || apiT.Id || '';
+    const rawVariant = apiT.variantCode || apiT.VariantCode || apiT.templateKey || apiT.TemplateKey || '';
+    const rawKey = apiT.templateKey || apiT.TemplateKey || rawVariant;
+
     return {
-      id: apiT.templateKey || apiT.variantCode || apiT.id,
-      dbId: apiT.id,
-      name: apiT.name || 'Untitled Template',
+      id: rawKey || rawVariant || rawId,
+      dbId: rawId,
+      name: apiT.name || apiT.Name || 'Untitled Template',
       category: cat,
-      variantCode: apiT.variantCode || apiT.templateKey || 'Section_Custom',
+      variantCode: rawVariant || 'Section_Custom',
       badge: apiT.isActive ? 'Active' : meta.badge,
       tag: cat,
       groupCode: groupCode,
       groupName: groupName,
-      description: apiT.description || `${apiT.name} component blueprint installed in tenant database.`,
+      description: apiT.description || apiT.Description || `${apiT.name || rawVariant} component blueprint installed in tenant database.`,
       thumbnailGradient: meta.gradient,
       previewIcon: meta.icon,
       previewSubtitle: meta.subtitle,
-      previewTitle: apiT.name,
-      previewBody: apiT.description || 'Tenant component template block.',
-      htmlTemplate: apiT.htmlTemplate || '',
-      cssStyles: apiT.cssStyles || '',
-      jsScript: apiT.jsScript || '',
-      version: apiT.installedVersion || '1.0.0',
-      installedUtc: apiT.installedUtc || new Date().toISOString(),
-      isCustomized: apiT.isCustomized,
-      isDefault: apiT.isDefault ?? false,
-      defaultContentJson: apiT.defaultContentJson
+      previewTitle: apiT.name || rawVariant,
+      previewBody: apiT.description || apiT.Description || 'Tenant component template block.',
+      htmlTemplate: apiT.htmlTemplate || apiT.HtmlTemplate || '',
+      cssStyles: apiT.cssStyles || apiT.CssStyles || '',
+      jsScript: apiT.jsScript || apiT.JsScript || '',
+      version: apiT.installedVersion || apiT.InstalledVersion || '1.0.0',
+      installedUtc: apiT.installedUtc || apiT.InstalledUtc || new Date().toISOString(),
+      isCustomized: apiT.isCustomized ?? apiT.IsCustomized,
+      isDefault: apiT.isDefault ?? apiT.IsDefault ?? false,
+      defaultContentJson: apiT.defaultContentJson || apiT.DefaultContentJson
     };
   }
 
   private getCategoryVisualMeta(cat: string): { icon: string; gradient: string; badge: string; subtitle: string } {
-    switch (cat) {
+    switch ((cat || '').toLowerCase()) {
       case 'menu':
         return { icon: 'menu', gradient: 'linear-gradient(135deg, #0050e5 0%, #1e40af 100%)', badge: 'Navbar', subtitle: 'Navigation' };
       case 'hero':
         return { icon: 'view_carousel', gradient: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', badge: 'Hero', subtitle: 'Hero Banner' };
+      case 'faq':
+        return { icon: 'quiz', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', badge: 'FAQ', subtitle: 'Accordion' };
+      case 'marquee':
+        return { icon: 'linear_scale', gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', badge: 'Ticker', subtitle: 'Marquee' };
+      case 'contact':
+      case 'contactus':
+        return { icon: 'contact_mail', gradient: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', badge: 'Contact', subtitle: 'Contact Form' };
       case 'footer':
         return { icon: 'dock_to_bottom', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', badge: 'Footer', subtitle: 'Page Footer' };
-      case 'newsletter':
-        return { icon: 'mail', gradient: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', badge: 'Newsletter', subtitle: 'Subscription Bar' };
-      case 'contact':
-        return { icon: 'contact_mail', gradient: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', badge: 'Intake', subtitle: 'Contact Form' };
       case 'blog':
-        return { icon: 'newspaper', gradient: 'linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)', badge: 'Articles', subtitle: 'News & Insights' };
-      case 'ecommerce':
-        return { icon: 'shopping_bag', gradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', badge: 'Storefront', subtitle: 'Products Grid' };
-      case 'breadcrumb':
-        return { icon: 'linear_scale', gradient: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', badge: 'Header', subtitle: 'Page Header' };
+      case 'blog_detail':
+      case 'article':
+        return { icon: 'newspaper', gradient: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)', badge: 'Articles', subtitle: 'News & Insights' };
+      case 'newsletter':
+        return { icon: 'mail', gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', badge: 'Newsletter', subtitle: 'Subscription Bar' };
       default:
         return { icon: 'view_quilt', gradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', badge: 'Section', subtitle: 'Content Block' };
     }
@@ -2734,7 +2945,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         });
 
         this.applyFilters();
-        this.toast.success(`⚡ '${suiteName}' is now your live active website theme!`);
+        this.toast.success(`'${suiteName}' is now your live active website theme!`);
       },
       error: (err) => {
         this.activatingSuite = false;
@@ -2805,13 +3016,36 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Evaluates if a template's category matches the target category filter,
+   * accounting for canonical keys and consolidated legacy aliases (e.g. ecommerce/bodysections into body).
+   * @param itemCat The template's category key.
+   * @param filterCat The active filter category key.
+   * @returns Boolean indicating whether the item matches the category filter.
+   */
+  matchesCategory(itemCat: string, filterCat: string): boolean {
+    if (!itemCat || !filterCat) return false;
+    const item = itemCat.toLowerCase().trim();
+    const filter = filterCat.toLowerCase().trim();
+    if (item === filter) return true;
+    if (filter === 'body' || filter === 'bodysections') {
+      return item === 'body' || item === 'bodysections' || item === 'section' || item === 'ecommerce' ||
+             item === 'faq' || item === 'contact' || item === 'contactus' || item === 'marquee' || item === 'features';
+    }
+    if (filter === 'menu') return item === 'menu' || item === 'nav' || item === 'header';
+    if (filter === 'hero') return item === 'hero' || item === 'breadcrumb' || item === 'banner' || item === 'slider';
+    if (filter === 'footer') return item === 'footer';
+    if (filter === 'blog') return item === 'blog' || item === 'blog_detail' || item === 'article' || item === 'news';
+    return false;
+  }
+
   applyFilters(): void {
     let list = [...this.installedTemplates];
     if (this.selectedGroup !== 'all') {
       list = list.filter(t => (t.groupCode || 'suite_corporate') === this.selectedGroup);
     }
     if (this.selectedCategory !== 'all') {
-      list = list.filter(t => t.category === this.selectedCategory);
+      list = list.filter(t => this.matchesCategory(t.category, this.selectedCategory));
     }
     if (this.searchQuery && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
@@ -2832,9 +3066,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   getCategoryCount(catId: string): number {
     if (this.selectedGroup === 'all') {
-      return this.installedTemplates.filter(t => t.category === catId).length;
+      return this.installedTemplates.filter(t => this.matchesCategory(t.category, catId)).length;
     }
-    return this.installedTemplates.filter(t => t.category === catId && (t.groupCode || 'suite_corporate') === this.selectedGroup).length;
+    return this.installedTemplates.filter(t => this.matchesCategory(t.category, catId) && (t.groupCode || 'suite_corporate') === this.selectedGroup).length;
   }
 
   getCategoryName(catId: string): string {
@@ -3165,6 +3399,30 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       combinedJs = this.activePreviewItem.jsScript || '';
     }
 
+    const activeSuite = this.getAvailableSuites().find(s => s.name === this.activeThemeSuiteName);
+    const suiteCode = (this.selectedGroup && this.selectedGroup !== 'all')
+      ? this.selectedGroup
+      : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
+
+    // Dynamic suite-specific + global head stylesheets, Google Fonts, and footer scripts
+    const activeHeadTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'head' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
+    const activeBodyOpenTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'body_open' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
+    const activeFooterTagsMarkup = this.allCodeInjections
+      .filter(t => t.zone === 'footer' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => t.content)
+      .join('\n');
+
     const cleanCombinedStyles = (combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
     const cleanCombinedJs = (combinedJs || '').replace(/<\/?script[^>]*>/gi, '').trim();
 
@@ -3176,131 +3434,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-    .dropdown {
-      position: relative !important;
-    }
-    .dropdown-menu {
-      position: absolute !important;
-      top: 100% !important;
-      left: 0 !important;
-      z-index: 99999 !important;
-      min-width: 14rem !important;
-      margin-top: 6px !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      background-color: #ffffff !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 8px !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-      padding: 6px 0 !important;
-    }
-    .dropdown-item {
-      cursor: pointer;
-      display: block !important;
-      padding: 8px 16px !important;
-      font-size: 13.5px !important;
-      font-weight: 500 !important;
-      color: #334155 !important;
-      text-decoration: none !important;
-      transition: background 0.15s ease, color 0.15s ease !important;
-    }
-    .dropdown-item:hover {
-      background-color: #f1f5f9 !important;
-      color: #0050e5 !important;
-    }
-    ${cleanCombinedStyles}
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('click', function(e) {
-      // 1. Dropdown Toggle Click Handler
-      var dropdownToggle = e.target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]');
-      if (dropdownToggle) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        var parentDropdown = dropdownToggle.closest('.dropdown');
-        var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
-        if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
-          document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-            m.classList.remove('show');
-            m.style.display = 'none';
-          });
-          document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-            t.setAttribute('aria-expanded', 'false');
-          });
-          if (!isAlreadyOpen) {
-            menu.classList.add('show');
-            menu.style.display = 'block';
-            dropdownToggle.setAttribute('aria-expanded', 'true');
-          }
-        }
-        return;
-      }
-
-      // 2. Dropdown Item Click Handler
-      var dropdownItem = e.target.closest('.dropdown-item');
-      if (dropdownItem) {
-        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
-        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
-          return;
-        }
-      }
-
-      // 3. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-          m.classList.remove('show');
-          m.style.display = 'none';
-        });
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-          t.setAttribute('aria-expanded', 'false');
-        });
-      }
-
-      // 4. Regular Navigation Links
-      var a = e.target.closest('a');
-      if (a && !a.classList.contains('dropdown-toggle')) {
-        var href = (a.getAttribute('href') || '').trim();
-        if (!href || href === '#' || href.startsWith('javascript:')) {
-          e.preventDefault();
-          return;
-        }
-        e.preventDefault();
-        window.parent.postMessage({ type: 'DEMO_NAV', href: href, text: a.textContent || '' }, '*');
-        return;
-      }
-
-      // 4. Cart / Add Buttons
-      var btn = e.target.closest('button, .btn');
-      if (btn) {
-        var txt = (btn.textContent || '').toLowerCase();
-        if (txt.includes('cart') || txt.includes('add')) {
-          e.preventDefault();
-          window.parent.postMessage({ type: 'DEMO_CART' }, '*');
-        }
-      }
-    });
-  <\/script>
+  ${activeHeadTagsMarkup}
+  ${cleanCombinedStyles ? `<style>\n${cleanCombinedStyles}\n</style>` : ''}
 </head>
 <body>
+  ${activeBodyOpenTagsMarkup}
   ${combinedHtml}
-  ${cleanCombinedJs ? `\n  <script>\n    ${cleanCombinedJs}\n  <\/script>` : ''}
+  ${cleanCombinedJs ? `\n  <script>\n${cleanCombinedJs}\n  </script>` : ''}
+  ${activeFooterTagsMarkup}
 </body>
 </html>`;
     this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
@@ -3347,7 +3488,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     if (!target) return false;
     const v = (target.variantCode || target.id || '').toLowerCase();
     const name = (target.name || '').toLowerCase();
-    return v.includes('detail') || v.includes('single') || name.includes('detail') || name.includes('single');
+    const cat = (target.category || '').toLowerCase();
+    return cat === 'blog_detail' || v.includes('detail') || v.includes('single') || name.includes('detail') || name.includes('single');
   }
 
   /**
@@ -3720,8 +3862,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    */
   initMonacoCssEditor(): void {
     if (!this.activePreviewItem) return;
-    if (!this.activePreviewItem.cssStyles || !this.activePreviewItem.cssStyles.trim()) {
-      this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    if (this.activePreviewItem.cssStyles === undefined || this.activePreviewItem.cssStyles === null) {
+      this.activePreviewItem.cssStyles = '';
     }
     setTimeout(() => {
       const container = this.monacoCssContainer?.nativeElement;
@@ -3776,7 +3918,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    * Initializes or updates the Monaco Editor instance for inspecting JavaScript logic with code folding.
    */
   initMonacoJsEditor(): void {
-    if (!this.activePreviewItem || !this.activePreviewItem.jsScript) return;
+    if (!this.activePreviewItem) return;
     setTimeout(() => {
       const container = this.monacoJsContainer?.nativeElement;
       if (!container || !container.isConnected) return;
@@ -3827,12 +3969,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Initializes starter scoped CSS with architectural guidance
+   * Initializes starter scoped CSS
    * and mounts or refreshes the Monaco CSS editor.
    */
   initializeTemplateCss(): void {
     if (!this.activePreviewItem) return;
-    this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    this.activePreviewItem.cssStyles = this.activePreviewItem.cssStyles || '';
     if (this.monacoInstanceCss) {
       this.monacoInstanceCss.setValue(this.activePreviewItem.cssStyles);
     } else {
@@ -3842,12 +3984,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Initializes boilerplate JavaScript with architectural guidance
+   * Initializes starter JavaScript
    * and mounts the Monaco JS editor.
    */
   initializeTemplateJs(): void {
     if (!this.activePreviewItem) return;
-    this.activePreviewItem.jsScript = this.DEFAULT_JS_GUIDE;
+    this.activePreviewItem.jsScript = this.activePreviewItem.jsScript || '';
     this.initMonacoJsEditor();
     this.updateSinglePreviewHtml();
   }
@@ -3902,34 +4044,217 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  insertMainMenuItemsLoopAtModalCursor(): void {
-    const loopSnippet = `{{#each MainMenuItems}}
-<li class="nav-item">
-  <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
-</li>
+  /**
+   * Inserts a multi-zone navigation items loop snippet into the HTML editor.
+   * @param zone 'first' | 'middle' | 'last' | 'all'
+   */
+  insertNavItemsZoneLoopAtModalCursor(zone: 'first' | 'middle' | 'last' | 'all' = 'all'): void {
+    const loopTag = zone === 'all' ? '{{#each NavItems}}' : `{{#each NavItems="${zone}"}}`;
+    const dropdownAlign = zone === 'last' ? ' dropdown-menu-end' : '';
+
+    const loopSnippet = `${loopTag}
+  {{#if IsDropdown}}
+    <li class="nav-item dropdown {{ CustomClass }}">
+      <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        {{ Title }}
+      </a>
+      <ul class="dropdown-menu${dropdownAlign}">
+        {{#each Pages}}
+          <li>
+            <a class="dropdown-item {{ CustomClass }}" href="{{ Url }}">{{ Title }}</a>
+          </li>
+        {{/each}}
+      </ul>
+    </li>
+  {{else}}
+    <li class="nav-item {{ CustomClass }}">
+      <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+    </li>
+  {{/if}}
 {{/each}}`;
     this.insertTokenAtModalCursor(loopSnippet);
   }
 
-  insertMenuDropdownsLoopAtModalCursor(): void {
-    const loopSnippet = `{{#each MenuDropdowns}}
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    {{ Title }}
-  </a>
-  <ul class="dropdown-menu shadow-sm border-0 py-2">
-    {{#each Pages}}
-    <li><a class="dropdown-item py-2 px-3 fw-medium" href="{{ Url }}">{{ Title }}</a></li>
-    {{/each}}
-  </ul>
-</li>
+  /**
+   * Inserts a topbar utility links loop snippet into the HTML editor.
+   */
+  insertTopBarPagesLoopAtModalCursor(): void {
+    const loopSnippet = `{{#each MainMenuItems="top"}}
+  <a href="{{ Url }}" class="top-utility-link {{ CustomClass }}">{{ Title }}</a>
 {{/each}}`;
     this.insertTokenAtModalCursor(loopSnippet);
+  }
+
+  /**
+   * Intelligently analyzes the current HTML markup in the active template editor,
+   * detects topbar links, brand logos, navbars, dropdowns, and CTA buttons,
+   * and automatically injects model-accurate Handlebars placeholders while preserving 100% of original CSS classes and attributes.
+   */
+  autoInjectMenuPlaceholders(): void {
+    const currentHtml = this.monacoInstanceHtml 
+      ? this.monacoInstanceHtml.getValue() 
+      : (this.activePreviewItem?.htmlTemplate || '');
+
+    if (!currentHtml || !currentHtml.trim()) {
+      this.toast.warning('Please paste or write your menu HTML markup into the editor first.');
+      return;
+    }
+
+    let transformed = currentHtml;
+    let transformationsCount = 0;
+
+    // 1. Detect Brand Logo (e.g. <a class="navbar-brand" href="..."> <img src="..." alt="..."> </a>)
+    const brandImgRegex = /(<a\b[^>]*\bclass=["'][^"']*\b(?:navbar-brand|brand|logo)\b[^"']*["'][^>]*>)([\s\S]*?)(<\/a>)/i;
+    if (brandImgRegex.test(transformed)) {
+      transformed = transformed.replace(brandImgRegex, (_m: string, openTag: string, innerContent: string, closeTag: string) => {
+        // Swap href with {{ HomeUrl }}
+        let newOpen = openTag.replace(/\bhref=["'][^"']*["']/i, 'href="{{ HomeUrl }}"');
+        if (!newOpen.includes('href=')) {
+          newOpen = newOpen.replace('<a', '<a href="{{ HomeUrl }}"');
+        }
+
+        // Swap img src and alt
+        let newInner = innerContent.replace(/<img\b([^>]*)>/i, (_imgM: string, imgAttrs: string) => {
+          let updatedAttrs = imgAttrs;
+          if (/\bsrc=["'][^"']*["']/i.test(updatedAttrs)) {
+            updatedAttrs = updatedAttrs.replace(/\bsrc=["'][^"']*["']/i, 'src="{{ BrandLogo }}"');
+          } else {
+            updatedAttrs = ` src="{{ BrandLogo }}"` + updatedAttrs;
+          }
+          if (/\balt=["'][^"']*["']/i.test(updatedAttrs)) {
+            updatedAttrs = updatedAttrs.replace(/\balt=["'][^"']*["']/i, 'alt="{{ BrandName }}"');
+          } else {
+            updatedAttrs += ` alt="{{ BrandName }}"`;
+          }
+          return `<img${updatedAttrs}>`;
+        });
+
+        transformationsCount++;
+        return `${newOpen}${newInner}${closeTag}`;
+      });
+    }
+
+    // 2. Detect TopBar / Utility Links
+    const topbarRegex = /(<(?:div|nav)\b[^>]*\bclass=["'][^"']*(?:topbar|top-bar|top-nav|utility|top-utility)[^"']*["'][^>]*>)([\s\S]*?)(<\/(?:div|nav)>)/i;
+    if (topbarRegex.test(transformed) && !transformed.includes('MainMenuItems="top"')) {
+      transformed = transformed.replace(topbarRegex, (fullMatch: string, openTag: string, innerContent: string, closeTag: string) => {
+        const linksRegex = /(<div\b[^>]*\bclass=["'][^"']*(?:links|utility-links|top-links|nav-links)[^"']*["'][^>]*>)([\s\S]*?)(<\/div>)/i;
+        if (linksRegex.test(innerContent)) {
+          innerContent = innerContent.replace(linksRegex, (_lm: string, lOpen: string, _lInner: string, lClose: string) => {
+            transformationsCount++;
+            return `${lOpen}\n      {{#each MainMenuItems="top"}}\n        <a href="{{ Url }}" class="top-nav-link {{ CustomClass }}">{{ Title }}</a>\n      {{/each}}\n      <a href="{{ LoginUrl }}" class="top-auth-link"><i class="fa-regular fa-user me-1"></i> Sign In</a>\n    ${lClose}`;
+          });
+        }
+        return `${openTag}${innerContent}${closeTag}`;
+      });
+    }
+
+    // 3. Detect Main Navbar List (<ul> with navbar-nav or nav)
+    const hasCtaArea = /(?:navbar-actions|nav-actions|header-actions|nav-cta|btn)/i.test(transformed);
+    const navbarNavRegex = /(<ul\b[^>]*\bclass=["'][^"']*\b(?:navbar-nav|nav-menu|menu-list|site-nav)\b[^"']*["'][^>]*>)([\s\S]*?)(<\/ul>)/i;
+    if (navbarNavRegex.test(transformed) && !transformed.includes('NavItems')) {
+      transformed = transformed.replace(navbarNavRegex, (_m: string, openTag: string, _inner: string, closeTag: string) => {
+        transformationsCount++;
+        const loginNavLi = !hasCtaArea ? `\n      <li class="nav-item"><a class="nav-link" href="{{ LoginUrl }}">{{ LoginText }}</a></li>` : '';
+        return `${openTag}
+      {{#each NavItems="first"}}
+        {{#if IsDropdown}}
+          <li class="nav-item dropdown {{ CustomClass }}">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{ Title }}</a>
+            <ul class="dropdown-menu">
+              {{#each Pages}}
+                <li><a class="dropdown-item {{ CustomClass }}" href="{{ Url }}">{{ Title }}</a></li>
+              {{/each}}
+            </ul>
+          </li>
+        {{else}}
+          <li class="nav-item {{ CustomClass }}">
+            <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+          </li>
+        {{/if}}
+      {{/each}}
+
+      {{#each NavItems="middle"}}
+        {{#if IsDropdown}}
+          <li class="nav-item dropdown {{ CustomClass }}">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{ Title }}</a>
+            <ul class="dropdown-menu">
+              {{#each Pages}}
+                <li><a class="dropdown-item {{ CustomClass }}" href="{{ Url }}">{{ Title }}</a></li>
+              {{/each}}
+            </ul>
+          </li>
+        {{else}}
+          <li class="nav-item {{ CustomClass }}">
+            <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+          </li>
+        {{/if}}
+      {{/each}}
+
+      {{#each NavItems="last"}}
+        {{#if IsDropdown}}
+          <li class="nav-item dropdown {{ CustomClass }}">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ Title }}</a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {{#each Pages}}
+                <li><a class="dropdown-item {{ CustomClass }}" href="{{ Url }}">{{ Title }}</a></li>
+              {{/each}}
+            </ul>
+          </li>
+        {{else}}
+          <li class="nav-item {{ CustomClass }}">
+            <a class="nav-link" href="{{ Url }}">{{ Title }}</a>
+          </li>
+        {{/if}}
+      {{/each}}${loginNavLi}
+    ${closeTag}`;
+      });
+    }
+
+    // 4. Detect Navbar CTA Buttons & Login link
+    const ctaContainerRegex = /(<(?:div|div|span)\b[^>]*\bclass=["'][^"']*(?:navbar-actions|nav-actions|header-actions|nav-cta)[^"']*["'][^>]*>)([\s\S]*?)(<\/(?:div|div|span)>)/i;
+    if (ctaContainerRegex.test(transformed) && !transformed.includes('MenuCtaButtons')) {
+      transformed = transformed.replace(ctaContainerRegex, (_m: string, openTag: string, _inner: string, closeTag: string) => {
+        transformationsCount++;
+        return `${openTag}
+      <a class="nav-link auth-link" href="{{ LoginUrl }}">{{ LoginText }}</a>
+      {{#each MenuCtaButtons}}
+        <a class="btn btn-primary btn-sm rounded-pill px-3 {{ CustomClass }}" href="{{ Url }}">{{ Title }}</a>
+      {{/each}}
+    ${closeTag}`;
+      });
+    }
+
+    // Apply transformed HTML to active editor
+    if (this.monacoInstanceHtml) {
+      this.monacoInstanceHtml.setValue(transformed);
+      if (this.activePreviewItem) {
+        this.activePreviewItem.htmlTemplate = transformed;
+      }
+      this.onModalHtmlChange();
+    } else if (this.activePreviewItem) {
+      this.activePreviewItem.htmlTemplate = transformed;
+      this.onModalHtmlChange();
+    }
+
+    if (transformationsCount > 0) {
+      this.toast.success(`Smart Auto-Injector converted ${transformationsCount} navbar zones into dynamic placeholders!`);
+    } else {
+      this.toast.info('Navbar placeholders are already present in your markup.');
+    }
+  }
+
+  insertMainMenuItemsLoopAtModalCursor(): void {
+    this.insertNavItemsZoneLoopAtModalCursor('all');
+  }
+
+  insertMenuDropdownsLoopAtModalCursor(): void {
+    this.insertNavItemsZoneLoopAtModalCursor('middle');
   }
 
   insertMenuCtaButtonsLoopAtModalCursor(): void {
     const loopSnippet = `{{#each MenuCtaButtons}}
-<a href="{{ Url }}" class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">{{ Title }}</a>
+<a href="{{ Url }}" class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm {{ CustomClass }}">{{ Title }}</a>
 {{/each}}`;
     this.insertTokenAtModalCursor(loopSnippet);
   }
@@ -4277,8 +4602,183 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.updateSinglePreviewHtml();
   }
 
-  saveTemplateHtml(): void {
+  // Pre-Save Architecture Validation State
+  showPreSaveWarningModal: boolean = false;
+  preSaveValidationWarnings: Array<{ token: string; title: string; impact: string; category: string }> = [];
+
+  /**
+   * Validates an HTML template against its target category to verify that essential
+   * dynamic placeholders and loops are present to safeguard live website functionality.
+   * @param category The template category (menu, footer, body, hero, blog, breadcrumb).
+   * @param html The HTML template string to evaluate.
+   * @returns An array of architectural warnings with plain-English impact descriptions.
+   */
+  validateTemplatePlaceholders(category: string, html: string): Array<{ token: string; title: string; impact: string; category: string }> {
+    const warnings: Array<{ token: string; title: string; impact: string; category: string }> = [];
+    if (!html) return warnings;
+
+    const cat = (category || '').toLowerCase().trim();
+    const cleanHtml = html;
+
+    // 1. Navigation / Menu Category
+    if (cat === 'menu' || cat === 'header') {
+      const hasBrand = /\{\{\s*(?:BrandIdentity|BrandName|BrandLogo|LogoUrl)\s*\}\}/i.test(cleanHtml);
+      if (!hasBrand) {
+        warnings.push({
+          token: '{{ BrandLogo }} / {{ BrandName }}',
+          title: 'Missing Brand Identity Placeholder',
+          impact: 'Your website logo and business title will not update dynamically when changed in Brand Settings.',
+          category: 'Navigation Menu'
+        });
+      }
+
+      const hasMenuLoop = /(?:\{\{#each\s+NavItems\s*=\s*["'](?:first|middle|last)["']\}\}|\{\{#each\s+(?:MainMenuItems|MenuDropdowns)\b)/i.test(cleanHtml);
+      if (!hasMenuLoop) {
+        warnings.push({
+          token: '{{#each NavItems="first"}} ... {{/each}}',
+          title: 'Missing Dynamic Navigation Loops',
+          impact: 'Pages created in CMS Pages with "Show in Header" will NOT appear in this navbar.',
+          category: 'Navigation Menu'
+        });
+      }
+
+      const hasAuthBtn = /\{\{\s*(?:LoginButton|LoginUrl|LoginText|AuthUrl|PortalUrl)\s*\}\}/i.test(cleanHtml);
+      if (!hasAuthBtn) {
+        warnings.push({
+          token: '{{ LoginUrl }} / {{ LoginText }}',
+          title: 'Missing Dynamic Authentication / Console Link',
+          impact: 'Visitors and administrators will not have a role-aware "Sign In" or "Console" button in this navbar.',
+          category: 'Navigation Menu'
+        });
+      }
+    }
+
+    // 2. Footer Category
+    if (cat === 'footer') {
+      const hasPageLoop = /\{\{#each\s+(?:FooterCategories|CategoryPages|TaggedPages)\b/i.test(cleanHtml);
+      if (!hasPageLoop) {
+        warnings.push({
+          token: '{{#each TaggedPages}} / {{#each FooterCategories}} / {{#each CategoryPages}}',
+          title: 'Missing Dynamic Page & Tagged Link Loops',
+          impact: 'Pages assigned to categories or tags (e.g. Services, Resources, Quick Links) with "Show in Footer" will NOT appear in this footer.',
+          category: 'Footer'
+        });
+      }
+
+      const hasLegalLoop = /\{\{#each\s+LegalPages\}\}/i.test(cleanHtml);
+      if (!hasLegalLoop) {
+        warnings.push({
+          token: '{{#each LegalPages}}',
+          title: 'Missing Legal Compliance Links Loop',
+          impact: 'Mandatory compliance pages (Privacy Policy, Terms of Service, Cookie Policy) will not render dynamically in this footer.',
+          category: 'Footer'
+        });
+      }
+
+      const hasCopyright = /\{\{\s*(?:Copyright|Year)\s*\}\}/i.test(cleanHtml);
+      if (!hasCopyright) {
+        warnings.push({
+          token: '{{ Copyright }} / {{ Year }}',
+          title: 'Missing Dynamic Copyright & Year',
+          impact: 'The copyright year and organization name will not update automatically from Brand Settings.',
+          category: 'Footer'
+        });
+      }
+
+      const hasBrand = /\{\{\s*(?:BrandIdentity|BrandName|LogoUrl)\s*\}\}/i.test(cleanHtml);
+      if (!hasBrand) {
+        warnings.push({
+          token: '{{ BrandIdentity }} / {{ BrandName }}',
+          title: 'Missing Brand Identity in Footer',
+          impact: 'The footer logo and business title will not update when edited in Brand Settings.',
+          category: 'Footer'
+        });
+      }
+    }
+
+    // 3. Body / Section / Repeater Category
+    if (cat === 'body' || cat === 'feature' || cat === 'testimonial' || cat === 'pricing') {
+      const hasItemsLoop = /\{\{#each\s+(?:PageSectionLists|Items|SectionLists)\}\}/i.test(cleanHtml);
+      const isMultiCardTemplate = /col-md-|col-lg-|card|item|slide/i.test(cleanHtml);
+      if (!hasItemsLoop && isMultiCardTemplate) {
+        warnings.push({
+          token: '{{#each PageSectionLists}} / {{#each Items}}',
+          title: 'Missing Child Items Repeater Loop',
+          impact: 'Child items (feature cards, team members, pricing tiers, slides) added in the Page Section editor will NOT render dynamically.',
+          category: 'Page Section'
+        });
+      }
+
+      const hasTitle = /\{\{\s*(?:Title|MiniTitle)\s*\}\}/i.test(cleanHtml);
+      if (!hasTitle) {
+        warnings.push({
+          token: '{{ Title }} / {{ MiniTitle }}',
+          title: 'Missing Section Title Placeholder',
+          impact: 'Changing the section headline in the CMS Page Editor will not reflect on the live website.',
+          category: 'Page Section'
+        });
+      }
+    }
+
+    // 4. Blog Category
+    if (cat === 'blog') {
+      const isDetail = this.isBlogDetailTemplate();
+      if (isDetail) {
+        const hasBody = /\{\{\s*(?:Article\.Body|Article\.Title)\s*\}\}|\{\{\{\s*Article\.Body\s*\}\}\}/i.test(cleanHtml);
+        if (!hasBody) {
+          warnings.push({
+            token: '{{ Article.Title }} / {{{ Article.Body }}}',
+            title: 'Missing Single Article Content Tokens',
+            impact: 'The published article title and rich-text body will not display on this article post page.',
+            category: 'Blog Article'
+          });
+        }
+      } else {
+        const hasArticlesLoop = /\{\{#each\s+Articles\}\}/i.test(cleanHtml);
+        if (!hasArticlesLoop) {
+          warnings.push({
+            token: '{{#each Articles}}',
+            title: 'Missing Articles Showcase Loop',
+            impact: 'Published blog posts will not appear in this article grid showcase.',
+            category: 'Blog Archive'
+          });
+        }
+      }
+    }
+
+    // 5. Breadcrumbs Category
+    if (cat === 'breadcrumb') {
+      const hasBreadcrumb = /\{\{\s*BreadcrumbTrail\s*\}\}|\{\{#each\s+(?:Breadcrumbs|BreadcrumbTrail|BreadcrumbItems)\}\}/i.test(cleanHtml);
+      if (!hasBreadcrumb) {
+        warnings.push({
+          token: '{{ BreadcrumbTrail }} / {{#each Breadcrumbs}}',
+          title: 'Missing Dynamic Breadcrumb Trail',
+          impact: 'Dynamic page hierarchy trails (Home > Category > Page) will not render in this banner.',
+          category: 'Breadcrumbs'
+        });
+      }
+    }
+
+    return warnings;
+  }
+
+  saveTemplateHtml(forceSave: boolean = false): void {
     if (!this.activePreviewItem) return;
+
+    // Check for architectural warnings unless user clicked "Proceed & Save Anyway"
+    if (!forceSave) {
+      const warnings = this.validateTemplatePlaceholders(
+        this.activePreviewItem.category,
+        this.activePreviewItem.htmlTemplate || ''
+      );
+      if (warnings.length > 0) {
+        this.preSaveValidationWarnings = warnings;
+        this.showPreSaveWarningModal = true;
+        return;
+      }
+    }
+
+    this.showPreSaveWarningModal = false;
     this.savingTemplateHtml = true;
 
     const payload = {
@@ -4306,6 +4806,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         this.toast.error(errMsg);
       }
     });
+  }
+
+  closePreSaveWarningModal(): void {
+    this.showPreSaveWarningModal = false;
+    this.preSaveValidationWarnings = [];
   }
 
   addBlogArticle(): void {
@@ -4605,6 +5110,171 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     return this.hydrationService.enforceOzikolCredit(html);
   }
 
+  /**
+   * Intelligently transforms the pasted raw navbar HTML into dynamic Ozikol
+   * Handlebars placeholders using Central Google Gemini 2.5 Flash / DeepSeek AI.
+   * Preserves 100% of original CSS classes, IDs, togglers, and layout structure.
+   */
+  aiTransformMenuPlaceholders(targetItem?: any): void {
+    const item = targetItem || this.activePreviewItem;
+    const currentHtml = this.monacoInstanceHtml 
+      ? this.monacoInstanceHtml.getValue() 
+      : (item?.htmlTemplate || '');
+
+    const rawHtml = (currentHtml || '').trim();
+    if (!rawHtml) {
+      this.toast.warning('Please paste or type raw navbar HTML into the editor first.');
+      return;
+    }
+
+    this.isAiTransforming = true;
+    this.toast.info('AI is analyzing navbar structure and transforming placeholders...');
+
+    const prompt = `You are a surgical code transformer for the Ozikol BCC CMS platform.
+
+YOUR ONLY MISSION:
+Replace SPECIFIC menu placeholders in the provided raw HTML and leave EVERY SINGLE OTHER LINE 100% UNTOUCHED.
+
+SURGICAL REPLACEMENT TARGETS ONLY:
+1. LOGO:
+   - In any logo anchor (desktop or mobile), change href to "{{ HomeUrl }}" and replace the logo content with:
+     {{#if BrandLogo}}
+       <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="[keep original classes]" />
+     {{else}}
+       <span class="[keep original classes]">{{ BrandName }}</span>
+     {{/if}}
+
+2. NAVIGATION LINKS LIST (EVERY navigation <ul> - Desktop navbar, Sticky header clone, and Off-Canvas Mobile Drawer <ul>):
+   - Whenever navigation <ul> elements are repeated or separate between desktop and mobile drawers: DO NOT ASSUME, SUMMARIZE, OR CUT OFF.
+   - Replace the static <li> links inside EVERY SINGLE navigation <ul> with the 3 sequential zones:
+     {{#each NavItems="first"}}
+       {{#if IsDropdown}}
+         <li class="[original dropdown classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original toggle classes]">{{ Title }} [preserve original chevron/caret if any]</a>
+           {{#if Pages}}
+             <ul class="[original dropdown-menu classes]">
+               {{#each Pages}}
+                 <li><a href="{{ Url }}" class="[original item classes] {{ CustomClass }}">{{ Title }}</a></li>
+               {{/each}}
+             </ul>
+           {{/if}}
+         </li>
+       {{else}}
+         <li class="[original classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original classes]">{{ Title }}</a>
+         </li>
+       {{/if}}
+     {{/each}}
+
+     {{#each NavItems="middle"}}
+       {{#if IsDropdown}}
+         <li class="[original dropdown classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original toggle classes]">{{ Title }} [preserve original chevron/caret if any]</a>
+           {{#if Pages}}
+             <ul class="[original dropdown-menu classes]">
+               {{#each Pages}}
+                 <li><a href="{{ Url }}" class="[original item classes] {{ CustomClass }}">{{ Title }}</a></li>
+               {{/each}}
+             </ul>
+           {{/if}}
+         </li>
+       {{else}}
+         <li class="[original classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original classes]">{{ Title }}</a>
+         </li>
+       {{/if}}
+     {{/each}}
+
+     {{#each NavItems="last"}}
+       {{#if IsDropdown}}
+         <li class="[original dropdown classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original toggle classes]">{{ Title }} [preserve original chevron/caret if any]</a>
+           {{#if Pages}}
+             <ul class="[original dropdown-menu classes]">
+               {{#each Pages}}
+                 <li><a href="{{ Url }}" class="[original item classes] {{ CustomClass }}">{{ Title }}</a></li>
+               {{/each}}
+             </ul>
+           {{/if}}
+         </li>
+       {{else}}
+         <li class="[original classes] {{ CustomClass }}">
+           <a href="{{ Url }}" class="[original classes]">{{ Title }}</a>
+         </li>
+       {{/if}}
+     {{/each}}
+
+3. CTA BUTTONS & DYNAMIC AUTHENTICATION (LOGIN) POSITIONING:
+   - Condition A (Navbar originally HAS a CTA button, e.g. [Add Listing], [Book Now], [Get Started]):
+     * Replace the CTA button with:
+       {{#each MenuCtaButtons}}
+         <li class="[original button classes] {{ CustomClass }}"><a href="{{ Url }}">{{ Title }}</a></li>
+       {{/each}}
+     * Include the dynamic Sign In link alongside the CTA area: href="{{ LoginUrl }}" with {{ LoginText }}.
+   - Condition B (Navbar has NO CTA button):
+     * DO NOT invent or add {{#each MenuCtaButtons}}.
+     * Instead, append the dynamic Sign In link as the final navigation item inside the <ul> list (right after NavItems="last"):
+       <li class="[original nav-item classes]"><a href="{{ LoginUrl }}" class="[original nav-link classes]">{{ LoginText }}</a></li>
+
+4. TOPBAR SITE LINKS:
+   - ONLY IF the topbar has site navigation page links, replace them with:
+     {{#each MainMenuItems="top"}}<a href="{{ Url }}" class="{{ CustomClass }}">{{ Title }}</a>{{/each}}
+
+5. ABSOLUTE ZERO-TOUCH & ZERO-TRUNCATION RULE FOR EVERYTHING ELSE:
+   - DO NOT TOUCH or replace phone numbers, email mailto links, physical addresses, support widgets, search inputs, language switchers, social icons, cart drawers (#ltn__utilize-cart-menu), or overlay backdrops (.ltn__utilize-overlay). Keep them 100% verbatim static HTML as pasted.
+   - DO NOT DROP, SUMMARIZE, OR TRUNCATE any sibling elements (like mobile drawers or cart menus) after closing header tags. Return 100% of the complete document.
+   - NEVER invent phantom tokens like {{ Brand.Email }}, {{ Brand.Phone }}, {{ Brand.Address }}, {{ Brand.LogoUrl }}, or {{ PageCategories }}.
+
+6. OUTPUT:
+   - Output ONLY the complete transformed raw HTML. No explanations, no markdown fences.`;
+
+    const payload = {
+      prompt,
+      rawHtml,
+      rawCss: item?.cssStyles || '',
+      category: 'menu',
+      currentTemplateName: item?.name || 'Navigation Menu',
+      pageRoute: '/content/console/templates',
+      pageTitle: 'My Installed Templates'
+    };
+
+    this.api.post<any>('ContentApi/templates/ai-copilot', payload).subscribe({
+      next: (res) => {
+        this.isAiTransforming = false;
+        let transformed = res?.data?.htmlTemplate || res?.data?.codeResult?.htmlTemplate || '';
+
+        // If AI returned text with markdown code fences, strip them
+        if (transformed) {
+          transformed = transformed.replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim();
+          if (item) {
+            item.htmlTemplate = transformed;
+          }
+          if (this.monacoInstanceHtml) {
+            this.monacoInstanceHtml.setValue(transformed);
+          }
+          this.onPreviewContentChange();
+          this.toast.success('Successfully transformed navbar with smart AI menu placeholders!');
+        } else {
+          this.toast.warning('AI response did not return HTML code. Please try again.');
+        }
+      },
+      error: (err) => {
+        this.isAiTransforming = false;
+        const msg = err?.error?.message || err?.message || 'Failed to reach AI service.';
+        this.toast.error(`AI Transformation error: ${msg}`);
+      }
+    });
+  }
+
+  /**
+   * One-click trigger from the Template Architecture Advisory warning modal
+   * to automatically inject all missing dynamic placeholders using AI.
+   */
+  autoInjectFromAdvisory(): void {
+    this.closePreSaveWarningModal();
+    this.aiTransformMenuPlaceholders();
+  }
+
   copyCode(content: string, type: string): void {
     if (!content) return;
     navigator.clipboard.writeText(content).then(() => {
@@ -4841,8 +5511,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             if (parsed?.items && Array.isArray(parsed.items)) ctx.items = parsed.items;
           } catch (e) {}
         }
-      } else if (b.category === 'blog') {
-        if (this.isBlogDetailTemplate(b)) {
+      } else if (b.category === 'blog' || b.category === 'blog_detail') {
+        if (b.category === 'blog_detail' || this.isBlogDetailTemplate(b)) {
           ctx = {
             ...ctx,
             ...this.previewBlogDetailContent,
@@ -4963,148 +5633,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  ${activeHeadTagsMarkup ? activeHeadTagsMarkup : `
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-  `}
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-    .dropdown {
-      position: relative !important;
-    }
-    .dropdown-menu {
-      display: none;
-    }
-    .dropdown-menu.show {
-      display: block !important;
-      position: absolute !important;
-      top: 100% !important;
-      left: 0 !important;
-      z-index: 99999 !important;
-      min-width: 14rem !important;
-      margin-top: 6px !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      background-color: #ffffff !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 8px !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-      padding: 6px 0 !important;
-    }
-    .dropdown-item {
-      cursor: pointer;
-      display: block !important;
-      padding: 8px 16px !important;
-      font-size: 13.5px !important;
-      font-weight: 500 !important;
-      color: #334155 !important;
-      text-decoration: none !important;
-      transition: background 0.15s ease, color 0.15s ease !important;
-    }
-    .dropdown-item:hover {
-      background-color: #f1f5f9 !important;
-      color: #0050e5 !important;
-    }
-    ${combinedStyles}
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  ${activeHeadTagsMarkup}
+  ${combinedStyles ? `<style>\n${combinedStyles}\n</style>` : ''}
 </head>
 <body>
   ${activeBodyOpenTagsMarkup}
   ${combinedHtml}
+  ${combinedJs ? `\n  <script>\n${combinedJs}\n  </script>` : ''}
   ${activeFooterTagsMarkup}
-  <script>
-    document.addEventListener('click', function(e) {
-      // 1. Dropdown Toggle Click Handler
-      var dropdownToggle = e.target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]');
-      if (dropdownToggle) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        var parentDropdown = dropdownToggle.closest('.dropdown');
-        var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
-        if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
-          document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-            m.classList.remove('show');
-            m.style.display = 'none';
-          });
-          document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-            t.setAttribute('aria-expanded', 'false');
-          });
-          if (!isAlreadyOpen) {
-            menu.classList.add('show');
-            menu.style.display = 'block';
-            dropdownToggle.setAttribute('aria-expanded', 'true');
-          }
-        }
-        return;
-      }
-
-      // 2. Dropdown Item Click Handler
-      var dropdownItem = e.target.closest('.dropdown-item');
-      if (dropdownItem) {
-        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
-        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-          m.classList.remove('show');
-          m.style.display = 'none';
-        });
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-          t.setAttribute('aria-expanded', 'false');
-        });
-        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
-          e.preventDefault();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
-          return;
-        }
-      }
-
-      // 3. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
-          m.classList.remove('show');
-          m.style.display = 'none';
-        });
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
-          t.setAttribute('aria-expanded', 'false');
-        });
-      }
-
-      // 4. Regular Navigation Links
-      var a = e.target.closest('a');
-      if (a && !a.classList.contains('dropdown-toggle')) {
-        var href = (a.getAttribute('href') || '').trim();
-        if (!href || href === '#' || href.startsWith('javascript:')) {
-          e.preventDefault();
-          return;
-        }
-        e.preventDefault();
-        window.parent.postMessage({ type: 'DEMO_NAV', href: href, text: a.textContent || '' }, '*');
-        return;
-      }
-
-      // 4. Cart / Add Buttons
-      var btn = e.target.closest('button, .btn');
-      if (btn) {
-        var txt = (btn.textContent || '').toLowerCase();
-        if (txt.includes('cart') || txt.includes('add')) {
-          e.preventDefault();
-          window.parent.postMessage({ type: 'DEMO_CART' }, '*');
-        }
-      }
-    });
-  <\/script>
-</head>
-<body>
-  ${combinedHtml}
-  ${combinedJs ? `\n  <script>\n    ${combinedJs}\n  <\/script>` : ''}
 </body>
 </html>`;
 
@@ -5226,9 +5762,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.showUninstallModal = true;
     this.deleteLinkedContentCheckbox = false;
     this.linkedSectionsList = [];
-    if (item.dbId) {
+
+    // Resolve identifier: prioritize dbId, then variantCode, templateKey, or id
+    const targetId = item.dbId || item.variantCode || item.id;
+    if (targetId) {
       this.loadingLinkedContent = true;
-      this.api.get<any>(`ContentApi/templates/${item.dbId}/linked-content`).subscribe({
+      this.api.get<any>(`ContentApi/templates/${encodeURIComponent(targetId)}/linked-content`).subscribe({
         next: (res) => {
           this.loadingLinkedContent = false;
           if (res?.data?.linkedSections) {
@@ -5258,31 +5797,161 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const count = this.linkedSectionsList.length;
     this.uninstallingTemplate = true;
 
-    this.installedTemplates = this.installedTemplates.filter(t => t.id !== item.id);
-    this.saveInstalledTemplates();
-    this.applyFilters();
+    // Resolve identifier: prioritize dbId, fallback to variantCode, templateKey, or id
+    const targetId = item.dbId || item.variantCode || item.id;
+    if (!targetId) {
+      this.uninstallingTemplate = false;
+      this.toast.error('Unable to delete: Template identifier missing.');
+      return;
+    }
 
-    if (item.dbId) {
-      this.api.delete<any>(`ContentApi/templates/installed/${item.dbId}?deleteLinkedContent=${cascade}`).subscribe({
-        next: () => {
-          this.uninstallingTemplate = false;
-          if (cascade && count > 0) {
-            this.toast.success(`Template '${item.name}' and ${count} linked section(s) deleted.`);
-          } else {
-            this.toast.success(`Template '${item.name}' uninstalled (linked content preserved).`);
-          }
-          this.closeUninstallModal();
+    this.api.delete<any>(`ContentApi/templates/installed/${encodeURIComponent(targetId)}?deleteLinkedContent=${cascade}`).subscribe({
+      next: (res) => {
+        this.uninstallingTemplate = false;
+
+        // Remove from in-memory list ONLY upon backend confirmation
+        this.installedTemplates = this.installedTemplates.filter(t => 
+          t.id !== item.id && 
+          t.variantCode !== item.variantCode && 
+          (!item.dbId || t.dbId !== item.dbId)
+        );
+        this.saveInstalledTemplates();
+
+        // Clear active references if this template was active
+        const cat = item.category?.toLowerCase();
+        if (cat === 'menu' && (this.activeMenuId === item.id || this.activeMenuId === item.variantCode || this.activeMenuId === item.dbId)) {
+          this.activeMenuId = '';
+          localStorage.removeItem('oz_active_menu_id');
+        } else if (cat === 'hero' && (this.activeHeroId === item.id || this.activeHeroId === item.variantCode || this.activeHeroId === item.dbId)) {
+          this.activeHeroId = '';
+          localStorage.removeItem('oz_active_hero_id');
+        } else if (cat === 'footer' && (this.activeFooterId === item.id || this.activeFooterId === item.variantCode || this.activeFooterId === item.dbId)) {
+          this.activeFooterId = '';
+          localStorage.removeItem('oz_active_footer_id');
+        } else if (cat === 'blog' && (this.activeBlogId === item.id || this.activeBlogId === item.variantCode || this.activeBlogId === item.dbId)) {
+          this.activeBlogId = '';
+          localStorage.removeItem('oz_active_blog_id');
+        }
+
+        this.applyFilters();
+
+        const successMsg = res?.message || (cascade && count > 0
+          ? `Template '${item.name}' and ${count} linked section(s) deleted.`
+          : `Template '${item.name}' uninstalled from database.`);
+        this.toast.success(successMsg);
+        this.closeUninstallModal();
+      },
+      error: (err) => {
+        this.uninstallingTemplate = false;
+        const errorMsg = err?.error?.message || err?.message || `Failed to uninstall template '${item.name}'.`;
+        this.toast.error(errorMsg);
+      }
+    });
+  }
+
+  // ==========================================
+  // AI WEBSITE HEALTH & RUNTIME DIAGNOSTIC INSPECTOR
+  // ==========================================
+
+  showAiHealthModal: boolean = false;
+  isDiagnosingWebsite: boolean = false;
+  diagnosticReport: {
+    healthScore: number;
+    statusTitle: string;
+    criticalIssues: Array<{ title: string; rootCause: string; recommendation: string }>;
+    warnings: Array<{ title: string; rootCause: string; recommendation: string }>;
+    passedChecks: string[];
+  } | null = null;
+
+  runAiWebsiteHealthCheck(): void {
+    this.isDiagnosingWebsite = true;
+
+    // 1. Gather active tags and template metadata from DB state
+    const headTags = this.allCodeInjections
+      .filter(t => t.zone === 'head' && t.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => `#${t.sortOrder} [${t.name}]: ${t.content}`);
+
+    const footerScripts = this.allCodeInjections
+      .filter(t => t.zone === 'footer' && t.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(t => `#${t.sortOrder} [${t.name}]: ${t.content}`);
+
+    const activeMenu = this.getActiveMenu();
+    const activeFooter = this.getActiveFooter();
+    const sim = this.composePageSimulation('home');
+
+    // 2. Execute headless sandbox runtime probe to capture real browser exceptions
+    const capturedErrors: string[] = [];
+    const capturedWarnings: string[] = [];
+
+    const sandboxIframe = document.createElement('iframe');
+    sandboxIframe.style.display = 'none';
+    sandboxIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    document.body.appendChild(sandboxIframe);
+
+    const probeHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>
+    window.onerror = function(msg, url, line, col, err) {
+      window.parent.postMessage({ type: 'OZ_RUNTIME_ERR', msg: msg + (line ? ' (line ' + line + ')' : '') }, '*');
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      window.parent.postMessage({ type: 'OZ_RUNTIME_ERR', msg: 'Unhandled Promise: ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown') }, '*');
+    });
+  </script>
+  ${this.allCodeInjections.filter(t => t.zone === 'head' && t.isActive).sort((a, b) => a.sortOrder - b.sortOrder).map(t => t.content).join('\n')}
+  <style>${sim.combinedStyles}</style>
+</head>
+<body>
+  ${sim.combinedHtml}
+  ${sim.combinedJs ? '<script>' + sim.combinedJs + '</script>' : ''}
+  ${this.allCodeInjections.filter(t => t.zone === 'footer' && t.isActive).sort((a, b) => a.sortOrder - b.sortOrder).map(t => t.content).join('\n')}
+</body>
+</html>`;
+
+    const messageHandler = (e: MessageEvent) => {
+      if (e.data?.type === 'OZ_RUNTIME_ERR') {
+        capturedErrors.push(e.data.msg);
+      }
+    };
+    window.addEventListener('message', messageHandler);
+
+    sandboxIframe.srcdoc = probeHtml;
+
+    // 3. After sandbox evaluation window, dispatch real telemetry to AI Engine
+    setTimeout(() => {
+      window.removeEventListener('message', messageHandler);
+      sandboxIframe.remove();
+
+      const payload = {
+        headerTags: headTags,
+        footerScripts: footerScripts,
+        capturedErrors: capturedErrors,
+        capturedWarnings: capturedWarnings,
+        activeTemplateName: activeMenu?.name || activeFooter?.name || 'Live Workspace Bundle',
+        activeTemplateCategory: activeMenu ? 'Menu / Header' : 'Full Site Bundle',
+        scopedCss: sim.combinedStyles,
+        scopedJs: sim.combinedJs
+      };
+
+      this.api.post<any>('ContentApi/ai/diagnose-runtime', payload).subscribe({
+        next: (res) => {
+          this.isDiagnosingWebsite = false;
+          this.diagnosticReport = res?.data || null;
+          this.showAiHealthModal = true;
         },
-        error: () => {
-          this.uninstallingTemplate = false;
-          this.toast.success(`Template '${item.name}' uninstalled from local library.`);
-          this.closeUninstallModal();
+        error: (err) => {
+          this.isDiagnosingWebsite = false;
+          this.toast.error(err?.error?.message || 'Failed to complete AI diagnostic inspection.');
         }
       });
-    } else {
-      this.uninstallingTemplate = false;
-      this.toast.success(`Template '${item.name}' uninstalled.`);
-      this.closeUninstallModal();
-    }
+    }, 600);
+  }
+
+  closeAiHealthModal(): void {
+    this.showAiHealthModal = false;
   }
 }

@@ -1,263 +1,173 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 {
     /// <summary>
-    /// PageModel for authoring and registering a new UI Marketplace block template definition.
-    /// Manages semantic HTML markup with Mustache tokens, scoped CSS stylesheets, and preview parameters.
+    /// Create page model for authoring a new Master Marketplace Template / Section from scratch.
     /// </summary>
     public class CreateModel : PageModel
     {
-        private readonly MasterCatalogDbContext _dbContext;
+        private readonly MasterCatalogDbContext _masterDb;
+        private readonly ILogger<CreateModel> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateModel"/> class.
         /// </summary>
-        /// <param name="dbContext">Master catalog database context.</param>
-        public CreateModel(MasterCatalogDbContext dbContext)
+        public CreateModel(MasterCatalogDbContext masterDb, ILogger<CreateModel> logger)
         {
-            _dbContext = dbContext;
+            _masterDb = masterDb ?? throw new ArgumentNullException(nameof(masterDb));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        #region Input Model
+
         /// <summary>
-        /// Input model carrying the new template parameters.
+        /// Form input model for template creation.
         /// </summary>
+        public class InputModel
+        {
+            [Required]
+            [MaxLength(150)]
+            public string Name { get; set; } = string.Empty;
+
+            [Required]
+            [MaxLength(100)]
+            public string VariantCode { get; set; } = string.Empty;
+
+            [Required]
+            [MaxLength(50)]
+            public string CategoryKey { get; set; } = "hero";
+
+            [MaxLength(50)]
+            public string? Badge { get; set; } = "New";
+
+            [MaxLength(500)]
+            public string? Description { get; set; }
+
+            [Required]
+            public string HtmlTemplate { get; set; } = string.Empty;
+
+            [Required]
+            public string CssStyles { get; set; } = string.Empty;
+
+            public string? JsScript { get; set; }
+
+            public string? DefaultSectionListsJson { get; set; }
+        }
+
         [BindProperty]
-        public TemplateInputModel Input { get; set; } = new();
+        public InputModel Input { get; set; } = new();
+
+        #endregion
 
         /// <summary>
-        /// Available category options for selection.
+        /// Handles HTTP GET requests.
         /// </summary>
-        public List<SelectListItem> CategoryOptions { get; set; } = new();
-
-        /// <summary>
-        /// Handles HTTP GET requests to prepare the creation form.
-        /// </summary>
-        public async Task<IActionResult> OnGetAsync()
+        public void OnGet()
         {
-            await PopulateCategoriesAsync();
-            return Page();
+            // Provide clean initial template starter
+            Input = new InputModel
+            {
+                Name = "Hero Feature Showcase",
+                VariantCode = $"hero_{DateTime.UtcNow.Ticks % 10000:D4}",
+                CategoryKey = "hero",
+                Badge = "New",
+                Description = "High-impact hero section with dual action buttons and background gradient.",
+                HtmlTemplate = @"<section class=""py-5 bg-dark text-white position-relative overflow-hidden"">
+  <div class=""container py-5"">
+    <div class=""row align-items-center g-5"">
+      <div class=""col-lg-6"">
+        <span class=""badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-medium mb-3"">{{BadgeText}}</span>
+        <h1 class=""display-4 fw-bold mb-3"">{{Title}}</h1>
+        <p class=""lead text-muted mb-4"">{{Description}}</p>
+        <div class=""d-flex flex-wrap gap-3"">
+          <a href=""{{ButtonLink}}"" class=""btn btn-primary btn-lg rounded-pill px-4 fw-bold"">{{ButtonText}}</a>
+          <a href=""{{SecondaryButtonLink}}"" class=""btn btn-outline-light btn-lg rounded-pill px-4"">{{SecondaryButtonText}}</a>
+        </div>
+      </div>
+      <div class=""col-lg-6 text-center"">
+        <img src=""{{ImageUrl}}"" alt=""{{Title}}"" class=""img-fluid rounded-4 shadow-lg"" />
+      </div>
+    </div>
+  </div>
+</section>",
+                CssStyles = @".hero-banner-area section {
+  background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+}",
+                DefaultSectionListsJson = @"[
+  { ""Title"": ""High Performance"", ""Description"": ""Sub-second load times"" },
+  { ""Title"": ""Modular Design"", ""Description"": ""Seamlessly swappable components"" }
+]"
+            };
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to validate and save the new template definition.
+        /// Handles HTTP POST requests to create a new template section.
         /// </summary>
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
             {
-                await PopulateCategoriesAsync();
                 return Page();
+            }
+
+            var category = await _masterDb.MasterMarketplaceCategories
+                .FirstOrDefaultAsync(c => c.CategoryKey.ToLower() == Input.CategoryKey.ToLower(), cancellationToken);
+
+            if (category == null)
+            {
+                category = await _masterDb.MasterMarketplaceCategories.FirstOrDefaultAsync(cancellationToken);
+                if (category == null)
+                {
+                    ModelState.AddModelError(string.Empty, "No marketplace categories configured.");
+                    return Page();
+                }
             }
 
             var cleanVariant = Input.VariantCode.Trim();
 
-            // Verify unique variant code
-            var variantExists = await _dbContext.MasterMarketplaceTemplates
-                .AnyAsync(t => t.VariantCode.ToLower() == cleanVariant.ToLower());
+            var exists = await _masterDb.MasterMarketplaceTemplates
+                .AnyAsync(t => t.VariantCode == cleanVariant, cancellationToken);
 
-            if (variantExists)
+            if (exists)
             {
-                ModelState.AddModelError("Input.VariantCode", $"Variant code '{cleanVariant}' is already registered.");
-                await PopulateCategoriesAsync();
+                ModelState.AddModelError("Input.VariantCode", "A section with this variant code already exists.");
                 return Page();
             }
 
-            var category = await _dbContext.MasterMarketplaceCategories.FindAsync(Input.CategoryId);
-            if (category == null)
-            {
-                ModelState.AddModelError("Input.CategoryId", "Selected marketplace category was not found.");
-                await PopulateCategoriesAsync();
-                return Page();
-            }
-
-            var template = new MasterMarketplaceTemplate
+            var newTemplate = new MasterMarketplaceTemplate
             {
                 Id = Guid.NewGuid(),
                 CategoryId = category.Id,
                 CategoryKey = category.CategoryKey,
                 Name = Input.Name.Trim(),
                 VariantCode = cleanVariant,
-                Tag = string.IsNullOrWhiteSpace(Input.Tag) ? "modern" : Input.Tag.Trim().ToLowerInvariant(),
-                Badge = string.IsNullOrWhiteSpace(Input.Badge) ? null : Input.Badge.Trim(),
+                Tag = "modern",
+                Badge = Input.Badge?.Trim() ?? "New",
                 Description = Input.Description?.Trim(),
-                ThumbnailGradient = string.IsNullOrWhiteSpace(Input.ThumbnailGradient) 
-                    ? "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)" 
-                    : Input.ThumbnailGradient.Trim(),
-                PreviewIcon = string.IsNullOrWhiteSpace(Input.PreviewIcon) ? "widgets" : Input.PreviewIcon.Trim(),
-                PreviewTitle = Input.PreviewTitle?.Trim(),
-                PreviewSubtitle = Input.PreviewSubtitle?.Trim(),
-                PreviewImageUrl = Input.PreviewImageUrl?.Trim(),
                 HtmlTemplate = Input.HtmlTemplate,
                 CssStyles = Input.CssStyles,
-                JsScript = string.IsNullOrWhiteSpace(Input.JsScript) ? null : Input.JsScript,
-                DefaultSectionListsJson = string.IsNullOrWhiteSpace(Input.DefaultSectionListsJson) ? null : Input.DefaultSectionListsJson,
-                Version = string.IsNullOrWhiteSpace(Input.Version) ? "1.0.0" : Input.Version.Trim(),
-                SortOrder = Input.SortOrder,
-                IsActive = Input.IsActive,
-                CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow
+                JsScript = Input.JsScript,
+                DefaultSectionListsJson = Input.DefaultSectionListsJson,
+                IsActive = true,
+                CreatedUtc = DateTime.UtcNow
             };
 
-            _dbContext.MasterMarketplaceTemplates.Add(template);
-            await _dbContext.SaveChangesAsync();
+            _masterDb.MasterMarketplaceTemplates.Add(newTemplate);
+            await _masterDb.SaveChangesAsync(cancellationToken);
 
-            TempData["StatusMessage"] = $"Template '{template.Name}' ({template.VariantCode}) created successfully.";
-            return RedirectToPage("./Details", new { id = template.Id });
-        }
-
-        private async Task PopulateCategoriesAsync()
-        {
-            var categories = await _dbContext.MasterMarketplaceCategories
-                .OrderBy(c => c.SortOrder)
-                .ThenBy(c => c.Name)
-                .ToListAsync();
-
-            CategoryOptions = categories.Select(c => new SelectListItem
-            {
-                Value = c.Id.ToString(),
-                Text = $"{c.Name} ({c.CategoryKey})"
-            }).ToList();
-        }
-
-        /// <summary>
-        /// Input model capturing form data for a new marketplace template.
-        /// </summary>
-        public class TemplateInputModel
-        {
-            /// <summary>
-            /// Identifier of the marketplace category.
-            /// </summary>
-            [Required(ErrorMessage = "Please select a category.")]
-            [Display(Name = "Category")]
-            public Guid CategoryId { get; set; }
-
-            /// <summary>
-            /// Display name of the template.
-            /// </summary>
-            [Required(ErrorMessage = "Template name is required.")]
-            [MaxLength(150)]
-            [Display(Name = "Template Name")]
-            public string Name { get; set; } = string.Empty;
-
-            /// <summary>
-            /// Unique programmatic variant code (e.g. Hero_SplitProduct).
-            /// </summary>
-            [Required(ErrorMessage = "Variant code is required.")]
-            [MaxLength(100)]
-            [Display(Name = "Variant Code")]
-            public string VariantCode { get; set; } = string.Empty;
-
-            /// <summary>
-            /// Style classification tag (e.g. modern, dark, minimal, corporate).
-            /// </summary>
-            [MaxLength(50)]
-            [Display(Name = "Style Tag")]
-            public string Tag { get; set; } = "modern";
-
-            /// <summary>
-            /// Visual promotional badge (e.g. Popular, New, Trending).
-            /// </summary>
-            [MaxLength(50)]
-            [Display(Name = "Badge Label")]
-            public string? Badge { get; set; }
-
-            /// <summary>
-            /// Brief summary of what this template renders and its intended use case.
-            /// </summary>
-            [MaxLength(500)]
-            [Display(Name = "Description")]
-            public string? Description { get; set; }
-
-            /// <summary>
-            /// CSS gradient string used for thumbnail card preview.
-            /// </summary>
-            [MaxLength(150)]
-            [Display(Name = "Thumbnail Gradient (CSS)")]
-            public string ThumbnailGradient { get; set; } = "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)";
-
-            /// <summary>
-            /// Icon name or emoji displayed in preview card.
-            /// </summary>
-            [MaxLength(50)]
-            [Display(Name = "Preview Icon")]
-            public string PreviewIcon { get; set; } = "widgets";
-
-            /// <summary>
-            /// Mock header title for preview card.
-            /// </summary>
-            [MaxLength(200)]
-            [Display(Name = "Preview Title")]
-            public string? PreviewTitle { get; set; }
-
-            /// <summary>
-            /// Mock subtitle for preview card.
-            /// </summary>
-            [MaxLength(200)]
-            [Display(Name = "Preview Subtitle")]
-            public string? PreviewSubtitle { get; set; }
-
-            /// <summary>
-            /// Optional screenshot or demonstration image URL.
-            /// </summary>
-            [MaxLength(500)]
-            [Display(Name = "Preview Image URL")]
-            public string? PreviewImageUrl { get; set; }
-
-            /// <summary>
-            /// Pure semantic HTML markup with {{ Mustache }} tokens.
-            /// </summary>
-            [Required(ErrorMessage = "HTML markup template is required.")]
-            [Display(Name = "HTML Template Markup")]
-            public string HtmlTemplate { get; set; } = "<section class=\"oz-block\">\n    <div class=\"oz-container\">\n        <h2>{{ Title }}</h2>\n        <p>{{ Subtitle }}</p>\n    </div>\n</section>";
-
-            /// <summary>
-            /// Scoped CSS styles.
-            /// </summary>
-            [Required(ErrorMessage = "CSS styles are required.")]
-            [Display(Name = "Scoped CSS Styles")]
-            public string CssStyles { get; set; } = ".oz-block { padding: 80px 0; }\n.oz-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }";
-
-            /// <summary>
-            /// Optional sandboxed JavaScript for client interactivity.
-            /// </summary>
-            [Display(Name = "Client JavaScript (Optional)")]
-            public string? JsScript { get; set; }
-
-            /// <summary>
-            /// Optional JSON representation of default child list items.
-            /// </summary>
-            [Display(Name = "Default Section Lists (JSON)")]
-            public string? DefaultSectionListsJson { get; set; }
-
-            /// <summary>
-            /// Semantic version tag.
-            /// </summary>
-            [MaxLength(20)]
-            [Display(Name = "Version")]
-            public string Version { get; set; } = "1.0.0";
-
-            /// <summary>
-            /// Presentation sort order.
-            /// </summary>
-            [Display(Name = "Sort Order")]
-            public int SortOrder { get; set; } = 0;
-
-            /// <summary>
-            /// Whether template is published to public tenant catalog.
-            /// </summary>
-            [Display(Name = "Active & Published")]
-            public bool IsActive { get; set; } = true;
+            _logger.LogInformation("Created new Master Marketplace Template {Id} ({VariantCode})", newTemplate.Id, newTemplate.VariantCode);
+            return RedirectToPage("./Details", new { id = newTemplate.Id });
         }
     }
 }

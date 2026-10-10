@@ -118,6 +118,15 @@ namespace Ozikol_BCC.Domain.Models
         public string? DirectUrl { get; set; }
 
         /// <summary>
+        /// Optional custom CSS class applied to this item container.
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [NotMapped]
+        [MaxLength(200)]
+        [Display(Name = "Custom CSS Class")]
+        public string? CustomClass { get; set; }
+
+        /// <summary>
         /// Order in which this item appears within the section loop (ascending: 1, 2, 3...).
         /// </summary>
         public int SortOrder { get; set; } = 0;

@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -2077,6 +2077,89 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.HasIndex("IsActive");
 
                     b.ToTable("MasterMarketplaceCategories");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceDraftSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CategoryKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DetectedFontsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DraftSuiteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HtmlTemplate")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JsScript")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("RequiredCssLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequiredJsLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequiredLibrariesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SampleContentJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ScopedCss")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceChannel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SuiteName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VariantCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MasterMarketplaceDraftSections");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterMarketplaceTemplate", b =>

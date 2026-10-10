@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Domain.Models
 {
@@ -27,7 +28,14 @@ namespace Ozikol_BCC.Domain.Models
         public string Title { get; set; } = string.Empty;
 
         /// <summary>
-        /// Position in the primary navigation header menu.
+        /// Explicit positioning of this category dropdown in the navigation layout (First/Left, Middle/Center, Last/Right, or Top Utility Bar).
+        /// Navigation items are grouped first by MenuPosition, then sorted by MenuSortOrder within that group.
+        /// </summary>
+        [Display(Name = "Menu Zone Position")]
+        public MenuPosition MenuPosition { get; set; } = MenuPosition.Middle;
+
+        /// <summary>
+        /// Position in the primary navigation header menu within its MenuPosition group.
         /// </summary>
         [Display(Name = "Menu Sort Order")]
         public int MenuSortOrder { get; set; } = 0;
@@ -79,6 +87,14 @@ namespace Ozikol_BCC.Domain.Models
         /// </summary>
         [MaxLength(100)]
         public string? Icon { get; set; }
+
+        /// <summary>
+        /// Optional custom CSS class applied to this category's dropdown trigger or column container.
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [MaxLength(200)]
+        [Display(Name = "Custom CSS Class")]
+        public string? CustomClass { get; set; }
 
         /// <summary>
         /// Category creation timestamp in UTC.

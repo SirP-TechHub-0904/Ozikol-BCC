@@ -128,6 +128,65 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.Ai.BcpAiChatHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AttachedImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GeneratedCodeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ImplementedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsImplemented")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PageRoute")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("PageTitle")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PreviousSnapshotJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PromptText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProviderUsed")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ResponseText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BcpAiChatHistories");
+                });
+
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.AppRole", b =>
                 {
                     b.Property<string>("Id")
@@ -3466,234 +3525,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BcpScheduledJobQueues");
                 });
 
-            modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSetting", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ActiveAiProvider")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ActiveCaptcha")
-                        .HasColumnType("int");
-
-                    b.Property<string>("AlumniAlias")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AnthropicApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CategoryAlias")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencyCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencySymbol")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DefaultAttendanceCloseTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DefaultAttendanceStartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DefaultAttendanceStartTimeSaturday")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EarlyMinute")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EmailMaxRetries")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("EnableListDownload")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("EnablePaystack")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("EnablePixelPay")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("EnableUserDeletion")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("EnableZeptoMail")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("EncryptionKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EncryptionNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EncryptionUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GeminiApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("GlobalNewsletterQuota")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("GlobalNewsletterQuotaExpiry")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GoogleRecaptchaSecretKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GoogleRecaptchaSiteKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GroupAlias")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("JobCardNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("JobCardTitleBackgroundKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("JobCardTitleBackgroundUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("LateMinute")
-                        .HasColumnType("int");
-
-                    b.Property<int>("LockoutDurationMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaxFailedAccessAttempts")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MemberIdDelimiter")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MemberIdFormat")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MemberIdNextNumber")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MemberIdPadding")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MemberIdPrefix")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("MfaRequiredForAdmins")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("MfaRequiredGlobally")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("OntimeMinute")
-                        .HasColumnType("int");
-
-                    b.Property<string>("OpenAIApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PasswordExpirationDays")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PasswordMinLength")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("PasswordRequireDigit")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PasswordRequireLowercase")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PasswordRequireNonAlphanumeric")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PasswordRequireUppercase")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PaymentModuleActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PaystackPublicKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaystackSecretKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaystackWebhookSecret")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPayBaseUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPayCurrency")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPayKeyId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPaySecretKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPaySignature")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PixelPayWebhookSecret")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RemitaButton")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RemitaInstruction")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RemitaTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ReportCloseTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("RequireConfirmedEmailToLogin")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("SmsCreditBalance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("SubCategoryAlias")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VeryLateMinute")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("WebContactEnableCategory")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("WebContactEnableFile")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("WebContactEnablePhone")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ZeptoMailApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ZeptoMailSendMailId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ZeptoMailSenderEmail")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ZeptoMailSenderName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("BcpSettings");
-                });
-
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.BcpSmsCampaign", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4453,362 +4284,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("BlogCategories");
                 });
 
-            modelBuilder.Entity("Ozikol_BCC.Domain.Models.ConfigSetting", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("ActivateComingSoon")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateLogin")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateLoginInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateLoginInMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateProductsInHome")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateSubscribeFormOnFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ActivateWorkWithUsFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddBlogToFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddBlogToHome")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddBlogToMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddCareerToFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddCareerToMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddFaqToFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddFaqToHome")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddPartnerToHome")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddTestimonyToFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("AddTestimonyToHome")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("AddressOne")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AddressTwo")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BlogDisplayTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BlogTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BreakingNewsRibonTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CareerDisplayTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ColorTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyDescription")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyIconKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyIconUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyLogoKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyLogoUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyNameAbbreviation")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyWebsiteLink")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyWhiteLogoKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyWhiteLogoUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencyCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencySymbol")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomCloudinaryApiKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomCloudinaryApiSecret")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomCloudinaryCloudName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomMenuTop")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DashboardTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DefaultTitleBackgroundKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DefaultTitleBackgroundUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("DisableMainTopMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("EmailOne")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmailTemplate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmailThree")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmailTwo")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("EnableBreakingNewsRibon")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("FacebookPage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FooterTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GoogleMap")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("InstagramPage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("JustWebsite")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LoginBackgroundImageKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginBackgroundImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginButtonText")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginNoteFooter")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginNoteTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LoginTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OrganizationDisplayName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OrganizationPaymentNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PageHeaderTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneOne")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneThree")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneTwo")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProductTitleHome")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Qoute")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReloaderIconKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReloaderIconUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReloaderTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("RemoveWatermark")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("RibonPosition")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SMSTemplate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("ShowAddressOneInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowContactUsFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowContactUsMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailOneInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailOneInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailThreeInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailThreeInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailTwoInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowEmailTwoInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneOneInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneOneInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneThreeInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneThreeInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneTwoInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowPhoneTwoInTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowProductsInFooter")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowProductsInMenu")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowSixProducts")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowThreeProducts")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ShowTwoProducts")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SliderTemplateKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("SpecialMenuButtonActivate")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SpecialMenuButtonLink")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SpecialMenuButtonText")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TemplateLayoutKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TiktokPage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TitleWorkWithUsFooter")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TopNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TwitterPage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("UseCategoryBlog")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("UseCustomMenuTop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("UseCustomStorage")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("UseNormalLogoInLogin")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("UseWhiteLogoInLogin")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("WebsiteTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WorkingHour")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("YoutubeChannel")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ConfigSettings");
-                });
-
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.ContactUs", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4910,88 +4385,670 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("MailingSystems");
                 });
 
-            modelBuilder.Entity("Ozikol_BCC.Domain.Models.ManagementSetting", b =>
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.MisConfigurationSetting", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AccountName")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("AlumniAlias")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("AccountNumber")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("CategoryAlias")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("ActivateOnlyAuthorizedDevice")
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CurrencySymbol")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CustomCloudinaryApiKey")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CustomCloudinaryApiSecret")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("CustomCloudinaryCloudName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CustomS3AccessKey")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CustomS3BucketName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CustomS3Region")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CustomS3SecretKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("EmailMaxRetries")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmailProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("EnableFlutterwave")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("ActivateSMS")
+                    b.Property<bool>("EnableListDownload")
                         .HasColumnType("bit");
 
-                    b.Property<string>("BankName")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnableOnlyAuthorizedDevices")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("BcpDashboardCSS")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnablePayPal")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("BcpJobBoardCSS")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnablePaystack")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("BcpLayoutJavaScript")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnablePixelPay")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("BucketName")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnableSms")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("Configuration")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnableStripe")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("DashboardCSS")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnableTwoFactorAuth")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("ElectionCustomCss")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("EnableUserDeletion")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("FileFolderName")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<string>("FlutterwaveEncryptionKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("LayoutCSS")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("FlutterwavePublicKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("LayoutJavaScript")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("FlutterwaveSecretKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("LiveConfiguration")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("GlobalNewsletterQuota")
+                        .HasColumnType("int");
 
-                    b.Property<string>("LoginCSS")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("GlobalNewsletterQuotaExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GroupAlias")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("LockoutDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxFailedAccessAttempts")
+                        .HasColumnType("int");
 
                     b.Property<int>("MaximumUsers")
                         .HasColumnType("int");
 
-                    b.Property<bool>("RedirectTohttps")
+                    b.Property<string>("MemberIdDelimiter")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("MemberIdFormat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("MemberIdNextNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MemberIdPadding")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MemberIdPrefix")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("MfaRequiredForAdmins")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("RedirectTohttpswww")
+                    b.Property<bool>("MfaRequiredGlobally")
                         .HasColumnType("bit");
 
-                    b.Property<string>("SignatureKey")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("PasswordMinLength")
+                        .HasColumnType("int");
 
-                    b.Property<string>("SignatureName")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("PasswordRequireDigit")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("SignatureTitle")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("PasswordRequireLowercase")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("SignatureUrl")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("PasswordRequireNonAlphanumeric")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PasswordRequireUppercase")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PayPalClientId")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PayPalClientSecret")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PayPalWebhookId")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PaystackPublicKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PaystackSecretKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PaystackWebhookSecret")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPayApiKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPayBaseUrl")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPayCurrency")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("PixelPayKeyId")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPayMerchantCode")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPaySaltKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPaySecretKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PixelPayWebhookSecret")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PostmarkFromEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PostmarkMessageStream")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PostmarkServerToken")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("RequireConfirmedEmailToLogin")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SenderEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SenderName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SessionTimeoutMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SmsCreditBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SmsProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("SmtpEnableSsl")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SmtpHost")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SmtpPassword")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("SmtpPort")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SmtpUsername")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("StripePublishableKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("StripeSecretKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("StripeWebhookSecret")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("SubCategoryAlias")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TermiiApiKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("TermiiSenderId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TwilioAccountSid")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("TwilioAuthToken")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("TwilioPhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseCustomStorage")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ZeptoMailApiKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ZeptoMailSendMailToken")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ZeptoMailSenderEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ZeptoMailSenderName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ManagementSettings");
+                    b.ToTable("MisConfigurationSettings");
+                });
+
+            modelBuilder.Entity("Ozikol_BCC.Domain.Models.MisWebsiteSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("ActivateLogin")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ActivateLoginInFooter")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ActivateLoginInMenu")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ActivateProductsInHome")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("AddressOne")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("AddressTwo")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BillingEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BrandName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ComingSoonMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ComingSoonTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CompanyDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("CompanyIconKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("CompanyIconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CompanyLogoKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("CompanyLogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CompanyName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CompanyNameAbbreviation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CompanyWebsiteLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CompanyWhiteLogoKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("CompanyWhiteLogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CopyrightNotice")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DashboardTitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("EmailOne")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("EmailTwo")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<bool>("EnableComingSoon")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FacebookPage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FacebookUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FaviconKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("FaviconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("GitHubUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("GoogleMapUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("InstagramPage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("InstagramUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsLive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LinkedInUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LoginBackgroundImageKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("LoginBackgroundImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("LoginButtonText")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LoginNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("LoginNoteFooter")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LoginNoteTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("LoginTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("LogoKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PhoneOne")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PhoneTwo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PrimaryPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProductTitle")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ProductTitleHome")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ReloaderIconKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ReloaderIconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("RemovePlatformWatermark")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SalesEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SecondaryPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("ShowProductsInFooter")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowProductsInMenu")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowSixProducts")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowThreeProducts")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowTwoProducts")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SiteTitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("State")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupportEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Tagline")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("TemplateLayoutKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TikTokUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TiktokPage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TwitterPage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TwitterUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("UseNormalLogoInLogin")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseWhiteLogoInLogin")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("WebsiteTitle")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("WhatsAppNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("WhiteLogoKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("WhiteLogoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("WorkingHours")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("YouTubeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("YoutubeChannel")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MisWebsiteSettings");
                 });
 
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.NewsLetter", b =>
@@ -5023,6 +5080,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CustomClass")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("FooterDisplayTitle")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -5030,6 +5091,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("Icon")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("MenuPosition")
+                        .HasColumnType("int");
 
                     b.Property<int>("MenuSortOrder")
                         .HasColumnType("int");
@@ -5791,74 +5855,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.ToTable("TenantInstalledTemplates");
                 });
 
-            modelBuilder.Entity("Ozikol_BCC.Domain.Models.UiSetting", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("BrandName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("ComingSoonMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("ComingSoonTitle")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("EnableComingSoon")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("FaviconKey")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("FaviconUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("LogoKey")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("LogoUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<bool>("RemovePlatformWatermark")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SiteTitle")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("Tagline")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("WhiteLogoKey")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("WhiteLogoUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("UiSettings");
-                });
-
             modelBuilder.Entity("Ozikol_BCC.Domain.Models.UserDeviceSession", b =>
                 {
                     b.Property<string>("Id")
@@ -5916,6 +5912,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CustomClass")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("DirectUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -5957,6 +5957,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("MenuCtaUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MenuPosition")
+                        .HasColumnType("int");
 
                     b.Property<string>("MetaDescription")
                         .HasMaxLength(500)

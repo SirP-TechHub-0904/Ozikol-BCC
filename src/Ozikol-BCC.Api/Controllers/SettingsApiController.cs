@@ -1,3 +1,7 @@
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,14 +10,14 @@ using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Queries.SettingsQueries;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
-using Ozikol_BCC.Domain.Models.Settings;
 using Ozikol_BCC.Persistence.EF.SQL;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
 
 namespace Ozikol_BCC.Api.Controllers
 {
+    /// <summary>
+    /// API controller managing branding, storage, terminology aliases, e-commerce, and system settings.
+    /// Operates against consolidated MisWebsiteSettings and MisConfigurationSettings models.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Tags("6. System & Branding Settings")]
@@ -49,7 +53,7 @@ namespace Ozikol_BCC.Api.Controllers
             try
             {
                 // Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) credentials
-                var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+                var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
                 string? customCloud = null;
                 string? customKey = null;
                 string? customSecret = null;
@@ -90,7 +94,7 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<StorageSettingsResponseDto>), 200)]
         public async Task<IActionResult> GetStorageSettings()
         {
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
             var hasCustom = config?.UseCustomStorage == true &&
                             !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName);
 
@@ -138,11 +142,11 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Could not verify Cloudinary credentials. Please verify your Cloud Name, API Key, and API Secret."));
             }
 
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
             if (config == null)
             {
-                config = new ConfigSetting { Id = Guid.NewGuid() };
-                _db.ConfigSettings.Add(config);
+                config = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _db.MisConfigurationSettings.Add(config);
             }
 
             config.UseCustomStorage = true;
@@ -167,7 +171,7 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> DisconnectCustomStorage()
         {
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
             if (config != null)
             {
                 config.UseCustomStorage = false;
@@ -188,14 +192,14 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<TerminologyAliasesDto>), 200)]
         public async Task<IActionResult> GetTerminologyAliases()
         {
-            var bcpSetting = await _db.BcpSettings.FirstOrDefaultAsync();
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
 
             var data = new TerminologyAliasesDto
             {
-                GroupAlias = !string.IsNullOrWhiteSpace(bcpSetting?.GroupAlias) ? bcpSetting.GroupAlias : "Group",
-                CategoryAlias = !string.IsNullOrWhiteSpace(bcpSetting?.CategoryAlias) ? bcpSetting.CategoryAlias : "Category",
-                SubCategoryAlias = !string.IsNullOrWhiteSpace(bcpSetting?.SubCategoryAlias) ? bcpSetting.SubCategoryAlias : "Sub-Category",
-                AlumniAlias = !string.IsNullOrWhiteSpace(bcpSetting?.AlumniAlias) ? bcpSetting.AlumniAlias : "Alumni"
+                GroupAlias = !string.IsNullOrWhiteSpace(config?.GroupAlias) ? config.GroupAlias : "Group",
+                CategoryAlias = !string.IsNullOrWhiteSpace(config?.CategoryAlias) ? config.CategoryAlias : "Category",
+                SubCategoryAlias = !string.IsNullOrWhiteSpace(config?.SubCategoryAlias) ? config.SubCategoryAlias : "Sub-Category",
+                AlumniAlias = !string.IsNullOrWhiteSpace(config?.AlumniAlias) ? config.AlumniAlias : "Alumni"
             };
 
             return Ok(ApiResponse<TerminologyAliasesDto>.SuccessResponse(data, "Terminology aliases retrieved."));
@@ -211,17 +215,17 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (dto == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid payload."));
 
-            var bcpSetting = await _db.BcpSettings.FirstOrDefaultAsync();
-            if (bcpSetting == null)
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (config == null)
             {
-                bcpSetting = new BcpSetting { Id = Guid.NewGuid() };
-                _db.BcpSettings.Add(bcpSetting);
+                config = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _db.MisConfigurationSettings.Add(config);
             }
 
-            bcpSetting.CategoryAlias = !string.IsNullOrWhiteSpace(dto.CategoryAlias) ? dto.CategoryAlias.Trim() : "Category";
-            bcpSetting.SubCategoryAlias = !string.IsNullOrWhiteSpace(dto.SubCategoryAlias) ? dto.SubCategoryAlias.Trim() : "Sub-Category";
-            bcpSetting.GroupAlias = !string.IsNullOrWhiteSpace(dto.GroupAlias) ? dto.GroupAlias.Trim() : "Group";
-            bcpSetting.AlumniAlias = !string.IsNullOrWhiteSpace(dto.AlumniAlias) ? dto.AlumniAlias.Trim() : "Alumni";
+            config.CategoryAlias = !string.IsNullOrWhiteSpace(dto.CategoryAlias) ? dto.CategoryAlias.Trim() : "Category";
+            config.SubCategoryAlias = !string.IsNullOrWhiteSpace(dto.SubCategoryAlias) ? dto.SubCategoryAlias.Trim() : "Sub-Category";
+            config.GroupAlias = !string.IsNullOrWhiteSpace(dto.GroupAlias) ? dto.GroupAlias.Trim() : "Group";
+            config.AlumniAlias = !string.IsNullOrWhiteSpace(dto.AlumniAlias) ? dto.AlumniAlias.Trim() : "Alumni";
 
             await _db.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Terminology aliases updated successfully."));
@@ -235,42 +239,42 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<BrandSettingsResponseDto>), 200)]
         public async Task<IActionResult> GetBrandSettings()
         {
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
-            var companyName = config?.CompanyName ?? "Workspace";
-            var abbreviation = !string.IsNullOrWhiteSpace(config?.CompanyNameAbbreviation)
-                ? config.CompanyNameAbbreviation
+            var site = await _db.MisWebsiteSettings.FirstOrDefaultAsync();
+            var companyName = !string.IsNullOrWhiteSpace(site?.BrandName) ? site.BrandName : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Workspace");
+            var abbreviation = !string.IsNullOrWhiteSpace(site?.CompanyNameAbbreviation)
+                ? site.CompanyNameAbbreviation
                 : ComputeAbbreviation(companyName);
 
             var data = new BrandSettingsResponseDto
             {
                 CompanyName = companyName,
                 CompanyNameAbbreviation = abbreviation,
-                CompanyDescription = config?.CompanyDescription ?? "",
-                CompanyWebsiteLink = config?.CompanyWebsiteLink ?? "",
-                WebsiteTitle = config?.WebsiteTitle ?? "",
-                DashboardTitle = config?.DashboardTitle ?? "",
-                CompanyLogoUrl = config?.CompanyLogoUrl ?? "",
-                CompanyLogoKey = config?.CompanyLogoKey ?? "",
-                CompanyWhiteLogoUrl = config?.CompanyWhiteLogoUrl ?? "",
-                CompanyWhiteLogoKey = config?.CompanyWhiteLogoKey ?? "",
-                CompanyIconUrl = config?.CompanyIconUrl ?? "",
-                CompanyIconKey = config?.CompanyIconKey ?? "",
-                ReloaderIconUrl = config?.ReloaderIconUrl ?? "",
-                ReloaderIconKey = config?.ReloaderIconKey ?? "",
+                CompanyDescription = site?.CompanyDescription ?? site?.Tagline ?? "",
+                CompanyWebsiteLink = site?.CompanyWebsiteLink ?? "",
+                WebsiteTitle = site?.WebsiteTitle ?? site?.SiteTitle ?? "",
+                DashboardTitle = site?.DashboardTitle ?? "",
+                CompanyLogoUrl = site?.CompanyLogoUrl ?? site?.LogoUrl ?? "",
+                CompanyLogoKey = site?.CompanyLogoKey ?? site?.LogoKey ?? "",
+                CompanyWhiteLogoUrl = site?.CompanyWhiteLogoUrl ?? site?.WhiteLogoUrl ?? "",
+                CompanyWhiteLogoKey = site?.CompanyWhiteLogoKey ?? site?.WhiteLogoKey ?? "",
+                CompanyIconUrl = site?.CompanyIconUrl ?? site?.FaviconUrl ?? "",
+                CompanyIconKey = site?.CompanyIconKey ?? site?.FaviconKey ?? "",
+                ReloaderIconUrl = site?.ReloaderIconUrl ?? "",
+                ReloaderIconKey = site?.ReloaderIconKey ?? "",
                 PrimaryColor = "#0050e5",
                 SecondaryColor = "#1f6bff",
-                LoginBackgroundImageUrl = config?.LoginBackgroundImageUrl ?? "",
-                LoginBackgroundImageKey = config?.LoginBackgroundImageKey ?? "",
-                UseNormalLogoInLogin = config?.UseNormalLogoInLogin ?? false,
-                UseWhiteLogoInLogin = config?.UseWhiteLogoInLogin ?? false,
-                LoginTitle = config?.LoginTitle ?? "",
-                LoginNoteTitle = config?.LoginNoteTitle ?? "",
-                LoginNote = config?.LoginNote ?? "",
-                LoginNoteFooter = config?.LoginNoteFooter ?? "",
-                ActivateLogin = config?.ActivateLogin ?? true,
-                ActivateLoginInMenu = config?.ActivateLoginInMenu ?? true,
-                ActivateLoginInFooter = config?.ActivateLoginInFooter ?? true,
-                LoginButtonText = !string.IsNullOrWhiteSpace(config?.LoginButtonText) ? config.LoginButtonText : "Sign In"
+                LoginBackgroundImageUrl = site?.LoginBackgroundImageUrl ?? "",
+                LoginBackgroundImageKey = site?.LoginBackgroundImageKey ?? "",
+                UseNormalLogoInLogin = site?.UseNormalLogoInLogin ?? true,
+                UseWhiteLogoInLogin = site?.UseWhiteLogoInLogin ?? false,
+                LoginTitle = site?.LoginTitle ?? "",
+                LoginNoteTitle = site?.LoginNoteTitle ?? "",
+                LoginNote = site?.LoginNote ?? "",
+                LoginNoteFooter = site?.LoginNoteFooter ?? "",
+                ActivateLogin = site?.ActivateLogin ?? true,
+                ActivateLoginInMenu = site?.ActivateLoginInMenu ?? true,
+                ActivateLoginInFooter = site?.ActivateLoginInFooter ?? true,
+                LoginButtonText = !string.IsNullOrWhiteSpace(site?.LoginButtonText) ? site.LoginButtonText : "Sign In"
             };
 
             return Ok(ApiResponse<BrandSettingsResponseDto>.SuccessResponse(data, "Brand identity settings retrieved."));
@@ -286,42 +290,50 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (dto == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid payload."));
 
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
-            if (config == null)
+            var site = await _db.MisWebsiteSettings.FirstOrDefaultAsync();
+            if (site == null)
             {
-                config = new ConfigSetting { Id = Guid.NewGuid() };
-                _db.ConfigSettings.Add(config);
+                site = new MisWebsiteSetting { Id = Guid.NewGuid() };
+                _db.MisWebsiteSettings.Add(site);
             }
 
-            // Sync with ConfigSetting table
-            config.CompanyName = dto.CompanyName;
-            config.CompanyNameAbbreviation = !string.IsNullOrWhiteSpace(dto.CompanyNameAbbreviation)
+            site.BrandName = dto.CompanyName;
+            site.CompanyName = dto.CompanyName;
+            site.CompanyNameAbbreviation = !string.IsNullOrWhiteSpace(dto.CompanyNameAbbreviation)
                 ? dto.CompanyNameAbbreviation.Trim()
                 : ComputeAbbreviation(dto.CompanyName);
-            config.CompanyDescription = dto.CompanyDescription;
-            config.CompanyWebsiteLink = dto.CompanyWebsiteLink;
-            config.WebsiteTitle = dto.WebsiteTitle;
-            config.DashboardTitle = dto.DashboardTitle;
-            config.CompanyLogoUrl = dto.CompanyLogoUrl;
-            config.CompanyLogoKey = dto.CompanyLogoKey;
-            config.CompanyWhiteLogoUrl = dto.CompanyWhiteLogoUrl;
-            config.CompanyWhiteLogoKey = dto.CompanyWhiteLogoKey;
-            config.CompanyIconUrl = dto.CompanyIconUrl;
-            config.CompanyIconKey = dto.CompanyIconKey;
-            config.ReloaderIconUrl = dto.ReloaderIconUrl;
-            config.ReloaderIconKey = dto.ReloaderIconKey;
-            config.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
-            config.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
-            config.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
-            config.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
-            config.LoginTitle = dto.LoginTitle;
-            config.LoginNoteTitle = dto.LoginNoteTitle;
-            config.LoginNote = dto.LoginNote;
-            config.LoginNoteFooter = dto.LoginNoteFooter;
-            config.ActivateLogin = dto.ActivateLogin;
-            config.ActivateLoginInMenu = dto.ActivateLoginInMenu;
-            config.ActivateLoginInFooter = dto.ActivateLoginInFooter;
-            config.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
+            site.CompanyDescription = dto.CompanyDescription;
+            site.CompanyWebsiteLink = dto.CompanyWebsiteLink;
+            site.WebsiteTitle = dto.WebsiteTitle;
+            site.SiteTitle = dto.WebsiteTitle;
+            site.DashboardTitle = dto.DashboardTitle;
+            site.LogoUrl = dto.CompanyLogoUrl;
+            site.CompanyLogoUrl = dto.CompanyLogoUrl;
+            site.LogoKey = dto.CompanyLogoKey;
+            site.CompanyLogoKey = dto.CompanyLogoKey;
+            site.WhiteLogoUrl = dto.CompanyWhiteLogoUrl;
+            site.CompanyWhiteLogoUrl = dto.CompanyWhiteLogoUrl;
+            site.WhiteLogoKey = dto.CompanyWhiteLogoKey;
+            site.CompanyWhiteLogoKey = dto.CompanyWhiteLogoKey;
+            site.FaviconUrl = dto.CompanyIconUrl;
+            site.CompanyIconUrl = dto.CompanyIconUrl;
+            site.FaviconKey = dto.CompanyIconKey;
+            site.CompanyIconKey = dto.CompanyIconKey;
+            site.ReloaderIconUrl = dto.ReloaderIconUrl;
+            site.ReloaderIconKey = dto.ReloaderIconKey;
+            site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
+            site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
+            site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
+            site.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
+            site.LoginTitle = dto.LoginTitle;
+            site.LoginNoteTitle = dto.LoginNoteTitle;
+            site.LoginNote = dto.LoginNote;
+            site.LoginNoteFooter = dto.LoginNoteFooter;
+            site.ActivateLogin = dto.ActivateLogin;
+            site.ActivateLoginInMenu = dto.ActivateLoginInMenu;
+            site.ActivateLoginInFooter = dto.ActivateLoginInFooter;
+            site.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
+            site.UpdatedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Brand identity updated successfully."));
@@ -353,11 +365,11 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves custom CSS/JS tracking code injection scripts.
         /// </summary>
         [HttpGet("code-injection")]
-        [ProducesResponseType(typeof(ApiResponse<BcpTenantCodeInjectionSetting>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> GetCodeInjectionSettings()
         {
-            var result = await _mediator.Send(new GetCodeInjectionSettingsQuery());
-            return Ok(ApiResponse<BcpTenantCodeInjectionSetting>.SuccessResponse(result, "Tracking code scripts retrieved."));
+            var tags = await _db.SiteCodeInjectionTags.OrderBy(t => t.SortOrder).ToListAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(tags, "Tracking code scripts retrieved."));
         }
 
         /// <summary>
@@ -377,9 +389,16 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("communication")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult GetCommunicationSettings()
+        public async Task<IActionResult> GetCommunicationSettings()
         {
-            var data = new { provider = "ZeptoMail", smsProvider = "KudiSMS" };
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            var data = new
+            {
+                emailProvider = config?.EmailProvider ?? "Postmark",
+                smsProvider = config?.SmsProvider ?? "Termii",
+                enableSms = config?.EnableSms ?? true,
+                smsCreditBalance = config?.SmsCreditBalance ?? 0
+            };
             return Ok(ApiResponse<object>.SuccessResponse(data, "Communication settings retrieved."));
         }
 
@@ -435,28 +454,28 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<StoreSettingsDto>), 200)]
         public async Task<IActionResult> GetStoreSettings()
         {
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
-            var bcp = await _db.BcpSettings.FirstOrDefaultAsync();
+            var site = await _db.MisWebsiteSettings.FirstOrDefaultAsync();
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
 
-            var mode = !string.IsNullOrWhiteSpace(config?.TemplateLayoutKey)
-                ? config.TemplateLayoutKey
-                : (!string.IsNullOrWhiteSpace(config?.ProductTemplateKey) ? config.ProductTemplateKey : "standard");
+            var mode = !string.IsNullOrWhiteSpace(site?.TemplateLayoutKey)
+                ? site.TemplateLayoutKey
+                : "standard";
 
             var data = new StoreSettingsDto
             {
-                StorefrontEnabled = config?.ActivateProductsInHome ?? true,
-                StoreTitle = !string.IsNullOrWhiteSpace(config?.ProductTitle) ? config.ProductTitle : "Online Store",
+                StorefrontEnabled = site?.ActivateProductsInHome ?? true,
+                StoreTitle = !string.IsNullOrWhiteSpace(site?.ProductTitle) ? site.ProductTitle : "Online Store",
                 StoreOperatingMode = mode,
-                CurrencyCode = !string.IsNullOrWhiteSpace(bcp?.CurrencyCode) ? bcp.CurrencyCode : (!string.IsNullOrWhiteSpace(config?.CurrencyCode) ? config.CurrencyCode : "USD"),
-                CurrencySymbol = !string.IsNullOrWhiteSpace(bcp?.CurrencySymbol) ? bcp.CurrencySymbol : (!string.IsNullOrWhiteSpace(config?.CurrencySymbol) ? config.CurrencySymbol : "$"),
-                ShowInNavbar = config?.ShowProductsInMenu ?? true,
-                ShowInFooter = config?.ShowProductsInFooter ?? true,
-                ShowOnHome = config?.ActivateProductsInHome ?? true,
-                EnableOnlinePayment = bcp?.EnablePaystack ?? true,
+                CurrencyCode = !string.IsNullOrWhiteSpace(config?.CurrencyCode) ? config.CurrencyCode : "USD",
+                CurrencySymbol = !string.IsNullOrWhiteSpace(config?.CurrencySymbol) ? config.CurrencySymbol : "$",
+                ShowInNavbar = site?.ShowProductsInMenu ?? true,
+                ShowInFooter = site?.ShowProductsInFooter ?? true,
+                ShowOnHome = site?.ActivateProductsInHome ?? true,
+                EnableOnlinePayment = config?.EnablePaystack ?? true,
                 EnableBankTransfer = true,
                 EnableCashOnDelivery = false,
                 ProductsPerPage = 12,
-                HomeProductsCount = config?.ShowSixProducts == true ? 6 : (config?.ShowThreeProducts == true ? 3 : (config?.ShowTwoProducts == true ? 2 : 6)),
+                HomeProductsCount = site?.ShowSixProducts == true ? 6 : (site?.ShowThreeProducts == true ? 3 : (site?.ShowTwoProducts == true ? 2 : 6)),
                 LowStockThreshold = 5,
                 AllowBackorders = false,
                 ShowReviews = true,
@@ -464,9 +483,9 @@ namespace Ozikol_BCC.Api.Controllers
                 FlatShippingRate = 0,
                 FreeShippingThreshold = 0,
                 TaxPercentage = 0,
-                SupportEmail = !string.IsNullOrWhiteSpace(config?.EmailOne) ? config.EmailOne : "",
-                SupportPhone = !string.IsNullOrWhiteSpace(config?.PhoneOne) ? config.PhoneOne : "",
-                PickupAddress = !string.IsNullOrWhiteSpace(config?.AddressOne) ? config.AddressOne : ""
+                SupportEmail = !string.IsNullOrWhiteSpace(site?.ContactEmail) ? site.ContactEmail : (!string.IsNullOrWhiteSpace(site?.EmailOne) ? site.EmailOne : ""),
+                SupportPhone = !string.IsNullOrWhiteSpace(site?.PrimaryPhone) ? site.PrimaryPhone : (!string.IsNullOrWhiteSpace(site?.PhoneOne) ? site.PhoneOne : ""),
+                PickupAddress = !string.IsNullOrWhiteSpace(site?.Address) ? site.Address : (!string.IsNullOrWhiteSpace(site?.AddressOne) ? site.AddressOne : "")
             };
 
             return Ok(ApiResponse<StoreSettingsDto>.SuccessResponse(data, "Store & Website settings retrieved."));
@@ -482,53 +501,50 @@ namespace Ozikol_BCC.Api.Controllers
         {
             if (dto == null) return BadRequest(ApiResponse<object>.FailureResponse("Invalid payload."));
 
-            var config = await _db.ConfigSettings.FirstOrDefaultAsync();
-            if (config == null)
+            var site = await _db.MisWebsiteSettings.FirstOrDefaultAsync();
+            if (site == null)
             {
-                config = new ConfigSetting { Id = Guid.NewGuid() };
-                _db.ConfigSettings.Add(config);
+                site = new MisWebsiteSetting { Id = Guid.NewGuid() };
+                _db.MisWebsiteSettings.Add(site);
             }
 
-            var bcp = await _db.BcpSettings.FirstOrDefaultAsync();
-            if (bcp == null)
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (config == null)
             {
-                bcp = new BcpSetting { Id = Guid.NewGuid() };
-                _db.BcpSettings.Add(bcp);
+                config = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _db.MisConfigurationSettings.Add(config);
             }
 
             var operatingMode = !string.IsNullOrWhiteSpace(dto.StoreOperatingMode) ? dto.StoreOperatingMode : "standard";
-            config.TemplateLayoutKey = operatingMode;
-            config.ProductTemplateKey = operatingMode;
-            config.ProductTitle = dto.StoreTitle;
-            config.ProductTitleHome = dto.StoreTitle;
-            config.ShowProductsInMenu = dto.ShowInNavbar;
-            config.ShowProductsInFooter = dto.ShowInFooter;
-            config.ActivateProductsInHome = dto.ShowOnHome;
-            config.CurrencyCode = dto.CurrencyCode;
-            config.CurrencySymbol = dto.CurrencySymbol;
+            site.TemplateLayoutKey = operatingMode;
+            site.ProductTitle = dto.StoreTitle;
+            site.ProductTitleHome = dto.StoreTitle;
+            site.ShowProductsInMenu = dto.ShowInNavbar;
+            site.ShowProductsInFooter = dto.ShowInFooter;
+            site.ActivateProductsInHome = dto.ShowOnHome;
 
             if (dto.HomeProductsCount == 2)
             {
-                config.ShowTwoProducts = true;
-                config.ShowThreeProducts = false;
-                config.ShowSixProducts = false;
+                site.ShowTwoProducts = true;
+                site.ShowThreeProducts = false;
+                site.ShowSixProducts = false;
             }
             else if (dto.HomeProductsCount == 3)
             {
-                config.ShowTwoProducts = false;
-                config.ShowThreeProducts = true;
-                config.ShowSixProducts = false;
+                site.ShowTwoProducts = false;
+                site.ShowThreeProducts = true;
+                site.ShowSixProducts = false;
             }
             else
             {
-                config.ShowTwoProducts = false;
-                config.ShowThreeProducts = false;
-                config.ShowSixProducts = true;
+                site.ShowTwoProducts = false;
+                site.ShowThreeProducts = false;
+                site.ShowSixProducts = true;
             }
 
-            bcp.CurrencyCode = dto.CurrencyCode;
-            bcp.CurrencySymbol = dto.CurrencySymbol;
-            bcp.EnablePaystack = dto.EnableOnlinePayment;
+            config.CurrencyCode = dto.CurrencyCode;
+            config.CurrencySymbol = dto.CurrencySymbol;
+            config.EnablePaystack = dto.EnableOnlinePayment;
 
             await _db.SaveChangesAsync();
 
@@ -536,14 +552,24 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves cloud integration API keys (Paystack, AWS, Cloudinary).
+        /// Retrieves cloud integration API keys.
         /// </summary>
         [HttpGet("integrations")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult GetIntegrations()
+        public async Task<IActionResult> GetIntegrations()
         {
-            var data = new { paystackConfigured = true, awsS3Configured = true };
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            var data = new
+            {
+                paystackConfigured = !string.IsNullOrWhiteSpace(config?.PaystackSecretKey),
+                stripeConfigured = !string.IsNullOrWhiteSpace(config?.StripeSecretKey),
+                flutterwaveConfigured = !string.IsNullOrWhiteSpace(config?.FlutterwaveSecretKey),
+                paypalConfigured = !string.IsNullOrWhiteSpace(config?.PayPalClientId),
+                pixelPayConfigured = !string.IsNullOrWhiteSpace(config?.PixelPaySecretKey) || !string.IsNullOrWhiteSpace(config?.PixelPayApiKey),
+                awsS3Configured = !string.IsNullOrWhiteSpace(config?.CustomS3BucketName),
+                cloudinaryConfigured = config?.UseCustomStorage == true && !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName)
+            };
             return Ok(ApiResponse<object>.SuccessResponse(data, "Integrations settings retrieved."));
         }
 
@@ -583,8 +609,6 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Computes organization abbreviation from company name.
-        /// If multi-word, takes initial letter of each word (e.g. "Rozzy kik" -> "RK").
-        /// If single-word, takes first 3 characters uppercase (e.g. "Rozzy" -> "ROZ").
         /// </summary>
         private static string ComputeAbbreviation(string? name)
         {
@@ -619,7 +643,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string SecondaryColor { get; set; } = "#1f6bff";
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
-        public bool UseNormalLogoInLogin { get; set; }
+        public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;
         public string LoginNoteTitle { get; set; } = string.Empty;
@@ -649,7 +673,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string ReloaderIconKey { get; set; } = string.Empty;
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
-        public bool UseNormalLogoInLogin { get; set; }
+        public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;
         public string LoginNoteTitle { get; set; } = string.Empty;
@@ -677,7 +701,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public bool StorefrontEnabled { get; set; } = true;
         public string StoreTitle { get; set; } = "Online Store";
-        public string StoreOperatingMode { get; set; } = "ecommerce"; // ecommerce | services | subscriptions | wholesale
+        public string StoreOperatingMode { get; set; } = "standard";
         public string CurrencyCode { get; set; } = "USD";
         public string CurrencySymbol { get; set; } = "$";
         public bool ShowInNavbar { get; set; } = true;
@@ -705,21 +729,12 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     public class ConnectCustomStorageDto
     {
-        /// <summary>
-        /// The tenant's custom Cloudinary Cloud Name.
-        /// </summary>
         [Required]
         public string CloudName { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The tenant's custom Cloudinary API Key.
-        /// </summary>
         [Required]
         public string ApiKey { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The tenant's custom Cloudinary API Secret.
-        /// </summary>
         [Required]
         public string ApiSecret { get; set; } = string.Empty;
     }
@@ -729,24 +744,9 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     public class StorageSettingsResponseDto
     {
-        /// <summary>
-        /// Whether the tenant has custom storage enabled.
-        /// </summary>
         public bool UseCustomStorage { get; set; }
-
-        /// <summary>
-        /// The active custom Cloud Name, if configured.
-        /// </summary>
         public string? CustomCloudName { get; set; }
-
-        /// <summary>
-        /// Masked API Key for security (e.g. *******1234).
-        /// </summary>
         public string? MaskedApiKey { get; set; }
-
-        /// <summary>
-        /// Indicates if the tenant is currently using the platform master Cloudinary default.
-        /// </summary>
         public bool UsingPlatformDefault { get; set; } = true;
     }
 }

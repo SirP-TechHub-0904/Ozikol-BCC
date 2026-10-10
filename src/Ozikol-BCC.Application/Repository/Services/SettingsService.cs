@@ -20,20 +20,19 @@ namespace Ozikol_BCC.Application.Repository.Services
 
         public async Task<Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto> GetConfigAsync()
         {
-            var config = await _context.ConfigSettings.FirstOrDefaultAsync();
+            var website = await _context.MisWebsiteSettings.FirstOrDefaultAsync();
             return new Ozikol_BCC.Application.Dtos.UI.ConfigSettingDto
             {
-                TemplateLayoutKey = config?.TemplateLayoutKey
+                TemplateLayoutKey = "standard"
             };
         }
 
         public async Task<Ozikol_BCC.Application.Dtos.VerificationWebDto> ValidateWeb(HttpContext context)
         {
-            var config = await _context.ConfigSettings.FirstOrDefaultAsync();
-            var management = await _context.ManagementSettings.FirstOrDefaultAsync();
-            var mis = await _context.BcpSettings.FirstOrDefaultAsync();
+            var website = await _context.MisWebsiteSettings.FirstOrDefaultAsync();
+            var config = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
 
-            if (config == null)
+            if (website == null)
             {
                 return new Ozikol_BCC.Application.Dtos.VerificationWebDto { SettingFound = false, Path = "/V3/Create", Area = "Management" };
             }
@@ -41,9 +40,8 @@ namespace Ozikol_BCC.Application.Repository.Services
             return new Ozikol_BCC.Application.Dtos.VerificationWebDto
             {
                 SettingFound = true,
-                ConfigSetting = config,
-                ManagementSetting = management,
-                BcpSetting = mis,
+                MisWebsiteSetting = website,
+                MisConfigurationSetting = config,
                 Portfolio = false
             };
         }

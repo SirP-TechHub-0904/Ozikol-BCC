@@ -1503,10 +1503,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
         }
 
         /// <summary>
-        /// Seeds and synchronizes the canonical 40 platform features organized under the 10 official Feature Suites.
+        /// Seeds and synchronizes the canonical 45 platform features organized under the 10 official Feature Suites.
         /// Preserves custom pricing overrides while ensuring all official capabilities exist in the master catalog.
-        /// All 40 features are configured as Compulsory Core at $0.74 USD / year ($0.08 USD / month, $0.22 USD / quarter),
-        /// yielding ~$29.60 USD (~40,000 NGN) per year platform total.
+        /// All 45 features are configured as Compulsory Core at $0.74 USD / year ($0.08 USD / month, $0.22 USD / quarter),
+        /// yielding ~$33.30 USD (~45,000 NGN) per year platform total.
         /// </summary>
         /// <param name="dbContext">The master catalog database context.</param>
         /// <param name="ct">Cancellation token for async operations.</param>
@@ -1658,6 +1658,23 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     SortOrder = 8,
                     IsActive = true
                 },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-calendar-followups",
+                    Name = "Calendar & Automated Follow-Up Routine",
+                    Category = "Workforce, Rota & Scheduling",
+                    Description = "Two-way Google, Microsoft Outlook and Apple calendar synchronization, routine appointment reminders, and automated member follow-up cadences.",
+                    Icon = "event_repeat",
+                    RoutePrefix = "/calendar-followups",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 9,
+                    IsActive = true
+                },
 
                 // =========================================================================
                 // Suite 03: Reports, Forms & Analytics
@@ -1676,7 +1693,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 9,
+                    SortOrder = 10,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1693,7 +1710,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 10,
+                    SortOrder = 11,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1710,7 +1727,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 11,
+                    SortOrder = 12,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-reference-forms",
+                    Name = "Reference Form & Referee Verification",
+                    Category = "Reports, Forms & Analytics",
+                    Description = "Design custom confidential reference questionnaires, dispatch secure one-time magic links to referees, and generate compiled vetting dossiers.",
+                    Icon = "fact_check",
+                    RoutePrefix = "/reference-forms",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 13,
                     IsActive = true
                 },
 
@@ -1731,7 +1765,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 12,
+                    SortOrder = 14,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1748,7 +1782,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 13,
+                    SortOrder = 15,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1765,7 +1799,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 14,
+                    SortOrder = 16,
                     IsActive = true
                 },
 
@@ -1786,7 +1820,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 15,
+                    SortOrder = 17,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1803,7 +1837,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 16,
+                    SortOrder = 18,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1820,7 +1854,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 17,
+                    SortOrder = 19,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1837,7 +1871,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 18,
+                    SortOrder = 20,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-embedded-banking",
+                    Name = "Embedded Banking, Wallets & Transfers",
+                    Category = "Finance & Commercial Revenue",
+                    Description = "Dedicated virtual account numbers, interbank direct transfers, vendor bulk payouts, automated escrow holding, and multi-currency digital ledgers.",
+                    Icon = "account_balance_wallet",
+                    RoutePrefix = "/embedded-banking",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 21,
                     IsActive = true
                 },
 
@@ -1858,7 +1909,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 19,
+                    SortOrder = 22,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1875,7 +1926,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 20,
+                    SortOrder = 23,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1892,7 +1943,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 21,
+                    SortOrder = 24,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1909,7 +1960,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 22,
+                    SortOrder = 25,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1926,7 +1977,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 23,
+                    SortOrder = 26,
                     IsActive = true
                 },
 
@@ -1947,7 +1998,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 24,
+                    SortOrder = 27,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1964,7 +2015,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 25,
+                    SortOrder = 28,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1981,7 +2032,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 26,
+                    SortOrder = 29,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -1998,7 +2049,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 27,
+                    SortOrder = 30,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2015,7 +2066,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 28,
+                    SortOrder = 31,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2032,7 +2083,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 29,
+                    SortOrder = 32,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-gocall-ai",
+                    Name = "GoCall AI Emergency & Voice Dispatch",
+                    Category = "Communication, AI & Support",
+                    Description = "Autonomous conversational AI voice and SMS calling engine with verified institutional contact pool for emergency, hospital, and service dispatch.",
+                    Icon = "phone_in_talk",
+                    RoutePrefix = "/gocall-ai",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 33,
                     IsActive = true
                 },
 
@@ -2053,7 +2121,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 30,
+                    SortOrder = 34,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2070,7 +2138,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 31,
+                    SortOrder = 35,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2087,7 +2155,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 32,
+                    SortOrder = 36,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2104,7 +2172,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 33,
+                    SortOrder = 37,
+                    IsActive = true
+                },
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-kyc-verification",
+                    Name = "Official KYC & Identity Verification",
+                    Category = "Compliance, Learning & Certification",
+                    Description = "Official government ID scanning, biometric facial liveness checks, anti-money laundering (AML) screening, and secure compliance vault.",
+                    Icon = "verified_user",
+                    RoutePrefix = "/kyc-verification",
+                    IsCompulsory = true,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 38,
                     IsActive = true
                 },
 
@@ -2125,7 +2210,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 34,
+                    SortOrder = 39,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2142,7 +2227,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 35,
+                    SortOrder = 40,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2159,7 +2244,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 36,
+                    SortOrder = 41,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2176,7 +2261,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 37,
+                    SortOrder = 42,
                     IsActive = true
                 },
 
@@ -2197,7 +2282,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 38,
+                    SortOrder = 43,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2214,7 +2299,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 39,
+                    SortOrder = 44,
                     IsActive = true
                 },
                 new MasterFeatureCatalog
@@ -2231,7 +2316,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     QuarterlyPrice = 0.00m,
                     YearlyPrice = 0.74m,
                     IsMetered = false,
-                    SortOrder = 40,
+                    SortOrder = 45,
                     IsActive = true
                 }
             };

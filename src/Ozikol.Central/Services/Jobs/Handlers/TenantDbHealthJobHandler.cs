@@ -77,12 +77,14 @@ namespace Ozikol.Central.Services.Jobs.Handlers
                 return JobExecutionResult.Succeeded(0, "No active tenants to inspect.", logs);
             }
 
+            var masterConnStr = _masterCatalogDbContext.Database.GetConnectionString() ?? string.Empty;
             int healthyCount = 0;
             int warningCount = 0;
 
             foreach (var tenant in tenants)
             {
-                if (string.IsNullOrWhiteSpace(tenant.ConnectionString))
+                string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+                if (string.IsNullOrWhiteSpace(tenantConnStr))
                 {
                     logs.Add($"   ├── ⚠️ Tenant [{tenant.TenantKey}] '{tenant.OrganizationName}': Missing connection string!");
                     warningCount++;
@@ -92,7 +94,7 @@ namespace Ozikol.Central.Services.Jobs.Handlers
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    await using var conn = new SqlConnection(tenant.ConnectionString);
+                    await using var conn = new SqlConnection(tenantConnStr);
                     await conn.OpenAsync(cancellationToken);
                     await using var cmd = conn.CreateCommand();
                     cmd.CommandText = "SELECT 1;";

@@ -29,7 +29,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         private async Task<(string Code, string Symbol)> GetActiveCurrencyAsync()
         {
-            var setting = await _context.BcpSettings.AsNoTracking().FirstOrDefaultAsync();
+            var setting = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
             string code = string.IsNullOrWhiteSpace(setting?.CurrencyCode) ? "USD" : setting.CurrencyCode.Trim().ToUpperInvariant();
             string symbol = string.IsNullOrWhiteSpace(setting?.CurrencySymbol) ? "$" : setting.CurrencySymbol.Trim();
             return (code, symbol);

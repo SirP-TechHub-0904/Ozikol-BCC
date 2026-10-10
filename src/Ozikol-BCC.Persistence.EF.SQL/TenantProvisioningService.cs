@@ -351,34 +351,34 @@ END";
                 }
             }
 
-            // 3. Seed ConfigSetting (Website Title, Company Name)
-            if (!await dbContext.ConfigSettings.AnyAsync(cancellationToken))
+            // 3. Seed MisWebsiteSetting (Brand Name, Website Title, Default Controls)
+            if (!await dbContext.MisWebsiteSettings.AnyAsync(cancellationToken))
             {
-                dbContext.ConfigSettings.Add(new ConfigSetting
+                dbContext.MisWebsiteSettings.Add(new MisWebsiteSetting
                 {
                     Id = Guid.NewGuid(),
-                    CompanyName = request.OrganizationName,
-                    CompanyIconUrl = null,
-                    WebsiteTitle = request.OrganizationName,
-                    DashboardTitle = $"{request.OrganizationName} Command Center",
-                    TemplateLayoutKey = "standard",
-                    ProductTitle = "Online Store",
-                    ShowProductsInMenu = true,
-                    ShowProductsInFooter = true,
-                    ActivateProductsInHome = false,
-                    CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    BrandName = request.OrganizationName,
+                    SiteTitle = request.OrganizationName,
+                    Tagline = $"{request.OrganizationName} Sovereign Platform",
+                    CopyrightNotice = $"© {DateTime.UtcNow.Year} {request.OrganizationName}. All rights reserved.",
+                    EnableComingSoon = false,
+                    RemovePlatformWatermark = false
                 });
             }
 
-            // 4. Seed BcpSetting
-            if (!await dbContext.BcpSettings.AnyAsync(cancellationToken))
+            // 4. Seed MisConfigurationSetting (Currency, Quotas, Gateways)
+            if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
-                dbContext.BcpSettings.Add(new BcpSetting
+                dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
                     CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    CurrencySymbol = "$",
+                    EnableSms = true,
+                    EmailProvider = "Postmark",
+                    MaximumUsers = 1000,
+                    SessionTimeoutMinutes = 120,
+                    EnableListDownload = true
                 });
             }
 

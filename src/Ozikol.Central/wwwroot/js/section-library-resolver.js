@@ -4,6 +4,11 @@
  */
 const SectionLibraryResolver = (function () {
     const catalog = {
+        jquery: {
+            name: "jQuery 3.7",
+            css: [],
+            js: ["https://code.jquery.com/jquery-3.7.1.min.js"]
+        },
         bootstrap: {
             name: "Bootstrap 5.3",
             css: ["https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"],
@@ -13,6 +18,39 @@ const SectionLibraryResolver = (function () {
             name: "Swiper v11",
             css: ["https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"],
             js: ["https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"]
+        },
+        meanmenu: {
+            name: "MeanMenu Mobile Nav",
+            css: ["https://cdnjs.cloudflare.com/ajax/libs/meanmenu/2.0.8/meanmenu.min.css"],
+            js: ["https://code.jquery.com/jquery-3.7.1.min.js", "https://cdnjs.cloudflare.com/ajax/libs/meanmenu/2.0.8/jquery.meanmenu.min.js"],
+            autoInit: "if (typeof jQuery !== 'undefined' && jQuery.fn.meanmenu) { jQuery('#mobile-menu, nav#mobile-menu').meanmenu(); }"
+        },
+        "nice-select": {
+            name: "jQuery Nice Select",
+            css: ["https://cdnjs.cloudflare.com/ajax/libs/jquery-nice-select/1.1.0/css/nice-select.min.css"],
+            js: ["https://code.jquery.com/jquery-3.7.1.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jquery-nice-select/1.1.0/js/jquery.nice-select.min.js"],
+            autoInit: "if (typeof jQuery !== 'undefined' && jQuery.fn.niceSelect) { jQuery('select').niceSelect(); }"
+        },
+        animate: {
+            name: "Animate.css",
+            css: ["https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"],
+            js: []
+        },
+        "magnific-popup": {
+            name: "Magnific Popup",
+            css: ["https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.min.css"],
+            js: ["https://code.jquery.com/jquery-3.7.1.min.js", "https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.min.js"],
+            autoInit: "if (typeof jQuery !== 'undefined' && jQuery.fn.magnificPopup) { jQuery('.popup-image, .popup-video').magnificPopup({ type: 'image', gallery: { enabled: true } }); }"
+        },
+        slick: {
+            name: "Slick Carousel",
+            css: ["https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.css", "https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css"],
+            js: ["https://code.jquery.com/jquery-3.7.1.min.js", "https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"]
+        },
+        gsap: {
+            name: "GSAP Animation Suite",
+            css: [],
+            js: ["https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js", "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"]
         },
         aos: {
             name: "AOS Animations",
@@ -75,6 +113,24 @@ const SectionLibraryResolver = (function () {
         if (/\b(container|container-fluid|row|col|col-\w+|d-flex|modal|dropdown|accordion|navbar|btn-primary|data-bs-|bootstrap\.)\b/i.test(combined)) {
             detected.add("bootstrap");
         }
+        if (/\b(meanmenu|mean-container|mean-bar|meanmenu-reveal|\.meanmenu\(|meanMenuContainer)\b/i.test(combined)) {
+            detected.add("meanmenu");
+        }
+        if (/\b(nice-select|\.niceSelect\(|nice_select)\b/i.test(combined)) {
+            detected.add("nice-select");
+        }
+        if (/\b(animate__animated|animate__fadeIn|wow\s+fadeIn|new\s+WOW)\b/i.test(combined)) {
+            detected.add("animate");
+        }
+        if (/\b(magnificPopup|mfp-|popup-image|popup-video|\.magnificPopup\()\b/i.test(combined)) {
+            detected.add("magnific-popup");
+        }
+        if (/\b(slick-slider|slick-slide|slick-track|\.slick\()\b/i.test(combined)) {
+            detected.add("slick");
+        }
+        if (/\b(gsap\.|ScrollTrigger|TweenMax|TweenLite)\b/i.test(combined)) {
+            detected.add("gsap");
+        }
         if (/\b(swiper|swiper-slide|swiper-wrapper|swiper-pagination|swiper-button-|new\s+Swiper)\b/i.test(combined)) {
             detected.add("swiper");
         }
@@ -110,23 +166,34 @@ const SectionLibraryResolver = (function () {
     }
 
     /**
-     * Resolves all CDN asset URLs and initializers for given library keys.
+     * Resolves all CDN asset URLs and initializers for given library keys,
+     * cleanly separating CSS and JS library bundles.
      */
     function resolveAssets(libraryKeys) {
         const cssUrls = [];
         const jsUrls = [];
         const autoInits = [];
+        const cssLibraries = [];
+        const jsLibraries = [];
 
         (libraryKeys || []).forEach(key => {
             const def = catalog[key.toLowerCase()];
             if (def) {
-                if (def.css) cssUrls.push(...def.css);
-                if (def.js) jsUrls.push(...def.js);
+                if (def.css && def.css.length > 0) {
+                    cssUrls.push(...def.css);
+                    cssLibraries.push(def.name);
+                }
+                if (def.js && def.js.length > 0) {
+                    jsUrls.push(...def.js);
+                    jsLibraries.push(def.name);
+                }
                 if (def.autoInit) autoInits.push(def.autoInit);
             }
         });
 
         return {
+            cssLibraries: Array.from(new Set(cssLibraries)),
+            jsLibraries: Array.from(new Set(jsLibraries)),
             css: Array.from(new Set(cssUrls)),
             js: Array.from(new Set(jsUrls)),
             autoInits: Array.from(new Set(autoInits))
@@ -134,7 +201,10 @@ const SectionLibraryResolver = (function () {
     }
 
     /**
-     * Injects resolved CSS links, scripts, scoped styles, and isolated section JS into an iframe document.
+     * Injects resolved CSS links, scoped styles, HTML template, JS links, and isolated scripts into an iframe document.
+     * Order of injection:
+     * 1. <head>: Google Fonts + CSS Library CDN links + Scoped Custom CSS
+     * 2. <body>: Hydrated HTML Section + JS Library CDN scripts + Auto-inits + Custom Section JS
      */
     function injectIntoIframe(iframeDoc, sectionPayload, callback) {
         if (!iframeDoc) return;
@@ -142,11 +212,11 @@ const SectionLibraryResolver = (function () {
         const detectedLibs = sectionPayload.requiredLibraries || detectLibraries(sectionPayload.htmlTemplate, sectionPayload.jsScript);
         const assets = resolveAssets(detectedLibs);
 
-        // 1. Build head markup
-        const headLinks = assets.css.map(url => `<link rel="stylesheet" href="${url}">`).join("\n");
+        // 1. Build head markup: CSS Libraries first, then author's Scoped CSS
+        const headCssLinks = assets.css.map(url => `<link rel="stylesheet" href="${url}">`).join("\n");
         const scopedCssTag = sectionPayload.scopedCss ? `<style>${sectionPayload.scopedCss}</style>` : "";
 
-        // 2. Build scripts markup
+        // 2. Build scripts markup: JS Libraries first, then Auto-inits, then isolated custom script
         const scriptTags = assets.js.map(url => `<script src="${url}"><\/script>`).join("\n");
         const initsTag = assets.autoInits.length ? `<script>document.addEventListener('DOMContentLoaded', function() { ${assets.autoInits.join("\n")} });<\/script>` : "";
         const isolatedJsTag = sectionPayload.jsScript ? `<script>(function() { try { ${sectionPayload.jsScript} } catch(e) { console.warn('Section JS execution warning:', e); } })();<\/script>` : "";
@@ -161,10 +231,10 @@ const SectionLibraryResolver = (function () {
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-                ${headLinks}
+                ${headCssLinks}
                 ${scopedCssTag}
                 <style>
-                    body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
+                    body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
                 </style>
             </head>
             <body>

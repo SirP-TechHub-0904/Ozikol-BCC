@@ -5080,9 +5080,90 @@
     <value>Solicite cupones y hasta 1 aÃ±o de acceso promocional a la plataforma.</value>
   </data>
   <data name="Nav_Support_Vouchers" xml:space="preserve">
-    <value>CupÃ³n promocional</value>
+    <value>Cupón promocional</value>
   </data>
   <data name="Support_Tab_Vouchers" xml:space="preserve">
-    <value>CupÃ³n promocional</value>
+    <value>Cupón promocional</value>
+  </data>
+
+  <!-- 5 Canonical New Features Localization (Spanish) -->
+  <data name="Feat_CalendarFollowups_Title" xml:space="preserve">
+    <value>Calendario y rutina de seguimiento</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Desc" xml:space="preserve">
+    <value>Sincronización bidireccional de Google y Outlook con recordatorios y rutinas automáticas de seguimiento.</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt1" xml:space="preserve">
+    <value>Sincronización con Google Calendar, Microsoft Outlook y Apple iCal</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt2" xml:space="preserve">
+    <value>Cadencias de correo electrónico y SMS de seguimiento posteriores a la reunión</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt3" xml:space="preserve">
+    <value>Detección universal de conflictos de horarios y vista de cronograma</value>
+  </data>
+
+  <data name="Feat_ReferenceForms_Title" xml:space="preserve">
+    <value>Sistema de formularios de referencia</value>
+  </data>
+  <data name="Feat_ReferenceForms_Desc" xml:space="preserve">
+    <value>Diseñe cuestionarios de evaluación confidenciales, envíe enlaces mágicos seguros y genere expedientes de verificación.</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt1" xml:space="preserve">
+    <value>Rúbricas de calificación confidenciales y cuestionarios a medida</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt2" xml:space="preserve">
+    <value>Enlaces mágicos de un solo uso enviados directamente a los árbitros</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt3" xml:space="preserve">
+    <value>Recordatorios automáticos y generación de informes ejecutivos en PDF</value>
+  </data>
+
+  <data name="Feat_EmbeddedBanking_Title" xml:space="preserve">
+    <value>Banca integrada y rieles de pago</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Desc" xml:space="preserve">
+    <value>Números de cuenta virtuales dedicados, transferencias interbancarias directas, pagos masivos, custodia y libros multidivisa.</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt1" xml:space="preserve">
+    <value>Números de cuenta bancaria virtual dedicados para organizaciones y miembros</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt2" xml:space="preserve">
+    <value>Transferencias interbancarias directas y pagos masivos a proveedores y personal</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt3" xml:space="preserve">
+    <value>Webhooks en tiempo real, retención en custodia y libro mayor multidivisa</value>
+  </data>
+
+  <data name="Feat_GoCallAi_Title" xml:space="preserve">
+    <value>GoCall AI - Despacho de voz y emergencias</value>
+  </data>
+  <data name="Feat_GoCallAi_Desc" xml:space="preserve">
+    <value>Motor de llamadas de voz y SMS con IA conversacional y directorio de hospitales e instituciones verificadas para emergencias.</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt1" xml:space="preserve">
+    <value>Directorio verificado de instituciones y centros de emergencia</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt2" xml:space="preserve">
+    <value>Enrutamiento inteligente de emergencias y llamadas telefónicas autónomas</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt3" xml:space="preserve">
+    <value>Voz conversacional natural, transcripciones y registros de auditoría de audio</value>
+  </data>
+
+  <data name="Feat_KycVerification_Title" xml:space="preserve">
+    <value>KYC oficial y verificación de identidad</value>
+  </data>
+  <data name="Feat_KycVerification_Desc" xml:space="preserve">
+    <value>Escaneo OCR de documentos de identidad oficiales, pruebas de vida biométrica facial, análisis AML y bóveda de cumplimiento segura.</value>
+  </data>
+  <data name="Feat_KycVerification_Pt1" xml:space="preserve">
+    <value>Extracción OCR de documentos nacionales, pasaportes y licencias de conducir</value>
+  </data>
+  <data name="Feat_KycVerification_Pt2" xml:space="preserve">
+    <value>Cotejo biométrico facial y verificación de vitalidad antifraude</value>
+  </data>
+  <data name="Feat_KycVerification_Pt3" xml:space="preserve">
+    <value>Insignias de cumplimiento KYC por niveles y archivo de auditoría AML cifrado</value>
   </data>
 </root>

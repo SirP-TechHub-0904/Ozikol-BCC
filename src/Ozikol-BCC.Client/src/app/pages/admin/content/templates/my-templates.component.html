@@ -121,7 +121,7 @@
                 class="form-control templates-search"
                 placeholder="Search installed templates by title, variant code, or role..."
               />
-              <button *ngIf="searchQuery" (click)="searchQuery = ''; applyFilters()" class="btn-clear-search">✕</button>
+              <button *ngIf="searchQuery" (click)="searchQuery = ''; applyFilters()" class="btn-clear-search"><span class="material-symbols-outlined">close</span></button>
             </div>
 
             <div class="view-mode-toggle">
@@ -181,7 +181,7 @@
                 <span class="material-symbols-outlined btn-icon" [class.spin-icon]="activatingSuite">
                   {{ isCurrentThemeSuiteActive() ? 'verified' : 'bolt' }}
                 </span>
-                <span>{{ activatingSuite ? 'Activating...' : (isCurrentThemeSuiteActive() ? '✓ Currently Active' : 'Activate Theme') }}</span>
+                <span>{{ activatingSuite ? 'Activating...' : (isCurrentThemeSuiteActive() ? 'Currently Active' : 'Activate Theme') }}</span>
               </button>
             </div>
           </div>
@@ -199,7 +199,8 @@
                 [class.active]="selectedGroup === 'all'"
                 (click)="selectSuiteGroup('all')"
               >
-                All Suites ({{ installedTemplates.length }})
+                <span>All Suites</span>
+                <span class="suite-count-badge">{{ installedTemplates.length }}</span>
               </button>
               <button
                 type="button"
@@ -208,10 +209,10 @@
                 [class.active]="selectedGroup === suite.code"
                 (click)="selectSuiteGroup(suite.code)"
               >
-                <i class="fa-solid fa-cube me-1" [class.text-success]="suite.name === activeThemeSuiteName" [class.text-primary]="suite.name !== activeThemeSuiteName"></i>
-                <span>{{ suite.name }}</span>
-                <span class="suite-count-badge">({{ suite.count }})</span>
-                <span class="live-pill ms-1" *ngIf="suite.name === activeThemeSuiteName">Active</span>
+                <span class="material-symbols-outlined suite-cube-icon" [class.text-emerald]="suite.name === activeThemeSuiteName" [class.text-blue]="suite.name !== activeThemeSuiteName">view_in_ar</span>
+                <span class="suite-name">{{ suite.name }}</span>
+                <span class="suite-count-badge">{{ suite.count }}</span>
+                <span class="live-pill" *ngIf="suite.name === activeThemeSuiteName">ACTIVE</span>
               </button>
             </div>
           </div>
@@ -251,7 +252,7 @@
                   {{ getCategoryName(item.category) }}
                 </span>
                 <span class="active-badge" *ngIf="isActiveSingleton(item)">
-                  ✓ Active {{ getSingletonLabel(item.category) }}
+                  <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle; margin-right: 2px;">check_circle</span> Active {{ getSingletonLabel(item.category) }}
                 </span>
                 <span class="version-tag" *ngIf="!isActiveSingleton(item)">
                   v{{ item.version }}
@@ -299,7 +300,7 @@
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">Scoped CSS:</span>
-                  <span class="meta-check">✓ Isolated</span>
+                  <span class="meta-check"><span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">check</span> Isolated</span>
                 </div>
               </div>
             </div>
@@ -315,6 +316,15 @@
                 <span class="material-symbols-outlined btn-icon">visibility</span>
                 <span>Preview</span>
               </button>
+
+              <a
+                [routerLink]="['/content/console/templates/visuals', item.id || item.variantCode]"
+                class="btn btn-card-edit"
+                title="Edit component in Visual Studio"
+              >
+                <span class="material-symbols-outlined btn-icon">edit_note</span>
+                <span>Edit</span>
+              </a>
 
               <button
                 *ngIf="isSingletonCategory(item.category) && !isActiveSingleton(item)"
@@ -395,7 +405,8 @@
                   </td>
                   <td>
                     <span class="status-pill active" *ngIf="isActiveSingleton(item)">
-                      ✓ Active {{ getSingletonLabel(item.category) }}
+                      <span class="material-symbols-outlined" style="font-size: 13px; margin-right: 3px;">check_circle</span>
+                      Active {{ getSingletonLabel(item.category) }}
                     </span>
                     <span class="status-pill ready" *ngIf="!isActiveSingleton(item)">
                       {{ isSingletonCategory(item.category) ? 'Inactive' : 'Ready to Use' }}
@@ -415,6 +426,14 @@
                         <span class="material-symbols-outlined">visibility</span>
                         Preview
                       </button>
+                      <a
+                        [routerLink]="['/content/console/templates/visuals', item.id || item.variantCode]"
+                        class="btn-tbl-action edit"
+                        title="Edit in Visual Studio"
+                      >
+                        <span class="material-symbols-outlined">edit_note</span>
+                        Edit
+                      </a>
                       <button
                         *ngIf="isSingletonCategory(item.category) && !isActiveSingleton(item)"
                         type="button"
@@ -629,106 +648,79 @@
     <!-- ============================================== -->
     <div class="modal-backdrop" *ngIf="showSinglePreviewModal && activePreviewItem" (click)="closeSinglePreviewModal()">
       <div class="modal-card preview-modal-card" (click)="$event.stopPropagation()">
-        <!-- Animated AI Transformation Top Progress Bar -->
-        <div *ngIf="isAiTransforming" class="ai-transform-progress-line"></div>
-
         <!-- Header -->
         <div class="preview-modal-header">
           <div class="preview-title-info">
-            <span class="material-symbols-outlined preview-modal-badge-icon">{{ activePreviewItem.previewIcon }}</span>
+            <span class="material-symbols-outlined preview-modal-badge-icon">{{ activePreviewItem.previewIcon || 'visibility' }}</span>
             <div>
-              <h3 class="preview-modal-name">{{ activePreviewItem.name }}</h3>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h3 class="preview-modal-name">{{ activePreviewItem.name }}</h3>
+                <span class="category-pill">
+                  <span class="material-symbols-outlined cat-pill-icon">{{ getCategoryIcon(activePreviewItem.category) }}</span>
+                  {{ getCategoryName(activePreviewItem.category) }}
+                </span>
+                <code class="variant-code-badge">{{ activePreviewItem.variantCode }}</code>
+              </div>
               <span class="preview-modal-sub">
-                {{ getCategoryName(activePreviewItem.category) }} • Code: <code>{{ activePreviewItem.variantCode }}</code> • Scoped CSS
+                Scoped CSS Isolation &bull; v{{ activePreviewItem.version || '1.0' }}
               </span>
             </div>
           </div>
 
-          <!-- Mode Tabs: Preview, Sample Content, HTML, CSS, JS -->
-          <div class="modal-view-mode-tabs">
-            <button
-              type="button"
-              class="modal-mode-tab-btn"
-              [class.active]="previewModalTab === 'preview'"
-              (click)="setPreviewModalTab('preview')"
+          <!-- Viewport Toggle & Visual Editor Jump -->
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="viewport-toggle-group">
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="previewViewport === 'desktop'"
+                (click)="previewViewport = 'desktop'"
+                title="Desktop View"
+              >
+                <span class="material-symbols-outlined">desktop_windows</span>
+                <span>Desktop</span>
+              </button>
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="previewViewport === 'tablet'"
+                (click)="previewViewport = 'tablet'"
+                title="Tablet View (768px)"
+              >
+                <span class="material-symbols-outlined">tablet_mac</span>
+                <span>Tablet</span>
+              </button>
+              <button
+                type="button"
+                class="viewport-btn"
+                [class.active]="previewViewport === 'mobile'"
+                (click)="previewViewport = 'mobile'"
+                title="Mobile View (375px)"
+              >
+                <span class="material-symbols-outlined">smartphone</span>
+                <span>Mobile</span>
+              </button>
+            </div>
+
+            <a
+              [routerLink]="['/content/console/templates/visuals', activePreviewItem.id || activePreviewItem.variantCode]"
+              (click)="closeSinglePreviewModal()"
+              class="btn btn-primary"
+              style="font-size: 12.5px; height: 36px; padding: 0 14px; gap: 6px; display: inline-flex; align-items: center;"
+              title="Edit in Visual Studio"
             >
-              <span class="material-symbols-outlined">visibility</span>
-              <span>Preview</span>
-            </button>
-            <button
-              type="button"
-              class="modal-mode-tab-btn"
-              [class.active]="previewModalTab === 'content'"
-              (click)="setPreviewModalTab('content')"
-            >
-              <span class="material-symbols-outlined">edit_note</span>
-              <span>Sample Content</span>
-            </button>
-            <button
-              type="button"
-              class="modal-mode-tab-btn"
-              [class.active]="previewModalTab === 'html'"
-              (click)="setPreviewModalTab('html')"
-            >
-              <span class="material-symbols-outlined">html</span>
-              <span>HTML</span>
-            </button>
-            <button
-              type="button"
-              class="modal-mode-tab-btn"
-              [class.active]="previewModalTab === 'css'"
-              (click)="setPreviewModalTab('css')"
-            >
-              <span class="material-symbols-outlined">css</span>
-              <span>CSS</span>
-            </button>
-            <button
-              type="button"
-              class="modal-mode-tab-btn"
-              [class.active]="previewModalTab === 'js'"
-              (click)="setPreviewModalTab('js')"
-            >
-              <span class="material-symbols-outlined">javascript</span>
-              <span>JS</span>
+              <span class="material-symbols-outlined" style="font-size: 18px;">edit_note</span>
+              <span>Edit Component</span>
+            </a>
+
+            <button type="button" class="btn-close-modal" (click)="closeSinglePreviewModal()" title="Close Preview">
+              <span class="material-symbols-outlined">close</span>
             </button>
           </div>
-
-          <!-- Viewport Toggle (Visible only when in Preview mode) -->
-          <div class="viewport-toggle-group" *ngIf="previewModalTab === 'preview'">
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="previewViewport === 'desktop'"
-              (click)="previewViewport = 'desktop'"
-            >
-              <span class="material-symbols-outlined">desktop_windows</span>
-              <span>Desktop</span>
-            </button>
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="previewViewport === 'tablet'"
-              (click)="previewViewport = 'tablet'"
-            >
-              <span class="material-symbols-outlined">tablet_mac</span>
-              <span>Tablet (768px)</span>
-            </button>
-            <button
-              type="button"
-              class="viewport-btn"
-              [class.active]="previewViewport === 'mobile'"
-              (click)="previewViewport = 'mobile'"
-            >
-              <span class="material-symbols-outlined">smartphone</span>
-              <span>Mobile (375px)</span>
-            </button>
-          </div>
-
-          <button type="button" class="btn-close-modal" (click)="closeSinglePreviewModal()">✕</button>
         </div>
 
-        <!-- Page View Simulation Bar (active for menu templates in visual preview mode) -->
-        <div class="page-sim-toolbar" *ngIf="previewModalTab === 'preview' && activePreviewItem?.category === 'menu'">
+        <!-- Page View Simulation Bar (for menu templates in visual preview mode) -->
+        <div class="page-sim-toolbar" *ngIf="activePreviewItem?.category === 'menu'">
           <div class="sim-brand-badge">
             <span class="material-symbols-outlined fs-6">web</span>
             <span>Page Simulation:</span>
@@ -762,1391 +754,13 @@
           </div>
         </div>
 
-        <!-- Mode 1: Rendered Visual Canvas -->
-        <div *ngIf="previewModalTab === 'preview'" class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
+        <!-- Rendered Visual Canvas -->
+        <div class="preview-modal-body" [class.viewport-mobile]="previewViewport === 'mobile'" [class.viewport-tablet]="previewViewport === 'tablet'">
           <div class="preview-canvas-wrapper">
             <iframe class="full-demo-iframe" [srcdoc]="safeSinglePreviewSrcDoc" title="Single Template Visual Preview"></iframe>
           </div>
         </div>
 
-        <!-- Mode: Interactive Sample Content Editor -->
-        <div *ngIf="previewModalTab === 'content'" class="content-editor-container">
-          <div class="content-editor-header">
-            <div class="content-editor-title-wrap">
-              <span class="material-symbols-outlined editor-head-icon">tune</span>
-              <div>
-                <h4 class="editor-head-title">Dynamic Preview Content Replacements</h4>
-                <p class="editor-head-sub">Type custom titles, descriptions, and list cards below. The preview updates instantly!</p>
-              </div>
-            </div>
-            <div class="content-editor-actions">
-              <button type="button" class="btn-reset-content" (click)="resetPreviewContent()">
-                <span class="material-symbols-outlined">restart_alt</span>
-                <span>Reset Defaults</span>
-              </button>
-              <button type="button" class="btn btn-primary" (click)="setPreviewModalTab('preview')">
-                <span class="material-symbols-outlined">visibility</span>
-                <span>Return to Preview</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="content-editor-body" [ngSwitch]="activePreviewItem.category">
-            <!-- MENU CATEGORY -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'menu'">
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'BRAND NAME ({{ BrandName }})'"></label>
-                <input type="text" [(ngModel)]="previewMenuContent.brandName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Acme Global" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'LOGO IMAGE URL ({{ LogoUrl }})'"></label>
-                <div style="display: flex; gap: 8px;">
-                  <input type="text" [(ngModel)]="previewMenuContent.logoUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="https://... (or leave empty to show text business name)" />
-                  <button *ngIf="previewMenuContent.logoUrl" type="button" class="btn btn-outline" style="white-space: nowrap; padding: 4px 10px; font-size: 11.5px;" (click)="previewMenuContent.logoUrl = ''; onPreviewContentChange()" title="Clear logo to test business name text fallback">Clear Logo</button>
-                </div>
-              </div>
-
-              <!-- Brand Identity Explanatory Tip -->
-              <div class="form-group full-width" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #475569;">
-                <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                <strong>Logo-First Fallback:</strong> <code [innerText]="'{{ BrandIdentity }}'"></code> automatically renders the uploaded logo image if Logo URL is present. If null or empty, it seamlessly displays the business name text without leaving broken image tags.
-              </div>
-
-              <!-- Top Navigation Links -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'TOP NAVIGATION LINKS ({{#each MainMenuItems}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addTopMenuItem()">+ Add Nav Link</button>
-                </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row" *ngFor="let item of previewMenuContent.topMenuItems; let idx = index">
-                    <span class="subitem-badge">#{{ idx + 1 }}</span>
-                    <div class="subitem-inputs">
-                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Link Title" />
-                      <input type="text" [(ngModel)]="item.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/slug or #anchor" />
-                    </div>
-                    <button type="button" class="btn-del-subitem" (click)="removeTopMenuItem(idx)" title="Remove item">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dropdown Menus with Nested Pages -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'DROPDOWN MENUS ({{#each MenuDropdowns}} with nested {{#each Pages}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addMenuDropdown()">+ Add Dropdown Menu</button>
-                </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row mb-3" *ngFor="let dd of previewMenuContent.dropdowns; let ddIdx = index" style="flex-direction: column; align-items: stretch;">
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      <span class="subitem-badge">Dropdown #{{ ddIdx + 1 }}</span>
-                      <input type="text" [(ngModel)]="dd.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Dropdown Title (e.g. Services, Solutions)" />
-                      <button type="button" class="btn-del-subitem" (click)="removeMenuDropdown(ddIdx)" title="Remove Dropdown">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-
-                    <!-- Inner Child Pages -->
-                    <div style="margin-left: 24px; padding-left: 12px; border-left: 2px solid #e2e8f0;">
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">Dropdown Sub-Links:</span>
-                        <button type="button" class="btn-add-subitem" style="padding: 2px 8px; font-size: 11px;" (click)="addMenuDropdownPage(ddIdx)">+ Add Sub-Link</button>
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display: flex; gap: 8px; align-items: center;" *ngFor="let p of dd.pages; let pIdx = index">
-                          <input type="text" [(ngModel)]="p.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Sub-Link Title (e.g. Commercial Cleaning)" />
-                          <input type="text" [(ngModel)]="p.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="/services/commercial-cleaning" />
-                          <button type="button" class="btn-del-subitem" (click)="removeMenuDropdownPage(ddIdx, pIdx)" title="Remove Link">
-                            <span class="material-symbols-outlined">close</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Header CTA Action Buttons -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'HEADER CTA BUTTONS ({{#each MenuCtaButtons}} — dynamically populated from pages where IsMenuCTA is enabled)'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addMenuCtaButton()">+ Add CTA Button</button>
-                </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row" *ngFor="let cta of previewMenuContent.menuCtaButtons; let cIdx = index">
-                    <span class="subitem-badge">#{{ cIdx + 1 }}</span>
-                    <div class="subitem-inputs">
-                      <input type="text" [(ngModel)]="cta.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Button Text (e.g. Request a Service)" />
-                      <input type="text" [(ngModel)]="cta.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/target-page" />
-                    </div>
-                    <button type="button" class="btn-del-subitem" (click)="removeMenuCtaButton(cIdx)" title="Remove CTA">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- HERO CATEGORY (SLIDER MODEL) -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'hero'">
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'SLIDER MAIN HEADLINE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Innovating the Future of Community Empowerment" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. OFFICIAL PORTAL" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'PRIMARY SLIDE IMAGE URL ({{ Url }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. https://yourdomain.com/hero-image.jpg" />
-              </div>
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'SLIDE TEXT / SUMMARY ({{ Text }})'"></label>
-                <textarea [(ngModel)]="previewHeroContent.text" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Brief supportive summary..."></textarea>
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Learn More" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'PRIMARY BUTTON LINK ({{ ButtonLink }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="/services or https://..." />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'VIDEO BUTTON TEXT ({{ VideoButtonText }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.videoButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Watch Video" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'POPUP VIDEO LINK ({{ VideoLink }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.videoLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://youtube.com/watch?v=..." />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'SECONDARY IMAGE URL ({{ SecondUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.secondUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://... (optional overlapping graphic)" />
-              </div>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeVideo }})'"></label>
-                <input type="text" [(ngModel)]="previewHeroContent.youtubeVideo" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
-              </div>
-            </div>
-
-            <!-- BLOG & ARTICLES CATEGORY (DETAIL VS GRID) -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'blog'">
-              <!-- 1. Single Article Detail Sample Content Editor -->
-              <ng-container *ngIf="isBlogDetailTemplate(); else blogGridContent">
-                <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 14px 16px;">
-                  <h5 style="margin: 0 0 4px 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">
-                    <i class="fa-solid fa-file-lines me-2"></i>Single Article Detail Sample Content
-                  </h5>
-                  <p style="margin: 0; font-size: 12px; color: #475569; line-height: 1.5;">
-                    All modifications below dynamically hydrate the article headline, author biography, rich-text body, and sticky sidebar dispatches in real-time.
-                  </p>
-                </div>
-
-                <div class="form-group full-width">
-                  <label class="form-lbl" [innerText]="'ARTICLE TITLE ({{ Article.Title }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Accelerating Enterprise Scalability with Hybrid Cloud Architecture" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'ARTICLE CATEGORY ({{ Article.Category }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Technology & Cloud" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'PUBLISHED DATE ({{ Article.PublishedDate }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. September 14, 2026" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'ESTIMATED READ TIME ({{ Article.ReadTime }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.readTime" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. 5 min read" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'FEATURED BANNER IMAGE ({{ Article.CoverImageUrl }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'AUTHOR FULL NAME ({{ Article.AuthorName }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Dr. Jennifer Miller" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'AUTHOR ROLE / TITLE ({{ Article.AuthorRole }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorRole" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Principal Cloud Strategist" />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'AUTHOR AVATAR URL ({{ Article.AuthorAvatarUrl }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.authorAvatarUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
-                </div>
-
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'ARTICLE TOPIC TAGS ({{#each Article.Tags}})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogDetailContent.tagsInput" (ngModelChange)="onBlogDetailTagsChange()" class="form-ctrl" placeholder="Comma-separated e.g. Cloud, Scalability, Security" />
-                </div>
-
-                <div class="form-group full-width">
-                  <label class="form-lbl" [innerText]="'AUTHOR BIOGRAPHY ({{ Article.AuthorBio }})'"></label>
-                  <textarea [(ngModel)]="previewBlogDetailContent.authorBio" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
-                </div>
-
-                <div class="form-group full-width">
-                  <label class="form-lbl" [innerText]="'ARTICLE CONTENT BODY HTML ({{ Article.Body }})'"></label>
-                  <textarea [(ngModel)]="previewBlogDetailContent.body" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" rows="6"></textarea>
-                </div>
-
-                <!-- Social Sharing Toggle (Managed in MIS / Blog Settings) -->
-                <div class="form-group full-width" style="display: flex; align-items: center; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px;">
-                  <input type="checkbox" id="enableSharePostCheck" [(ngModel)]="previewBlogDetailContent.enableSharePost" (ngModelChange)="onPreviewContentChange()" style="width: 18px; height: 18px; cursor: pointer;" />
-                  <div ngNonBindable>
-                    <label for="enableSharePostCheck" style="margin: 0; font-size: 13px; font-weight: 700; cursor: pointer; color: #1e293b;">
-                      Enable Social Media Share Strip (&#123;&#123; PostShareStrip &#125;&#125;)
-                    </label>
-                    <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #64748b;">
-                      When enabled, dynamic share buttons for selected social channels are automatically injected into the &#123;&#123; PostShareStrip &#125;&#125; placeholder in the template HTML.
-                    </p>
-                  </div>
-                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill small ms-auto">MIS / Blog Setting</span>
-                </div>
-
-                <!-- Sidebar Recent Dispatches Repeater -->
-                <div class="form-group full-width">
-                  <div class="lbl-with-note">
-                    <label class="form-lbl" [innerText]="'SIDEBAR: RECENT DISPATCHES ({{#each RecentArticles}})'"></label>
-                    <button type="button" class="btn-add-subitem" (click)="addBlogRecentArticle()">+ Add Dispatch</button>
-                  </div>
-                  <div class="subitems-list">
-                    <div class="subitem-card-row mb-2" *ngFor="let r of previewBlogDetailContent.recentArticles; let rIdx = index" style="flex-direction: column; align-items: stretch;">
-                      <div style="display: flex; gap: 10px; align-items: center;">
-                        <span class="subitem-badge">#{{ rIdx + 1 }}</span>
-                        <input type="text" [(ngModel)]="r.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
-                        <input type="text" [(ngModel)]="r.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Date" />
-                        <button type="button" class="btn-del-subitem" (click)="removeBlogRecentArticle(rIdx)" title="Remove Dispatch">
-                          <span class="material-symbols-outlined">delete</span>
-                        </button>
-                      </div>
-                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
-                        <input type="text" [(ngModel)]="r.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Thumbnail Cover URL" />
-                        <input type="text" [(ngModel)]="r.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1;" placeholder="/route or URL" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sidebar Topics & Categories Repeater -->
-                <div class="form-group full-width">
-                  <div class="lbl-with-note">
-                    <label class="form-lbl" [innerText]="'SIDEBAR: TOPICS & CATEGORIES ({{#each BlogCategories}})'"></label>
-                    <button type="button" class="btn-add-subitem" (click)="addBlogCategoryItem()">+ Add Topic</button>
-                  </div>
-                  <div class="subitems-list">
-                    <div class="subitem-card-row mb-2" *ngFor="let c of previewBlogDetailContent.categories; let cIdx = index" style="align-items: center; gap: 10px;">
-                      <span class="subitem-badge">#{{ cIdx + 1 }}</span>
-                      <input type="text" [(ngModel)]="c.name" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Category Name" />
-                      <input type="number" [(ngModel)]="c.postCount" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="max-width: 90px;" placeholder="Count" />
-                      <input type="text" [(ngModel)]="c.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1.5;" placeholder="/blog?category=..." />
-                      <button type="button" class="btn-del-subitem" (click)="removeBlogCategoryItem(cIdx)" title="Remove Topic">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-
-              <!-- 2. Blog Articles Showcase Grid Sample Content Editor -->
-              <ng-template #blogGridContent>
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'SECTION TITLE ({{ Title }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Platform Insights & Case Studies" />
-                </div>
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. LATEST KNOWLEDGE" />
-                </div>
-                <div class="form-group full-width">
-                  <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
-                  <textarea [(ngModel)]="previewBlogContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2"></textarea>
-                </div>
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'VIEW ALL BUTTON TEXT ({{ ButtonText }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogContent.buttonText" (ngModelChange)="previewBlogContent.viewAllButtonText = previewBlogContent.buttonText; onPreviewContentChange()" class="form-ctrl" placeholder="Browse All Articles →" />
-                </div>
-                <div class="form-group">
-                  <label class="form-lbl" [innerText]="'VIEW ALL BUTTON LINK ({{ ButtonLink }})'"></label>
-                  <input type="text" [(ngModel)]="previewBlogContent.buttonLink" (ngModelChange)="previewBlogContent.viewAllButtonLink = previewBlogContent.buttonLink; onPreviewContentChange()" class="form-ctrl" placeholder="/blog" />
-                </div>
-
-                <!-- Blog Articles Repeater -->
-                <div class="form-group full-width">
-                  <div class="lbl-with-note">
-                    <label class="form-lbl" [innerText]="'BLOG ARTICLES GRID ({{#each Articles}})'"></label>
-                    <button type="button" class="btn-add-subitem" (click)="addBlogArticle()">+ Add Article</button>
-                  </div>
-                  <div class="subitems-list">
-                    <div class="subitem-card-row mb-2" *ngFor="let art of previewBlogContent.articles; let aIdx = index" style="flex-direction: column; align-items: stretch;">
-                      <div style="display: flex; gap: 10px; align-items: center;">
-                        <span class="subitem-badge">#{{ aIdx + 1 }}</span>
-                        <input type="text" [(ngModel)]="art.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article Title" />
-                        <input type="text" [(ngModel)]="art.category" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Category" />
-                        <button type="button" class="btn-del-subitem" (click)="removeBlogArticle(aIdx)" title="Remove Article">
-                          <span class="material-symbols-outlined">delete</span>
-                        </button>
-                      </div>
-                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
-                        <input type="text" [(ngModel)]="art.publishedDate" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Published Date (e.g. Sep 12, 2026)" />
-                        <input type="text" [(ngModel)]="art.authorName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Author Name" />
-                        <input type="text" [(ngModel)]="art.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="flex: 1;" placeholder="Article Route URL (/blog/...)" />
-                      </div>
-                      <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
-                        <input type="text" [(ngModel)]="art.summary" (ngModelChange)="art.excerpt = art.summary; onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Article summary / excerpt..." />
-                        <input type="text" [(ngModel)]="art.coverImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Cover Image URL" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </ng-template>
-            </div>
-
-            <!-- FOOTER-SPECIFIC CONTENT EDITOR -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'footer'">
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'BRAND NAME ({{ BrandName }})'"></label>
-                <input type="text" [(ngModel)]="previewFooterContent.brandName" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Acme Global" />
-              </div>
-
-              <!-- Note: Email, phone, and address are directly edited in HTML without placeholders -->
-              <div class="form-group full-width" style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #64748b;">
-                <i class="fa-solid fa-circle-info text-primary me-1"></i>
-                <strong>Direct HTML Philosophy:</strong> Email, phone numbers, office addresses, and narrative descriptions are typed directly into the footer HTML source (not placeholder variables), providing zero layout friction.
-              </div>
-
-              <!-- Footer Columns & Page Links -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'FOOTER COLUMNS & PAGE LINKS ({{#each CategoryPages}} & {{#each FooterCategories}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addFooterCategory()">+ Add Column</button>
-                </div>
-
-                <div class="subitems-list">
-                  <div class="subitem-card-row mb-3" *ngFor="let col of previewFooterContent.categories; let cIdx = index" style="flex-direction: column; align-items: stretch;">
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      <span class="subitem-badge">Col #{{ cIdx + 1 }}</span>
-                      <input type="text" [(ngModel)]="col.name" (ngModelChange)="onPreviewContentChange()" class="form-ctrl font-mono" style="max-width: 180px;" placeholder="Category (e.g. Services)" title="Identifier matching CategoryPages 'Name'" />
-                      <input type="text" [(ngModel)]="col.displayTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Column Title (e.g. Solutions)" />
-                      <button type="button" class="btn-del-subitem" (click)="removeFooterCategory(cIdx)" title="Remove Column">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-
-                    <!-- Inner Page Links -->
-                    <div style="margin-left: 24px; padding-left: 12px; border-left: 2px solid #e2e8f0;">
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">Page Links in this Column:</span>
-                        <button type="button" class="btn-add-subitem" style="padding: 2px 8px; font-size: 11px;" (click)="addFooterCategoryPage(cIdx)">+ Add Link</button>
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display: flex; gap: 8px; align-items: center;" *ngFor="let p of col.pages; let pIdx = index">
-                          <input type="text" [(ngModel)]="p.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="Link Title" />
-                          <input type="text" [(ngModel)]="p.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 1;" placeholder="/route or #anchor" />
-                          <button type="button" class="btn-del-subitem" (click)="removeFooterCategoryPage(cIdx, pIdx)" title="Remove Link">
-                            <span class="material-symbols-outlined">close</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Legal Pages -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'LEGAL COMPLIANCE PAGES ({{#each LegalPages}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addFooterLegalPage()">+ Add Policy Link</button>
-                </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row" *ngFor="let lp of previewFooterContent.legalPages; let lIdx = index">
-                    <span class="subitem-badge">#{{ lIdx + 1 }}</span>
-                    <div class="subitem-inputs">
-                      <input type="text" [(ngModel)]="lp.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Policy Title" />
-                      <input type="text" [(ngModel)]="lp.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="/policy-slug" />
-                    </div>
-                    <button type="button" class="btn-del-subitem" (click)="removeFooterLegalPage(lIdx)" title="Remove Policy">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- BREADCRUMB CATEGORY (BREADCRUMB & PAGE HEADERS) -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'breadcrumb'">
-              <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 14px 16px;">
-                <h5 style="margin: 0 0 4px 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">
-                  <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">linear_scale</span>
-                  Breadcrumbs & Page Header Sample Content
-                </h5>
-                <p style="margin: 0; font-size: 12px; color: #475569;">
-                  Live adjustments here immediately update the preview iframe below, the breadcrumb trail hierarchy, and the banner background image.
-                </p>
-              </div>
-
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'PAGE MAIN TITLE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewBreadcrumbContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Enterprise Solutions & Insights" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'EYEBROW / CATEGORY ({{ MiniTitle }})'"></label>
-                <input type="text" [(ngModel)]="previewBreadcrumbContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. MISSION & LEADERSHIP" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'BACKGROUND IMAGE URL ({{ BackgroundImageUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewBreadcrumbContent.backgroundImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://images.unsplash.com/..." />
-              </div>
-
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'DESCRIPTION / SUBTITLE ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewBreadcrumbContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Supportive summary text..."></textarea>
-              </div>
-
-              <!-- Breadcrumb Trail Nodes Repeater -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl" [innerText]="'BREADCRUMB TRAIL HIERARCHY ({{ BreadcrumbTrail }} / {{#each Breadcrumbs}})'"></label>
-                  <button type="button" class="btn-add-subitem" (click)="addBreadcrumbTrailItem()">+ Add Breadcrumb Node</button>
-                </div>
-                <div class="subitems-list">
-                  <div class="subitem-card-row" *ngFor="let node of previewBreadcrumbContent.trailItems; let nIdx = index" style="align-items: center; gap: 10px;">
-                    <span class="subitem-badge">#{{ nIdx + 1 }}</span>
-                    <input type="text" [(ngModel)]="node.label" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="Node Label (e.g. Solutions)" />
-                    <input type="text" [(ngModel)]="node.url" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="flex: 2;" placeholder="/target-path" />
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap; cursor: pointer;">
-                      <input type="checkbox" [(ngModel)]="node.isActive" (ngModelChange)="onPreviewContentChange()" />
-                      Active (Current)
-                    </label>
-                    <button type="button" class="btn-del-subitem" (click)="removeBreadcrumbTrailItem(nIdx)" title="Remove Node" [disabled]="previewBreadcrumbContent.trailItems.length <= 1">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- BODY CATEGORY (PAGESECTION & PAGESECTIONLISTS) -->
-            <div class="custom-tpl-form-grid" *ngSwitchCase="'body'">
-              <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 12px 16px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                  <span class="material-symbols-outlined text-primary" style="font-size: 18px;">widgets</span>
-                  <h5 style="margin: 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">{{ activePreviewItem ? activePreviewItem.name : 'Body Section Content Engine' }}</h5>
-                </div>
-                <p style="margin: 0; font-size: 11.5px; color: #64748b; line-height: 1.4;">
-                  Configure section headlines, narratives, repeatable cards, and contact points tailored specifically for this section.
-                </p>
-              </div>
-
-              <!-- Main Title (Always present in all 9 body templates) -->
-              <div class="form-group" *ngIf="templateUses('Title')">
-                <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Empowering Modern Organizations" />
-              </div>
-
-              <!-- Mini Title / Eyebrow (Only shown if template uses MiniTitle) -->
-              <div class="form-group" *ngIf="templateUses('MiniTitle')">
-                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. NEXT-GENERATION PLATFORM" />
-              </div>
-
-              <!-- Primary Description (Only shown if template uses Description) -->
-              <div class="form-group full-width" *ngIf="templateUses('Description')">
-                <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Primary overview narrative..."></textarea>
-              </div>
-
-              <!-- Full Extended Description (Only shown if template uses FullDescription) -->
-              <div class="form-group full-width" *ngIf="templateUses('FullDescription')">
-                <label class="form-lbl" [innerText]="'FULL EXTENDED DESCRIPTION ({{ FullDescription }})'"></label>
-                <textarea [(ngModel)]="previewContent.fullDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Secondary extended narrative..."></textarea>
-              </div>
-
-              <!-- Images (Only shown if template uses ImageUrl / SecondImageUrl) -->
-              <div class="form-group" *ngIf="templateUses('ImageUrl')">
-                <label class="form-lbl" [innerText]="'PRIMARY IMAGE URL ({{ ImageUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
-              </div>
-
-              <div class="form-group" *ngIf="templateUses('SecondImageUrl') || templateUses('SecondUrl')">
-                <label class="form-lbl" [innerText]="'SECONDARY IMAGE / OVERLAY URL ({{ SecondImageUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.secondImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
-              </div>
-
-              <!-- Action Buttons (Only shown if template uses ButtonText) -->
-              <div class="form-group" *ngIf="templateUses('ButtonText') || templateUses('ButtonLink')">
-                <div style="display: flex; gap: 10px;">
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Explore Solutions" />
-                  </div>
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'PRIMARY BUTTON LINK ({{ ButtonLink }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="# or /services" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Secondary Action Buttons (Only shown if template uses SecondaryButtonText) -->
-              <div class="form-group" *ngIf="templateUses('SecondaryButtonText') || templateUses('SecondaryButtonLink')">
-                <div style="display: flex; gap: 10px;">
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'SECONDARY BUTTON TEXT ({{ SecondaryButtonText }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.secondaryButtonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Download Brief" />
-                  </div>
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'SECONDARY BUTTON LINK ({{ SecondaryButtonLink }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.secondaryButtonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="# or /docs" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Contact & Office Information (Only shown if template uses Email, Phone, Address, WorkingHours) -->
-              <div class="form-group" *ngIf="templateUses('Email')">
-                <label class="form-lbl" [innerText]="'CONTACT EMAIL ({{ Email }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.email" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="contact@organization.com" />
-              </div>
-
-              <div class="form-group" *ngIf="templateUses('Phone')">
-                <label class="form-lbl" [innerText]="'PHONE NUMBER ({{ Phone }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.phone" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="+1 (555) 019-2834" />
-              </div>
-
-              <div class="form-group" *ngIf="templateUses('Address')">
-                <label class="form-lbl" [innerText]="'OFFICE ADDRESS ({{ Address }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.address" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="100 Innovation Parkway, Suite 400" />
-              </div>
-
-              <div class="form-group" *ngIf="templateUses('WorkingHours')">
-                <label class="form-lbl" [innerText]="'WORKING HOURS ({{ WorkingHours }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.workingHours" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Monday - Friday: 8:00 AM - 6:00 PM" />
-              </div>
-
-              <!-- Direct Link & YouTube Video (Only shown if template uses them) -->
-              <div class="form-group" *ngIf="templateUses('DirectUrl')">
-                <label class="form-lbl" [innerText]="'DIRECT URL LINK ({{ DirectUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.directUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://external-resource.com" />
-              </div>
-
-              <div class="form-group" *ngIf="templateUses('YoutubeUrlLink') || templateUses('YoutubeVideo')">
-                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeUrlLink }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.youtubeUrlLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
-              </div>
-
-              <!-- Repeatable Card Loop (PageSectionLists) -->
-              <div class="form-group full-width" *ngIf="templateUses('PageSectionLists')">
-                <div class="lbl-with-note">
-                  <div>
-                    <label class="form-lbl text-primary fw-bold" style="margin-bottom: 2px;">{{ getRepeatableSectionTitle() | uppercase }}</label>
-                    <span style="font-size: 11px; color: #64748b;">Live repeatable list items. Add, edit, or remove items to customize the layout.</span>
-                  </div>
-                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add Item</button>
-                </div>
-
-                <div class="subitems-list">
-                  <div class="subitem-card-row mb-3" *ngFor="let item of previewContent.items; let i = index" style="flex-direction: column; align-items: stretch; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="subitem-badge">#{{ i + 1 }}</span>
-                        <span *ngIf="item.iconText" class="badge bg-light text-dark border d-inline-flex align-items-center gap-1" style="font-size: 11px; padding: 2px 8px;">
-                          <i [ngClass]="item.iconText.startsWith('fa-') ? item.iconText : 'material-symbols-outlined'" style="font-size: 14px;">{{ item.iconText.startsWith('fa-') ? '' : item.iconText }}</i>
-                          <span>{{ item.iconText }}</span>
-                        </span>
-                        <span *ngIf="item.miniTitle" class="badge bg-primary-subtle text-primary" style="font-size: 10.5px;">{{ item.miniTitle }}</span>
-                      </div>
-                      <button type="button" class="btn-del-subitem" (click)="removePreviewSubItem(i)" title="Remove item">
-                        <span class="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                      <div *ngIf="templateUses('IconText') || templateUses('Icon')">
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Icon Glyph or Class (IconText)</label>
-                        <input type="text" [(ngModel)]="item.iconText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. fa-solid fa-check or verified_user" />
-                      </div>
-                      <div *ngIf="templateUses('MiniTitle')">
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Eyebrow / Subtitle / Metric (MiniTitle)</label>
-                        <input type="text" [(ngModel)]="item.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. 01, 99.9%, SECURITY" />
-                      </div>
-                    </div>
-
-                    <div style="margin-bottom: 8px;">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Headline / Title (Title)</label>
-                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12.5px; font-weight: 600; height: 34px;" placeholder="Item Title, Metric Number, or Question" />
-                    </div>
-
-                    <div style="margin-bottom: 8px;" *ngIf="templateUses('Description')">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Narrative / Details (Description)</label>
-                      <textarea [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" style="font-size: 12px;" placeholder="Item description, metric label, or FAQ answer..."></textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" *ngIf="templateUses('MoreDescription') || templateUses('ButtonText')">
-                      <div *ngIf="templateUses('MoreDescription')">
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Role / Company / Extra (MoreDescription)</label>
-                        <input type="text" [(ngModel)]="item.moreDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Managing Director" />
-                      </div>
-                      <div *ngIf="templateUses('ButtonText')">
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Button Text (ButtonText)</label>
-                        <input type="text" [(ngModel)]="item.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Learn More" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- DEFAULT SECTION CONTENT EDITOR (FOR HERO, BODY, ECOMMERCE, ETC.) -->
-            <div class="custom-tpl-form-grid" *ngSwitchDefault>
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Empowering Modern Organizations" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. CORE CAPABILITIES" />
-              </div>
-
-              <div class="form-group full-width">
-                <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
-                <textarea [(ngModel)]="previewContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Overview narrative..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'PRIMARY IMAGE URL ({{ ImageUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
-              </div>
-
-              <div class="form-group">
-                <div style="display: flex; gap: 10px;">
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'BUTTON TEXT ({{ ButtonText }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. Get Started" />
-                  </div>
-                  <div style="flex: 1;">
-                    <label class="form-lbl" [innerText]="'BUTTON LINK ({{ ButtonLink }})'"></label>
-                    <input type="text" [(ngModel)]="previewContent.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="# or /page" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Repeatable Card Loop (PageSectionLists) -->
-              <div class="form-group full-width">
-                <div class="lbl-with-note">
-                  <label class="form-lbl">REPEATABLE CARDS / SUB-ITEMS (PageSectionLists Loop)</label>
-                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add Card Item</button>
-                </div>
-
-                <div class="subitems-list">
-                  <div class="subitem-card-row" *ngFor="let item of previewContent.items; let i = index">
-                    <span class="subitem-badge">#{{ i + 1 }}</span>
-                    <div class="subitem-inputs">
-                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-title" placeholder="Card Title" />
-                      <input type="text" [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl subitem-desc" placeholder="Card Description" />
-                    </div>
-                    <button type="button" class="btn-del-subitem" (click)="removePreviewSubItem(i)" title="Remove item">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mode 2: HTML Source Code with Interactive Token Ribbon Bar -->
-        <div *ngIf="previewModalTab === 'html'" class="code-view-container">
-          <div class="code-view-toolbar">
-            <div class="code-badge-title">
-              <span class="material-symbols-outlined">code</span>
-              <span>HTML Template Markup</span>
-              <span *ngIf="activePreviewItem?.category" class="badge-category-tag font-mono text-uppercase">
-                {{ activePreviewItem.category }}
-              </span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save HTML modifications to this installed template">
-                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
-                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
-                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
-              </button>
-              <a [routerLink]="['/content/console/templates/visuals', activePreviewItem.id || activePreviewItem.variantCode]" class="btn-open-studio" title="Open full studio editor">
-                <span class="material-symbols-outlined">open_in_new</span>
-                <span>Open Full Studio</span>
-              </a>
-              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.htmlTemplate, 'HTML')">
-                <span class="material-symbols-outlined">content_copy</span>
-                <span>Copy HTML</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Interactive Token Ribbon Bar for Rapid Insertion -->
-          <div class="modal-token-ribbon">
-            <span class="ribbon-label">
-              <span class="material-symbols-outlined">data_object</span>
-              <span>Insert Tokens:</span>
-            </span>
-
-            <!-- Menu Category Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category === 'menu'">
-              <!-- AI / DOM Smart Auto-Injector Button -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-ai-magic" (click)="aiTransformMenuPlaceholders()" [disabled]="isAiTransforming" title="Intelligently analyzes pasted navbar HTML with AI and replaces static elements with clean Ozikol Handlebars placeholders">
-                  <span class="material-symbols-outlined chip-icon" [class.ai-spinning]="isAiTransforming">auto_awesome</span>
-                  <span>{{ isAiTransforming ? 'AI Transforming...' : '✨ Smart Auto-Inject Placeholders' }}</span>
-                </button>
-              </span>
-
-              <!-- Brand Identity Tokens -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
-                  <span class="material-symbols-outlined chip-icon">storefront</span>
-                  <span [innerText]="'+ {{ BrandIdentity }}'"></span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandIdentity', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandIdentity', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ BrandLogo }}')" [innerText]="'+ {{ BrandLogo }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandLogo', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandLogo', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ HomeUrl }}')" [innerText]="'+ {{ HomeUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('HomeUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('HomeUrl', $event)" title="Home Page Link"><span class="material-symbols-outlined">info</span></button>
-              </span>
-
-              <!-- Multi-Zone Navigation Loops -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('first')" title="Inserts Zone 1 First Loop (Direct pages + Dropdowns sorted by SortOrder)">
-                  <span class="material-symbols-outlined chip-icon">first_page</span>
-                  <span>+ NavItems="first"</span>
-                </button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('middle')" title="Inserts Zone 2 Middle Loop (Direct pages + Dropdowns sorted by SortOrder)">
-                  <span class="material-symbols-outlined chip-icon">view_headline</span>
-                  <span>+ NavItems="middle"</span>
-                </button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('last')" title="Inserts Zone 3 Last Loop (Direct pages + Dropdowns sorted by SortOrder)">
-                  <span class="material-symbols-outlined chip-icon">last_page</span>
-                  <span>+ NavItems="last"</span>
-                </button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertNavItemsZoneLoopAtModalCursor('all')" title="Inserts Sequential All Items Loop (Ordered by MenuPosition, then SortOrder)">
-                  <span class="material-symbols-outlined chip-icon">menu</span>
-                  <span>+ NavItems (All)</span>
-                </button>
-              </span>
-
-              <!-- TopBar Utility Loop -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertTopBarPagesLoopAtModalCursor()" title="Inserts TopBar Utility Links Loop (MenuPosition.Top)">
-                  <span class="material-symbols-outlined chip-icon">vertical_align_top</span>
-                  <span>+ MainMenuItems="top"</span>
-                </button>
-              </span>
-
-              <!-- Menu CTA Buttons -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertMenuCtaButtonsLoopAtModalCursor()" title="Inserts dynamic CTA buttons from IsMenuCTA pages">
-                  <span class="material-symbols-outlined chip-icon">smart_button</span>
-                  <span>+ Menu CTA Buttons Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-
-              <!-- Custom Class Token -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ CustomClass }}')" [innerText]="'+ {{ CustomClass }}'" title="Inserts custom CSS class placeholder from database model"></button>
-              </span>
-
-              <!-- Auth / Sign In Tokens -->
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-
-            <!-- Hero Category Ribbon (Slider Model) -->
-            <ng-container *ngIf="activePreviewItem?.category === 'hero'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Text }}')" [innerText]="'+ {{ Text }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Text', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Text', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ VideoButtonText }}')" [innerText]="'+ {{ VideoButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ VideoLink }}')" [innerText]="'+ {{ VideoLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoLink', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ Url }}')" [innerText]="'+ {{ Url }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Url', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Url', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ SecondUrl }}')" [innerText]="'+ {{ SecondUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ YoutubeVideo }}')" [innerText]="'+ {{ YoutubeVideo }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('YoutubeVideo', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('YoutubeVideo', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertHeroDualCtaSnippetAtModalCursor()" title="Inserts dual action button pair">
-                  <span class="material-symbols-outlined chip-icon">smart_button</span>
-                  <span>+ Dual Action Buttons</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('VideoButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('VideoButtonText', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-
-            <!-- Footer Category Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category === 'footer'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandIdentity }}')" title="Renders uploaded logo image, or falls back to business name text">
-                  <span class="material-symbols-outlined chip-icon">storefront</span>
-                  <span [innerText]="'+ {{ BrandIdentity }}'"></span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandIdentity', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandIdentity', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ BrandName }}')" [innerText]="'+ {{ BrandName }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BrandName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BrandName', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ LogoUrl }}')" [innerText]="'+ {{ LogoUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LogoUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LogoUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Copyright }}')" [innerText]="'+ {{ Copyright }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Copyright', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Copyright', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertCategoryPagesLoopSnippet()" title="Loop published pages in a named category enabled for footer">
-                  <span class="material-symbols-outlined chip-icon">folder</span>
-                  <span>+ Category Pages Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CategoryPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CategoryPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertTaggedPagesLoopSnippet()" title="Loop published pages with a specific tag (ShowInFooter=true)">
-                  <span class="material-symbols-outlined chip-icon">sell</span>
-                  <span>+ Tagged Pages Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('TaggedPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('TaggedPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertLegalPagesLoopSnippet()" title="Loop published legal compliance documents (ShowInFooter=true)">
-                  <span class="material-symbols-outlined chip-icon">gavel</span>
-                  <span>+ Legal Pages Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LegalPages', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LegalPages', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-form" (click)="insertFooterFormSnippet()" title="Embed an active published form (e.g. newsletter subscribe)">
-                  <span class="material-symbols-outlined chip-icon">dynamic_form</span>
-                  <span>+ Form Embed</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-
-            <!-- Blog & Insights Category Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category === 'blog'">
-              <!-- Detail Template Tokens -->
-              <ng-container *ngIf="isBlogDetailTemplate(); else blogGridRibbon">
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Title }}')" [innerText]="'+ {{ Article.Title }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Title', $event)" title="Article Title"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Category }}')" [innerText]="'+ {{ Article.Category }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Category', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Category', $event)" title="Article Category"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.PublishedDate }}')" [innerText]="'+ {{ Article.PublishedDate }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.ReadTime }}')" [innerText]="'+ {{ Article.ReadTime }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_ReadTime', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_ReadTime', $event)" title="Estimated Read Time"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ Article.CoverImageUrl }}')" [innerText]="'+ {{ Article.CoverImageUrl }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_CoverImageUrl', $event)" title="Banner Image URL"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Article.Body }}')" [innerText]="'+ {{ Article.Body }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Body', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Body', $event)" title="Article Rich-Text Body"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogTagsLoopSnippet()" title="Loop article tags">
-                    <span class="material-symbols-outlined chip-icon">sell</span>
-                    <span>+ Tags Loop</span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Tags', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Tags', $event)" title="Article Tags Loop"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertBlogAuthorBioSnippet()" title="Author biography card with portrait">
-                    <span class="material-symbols-outlined chip-icon">person</span>
-                    <span>+ Author Bio Card</span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_AuthorName', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_AuthorName', $event)" title="Author Card"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogRecentSidebarSnippet()" title="Loop recent dispatches for sidebars">
-                    <span class="material-symbols-outlined chip-icon">history</span>
-                    <span>+ Recent Articles Sidebar</span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('RecentArticles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('RecentArticles', $event)" title="Recent Articles"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogCategoriesSnippet()" title="Loop topics and categories with live article counts">
-                    <span class="material-symbols-outlined chip-icon">category</span>
-                    <span>+ Topics Loop</span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BlogCategories', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BlogCategories', $event)" title="Topics Loop"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertBlogSocialShareStripSnippet()" title="Inserts dynamic social share strip placeholder">
-                    <span class="material-symbols-outlined chip-icon">share</span>
-                    <span [innerText]="'+ {{ PostShareStrip }}'"></span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PostShareStrip', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PostShareStrip', $event)" title="Share Post Settings"><span class="material-symbols-outlined">info</span></button>
-                </span>
-              </ng-container>
-
-              <!-- Grid Showcase Tokens -->
-              <ng-template #blogGridRibbon>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Showcase Title"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Category / Tag Badge"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)" title="Button Text"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Button Link"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-repeater" (click)="insertBlogArticlesLoopSnippet()" title="Loop published articles (Card Grid Showcase)">
-                    <span class="material-symbols-outlined chip-icon">newspaper</span>
-                    <span>+ Articles Grid Loop</span>
-                  </button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Articles', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Articles', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ CoverImageUrl }}')" [innerText]="'+ {{ CoverImageUrl }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('CoverImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('CoverImageUrl', $event)" title="Featured Image"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Category }}')" [innerText]="'+ {{ Category }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Article_Category', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Article_Category', $event)" title="Category"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ PublishedDate }}')" [innerText]="'+ {{ PublishedDate }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PublishedDate', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PublishedDate', $event)" title="Publication Date"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Excerpt }}')" [innerText]="'+ {{ Excerpt }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Excerpt', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Excerpt', $event)" title="Summary Excerpt"><span class="material-symbols-outlined">info</span></button>
-                </span>
-                <span class="token-chip-wrap">
-                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Url }}')" [innerText]="'+ {{ Url }}'"></button>
-                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Url', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Url', $event)" title="Article URL"><span class="material-symbols-outlined">info</span></button>
-                </span>
-              </ng-template>
-            </ng-container>
-
-            <!-- Breadcrumbs & Page Header Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category === 'breadcrumb'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Page Title"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)" title="Description / Subtitle"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ BackgroundImageUrl }}')" [innerText]="'+ {{ BackgroundImageUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BackgroundImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BackgroundImageUrl', $event)" title="Banner Background Image URL"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertBreadcrumbTrailSnippet()" title="Inserts dynamic breadcrumb hierarchy trail placeholder">
-                  <span class="material-symbols-outlined chip-icon">linear_scale</span>
-                  <span [innerText]="'+ {{ BreadcrumbTrail }}'"></span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('BreadcrumbTrail', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('BreadcrumbTrail', $event)" title="Breadcrumb Trail"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertBreadcrumbsLoopSnippet()" title="Inserts customizable breadcrumbs loop with active styling">
-                  <span class="material-symbols-outlined chip-icon">repeat</span>
-                  <span>+ Breadcrumbs Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Breadcrumbs', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Breadcrumbs', $event)" title="Breadcrumbs Loop"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-
-            <!-- Body Category Ribbon (PageSection & PageSectionLists) -->
-            <ng-container *ngIf="activePreviewItem?.category === 'body'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)" title="Section Headline"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)" title="Eyebrow / Subtitle"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)" title="Section Overview"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ FullDescription }}')" [innerText]="'+ {{ FullDescription }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('FullDescription', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('FullDescription', $event)" title="Extended Narrative"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ImageUrl', $event)" title="Featured Image"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)" title="Primary Button Text"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)" title="Primary Button Link"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonText }}')" [innerText]="'+ {{ SecondaryButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonText', $event)" title="Secondary Button Text"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ SecondaryButtonLink }}')" [innerText]="'+ {{ SecondaryButtonLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('SecondaryButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('SecondaryButtonLink', $event)" title="Secondary Button Link"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-repeater" (click)="insertPageSectionListsLoopSnippet()" title="Loop child feature cards, metrics, testimonials, or accordions">
-                  <span class="material-symbols-outlined chip-icon">view_list</span>
-                  <span>+ PageSectionLists Loop</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('PageSectionLists', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('PageSectionLists', $event)" title="PageSectionLists Loop"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ IconText }}')" [innerText]="'+ {{ IconText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('IconText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('IconText', $event)" title="Item Icon Class / Glyph"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MoreDescription }}')" [innerText]="'+ {{ MoreDescription }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MoreDescription', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MoreDescription', $event)" title="Item Extra Footnote"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-form" (click)="insertBodyFormSnippet('Newsletter_Subscribe')" title="Embed Newsletter Subscription Form">
-                  <span class="material-symbols-outlined chip-icon">mail</span>
-                  <span>+ Newsletter Form</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Newsletter Form"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-form" (click)="insertBodyFormSnippet('Contact_Us')" title="Embed Contact Us Form">
-                  <span class="material-symbols-outlined chip-icon">contact_mail</span>
-                  <span>+ Contact Form</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Contact Form"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-form" (click)="insertBodyFormSnippet('Service_Request')" title="Embed Service Request Intake Form">
-                  <span class="material-symbols-outlined chip-icon">assignment</span>
-                  <span>+ Service Request Form</span>
-                </button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Service Request Form"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-
-            <!-- Other Categories Ribbon -->
-            <ng-container *ngIf="activePreviewItem?.category !== 'menu' && activePreviewItem?.category !== 'hero' && activePreviewItem?.category !== 'footer' && activePreviewItem?.category !== 'blog' && activePreviewItem?.category !== 'breadcrumb' && activePreviewItem?.category !== 'body'">
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Title }}')" [innerText]="'+ {{ Title }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Title', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Title', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ MiniTitle }}')" [innerText]="'+ {{ MiniTitle }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MiniTitle', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MiniTitle', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ Description }}')" [innerText]="'+ {{ Description }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Description', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Description', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-media" (click)="insertTokenAtModalCursor('{{ ImageUrl }}')" [innerText]="'+ {{ ImageUrl }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ImageUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ImageUrl', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonText }}')" [innerText]="'+ {{ ButtonText }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonText', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonText', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-              <span class="token-chip-wrap">
-                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ ButtonLink }}')" [innerText]="'+ {{ ButtonLink }}'"></button>
-                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('ButtonLink', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('ButtonLink', $event)"><span class="material-symbols-outlined">info</span></button>
-              </span>
-            </ng-container>
-          </div>
-
-          <!-- Real-Time Interactive Template Editor with Monaco Code Folding -->
-          <div class="monaco-host-wrap">
-            <div *ngIf="loadingMonaco" class="monaco-loading-overlay">
-              <span class="spinner-border spinner-border-sm text-info me-2"></span>
-              <span>Loading Monaco editor with code folding...</span>
-            </div>
-
-            <!-- AI Transforming Loading Overlay (Visible until finish) -->
-            <div *ngIf="isAiTransforming" class="ai-transforming-overlay">
-              <div class="ai-transforming-card">
-                <div class="ai-spinner-container">
-                  <div class="ai-spinner-ring"></div>
-                  <span class="material-symbols-outlined ai-magic-icon">auto_awesome</span>
-                </div>
-                <div class="ai-transforming-info">
-                  <h5 class="ai-transforming-heading">AI Transforming Navbar Placeholders...</h5>
-                  <p class="ai-transforming-desc">
-                    Analyzing raw HTML structure, preserving 100% of styles &amp; classes, and injecting 3-Zone Handlebars placeholders.
-                  </p>
-                  <div class="ai-transforming-status-pill">
-                    <span class="spinner-border spinner-border-sm text-info me-2"></span>
-                    <span>Processing with Ozi AI Engine...</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div #monacoHtmlContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
-            <textarea
-              *ngIf="!monacoReady && !loadingMonaco"
-              #modalHtmlEditor
-              class="modal-code-textarea"
-              [(ngModel)]="activePreviewItem.htmlTemplate"
-              (ngModelChange)="onModalHtmlChange()"
-              spellcheck="false"
-              placeholder="Edit HTML template source..."
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- Mode 3: Scoped CSS Stylesheet -->
-        <div *ngIf="previewModalTab === 'css'" class="code-view-container">
-          <div class="code-view-toolbar">
-            <div class="code-badge-title">
-              <span class="material-symbols-outlined">style</span>
-              <span>Scoped CSS Stylesheet</span>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save CSS modifications to this installed template">
-                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
-                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
-                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
-              </button>
-              <button *ngIf="!activePreviewItem.cssStyles || !activePreviewItem.cssStyles.trim()" type="button" class="btn-copy-code" (click)="initializeTemplateCss()">
-                <span class="material-symbols-outlined">add</span>
-                <span>Add Starter CSS</span>
-              </button>
-              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.cssStyles, 'CSS')">
-                <span class="material-symbols-outlined">content_copy</span>
-                <span>Copy CSS</span>
-              </button>
-            </div>
-          </div>
-          <div class="code-guideline-bar">
-            <span class="material-symbols-outlined guideline-icon">lightbulb</span>
-            <span>Write pure CSS only (do NOT include <code>&lt;style&gt;</code> tags). Scope class names to your section to prevent global leaks.</span>
-          </div>
-          <div class="monaco-host-wrap">
-            <div #monacoCssContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
-            <pre *ngIf="!monacoReady" class="code-block-pre"><code class="code-content">{{ activePreviewItem.cssStyles }}</code></pre>
-          </div>
-        </div>
-
-        <!-- Mode 4: JavaScript Logic -->
-        <div *ngIf="previewModalTab === 'js'" class="code-view-container">
-          <div class="code-view-toolbar">
-            <div class="code-badge-title">
-              <span class="material-symbols-outlined">terminal</span>
-              <span>JavaScript Logic Script</span>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <button type="button" class="btn-save-template-code" (click)="saveTemplateHtml()" [disabled]="savingTemplateHtml" title="Save JavaScript modifications to this installed template">
-                <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
-                <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
-                <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
-              </button>
-              <button *ngIf="!activePreviewItem.jsScript" type="button" class="btn-copy-code" (click)="initializeTemplateJs()">
-                <span class="material-symbols-outlined">add_code</span>
-                <span>Initialize JS</span>
-              </button>
-              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.jsScript || '', 'JavaScript')" [disabled]="!activePreviewItem.jsScript">
-                <span class="material-symbols-outlined">content_copy</span>
-                <span>Copy JS</span>
-              </button>
-            </div>
-          </div>
-          <div class="code-guideline-bar">
-            <span class="material-symbols-outlined guideline-icon">info</span>
-            <span>Write pure JavaScript only (do NOT include <code>&lt;script&gt;</code> tags). Keep code wrapped in an IIFE <code>(function() &#123; ... &#125;)();</code> so multiple functions don't collide.</span>
-          </div>
-          <div class="monaco-host-wrap" *ngIf="activePreviewItem.jsScript">
-            <div #monacoJsContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
-            <pre *ngIf="!monacoReady" class="code-block-pre"><code class="code-content">{{ activePreviewItem.jsScript }}</code></pre>
-          </div>
-          <div class="code-empty-state" *ngIf="!activePreviewItem.jsScript">
-            <span class="material-symbols-outlined empty-code-icon">data_object</span>
-            <p>This template is pure HTML/CSS and does not currently have custom JavaScript logic.</p>
-            <button type="button" class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" (click)="initializeTemplateJs()">
-              <span class="material-symbols-outlined fs-6">add_code</span>
-              <span>Add Custom JavaScript</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="preview-modal-footer">
-          <span class="footer-hint">
-            <i class="fa-solid fa-lightbulb text-warning me-1"></i> This is a live preview rendering the exact scoped HTML and CSS bundle.
-          </span>
-          <div class="preview-footer-btns">
-            <!-- Save Changes in Modal Footer -->
-            <button
-              *ngIf="previewModalTab === 'html' || previewModalTab === 'css' || previewModalTab === 'js'"
-              type="button"
-              class="btn-save-template-code"
-              (click)="saveTemplateHtml()"
-              [disabled]="savingTemplateHtml"
-            >
-              <span class="material-symbols-outlined" *ngIf="!savingTemplateHtml">save</span>
-              <span class="spinner-border spinner-border-sm text-light" *ngIf="savingTemplateHtml"></span>
-              <span>{{ savingTemplateHtml ? 'Saving...' : 'Save Template Changes' }}</span>
-            </button>
-
-            <!-- Active Singleton Badge -->
-            <span *ngIf="isSingletonCategory(activePreviewItem.category) && isActiveSingleton(activePreviewItem)" class="active-badge-preview">
-              <span class="material-symbols-outlined">check_circle</span>
-              <span>Currently Active Website {{ getSingletonLabel(activePreviewItem.category) }}</span>
-            </span>
-
-            <!-- Replace / Set Active Singleton Button -->
-            <button
-              *ngIf="isSingletonCategory(activePreviewItem.category) && !isActiveSingleton(activePreviewItem)"
-              type="button"
-              class="btn btn-primary"
-              (click)="activateTemplate(activePreviewItem); closeSinglePreviewModal();"
-            >
-              <span class="material-symbols-outlined">published_with_changes</span>
-              <span>Replace Active {{ getSingletonLabel(activePreviewItem.category) }}</span>
-            </button>
-
-            <!-- Additive Section: Insert into CMS Page -->
-            <button
-              *ngIf="!isSingletonCategory(activePreviewItem.category)"
-              type="button"
-              class="btn btn-primary"
-              (click)="closeSinglePreviewModal(); openAssignModal(activePreviewItem);"
-            >
-              <span class="material-symbols-outlined">post_add</span>
-              <span>Use in CMS Page</span>
-            </button>
-
-            <button type="button" class="btn btn-outline" (click)="closeSinglePreviewModal()">Close</button>
-          </div>
-        </div>
-
-        <!-- Floating Token Documentation Popover -->
-        <div
-          class="token-doc-popover"
-          *ngIf="activeTokenDoc"
-          [style.top.px]="popoverTop"
-          [style.left.px]="popoverLeft"
-          (mouseenter)="cancelPopoverLeaveTimer()"
-          (mouseleave)="hideTokenDocModal()"
-          (click)="$event.stopPropagation()"
-        >
-          <div class="popover-header">
-            <div class="popover-title-row">
-              <span class="material-symbols-outlined popover-icon">info</span>
-              <span class="popover-token-code" [innerText]="activeTokenDoc.token"></span>
-            </div>
-            <button type="button" class="popover-close-btn" (click)="closeTokenDoc()">✕</button>
-          </div>
-          <div class="popover-body">
-            <div class="popover-field">
-              <label class="popover-label">Purpose</label>
-              <p class="popover-value">{{ activeTokenDoc.description }}</p>
-            </div>
-            <div class="popover-field">
-              <label class="popover-label">Managed In CMS</label>
-              <p class="popover-value font-mono-subtle">{{ activeTokenDoc.cmsPath }}</p>
-            </div>
-            <div class="popover-field" *ngIf="activeTokenDoc.example">
-              <label class="popover-label">Syntax Example</label>
-              <pre class="popover-code"><code>{{ activeTokenDoc.example }}</code></pre>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -2204,7 +818,7 @@
               </button>
             </div>
 
-            <button type="button" class="btn-close-modal" (click)="closeFullSiteDemoModal()" title="Close Live Demo">✕</button>
+            <button type="button" class="btn-close-modal" (click)="closeFullSiteDemoModal()" title="Close Live Demo"><span class="material-symbols-outlined">close</span></button>
           </div>
         </div>
 
@@ -2317,7 +931,7 @@
               <span class="assign-sub">{{ selectedAssignItem.name }} ({{ selectedAssignItem.variantCode }})</span>
             </div>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeAssignModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeAssignModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <div class="assign-modal-body">
@@ -2381,7 +995,7 @@
               <span class="preview-modal-sub">Target browser zone: <code>&lt;{{ getZoneHtmlTag(tagFormZone) }}&gt;</code> • Execution priority by Sort Order</span>
             </div>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeTagModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeTagModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <div class="custom-tpl-modal-body">
@@ -2755,7 +1369,7 @@
           <div class="confirm-danger-badge">
             <span class="material-symbols-outlined confirm-icon">delete_forever</span>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeUninstallModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeUninstallModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <!-- Body -->
@@ -2877,7 +1491,7 @@
           <div class="confirm-danger-badge">
             <span class="material-symbols-outlined confirm-icon">delete_forever</span>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeDeleteTagModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeDeleteTagModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <!-- Body -->
@@ -2923,7 +1537,7 @@
           <div class="confirm-danger-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
             <span class="material-symbols-outlined confirm-icon">mop</span>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeClearAllModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeClearAllModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <div class="confirm-modal-body">
@@ -2958,7 +1572,7 @@
           <div class="confirm-danger-badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5;">
             <span class="material-symbols-outlined confirm-icon">restart_alt</span>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeReinstallDefaultsModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeReinstallDefaultsModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <div class="confirm-modal-body">
@@ -3007,7 +1621,7 @@
               </span>
             </div>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeBulkUploadModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeBulkUploadModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <!-- Body -->
@@ -3202,7 +1816,7 @@
               <span class="material-symbols-outlined spin-icon" *ngIf="savingAssetContent" style="font-size: 18px;">sync</span>
               <span>{{ savingAssetContent ? 'Saving to CDN...' : 'Save &amp; Update CDN Asset' }}</span>
             </button>
-            <button type="button" class="btn-close-modal" (click)="closeAssetEditorModal()" style="color: #94a3b8;">✕</button>
+            <button type="button" class="btn-close-modal" (click)="closeAssetEditorModal()" style="color: #94a3b8;"><span class="material-symbols-outlined">close</span></button>
           </div>
         </div>
 
@@ -3305,7 +1919,7 @@
               </span>
             </div>
           </div>
-          <button type="button" class="btn-close-modal" (click)="closeFontUploadModal()">✕</button>
+          <button type="button" class="btn-close-modal" (click)="closeFontUploadModal()"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <!-- Body -->
@@ -3470,7 +2084,7 @@
                 <div style="font-weight: 800; color: #b91c1c; font-size: 14px;">{{ item.title }}</div>
                 <div style="font-size: 13px; color: #475569; margin: 6px 0;"><strong>Root Cause:</strong> {{ item.rootCause }}</div>
                 <div style="font-size: 13px; color: #1e293b; background: #ffffff; border-left: 3px solid #dc2626; padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-                  <strong>💡 How to Fix:</strong> {{ item.recommendation }}
+                  <strong style="display: inline-flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 15px; color: #f59e0b;">lightbulb</span> How to Fix:</strong> {{ item.recommendation }}
                 </div>
               </div>
             </div>
@@ -3487,7 +2101,7 @@
                 <div style="font-weight: 800; color: #b45309; font-size: 14px;">{{ item.title }}</div>
                 <div style="font-size: 13px; color: #475569; margin: 6px 0;"><strong>Impact:</strong> {{ item.rootCause }}</div>
                 <div style="font-size: 13px; color: #1e293b; background: #ffffff; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-                  <strong>💡 Recommendation:</strong> {{ item.recommendation }}
+                  <strong style="display: inline-flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 15px; color: #f59e0b;">lightbulb</span> Recommendation:</strong> {{ item.recommendation }}
                 </div>
               </div>
             </div>
@@ -3538,7 +2152,7 @@
                 We analyzed your <strong>{{ activePreviewItem?.name }}</strong> ({{ activePreviewItem?.category | uppercase }}) template and found dynamic placeholders are missing.
               </p>
             </div>
-            <button type="button" (click)="closePreSaveWarningModal()" style="background: transparent; border: none; font-size: 20px; color: #92400e; cursor: pointer; padding: 0; line-height: 1;">✕</button>
+            <button type="button" (click)="closePreSaveWarningModal()" style="background: transparent; border: none; font-size: 20px; color: #92400e; cursor: pointer; padding: 0; line-height: 1;"><span class="material-symbols-outlined">close</span></button>
           </div>
 
           <!-- Impact List Body -->
@@ -3558,7 +2172,7 @@
             </div>
 
             <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #64748b; margin-top: 4px;">
-              💡 <em>If you are intentionally creating a custom/static section without dynamic loops, you can click <strong>"Proceed &amp; Save Anyway"</strong>.</em>
+              <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: middle; color: #f59e0b; margin-right: 3px;">lightbulb</span> <em>If you are intentionally creating a custom/static section without dynamic loops, you can click <strong>"Proceed &amp; Save Anyway"</strong>.</em>
             </div>
           </div>
 
@@ -3572,7 +2186,7 @@
                     style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);">
               <span class="spinner-border spinner-border-sm" *ngIf="isAiTransforming"></span>
               <span class="material-symbols-outlined fs-6" *ngIf="!isAiTransforming">auto_awesome</span>
-              <span>✨ Auto-Inject Missing Placeholders with AI</span>
+              <span>Auto-Inject Missing Placeholders with AI</span>
             </button>
             <button type="button" class="btn btn-outline" (click)="closePreSaveWarningModal()">
               <span class="material-symbols-outlined fs-6 me-1">edit</span>

@@ -82,5 +82,40 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Feature & Capability Terminology (No "Fleet")**: Always use **Features**, **Modular Capabilities**, **Tenants**, or **Tenant Organizations**. NEVER use the word "fleet" in UI text, headings, badges, telemetry labels, code comments, documentation, or implementation plans.
 * **MRR (Monthly Recurring Revenue)**: Clearly represent MRR as Monthly Subscription Revenue / Recurring Feature Revenue generated from paid feature add-ons and tenant plans.
 
+---
+
+## 8. AI Studio Assistant Docking & Responsive Split-Screen Layout Architecture (Mandatory)
+* **Non-Overlapping Screen Sharing (Zero Floating Clutter)**: The Ozi AI assistant (`app-ai-assistant`) must NEVER float over or obscure main workspace content, form inputs, buttons, tables, or code editors when docked.
+  * **Sidebar Mode (`docked-right`)**:
+    * `:host` must maintain `display: contents` to participate directly as a flex item in `.bcp-workspace-container`.
+    * `.ai-panel-wrapper.mode-docked-right` MUST use `position: relative` (never `position: fixed`) with flex sizing (`flex: 0 0 380px; width: 380px; height: 100%`).
+    * The main page shell (`.bcp-page-shell`) must dynamically flex (`flex: 1 1 0; min-width: 0`) and shift left (~70% width), sharing the screen side-by-side with the AI assistant (~30% width).
+  * **Bottom Bar Mode (`docked-bottom`)**:
+    * `.bcp-workspace-container.ai-docked-bottom` uses column flex (`flex-direction: column`).
+    * `.ai-panel-wrapper.mode-docked-bottom` MUST use `position: relative` (never `position: fixed`) with flex sizing (`flex: 0 0 340px; height: 340px; width: 100%`).
+    * The main page shell shifts upward (`flex: 1 1 0; min-height: 0`), cleanly sharing vertical screen real estate without overlapping any controls.
+  * **Floating Mode (`floating`)**:
+    * `position: fixed` is reserved strictly for explicit floating window mode (`mode-floating`), where the card hovers over the bottom-right corner and the page remains at 100% width.
+  * **Zero Regression Rule**: Never alter these flex docking contracts to re-introduce fixed position overlays during UI tweaks or refactors.
+
+---
+
+## 9. Central Master DB AI Key Pool & Provider Execution Standards (Mandatory)
+* **Central Master DB Key Storage (Never in `.env`)**: All AI provider API keys (Google Gemini, DeepSeek, etc.) MUST be stored and managed dynamically in the Central Master Catalog Database (`Ozikol_MasterCatalogDb`) table `[dbo].[MasterAiApiKeys]` via `IAiKeyPoolManagerService`. Never expect, require, or store raw AI keys in `.env` or `appsettings.json`.
+* **Central Works Web Management UI**: AI keys are managed, added, and health-probed via the Central Works portal route **`/centralwks/aikeys`** (e.g. `https://localhost:5001/centralwks/aikeys`).
+* **Key Generation Sources**:
+  * **Google Gemini API Keys**: Generated from Google AI Studio (`https://aistudio.google.com/app/apikey`).
+  * **DeepSeek API Keys**: Generated from DeepSeek Platform (`https://platform.deepseek.com/api_keys`).
+* **Provider Hierarchy & Execution Order**:
+  1. **Primary Provider (Priority #1)**: **Google Gemini 2.5 Flash** (`Provider == "Gemini"`) — Delivers 1-to-1 HTML/CSS DOM fidelity, exact tokenization matching canonical models, and ~1.2s response latency.
+  2. **Automated Secondary Failover**: **DeepSeek Chat / Coder** (`Provider == "DeepSeek"`) — Seamless failover if all active Gemini keys are rate-limited or exhausted.
+  3. **Last-Resort Local Engine**: Ollama (`qwen2.5-coder:1.5b` at `https://ozi-ai.ozikol.cloud/api/generate`) / In-Memory Tokenizer — Engaged only if external key pools are unreachable or unpopulated.
+* **Dynamic Pool Governance**:
+  * **Round-Robin Load Distribution**: The least-used healthy key (`TodayRequestsCount < DailyQuotaLimit`) is selected first.
+  * **Automatic Rate-Limit Cooldown**: When a provider returns `429 Too Many Requests` or quota exhaustion, the key is immediately put into cooldown (300s for Gemini, 120s for DeepSeek) and traffic automatically rotates to the next available key in the pool.
+  * **Telemetry Logging**: Every AI dispatch must record status codes, token counts, and latency to `MasterAiApiKeyUsageLogs`.
+
+
+
 
 

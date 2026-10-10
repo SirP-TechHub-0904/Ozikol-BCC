@@ -197,7 +197,7 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("password-policy")]
         public async Task<IActionResult> GetPasswordPolicy()
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -218,7 +218,7 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPut("password-policy")]
         public async Task<IActionResult> UpdatePasswordPolicy([FromBody] PasswordPolicyUpdateRequest request)
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -237,7 +237,7 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("mfa-policy")]
         public async Task<IActionResult> GetMfaPolicy()
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 
@@ -254,7 +254,7 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPut("mfa-policy")]
         public async Task<IActionResult> UpdateMfaPolicy([FromBody] MfaPolicyUpdateRequest request)
         {
-            var settings = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (settings == null)
                 return BadRequest(ApiResponse<object>.FailureResponse("Tenant configuration settings not found."));
 

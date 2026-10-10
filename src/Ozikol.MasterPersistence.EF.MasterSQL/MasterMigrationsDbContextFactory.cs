@@ -20,6 +20,10 @@ public class MasterMigrationsDbContextFactory : IDesignTimeDbContextFactory<Mast
         builder.UseSqlServer(connectionString, sqlOptions =>
         {
             sqlOptions.MigrationsAssembly(typeof(MasterCatalogDbContext).Assembly.FullName);
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
         })
         .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 

@@ -92,10 +92,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             Tenant = tenant;
             TenantKey = tenant.TenantKey;
 
+            var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+            string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+
             // Extract sanitized server host
             try
             {
-                var builder = new SqlConnectionStringBuilder(tenant.ConnectionString);
+                var builder = new SqlConnectionStringBuilder(harmonizedConnStr);
                 ServerHost = builder.DataSource;
             }
             catch
@@ -114,7 +117,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
             DeepDive = deepDive;
 
             // Test Ping Latency
-            await MeasurePingLatencyAsync(tenant.ConnectionString);
+            await MeasurePingLatencyAsync(harmonizedConnStr);
 
             return Page();
         }
@@ -130,10 +133,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
                 return new JsonResult(new { success = false, message = "Tenant not found." });
             }
 
+            var masterConnStr = _dbContext.Database.GetConnectionString() ?? string.Empty;
+            string harmonizedConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
+
             var sw = Stopwatch.StartNew();
             try
             {
-                using var conn = new SqlConnection(tenant.ConnectionString);
+                using var conn = new SqlConnection(harmonizedConnStr);
                 await conn.OpenAsync();
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = "SELECT 1;";

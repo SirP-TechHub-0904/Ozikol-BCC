@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -13,653 +16,835 @@ using Ozikol.Central.Services;
 using Ozikol.Central.Services.Extraction;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Application.Dtos.Sections;
+using Ozikol_BCC.Application.Interfaces.Services;
 
 namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
 {
     /// <summary>
-    /// PageModel for extracting, auditing, previewing, and importing modular section templates
-    /// from live website URLs directly into the Central Master Marketplace.
-    /// Manages dual-series group codes (Suite-level and Page-level) and single/batch publishing.
+    /// Unified Page Model for the 3-Tab Template &amp; Modular Section Ingestion Studio.
+    /// Orchestrates ingestion via File (.html) / Paste, Live Website URL crawler, and Vision Screenshot Mockup,
+    /// directly leveraging <see cref="ISectionCustomCodeExtractorService"/>, <see cref="ITemplateAssetBundlePipelineService"/>,
+    /// <see cref="ISectionLibraryResolverService"/>, and <see cref="ITemplateImageOptimizationService"/>.
+    /// Automatically persists extracted sections to <see cref="MasterMarketplaceDraftSection"/> for multi-turn AI refinements.
     /// </summary>
     public class ImportModel : PageModel
     {
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ExtractedSectionDto> _previewSectionCache = new();
-
+        private readonly ISectionCustomCodeExtractorService _customCodeExtractor;
+        private readonly ITemplateAssetBundlePipelineService _assetBundlePipeline;
+        private readonly ISectionLibraryResolverService _libraryResolver;
+        private readonly ITemplateImageOptimizationService _imageOptimizer;
         private readonly INativeSectionExtractorService _nativeExtractor;
-        private readonly ISectionsBuilderClientService _sectionsBuilderClient;
-        private readonly ISectionAiStudioService _sectionAiStudioService;
-        private readonly Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService _imageOptimizer;
-        private readonly MasterCatalogDbContext _dbContext;
-        private readonly HttpClient _httpClient;
+        private readonly ISectionAiStudioService _aiStudioService;
+        private readonly MasterCatalogDbContext _masterDb;
         private readonly ILogger<ImportModel> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImportModel"/> class.
+        /// </summary>
         public ImportModel(
+            ISectionCustomCodeExtractorService customCodeExtractor,
+            ITemplateAssetBundlePipelineService assetBundlePipeline,
+            ISectionLibraryResolverService libraryResolver,
+            ITemplateImageOptimizationService imageOptimizer,
             INativeSectionExtractorService nativeExtractor,
-            ISectionsBuilderClientService sectionsBuilderClient,
-            ISectionAiStudioService sectionAiStudioService,
-            Ozikol_BCC.Application.Interfaces.Services.ITemplateImageOptimizationService imageOptimizer,
-            MasterCatalogDbContext dbContext,
-            HttpClient httpClient,
+            ISectionAiStudioService aiStudioService,
+            MasterCatalogDbContext masterDb,
             ILogger<ImportModel> logger)
         {
-            _nativeExtractor = nativeExtractor;
-            _sectionsBuilderClient = sectionsBuilderClient;
-            _sectionAiStudioService = sectionAiStudioService;
-            _imageOptimizer = imageOptimizer;
-            _dbContext = dbContext;
-            _httpClient = httpClient;
-            _logger = logger;
-            ExtractorBaseUrl = string.Empty;
+            _customCodeExtractor = customCodeExtractor ?? throw new ArgumentNullException(nameof(customCodeExtractor));
+            _assetBundlePipeline = assetBundlePipeline ?? throw new ArgumentNullException(nameof(assetBundlePipeline));
+            _libraryResolver = libraryResolver ?? throw new ArgumentNullException(nameof(libraryResolver));
+            _imageOptimizer = imageOptimizer ?? throw new ArgumentNullException(nameof(imageOptimizer));
+            _nativeExtractor = nativeExtractor ?? throw new ArgumentNullException(nameof(nativeExtractor));
+            _aiStudioService = aiStudioService ?? throw new ArgumentNullException(nameof(aiStudioService));
+            _masterDb = masterDb ?? throw new ArgumentNullException(nameof(masterDb));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Currently active extraction tab: "url" (Live Website URL), "source" (Paste Page Source / HTML), or "image" (UI Screenshot / Mockup).
-        /// </summary>
-        [BindProperty]
-        public string ActiveTab { get; set; } = "url";
+        #region View State Properties
 
         /// <summary>
-        /// Uploaded UI mockup / screenshot image file for Gemini Vision decomposition.
+        /// Gets or sets the target suite or theme family name being created/imported.
         /// </summary>
-        [BindProperty]
-        public Microsoft.AspNetCore.Http.IFormFile? ImageMockupFile { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public string SuiteName { get; set; } = "Pasted Suite";
 
         /// <summary>
-        /// Custom suite name for image mockup extraction.
+        /// Gets or sets the target brand name for debranding and canonical tokenization.
         /// </summary>
-        [BindProperty]
-        public string? ImageSuiteName { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public string BrandName { get; set; } = "Enterprise Workspace";
 
         /// <summary>
-        /// Brand identity name for image mockup extraction.
+        /// Gets or sets the active studio step (1: Input Channels, 2: Section Workbench, 3: Live Preview &amp; Publish).
         /// </summary>
-        [BindProperty]
-        public string? ImageBrandName { get; set; }
-
-        /// <summary>
-        /// Target website URL to crawl and decompose into modular sections.
-        /// </summary>
-        [BindProperty]
-        public string TargetUrl { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Custom design theme suite name (e.g. "Apex Modern Suite", "Bexon Corporate").
-        /// </summary>
-        [BindProperty]
-        public string SuiteName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Brand identity name to use for dynamic template debranding.
-        /// </summary>
-        [BindProperty]
-        public string BrandName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Whether to automatically discover and crawl subpages found in the navigation menu.
-        /// </summary>
-        [BindProperty]
-        public bool CrawlSubpages { get; set; } = true;
-
-        /// <summary>
-        /// Maximum number of discovered subpages to process.
-        /// </summary>
-        [BindProperty]
-        public int MaxSubpages { get; set; } = 5;
-
-        /// <summary>
-        /// JSON array of user-selected page URLs to extract (when using 2-step discovery flow).
-        /// </summary>
-        [BindProperty]
-        public string? SelectedPageUrlsJson { get; set; }
-
-        /// <summary>
-        /// Current active studio step (1 = Input, 2 = Inspect Code & Assets Workbench, 3/4 = Sliced Sections & Preview, 5 = Install).
-        /// </summary>
-        [BindProperty]
         public int CurrentStep { get; set; } = 1;
 
         /// <summary>
-        /// Raw HTML page source pasted directly from "View Source" / Ctrl+U.
+        /// Gets or sets the serialized extraction result package JSON for client-side rendering.
         /// </summary>
-        [BindProperty]
-        public string? HtmlSource { get; set; }
+        public string? ExtractionResultJson { get; set; }
 
         /// <summary>
-        /// Optional base URL for resolving relative image and asset paths in pasted HTML source.
+        /// Gets or sets the list of active categories available in the marketplace.
         /// </summary>
-        [BindProperty]
-        public string? SourceBaseUrl { get; set; }
+        public List<MasterMarketplaceCategory> AvailableCategories { get; set; } = new();
 
         /// <summary>
-        /// Custom suite name for pasted page source.
+        /// Gets or sets the list of current draft staging sections.
         /// </summary>
-        [BindProperty]
-        public string? SourceSuiteName { get; set; }
+        public List<MasterMarketplaceDraftSection> StagedDraftSections { get; set; } = new();
 
         /// <summary>
-        /// Brand identity name for debranding pasted page source.
+        /// Gets or sets the error message if ingestion fails.
         /// </summary>
-        [BindProperty]
-        public string? SourceBrandName { get; set; }
-
-        /// <summary>
-        /// Optional custom or raw stylesheet CSS pasted by the user.
-        /// </summary>
-        [BindProperty]
-        public string? SourceCustomCss { get; set; }
-
-        /// <summary>
-        /// Edited HTML from Step 2 Workbench.
-        /// </summary>
-        [BindProperty]
-        public string? EditedHtmlSource { get; set; }
-
-        /// <summary>
-        /// JSON array of edited stylesheets from Step 2 Workbench.
-        /// </summary>
-        [BindProperty]
-        public string? EditedStylesheetsJson { get; set; }
-
-        /// <summary>
-        /// Inspected raw assets result for Step 2 Workbench.
-        /// </summary>
-        public RawAssetsInspectResponseDto? InspectResult { get; set; }
-
-        /// <summary>
-        /// Serialized JSON of inspected raw assets.
-        /// </summary>
-        public string InspectResultJson { get; set; } = "null";
-
-        /// <summary>
-        /// The base URL of the Python extractor service for live iframe sandboxes.
-        /// </summary>
-        public string ExtractorBaseUrl { get; set; } = "http://localhost:8001";
-
-        /// <summary>
-        /// Stored or active extraction result containing all modular sections and discovered pages.
-        /// </summary>
-        public SectionsBuilderResponseDto? ExtractionResult { get; set; }
-
-        /// <summary>
-        /// Serialized JSON of the entire extraction result for client-side filtering and preview state.
-        /// </summary>
-        public string ExtractionResultJson { get; set; } = "null";
-
-        /// <summary>
-        /// Status or error messages.
-        /// </summary>
-        [TempData]
-        public string? StatusMessage { get; set; }
-
         public string? ErrorMessage { get; set; }
 
         /// <summary>
-        /// Handles HTTP GET requests to prepare the import studio.
+        /// Gets or sets the success notification message.
         /// </summary>
-        public void OnGet()
-        {
-            // Initial view state
-        }
+        public string? SuccessMessage { get; set; }
+
+        #endregion
 
         /// <summary>
-        /// AJAX endpoint for rapidly discovering all menu pages from the website URL without slicing sections.
+        /// Handles HTTP GET requests to initialize the Template Ingestion Studio.
         /// </summary>
-        public async Task<IActionResult> OnPostDiscoverPagesAsync([FromBody] DiscoverPagesRequest request, CancellationToken cancellationToken)
+        /// <param name="suiteName">Optional initial suite name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The Razor Page result.</returns>
+        public async Task<IActionResult> OnGetAsync(string? suiteName = null, CancellationToken cancellationToken = default)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Url))
+            if (!string.IsNullOrWhiteSpace(suiteName))
             {
-                return BadRequest(new { success = false, message = "Target URL is required for page discovery." });
+                SuiteName = suiteName.Trim();
             }
 
             try
             {
-                var discoveryResult = await _nativeExtractor.DiscoverPagesAsync(request.Url.Trim(), cancellationToken);
-                if (discoveryResult == null || !discoveryResult.Pages.Any())
+                AvailableCategories = await _masterDb.MasterMarketplaceCategories
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.SortOrder)
+                    .ToListAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load marketplace categories.");
+                AvailableCategories = new List<MasterMarketplaceCategory>();
+            }
+
+            try
+            {
+                StagedDraftSections = await _masterDb.MasterMarketplaceDraftSections
+                    .Where(d => d.Status != "Published")
+                    .OrderByDescending(d => d.CreatedUtc)
+                    .Take(50)
+                    .ToListAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load staged draft sections from MasterMarketplaceDraftSections.");
+                StagedDraftSections = new List<MasterMarketplaceDraftSection>();
+            }
+
+            return Page();
+        }
+
+        #region Tab 1: Upload / Paste HTML Handler
+
+        /// <summary>
+        /// Ingests raw HTML markup via uploaded .html file or pasted textarea content, decomposes into modular sections,
+        /// and applies <see cref="ISectionCustomCodeExtractorService"/> for canonical tokenization and scoped CSS.
+        /// Persists extracted components to <see cref="MasterMarketplaceDraftSection"/> database staging table.
+        /// </summary>
+        /// <param name="htmlFile">Optional uploaded HTML file.</param>
+        /// <param name="pastedHtml">Optional pasted HTML string.</param>
+        /// <param name="customCss">Optional custom author CSS.</param>
+        /// <param name="suiteName">Theme suite display name.</param>
+        /// <param name="brandName">Brand name for debranding.</param>
+        /// <param name="baseUrl">Optional base URL for resolving relative assets and stylesheets.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>JSON result or re-rendered page with extracted sections.</returns>
+        public async Task<IActionResult> OnPostUploadHtmlAsync(
+            IFormFile? htmlFile,
+            string? pastedHtml,
+            string? customCss,
+            string? suiteName,
+            string? brandName,
+            string? baseUrl,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                string rawHtml = string.Empty;
+
+                if (htmlFile != null && htmlFile.Length > 0)
                 {
-                    return BadRequest(new { success = false, message = "No pages could be discovered from this website." });
+                    using var reader = new StreamReader(htmlFile.OpenReadStream());
+                    rawHtml = await reader.ReadToEndAsync(cancellationToken);
+                }
+                else if (!string.IsNullOrWhiteSpace(pastedHtml))
+                {
+                    rawHtml = pastedHtml.Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(rawHtml))
+                {
+                    return new JsonResult(new { success = false, message = "Please provide an HTML file or paste raw HTML markup." });
+                }
+
+                var cleanSuite = string.IsNullOrWhiteSpace(suiteName) ? "Imported Suite" : suiteName.Trim();
+                var cleanBrand = string.IsNullOrWhiteSpace(brandName) ? "Enterprise Workspace" : brandName.Trim();
+                var cleanBaseUrl = string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl.Trim();
+
+                Console.WriteLine();
+                var totalSw = Stopwatch.StartNew();
+                var stepSw = Stopwatch.StartNew();
+
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"\n[{DateTime.Now:HH:mm:ss.fff}] ╔═══════════════════════════════════════════════════════════════════════════════╗");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ [TEMPLATE INGESTION STUDIO] Ingesting HTML for Suite: '{cleanSuite}'".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ Base URL: {cleanBaseUrl ?? "(none)"} | Brand: {cleanBrand} | Size: {rawHtml.Length} chars".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ╚═══════════════════════════════════════════════════════════════════════════════╝");
+                Console.ResetColor();
+
+                _logger.LogInformation("Processing HTML Ingestion for Suite: '{Suite}' ({Length} chars, BaseUrl: '{BaseUrl}')...", cleanSuite, rawHtml.Length, cleanBaseUrl ?? "none");
+
+                // 1. Slice sections with native extractor
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⏱️ Step 1 & 2: Slicing DOM sections with INativeSectionExtractorService...");
+                Console.ResetColor();
+
+                stepSw.Restart();
+                var extraction = await _nativeExtractor.ExtractSectionsFromSourceAsync(
+                    rawHtml,
+                    baseUrl: cleanBaseUrl,
+                    suiteName: cleanSuite,
+                    brandName: cleanBrand,
+                    customCss: customCss,
+                    cancellationToken: cancellationToken);
+                stepSw.Stop();
+
+                if (extraction == null || extraction.Sections.Count == 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ Ingestion Error: No valid modular sections detected ({stepSw.ElapsedMilliseconds}ms).");
+                    Console.ResetColor();
+                    return new JsonResult(new { success = false, message = "No valid modular sections could be detected in the provided HTML markup." });
+                }
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Slicing Completed in {stepSw.ElapsedMilliseconds}ms: {extraction.Sections.Count} sections discovered:");
+                foreach (var sec in extraction.Sections)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • [{sec.CategoryKey}] '{sec.Name}' (Variant: {sec.VariantCode})");
+                }
+                Console.ResetColor();
+
+                // 2. Detect global vendor CDN requirements
+                stepSw.Restart();
+                var detectedLibs = _libraryResolver.DetectLibraries(rawHtml);
+                stepSw.Stop();
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ▶ Detected Vendor CDN Libraries ({detectedLibs.Count}) in {stepSw.ElapsedMilliseconds}ms: {string.Join(", ", detectedLibs)}");
+                Console.ResetColor();
+
+                // 3. For each extracted section, execute canonical tokenization and image optimization
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ▶ Step 3 & 4: Cleaning custom code, Mustache tokenizing, and migrating images for {extraction.Sections.Count} sections...");
+                Console.ResetColor();
+
+                int sectionIndex = 1;
+                foreach (var section in extraction.Sections)
+                {
+                    var secTimer = Stopwatch.StartNew();
+                    try
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⏱️ Processing Section [{sectionIndex}/{extraction.Sections.Count}] '{section.VariantCode}' ({section.CategoryKey})...");
+
+                        var imgSw = Stopwatch.StartNew();
+                        var optHtml = await _imageOptimizer.ProcessAndReplaceImagesInHtmlAsync(
+                            section.HtmlTemplate, 
+                            baseDomainUrl: cleanBaseUrl, 
+                            categoryOrContext: section.CategoryKey, 
+                            cancellationToken: cancellationToken);
+                        imgSw.Stop();
+                        section.HtmlTemplate = optHtml;
+
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • Images optimized / migrated in {imgSw.ElapsedMilliseconds}ms");
+
+                        var containerClass = ResolveAuthenticContainerClass(section.HtmlTemplate);
+
+                        var tokenReq = new SectionCustomCodeExtractionRequestDto
+                        {
+                            SectionKey = section.VariantCode,
+                            ContainerClass = containerClass,
+                            CategoryKey = section.CategoryKey,
+                            HtmlMarkup = section.HtmlTemplate,
+                            RawCustomCss = string.IsNullOrWhiteSpace(section.ScopedCss) ? customCss : section.ScopedCss,
+                            RawCustomJs = section.JsScript
+                        };
+
+                        var codeResult = await _customCodeExtractor.ExtractAndIsolateAsync(tokenReq, cancellationToken);
+                        secTimer.Stop();
+
+                        if (codeResult != null && codeResult.Success)
+                        {
+                            section.HtmlTemplate = codeResult.HtmlTemplate;
+                            section.ScopedCss = codeResult.ScopedCss;
+                            section.JsScript = codeResult.JsScript;
+                            section.SampleContentJson = !string.IsNullOrWhiteSpace(codeResult.ExtractedContentJson) && codeResult.ExtractedContentJson.Trim() != "{}"
+                                ? codeResult.ExtractedContentJson
+                                : (!string.IsNullOrWhiteSpace(section.SampleContentJson) && section.SampleContentJson.Trim() != "{}" ? section.SampleContentJson : "{}");
+
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    ✔ [{section.VariantCode}] Processed in {secTimer.ElapsedMilliseconds}ms | Mock Data: {section.SampleContentJson?.Length ?? 0} chars | Scoped CSS: {codeResult.ScopedCss?.Length ?? 0} chars");
+                            Console.ResetColor();
+                        }
+                    }
+                    catch (Exception secEx)
+                    {
+                        secTimer.Stop();
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    ⚠ Warning for section [{section.VariantCode}] after {secTimer.ElapsedMilliseconds}ms: {secEx.Message}");
+                        Console.ResetColor();
+                        _logger.LogWarning(secEx, "Custom code extraction warning for section {Code}", section.VariantCode);
+                    }
+                    sectionIndex++;
+                }
+
+                // 4. Persist to MasterMarketplaceDraftSections database staging table
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ▶ Step 5: Staging {extraction.Sections.Count} sections into MasterMarketplaceDraftSections database table...");
+                Console.ResetColor();
+
+                stepSw.Restart();
+                await PersistDraftSectionsAsync(extraction, cleanSuite, "HtmlFile", detectedLibs, cancellationToken);
+                stepSw.Stop();
+                totalSw.Stop();
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Staging Complete in {stepSw.ElapsedMilliseconds}ms! {extraction.Sections.Count} sections ready in Workbench.");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🏁 Total Ingestion Pipeline Duration: {totalSw.ElapsedMilliseconds / 1000.0:F2}s");
+                Console.WriteLine("═══════════════════════════════════════════════════════════════════════════════\n");
+                Console.ResetColor();
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    data = extraction,
+                    libraries = detectedLibs,
+                    message = $"Successfully extracted and staged {extraction.Sections.Count} modular sections in the database."
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"❌ Ingestion Error: {ex.Message}");
+                Console.ResetColor();
+                _logger.LogError(ex, "Error processing HTML ingestion in Template Studio.");
+                var errorMsg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return new JsonResult(new { success = false, message = $"HTML Ingestion failed: {errorMsg}" });
+            }
+        }
+
+        #endregion
+
+        #region Tab 2: Live Website URL Crawler Handler
+
+        /// <summary>
+        /// Crawls a live demo website URL, resolves relative CSS and JS assets, bundles styles,
+        /// detects vendor dependencies, and performs canonical section extraction using the 4 core services.
+        /// Persists extracted components to <see cref="MasterMarketplaceDraftSection"/> database staging table.
+        /// </summary>
+        /// <param name="targetUrl">Live website URL to crawl.</param>
+        /// <param name="suiteName">Theme suite display name.</param>
+        /// <param name="brandName">Brand name for debranding.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>JSON result containing extracted modular sections and resolved CDN assets.</returns>
+        public async Task<IActionResult> OnPostCrawlUrlAsync(
+            string targetUrl,
+            string? suiteName,
+            string? brandName,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(targetUrl) || !Uri.TryCreate(targetUrl.Trim(), UriKind.Absolute, out var validatedUri))
+                {
+                    return new JsonResult(new { success = false, message = "Please enter a valid absolute website URL (e.g. https://agency.com)." });
+                }
+
+                var cleanSuite = string.IsNullOrWhiteSpace(suiteName) ? validatedUri.Host.Replace(".", " ") : suiteName.Trim();
+                var cleanBrand = string.IsNullOrWhiteSpace(brandName) ? "Enterprise Workspace" : brandName.Trim();
+
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("╔═══════════════════════════════════════════════════════════════════════════════╗");
+                Console.WriteLine($"║ [TEMPLATE INGESTION STUDIO] Crawling Live Demo URL: '{validatedUri}'".PadRight(79) + "║");
+                Console.WriteLine($"║ Suite: '{cleanSuite}' | Brand: '{cleanBrand}'".PadRight(79) + "║");
+                Console.WriteLine("╚═══════════════════════════════════════════════════════════════════════════════╝");
+                Console.ResetColor();
+
+                _logger.LogInformation("Starting Remote Website Crawl for URL: {Url} (Suite: '{Suite}')", validatedUri, cleanSuite);
+
+                // 1. Ingest via Template Asset Bundle Pipeline
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("▶ Step 1: Executing TemplateAssetBundlePipelineService to download HTML, resolve CSS/JS, and map CDNs...");
+                Console.ResetColor();
+
+                var pipelineReq = new TemplateRemoteAssetPipelineRequestDto
+                {
+                    DemoUrl = validatedUri.ToString(),
+                    AutoSliceSections = true
+                };
+
+                var pipelineResp = await _assetBundlePipeline.ProcessRemoteTemplateAsync(pipelineReq, cancellationToken);
+                if (!pipelineResp.Success)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"❌ Pipeline Error: {pipelineResp.Message}");
+                    Console.ResetColor();
+                    return new JsonResult(new { success = false, message = pipelineResp.Message ?? "Failed to crawl target URL." });
+                }
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"✔ Asset Bundle Complete! Merged CSS: {pipelineResp.RawMergedCustomCss?.Length ?? 0} chars | Merged JS: {pipelineResp.RawMergedCustomJs?.Length ?? 0} chars");
+                Console.ResetColor();
+
+                // 2. Perform native section extraction with resolved CSS bundle
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("▶ Step 2: Slicing modular sections from crawled HTML...");
+                Console.ResetColor();
+
+                var extraction = await _nativeExtractor.ExtractSectionsFromSourceAsync(
+                    pipelineResp.RawMergedCustomCss,
+                    baseUrl: validatedUri.ToString(),
+                    suiteName: cleanSuite,
+                    brandName: cleanBrand,
+                    customCss: pipelineResp.RawMergedCustomCss,
+                    cancellationToken: cancellationToken);
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"✔ Discovered {extraction.Sections.Count} sections from live page.");
+                Console.ResetColor();
+
+                // 3. Run SectionCustomCodeExtractorService on each section
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("▶ Step 3 & 4: Isolating custom styles and tokenizing Mustache placeholders...");
+                Console.ResetColor();
+
+                foreach (var section in extraction.Sections)
+                {
+                    try
+                    {
+                        var optHtml = await _imageOptimizer.ProcessAndReplaceImagesInHtmlAsync(
+                            section.HtmlTemplate, 
+                            baseDomainUrl: validatedUri.ToString(), 
+                            categoryOrContext: section.CategoryKey, 
+                            cancellationToken: cancellationToken);
+                        section.HtmlTemplate = optHtml;
+
+                        var containerClass = ResolveAuthenticContainerClass(section.HtmlTemplate);
+
+                        var tokenReq = new SectionCustomCodeExtractionRequestDto
+                        {
+                            SectionKey = section.VariantCode,
+                            ContainerClass = containerClass,
+                            CategoryKey = section.CategoryKey,
+                            HtmlMarkup = section.HtmlTemplate,
+                            RawCustomCss = string.IsNullOrWhiteSpace(section.ScopedCss) ? pipelineResp.RawMergedCustomCss : section.ScopedCss,
+                            CustomCssUrl = pipelineResp.CompiledCustomCssUrl,
+                            RawCustomJs = section.JsScript
+                        };
+
+                        var codeResult = await _customCodeExtractor.ExtractAndIsolateAsync(tokenReq, cancellationToken);
+                        if (codeResult != null && codeResult.Success)
+                        {
+                            section.HtmlTemplate = codeResult.HtmlTemplate;
+                            section.ScopedCss = codeResult.ScopedCss;
+                            section.JsScript = codeResult.JsScript;
+                            section.SampleContentJson = !string.IsNullOrWhiteSpace(codeResult.ExtractedContentJson) && codeResult.ExtractedContentJson.Trim() != "{}"
+                                ? codeResult.ExtractedContentJson
+                                : (!string.IsNullOrWhiteSpace(section.SampleContentJson) && section.SampleContentJson.Trim() != "{}" ? section.SampleContentJson : "{}");
+
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine($"   ✔ [{section.VariantCode}] Processed | Mock Data: {section.SampleContentJson?.Length ?? 0} chars | Scoped CSS: {codeResult.ScopedCss?.Length ?? 0} chars");
+                            Console.ResetColor();
+                        }
+                    }
+                    catch (Exception secEx)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"   ⚠ Warning for section [{section.VariantCode}]: {secEx.Message}");
+                        Console.ResetColor();
+                        _logger.LogWarning(secEx, "Warning tokenizing live URL section {Code}", section.VariantCode);
+                    }
+                }
+
+                // 4. Persist to MasterMarketplaceDraftSections database staging table
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("▶ Step 5: Staging live URL sections into MasterMarketplaceDraftSections database table...");
+                Console.ResetColor();
+
+                var detectedLibs = _libraryResolver.DetectLibraries(pipelineResp.RawMergedCustomCss);
+                await PersistDraftSectionsAsync(extraction, cleanSuite, "LiveUrl", detectedLibs, cancellationToken);
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"✔ Staging Complete! {extraction.Sections.Count} sections ready in Workbench.");
+                Console.WriteLine("═══════════════════════════════════════════════════════════════════════════════\n");
+                Console.ResetColor();
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    data = extraction,
+                    pipeline = pipelineResp,
+                    message = $"Successfully crawled {validatedUri.Host}, extracted {extraction.Sections.Count} sections, and staged in database."
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"❌ Live URL Ingestion Error: {ex.Message}");
+                Console.ResetColor();
+                _logger.LogError(ex, "Error crawling live URL in Template Studio.");
+                return new JsonResult(new { success = false, message = $"Live URL crawl failed: {ex.Message}" });
+            }
+        }
+
+        #endregion
+
+        #region Tab 3: UI Screenshot Mockup (Vision AI) Handler
+
+        /// <summary>
+        /// Analyzes an uploaded UI screenshot or Figma mockup image using Multimodal Vision AI,
+        /// generates semantic HTML and scoped CSS, and tokenizes canonical placeholders using <see cref="ISectionCustomCodeExtractorService"/>.
+        /// Persists extracted components to <see cref="MasterMarketplaceDraftSection"/> database staging table.
+        /// </summary>
+        /// <param name="screenshotFile">The uploaded mockup image.</param>
+        /// <param name="suiteName">Theme suite display name.</param>
+        /// <param name="brandName">Brand name for debranding.</param>
+        /// <param name="provider">AI provider (defaults to "Gemini").</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>JSON result containing the AI-generated modular sections.</returns>
+        public async Task<IActionResult> OnPostVisionScreenshotAsync(
+            IFormFile? screenshotFile,
+            string? suiteName,
+            string? brandName,
+            string provider = "Gemini",
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (screenshotFile == null || screenshotFile.Length == 0)
+                {
+                    return new JsonResult(new { success = false, message = "Please select a UI screenshot image file (PNG, JPG, WebP)." });
+                }
+
+                var cleanSuite = string.IsNullOrWhiteSpace(suiteName) ? "Visual Mockup Suite" : suiteName.Trim();
+                var cleanBrand = string.IsNullOrWhiteSpace(brandName) ? "Enterprise Workspace" : brandName.Trim();
+
+                using var ms = new MemoryStream();
+                await screenshotFile.CopyToAsync(ms, cancellationToken);
+                var imageBytes = ms.ToArray();
+                var mimeType = screenshotFile.ContentType;
+
+                _logger.LogInformation("Executing Multimodal Vision AI decomposition for suite: '{Suite}'...", cleanSuite);
+
+                // 1. Decompose screenshot into modular sections
+                var extraction = await _aiStudioService.DecomposeImageToSectionsAsync(
+                    screenshotFile,
+                    suiteName: cleanSuite,
+                    brandName: cleanBrand,
+                    provider: provider,
+                    cancellationToken: cancellationToken);
+
+                if (extraction == null || extraction.Sections.Count == 0)
+                {
+                    return new JsonResult(new { success = false, message = "Vision AI was unable to generate sections from this screenshot." });
+                }
+
+                // 2. Refine each section with SectionCustomCodeExtractorService
+                foreach (var section in extraction.Sections)
+                {
+                    try
+                    {
+                        var containerClass = ResolveAuthenticContainerClass(section.HtmlTemplate);
+
+                        var tokenReq = new SectionCustomCodeExtractionRequestDto
+                        {
+                            SectionKey = section.VariantCode,
+                            ContainerClass = containerClass,
+                            CategoryKey = section.CategoryKey,
+                            HtmlMarkup = section.HtmlTemplate,
+                            RawCustomCss = section.ScopedCss,
+                            RawCustomJs = section.JsScript
+                        };
+
+                        var codeResult = await _customCodeExtractor.ExtractAndIsolateAsync(tokenReq, cancellationToken);
+                        if (codeResult != null && codeResult.Success)
+                        {
+                            section.HtmlTemplate = codeResult.HtmlTemplate;
+                            section.ScopedCss = codeResult.ScopedCss;
+                            section.JsScript = codeResult.JsScript;
+                            section.SampleContentJson = !string.IsNullOrWhiteSpace(codeResult.ExtractedContentJson) && codeResult.ExtractedContentJson.Trim() != "{}"
+                                ? codeResult.ExtractedContentJson
+                                : (!string.IsNullOrWhiteSpace(section.SampleContentJson) && section.SampleContentJson.Trim() != "{}" ? section.SampleContentJson : "{}");
+                        }
+                    }
+                    catch (Exception secEx)
+                    {
+                        _logger.LogWarning(secEx, "Warning tokenizing vision section {Code}", section.VariantCode);
+                    }
+                }
+
+                // 3. Persist to MasterMarketplaceDraftSections database staging table
+                await PersistDraftSectionsAsync(extraction, cleanSuite, "VisionAi", new List<string> { "bootstrap", "fontawesome" }, cancellationToken);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    data = extraction,
+                    message = $"Vision AI successfully synthesized {extraction.Sections.Count} modular sections and staged in database."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing UI screenshot in Template Studio.");
+                return new JsonResult(new { success = false, message = $"Screenshot processing failed: {ex.Message}" });
+            }
+        }
+
+        #endregion
+
+        #region Single Section AI Clean / Refine Handler
+
+        /// <summary>
+        /// Executes a full 4-pillar clean or natural-language prompt refinement on a staging draft section using AI.
+        /// Directly updates the persisted row in <see cref="MasterMarketplaceDraftSection"/>.
+        /// </summary>
+        /// <param name="request">The clean request payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Cleaned section DTO with database ID.</returns>
+        public async Task<IActionResult> OnPostCleanSectionWithAiAsync(
+            [FromBody] SectionAiFullCleanRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.HtmlTemplate))
+                {
+                    return new JsonResult(new { success = false, message = "Section HTML markup is required." });
+                }
+
+                MasterMarketplaceDraftSection? draft = null;
+                if (Guid.TryParse(request.Id, out var draftGuid) && draftGuid != Guid.Empty)
+                {
+                    draft = await _masterDb.MasterMarketplaceDraftSections
+                        .FirstOrDefaultAsync(d => d.Id == draftGuid, cancellationToken);
+                }
+
+                var containerClass = string.IsNullOrWhiteSpace(request.ContainerClass)
+                    ? ResolveAuthenticContainerClass(request.HtmlTemplate)
+                    : request.ContainerClass.TrimStart('.');
+
+                string finalHtml = request.HtmlTemplate;
+                string finalCss = request.RawCss ?? string.Empty;
+                string? finalJs = request.RawJs;
+                string? finalTokens = draft?.SampleContentJson;
+                string explanation = "Section refined and persisted to staging database.";
+
+                // 1. If user provided a conversational refinement prompt, execute AI Tweak first
+                if (!string.IsNullOrWhiteSpace(request.UserPrompt))
+                {
+                    var tweakReq = new SectionAiTweakRequestDto
+                    {
+                        HtmlTemplate = request.HtmlTemplate,
+                        ScopedCss = request.RawCss,
+                        UserPrompt = request.UserPrompt,
+                        Provider = request.Provider ?? "Gemini"
+                    };
+
+                    var tweakResult = await _aiStudioService.TweakSectionAsync(tweakReq, cancellationToken);
+                    if (tweakResult != null && tweakResult.Success)
+                    {
+                        finalHtml = tweakResult.HtmlTemplate;
+                        finalCss = tweakResult.ScopedCss;
+                        explanation = tweakResult.Explanation ?? "Refined section based on user prompt.";
+                    }
+                }
+
+                // 2. Extract and standardize tokens with custom code extractor
+                var extractReq = new SectionCustomCodeExtractionRequestDto
+                {
+                    SectionKey = request.Title ?? draft?.VariantCode ?? "section",
+                    ContainerClass = containerClass,
+                    CategoryKey = request.CategoryKey ?? draft?.CategoryKey ?? "bodysections",
+                    HtmlMarkup = finalHtml,
+                    RawCustomCss = finalCss,
+                    RawCustomJs = finalJs ?? draft?.JsScript
+                };
+
+                var result = await _customCodeExtractor.ExtractAndIsolateAsync(extractReq, cancellationToken);
+
+                if (result != null && result.Success)
+                {
+                    finalHtml = result.HtmlTemplate;
+                    finalCss = result.ScopedCss;
+                    finalJs = result.JsScript;
+                    finalTokens = result.ExtractedContentJson;
+                }
+                else if (string.IsNullOrWhiteSpace(request.UserPrompt))
+                {
+                    var studioResult = await _aiStudioService.CleanAndIsolateFullSectionWithAiAsync(request, cancellationToken);
+                    if (studioResult != null && studioResult.Success)
+                    {
+                        finalHtml = studioResult.HtmlTemplate;
+                        finalCss = studioResult.ScopedCss;
+                        finalJs = studioResult.JsScript;
+                        finalTokens = studioResult.SampleContentJson;
+                        explanation = studioResult.Explanation ?? explanation;
+                    }
+                }
+
+                // Update database staging record
+                if (draft != null)
+                {
+                    draft.HtmlTemplate = finalHtml;
+                    draft.ScopedCss = finalCss;
+                    draft.JsScript = finalJs;
+                    draft.SampleContentJson = finalTokens;
+                    draft.Status = "RefinedByAi";
+                    draft.UpdatedUtc = DateTime.UtcNow;
+                    await _masterDb.SaveChangesAsync(cancellationToken);
                 }
 
                 return new JsonResult(new
                 {
                     success = true,
-                    sourceUrl = discoveryResult.SourceUrl,
-                    totalPages = discoveryResult.TotalPages,
-                    pages = discoveryResult.Pages,
-                    message = discoveryResult.Message
+                    id = draft?.Id.ToString() ?? request.Id,
+                    html_template = finalHtml,
+                    scoped_css = finalCss,
+                    js_script = finalJs,
+                    sample_content_json = finalTokens,
+                    status = draft?.Status ?? "RefinedByAi",
+                    explanation = "Section refined and persisted to staging database."
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to discover menu pages for {Url}", request.Url);
-                return StatusCode(500, new { success = false, message = ex.Message });
+                _logger.LogError(ex, "Error cleaning section with AI.");
+                return new JsonResult(new { success = false, message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to crawl the target URL and extract modular sections.
+        /// Updates an existing draft staging section directly in the database.
         /// </summary>
-        public async Task<IActionResult> OnPostExtractAsync(CancellationToken cancellationToken)
+        /// <param name="request">Update draft payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Result containing updated draft.</returns>
+        public async Task<IActionResult> OnPostUpdateDraftSectionAsync(
+            [FromBody] UpdateDraftSectionRequestDto request,
+            CancellationToken cancellationToken = default)
         {
-            ActiveTab = "url";
-            if (string.IsNullOrWhiteSpace(TargetUrl))
-            {
-                ErrorMessage = "Please provide a valid website URL to extract.";
-                CurrentStep = 1;
-                return Page();
-            }
-
             try
             {
-                _logger.LogInformation("Starting live website extraction natively for: {Url}", TargetUrl);
-
-                string html = string.Empty;
-                try
+                if (request == null || request.Id == Guid.Empty)
                 {
-                    using var req = new HttpRequestMessage(HttpMethod.Get, TargetUrl.Trim());
-                    req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-                    req.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                    var resp = await _httpClient.SendAsync(req, cancellationToken);
-                    
-                    if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden || resp.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-                    {
-                        throw new InvalidOperationException("Cloudflare Bot Security Protected");
-                    }
-                    resp.EnsureSuccessStatusCode();
-                    html = await resp.Content.ReadAsStringAsync(cancellationToken);
-                }
-                catch (Exception fetchEx)
-                {
-                    _logger.LogWarning(fetchEx, "Direct HTTP fetch was blocked for {Url}", TargetUrl);
-                    ErrorMessage = "This demo site is guarded by Cloudflare anti-bot security. Please switch to the 'Paste Page Source / Upload HTML' tab (press Ctrl+U in your browser, copy and paste) to extract all sections instantly without bot blocks.";
-                    CurrentStep = 1;
-                    return Page();
+                    return new JsonResult(new { success = false, message = "Draft Section ID is required." });
                 }
 
-                ExtractionResult = await _nativeExtractor.ExtractSectionsFromSourceAsync(
-                    html,
-                    TargetUrl.Trim(),
-                    SuiteName,
-                    BrandName,
-                    cancellationToken: cancellationToken);
+                var draft = await _masterDb.MasterMarketplaceDraftSections
+                    .FirstOrDefaultAsync(d => d.Id == request.Id, cancellationToken);
 
-                if (ExtractionResult != null && ExtractionResult.Sections.Any())
+                if (draft == null)
                 {
-                    foreach (var sec in ExtractionResult.Sections)
-                    {
-                        _previewSectionCache[sec.Id] = sec;
-                    }
-
-                    ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
-                        WriteIndented = false
-                    });
-
-                    CurrentStep = 3;
-                    StatusMessage = $"Extraction complete! Discovered {ExtractionResult.TotalSections} modular sections with precision tree-shaking.";
+                    return new JsonResult(new { success = false, message = "Draft section not found in database." });
                 }
-                else
+
+                if (!string.IsNullOrWhiteSpace(request.Name)) draft.Name = request.Name;
+                if (!string.IsNullOrWhiteSpace(request.CategoryKey)) draft.CategoryKey = request.CategoryKey;
+                if (!string.IsNullOrWhiteSpace(request.HtmlTemplate)) draft.HtmlTemplate = request.HtmlTemplate;
+                if (request.ScopedCss != null) draft.ScopedCss = request.ScopedCss;
+                if (request.JsScript != null) draft.JsScript = request.JsScript;
+                if (request.SampleContentJson != null) draft.SampleContentJson = request.SampleContentJson;
+                if (request.RequiredLibrariesJson != null) draft.RequiredLibrariesJson = request.RequiredLibrariesJson;
+                if (request.RequiredCssLibrariesJson != null) draft.RequiredCssLibrariesJson = request.RequiredCssLibrariesJson;
+                if (request.RequiredJsLibrariesJson != null) draft.RequiredJsLibrariesJson = request.RequiredJsLibrariesJson;
+                if (request.Description != null) draft.Description = request.Description;
+
+                draft.UpdatedUtc = DateTime.UtcNow;
+                await _masterDb.SaveChangesAsync(cancellationToken);
+
+                return new JsonResult(new
                 {
-                    ErrorMessage = "Extraction service did not find any modular sections. Please verify the page markup.";
-                    CurrentStep = 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Website extraction failed for {Url}", TargetUrl);
-                ErrorMessage = $"Extraction failed: {ex.Message}";
-                CurrentStep = 1;
-            }
-
-            return Page();
-        }
-
-        /// <summary>
-        /// Handles HTTP POST requests to slice modular sections directly from raw HTML page source in real time.
-        /// </summary>
-        public async Task<IActionResult> OnPostExtractFromSourceAsync(CancellationToken cancellationToken)
-        {
-            ActiveTab = "source";
-            if (string.IsNullOrWhiteSpace(HtmlSource))
-            {
-                ErrorMessage = "Please paste the raw HTML page source to extract.";
-                CurrentStep = 1;
-                return Page();
-            }
-
-            try
-            {
-                _logger.LogInformation("Starting direct page source extraction natively in C#.");
-
-                ExtractionResult = await _nativeExtractor.ExtractSectionsFromSourceAsync(
-                    HtmlSource.Trim(),
-                    SourceBaseUrl,
-                    SourceSuiteName,
-                    SourceBrandName,
-                    SourceCustomCss,
-                    cancellationToken);
-
-                if (ExtractionResult != null && ExtractionResult.Sections.Any())
-                {
-                    foreach (var sec in ExtractionResult.Sections)
-                    {
-                        _previewSectionCache[sec.Id] = sec;
-                    }
-
-                    ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
-                        WriteIndented = false
-                    });
-
-                    CurrentStep = 3;
-                    StatusMessage = $"Direct source extraction complete! Sliced and scoped {ExtractionResult.TotalSections} modular sections.";
-                }
-                else
-                {
-                    ErrorMessage = "Source extraction did not return any sections. Please verify the HTML markup.";
-                    CurrentStep = 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Direct page source extraction failed");
-                ErrorMessage = $"Source extraction failed: {ex.Message}";
-                CurrentStep = 1;
-            }
-
-            return Page();
-        }
-
-        /// <summary>
-        /// Handles HTTP POST requests to decompose an uploaded UI mockup/screenshot into modular sections using Gemini Multimodal Vision.
-        /// </summary>
-        public async Task<IActionResult> OnPostExtractFromImageAsync(CancellationToken cancellationToken)
-        {
-            ActiveTab = "image";
-            if (ImageMockupFile == null || ImageMockupFile.Length == 0)
-            {
-                ErrorMessage = "Please select a UI mockup or screenshot image file to upload.";
-                CurrentStep = 1;
-                return Page();
-            }
-
-            try
-            {
-                _logger.LogInformation("Starting UI Image-to-Section Vision decomposition for file: {FileName}", ImageMockupFile.FileName);
-
-                ExtractionResult = await _sectionAiStudioService.DecomposeImageToSectionsAsync(
-                    ImageMockupFile,
-                    ImageSuiteName,
-                    ImageBrandName,
-                    "Gemini",
-                    cancellationToken);
-
-                if (ExtractionResult != null && ExtractionResult.Sections.Any())
-                {
-                    foreach (var sec in ExtractionResult.Sections)
-                    {
-                        _previewSectionCache[sec.Id] = sec;
-                    }
-
-                    ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
-                        WriteIndented = false
-                    });
-
-                    CurrentStep = 3;
-                    StatusMessage = $"Vision AI decomposition complete! Generated {ExtractionResult.TotalSections} modular sections with isolated scoped CSS and placeholders.";
-                }
-                else
-                {
-                    ErrorMessage = "Vision AI was unable to generate sections from this image. Please ensure the image shows clear UI components.";
-                    CurrentStep = 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "UI Image decomposition failed");
-                ErrorMessage = $"Vision decomposition failed: {ex.Message}";
-                CurrentStep = 1;
-            }
-
-            return Page();
-        }
-
-        /// <summary>
-        /// AJAX endpoint for conversational in-preview AI section tweaking (HTML, Scoped CSS, Placeholders).
-        /// </summary>
-        public async Task<IActionResult> OnPostTweakSectionWithAiAsync([FromBody] SectionAiTweakRequestDto request, CancellationToken cancellationToken)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.UserPrompt))
-            {
-                return BadRequest(new { success = false, errorMessage = "Please provide an AI instruction prompt." });
-            }
-
-            try
-            {
-                var result = await _sectionAiStudioService.TweakSectionAsync(request, cancellationToken);
-                return new JsonResult(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to tweak section with AI");
-                return StatusCode(500, new SectionAiTweakResponseDto
-                {
-                    Success = false,
-                    ErrorMessage = ex.Message
+                    success = true,
+                    data = draft,
+                    message = $"Draft '{draft.Name}' updated successfully in staging database."
                 });
             }
-        }
-
-        /// <summary>
-        /// Step 2 Handler: Fetches and inspects all raw HTML markup, CSS stylesheets, JS scripts, and Fonts.
-        /// </summary>
-        public async Task<IActionResult> OnPostInspectAssetsAsync(CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrWhiteSpace(HtmlSource))
-            {
-                ErrorMessage = "Please paste the HTML page source or upload a file.";
-                CurrentStep = 1;
-                return Page();
-            }
-
-            try
-            {
-                _logger.LogInformation("Inspecting raw assets natively for base URL: {BaseUrl}", SourceBaseUrl);
-
-                var request = new RawAssetsInspectRequestDto
-                {
-                    HtmlSource = HtmlSource.Trim(),
-                    BaseUrl = string.IsNullOrWhiteSpace(SourceBaseUrl) ? null : SourceBaseUrl.Trim(),
-                    SuiteName = string.IsNullOrWhiteSpace(SourceSuiteName) ? "Pasted Source Suite" : SourceSuiteName.Trim(),
-                    BrandName = string.IsNullOrWhiteSpace(SourceBrandName) ? "Enterprise Workspace" : SourceBrandName.Trim()
-                };
-
-                InspectResult = await _nativeExtractor.InspectRawAssetsAsync(request, cancellationToken);
-
-                if (InspectResult != null)
-                {
-                    InspectResultJson = JsonSerializer.Serialize(InspectResult, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
-                        WriteIndented = false
-                    });
-
-                    CurrentStep = 2;
-                    StatusMessage = $"Fetched {InspectResult.Stylesheets.Count} stylesheets ({InspectResult.TotalCssKb} KB) and {InspectResult.Scripts.Count} scripts ready for inspection.";
-                }
-                else
-                {
-                    ErrorMessage = "Failed to inspect raw assets. Please check the markup and URL.";
-                    CurrentStep = 1;
-                }
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to inspect raw assets");
-                ErrorMessage = $"Asset inspection failed: {ex.Message}";
-                CurrentStep = 1;
+                _logger.LogError(ex, "Error updating draft section in database.");
+                return new JsonResult(new { success = false, message = ex.Message });
             }
-
-            return Page();
         }
 
+        #endregion
+
+        #region Marketplace Publishing Handlers
+
         /// <summary>
-        /// Step 3 & 4 Handler: Slices confirmed/edited HTML & CSS from Step 2 into modular sections.
+        /// Publishes an individual modular section directly from the staging table to the Master Marketplace Catalog.
         /// </summary>
-        public async Task<IActionResult> OnPostSliceAndScopeAsync(CancellationToken cancellationToken)
+        /// <param name="request">The section publishing payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Result of the publishing operation.</returns>
+        public async Task<IActionResult> OnPostPublishSectionAsync(
+            [FromBody] PublishSectionRequestDto request,
+            CancellationToken cancellationToken = default)
         {
-            var html = !string.IsNullOrWhiteSpace(EditedHtmlSource) ? EditedHtmlSource : HtmlSource;
-
-            if (string.IsNullOrWhiteSpace(html))
-            {
-                ErrorMessage = "HTML page source is missing. Please start from Step 1.";
-                CurrentStep = 1;
-                return Page();
-            }
-
             try
             {
-                _logger.LogInformation("Slicing and scoping modular sections from Step 2 Workbench natively.");
-
-                List<RawAssetItemDto>? parsedStylesheets = null;
-                if (!string.IsNullOrWhiteSpace(EditedStylesheetsJson))
+                if (request == null || string.IsNullOrWhiteSpace(request.HtmlTemplate))
                 {
-                    try
-                    {
-                        parsedStylesheets = JsonSerializer.Deserialize<List<RawAssetItemDto>>(EditedStylesheetsJson, new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Could not deserialize EditedStylesheetsJson; continuing with default.");
-                    }
+                    return new JsonResult(new { success = false, message = "Section HTML template cannot be empty." });
                 }
 
-                var request = new SliceAndScopeRequestDto
-                {
-                    HtmlSource = html.Trim(),
-                    Stylesheets = parsedStylesheets,
-                    CustomCss = string.IsNullOrWhiteSpace(SourceCustomCss) ? null : SourceCustomCss.Trim(),
-                    BaseUrl = string.IsNullOrWhiteSpace(SourceBaseUrl) ? null : SourceBaseUrl.Trim(),
-                    SuiteName = string.IsNullOrWhiteSpace(SourceSuiteName) ? "Source Suite" : SourceSuiteName.Trim(),
-                    BrandName = string.IsNullOrWhiteSpace(SourceBrandName) ? "Enterprise Workspace" : SourceBrandName.Trim(),
-                    DeepDebrand = true,
-                    IncludeCodeInjections = true
-                };
-
-                ExtractionResult = await _nativeExtractor.SliceAndScopeAsync(request, cancellationToken);
-
-                if (ExtractionResult != null && ExtractionResult.Sections.Any())
-                {
-                    foreach (var sec in ExtractionResult.Sections)
-                    {
-                        _previewSectionCache[sec.Id] = sec;
-                    }
-
-                    ExtractionResultJson = JsonSerializer.Serialize(ExtractionResult, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
-                        WriteIndented = false
-                    });
-
-                    CurrentStep = 3;
-                    StatusMessage = $"Sliced and scoped {ExtractionResult.TotalSections} modular sections with precision class isolation!";
-                }
-                else
-                {
-                    ErrorMessage = "Section slicing did not return any sections. Please check your HTML.";
-                    CurrentStep = 2;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to slice and scope sections");
-                ErrorMessage = $"Section slicing failed: {ex.Message}";
-                CurrentStep = 2;
-            }
-
-            return Page();
-        }
-
-        /// <summary>
-        /// Renders an in-process standalone HTML sandbox for previewing an individual section inside an iframe.
-        /// </summary>
-        public IActionResult OnGetPreviewSandbox(string sectionId, string? suiteName, string? baseUrl)
-        {
-            if (string.IsNullOrWhiteSpace(sectionId) || !_previewSectionCache.TryGetValue(sectionId, out var section))
-            {
-                return Content("<!DOCTYPE html><html><body style='font-family: sans-serif; padding: 30px; text-align: center; color: #64748b;'><h3>Section Preview Loading...</h3><p>Please select a section card to preview.</p></body></html>", "text/html");
-            }
-
-            var html = _nativeExtractor.BuildStandaloneSectionPreviewHtml(section, suiteName, baseUrl);
-            return Content(html, "text/html");
-        }
-
-        /// <summary>
-        /// AJAX endpoint for publishing an individual extracted section into the Master Catalog Marketplace.
-        /// </summary>
-        public async Task<IActionResult> OnPostPublishSectionAsync([FromBody] PublishSectionRequest payload)
-        {
-            if (payload == null || string.IsNullOrWhiteSpace(payload.HtmlTemplate))
-            {
-                return BadRequest(new { success = false, message = "Invalid section payload." });
-            }
-
-            try
-            {
-                var cleanCategoryKey = string.IsNullOrWhiteSpace(payload.CategoryKey) ? "body" : payload.CategoryKey.Trim().ToLowerInvariant();
-                var cleanVariant = string.IsNullOrWhiteSpace(payload.VariantCode) 
-                    ? $"Sec_{Guid.NewGuid().ToString("N")[..8]}" 
-                    : payload.VariantCode.Trim();
-
-                // 1. Ensure Marketplace Category exists in master DB
-                var category = await _dbContext.MasterMarketplaceCategories
-                    .FirstOrDefaultAsync(c => c.CategoryKey.ToLower() == cleanCategoryKey);
+                // Find or resolve category
+                var category = await _masterDb.MasterMarketplaceCategories
+                    .FirstOrDefaultAsync(c => c.CategoryKey.ToLower() == request.CategoryKey.ToLower(), cancellationToken);
 
                 if (category == null)
                 {
-                    category = new MasterMarketplaceCategory
+                    category = await _masterDb.MasterMarketplaceCategories.FirstOrDefaultAsync(cancellationToken);
+                    if (category == null)
                     {
-                        Id = Guid.NewGuid(),
-                        CategoryKey = cleanCategoryKey,
-                        Name = GetCategoryDisplayName(cleanCategoryKey),
-                        Description = $"Marketplace section category for {cleanCategoryKey} components.",
-                        Icon = GetCategoryIcon(cleanCategoryKey),
-                        SortOrder = GetCategorySortOrder(cleanCategoryKey),
-                        IsActive = true
-                    };
-                    _dbContext.MasterMarketplaceCategories.Add(category);
-                    await _dbContext.SaveChangesAsync();
+                        return new JsonResult(new { success = false, message = "No marketplace category found in database." });
+                    }
                 }
 
-                // 2. Check if variant code exists (update existing or create new)
-                var existingTemplate = await _dbContext.MasterMarketplaceTemplates
-                    .FirstOrDefaultAsync(t => t.VariantCode.ToLower() == cleanVariant.ToLower());
+                var cleanVariantCode = string.IsNullOrWhiteSpace(request.VariantCode)
+                    ? $"sec_{DateTime.UtcNow.Ticks}"
+                    : request.VariantCode.Trim();
 
-                if (existingTemplate != null)
+                // Check for existing template with this variant code
+                var existing = await _masterDb.MasterMarketplaceTemplates
+                    .FirstOrDefaultAsync(t => t.VariantCode == cleanVariantCode, cancellationToken);
+
+                if (existing != null)
                 {
-                    existingTemplate.Name = payload.Name.Trim();
-                    existingTemplate.CategoryId = category.Id;
-                    existingTemplate.CategoryKey = category.CategoryKey;
-                    existingTemplate.Tag = string.IsNullOrWhiteSpace(payload.SuiteCode) ? "modern" : payload.SuiteCode.Trim().ToLowerInvariant();
-                    existingTemplate.Badge = string.IsNullOrWhiteSpace(payload.Badge) ? "New" : payload.Badge.Trim();
-                    existingTemplate.Description = payload.Description?.Trim();
-                    existingTemplate.HtmlTemplate = payload.HtmlTemplate;
-                    existingTemplate.CssStyles = payload.ScopedCss ?? string.Empty;
-                    existingTemplate.JsScript = string.IsNullOrWhiteSpace(payload.JsScript) ? null : payload.JsScript;
-                    existingTemplate.DefaultSectionListsJson = payload.SampleContentJson;
-                    existingTemplate.UpdatedUtc = DateTime.UtcNow;
-                    existingTemplate.IsActive = true;
+                    existing.Name = request.Name ?? existing.Name;
+                    existing.HtmlTemplate = request.HtmlTemplate;
+                    existing.CssStyles = request.CssStyles ?? string.Empty;
+                    existing.JsScript = request.JsScript;
+                    existing.DefaultSectionListsJson = request.DefaultSectionListsJson;
+                    existing.Description = request.Description;
+                    existing.Badge = request.Badge;
+                    existing.UpdatedUtc = DateTime.UtcNow;
                 }
                 else
                 {
@@ -668,327 +853,359 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Templates
                         Id = Guid.NewGuid(),
                         CategoryId = category.Id,
                         CategoryKey = category.CategoryKey,
-                        Name = payload.Name.Trim(),
-                        VariantCode = cleanVariant,
-                        Tag = string.IsNullOrWhiteSpace(payload.SuiteCode) ? "modern" : payload.SuiteCode.Trim().ToLowerInvariant(),
-                        Badge = string.IsNullOrWhiteSpace(payload.Badge) ? "New" : payload.Badge.Trim(),
-                        Description = payload.Description?.Trim(),
-                        ThumbnailGradient = string.IsNullOrWhiteSpace(payload.ThumbnailGradient)
-                            ? "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)"
-                            : payload.ThumbnailGradient.Trim(),
-                        PreviewIcon = string.IsNullOrWhiteSpace(payload.PreviewIcon) ? "widgets" : payload.PreviewIcon.Trim(),
-                        PreviewTitle = payload.Name.Trim(),
-                        HtmlTemplate = payload.HtmlTemplate,
-                        CssStyles = payload.ScopedCss ?? string.Empty,
-                        JsScript = string.IsNullOrWhiteSpace(payload.JsScript) ? null : payload.JsScript,
-                        DefaultSectionListsJson = payload.SampleContentJson,
-                        Version = "1.0.0",
-                        SortOrder = payload.SortOrder,
+                        Name = request.Name ?? "Modular Section",
+                        VariantCode = cleanVariantCode,
+                        Tag = request.Tag ?? "modern",
+                        Badge = request.Badge ?? "New",
+                        Description = request.Description ?? "Ingested modular section",
+                        HtmlTemplate = request.HtmlTemplate,
+                        CssStyles = request.CssStyles ?? string.Empty,
+                        JsScript = request.JsScript,
+                        DefaultSectionListsJson = request.DefaultSectionListsJson,
                         IsActive = true,
-                        CreatedUtc = DateTime.UtcNow,
-                        UpdatedUtc = DateTime.UtcNow
+                        CreatedUtc = DateTime.UtcNow
                     };
-                    _dbContext.MasterMarketplaceTemplates.Add(newTemplate);
+
+                    _masterDb.MasterMarketplaceTemplates.Add(newTemplate);
                 }
 
-                await _dbContext.SaveChangesAsync();
+                // Mark draft record as Published if available
+                if (request.DraftId.HasValue)
+                {
+                    var draft = await _masterDb.MasterMarketplaceDraftSections
+                        .FirstOrDefaultAsync(d => d.Id == request.DraftId.Value, cancellationToken);
+                    if (draft != null)
+                    {
+                        draft.Status = "Published";
+                        draft.UpdatedUtc = DateTime.UtcNow;
+                    }
+                }
+
+                await _masterDb.SaveChangesAsync(cancellationToken);
 
                 return new JsonResult(new
                 {
                     success = true,
-                    variantCode = cleanVariant,
-                    message = $"Template '{payload.Name}' successfully published to the Central Marketplace."
+                    variantCode = cleanVariantCode,
+                    message = $"Section '{request.Name}' successfully published to Marketplace!"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to publish section to marketplace");
-                return StatusCode(500, new { success = false, message = ex.Message });
+                _logger.LogError(ex, "Error publishing section to Master Marketplace.");
+                return new JsonResult(new { success = false, message = $"Publishing failed: {ex.Message}" });
             }
         }
 
         /// <summary>
-        /// AJAX endpoint for publishing multiple selected sections in a single batch.
+        /// Publishes all extracted sections in a theme suite to the Master Marketplace Catalog in a single batch.
         /// </summary>
-        public async Task<IActionResult> OnPostPublishBatchAsync([FromBody] PublishBatchRequest payload)
+        /// <param name="request">The batch suite publishing payload.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Result of the batch publishing operation.</returns>
+        public async Task<IActionResult> OnPostPublishAllSuiteSectionsAsync(
+            [FromBody] PublishSuiteRequestDto request,
+            CancellationToken cancellationToken = default)
         {
-            if (payload == null || payload.Sections == null || !payload.Sections.Any())
-            {
-                return BadRequest(new { success = false, message = "No sections selected for batch publishing." });
-            }
-
             try
             {
-                int publishedCount = 0;
-                var suiteCode = string.IsNullOrWhiteSpace(payload.SuiteCode) ? "suite_extracted" : payload.SuiteCode.Trim().ToLowerInvariant();
-
-                // Pre-fetch all marketplace categories
-                var allCategories = await _dbContext.MasterMarketplaceCategories.ToListAsync();
-
-                foreach (var sec in payload.Sections)
+                if (request == null || request.Sections == null || request.Sections.Count == 0)
                 {
-                    var catKey = string.IsNullOrWhiteSpace(sec.CategoryKey) ? "body" : sec.CategoryKey.Trim().ToLowerInvariant();
-                    var category = allCategories.FirstOrDefault(c => c.CategoryKey.ToLower() == catKey);
+                    return new JsonResult(new { success = false, message = "No sections provided for suite publishing." });
+                }
 
-                    if (category == null)
-                    {
-                        category = new MasterMarketplaceCategory
-                        {
-                            Id = Guid.NewGuid(),
-                            CategoryKey = catKey,
-                            Name = GetCategoryDisplayName(catKey),
-                            Description = $"Marketplace category for {catKey} components.",
-                            Icon = GetCategoryIcon(catKey),
-                            SortOrder = GetCategorySortOrder(catKey),
-                            IsActive = true
-                        };
-                        _dbContext.MasterMarketplaceCategories.Add(category);
-                        await _dbContext.SaveChangesAsync();
-                        allCategories.Add(category);
-                    }
+                var categories = await _masterDb.MasterMarketplaceCategories.ToListAsync(cancellationToken);
+                var defaultCat = categories.FirstOrDefault();
 
-                    var cleanVariant = string.IsNullOrWhiteSpace(sec.VariantCode)
-                        ? $"Sec_{Guid.NewGuid().ToString("N")[..8]}"
-                        : sec.VariantCode.Trim();
+                int createdCount = 0;
+                int updatedCount = 0;
 
-                    var existing = await _dbContext.MasterMarketplaceTemplates
-                        .FirstOrDefaultAsync(t => t.VariantCode.ToLower() == cleanVariant.ToLower());
+                foreach (var sec in request.Sections)
+                {
+                    if (string.IsNullOrWhiteSpace(sec.HtmlTemplate)) continue;
+
+                    var cat = categories.FirstOrDefault(c => string.Equals(c.CategoryKey, sec.CategoryKey, StringComparison.OrdinalIgnoreCase)) ?? defaultCat;
+                    if (cat == null) continue;
+
+                    var cleanVariant = string.IsNullOrWhiteSpace(sec.VariantCode) ? $"sec_{DateTime.UtcNow.Ticks}_{createdCount}" : sec.VariantCode.Trim();
+
+                    var existing = await _masterDb.MasterMarketplaceTemplates
+                        .FirstOrDefaultAsync(t => t.VariantCode == cleanVariant, cancellationToken);
 
                     if (existing != null)
                     {
-                        existing.Name = sec.Name.Trim();
-                        existing.CategoryId = category.Id;
-                        existing.CategoryKey = category.CategoryKey;
-                        existing.Tag = suiteCode;
-                        existing.Badge = string.IsNullOrWhiteSpace(sec.Badge) ? "New" : sec.Badge.Trim();
-                        existing.Description = sec.Description?.Trim();
+                        existing.Name = sec.Name ?? existing.Name;
                         existing.HtmlTemplate = sec.HtmlTemplate;
-                        existing.CssStyles = sec.ScopedCss ?? string.Empty;
-                        existing.JsScript = string.IsNullOrWhiteSpace(sec.JsScript) ? null : sec.JsScript;
-                        existing.DefaultSectionListsJson = sec.SampleContentJson;
+                        existing.CssStyles = sec.CssStyles ?? string.Empty;
+                        existing.JsScript = sec.JsScript;
+                        existing.DefaultSectionListsJson = sec.DefaultSectionListsJson;
+                        existing.Description = sec.Description;
                         existing.UpdatedUtc = DateTime.UtcNow;
-                        existing.IsActive = true;
+                        updatedCount++;
                     }
                     else
                     {
                         var newTemplate = new MasterMarketplaceTemplate
                         {
                             Id = Guid.NewGuid(),
-                            CategoryId = category.Id,
-                            CategoryKey = category.CategoryKey,
-                            Name = sec.Name.Trim(),
+                            CategoryId = cat.Id,
+                            CategoryKey = cat.CategoryKey,
+                            Name = sec.Name ?? $"{request.SuiteName} Section",
                             VariantCode = cleanVariant,
-                            Tag = suiteCode,
-                            Badge = string.IsNullOrWhiteSpace(sec.Badge) ? "New" : sec.Badge.Trim(),
-                            Description = sec.Description?.Trim(),
-                            ThumbnailGradient = string.IsNullOrWhiteSpace(sec.ThumbnailGradient)
-                                ? "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)"
-                                : sec.ThumbnailGradient.Trim(),
-                            PreviewIcon = string.IsNullOrWhiteSpace(sec.PreviewIcon) ? "widgets" : sec.PreviewIcon.Trim(),
-                            PreviewTitle = sec.Name.Trim(),
+                            Tag = "modern",
+                            Badge = "New",
+                            Description = sec.Description ?? $"Part of {request.SuiteName} suite",
                             HtmlTemplate = sec.HtmlTemplate,
-                            CssStyles = sec.ScopedCss ?? string.Empty,
-                            JsScript = string.IsNullOrWhiteSpace(sec.JsScript) ? null : sec.JsScript,
-                            DefaultSectionListsJson = sec.SampleContentJson,
-                            Version = "1.0.0",
-                            SortOrder = sec.SortOrder,
+                            CssStyles = sec.CssStyles ?? string.Empty,
+                            JsScript = sec.JsScript,
+                            DefaultSectionListsJson = sec.DefaultSectionListsJson,
                             IsActive = true,
-                            CreatedUtc = DateTime.UtcNow,
-                            UpdatedUtc = DateTime.UtcNow
+                            CreatedUtc = DateTime.UtcNow
                         };
-                        _dbContext.MasterMarketplaceTemplates.Add(newTemplate);
+
+                        _masterDb.MasterMarketplaceTemplates.Add(newTemplate);
+                        createdCount++;
                     }
 
-                    publishedCount++;
+                    if (sec.DraftId.HasValue)
+                    {
+                        var draft = await _masterDb.MasterMarketplaceDraftSections
+                            .FirstOrDefaultAsync(d => d.Id == sec.DraftId.Value, cancellationToken);
+                        if (draft != null)
+                        {
+                            draft.Status = "Published";
+                            draft.UpdatedUtc = DateTime.UtcNow;
+                        }
+                    }
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await _masterDb.SaveChangesAsync(cancellationToken);
 
                 return new JsonResult(new
                 {
                     success = true,
-                    publishedCount = publishedCount,
-                    message = $"Successfully published {publishedCount} sections to the Master Marketplace under suite '{suiteCode}'."
+                    createdCount,
+                    updatedCount,
+                    message = $"Successfully published suite '{request.SuiteName}' ({createdCount} created, {updatedCount} updated) to Marketplace!"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to execute batch publish to marketplace");
-                return StatusCode(500, new { success = false, message = ex.Message });
+                _logger.LogError(ex, "Error publishing entire suite to Master Marketplace.");
+                return new JsonResult(new { success = false, message = $"Suite publishing failed: {ex.Message}" });
             }
         }
 
+        #endregion
+
+        #region Private Staging Persistence Helpers
 
         /// <summary>
-        /// AJAX endpoint for complete 4-pillar AI cleanup: HTML tokenization, CSS tree-shaking, JS extraction, and mock JSON synthesis.
+        /// Persists extracted modular sections to the <see cref="MasterMarketplaceDraftSection"/> staging table.
         /// </summary>
-        public async Task<IActionResult> OnPostAiCleanSectionAsync(
-            [FromBody] SectionAiFullCleanRequestDto payload, 
+        private async Task PersistDraftSectionsAsync(
+            SectionsBuilderResponseDto extraction,
+            string suiteName,
+            string sourceChannel,
+            List<string>? detectedLibs,
             CancellationToken cancellationToken)
         {
-            if (payload == null || string.IsNullOrWhiteSpace(payload.HtmlTemplate))
+            if (extraction == null || extraction.Sections == null || extraction.Sections.Count == 0) return;
+
+            var suiteGuid = Guid.NewGuid();
+            var libsJson = JsonSerializer.Serialize(detectedLibs ?? new List<string>());
+
+            for (int i = 0; i < extraction.Sections.Count; i++)
             {
-                return BadRequest(new { success = false, message = "Invalid section payload for AI full clean." });
+                var sec = extraction.Sections[i];
+                var secLibs = sec.RequiredLibraries != null && sec.RequiredLibraries.Count > 0 ? sec.RequiredLibraries : (detectedLibs ?? new List<string>());
+                var secCssLibs = sec.RequiredCssLibraries ?? new List<string>();
+                var secJsLibs = sec.RequiredJsLibraries ?? new List<string>();
+
+                var finalSampleJson = sec.SampleContentJson;
+                if (string.IsNullOrWhiteSpace(finalSampleJson) || finalSampleJson.Trim() == "{}" || finalSampleJson.Trim() == "null" || finalSampleJson.Trim() == "[]")
+                {
+                    var isMenuSec = string.Equals(sec.CategoryKey, "menu", StringComparison.OrdinalIgnoreCase)
+                        || (!string.IsNullOrWhiteSpace(sec.HtmlTemplate) && (sec.HtmlTemplate.Contains("<header", StringComparison.OrdinalIgnoreCase) || sec.HtmlTemplate.Contains("<nav", StringComparison.OrdinalIgnoreCase)));
+
+                    if (isMenuSec)
+                    {
+                        finalSampleJson = JsonSerializer.Serialize(new
+                        {
+                            CompanyName = "Enterprise Workspace",
+                            Brand = new
+                            {
+                                Name = "Enterprise Workspace",
+                                LogoUrl = "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300",
+                                WhiteLogoUrl = "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300",
+                                FaviconUrl = "/favicon.ico",
+                                WebsiteUrl = "/",
+                                LoginButtonText = "Sign In"
+                            },
+                            ButtonText = "Let’s Talk",
+                            ButtonLink = "/contact",
+                            PageCategories = new object[]
+                            {
+                                new { Title = "Home", DirectUrl = "/", HasChildren = false, Pages = Array.Empty<object>() },
+                                new { 
+                                    Title = "Services", 
+                                    DirectUrl = "/services", 
+                                    HasChildren = true, 
+                                    Pages = new object[]
+                                    {
+                                        new { PageTitle = "Web Solutions", PageUrl = "/services/web", PageDescription = "Custom high-performance web development." },
+                                        new { PageTitle = "Cloud Infrastructure", PageUrl = "/services/cloud", PageDescription = "Scalable enterprise cloud architecture." }
+                                    },
+                                    Children = new object[]
+                                    {
+                                        new { 
+                                            Title = "Digital Capabilities", 
+                                            DirectUrl = "/services", 
+                                            Pages = new object[]
+                                            {
+                                                new { PageTitle = "AI Automation", PageUrl = "/services/ai" },
+                                                new { PageTitle = "Cyber Security", PageUrl = "/services/security" }
+                                            } 
+                                        }
+                                    }
+                                },
+                                new { Title = "About Us", DirectUrl = "/about", HasChildren = false, Pages = Array.Empty<object>() },
+                                new { Title = "Contact", DirectUrl = "/contact", HasChildren = false, Pages = Array.Empty<object>() }
+                            }
+                        }, new JsonSerializerOptions { WriteIndented = true });
+                    }
+                    else
+                    {
+                        finalSampleJson = JsonSerializer.Serialize(new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Title"] = "Dynamic Section Heading",
+                            ["MiniTitle"] = "Featured Capability",
+                            ["Description"] = "Empowering modern organizations with scalable digital solutions and seamless user experience.",
+                            ["FullDescription"] = "<p>Empowering modern organizations with scalable digital solutions and seamless user experience.</p>",
+                            ["ButtonText"] = "Get Started",
+                            ["ButtonLink"] = "#",
+                            ["SecondButtonText"] = "View Demo",
+                            ["SecondButtonLink"] = "#",
+                            ["ImageUrl"] = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600",
+                            ["IconText"] = "fa-solid fa-arrow-right",
+                            ["SectionLists"] = new object[]
+                            {
+                                new { Title = "Innovative Strategy", MiniTitle = "01", Description = "End-to-end digital transformation.", ButtonText = "Learn More", ButtonLink = "#", ImageUrl = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600", IconText = "fa-solid fa-star" },
+                                new { Title = "Cloud Architecture", MiniTitle = "02", Description = "Scalable infrastructure and security.", ButtonText = "Learn More", ButtonLink = "#", ImageUrl = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600", IconText = "fa-solid fa-cloud" },
+                                new { Title = "AI Intelligence", MiniTitle = "03", Description = "Automated workflows and analytics.", ButtonText = "Learn More", ButtonLink = "#", ImageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600", IconText = "fa-solid fa-brain" }
+                            }
+                        }, new JsonSerializerOptions { WriteIndented = true });
+                    }
+                    sec.SampleContentJson = finalSampleJson;
+                }
+
+                var draft = new MasterMarketplaceDraftSection
+                {
+                    Id = Guid.NewGuid(),
+                    DraftSuiteId = suiteGuid,
+                    SuiteName = TruncateString(string.IsNullOrWhiteSpace(suiteName) ? "Imported Suite" : suiteName, 150),
+                    Name = TruncateString(string.IsNullOrWhiteSpace(sec.Name) ? $"{suiteName} Section {i + 1}" : sec.Name, 150),
+                    VariantCode = TruncateString(string.IsNullOrWhiteSpace(sec.VariantCode) ? $"sec_{i + 1}" : sec.VariantCode, 100),
+                    CategoryKey = TruncateString(string.IsNullOrWhiteSpace(sec.CategoryKey) ? "bodysections" : sec.CategoryKey, 50),
+                    Description = TruncateString(sec.Description, 500),
+                    HtmlTemplate = sec.HtmlTemplate ?? string.Empty,
+                    ScopedCss = sec.ScopedCss ?? string.Empty,
+                    JsScript = sec.JsScript,
+                    SampleContentJson = finalSampleJson,
+                    RequiredLibrariesJson = JsonSerializer.Serialize(secLibs),
+                    RequiredCssLibrariesJson = JsonSerializer.Serialize(secCssLibs),
+                    RequiredJsLibrariesJson = JsonSerializer.Serialize(secJsLibs),
+                    SourceChannel = TruncateString(sourceChannel, 50),
+                    Status = "Draft",
+                    SortOrder = i,
+                    CreatedUtc = DateTime.UtcNow
+                };
+
+                _masterDb.MasterMarketplaceDraftSections.Add(draft);
+                sec.Id = draft.Id.ToString();
             }
 
             try
             {
-                _logger.LogInformation("[Section Studio] Triggering on-demand AI Full Clean for section '{SectionKey}' ({Title})", 
-                    payload.SectionKey, payload.Title);
-
-                var result = await _sectionAiStudioService.CleanAndIsolateFullSectionWithAiAsync(payload, cancellationToken);
-                
-                _logger.LogInformation("[Section Studio] AI Full Clean for section '{SectionKey}' result: Success={Success}, CSS Lines={Lines}, Reduction={Reduction}", 
-                    payload.SectionKey, result.Success, result.FilteredLinesCss, result.ReductionPercentage);
-
-                return new JsonResult(result);
+                await _masterDb.SaveChangesAsync(cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[Section Studio] Failed to execute AI full clean for section {Key}", payload.SectionKey);
-                return StatusCode(500, new { success = false, message = ex.Message });
+                _logger.LogWarning(ex, "Failed to persist staged draft sections to database. Continuing with in-memory sections.");
             }
         }
 
-        private static string GetCategoryDisplayName(string key) => key switch
+        private static string ResolveAuthenticContainerClass(string htmlMarkup, string fallback = "")
         {
-            "menu" => "Navigation & Menus",
-            "hero" => "Hero Sliders & Banners",
-            "body" => "Body Features & Content Blocks",
-            "footer" => "Footers",
-            "blog" => "Blogs & News",
-            "ecommerce" => "E-Commerce Showcases",
-            "breadcrumb" => "Breadcrumbs & Page Headers",
-            _ => "Modular Sections"
-        };
-
-        /// <summary>
-        /// Automatically performs AI tree-shaking, Mustache tokenization, JS extraction, and mock data synthesis across all sliced sections.
-        /// </summary>
-        /// <param name="extractionResult">The sliced sections extraction result.</param>
-        /// <param name="rawCssSuite">The full raw stylesheet from workbench.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        private async Task AutoCleanSectionsWithAiAsync(
-            SectionsBuilderResponseDto extractionResult, 
-            string? rawCssSuite, 
-            CancellationToken cancellationToken)
-        {
-            if (extractionResult == null || !extractionResult.Sections.Any()) return;
-
-            var baseDomain = !string.IsNullOrWhiteSpace(SourceBaseUrl) ? SourceBaseUrl : TargetUrl;
-
-            foreach (var sec in extractionResult.Sections)
+            if (string.IsNullOrWhiteSpace(htmlMarkup)) return fallback;
+            var match = Regex.Match(htmlMarkup, @"<(?:header|section|footer|nav|div|article)\b[^>]*\bclass=[""']([^""']+)[""']", RegexOptions.IgnoreCase);
+            if (match.Success)
             {
-                try
-                {
-                    // 1. Optimize and convert all images in HTML to lightweight WebP (<= 300KB) in Cloudinary
-                    if (!string.IsNullOrWhiteSpace(sec.HtmlTemplate))
-                    {
-                        sec.HtmlTemplate = await _imageOptimizer.ProcessAndReplaceImagesInHtmlAsync(
-                            sec.HtmlTemplate, 
-                            baseDomain, 
-                            sec.CategoryKey, 
-                            "templates/images", 
-                            null, null, null, 
-                            cancellationToken);
-                    }
-
-                    var cssForSec = !string.IsNullOrWhiteSpace(rawCssSuite) && rawCssSuite.Length > (sec.ScopedCss?.Length ?? 0)
-                        ? rawCssSuite
-                        : (sec.ScopedCss ?? string.Empty);
-
-                    // 2. Optimize background images in CSS
-                    if (!string.IsNullOrWhiteSpace(cssForSec))
-                    {
-                        cssForSec = await _imageOptimizer.ProcessAndReplaceImagesInCssAsync(
-                            cssForSec, 
-                            baseDomain, 
-                            "templates/images", 
-                            null, null, null, 
-                            cancellationToken);
-                    }
-
-                    var containerClass = "sec-variant-" + (sec.VariantCode ?? "sec").ToLowerInvariant().Replace(' ', '_').Replace('-', '_');
-
-                    var cleanReq = new SectionAiFullCleanRequestDto
-                    {
-                        SectionKey = sec.Id,
-                        CategoryKey = sec.CategoryKey,
-                        Title = sec.Name,
-                        HtmlTemplate = sec.HtmlTemplate,
-                        RawCss = cssForSec,
-                        RawJs = sec.JsScript,
-                        ContainerClass = containerClass,
-                        Provider = "Gemini"
-                    };
-
-                    var cleanRes = await _sectionAiStudioService.CleanAndIsolateFullSectionWithAiAsync(cleanReq, cancellationToken);
-                    if (cleanRes != null && cleanRes.Success)
-                    {
-                        if (!string.IsNullOrWhiteSpace(cleanRes.HtmlTemplate)) sec.HtmlTemplate = cleanRes.HtmlTemplate;
-                        if (!string.IsNullOrWhiteSpace(cleanRes.ScopedCss)) sec.ScopedCss = cleanRes.ScopedCss;
-                        if (cleanRes.JsScript != null) sec.JsScript = cleanRes.JsScript;
-                        if (!string.IsNullOrWhiteSpace(cleanRes.SampleContentJson)) sec.SampleContentJson = cleanRes.SampleContentJson;
-                        if (!string.IsNullOrWhiteSpace(cleanRes.Explanation)) sec.Description = cleanRes.Explanation;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Auto AI cleanup skipped for section {SectionName}", sec.Name);
-                }
+                var classes = match.Groups[1].Value.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var primaryClass = classes.FirstOrDefault(c => !NativeSectionExtractorService.IsVendorUtilityClass(c));
+                if (!string.IsNullOrWhiteSpace(primaryClass)) return primaryClass;
+                if (classes.Length > 0) return classes[0];
             }
+            var idMatch = Regex.Match(htmlMarkup, @"<(?:header|section|footer|nav|div|article)\b[^>]*\bid=[""']([^""']+)[""']", RegexOptions.IgnoreCase);
+            if (idMatch.Success) return idMatch.Groups[1].Value.Trim();
+            return fallback;
         }
 
-        private static string GetCategoryIcon(string key) => key switch
+        private static string TruncateString(string? value, int maxLength)
         {
-            "menu" => "menu",
-            "hero" => "view_carousel",
-            "body" => "view_quilt",
-            "footer" => "dock_to_bottom",
-            "blog" => "newspaper",
-            "ecommerce" => "shopping_bag",
-            "breadcrumb" => "linear_scale",
-            _ => "widgets"
-        };
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return value.Length <= maxLength ? value : value[..maxLength];
+        }
 
-        private static int GetCategorySortOrder(string key) => key switch
-        {
-            "menu" => 1,
-            "hero" => 2,
-            "body" => 3,
-            "footer" => 4,
-            "blog" => 5,
-            "ecommerce" => 6,
-            "breadcrumb" => 7,
-            _ => 10
-        };
+        #endregion
     }
 
-    public class PublishSectionRequest
+    #region DTOs for Publishing and Staging Updates
+
+    /// <summary>
+    /// Payload for publishing a single section.
+    /// </summary>
+    public class PublishSectionRequestDto
     {
-        public string Name { get; set; } = string.Empty;
-        public string VariantCode { get; set; } = string.Empty;
-        public string CategoryKey { get; set; } = "body";
-        public string SuiteCode { get; set; } = string.Empty;
-        public string? Badge { get; set; } = "New";
-        public string? Description { get; set; }
+        public Guid? DraftId { get; set; }
+        public string? Name { get; set; }
+        public string? VariantCode { get; set; }
+        public string CategoryKey { get; set; } = "bodysections";
         public string HtmlTemplate { get; set; } = string.Empty;
+        public string? CssStyles { get; set; }
+        public string? JsScript { get; set; }
+        public string? DefaultSectionListsJson { get; set; }
+        public string? Description { get; set; }
+        public string? Tag { get; set; }
+        public string? Badge { get; set; }
+    }
+
+    /// <summary>
+    /// Payload for batch publishing an entire theme suite.
+    /// </summary>
+    public class PublishSuiteRequestDto
+    {
+        public string SuiteName { get; set; } = "Theme Suite";
+        public List<PublishSectionRequestDto> Sections { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Payload for updating a draft section in the staging database.
+    /// </summary>
+    public class UpdateDraftSectionRequestDto
+    {
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
+        public string? CategoryKey { get; set; }
+        public string? Description { get; set; }
+        public string? HtmlTemplate { get; set; }
         public string? ScopedCss { get; set; }
         public string? JsScript { get; set; }
         public string? SampleContentJson { get; set; }
-        public string PreviewIcon { get; set; } = "widgets";
-        public string ThumbnailGradient { get; set; } = "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)";
-        public int SortOrder { get; set; } = 10;
+        public string? RequiredLibrariesJson { get; set; }
+        public string? RequiredCssLibrariesJson { get; set; }
+        public string? RequiredJsLibrariesJson { get; set; }
     }
 
-    public class PublishBatchRequest
-    {
-        public string SuiteCode { get; set; } = string.Empty;
-        public List<PublishSectionRequest> Sections { get; set; } = new();
-    }
-
-    public class DiscoverPagesRequest
-    {
-        public string Url { get; set; } = string.Empty;
-    }
+    #endregion
 }

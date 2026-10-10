@@ -84,6 +84,21 @@ import { ToastService } from '../../../core/services/toast.service';
                 <input type="number" [(ngModel)]="page.sortOrder" class="form-control">
               </div>
 
+              <div class="form-group">
+                <label>MENU ZONE POSITION *</label>
+                <select [(ngModel)]="page.menuPosition" class="form-control">
+                  <option [ngValue]="1">First Zone (NavItems="first")</option>
+                  <option [ngValue]="2">Middle Zone (NavItems="middle")</option>
+                  <option [ngValue]="3">Last Zone (NavItems="last")</option>
+                  <option [ngValue]="4">Top Utility Bar (MainMenuItems="top")</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>CUSTOM CSS CLASS</label>
+                <input type="text" [(ngModel)]="page.customClass" class="form-control" placeholder="e.g. nav-highlight">
+              </div>
+
               <div class="form-group full-width">
                 <label>PARENT PAGE (SUB-PAGE HIERARCHY)</label>
                 <select [(ngModel)]="page.mainPageId" class="form-control">

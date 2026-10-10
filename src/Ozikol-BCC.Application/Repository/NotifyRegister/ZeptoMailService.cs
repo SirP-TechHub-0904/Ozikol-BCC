@@ -26,7 +26,7 @@ namespace Ozikol_BCC.Application.Repository.NotifyRegister
         {
             try
             {
-                var settings = await _context.BcpSettings.FirstOrDefaultAsync();
+                var settings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
                 if (settings == null || string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey))
                 {
                     return (false, "ZeptoMail API Key is not configured in settings.");

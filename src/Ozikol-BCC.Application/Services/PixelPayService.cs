@@ -35,7 +35,7 @@ namespace Ozikol_BCC.Application.Services
             string callbackUrl,
             int expiryHours = 24)
         {
-            var settings = await _context.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
 
             // PixelPay credentials and default currency are tenant-controlled through BCP Settings.
             // Configuration problems are returned in PaymentInitResult so checkout pages can show guidance.
@@ -131,7 +131,7 @@ namespace Ozikol_BCC.Application.Services
         // ──────────────────────────────────────────────────────────────
         public async Task<bool> VerifyPaymentAsync(string transactionReference)
         {
-            var settings = await _context.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
 
             // Verification does not mutate local transaction state; webhook/callback handlers own that decision.
             // Use this as a fallback check when a browser callback arrives before the provider webhook.
