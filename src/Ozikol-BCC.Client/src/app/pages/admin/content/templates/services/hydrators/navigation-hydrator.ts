@@ -142,17 +142,18 @@ function renderNavList(items: any[], innerTemplate: string): string {
       rendered = resolveDepthAwareIf(rendered, 'IsDropdown', isDropdown);
 
       // 2. Resolve child pages if dropdown
-      if (isDropdown) {
-        const childPages = (item.pages || [])
-          .filter((p: any) => p.publish !== false && p.showInMenuDropDown !== false)
-          .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      const childPages = (item.pages || [])
+        .filter((p: any) => p.publish !== false && p.showInMenuDropDown !== false)
+        .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
+      rendered = resolveDepthAwareIf(rendered, 'Pages', isDropdown && childPages.length > 0);
+
+      if (isDropdown && childPages.length > 0) {
         const pagesMatcher = (openTag: string) => {
           return /^\{\{#each\s+Pages\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
         };
 
         rendered = replaceDepthAwareEach(rendered, pagesMatcher, (pageTemplate) => {
-          if (childPages.length === 0) return '';
           return childPages.map((page: any) => {
             let pageRendered = pageTemplate;
             pageRendered = pageRendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');

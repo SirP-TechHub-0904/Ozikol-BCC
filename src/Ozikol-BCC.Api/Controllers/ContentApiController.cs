@@ -1864,22 +1864,24 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
 
         /// <summary>
-        /// Creates a custom section template directly in the tenant database without requiring a marketplace installation.
+        /// Creates or saves a section template directly in the tenant database without requiring a marketplace installation.
         /// Supports {{ Placeholders }} and optional CSS (CSS can be left blank when relying on global theme styles).
         /// </summary>
         /// <param name="request">The custom template definition.</param>
         /// <returns>The created or updated TenantInstalledTemplate.</returns>
+        [HttpPost("templates")]
         [HttpPost("templates/custom")]
         public async Task<IActionResult> CreateCustomTemplate([FromBody] CreateCustomTemplateRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.CategoryKey))
+            var rawCategory = string.IsNullOrWhiteSpace(request.CategoryKey) ? request.Category : request.CategoryKey;
+            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(rawCategory))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Template Name and Category are required."));
             }
 
             try
             {
-                var catKey = request.CategoryKey.Trim().ToLowerInvariant();
+                var catKey = rawCategory.Trim().ToLowerInvariant();
                 var cleanName = request.Name.Trim();
                 var cleanVariant = string.IsNullOrWhiteSpace(request.VariantCode)
                     ? $"{char.ToUpper(catKey[0])}{catKey[1..]}_{Guid.NewGuid().ToString("N")[..6]}"
@@ -1917,6 +1919,10 @@ namespace Ozikol_BCC.Api.Controllers
                 var template = await _context.TenantInstalledTemplates
                     .FirstOrDefaultAsync(t => t.TemplateKey == cleanKey || t.VariantCode == cleanVariant);
 
+                var versionString = string.IsNullOrWhiteSpace(request.InstalledVersion)
+                    ? (string.IsNullOrWhiteSpace(request.Version) ? "1.0.0" : request.Version.Trim())
+                    : request.InstalledVersion.Trim();
+
                 if (template != null)
                 {
                     template.Name = cleanName;
@@ -1926,7 +1932,7 @@ namespace Ozikol_BCC.Api.Controllers
                     template.CssStyles = request.CssStyles ?? string.Empty;
                     template.JsScript = request.JsScript;
                     template.DefaultContentJson = request.DefaultContentJson;
-                    template.InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion;
+                    template.InstalledVersion = versionString;
                     template.IsCustomized = true;
                     template.IsActive = true;
                     template.LastUpdatedUtc = DateTime.UtcNow;
@@ -1944,7 +1950,7 @@ namespace Ozikol_BCC.Api.Controllers
                         CssStyles = request.CssStyles ?? string.Empty,
                         JsScript = request.JsScript,
                         DefaultContentJson = request.DefaultContentJson,
-                        InstalledVersion = string.IsNullOrWhiteSpace(request.InstalledVersion) ? "1.0.0" : request.InstalledVersion,
+                        InstalledVersion = versionString,
                         IsCustomized = true,
                         IsActive = true,
                         InstalledUtc = DateTime.UtcNow
@@ -1959,6 +1965,94 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
                 return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to save custom template: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves an installed UI template by its unique identifier.
+        /// </summary>
+        /// <param name="id">The unique identifier of the template.</param>
+        /// <returns>The installed template record.</returns>
+        [HttpGet("templates/{id:guid}")]
+        public async Task<IActionResult> GetTemplateById(Guid id)
+        {
+            try
+            {
+                var template = await _context.TenantInstalledTemplates.FindAsync(id);
+                if (template == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("Template not found."));
+                }
+
+                return Ok(ApiResponse<object>.SuccessResponse(template, "Template retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to fetch template: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Updates an existing installed UI template by its unique identifier.
+        /// </summary>
+        /// <param name="id">The unique identifier of the template to update.</param>
+        /// <param name="request">The updated template content.</param>
+        /// <returns>The updated template record.</returns>
+        [HttpPut("templates/{id:guid}")]
+        public async Task<IActionResult> UpdateTemplate(Guid id, [FromBody] CreateCustomTemplateRequest request)
+        {
+            try
+            {
+                var template = await _context.TenantInstalledTemplates.FindAsync(id);
+                if (template == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("Template not found."));
+                }
+
+                var rawCategory = string.IsNullOrWhiteSpace(request.CategoryKey) ? request.Category : request.CategoryKey;
+                var catKey = !string.IsNullOrWhiteSpace(rawCategory) ? rawCategory.Trim().ToLowerInvariant() : template.CategoryKey;
+
+                // Singleton enforcement if category is active menu or footer
+                if (catKey == "menu")
+                {
+                    var existingMenus = await _context.TenantInstalledTemplates
+                        .Where(t => t.CategoryKey.ToLower() == "menu" && t.Id != id && t.IsActive)
+                        .ToListAsync();
+                    foreach (var m in existingMenus) m.IsActive = false;
+                }
+                else if (catKey == "footer")
+                {
+                    var existingFooters = await _context.TenantInstalledTemplates
+                        .Where(t => t.CategoryKey.ToLower() == "footer" && t.Id != id && t.IsActive)
+                        .ToListAsync();
+                    foreach (var f in existingFooters) f.IsActive = false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Name)) template.Name = request.Name.Trim();
+                template.CategoryKey = catKey;
+                if (!string.IsNullOrWhiteSpace(request.VariantCode)) template.VariantCode = request.VariantCode.Trim();
+                if (request.HtmlTemplate != null) template.HtmlTemplate = request.HtmlTemplate;
+                if (request.CssStyles != null) template.CssStyles = request.CssStyles;
+                if (request.JsScript != null) template.JsScript = request.JsScript;
+                if (request.DefaultContentJson != null) template.DefaultContentJson = request.DefaultContentJson;
+
+                var versionString = string.IsNullOrWhiteSpace(request.InstalledVersion)
+                    ? (string.IsNullOrWhiteSpace(request.Version) ? template.InstalledVersion : request.Version.Trim())
+                    : request.InstalledVersion.Trim();
+                template.InstalledVersion = versionString;
+
+                template.IsCustomized = true;
+                template.IsActive = true;
+                template.LastUpdatedUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(template, $"Template '{template.Name}' updated successfully."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to update template: {msg}"));
             }
         }
 
@@ -2206,8 +2300,43 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
        {{{{/if}}}}
      {{{{/each}}}}
 
-     {{{{#each NavItems=""middle""}}}} ... {{{{/each}}}}
-     {{{{#each NavItems=""last""}}}} ... {{{{/each}}}}
+     {{{{#each NavItems=""middle""}}}}
+       {{{{#if IsDropdown}}}}
+         <li class=""[original dropdown classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original toggle classes]"">{{{{ Title }}}}</a>
+           {{{{#if Pages}}}}
+             <ul class=""[original dropdown-menu classes]"">
+               {{{{#each Pages}}}}
+                 <li><a href=""{{{{ Url }}}}"" class=""[original item classes] {{{{ CustomClass }}}}"">{{{{ Title }}}}</a></li>
+               {{{{/each}}}}
+             </ul>
+           {{{{/if}}}}
+         </li>
+       {{{{else}}}}
+         <li class=""[original classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original classes]"">{{{{ Title }}}}</a>
+         </li>
+       {{{{/if}}}}
+     {{{{/each}}}}
+
+     {{{{#each NavItems=""last""}}}}
+       {{{{#if IsDropdown}}}}
+         <li class=""[original dropdown classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original toggle classes]"">{{{{ Title }}}}</a>
+           {{{{#if Pages}}}}
+             <ul class=""[original dropdown-menu classes]"">
+               {{{{#each Pages}}}}
+                 <li><a href=""{{{{ Url }}}}"" class=""[original item classes] {{{{ CustomClass }}}}"">{{{{ Title }}}}</a></li>
+               {{{{/each}}}}
+             </ul>
+           {{{{/if}}}}
+         </li>
+       {{{{else}}}}
+         <li class=""[original classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original classes]"">{{{{ Title }}}}</a>
+         </li>
+       {{{{/if}}}}
+     {{{{/each}}}}
 
    - CTA BUTTONS & DYNAMIC AUTHENTICATION (LOGIN) POSITIONING:
      * Condition A (Navbar has an original CTA button, e.g. [Add Listing], [Book Now], [Get Started]):
@@ -4686,13 +4815,16 @@ You MUST respond strictly with a valid JSON object matching this schema without 
     public class CreateCustomTemplateRequest
     {
         public string Name { get; set; } = string.Empty;
-        public string CategoryKey { get; set; } = string.Empty;
+        public string? CategoryKey { get; set; }
+        public string? Category { get; set; }
+        public string? Description { get; set; }
         public string? TemplateKey { get; set; }
         public string? VariantCode { get; set; }
         public string? HtmlTemplate { get; set; }
         public string? CssStyles { get; set; }
         public string? JsScript { get; set; }
         public string? DefaultContentJson { get; set; }
+        public string? Version { get; set; }
         public string? InstalledVersion { get; set; } = "1.0.0";
     }
 
