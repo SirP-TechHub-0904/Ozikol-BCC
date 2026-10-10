@@ -75,7 +75,7 @@ export interface CategoryPresetItem {
                 </div>
                 <p class="page-subtitle">
                   Configure, code, and simulate modular section visuals with real-time responsive rendering,
-                  Monaco code folding, and live tenant tokens.
+                  code folding, and live tokens.
                 </p>
               </div>
             </div>
