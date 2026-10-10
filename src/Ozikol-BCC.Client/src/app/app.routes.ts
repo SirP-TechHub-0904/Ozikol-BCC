@@ -48,7 +48,6 @@ import { SettingsComponent } from './pages/admin/settings/settings.component';
 import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.component';
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
 import { MyTemplatesComponent } from './pages/admin/content/templates/my-templates.component';
-import { CreateCustomTemplateComponent } from './pages/admin/content/templates/create-custom-template.component';
 import { TemplateVisualsComponent } from './pages/admin/content/templates/template-visuals.component';
 import { ImportWebsiteTemplateComponent } from './pages/admin/content/templates/import-website-template.component';
 import { TemplateMaintenanceComponent } from './pages/admin/content/templates/template-maintenance.component';
@@ -212,7 +211,7 @@ export const routes: Routes = [
       { path: 'content/console/forms/:formKey/submissions', component: FormSubmissionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'admin/forms', redirectTo: 'content/console/forms', pathMatch: 'full' },
       { path: 'content/console/templates/import', component: ImportWebsiteTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/templates/create', component: CreateCustomTemplateComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/templates/create', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
       { path: 'content/console/templates/visuals', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/templates/visuals/:id', component: TemplateVisualsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'templates/visuals', redirectTo: 'content/console/templates/visuals', pathMatch: 'full' },
