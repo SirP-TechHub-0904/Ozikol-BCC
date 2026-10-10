@@ -5085,4 +5085,85 @@
   <data name="Support_Tab_Vouchers" xml:space="preserve">
     <value>Gutschein-Programm</value>
   </data>
+
+  <!-- 5 Canonical New Features Localization (German) -->
+  <data name="Feat_CalendarFollowups_Title" xml:space="preserve">
+    <value>Kalender &amp; Nachverfolgungs-Routine</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Desc" xml:space="preserve">
+    <value>Zwei-Wege-Synchronisierung von Google- und Outlook-Kalendern mit Terminerinnerungen und automatisierten Nachfass-Routinen.</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt1" xml:space="preserve">
+    <value>Zwei-Wege-Synchronisierung mit Google, Outlook &amp; Apple iCal</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt2" xml:space="preserve">
+    <value>Automatisierte E-Mail- &amp; SMS-Nachfasskadenz nach Terminen</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt3" xml:space="preserve">
+    <value>Universelle Terminkonflikterkennung &amp; Zeitleistenansicht</value>
+  </data>
+
+  <data name="Feat_ReferenceForms_Title" xml:space="preserve">
+    <value>Referenzformulare &amp; Prüfungsportal</value>
+  </data>
+  <data name="Feat_ReferenceForms_Desc" xml:space="preserve">
+    <value>Entwerfen Sie vertrauliche Referenzfragebögen, versenden Sie sichere Einmal-Links und erstellen Sie verifizierte Bewertungsdossiers.</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt1" xml:space="preserve">
+    <value>Vertrauliche Bewertungsrubriken &amp; individuelle Fragebögen</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt2" xml:space="preserve">
+    <value>Sichere Einmal-Magic-Links direkt an Referenzgeber</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt3" xml:space="preserve">
+    <value>Automatisierte Erinnerungen &amp; fertige Management-PDF-Dossiers</value>
+  </data>
+
+  <data name="Feat_EmbeddedBanking_Title" xml:space="preserve">
+    <value>Embedded Banking &amp; Auszahlungen</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Desc" xml:space="preserve">
+    <value>Dedizierte virtuelle Konten, direkte Interbank-Überweisungen, Lieferanten-Sammelauszahlungen, Treuhand und Multi-Währungs-Hauptbuch.</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt1" xml:space="preserve">
+    <value>Dedizierte virtuelle Kontonummern für Organisationen &amp; Mitglieder</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt2" xml:space="preserve">
+    <value>Direkte Interbank-Überweisungen &amp; Sammelauszahlungen</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt3" xml:space="preserve">
+    <value>Echtzeit-Webhooks, automatische Treuhandverwahrung &amp; Multi-Währungsbuch</value>
+  </data>
+
+  <data name="Feat_GoCallAi_Title" xml:space="preserve">
+    <value>GoCall KI - Notfall- &amp; Sprach-Dispatch</value>
+  </data>
+  <data name="Feat_GoCallAi_Desc" xml:space="preserve">
+    <value>Autonome Sprach- und SMS-Telefonie-KI mit verifiziertem Verzeichnis von Krankenhäusern und Notfalldiensten.</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt1" xml:space="preserve">
+    <value>Geprüfter Notfall- &amp; Instituts-Verzeichniskatalog</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt2" xml:space="preserve">
+    <value>Kontextbezogenes Notfallrouting &amp; autonome Telefonanrufe</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt3" xml:space="preserve">
+    <value>Natürliche Sprachdialoge, Transkripte &amp; Audio-Audit-Protokolle</value>
+  </data>
+
+  <data name="Feat_KycVerification_Title" xml:space="preserve">
+    <value>Offizielles KYC &amp; Identitätsprüfung</value>
+  </data>
+  <data name="Feat_KycVerification_Desc" xml:space="preserve">
+    <value>OCR-Erkennung von Ausweisdokumenten, biometrischer Gesichts-Liveness-Check, AML-Screening und Compliance-Tresor.</value>
+  </data>
+  <data name="Feat_KycVerification_Pt1" xml:space="preserve">
+    <value>OCR-Auslesung von Personalausweisen, Pässen &amp; Führerscheinen</value>
+  </data>
+  <data name="Feat_KycVerification_Pt2" xml:space="preserve">
+    <value>Gesichtsbiometrie-Abgleich &amp; Anti-Spoofing-Liveness-Check</value>
+  </data>
+  <data name="Feat_KycVerification_Pt3" xml:space="preserve">
+    <value>Abgestufte KYC-Zertifikate &amp; verschlüsseltes AML-Archiv</value>
+  </data>
 </root>

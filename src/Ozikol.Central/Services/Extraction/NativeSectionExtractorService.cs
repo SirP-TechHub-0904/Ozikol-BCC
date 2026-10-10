@@ -166,6 +166,31 @@ namespace Ozikol.Central.Services.Extraction
                 var rawOuterHtml = element.OuterHtml;
                 var debrandedHtml = ApplyMustacheDebranding(rawOuterHtml, cleanBrand);
 
+                // Detect libraries required specifically by this section's markup and interactive JS
+                var sectionMarkup = $"{rawOuterHtml} {sectionJs}";
+                var detectedSectionLibs = DetectLibrariesForMarkup(sectionMarkup);
+                var sectionCssLibs = new List<string>();
+                var sectionJsLibs = new List<string>();
+                var sectionCssUrls = new List<string>();
+                var sectionJsUrls = new List<string>();
+
+                foreach (var libKey in detectedSectionLibs)
+                {
+                    if (Ozikol.Central.Services.SectionLibraryResolverService.Catalog.TryGetValue(libKey, out var def))
+                    {
+                        if (def.CssUrls != null && def.CssUrls.Length > 0)
+                        {
+                            sectionCssLibs.Add(def.DisplayName);
+                            sectionCssUrls.AddRange(def.CssUrls);
+                        }
+                        if (def.JsUrls != null && def.JsUrls.Length > 0)
+                        {
+                            sectionJsLibs.Add(def.DisplayName);
+                            sectionJsUrls.AddRange(def.JsUrls);
+                        }
+                    }
+                }
+
                 var sectionDto = new ExtractedSectionDto
                 {
                     Id = sectionId,
@@ -179,6 +204,11 @@ namespace Ozikol.Central.Services.Extraction
                     ScopedCss = scopedCss,
                     JsScript = sectionJs,
                     SampleContentJson = sampleContentJson,
+                    RequiredLibraries = detectedSectionLibs,
+                    RequiredCssLibraries = sectionCssLibs.Distinct().ToList(),
+                    RequiredJsLibraries = sectionJsLibs.Distinct().ToList(),
+                    RequiredCssUrls = sectionCssUrls.Distinct().ToList(),
+                    RequiredJsUrls = sectionJsUrls.Distinct().ToList(),
                     PreviewIcon = GetCategoryIcon(category),
                     ThumbnailGradient = GetCategoryGradient(category, i),
                     ParentPageSlugs = new List<string> { "home" },
@@ -554,8 +584,8 @@ namespace Ozikol.Central.Services.Extraction
             sb.AppendLine("</head>");
             sb.AppendLine("<body>");
 
-            // Section Container wrapper
-            sb.AppendLine($"    <div class=\"ozikol-section-sandbox sec-variant-{section.VariantCode.ToLowerInvariant()}\">");
+            // Section Container wrapper (clean without artificial classes)
+            sb.AppendLine("    <div class=\"ozikol-section-sandbox\">");
             sb.AppendLine(section.HtmlTemplate);
             sb.AppendLine("    </div>");
 
@@ -701,10 +731,103 @@ namespace Ozikol.Central.Services.Extraction
             return "body";
         }
 
+        private static readonly Regex VendorClassRegex = new(
+            @"^(?:container(?:-(?:fluid|sm|md|lg|xl|xxl))?|row|row-cols(?:-\w+)?|col(?:-\w+)?|order(?:-\w+)?|offset(?:-\w+)?|g(?:[xy])?-\w+|d-(?:none|block|flex|inline\w*|grid)|flex-\w+|justify-content-\w+|align-items-\w+|align-self-\w+|align-content-\w+|m[trblsexy]?-\w+|p[trblsexy]?-\w+|text-(?:center|start|end|left|right|justify|nowrap|break|lowercase|uppercase|capitalize|muted|white|primary|secondary|success|danger|warning|info|light|dark|body|black)|bg-(?:primary|secondary|success|danger|warning|info|light|dark|white|transparent|body)|border(?:-\w+)?|rounded(?:-\w+)?|shadow(?:-\w+)?|w-\w+|h-\w+|opacity-\w+|overflow-\w+|position-\w+|top-\w+|bottom-\w+|start-\w+|end-\w+|z-\w+|fs-\w+|fw-\w+|lh-\w+|visually-hidden\w*|btn|btn-\w+|btn-group\w*|btn-toolbar|badge|badge-\w+|card|card-\w+|dropdown|dropdown-\w+|modal|modal-\w+|nav|navbar|navbar-\w+|nav-item|nav-link|accordion|accordion-\w+|alert|alert-\w+|table|table-\w+|form-\w+|input-group|input-group-\w+|form-control|form-select|form-check\w*|collapse|collapsing|fade|show|active|disabled|fa|fas|far|fab|fad|fal|fat|fa-\w+|bi|bi-\w+|material-symbols-\w+|material-icons\w*|swiper|swiper-\w+|aos-\w+|glightbox|gslide\w*|gdesc\w*|animate__\w+|animated|mfp-\w+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <summary>
+        /// Determines whether a CSS class is a standard third-party vendor / framework utility class (e.g. Bootstrap grid, FontAwesome icon)
+        /// that should not be extracted or scoped into custom section styles.
+        /// </summary>
+        public static bool IsVendorUtilityClass(string className)
+        {
+            if (string.IsNullOrWhiteSpace(className)) return false;
+            return VendorClassRegex.IsMatch(className.Trim());
+        }
+
         /// <summary>
-        /// Extracts CSS rules matching the classes and IDs of the element and prefixes them for scoping,
-        /// fully supporting both root stylesheets and nested @media query rules.
+        /// Detects required third-party frontend library keys from HTML/JS markup.
+        /// </summary>
+        private static List<string> DetectLibrariesForMarkup(string markup)
+        {
+            var detected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(markup)) return detected.ToList();
+
+            if (Regex.IsMatch(markup, @"\b(container|container-fluid|row|col|col-\w+|d-flex|modal|dropdown|accordion|navbar|btn-primary|data-bs-|bootstrap\.)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("bootstrap");
+            }
+            if (Regex.IsMatch(markup, @"\b(meanmenu|mean-container|mean-bar|meanmenu-reveal|\.meanmenu\(|meanMenuContainer)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("meanmenu");
+            }
+            if (Regex.IsMatch(markup, @"\b(nice-select|\.niceSelect\(|nice_select)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("nice-select");
+            }
+            if (Regex.IsMatch(markup, @"\b(animate__animated|animate__fadeIn|wow\s+fadeIn|new\s+WOW)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("animate");
+            }
+            if (Regex.IsMatch(markup, @"\b(magnificPopup|mfp-|popup-image|popup-video|\.magnificPopup\()\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("magnific-popup");
+            }
+            if (Regex.IsMatch(markup, @"\b(slick-slider|slick-slide|slick-track|\.slick\()\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("slick");
+            }
+            if (Regex.IsMatch(markup, @"\b(gsap\.|ScrollTrigger|TweenMax|TweenLite)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("gsap");
+            }
+            if (Regex.IsMatch(markup, @"\b(swiper|swiper-slide|swiper-wrapper|swiper-pagination|swiper-button-|new\s+Swiper)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("swiper");
+            }
+            if (markup.Contains("data-aos", StringComparison.OrdinalIgnoreCase) || markup.Contains("aos-animate", StringComparison.OrdinalIgnoreCase))
+            {
+                detected.Add("aos");
+            }
+            if (Regex.IsMatch(markup, @"\b(glightbox|fancybox|data-gallery|data-glightbox|GLightbox\()\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("glightbox");
+            }
+            if (Regex.IsMatch(markup, @"\b(fa|fas|far|fab|fa-solid|fa-brands|fa-regular|fa-\w+)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("fontawesome");
+            }
+            if (Regex.IsMatch(markup, @"\b(bi|bi-\w+)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("bootstrap-icons");
+            }
+            if (markup.Contains("material-symbols-outlined", StringComparison.OrdinalIgnoreCase) || markup.Contains("material-icons", StringComparison.OrdinalIgnoreCase))
+            {
+                detected.Add("material-symbols");
+            }
+            if (Regex.IsMatch(markup, @"\b(purecounter|counter-up|data-purecounter-|new\s+PureCounter)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("purecounter");
+            }
+            if (Regex.IsMatch(markup, @"\b(odometer|odometer-auto-theme|data-count|new\s+Odometer)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("odometer");
+            }
+            if (markup.Contains("typed", StringComparison.OrdinalIgnoreCase) || markup.Contains("data-typed-items", StringComparison.OrdinalIgnoreCase))
+            {
+                detected.Add("typed");
+            }
+            if (Regex.IsMatch(markup, @"\b(isotope-container|isotope-item|portfolio-container|portfolio-filters|new\s+Isotope)\b", RegexOptions.IgnoreCase))
+            {
+                detected.Add("isotope");
+            }
+
+            return detected.ToList();
+        }
+
+        /// <summary>
+        /// Extracts CSS rules matching the custom author classes and IDs of the element and prefixes them for scoping,
+        /// strictly excluding generic framework / vendor utility rules.
         /// </summary>
         private static string ExtractAndScopeCssForElement(IElement element, string fullCss, string variantCode, string category = "body")
         {
@@ -713,14 +836,17 @@ namespace Ozikol.Central.Services.Extraction
                 return string.Empty;
             }
 
-            // Gather all class names and IDs present in this section
+            // Gather all custom author class names and IDs present in this section (strictly ignoring standard vendor utilities)
             var classNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (!string.IsNullOrWhiteSpace(element.ClassName))
             {
                 foreach (var c in element.ClassName.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
-                    classNames.Add(c.Trim());
+                {
+                    var trimmed = c.Trim();
+                    if (!IsVendorUtilityClass(trimmed)) classNames.Add(trimmed);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(element.Id))
@@ -734,7 +860,10 @@ namespace Ozikol.Central.Services.Extraction
                 if (!string.IsNullOrWhiteSpace(child.ClassName))
                 {
                     foreach (var c in child.ClassName.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
-                        classNames.Add(c.Trim());
+                    {
+                        var trimmed = c.Trim();
+                        if (!IsVendorUtilityClass(trimmed)) classNames.Add(trimmed);
+                    }
                 }
                 if (!string.IsNullOrWhiteSpace(child.Id))
                 {
@@ -742,7 +871,6 @@ namespace Ozikol.Central.Services.Extraction
                 }
             }
 
-            var scopeClass = $".sec-variant-{variantCode.ToLowerInvariant()}";
             var matchedRules = new StringBuilder();
             var seenSelectors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -786,7 +914,7 @@ namespace Ozikol.Central.Services.Extraction
                     int mediaBlockEnd = j;
                     string mediaContent = fullCss.Substring(openBrace + 1, (mediaBlockEnd - 1) - (openBrace + 1));
 
-                    var innerMatches = ParseAndScopeCssRules(mediaContent, classNames, ids, scopeClass);
+                    var innerMatches = ParseAndFilterCssRules(mediaContent, classNames, ids);
                     if (!string.IsNullOrWhiteSpace(innerMatches))
                     {
                         matchedRules.AppendLine($"{header} {{\n{innerMatches}\n}}\n");
@@ -804,14 +932,7 @@ namespace Ozikol.Central.Services.Extraction
                     {
                         if (MatchesSection(header, classNames, ids) && seenSelectors.Add(header))
                         {
-                            var scopedSelectors = header.Split(',')
-                                .Select(s => {
-                                    var trimmed = s.Trim();
-                                    return $"{scopeClass} {trimmed}, {scopeClass}{trimmed}";
-                                })
-                                .ToArray();
-
-                            matchedRules.AppendLine($"{string.Join(",\n", scopedSelectors)} {{\n    {body}\n}}\n");
+                            matchedRules.AppendLine($"{header} {{\n    {body}\n}}\n");
                         }
                     }
 
@@ -819,55 +940,12 @@ namespace Ozikol.Central.Services.Extraction
                 }
             }
 
-            if (category.Equals("menu", StringComparison.OrdinalIgnoreCase))
-            {
-                matchedRules.AppendLine($@"
-/* Base Navigation & Dropdown Styling for Menu Section */
-{scopeClass} nav ul, {scopeClass} .menu, {scopeClass} .navbar-nav {{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}}
-{scopeClass} nav li, {scopeClass} .menu-item {{
-    position: relative;
-}}
-{scopeClass} .has-dropdown > .at-submenu, 
-{scopeClass} .has-dropdown > .submenu, 
-{scopeClass} .has-dropdown > .sub-menu,
-{scopeClass} .has-dropdown > ul,
-{scopeClass} .dropdown-menu {{
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 9999;
-    min-width: 220px;
-    background: #ffffff;
-    padding: 16px;
-    border-radius: 10px;
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-}}
-{scopeClass} .has-dropdown:hover > .at-submenu, 
-{scopeClass} .has-dropdown:hover > .submenu, 
-{scopeClass} .has-dropdown:hover > .sub-menu,
-{scopeClass} .has-dropdown:hover > ul,
-{scopeClass} .has-dropdown.is-open > .at-submenu,
-{scopeClass} .has-dropdown.is-open > .submenu {{
-    display: block;
-}}
-{scopeClass} .at-megamenu {{
-    max-width: 90vw;
-}}
-");
-            }
-
             return matchedRules.ToString();
         }
 
         private static bool MatchesSection(string selector, HashSet<string> classNames, HashSet<string> ids)
         {
-            if (string.IsNullOrWhiteSpace(selector)) return false;
+            if (string.IsNullOrWhiteSpace(selector) || classNames.Count == 0 && ids.Count == 0) return false;
             foreach (var cls in classNames)
             {
                 if (selector.IndexOf("." + cls, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -881,11 +959,10 @@ namespace Ozikol.Central.Services.Extraction
             return false;
         }
 
-        private static string ParseAndScopeCssRules(
+        private static string ParseAndFilterCssRules(
             string cssBlock, 
             HashSet<string> classNames, 
-            HashSet<string> ids, 
-            string scopeClass)
+            HashSet<string> ids)
         {
             var sb = new StringBuilder();
             var ruleRegex = new Regex(@"([^{]+)\{([^}]+)\}", RegexOptions.Compiled);
@@ -901,14 +978,7 @@ namespace Ozikol.Central.Services.Extraction
 
                 if (MatchesSection(selector, classNames, ids))
                 {
-                    var scopedSelectors = selector.Split(',')
-                        .Select(s => {
-                            var trimmed = s.Trim();
-                            return $"    {scopeClass} {trimmed}, {scopeClass}{trimmed}";
-                        })
-                        .ToArray();
-
-                    sb.AppendLine($"{string.Join(",\n", scopedSelectors)} {{\n        {body}\n    }}\n");
+                    sb.AppendLine($"    {selector} {{\n        {body}\n    }}\n");
                 }
             }
 
@@ -1149,10 +1219,13 @@ document.addEventListener('DOMContentLoaded', function () {
             {
                 try
                 {
+                    using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    probeCts.CancelAfter(TimeSpan.FromSeconds(2));
+
                     using var req = new HttpRequestMessage(HttpMethod.Get, probeUrl);
                     req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
                     req.Headers.Add("Accept", "text/css,*/*;q=0.1");
-                    var res = await _httpClient.SendAsync(req, cancellationToken);
+                    var res = await _httpClient.SendAsync(req, probeCts.Token);
                     if (res.IsSuccessStatusCode)
                     {
                         var css = await res.Content.ReadAsStringAsync(cancellationToken);
@@ -1239,10 +1312,13 @@ document.addEventListener('DOMContentLoaded', function () {
             {
                 try
                 {
+                    using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    probeCts.CancelAfter(TimeSpan.FromSeconds(2));
+
                     using var req = new HttpRequestMessage(HttpMethod.Get, probeUrl);
                     req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
                     req.Headers.Add("Accept", "*/*");
-                    var res = await _httpClient.SendAsync(req, cancellationToken);
+                    var res = await _httpClient.SendAsync(req, probeCts.Token);
                     if (res.IsSuccessStatusCode)
                     {
                         var js = await res.Content.ReadAsStringAsync(cancellationToken);

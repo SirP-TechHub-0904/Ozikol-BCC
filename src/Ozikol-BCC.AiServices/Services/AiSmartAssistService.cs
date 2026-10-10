@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Ozikol_BCC.Application.Interfaces.Services;
-using Ozikol_BCC.Domain.Models.Settings;
+using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -25,9 +25,9 @@ namespace Ozikol_BCC.AiServices.Services
 
         public async Task<AiCompletionResult> GenerateCompletionAsync(AiCompletionRequest request, CancellationToken cancellationToken = default)
         {
-            var securitySetting = await _dbContext.Set<BcpTenantSecuritySetting>().FirstOrDefaultAsync(cancellationToken);
-            var activeProvider = request.ProviderOverride ?? securitySetting?.ActiveAiProvider.ToString() ?? "OpenAI";
-            var apiKey = securitySetting?.OpenAIApiKey ?? securitySetting?.GeminiApiKey ?? _configuration["Ai:ApiKey"] ?? string.Empty;
+            var config = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync(cancellationToken);
+            var activeProvider = request.ProviderOverride ?? _configuration["Ai:DefaultProvider"] ?? "Gemini";
+            var apiKey = _configuration["Ai:ApiKey"] ?? string.Empty;
 
             if (activeProvider.Equals("DeepSeek", StringComparison.OrdinalIgnoreCase))
             {

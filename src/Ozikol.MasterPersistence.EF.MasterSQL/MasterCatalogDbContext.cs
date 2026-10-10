@@ -15,6 +15,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterTenantCatalog> MasterTenantCatalogs { get; set; } = null!;
     public DbSet<MasterMarketplaceCategory> MasterMarketplaceCategories { get; set; } = null!;
     public DbSet<MasterMarketplaceTemplate> MasterMarketplaceTemplates { get; set; } = null!;
+    public DbSet<MasterMarketplaceDraftSection> MasterMarketplaceDraftSections { get; set; } = null!;
     public DbSet<MasterTemplateSection> MasterTemplateSections { get; set; } = null!;
     public DbSet<MasterTemplateSectionList> MasterTemplateSectionLists { get; set; } = null!;
     public DbSet<MasterTemplatePlaceholder> MasterTemplatePlaceholders { get; set; } = null!;

@@ -21,10 +21,10 @@ namespace Ozikol_BCC.Application.Services
 
         public async Task<string> GenerateMemberIdAsync(string? firstName = null, string? lastName = null, string? categoryName = null)
         {
-            var setting = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
             if (setting == null)
             {
-                setting = new BcpSetting
+                setting = new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
                     MemberIdFormat = "PrefixYearMonthRandom",
@@ -33,7 +33,7 @@ namespace Ozikol_BCC.Application.Services
                     MemberIdPadding = 4,
                     MemberIdDelimiter = "-"
                 };
-                _dbContext.BcpSettings.Add(setting);
+                _dbContext.MisConfigurationSettings.Add(setting);
                 await _dbContext.SaveChangesAsync();
             }
 
@@ -139,7 +139,7 @@ namespace Ozikol_BCC.Application.Services
 
         public async Task<List<MemberIdFormatPreview>> GetFormatPreviewsAsync(string? customPrefix = null, int? customStartNumber = null, int? customPadding = null, string? customDelimiter = null)
         {
-            var setting = await _dbContext.BcpSettings.FirstOrDefaultAsync();
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
 
             var prefix = !string.IsNullOrWhiteSpace(customPrefix) 
                 ? customPrefix.Trim().ToUpperInvariant() 

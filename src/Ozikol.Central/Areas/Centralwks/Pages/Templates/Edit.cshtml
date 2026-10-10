@@ -1,1091 +1,327 @@
-@page "{id:guid}"
+@page "/centralwks/templates/{id:guid}/edit"
 @model Ozikol.Central.Areas.Centralwks.Pages.Templates.EditModel
 @{
-    ViewData["Title"] = $"Edit Template: {Model.Input.Name}";
+    ViewData["Title"] = $"Edit {Model.Input.Name}";
     ViewData["BreadcrumbSection"] = "Marketplace";
 }
 
-<!-- CodeMirror 5 Dependencies -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
-
+@section Styles {
 <style>
-    .studio-hero-card {
-        background: var(--admin-bg-surface, #ffffff);
-        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        border-radius: 14px;
-        padding: 20px 24px;
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+    .edit-split-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 24px;
     }
-    .studio-tab-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: var(--admin-bg-surface-elevated, #f8fafc);
-        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        border-bottom: none;
-        border-top-left-radius: 12px;
-        border-top-right-radius: 12px;
-        padding: 8px 14px;
-        flex-wrap: wrap;
-        gap: 10px;
+    @@media (max-width: 1024px) {
+        .edit-split-grid {
+            grid-template-columns: 1fr;
+        }
     }
-    .studio-tab-group {
+    .form-group-block {
         display: flex;
+        flex-direction: column;
         gap: 6px;
-        flex-wrap: wrap;
-        align-items: center;
+        margin-bottom: 18px;
     }
-    .studio-tab-btn {
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: 8px;
-        color: var(--admin-text-muted, #64748b);
-        padding: 7px 12px;
+    .form-label-bold {
         font-size: 13px;
         font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-        transition: all 0.18s ease;
+        color: var(--admin-text);
     }
-    .studio-tab-btn:hover {
-        background: rgba(0, 0, 0, 0.04);
-        color: var(--admin-text, #0f172a);
-    }
-    .studio-tab-btn.active {
-        background: #ffffff;
-        color: var(--admin-text, #0f172a);
-        border-color: rgba(0, 0, 0, 0.08);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
-    .tab-badge {
-        font-size: 11px;
-        font-family: 'JetBrains Mono', monospace;
-        padding: 2px 7px;
-        border-radius: 6px;
-        background: var(--admin-bg-surface-elevated, #f1f5f9);
-        color: var(--admin-text-muted, #64748b);
-        font-weight: 500;
-    }
-    .studio-tab-btn.active .tab-badge {
-        background: #eff6ff;
-        color: #2563eb;
-    }
-    .studio-editor-pane {
-        display: none;
-        background: #0b1120;
-        border: 1px solid rgba(0, 0, 0, 0.12);
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        padding: 16px;
-    }
-    .studio-editor-pane.active {
-        display: block;
-    }
-    .studio-settings-pane {
-        display: none;
-        background: var(--admin-bg-surface, #ffffff);
-        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-        padding: 24px;
-    }
-    .studio-settings-pane.active {
-        display: block;
-    }
-    .CodeMirror {
-        height: 520px;
-        font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-        font-size: 13px;
-        line-height: 1.6;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .token-chip-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
-        padding: 10px 14px;
-        background: #020617;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        margin-bottom: 12px;
-    }
-    .token-chip {
-        background: rgba(56, 189, 248, 0.12);
-        border: 1px solid rgba(56, 189, 248, 0.25);
-        color: #38bdf8;
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-family: monospace;
-        font-size: 11px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        user-select: none;
-    }
-    .token-chip:hover {
-        background: rgba(56, 189, 248, 0.25);
-        border-color: #38bdf8;
-        color: #fff;
-    }
-    .height-btn {
-        background: var(--admin-bg-surface, #ffffff);
-        border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
-        color: var(--admin-text-muted, #64748b);
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        transition: all 0.15s ease;
-    }
-    .height-btn:hover {
-        background: var(--admin-bg-hover, #e2e8f0);
-        color: var(--admin-text, #0f172a);
-    }
-    .height-btn.active {
-        background: var(--admin-primary-light, rgba(229, 23, 63, 0.1));
-        color: var(--admin-primary, #e5173f);
-        border-color: var(--admin-primary, #e5173f);
-    }
-    .sample-repeater-card {
-        background: #020617;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
-        transition: all 0.15s ease;
-    }
-    .sample-repeater-card:hover {
-        border-color: rgba(56, 189, 248, 0.3);
-    }
-    .sample-form-control {
+    .form-input-styled {
         width: 100%;
-        background: #090e1a;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 6px;
-        padding: 8px 12px;
-        color: #f1f5f9;
-        font-size: 12.5px;
-        font-family: inherit;
+        padding: 10px 14px;
+        font-size: 13.5px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface-elevated);
+        color: var(--admin-text);
         outline: none;
-        transition: border-color 0.15s ease;
+        transition: var(--transition);
     }
-    .sample-form-control:focus {
-        border-color: #38bdf8;
+    .form-input-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
     }
-    .sample-view-btn {
-        background: transparent;
-        border: 1px solid transparent;
-        color: var(--admin-text-muted, #94a3b8);
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
+    .form-textarea-styled {
+        width: 100%;
+        padding: 12px 14px;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 13px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface-elevated);
+        color: var(--admin-text);
+        outline: none;
+        resize: vertical;
+        transition: var(--transition);
+    }
+    .form-textarea-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
+    }
+    .badge-pill {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        transition: all 0.15s ease;
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: capitalize;
     }
-    .sample-view-btn:hover {
-        color: #f1f5f9;
-    }
-    .sample-view-btn.active {
-        background: rgba(5, 150, 105, 0.2);
-        color: #34d399;
-        border-color: rgba(5, 150, 105, 0.4);
-    }
-    .settings-section-card {
-        background: var(--admin-bg-surface-elevated, #f8fafc);
-        border: 1px solid var(--admin-border, rgba(0,0,0,0.08));
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    .settings-section-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--admin-text, #0f172a);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 14px;
-        display: flex;
+    .badge-pill-primary { background: var(--admin-primary-light); color: var(--admin-primary); }
+
+    /* Modal */
+    .tweak-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+    }
+    .tweak-modal-overlay.is-active {
+        display: flex;
+    }
+    .tweak-modal-box {
+        width: 100%;
+        max-width: 640px;
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
     }
 </style>
+}
 
-<form method="post" id="templateEditForm">
-    @Html.AntiForgeryToken()
-
-    @* ── Top Breadcrumb Navigation ── *@
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-            <a href="/centralwks/templates" style="color: var(--admin-text-muted, #64748b); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span> Back to Templates
-            </a>
-            <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
-            <span style="color: var(--admin-text-muted, #64748b);">Marketplace</span>
-            <span style="color: var(--admin-border, rgba(0,0,0,0.15));">/</span>
-            <span style="color: var(--admin-text, #0f172a); font-weight: 600;">@Model.Input.VariantCode</span>
+<!-- Header -->
+<div class="admin-page-header">
+        <div class="admin-title-group">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <a href="/centralwks/templates/@Model.Input.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                    Cancel &amp; Back
+                </a>
+                <span class="badge-pill badge-pill-primary">@Model.Input.CategoryKey</span>
+            </div>
+            <h1 class="admin-title">Edit Section: @Model.Input.Name</h1>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a href="/centralwks/templates/details/@Model.Id" class="btn-admin btn-admin-secondary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span> Live Preview & Inspect
-            </a>
-            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 8px 18px;">
-                <span class="material-symbols-outlined" style="font-size: 16px;">save</span> Save Modifications
+
+        <div class="admin-actions">
+            <button type="button" class="btn-admin btn-admin-secondary" onclick="openAiTweakModal()">
+                <span class="material-symbols-outlined" style="color: var(--admin-indigo);">auto_awesome</span>
+                AI Section Assistant
             </button>
         </div>
     </div>
 
-    @* ── Compact Identity Hero Header ── *@
-    <div class="studio-hero-card">
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(37, 99, 235, 0.1); color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span class="material-symbols-outlined" style="font-size: 26px;">code_blocks</span>
-            </div>
-            <div>
-                <h1 style="font-size: 20px; font-weight: 800; color: var(--admin-text, #0f172a); margin: 0 0 6px 0; line-height: 1.2;">@Model.Input.Name</h1>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(37,99,235,0.1); color: #2563eb; font-weight: 700;">@Model.Input.VariantCode</span>
-                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--admin-bg-surface-elevated, #f1f5f9); color: var(--admin-text-muted, #64748b); font-weight: 600;">v@(Model.Input.Version)</span>
-                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--admin-bg-surface-elevated, #f1f5f9); color: var(--admin-text-muted, #64748b); text-transform: uppercase;">@Model.Input.Tag</span>
-                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: @(Model.Input.IsActive ? "rgba(5,150,105,0.1)" : "rgba(100,116,139,0.1)"); color: @(Model.Input.IsActive ? "#059669" : "#64748b"); font-weight: 600;">
-                        @(Model.Input.IsActive ? "Active & Published" : "Draft / Hidden")
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Edit Form -->
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Input.Id" />
 
-    @if (!ModelState.IsValid)
-    {
-        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
-            <div asp-validation-summary="All" style="margin: 0; padding-left: 20px;"></div>
-        </div>
-    }
+        <div class="edit-split-grid">
+            <!-- Left: Metadata -->
+            <div class="admin-card" style="padding: 24px; height: fit-content;">
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin-bottom: 20px;">Section Metadata</h3>
 
-    @* ── Full-Width 5-Tab Studio Workspace ── *@
-    <div style="margin-bottom: 30px;">
-        <div class="studio-tab-bar">
-            <div class="studio-tab-group">
-                <button type="button" class="studio-tab-btn active" onclick="switchStudioTab('html', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #0284c7;">code</span>
-                    Semantic HTML
-                    <span class="tab-badge" id="htmlTabBadge">HTML</span>
-                </button>
-                <button type="button" class="studio-tab-btn" onclick="switchStudioTab('css', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #7c3aed;">palette</span>
-                    Scoped CSS
-                    <span class="tab-badge" id="cssTabBadge">CSS</span>
-                </button>
-                <button type="button" class="studio-tab-btn" onclick="switchStudioTab('js', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">javascript</span>
-                    JavaScript
-                    <span class="tab-badge">JS</span>
-                </button>
-                <button type="button" class="studio-tab-btn" onclick="switchStudioTab('sample', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #059669;">dataset</span>
-                    Sample Data
-                    <span class="tab-badge" id="sampleItemsCountBadge">0 Items</span>
-                </button>
-                <button type="button" class="studio-tab-btn" onclick="switchStudioTab('settings', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">tune</span>
-                    Blueprint Settings
-                    <span class="tab-badge">Config</span>
-                </button>
-            </div>
-
-            <div id="editorHeightControls" style="display: flex; gap: 6px; align-items: center; padding: 4px 0;">
-                <span style="font-size: 11px; color: var(--admin-text-muted); margin-right: 4px;">Editor Height:</span>
-                <button type="button" class="height-btn" onclick="setEditorHeight(320, this)" title="Minimise Editor View">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">compress</span> Compact
-                </button>
-                <button type="button" class="height-btn active" onclick="setEditorHeight(520, this)" title="Standard Editor View">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">aspect_ratio</span> Standard
-                </button>
-                <button type="button" class="height-btn" onclick="setEditorHeight(780, this)" title="Expand Full Height">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">expand</span> Expanded
-                </button>
-            </div>
-        </div>
-
-        @* ── Tab 1: HTML Editor ── *@
-        <div id="studio-pane-html" class="studio-editor-pane active">
-            <div class="token-chip-bar" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; margin-bottom: 12px; background: #020617; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
-                <!-- Row 1: Section Fields -->
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 10.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Section:</span>
-                    <span class="token-chip" onclick="insertToken('{{ Title }}')" title="Primary heading">{{ Title }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ MiniTitle }}')" title="Kicker / sub-heading badge">{{ MiniTitle }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ Subtitle }}')" title="Subtitle">{{ Subtitle }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ Description }}')" title="Summary / excerpt">{{ Description }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ FullDescription }}')" title="Extended rich HTML body">{{ FullDescription }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ Quote }}')" title="Blockquote / highlight">{{ Quote }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ ImageUrl }}')" title="Primary section image">{{ ImageUrl }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ SecondImageUrl }}')" title="Secondary image">{{ SecondImageUrl }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ VideoUrl }}')" title="Video stream URL">{{ VideoUrl }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ ButtonText }}')" title="CTA button label">{{ ButtonText }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ ButtonLink }}')" title="CTA destination link">{{ ButtonLink }}</span>
-                    <span class="token-chip" onclick="insertToken('{{ DirectUrl }}')" title="Direct section anchor / slug">{{ DirectUrl }}</span>
+                <div class="form-group-block">
+                    <label asp-for="Input.Name" class="form-label-bold">Display Name</label>
+                    <input asp-for="Input.Name" class="form-input-styled" placeholder="e.g. Modern Split Hero" required />
+                    <span asp-validation-for="Input.Name" style="color: var(--admin-danger); font-size: 12px;"></span>
                 </div>
 
-                <!-- Row 2: Repeater Child Items -->
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Lists / Cards:</span>
-                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.35); color: #34d399;" onclick="insertSectionSnippet()" title="Insert repeating child items loop">{{#each SectionLists}}...{{/each}}</span>
-                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.25); color: #34d399;" onclick="insertToken('{{ IconText }}')" title="Bootstrap/FontAwesome icon class">{{ IconText }}</span>
-                    <span class="token-chip" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.25); color: #34d399;" onclick="insertToken('{{ MoreDescription }}')" title="Secondary role/detail">{{ MoreDescription }}</span>
+                <div class="form-group-block">
+                    <label asp-for="Input.VariantCode" class="form-label-bold">Variant Code (Unique)</label>
+                    <input asp-for="Input.VariantCode" class="form-input-styled" style="font-family: monospace;" placeholder="e.g. hero_split_01" required />
+                    <span asp-validation-for="Input.VariantCode" style="color: var(--admin-danger); font-size: 12px;"></span>
                 </div>
 
-                <!-- Row 3: Tenant Organization & Contact -->
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; min-width: 85px; letter-spacing: 0.04em;">Contact / Org:</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Phone }}')" title="Tenant phone number">{{ Organization.Phone }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Email }}')" title="Tenant contact email">{{ Organization.Email }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Address }}')" title="Physical address">{{ Organization.Address }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Name }}')" title="Organization / Brand name">{{ Organization.Name }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.WorkingHour }}')" title="Business operating hours">{{ Organization.WorkingHour }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.LogoUrl }}')" title="Brand logo URL">{{ Organization.LogoUrl }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Facebook }}')" title="Facebook URL">{{ Organization.Facebook }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Instagram }}')" title="Instagram URL">{{ Organization.Instagram }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Twitter }}')" title="Twitter / X URL">{{ Organization.Twitter }}</span>
-                    <span class="token-chip" style="background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;" onclick="insertToken('{{ Organization.Youtube }}')" title="YouTube channel URL">{{ Organization.Youtube }}</span>
+                <div class="form-group-block">
+                    <label asp-for="Input.CategoryKey" class="form-label-bold">Category</label>
+                    <select asp-for="Input.CategoryKey" class="form-input-styled">
+                        <option value="menu">Menu / Nav</option>
+                        <option value="hero">Hero Section</option>
+                        <option value="bodysections">Body &amp; Features</option>
+                        <option value="blog">Blog &amp; Cards</option>
+                        <option value="contact">Contact</option>
+                        <option value="footer">Footer</option>
+                    </select>
                 </div>
-            </div>
 
-            <textarea asp-for="Input.HtmlTemplate" id="htmlEditorTextarea"></textarea>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                <span asp-validation-for="Input.HtmlTemplate" class="text-danger" style="font-size: 12px; color: var(--admin-danger);"></span>
-                <span id="htmlCharCounter" style="font-size: 11px; font-family: monospace; color: #94a3b8;">0 characters</span>
-            </div>
-        </div>
+                <div class="form-group-block">
+                    <label asp-for="Input.Badge" class="form-label-bold">Badge (Optional)</label>
+                    <input asp-for="Input.Badge" class="form-input-styled" placeholder="e.g. Popular, New, Pro" />
+                </div>
 
-        @* ── Tab 2: CSS Editor ── *@
-        <div id="studio-pane-css" class="studio-editor-pane">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size: 12px; color: #a78bfa; font-weight: 600;">Scoped CSS Stylesheet (Isolated to component scope)</span>
-                <button type="button" class="height-btn" onclick="formatCss()">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">format_align_left</span> Auto Format
+                <div class="form-group-block">
+                    <label asp-for="Input.Description" class="form-label-bold">Description</label>
+                    <textarea asp-for="Input.Description" class="form-input-styled" rows="3" placeholder="Describe the purpose and layout of this section..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-admin btn-admin-primary btn-admin-lg" style="width: 100%; margin-top: 10px;">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Save Changes
                 </button>
             </div>
-            <textarea asp-for="Input.CssStyles" id="cssEditorTextarea"></textarea>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                <span asp-validation-for="Input.CssStyles" class="text-danger" style="font-size: 12px; color: var(--admin-danger);"></span>
-                <span id="cssCharCounter" style="font-size: 11px; font-family: monospace; color: #94a3b8;">0 characters</span>
-            </div>
-        </div>
 
-        @* ── Tab 3: JS Editor ── *@
-        <div id="studio-pane-js" class="studio-editor-pane">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size: 12px; color: #facc15;">Client-Side JavaScript execution logic. Runs in isolated container upon hydration.</span>
-            </div>
-            <textarea asp-for="Input.JsScript" id="jsEditorTextarea"></textarea>
-        </div>
-
-        @* ── Tab 4: Sample Data (Visual Form + Raw JSON Editor) ── *@
-        <div id="studio-pane-sample" class="studio-editor-pane">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 12px; color: #34d399; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Sample Data Items</span>
-                    <span style="font-size: 12px; color: #94a3b8;">— Used to populate repeating lists and preview mock content</span>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div style="display: inline-flex; background: #020617; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 2px;">
-                        <button type="button" id="btnSampleModeForm" class="sample-view-btn active" onclick="switchSampleMode('form')">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">list_alt</span> Visual Form
-                        </button>
-                        <button type="button" id="btnSampleModeJson" class="sample-view-btn" onclick="switchSampleMode('json')">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">data_object</span> Raw JSON
-                        </button>
-                    </div>
-                    <button type="button" id="btnAddSampleItemBtn" class="height-btn" onclick="addNewSampleItem()" style="background: #059669; color: #ffffff; border-color: #059669; font-weight: 600;">
-                        <span class="material-symbols-outlined" style="font-size: 14px;">add</span> Add Item
+            <!-- Right: Code Blocks -->
+            <div class="admin-card" style="overflow: hidden; display: flex; flex-direction: column;">
+                <div style="display: flex; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+                    <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="tabBtnHtml" onclick="switchEditorTab('html')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">html</span> HTML Template
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="tabBtnCss" onclick="switchEditorTab('css')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">css</span> Scoped CSS
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="tabBtnJson" onclick="switchEditorTab('json')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">data_object</span> Mock JSON
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-radius: 0; padding: 12px 18px;" id="tabBtnJs" onclick="switchEditorTab('js')">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">javascript</span> JS Script
                     </button>
                 </div>
-            </div>
 
-            <!-- Visual Form Mode -->
-            <div id="sampleVisualFormContainer">
-                <div id="sampleItemsRepeaterList"></div>
-                <div id="noSampleItemsMsg" style="display: none; text-align: center; padding: 40px 20px; background: #020617; border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px;">
-                    <span class="material-symbols-outlined" style="font-size: 36px; color: #64748b; margin-bottom: 8px; display: block;">dataset</span>
-                    <div style="font-weight: 600; font-size: 14px; color: #cbd5e1; margin-bottom: 4px;">No Sample Data Configured</div>
-                    <p style="font-size: 12.5px; color: #64748b; margin-bottom: 16px;">This template variant currently has no default repeating child items.</p>
-                    <button type="button" class="btn-admin btn-admin-primary" onclick="addNewSampleItem()" style="font-size: 12px; padding: 6px 14px;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add First Sample Item
-                    </button>
-                </div>
-            </div>
-
-            <!-- Raw JSON Mode -->
-            <div id="sampleRawJsonContainer" style="display: none;">
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
-                    <button type="button" class="height-btn" onclick="formatSampleJson()">
-                        <span class="material-symbols-outlined" style="font-size: 14px;">data_object</span> Format JSON
-                    </button>
-                </div>
-                <textarea asp-for="Input.DefaultSectionListsJson" id="jsonEditorTextarea"></textarea>
-            </div>
-        </div>
-
-        @* ── Tab 5: Blueprint Settings & Parameters ── *@
-        <div id="studio-pane-settings" class="studio-settings-pane">
-            <div class="settings-section-card">
-                <div class="settings-section-title">
-                    <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 18px;">badge</span>
-                    Template Identity & Categorization
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
-                    <div class="form-group">
-                        <label asp-for="Input.Name" class="form-label">
-                            Template Name <span style="color: var(--admin-danger);">*</span>
-                        </label>
-                        <input asp-for="Input.Name" class="form-control" placeholder="e.g. Strategies and Insights" />
-                        <span asp-validation-for="Input.Name" class="text-danger"></span>
+                <div style="padding: 20px; flex: 1; background: var(--admin-bg);">
+                    <!-- HTML Editor -->
+                    <div id="editorPanelHtml">
+                        <label class="form-label-bold" style="margin-bottom: 8px; display: block;">Mustache-Parameterized Semantic HTML</label>
+                        <textarea asp-for="Input.HtmlTemplate" id="editorHtml" class="form-textarea-styled" rows="20" placeholder="<section class='...'>...</section>" required></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="Input.VariantCode" class="form-label">
-                            Programmatic Variant Code <span style="color: var(--admin-danger);">*</span>
-                        </label>
-                        <input asp-for="Input.VariantCode" class="form-control" style="font-family: monospace; color: #0284c7; font-weight: 600;" placeholder="e.g. BLOG_10" />
-                        <span asp-validation-for="Input.VariantCode" class="text-danger"></span>
+                    <!-- Scoped CSS Editor -->
+                    <div id="editorPanelCss" style="display:none;">
+                        <label class="form-label-bold" style="margin-bottom: 8px; display: block;">Scoped CSS Rules (Author Selectors)</label>
+                        <textarea asp-for="Input.CssStyles" id="editorCss" class="form-textarea-styled" rows="20" placeholder=".header-area { ... }"></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="Input.CategoryId" class="form-label">
-                            Category <span style="color: var(--admin-danger);">*</span>
-                        </label>
-                        <select asp-for="Input.CategoryId" asp-items="Model.CategoryOptions" class="form-select"></select>
-                        <span asp-validation-for="Input.CategoryId" class="text-danger"></span>
+                    <!-- Mock JSON Editor -->
+                    <div id="editorPanelJson" style="display:none;">
+                        <label class="form-label-bold" style="margin-bottom: 8px; display: block;">Default Section Content Mock JSON</label>
+                        <textarea asp-for="Input.DefaultSectionListsJson" id="editorJson" class="form-textarea-styled" rows="20" placeholder="[ { 'Title': 'Item 1' } ]"></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label asp-for="Input.Tag" class="form-label">Style Classification</label>
-                        <select asp-for="Input.Tag" class="form-select">
-                            <option value="modern">Modern & Clean</option>
-                            <option value="dark">Dark & Futuristic</option>
-                            <option value="minimal">Minimalist</option>
-                            <option value="corporate">Corporate & Enterprise</option>
-                            <option value="ecommerce">E-Commerce</option>
-                            <option value="creative">Creative & Portfolio</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-section-card">
-                <div class="settings-section-title">
-                    <span class="material-symbols-outlined" style="color: #7c3aed; font-size: 18px;">description</span>
-                    Blueprint Description & Release Control
-                </div>
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                    <div class="form-group">
-                        <label asp-for="Input.Description" class="form-label">Short Summary Description</label>
-                        <input asp-for="Input.Description" class="form-control" placeholder="e.g. Developing personalized customer journeys..." />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="Input.Version" class="form-label">Version</label>
-                        <input asp-for="Input.Version" class="form-control" style="font-family: monospace;" placeholder="e.g. 1.0.0" />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="Input.SortOrder" class="form-label">Display Sort Order</label>
-                        <input asp-for="Input.SortOrder" type="number" class="form-control" />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="Input.Badge" class="form-label">Badge Label (Optional)</label>
-                        <input asp-for="Input.Badge" class="form-control" placeholder="e.g. New" />
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 8px; padding-top: 6px;">
-                    <input asp-for="Input.IsActive" type="checkbox" id="chkIsActive" style="width: 18px; height: 18px; accent-color: var(--admin-primary); cursor: pointer;" />
-                    <label for="chkIsActive" style="font-size: 13.5px; font-weight: 600; color: #059669; cursor: pointer; margin: 0;">
-                        Active & Published in Marketplace Catalog
-                    </label>
-                </div>
-            </div>
-
-            <div class="settings-section-card">
-                <div class="settings-section-title">
-                    <span class="material-symbols-outlined" style="color: #d97706; font-size: 18px;">image</span>
-                    Card Thumbnail & Builder Showcase Overrides
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
-                    <div class="form-group">
-                        <label asp-for="Input.PreviewTitle" class="form-label">Showcase Title Override</label>
-                        <input asp-for="Input.PreviewTitle" class="form-control" placeholder="e.g. Default title in builder" />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="Input.PreviewImageUrl" class="form-label">Demo Screenshot Image URL</label>
-                        <input asp-for="Input.PreviewImageUrl" class="form-control" placeholder="https://..." />
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="Input.ThumbnailGradient" class="form-label">Thumbnail Gradient (CSS)</label>
-                        <input asp-for="Input.ThumbnailGradient" class="form-control" style="font-family: monospace;" placeholder="linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)" />
+                    <!-- JS Script Editor -->
+                    <div id="editorPanelJs" style="display:none;">
+                        <label class="form-label-bold" style="margin-bottom: 8px; display: block;">Optional Component JavaScript Logic</label>
+                        <textarea asp-for="Input.JsScript" id="editorJs" class="form-textarea-styled" rows="20" placeholder="// Component JS logic"></textarea>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
+</div>
 
-    @* ── Bottom Action Bar ── *@
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08)); border-radius: 12px; margin-top: 24px; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));">
-        <a href="/centralwks/templates" class="btn-admin btn-admin-secondary">
-            &larr; Back to Templates List
-        </a>
-        <div style="display: flex; gap: 12px;">
-            <a href="/centralwks/templates/details/@Model.Id" class="btn-admin btn-admin-secondary">
-                Discard Changes
-            </a>
-            <button type="submit" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 10px 24px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">save</span> Save Template Changes
+<!-- AI Tweak Modal -->
+<div class="tweak-modal-overlay" id="aiTweakModal">
+    <div class="tweak-modal-box">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center; background: var(--admin-bg-surface-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--admin-indigo);">auto_awesome</span>
+                <div>
+                    <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--admin-text);">AI Section Assistant</h4>
+                    <p style="margin: 0; font-size: 12.5px; color: var(--admin-text-muted);">Provide plain-English instructions to refine the HTML, styling, or placeholders.</p>
+                </div>
+            </div>
+            <button type="button" class="btn-admin-icon" onclick="closeAiTweakModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div style="padding: 24px;">
+            <label class="form-label-bold" style="margin-bottom: 8px; display: block;">Instructions for AI</label>
+            <textarea class="form-textarea-styled" id="aiTweakPrompt" rows="5" placeholder="e.g. Add a secondary CTA button, adjust padding on mobile, or add a 3-column feature grid..."></textarea>
+        </div>
+        <div style="padding: 16px 24px; border-top: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center; background: var(--admin-bg-surface-elevated);">
+            <button type="button" class="btn-admin btn-admin-secondary" onclick="closeAiTweakModal()">Cancel</button>
+            <button type="button" class="btn-admin btn-admin-primary" id="btnExecuteAiTweak" onclick="runAiTweak()">
+                <span class="material-symbols-outlined">magic_button</span> Apply AI Refinements
             </button>
         </div>
     </div>
-</form>
 
-<!-- CodeMirror 5 Core & Modes -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+@section Scripts {
+    <script>
+        function openAiTweakModal() {
+            var m = document.getElementById('aiTweakModal');
+            if (m) m.classList.add('is-active');
+        }
 
-<script>
-    const editors = {
-        html: null,
-        css: null,
-        js: null,
-        json: null
-    };
+        function closeAiTweakModal() {
+            var m = document.getElementById('aiTweakModal');
+            if (m) m.classList.remove('is-active');
+        }
 
-    let sampleItems = [];
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize CodeMirror Editors
-        editors.html = CodeMirror.fromTextArea(document.getElementById('htmlEditorTextarea'), {
-            mode: 'htmlmixed',
-            theme: 'material-darker',
-            lineNumbers: true,
-            foldGutter: true,
-            matchBrackets: true,
-            autoCloseBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
-        });
-
-        editors.css = CodeMirror.fromTextArea(document.getElementById('cssEditorTextarea'), {
-            mode: 'css',
-            theme: 'material-darker',
-            lineNumbers: true,
-            foldGutter: true,
-            matchBrackets: true,
-            autoCloseBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
-        });
-
-        editors.js = CodeMirror.fromTextArea(document.getElementById('jsEditorTextarea'), {
-            mode: 'javascript',
-            theme: 'material-darker',
-            lineNumbers: true,
-            foldGutter: true,
-            matchBrackets: true,
-            autoCloseBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
-        });
-
-        editors.json = CodeMirror.fromTextArea(document.getElementById('jsonEditorTextarea'), {
-            mode: 'application/json',
-            theme: 'material-darker',
-            lineNumbers: true,
-            foldGutter: true,
-            matchBrackets: true,
-            autoCloseBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
-        });
-
-        // Initialize Sample Data from JSON
-        parseInitialSampleData();
-        renderSampleRepeater();
-
-        // Attach change listeners for counters
-        editors.html.on('change', updateCharCounts);
-        editors.css.on('change', updateCharCounts);
-        editors.json.on('change', function() {
-            try {
-                const val = editors.json.getValue();
-                if (val && val.trim()) {
-                    const parsed = JSON.parse(val);
-                    if (Array.isArray(parsed)) {
-                        sampleItems = parsed;
-                        updateSampleBadge();
-                    }
+        function switchEditorTab(tab) {
+            ['html', 'css', 'json', 'js'].forEach(function(t) {
+                var btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+                var panel = document.getElementById('editorPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (btn) {
+                    btn.classList.remove('btn-admin-primary');
+                    btn.classList.add('btn-admin-secondary');
                 }
-            } catch(e) {}
-        });
-
-        updateCharCounts();
-
-        // Hook form submission
-        const form = document.getElementById('templateEditForm');
-        if (form) {
-            form.addEventListener('submit', function() {
-                syncRepeaterToJson();
-                editors.html.save();
-                editors.css.save();
-                editors.js.save();
-                editors.json.save();
+                if (panel) panel.style.display = 'none';
             });
-        }
-    });
 
-    function parseInitialSampleData() {
-        try {
-            const raw = editors.json.getValue();
-            if (raw && raw.trim()) {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    sampleItems = parsed;
-                }
+            var activeBtn = document.getElementById('tabBtn' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            var activePanel = document.getElementById('editorPanel' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-admin-secondary');
+                activeBtn.classList.add('btn-admin-primary');
             }
-        } catch(e) {
-            sampleItems = [];
-        }
-    }
-
-    function switchStudioTab(tabId, btn) {
-        document.querySelectorAll('.studio-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.studio-editor-pane, .studio-settings-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const pane = document.getElementById('studio-pane-' + tabId);
-        if (pane) pane.classList.add('active');
-
-        const heightControls = document.getElementById('editorHeightControls');
-        if (heightControls) {
-            heightControls.style.display = (tabId === 'settings') ? 'none' : 'flex';
+            if (activePanel) activePanel.style.display = 'block';
         }
 
-        setTimeout(() => {
-            if (tabId === 'html' && editors.html) editors.html.refresh();
-            if (tabId === 'css' && editors.css) editors.css.refresh();
-            if (tabId === 'js' && editors.js) editors.js.refresh();
-            if (tabId === 'sample' && editors.json) {
-                editors.json.refresh();
-                renderSampleRepeater();
+        async function runAiTweak() {
+            var prompt = document.getElementById('aiTweakPrompt').value;
+            if (!prompt) {
+                alert('Please enter instructions for the AI.');
+                return;
             }
-        }, 50);
-    }
 
-    function setEditorHeight(heightPx, btn) {
-        document.querySelectorAll('.height-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.CodeMirror').forEach(cm => {
-            cm.style.height = heightPx + 'px';
-        });
-        Object.values(editors).forEach(ed => {
-            if (ed) ed.refresh();
-        });
-    }
+            var btn = document.getElementById('btnExecuteAiTweak');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Refining...';
 
-    function insertToken(token) {
-        if (!editors.html) return;
-        editors.html.replaceSelection(token);
-        editors.html.focus();
-        updateCharCounts();
-    }
+            var payload = {
+                section_key: document.getElementById('Input_VariantCode').value,
+                category_key: document.getElementById('Input_CategoryKey').value,
+                title: document.getElementById('Input_Name').value,
+                html_template: document.getElementById('editorHtml').value,
+                scoped_css: document.getElementById('editorCss').value,
+                user_prompt: prompt
+            };
 
-    function insertSectionSnippet() {
-        if (!editors.html) return;
-        const snippet = '{{#each SectionLists}}\n    <div class="item">\n        <h3>{{ Title }}</h3>\n        <p>{{ Description }}</p>\n    </div>\n{{/each}}';
-        editors.html.replaceSelection(snippet);
-        editors.html.focus();
-        updateCharCounts();
-    }
-
-    function updateCharCounts() {
-        if (editors.html) {
-            const len = editors.html.getValue().length;
-            document.getElementById('htmlCharCounter').textContent = len.toLocaleString() + ' characters';
-            document.getElementById('htmlTabBadge').textContent = len > 0 ? (len > 1000 ? (len/1000).toFixed(1) + 'k' : len) : 'HTML';
-        }
-        if (editors.css) {
-            const len = editors.css.getValue().length;
-            document.getElementById('cssCharCounter').textContent = len.toLocaleString() + ' characters';
-            document.getElementById('cssTabBadge').textContent = len > 0 ? (len > 1000 ? (len/1000).toFixed(1) + 'k' : len) : 'CSS';
-        }
-    }
-
-    function formatCss() {
-        if (!editors.css) return;
-        let css = editors.css.getValue();
-        if (!css.trim()) return;
-        css = css.replace(/\s*{\s*/g, ' {\n    ')
-                 .replace(/;\s*/g, ';\n    ')
-                 .replace(/\s*}\s*/g, '\n}\n\n')
-                 .replace(/\n    \n/g, '\n');
-        editors.css.setValue(css.trim());
-    }
-
-    function switchSampleMode(mode) {
-        const formCont = document.getElementById('sampleVisualFormContainer');
-        const jsonCont = document.getElementById('sampleRawJsonContainer');
-        const btnForm = document.getElementById('btnSampleModeForm');
-        const btnJson = document.getElementById('btnSampleModeJson');
-        const btnAdd = document.getElementById('btnAddSampleItemBtn');
-
-        if (mode === 'form') {
             try {
-                const raw = editors.json.getValue();
-                if (raw && raw.trim()) {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) {
-                        sampleItems = parsed;
-                    }
+                var resp = await fetch('?handler=AiTweak', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(payload)
+                });
+                var result = await resp.json();
+                if (result.success) {
+                    if (result.html_template) document.getElementById('editorHtml').value = result.html_template;
+                    if (result.scoped_css) document.getElementById('editorCss').value = result.scoped_css;
+                    closeAiTweakModal();
+                    alert('AI refinement applied successfully!');
+                } else {
+                    alert(result.error_message || 'AI tweak failed.');
                 }
-            } catch(e) {}
-            renderSampleRepeater();
-
-            formCont.style.display = 'block';
-            jsonCont.style.display = 'none';
-            btnForm.classList.add('active');
-            btnJson.classList.remove('active');
-            btnAdd.style.display = 'inline-flex';
-        } else {
-            syncRepeaterToJson();
-            formCont.style.display = 'none';
-            jsonCont.style.display = 'block';
-            btnForm.classList.remove('active');
-            btnJson.classList.add('active');
-            btnAdd.style.display = 'none';
-            setTimeout(() => editors.json.refresh(), 50);
-        }
-    }
-
-    const categorySchemas = {
-        faq: {
-            title: 'e.g. How do I configure custom domains?',
-            subtitle: 'e.g. Add a CNAME record pointing to our edge proxy in your DNS provider.',
-            tag: 'e.g. Domain Setup',
-            icon: 'e.g. bi bi-question-circle',
-            imageUrl: '',
-            buttonText: 'e.g. View Guide',
-            url: 'e.g. /docs/cname'
-        },
-        pricing: {
-            title: 'e.g. Enterprise Tier',
-            subtitle: 'e.g. $199 / month - Dedicated cluster with custom SLA',
-            tag: 'e.g. Recommended',
-            icon: 'e.g. bi bi-check2-circle',
-            imageUrl: '',
-            buttonText: 'e.g. Select Plan',
-            url: 'e.g. /checkout/enterprise'
-        },
-        stats: {
-            title: 'e.g. 99.99%',
-            subtitle: 'e.g. SLA Availability',
-            tag: 'e.g. Performance',
-            icon: 'e.g. bi bi-speedometer2',
-            imageUrl: '',
-            buttonText: '',
-            url: ''
-        },
-        counter: {
-            title: 'e.g. 5,000,000+',
-            subtitle: 'e.g. Monthly API Transactions',
-            tag: 'e.g. Global Scale',
-            icon: 'e.g. bi bi-activity',
-            imageUrl: '',
-            buttonText: '',
-            url: ''
-        },
-        process: {
-            title: 'e.g. 01. Configure Workspace',
-            subtitle: 'e.g. Set up your branding and team permissions in under 2 minutes.',
-            tag: 'e.g. Step 1',
-            icon: 'e.g. bi bi-hdd-network',
-            imageUrl: '',
-            buttonText: 'e.g. Next Step',
-            url: '#'
-        },
-        steps: {
-            title: 'e.g. Step 02: Deploy Application',
-            subtitle: 'e.g. Connect your GitHub repository to trigger zero-downtime builds.',
-            tag: 'e.g. Phase 2',
-            icon: 'e.g. bi bi-rocket-takeoff',
-            imageUrl: '',
-            buttonText: 'e.g. Learn More',
-            url: '#'
-        },
-        blog: {
-            title: 'e.g. Modern Architecture for Multi-Tenant Systems',
-            subtitle: 'e.g. Strategies for database schema isolation and telemetry monitoring.',
-            tag: 'e.g. Engineering',
-            icon: 'e.g. bi bi-journal-text',
-            imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-            buttonText: 'e.g. Read Article',
-            url: 'e.g. /blog/multi-tenant-architecture'
-        },
-        news: {
-            title: 'e.g. Release 2.4: Real-time Spam Protection & Sentry Telemetry',
-            subtitle: 'e.g. Introducing enhanced deliverability analysis and instant crash notifications.',
-            tag: 'e.g. Updates',
-            icon: 'e.g. bi bi-broadcast',
-            imageUrl: '',
-            buttonText: 'e.g. Release Notes',
-            url: 'e.g. /changelog'
-        },
-        hero: {
-            title: 'e.g. Next-Gen Multi-Tenant Platform',
-            subtitle: 'e.g. Build, deploy, and scale enterprise tenant applications seamlessly.',
-            tag: 'e.g. Enterprise',
-            icon: 'e.g. bi bi-stars',
-            imageUrl: '',
-            buttonText: 'e.g. Get Started Free',
-            url: 'e.g. /register'
-        },
-        feature: {
-            title: 'e.g. Enterprise Data Encryption',
-            subtitle: 'e.g. Bank-grade 256-bit encryption protecting tenant data at rest and in transit.',
-            tag: 'e.g. Security',
-            icon: 'e.g. bi bi-shield-lock',
-            imageUrl: '',
-            buttonText: 'e.g. Learn More',
-            url: 'e.g. /features/security'
-        },
-        features: {
-            title: 'e.g. Automated Edge Routing',
-            subtitle: 'e.g. Ultra-low latency routing across global points of presence.',
-            tag: 'e.g. Performance',
-            icon: 'e.g. bi bi-lightning-charge',
-            imageUrl: '',
-            buttonText: 'e.g. Explore Capabilities',
-            url: 'e.g. /features/routing'
-        },
-        body: {
-            title: 'e.g. Modular Architecture Block',
-            subtitle: 'e.g. Fully customizable UI block with isolated stylesheets.',
-            tag: 'e.g. Modular',
-            icon: 'e.g. bi bi-grid',
-            imageUrl: '',
-            buttonText: 'e.g. Explore',
-            url: '#'
-        },
-        contact: {
-            title: 'e.g. 24/7 Global Solutions Desk',
-            subtitle: 'e.g. Guaranteed 15-minute response SLA from our solutions team.',
-            tag: 'e.g. Support',
-            icon: 'e.g. bi bi-headset',
-            imageUrl: '',
-            buttonText: 'e.g. Contact Us',
-            url: 'e.g. /contact'
-        },
-        cta: {
-            title: 'e.g. Ready to transform your infrastructure?',
-            subtitle: 'e.g. Start your 14-day free trial. No credit card required.',
-            tag: 'e.g. Get Started',
-            icon: 'e.g. bi bi-arrow-right-circle',
-            imageUrl: '',
-            buttonText: 'e.g. Start Free Trial',
-            url: 'e.g. /register'
-        }
-    };
-
-    function getActiveCategoryPlaceholders() {
-        const catSelect = document.querySelector('select[name="Input.CategoryId"]');
-        let selectedText = '';
-        if (catSelect && catSelect.selectedIndex >= 0) {
-            selectedText = (catSelect.options[catSelect.selectedIndex].text || '').toLowerCase();
-        }
-        for (const [key, schema] of Object.entries(categorySchemas)) {
-            if (selectedText.includes(key)) {
-                return schema;
+            } catch (err) {
+                alert('Server error processing AI tweak.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined">magic_button</span> Apply AI Refinements';
             }
         }
-        return categorySchemas.feature;
-    }
-
-    function renderSampleRepeater() {
-        const list = document.getElementById('sampleItemsRepeaterList');
-        const empty = document.getElementById('noSampleItemsMsg');
-        const placeholders = getActiveCategoryPlaceholders();
-
-        if (!sampleItems || sampleItems.length === 0) {
-            list.innerHTML = '';
-            empty.style.display = 'block';
-            updateSampleBadge();
-            return;
-        }
-
-        empty.style.display = 'none';
-        list.innerHTML = '';
-
-        sampleItems.forEach((item, index) => {
-            const card = document.createElement('div');
-            card.className = 'sample-repeater-card';
-            card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 11px; font-weight: 700; color: #34d399; text-transform: uppercase;">Item #${index + 1}</span>
-                        <span style="font-size: 12px; font-weight: 600; color: #cbd5e1;">${escapeHtml(item.Title || placeholders.title.replace('e.g. ', ''))}</span>
-                    </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button type="button" class="height-btn" onclick="moveSampleItem(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Up">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_upward</span>
-                        </button>
-                        <button type="button" class="height-btn" onclick="moveSampleItem(${index}, 1)" ${index === sampleItems.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Down">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_downward</span>
-                        </button>
-                        <button type="button" class="height-btn" onclick="deleteSampleItem(${index})" style="color: #f87171;" title="Delete Item">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Title</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Title || '')}" placeholder="${escapeHtml(placeholders.title)}" oninput="updateSampleItemField(${index}, 'Title', this.value)" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Subtitle / Short Desc</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Subtitle || '')}" placeholder="${escapeHtml(placeholders.subtitle)}" oninput="updateSampleItemField(${index}, 'Subtitle', this.value)" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Tag / Badge</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Tag || '')}" placeholder="${escapeHtml(placeholders.tag)}" oninput="updateSampleItemField(${index}, 'Tag', this.value)" />
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Icon Class</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Icon || '')}" placeholder="${escapeHtml(placeholders.icon)}" oninput="updateSampleItemField(${index}, 'Icon', this.value)" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Image URL</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.ImageUrl || '')}" placeholder="https://..." oninput="updateSampleItemField(${index}, 'ImageUrl', this.value)" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Button / Link Text</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.ButtonText || '')}" placeholder="${escapeHtml(placeholders.buttonText || 'e.g. Learn More')}" oninput="updateSampleItemField(${index}, 'ButtonText', this.value)" />
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Link URL</label>
-                        <input type="text" class="sample-form-control" value="${escapeHtml(item.Url || '')}" placeholder="${escapeHtml(placeholders.url || 'e.g. /services')}" oninput="updateSampleItemField(${index}, 'Url', this.value)" />
-                    </div>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-
-        updateSampleBadge();
-    }
-
-    function addNewSampleItem() {
-        sampleItems.push({
-            Title: '',
-            Subtitle: '',
-            Tag: '',
-            Icon: '',
-            ImageUrl: '',
-            Url: '',
-            ButtonText: ''
-        });
-        renderSampleRepeater();
-        syncRepeaterToJson();
-    }
-
-    const catDropdown = document.querySelector('select[name="Input.CategoryId"]');
-    if (catDropdown) {
-        catDropdown.addEventListener('change', function() {
-            renderSampleRepeater();
-        });
-    }
-
-    function updateSampleItemField(index, field, value) {
-        if (!sampleItems[index]) return;
-        sampleItems[index][field] = value;
-        syncRepeaterToJson();
-    }
-
-    function moveSampleItem(index, direction) {
-        const newIndex = index + direction;
-        if (newIndex < 0 || newIndex >= sampleItems.length) return;
-        const item = sampleItems.splice(index, 1)[0];
-        sampleItems.splice(newIndex, 0, item);
-        renderSampleRepeater();
-        syncRepeaterToJson();
-    }
-
-    function deleteSampleItem(index) {
-        sampleItems.splice(index, 1);
-        renderSampleRepeater();
-        syncRepeaterToJson();
-    }
-
-    function syncRepeaterToJson() {
-        const jsonStr = sampleItems.length > 0 ? JSON.stringify(sampleItems, null, 4) : '';
-        if (editors.json) {
-            editors.json.setValue(jsonStr);
-        }
-        updateSampleBadge();
-    }
-
-    function updateSampleBadge() {
-        const badge = document.getElementById('sampleItemsCountBadge');
-        if (badge) {
-            badge.textContent = sampleItems.length + (sampleItems.length === 1 ? ' Item' : ' Items');
-        }
-    }
-
-    function formatSampleJson() {
-        if (!editors.json) return;
-        try {
-            const raw = editors.json.getValue();
-            if (!raw.trim()) return;
-            const parsed = JSON.parse(raw);
-            editors.json.setValue(JSON.stringify(parsed, null, 4));
-            if (window.ozToast) {
-                window.ozToast('JSON formatted successfully!', 'success', 2500);
-            }
-        } catch(e) {
-            if (window.ozToast) {
-                window.ozToast('Invalid JSON syntax: ' + e.message, 'error', 3500);
-            }
-        }
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-</script>
+    </script>
+}

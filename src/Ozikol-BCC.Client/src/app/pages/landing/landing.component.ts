@@ -171,49 +171,6 @@ import { TemplateHydrationService } from '../admin/content/templates/services/te
       min-height: 100vh;
     }
 
-    /* Navbar Dropdowns */
-    .dropdown {
-      position: relative !important;
-    }
-    .dropdown-menu {
-      display: none;
-    }
-    .dropdown-menu.show {
-      display: block !important;
-      position: absolute !important;
-      top: 100% !important;
-      left: 0 !important;
-      z-index: 99999 !important;
-      min-width: 15rem !important;
-      margin-top: 8px !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      background-color: #ffffff !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 10px !important;
-      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
-      padding: 8px 0 !important;
-      animation: fadeInDropdown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes fadeInDropdown {
-      from { opacity: 0; transform: translateY(-6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .dropdown-item {
-      cursor: pointer;
-      display: block !important;
-      padding: 9px 18px !important;
-      font-size: 14px !important;
-      font-weight: 500 !important;
-      color: #334155 !important;
-      text-decoration: none !important;
-      transition: background 0.15s ease, color 0.15s ease !important;
-    }
-    .dropdown-item:hover {
-      background-color: #f1f5f9 !important;
-      color: #0050e5 !important;
-    }
-
     /* Dynamic Form Input Focus & Styling */
     .dynamic-rendered-content form .form-control:focus,
     .dynamic-rendered-content form .form-select:focus {
@@ -370,32 +327,62 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchBrandSettings(): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get('SettingsApi/brand').subscribe({
-        next: (res: any) => {
-          if (res?.data) {
-            this.brandInfo = res.data;
-            this.brandName = res.data.companyName || res.data.websiteTitle || 'Acme Global';
-            this.brandLogoUrl = res.data.companyLogoUrl || '';
-
-            // Apply tenant browser tab favicon to live storefront (leave blank if not uploaded)
-            const rawIcon = res.data.companyIconUrl;
-            const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
-            const favicons = document.querySelectorAll("link[rel*='icon']");
-            if (favicons.length > 0) {
-              favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
-            } else if (activeIcon) {
-              const link = document.createElement('link');
-              link.rel = 'shortcut icon';
-              link.type = 'image/x-icon';
-              link.href = activeIcon;
-              document.head.appendChild(link);
-            }
+      // 1. Fetch public UI settings (always accessible anonymously)
+      this.apiService.get('WebsiteContentApi/ui-settings').subscribe({
+        next: (uiRes: any) => {
+          if (uiRes?.data) {
+            const data = uiRes.data;
+            this.brandInfo = { ...this.brandInfo, ...data };
+            this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
+            this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
+            this.applyFavicon(data.faviconUrl || data.companyIconUrl);
           }
-          resolve();
+          // 2. Also attempt to fetch full SettingsApi/brand if available
+          this.apiService.get('SettingsApi/brand').subscribe({
+            next: (brandRes: any) => {
+              if (brandRes?.data) {
+                const bData = brandRes.data;
+                this.brandInfo = { ...this.brandInfo, ...bData };
+                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                this.applyFavicon(bData.companyIconUrl);
+              }
+              resolve();
+            },
+            error: () => resolve()
+          });
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('SettingsApi/brand').subscribe({
+            next: (brandRes: any) => {
+              if (brandRes?.data) {
+                const bData = brandRes.data;
+                this.brandInfo = { ...this.brandInfo, ...bData };
+                if (bData.companyName) this.brandName = bData.companyName;
+                if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                this.applyFavicon(bData.companyIconUrl);
+              }
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
+  }
+
+  private applyFavicon(rawIcon?: string): void {
+    const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+    const favicons = document.querySelectorAll("link[rel*='icon']");
+    if (favicons.length > 0) {
+      favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+    } else if (activeIcon) {
+      const link = document.createElement('link');
+      link.rel = 'shortcut icon';
+      link.type = 'image/x-icon';
+      link.href = activeIcon;
+      document.head.appendChild(link);
+    }
   }
 
   private fetchActiveTemplates(): Promise<void> {
@@ -427,7 +414,15 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.categories = res?.data || [];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('ContentApi/categories').subscribe({
+            next: (cRes: any) => {
+              this.categories = cRes?.data || [];
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -439,7 +434,15 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.publishedPages = res?.data || [];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.apiService.get('ContentApi/pages').subscribe({
+            next: (pRes: any) => {
+              this.publishedPages = pRes?.data || [];
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -608,35 +611,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3b. Recent Blog Articles Showcase (matching Demo Preview sequence)
-    const blogTemplate = this.findActiveTemplate('blog');
-    const hasBlogSectionAlready = bodySections.some(s => s.templateKey?.toLowerCase()?.includes('blog'));
-    if (blogTemplate && !hasBlogSectionAlready && this.blogs && this.blogs.length > 0) {
-      if (blogTemplate.cssStyles && !combinedStyles.includes(blogTemplate.cssStyles)) {
-        combinedStyles += `\n${blogTemplate.cssStyles}\n`;
-      }
-      const blogData = {
-        title: 'Platform Insights & Case Studies',
-        miniTitle: 'LATEST KNOWLEDGE',
-        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
-        articles: this.blogs.slice(0, 3).map(b => ({
-          id: b.id,
-          title: b.title,
-          excerpt: b.description || 'Comprehensive strategic analysis and insights.',
-          category: b.blogCategory?.categoryName || 'Strategy & Advisory',
-          date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          author: 'Executive Advisory Desk',
-          imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
-          directUrl: `/blog/${b.id}`
-        }))
-      };
-      const blogHtml = this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogData, this.getHydrationOptions());
-      combinedHtml += `<!-- Section: Recent Blog Articles -->\n${blogHtml}\n`;
-      if (blogTemplate.jsScript && !combinedJs.includes(blogTemplate.jsScript)) {
-        combinedJs += `\n${blogTemplate.jsScript}\n`;
-      }
-    }
-
     // 4. Footer Section
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
@@ -685,13 +659,13 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: heroSection?.title || this.currentPage.title,
-        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || 'Organization Overview',
+        title: heroSection?.title || this.currentPage.title || '',
+        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || '',
         description: heroSection?.description || this.currentPage.description || '',
-        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
+        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || '',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: this.currentPage.title, url: '#', isActive: true }
+          { label: this.currentPage.title || '', url: '#', isActive: true }
         ]
       };
       const breadcrumbHtml = this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
@@ -722,24 +696,22 @@ export class LandingComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      // Fallback clean article content wrapper (including turnkey legal compliance content for legal pages)
-      const bodyContent = this.currentPage.fullDescription ||
-                          this.currentPage.description ||
-                          this.getTurnkeyLegalContent(this.currentSlug, this.currentPage.title);
-
-      combinedHtml += `
-        <section class="py-5 bg-white border-bottom">
-          <div class="container py-4">
-            <div class="row justify-content-center">
-              <div class="col-lg-9">
-                <article class="prose-content fs-5 leading-relaxed text-secondary">
-                  ${bodyContent}
-                </article>
+      const bodyContent = this.currentPage.fullDescription || this.currentPage.description || '';
+      if (bodyContent) {
+        combinedHtml += `
+          <section class="py-5 bg-white border-bottom">
+            <div class="container py-4">
+              <div class="row justify-content-center">
+                <div class="col-lg-9">
+                  <article class="prose-content fs-5 leading-relaxed text-secondary">
+                    ${bodyContent}
+                  </article>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      `;
+          </section>
+        `;
+      }
     }
 
     // 4. Footer
@@ -754,102 +726,11 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Generates turnkey corporate compliance text for legal pages when no custom CMS sections exist.
-   */
-  private getTurnkeyLegalContent(slug: string, pageTitle?: string): string {
-    const norm = (slug || '').toLowerCase().trim();
-
-    if (norm.includes('privacy')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Compliance</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Privacy & Data Governance Policy</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            This Privacy Policy explains how <strong>${this.brandName}</strong> collects, processes, stores, and safeguards personal data and institutional information when accessing our platform, services, and client portals.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Information We Collect</h4>
-          <p>We collect information necessary to deliver enterprise services, authenticate authorized personnel, and maintain platform security:</p>
-          <ul class="mb-4">
-            <li><strong>Account Identification:</strong> Full name, professional work email, corporate phone number, job title, and organization affiliation.</li>
-            <li><strong>Technical Telemetry:</strong> IP address, device telemetry, browser specifications, operating system parameters, and session access timestamps.</li>
-            <li><strong>Transactional & Service Inquiries:</strong> Engagement records, support ticket correspondence, service requests, and authorized billing profiles.</li>
-          </ul>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. How We Use Information</h4>
-          <p>We process collected data exclusively under legitimate business interests, contractual commitments, and legal obligations:</p>
-          <ul class="mb-4">
-            <li>To initialize, configure, and maintain sovereign tenant environments and user permissions.</li>
-            <li>To provide responsive technical support, incident escalation, and operational communications.</li>
-            <li>To monitor system resilience, prevent fraudulent access, and enforce SOC2/ISO 27001 compliance standards.</li>
-          </ul>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Data Retention & Sovereign Storage</h4>
-          <p class="mb-4">Personal and institutional data is encrypted in transit via TLS 1.3 and at rest via AES-256 standards. Records are retained strictly for the duration of the commercial agreement plus standard statutory compliance periods.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">4. Individual Rights & Inquiries</h4>
-          <p class="mb-4">Depending on applicable jurisdictions (including GDPR and CCPA), individuals hold rights to request access, rectification, portability, or erasure of their personal data. Inquiries may be directed to our Privacy Officer at <code>${this.brandInfo?.companyEmail || 'privacy@organization.com'}</code>.</p>
-        </div>
-      `;
-    }
-
-    if (norm.includes('terms') || norm.includes('condition')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Governance</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Terms & Conditions of Service</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            These Terms & Conditions govern access to and use of digital products, enterprise services, and web portals operated by <strong>${this.brandName}</strong>.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Acceptance of Terms</h4>
-          <p class="mb-4">By accessing our website or subscribing to our services, you confirm that you have read, understood, and agreed to be legally bound by these terms.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. Authorized Use & Account Governance</h4>
-          <p class="mb-4">Users are responsible for maintaining the confidentiality of their credentials and all activities executed under their authorized profiles. Unauthorized access, system reverse-engineering, or automated scraping is strictly prohibited.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Intellectual Property Rights</h4>
-          <p class="mb-4">All trademarks, service designs, proprietary codebases, templates, and multimedia content hosted across this portal remain the exclusive intellectual property of <strong>${this.brandName}</strong> or its licensed ecosystem partners.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">4. Limitation of Liability</h4>
-          <p class="mb-4">To the maximum extent permitted by applicable law, <strong>${this.brandName}</strong> and its affiliates shall not be liable for indirect, incidental, or consequential damages arising from service disruption or data loss.</p>
-        </div>
-      `;
-    }
-
-    if (norm.includes('cookie')) {
-      return `
-        <div class="legal-document">
-          <div class="mb-4 pb-3 border-bottom">
-            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Cookies & Tracking</span>
-            <h2 class="fw-bold text-dark mt-2 mb-1">Cookie & Tracking Technologies Policy</h2>
-            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
-          </div>
-          <p class="lead text-secondary mb-4">
-            This policy outlines how <strong>${this.brandName}</strong> utilizes cookies and analogous tracking technologies to provide seamless, secure website navigation.
-          </p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">1. Essential Operational Cookies</h4>
-          <p class="mb-4">These cookies are strictly required to ensure core portal security, tenant subdomain routing, authentication state management, and shopping cart persistence.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">2. Analytics & Performance Cookies</h4>
-          <p class="mb-4">We aggregate anonymized navigation metrics to understand visitor engagement, optimize page load speed, and improve overall content quality.</p>
-          <h4 class="fw-bold text-dark mt-4 mb-3">3. Managing Your Cookie Preferences</h4>
-          <p class="mb-4">You can modify or disable browser cookies at any time via your browser settings. Note that disabling essential cookies may impact system functionality.</p>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="general-page-content">
-        <p class="lead text-secondary mb-4">Welcome to <strong>${pageTitle || 'Page'}</strong> at <strong>${this.brandName}</strong>.</p>
-        <p class="text-muted">Content for this page is managed directly through the CMS Studio. Please check back shortly for upcoming publications, modules, and announcements.</p>
-      </div>
-    `;
-  }
-
-  /**
    * Assembles the Blog Archive Page:
    * Menu + Breadcrumb Header + Blog Grid + Footer.
    */
   private composeBlogArchive(): void {
-    this.titleService.setTitle(`Blog & Enterprise Insights | ${this.brandName}`);
+    this.titleService.setTitle(`Blog | ${this.brandName}`);
 
     const menuTemplate = this.findActiveTemplate('menu');
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
@@ -869,32 +750,32 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: 'Newsroom & Insights',
-        miniTitle: 'DISPATCHES',
-        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+        title: 'Blog',
+        miniTitle: '',
+        description: '',
+        backgroundImageUrl: '',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: 'Newsroom & Insights', url: '#', isActive: true }
+          { label: 'Blog', url: '#', isActive: true }
         ]
       };
       combinedHtml += `<!-- Breadcrumb Header -->\n` + this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()) + `\n`;
       if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
-    // Render Blog Grid
+    // Render Blog Grid from database
     const blogContext = {
-      title: 'Platform Insights & Case Studies',
-      miniTitle: 'LATEST KNOWLEDGE',
-      description: 'Explore our latest releases and corporate updates directly from our research desks.',
+      title: '',
+      miniTitle: '',
+      description: '',
       articles: this.blogs.map(b => ({
         id: b.id,
-        title: b.title,
-        excerpt: b.description || 'Comprehensive strategic analysis and insights.',
-        category: b.blogCategory?.categoryName || 'Strategy & Advisory',
-        date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        author: 'Executive Advisory Desk',
-        imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+        title: b.title || '',
+        excerpt: b.description || '',
+        category: b.blogCategory?.categoryName || b.categoryName || '',
+        date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+        author: b.author || '',
+        imageUrl: b.imageUrl || '',
         directUrl: `/blog/${b.id}`
       }))
     };
@@ -903,20 +784,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
       combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
       if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
-    }
-
-    // Newsletter Section (matching Demo Preview sequence)
-    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
-                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
-    if (newsletterTemplate) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
-      const newsContext = {
-        title: 'Subscribe to Executive Insights',
-        miniTitle: 'NEWSLETTER',
-        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
-      };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
     }
 
     if (footerTemplate) {
@@ -938,7 +805,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.titleService.setTitle(`${this.currentArticle.title} | ${this.brandName}`);
+    this.titleService.setTitle(`${this.currentArticle.title || 'Blog'} | ${this.brandName}`);
 
     const menuTemplate = this.findActiveTemplate('menu');
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
@@ -957,14 +824,14 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: this.currentArticle.title,
-        miniTitle: this.currentArticle.blogCategory?.categoryName || 'Strategic Advisory',
-        description: `Published on ${new Date(this.currentArticle.date || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
-        backgroundImageUrl: this.currentArticle.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1600&q=80',
+        title: this.currentArticle.title || '',
+        miniTitle: this.currentArticle.blogCategory?.categoryName || this.currentArticle.categoryName || '',
+        description: this.currentArticle.date ? `Published on ${new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '',
+        backgroundImageUrl: this.currentArticle.imageUrl || '',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '/blog', isActive: false },
-          { label: this.currentArticle.title, url: '#', isActive: true }
+          { label: this.currentArticle.title || '', url: '#', isActive: true }
         ]
       };
       combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
@@ -1066,53 +933,339 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Hydrates the active Navbar template with live navigation categories, child links,
    * top menu pages, CTA buttons, and active link highlights.
    */
+  /**
+   * Hydrates the active Navbar template with live navigation categories, child links,
+   * top menu pages, CTA buttons, and active link highlights.
+   */
   private hydrateMenu(rawHtml: string, activeSlug: string): string {
-    // 1. Top menu items (strictly pages configured for main menu, published, not legal, not category child, not CTA, and not home)
+    // Helper to safely parse and normalize MenuPosition values (1 = First, 2 = Middle, 3 = Last, 4 = Top)
+    const normalizeMenuPosition = (val: any): number => {
+      if (val === null || val === undefined) return 1;
+      if (typeof val === 'number') return isNaN(val) ? 1 : val;
+      const str = String(val).toLowerCase().trim();
+      if (str.includes('first') || str === '1' || str === 'left') return 1;
+      if (str.includes('middle') || str === '2' || str === 'center' || str === 'second') return 2;
+      if (str.includes('last') || str === '3' || str === 'right' || str === 'third') return 3;
+      if (str.includes('top') || str === '4') return 4;
+      const num = Number(val);
+      return isNaN(num) ? 1 : num;
+    };
+
+    // 1. Unified PageCategories list supporting both Standalone Pages and Nested Dropdown Categories
+    const unifiedPageCategories: any[] = [];
+
+    // Standalone pages (e.g. About Us, Contact Us)
+    this.publishedPages
+      .filter(p => (p.publish !== false && p.Publish !== false) && p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
+      .forEach(p => {
+        const url = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+        const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+        unifiedPageCategories.push({
+          title: pTitle,
+          Title: pTitle,
+          pageTitle: pTitle,
+          PageTitle: pTitle,
+          name: pTitle,
+          Name: pTitle,
+          url: url,
+          Url: url,
+          pageUrl: url,
+          PageUrl: url,
+          directUrl: url,
+          DirectUrl: url,
+          link: url,
+          Link: url,
+          hasChildren: false,
+          HasChildren: false,
+          isDropdown: false,
+          IsDropdown: false,
+          pages: [],
+          Pages: [],
+          sortOrder: p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0),
+          menuPosition: normalizeMenuPosition(p.menuPosition ?? p.MenuPosition ?? 1),
+          customClass: p.customClass || p.CustomClass || '',
+          CustomClass: p.customClass || p.CustomClass || ''
+        });
+      });
+
+    // Dropdown Categories (e.g. Services -> Real Estate)
+    this.categories
+      .filter(c => c.publish !== false && c.Publish !== false)
+      .forEach(c => {
+        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
+        const rawWebPages = c.webPages || c.WebPages || [];
+        const childPages = (rawWebPages && rawWebPages.length > 0)
+          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false)
+          : this.publishedPages.filter(p => (p.publish !== false && p.Publish !== false) && (p.pageCategoryId === c.id || p.pageCategoryId === c.Id || p.pageCategory?.id === c.id || p.pageCategory?.Id === c.id || p.pageCategory?.title === catTitle || p.pageCategory?.name === catTitle));
+
+        const pagesList = childPages.map((p: any) => {
+          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+          return {
+            title: pTitle,
+            Title: pTitle,
+            pageTitle: pTitle,
+            PageTitle: pTitle,
+            name: pTitle,
+            Name: pTitle,
+            url: pUrl,
+            Url: pUrl,
+            pageUrl: pUrl,
+            PageUrl: pUrl,
+            directUrl: pUrl,
+            DirectUrl: pUrl,
+            link: pUrl,
+            Link: pUrl,
+            customClass: p.customClass || p.CustomClass || '',
+            CustomClass: p.customClass || p.CustomClass || '',
+            pageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
+            PageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
+            pageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
+            PageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
+            sortOrder: p.sortOrder || p.SortOrder || 0
+          };
+        });
+
+        unifiedPageCategories.push({
+          title: catTitle,
+          Title: catTitle,
+          pageTitle: catTitle,
+          PageTitle: catTitle,
+          name: catTitle,
+          Name: catTitle,
+          categoryName: catTitle,
+          CategoryName: catTitle,
+          url: '#',
+          Url: '#',
+          directUrl: '#',
+          DirectUrl: '#',
+          link: '#',
+          Link: '#',
+          hasChildren: pagesList.length > 0,
+          HasChildren: pagesList.length > 0,
+          isDropdown: true,
+          IsDropdown: true,
+          pages: pagesList,
+          Pages: pagesList,
+          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : 0),
+          menuPosition: normalizeMenuPosition(c.menuPosition ?? c.MenuPosition ?? 2),
+          customClass: c.customClass || c.CustomClass || '',
+          CustomClass: c.customClass || c.CustomClass || ''
+        });
+      });
+
+    // Ensure 'Home' is the first navigation item if not already present
+    if (!unifiedPageCategories.some(m => m.url === '/' || m.directUrl === '/')) {
+      unifiedPageCategories.unshift({
+        title: 'Home',
+        Title: 'Home',
+        pageTitle: 'Home',
+        PageTitle: 'Home',
+        name: 'Home',
+        Name: 'Home',
+        url: '/',
+        Url: '/',
+        pageUrl: '/',
+        PageUrl: '/',
+        directUrl: '/',
+        DirectUrl: '/',
+        link: '/',
+        Link: '/',
+        hasChildren: false,
+        HasChildren: false,
+        isDropdown: false,
+        IsDropdown: false,
+        pages: [],
+        Pages: [],
+        sortOrder: -1,
+        menuPosition: 1,
+        customClass: '',
+        CustomClass: ''
+      });
+    }
+
+    // Top menu items (standalone pages)
     const topMenuItems = this.publishedPages
-      .filter(p => p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
+      .filter(p => (p.publish !== false && p.Publish !== false) && p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
       .map(p => ({
-        title: p.title,
-        url: `/${p.directUrl || p.slug}`
+        title: p.title || p.Title || '',
+        Title: p.title || p.Title || '',
+        name: p.title || p.Title || '',
+        Name: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        Url: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        directUrl: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        DirectUrl: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        link: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        Link: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
+        sortOrder: p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0),
+        menuPosition: normalizeMenuPosition(p.menuPosition ?? p.MenuPosition ?? 1),
+        customClass: p.customClass || p.CustomClass || '',
+        CustomClass: p.customClass || p.CustomClass || '',
+        isDropdown: false,
+        IsDropdown: false,
+        hasChildren: false,
+        HasChildren: false,
+        pages: [],
+        Pages: []
       }));
 
-    // Ensure Home, Blog, and Contact exist if not already present
     if (!topMenuItems.some(m => m.url === '/')) {
-      topMenuItems.unshift({ title: 'Home', url: '/' });
+      topMenuItems.unshift({
+        title: 'Home',
+        Title: 'Home',
+        name: 'Home',
+        Name: 'Home',
+        url: '/',
+        Url: '/',
+        directUrl: '/',
+        DirectUrl: '/',
+        link: '/',
+        Link: '/',
+        sortOrder: -1,
+        menuPosition: 1,
+        customClass: '',
+        CustomClass: '',
+        isDropdown: false,
+        IsDropdown: false,
+        hasChildren: false,
+        HasChildren: false,
+        pages: [],
+        Pages: []
+      });
     }
     if (!topMenuItems.some(m => m.url === '/blog') && this.blogs.length > 0) {
-      topMenuItems.push({ title: 'Blog', url: '/blog' });
+      topMenuItems.push({
+        title: 'Blog',
+        Title: 'Blog',
+        name: 'Blog',
+        Name: 'Blog',
+        url: '/blog',
+        Url: '/blog',
+        directUrl: '/blog',
+        DirectUrl: '/blog',
+        link: '/blog',
+        Link: '/blog',
+        sortOrder: 99,
+        menuPosition: 3,
+        customClass: '',
+        CustomClass: '',
+        isDropdown: false,
+        IsDropdown: false,
+        hasChildren: false,
+        HasChildren: false,
+        pages: [],
+        Pages: []
+      });
     }
 
-    // 2. Navigation Dropdowns (PageCategories with their published child WebPages)
+    // Dropdowns
     const dropdowns = this.categories
-      .filter(c => c.publish)
+      .filter(c => c.publish !== false && c.Publish !== false)
       .map(c => {
-        const catTitle = c.title || c.categoryName || c.name || 'Menu';
-        const childPages = (c.webPages && c.webPages.length > 0)
-          ? c.webPages.filter((p: any) => p.publish)
-          : this.publishedPages.filter(p => p.publish && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
+        const rawWebPages = c.webPages || c.WebPages || [];
+        const childPages = (rawWebPages && rawWebPages.length > 0)
+          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false)
+          : this.publishedPages.filter(p => (p.publish !== false && p.Publish !== false) && (p.pageCategoryId === c.id || p.pageCategoryId === c.Id || p.pageCategory?.id === c.id || p.pageCategory?.Id === c.id || p.pageCategory?.title === catTitle || p.pageCategory?.name === catTitle));
+
+        const pagesList = childPages.map((p: any) => {
+          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+          return {
+            title: pTitle,
+            Title: pTitle,
+            pageTitle: pTitle,
+            PageTitle: pTitle,
+            name: pTitle,
+            Name: pTitle,
+            url: pUrl,
+            Url: pUrl,
+            pageUrl: pUrl,
+            PageUrl: pUrl,
+            directUrl: pUrl,
+            DirectUrl: pUrl,
+            link: pUrl,
+            Link: pUrl,
+            customClass: p.customClass || p.CustomClass || '',
+            CustomClass: p.customClass || p.CustomClass || '',
+            pageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
+            PageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
+            pageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
+            PageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
+            sortOrder: p.sortOrder || p.SortOrder || 0
+          };
+        });
 
         return {
           title: catTitle,
+          Title: catTitle,
+          name: catTitle,
+          Name: catTitle,
           categoryName: catTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title,
-            url: `/${p.directUrl || p.slug}`
-          }))
+          CategoryName: catTitle,
+          url: '#',
+          Url: '#',
+          directUrl: '#',
+          DirectUrl: '#',
+          link: '#',
+          Link: '#',
+          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : 0),
+          menuPosition: normalizeMenuPosition(c.menuPosition ?? c.MenuPosition ?? 2),
+          customClass: c.customClass || c.CustomClass || '',
+          CustomClass: c.customClass || c.CustomClass || '',
+          isDropdown: true,
+          IsDropdown: true,
+          hasChildren: pagesList.length > 0,
+          HasChildren: pagesList.length > 0,
+          pages: pagesList,
+          Pages: pagesList
         };
       });
 
+    // Combined Unified NavItems (Direct Pages + Dropdowns, deduplicated)
+    const categoryTitles = new Set(dropdowns.map(d => (d.title || d.Title || '').toLowerCase().trim()));
+    const filteredTopMenuItems = topMenuItems.filter(t => !categoryTitles.has((t.title || t.Title || '').toLowerCase().trim()));
+    const allNavItems: any[] = [...filteredTopMenuItems, ...dropdowns];
+    
+    // Bucket into Multi-Zone Groups with combined SortOrder sorting
+    const navItemsFirst = allNavItems
+      .filter(item => normalizeMenuPosition(item.menuPosition) === 1)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    const navItemsMiddle = allNavItems
+      .filter(item => normalizeMenuPosition(item.menuPosition) === 2)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    const navItemsLast = allNavItems
+      .filter(item => normalizeMenuPosition(item.menuPosition) === 3)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    const navItems = [...allNavItems].sort((a, b) => {
+      const posA = normalizeMenuPosition(a.menuPosition);
+      const posB = normalizeMenuPosition(b.menuPosition);
+      if (posA !== posB) return posA - posB;
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+
+    // TopBar Utility Pages (MenuPosition.Top == 4 or showInMenuTopBar == true)
+    const topBarPages = this.publishedPages
+      .filter(p => p.publish && (normalizeMenuPosition(p.menuPosition) === 4 || p.showInMenuTopBar === true))
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(p => ({
+        title: p.title,
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
+        customClass: p.customClass || ''
+      }));
+
     // 3. CTA Buttons (pages with isMenuCTA = true)
-    const menuCtaButtons: Array<{ title: string; url: string; isLoginBtn?: boolean }> = this.publishedPages
+    const menuCtaButtons: Array<{ title: string; url: string; customClass?: string }> = this.publishedPages
       .filter(p => p.isMenuCTA)
       .map(p => ({
         title: p.title,
-        url: `/${p.directUrl || p.slug}`
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
+        customClass: p.customClass || ''
       }));
-
-    if (menuCtaButtons.length === 0) {
-      menuCtaButtons.push({ title: 'Request a Service', url: '/request-service' });
-    }
 
     // Dynamic Live Sign-In Button in Navigation Menu
     const isLoginActive = this.brandInfo?.activateLogin !== false;
@@ -1121,10 +1274,6 @@ export class LandingComponent implements OnInit, OnDestroy {
     const isAdmin = authed && this.isUserAdmin();
     const isMember = authed && !isAdmin;
 
-    // Determine login label, URL, and icon based on auth & role
-    // Admin / SuperAdmin / Privileged -> Console (/dashboard/console)
-    // Normal User / Member -> My Workspace (/dashboard/workspace)
-    // Guest / Not logged in -> Custom label or "Sign In" (/auth/login)
     const loginText = !authed 
       ? (this.brandInfo?.loginButtonText || 'Sign In') 
       : (isAdmin ? 'Console' : 'My Workspace');
@@ -1139,26 +1288,86 @@ export class LandingComponent implements OnInit, OnDestroy {
       ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
       : '';
 
-    if (isLoginActive && isLoginInMenu) {
-      menuCtaButtons.push({
-        title: loginText,
-        url: loginUrl,
-        isLoginBtn: true
-      });
-    }
+    const hasBrandLogo = Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0);
+    const hasContactInfo = Boolean(this.brandInfo?.phone || this.brandInfo?.email || this.brandInfo?.address);
 
     const menuContext = {
+      PageCategories: unifiedPageCategories,
+      pageCategories: unifiedPageCategories,
+      NavigationMenu: unifiedPageCategories,
+      navigationMenu: unifiedPageCategories,
+      categories: unifiedPageCategories,
       topMenuItems,
       dropdowns,
       menuCtaButtons,
+      navItems,
+      navItemsFirst,
+      navItemsMiddle,
+      navItemsLast,
+      topBarPages,
+      mainMenuItemsTop: topBarPages,
       cartCount: this.cartService.getItemCount(),
       BrandName: this.brandName,
+      brandName: this.brandName,
+      CompanyName: this.brandName,
+      companyName: this.brandName,
+      'Brand.Name': this.brandName,
       LogoUrl: this.brandLogoUrl,
+      logoUrl: this.brandLogoUrl,
+      BrandLogo: this.brandLogoUrl,
+      brandLogo: this.brandLogoUrl,
+      CompanyLogo: this.brandLogoUrl,
+      companyLogo: this.brandLogoUrl,
+      WhiteLogoUrl: this.brandLogoUrl,
+      whiteLogoUrl: this.brandLogoUrl,
+      'Brand.LogoUrl': this.brandLogoUrl,
+      'Brand.WhiteLogoUrl': this.brandLogoUrl,
+      'Brand.WebsiteUrl': '/',
+      'Brand.LoginButtonText': loginText,
+      HasBrandLogo: hasBrandLogo,
+      hasBrandLogo: hasBrandLogo,
+      HomeUrl: '/',
+      homeUrl: '/',
+      WebsiteUrl: '/',
+      websiteUrl: '/',
+      // Multi-zone conditional flags for defensive DOM rendering
+      HasNavItemsFirst: navItemsFirst.length > 0,
+      hasNavItemsFirst: navItemsFirst.length > 0,
+      NavItemsFirst: navItemsFirst.length > 0,
+      HasNavItemsMiddle: navItemsMiddle.length > 0,
+      hasNavItemsMiddle: navItemsMiddle.length > 0,
+      NavItemsMiddle: navItemsMiddle.length > 0,
+      HasNavItemsLast: navItemsLast.length > 0,
+      hasNavItemsLast: navItemsLast.length > 0,
+      NavItemsLast: navItemsLast.length > 0,
+      HasNavItems: navItems.length > 0,
+      hasNavItems: navItems.length > 0,
+      HasTopBar: topBarPages.length > 0 || hasContactInfo,
+      hasTopBar: topBarPages.length > 0 || hasContactInfo,
+      HasTopBarPages: topBarPages.length > 0,
+      hasTopBarPages: topBarPages.length > 0,
+      HasMenuCtaButtons: menuCtaButtons.length > 0,
+      hasMenuCtaButtons: menuCtaButtons.length > 0,
+      HasContactInfo: hasContactInfo,
+      hasContactInfo: hasContactInfo,
+      HasPhone: Boolean(this.brandInfo?.phone),
+      hasPhone: Boolean(this.brandInfo?.phone),
+      HasEmail: Boolean(this.brandInfo?.email),
+      hasEmail: Boolean(this.brandInfo?.email),
+      HasAddress: Boolean(this.brandInfo?.address),
+      hasAddress: Boolean(this.brandInfo?.address),
+      email: this.brandInfo?.email || '',
+      Email: this.brandInfo?.email || '',
+      phone: this.brandInfo?.phone || '',
+      Phone: this.brandInfo?.phone || '',
+      address: this.brandInfo?.address || '',
+      Address: this.brandInfo?.address || '',
       // Authentication & Role Tokens for Menu templates
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      ShowLogin: isLoginActive && isLoginInMenu,
       LoginText: loginText,
       LoginTitle: loginText,
       LoginUrl: loginUrl,
@@ -1172,7 +1381,6 @@ export class LandingComponent implements OnInit, OnDestroy {
     // Highlight active link matching activeSlug
     if (activeSlug) {
       const activeNormalized = activeSlug === 'home' ? '/' : `/${activeSlug}`;
-      // Highlight exact match href
       const regex = new RegExp(`(<a\\s+[^>]*href=["']${activeNormalized}["'][^>]*class=["'][^"']*)(["'])`, 'gi');
       html = html.replace(regex, '$1 active fw-bold$2');
     }
@@ -1286,10 +1494,10 @@ export class LandingComponent implements OnInit, OnDestroy {
       BrandName: this.brandName,
       LogoUrl: this.brandLogoUrl,
       Year: new Date().getFullYear().toString(),
-      Description: this.brandInfo?.companyDescription || 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
-      Email: this.brandInfo?.companyEmail || 'contact@organization.com',
-      Phone: this.brandInfo?.companyPhone || '+1 (555) 019-2834',
-      Address: this.brandInfo?.companyAddress || 'Corporate Headquarters',
+      Description: this.brandInfo?.companyDescription || '',
+      Email: this.brandInfo?.companyEmail || this.brandInfo?.email || '',
+      Phone: this.brandInfo?.companyPhone || this.brandInfo?.phone || '',
+      Address: this.brandInfo?.companyAddress || this.brandInfo?.address || '',
       Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
       categories: footerCategories,
       legalPages: legalPages,
@@ -1311,46 +1519,53 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Builds Hero hydration data from active DB section or sliders or defaults.
+   * Builds Hero hydration data from active DB section or sliders.
    */
   private buildHeroContext(dbHeroSection?: any): any {
     if (dbHeroSection) {
       return {
-        title: dbHeroSection.title || 'Driving Next-Generation Enterprise Growth',
-        miniTitle: dbHeroSection.miniTitle || 'Strategic Modernization',
-        description: dbHeroSection.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
-        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-        buttonText: dbHeroSection.buttonText || 'Explore Services',
-        buttonLink: dbHeroSection.buttonLink || '/services',
-        secondaryButtonText: 'Schedule Consultation',
-        secondaryButtonLink: '/contact-us'
+        title: dbHeroSection.title || '',
+        Title: dbHeroSection.title || '',
+        miniTitle: dbHeroSection.miniTitle || '',
+        MiniTitle: dbHeroSection.miniTitle || '',
+        description: dbHeroSection.description || '',
+        Description: dbHeroSection.description || '',
+        imageUrl: dbHeroSection.imageUrl || '',
+        ImageUrl: dbHeroSection.imageUrl || '',
+        buttonText: dbHeroSection.buttonText || '',
+        ButtonText: dbHeroSection.buttonText || '',
+        buttonLink: dbHeroSection.buttonLink || '',
+        ButtonLink: dbHeroSection.buttonLink || '',
+        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '',
+        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || ''
       };
     }
 
     if (this.sliders && this.sliders.length > 0) {
       const activeSlider = this.sliders[0];
       return {
-        title: activeSlider.title || 'Driving Next-Generation Enterprise Growth',
-        miniTitle: activeSlider.miniTitle || 'Strategic Modernization',
-        description: activeSlider.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
-        imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-        buttonText: activeSlider.buttonText || 'Explore Services',
-        buttonLink: activeSlider.buttonLink || '/services',
-        secondaryButtonText: activeSlider.secondaryButtonText || 'Schedule Consultation',
-        secondaryButtonLink: activeSlider.secondaryButtonLink || '/contact-us'
+        title: activeSlider.title || '',
+        Title: activeSlider.title || '',
+        miniTitle: activeSlider.miniTitle || '',
+        MiniTitle: activeSlider.miniTitle || '',
+        description: activeSlider.description || '',
+        Description: activeSlider.description || '',
+        imageUrl: activeSlider.imageUrl || '',
+        ImageUrl: activeSlider.imageUrl || '',
+        buttonText: activeSlider.buttonText || '',
+        ButtonText: activeSlider.buttonText || '',
+        buttonLink: activeSlider.buttonLink || '',
+        ButtonLink: activeSlider.buttonLink || '',
+        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
+        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
+        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '',
+        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || ''
       };
     }
 
-    return {
-      title: 'Pioneering Scalable Enterprise Infrastructure & Solutions',
-      miniTitle: 'Next-Generation Technology & Consulting',
-      description: 'We orchestrate robust operational frameworks, modern digital architecture, and resilient systems for global industry leaders.',
-      imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
-      buttonText: 'Explore Services',
-      buttonLink: '/services',
-      secondaryButtonText: 'Schedule Consultation',
-      secondaryButtonLink: '/contact-us'
-    };
+    return {};
   }
 
   /**
@@ -1359,23 +1574,27 @@ export class LandingComponent implements OnInit, OnDestroy {
   private buildSectionContext(sec: any): any {
     const listItems = (sec.pageSectionLists || []).map((item: any, idx: number) => ({
       id: item.id,
-      title: item.title || `Capability ${idx + 1}`,
-      Title: item.title || `Capability ${idx + 1}`,
+      title: item.title || '',
+      Title: item.title || '',
       miniTitle: item.miniTitle || '',
       MiniTitle: item.miniTitle || '',
       description: item.description || '',
       Description: item.description || '',
       moreDescription: item.moreDescription || '',
       MoreDescription: item.moreDescription || '',
-      iconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-      IconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
-      icon: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      iconText: item.iconText || item.icon || '',
+      IconText: item.iconText || item.icon || '',
+      icon: item.iconText || item.icon || '',
       imageUrl: item.imageUrl || '',
       ImageUrl: item.imageUrl || '',
+      secondImageUrl: item.secondImageUrl || '',
+      SecondImageUrl: item.secondImageUrl || '',
       buttonText: item.buttonText || '',
       ButtonText: item.buttonText || '',
-      buttonLink: item.buttonLink || '#',
-      ButtonLink: item.buttonLink || '#',
+      buttonLink: item.buttonLink || '',
+      ButtonLink: item.buttonLink || '',
+      directUrl: item.directUrl || '',
+      DirectUrl: item.directUrl || '',
       sortOrder: item.sortOrder || idx + 1
     }));
 
@@ -1384,21 +1603,44 @@ export class LandingComponent implements OnInit, OnDestroy {
       Title: sec.title || '',
       miniTitle: sec.miniTitle || '',
       MiniTitle: sec.miniTitle || '',
+      qoute: sec.qoute || sec.quote || '',
+      Qoute: sec.qoute || sec.quote || '',
+      quote: sec.quote || sec.qoute || '',
+      Quote: sec.quote || sec.qoute || '',
       description: sec.description || '',
       Description: sec.description || '',
-      moreDescription: sec.moreDescription || '',
-      MoreDescription: sec.moreDescription || '',
-      imageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
-      ImageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
-      buttonText: sec.buttonText || 'Explore Details',
-      ButtonText: sec.buttonText || 'Explore Details',
+      fullDescription: sec.fullDescription || sec.description || '',
+      FullDescription: sec.fullDescription || sec.description || '',
+      imageUrl: sec.imageUrl || '',
+      ImageUrl: sec.imageUrl || '',
+      secondImageUrl: sec.secondImageUrl || '',
+      SecondImageUrl: sec.secondImageUrl || '',
+      videoUrl: sec.videoUrl || '',
+      VideoUrl: sec.videoUrl || '',
+      youtubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',
+      YoutubeUrlLink: sec.youtubeUrlLink || sec.videoUrl || '',
+      iconText: sec.iconText || '',
+      IconText: sec.iconText || '',
+      buttonText: sec.buttonText || '',
+      ButtonText: sec.buttonText || '',
       buttonLink: sec.buttonLink || '#',
       ButtonLink: sec.buttonLink || '#',
-      secondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
-      SecondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
-      secondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
-      SecondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
-      videoUrl: sec.videoUrl || '',
+      secondButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      SecondButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      secondaryButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      SecondaryButtonText: sec.secondButtonText || sec.secondaryButtonText || '',
+      secondButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      SecondButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      secondaryButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      SecondaryButtonLink: sec.secondButtonLink || sec.secondaryButtonLink || '',
+      directUrl: sec.directUrl || '',
+      DirectUrl: sec.directUrl || '',
+      customClass: sec.customClass || '',
+      CustomClass: sec.customClass || '',
+      backgroundColor: sec.backgroundColor || '',
+      BackgroundColor: sec.backgroundColor || '',
+      formKey: sec.formKey || (sec.pageForm ? sec.pageForm.formKey : ''),
+      FormKey: sec.formKey || (sec.pageForm ? sec.pageForm.formKey : ''),
       pageSectionLists: listItems,
       PageSectionLists: listItems,
       items: listItems
@@ -1475,48 +1717,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
     const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
 
-    // Base framework CSS (Bootstrap 5.3.3, FontAwesome 6, Inter Font) ensuring 100% parity with Demo Preview
-    const baseFrameworkStyles = `
-      @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
-      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-      body.public-website-mode {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        background: #ffffff;
-      }
-      body.public-website-mode a {
-        text-decoration: none;
-        cursor: pointer;
-      }
-      body.public-website-mode button {
-        cursor: pointer;
-      }
-      .dropdown {
-        position: relative !important;
-      }
-      .dropdown-menu {
-        display: none;
-      }
-      .dropdown:hover .dropdown-menu {
-        display: block;
-      }
-      /* Active Navigation Link Highlighting */
-      .oz-nav-header .nav-link.active {
-        color: #0050e5 !important;
-        font-weight: 700 !important;
-      }
-      .oz-nav-header .nav-link:not(.active) {
-        color: #64748b !important;
-        font-weight: 500 !important;
-      }
-      .oz-nav-header .btn.active {
-        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.4) !important;
-        transform: translateY(-1px);
-      }
-    `;
-
-    styleTag.textContent = `${baseFrameworkStyles}\n${cleanStyles}`;
+    styleTag.textContent = cleanStyles;
 
     // 2. Set Safe HTML for main page layout
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
@@ -1526,19 +1727,16 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Injects code tags into all 3 document zones according to CMS architecture:
+   * Injects code tags strictly from the database according to CMS architecture:
    * - Zone 1: <head> -> external CSS stylesheets, meta tags, Google Fonts, OpenGraph, JSON-LD, Favicons
    * - Zone 2: <body> -> immediately after opening body tag
-   * - Zone 3: </body> -> immediately before closing body tag (Bootstrap JS bundle, section scripts)
+   * - Zone 3: </body> -> immediately before closing body tag (vendor JavaScript, section scripts)
    */
   private injectCodeTags(combinedJs?: string): void {
     // Clean up previously injected dynamic tags
     document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
 
-    // 1. Guaranteed Baseline Head Assets (Bootstrap 5.3 CSS, FA 6, Google Fonts)
-    this.ensureBaselineHeadTags();
-
-    // 2. Inject CMS Header Tags (<head>)
+    // 1. Inject CMS Header Tags (<head>) strictly from DB in sort order
     if (this.codeInjections.head && this.codeInjections.head.length > 0) {
       for (const tag of this.codeInjections.head) {
         if (!tag.content) continue;
@@ -1546,7 +1744,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 3. Inject CMS Body Open Tags (immediately after <body>)
+    // 2. Inject CMS Body Open Tags (immediately after <body>) strictly from DB
     if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
       for (const tag of this.codeInjections.bodyOpen) {
         if (!tag.content) continue;
@@ -1554,7 +1752,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 4. Inject CMS Footer Scripts (right before </body>)
+    // 3. Inject CMS Footer Scripts (right before </body>) strictly from DB in sort order
     if (this.codeInjections.footer && this.codeInjections.footer.length > 0) {
       for (const tag of this.codeInjections.footer) {
         if (!tag.content) continue;
@@ -1562,43 +1760,19 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 5. Guaranteed Baseline Footer Scripts (Bootstrap 5.3 JS Bundle)
-    this.ensureBootstrapJsScript();
-
-    // 6. Section JavaScript Execution
+    // 4. Section JavaScript Execution
     if (combinedJs && combinedJs.trim()) {
       const script = document.createElement('script');
       script.className = 'ozikol-injected-tag ozikol-section-scripts';
-      // Defensively strip any accidental <script> or </script> tags to ensure valid pure JS execution
       const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
-      script.textContent = cleanJs;
+      script.textContent = `
+        try {
+          ${cleanJs}
+        } catch (e) {
+          console.error('[Ozikol Theme Script Error]:', e);
+        }
+      `;
       document.body.appendChild(script);
-    }
-  }
-
-  private ensureBaselineHeadTags(): void {
-    if (!document.querySelector('link[href*="bootstrap"]')) {
-      const bsCss = document.createElement('link');
-      bsCss.rel = 'stylesheet';
-      bsCss.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
-      bsCss.className = 'ozikol-injected-tag';
-      document.head.appendChild(bsCss);
-    }
-    if (!document.querySelector('link[href*="font-awesome"]')) {
-      const faCss = document.createElement('link');
-      faCss.rel = 'stylesheet';
-      faCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
-      faCss.className = 'ozikol-injected-tag';
-      document.head.appendChild(faCss);
-    }
-  }
-
-  private ensureBootstrapJsScript(): void {
-    if (!document.querySelector('script[src*="bootstrap"]')) {
-      const bsJs = document.createElement('script');
-      bsJs.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
-      bsJs.className = 'ozikol-injected-tag';
-      document.body.appendChild(bsJs);
     }
   }
 
@@ -1691,7 +1865,20 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 3. Dropdown Items & Internal Navigation Links
     const anchor = target.closest('a') as HTMLAnchorElement;
     if (anchor && !anchor.classList.contains('dropdown-toggle')) {
+      // Check if this anchor is a toggle button or modal/drawer trigger
+      const isThemeToggle = anchor.getAttribute('data-bs-toggle') !== null ||
+                            anchor.getAttribute('data-toggle') !== null ||
+                            anchor.hasAttribute('data-bs-target') ||
+                            anchor.hasAttribute('data-target') ||
+                            anchor.classList.contains('toggle-btn') ||
+                            anchor.classList.contains('menu-toggle');
+
       const href = (anchor.getAttribute('href') || '').trim();
+
+      if (isThemeToggle || href === '#' || href === '' || href.startsWith('javascript:')) {
+        // Allow theme's JS handler to manage offcanvas / modal / drawer toggling without Angular router hijacking
+        return;
+      }
 
       if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('javascript:')) {
         if (href.startsWith('#')) {

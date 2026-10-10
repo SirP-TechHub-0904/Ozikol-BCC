@@ -234,12 +234,12 @@ Your sole job is to filter the provided RAW CSS and RAW JAVASCRIPT to retain ONL
 CRITICAL NON-NEGOTIABLE COMPLIANCE RULES:
 1. DO NOT INVENT ANY CODE: Do not write new CSS classes, do not change hex colors, do not add synthetic styling properties, and do not invent new javascript functions. You are strictly a tree-shaking filter and scoper.
 2. STRICT TREE-SHAKING: Discard 100% of the CSS rules that belong to unrelated components (e.g., hero sliders, blog cards, pricing tables, testimonials, footers, charts) that are NOT present in this HTML markup.
-3. STRICT CSS SCOPING: Every preserved CSS rule MUST be prefixed with the container selector `.{containerClass}` (e.g. `.{containerClass} .nav-link` or `.{containerClass}.at-header-area`). Never output unscoped global rules.
+3. AUTHENTIC CSS EXTRACTION: Retain the author's custom CSS rules matching elements and classes present in this section directly as written in the source stylesheet. Never invent synthetic wrapper classes.
 4. JAVASCRIPT EXTRACTION: Extract only the exact event listeners or initialization logic from the provided Raw JS that targets selectors found in this section (e.g., mobile hamburger toggle, dropdown toggle, search bar). If no JS is needed, return empty string for js_script.
 5. PRESERVE ORIGINAL VALUES: Keep the exact original transitions, hover states, z-indexes, breakpoints, and colors from the source stylesheet.
 6. OUTPUT FORMAT: Return ONLY a valid, raw JSON object (without markdown code fences or backticks) matching this exact JSON schema:
 {{
-  ""scoped_css"": "".{containerClass} ... {{ ... }}"",
+  ""scoped_css"": "".header-area {{ ... }} .nav-link {{ ... }}"",
   ""js_script"": ""/* filtered interactive script */"",
   ""explanation"": ""Filtered from {origLines} lines down to exact matching rules, discarding unrelated component styles.""
 }}";
@@ -260,7 +260,7 @@ RAW JAVASCRIPT CANDIDATES:
 
 Return the filtered JSON object.";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
             var payload = new
             {
                 system_instruction = new
@@ -531,12 +531,12 @@ PILLAR 1: HTML CLEANUP & MUSTACHE TOKENS
   Repeater lists: {{{{#each SectionLists}}}}...{{{{/each}}}} with {{{{Title}}}}, {{{{Description}}}}, {{{{IconText}}}}, {{{{ActionUrl}}}}, {{{{ImageUrl}}}}
   Organization info: {{{{Organization.Name}}}}, {{{{Organization.Phone}}}}, {{{{Organization.Email}}}}
 
-PILLAR 2: CSS PRECISION TREE-SHAKING & SCOPING (STRICT: ZERO INVENTED CODE)
+PILLAR 2: CSS PRECISION TREE-SHAKING (STRICT: ZERO INVENTED CODE)
 - The section's HTML contains ONLY these exact CSS classes:
   [{classListString}]
 - Scan the RAW CSS stylesheet. Retain ONLY rules whose selectors match one or more of the above classes or standard container tags.
 - Discard 100% of unrelated CSS rules (blog cards, pricing grids, testimonials, footers, charts).
-- Prefix every retained CSS rule with `.{containerClass}` (e.g. `.{containerClass} .nav-link` or `.{containerClass}.at-header-area`).
+- Keep authentic author selectors intact without injecting artificial container prefixes or wrappers.
 - DO NOT INVENT new CSS classes, do NOT change hex colors, and do NOT alter property values.
 
 PILLAR 3: JAVASCRIPT EXTRACTION (EXACT COMPONENT LOGIC)
@@ -549,7 +549,7 @@ PILLAR 4: MOCK CONTENT JSON SYNTHESIS
 OUTPUT FORMAT: Return ONLY a valid, raw JSON object (without markdown code fences or backticks) matching this schema:
 {{
   ""html_template"": ""<section class='...'>...</section>"",
-  ""scoped_css"": "".{containerClass} ... {{ ... }}"",
+  ""scoped_css"": "".author-class {{ ... }}"",
   ""js_script"": ""/* filtered interactive script */"",
   ""sample_content_json"": ""{{\""Title\"": \""Demo Title\"", ...}}"",
   ""placeholders"": [""Title"", ""Description"", ""ActionUrl"", ""SectionLists""],
@@ -614,7 +614,7 @@ Return the complete cleaned JSON object.";
             {
                 try
                 {
-                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
                     var payload = new
                     {
                         system_instruction = new
@@ -765,7 +765,7 @@ USER INSTRUCTION:
 
 Return the updated JSON object.";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
             var payload = new
             {
                 system_instruction = new
@@ -1001,7 +1001,7 @@ RULES FOR MODULAR DECOMPOSITION:
 - Brand Name: {brandName}
 - Hosted Source Image URL: {hostedImageUrl ?? "uploaded_screenshot.png"}";
 
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key.ApiKey}";
+            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key.ApiKey}";
             var payload = new
             {
                 system_instruction = new

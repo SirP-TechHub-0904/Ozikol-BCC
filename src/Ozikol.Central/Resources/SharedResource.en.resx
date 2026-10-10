@@ -5074,4 +5074,85 @@
   <data name="Support_Tab_Vouchers" xml:space="preserve">
     <value>Promotional Voucher</value>
   </data>
+
+  <!-- 5 Canonical New Features Localization -->
+  <data name="Feat_CalendarFollowups_Title" xml:space="preserve">
+    <value>Calendar &amp; Follow-Up Routine</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Desc" xml:space="preserve">
+    <value>Two-way Google and Outlook calendar synchronization with automated appointment check-ins and member follow-up cadences.</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt1" xml:space="preserve">
+    <value>2-way Google, Microsoft Outlook &amp; Apple iCal sync</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt2" xml:space="preserve">
+    <value>Automated post-meeting follow-up email &amp; SMS cadences</value>
+  </data>
+  <data name="Feat_CalendarFollowups_Pt3" xml:space="preserve">
+    <value>Universal schedule conflict detection &amp; timeline view</value>
+  </data>
+
+  <data name="Feat_ReferenceForms_Title" xml:space="preserve">
+    <value>Reference Form &amp; Referee Verification</value>
+  </data>
+  <data name="Feat_ReferenceForms_Desc" xml:space="preserve">
+    <value>Design custom confidential referee evaluation questionnaires, dispatch secure one-time magic links, and generate vetted candidate dossiers.</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt1" xml:space="preserve">
+    <value>Confidential rating rubrics &amp; custom vetting questionnaires</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt2" xml:space="preserve">
+    <value>Direct single-use magic links sent to referee inboxes</value>
+  </data>
+  <data name="Feat_ReferenceForms_Pt3" xml:space="preserve">
+    <value>Automated referee reminders &amp; compiled executive PDF dossiers</value>
+  </data>
+
+  <data name="Feat_EmbeddedBanking_Title" xml:space="preserve">
+    <value>Embedded Banking &amp; Payout Rails</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Desc" xml:space="preserve">
+    <value>Dedicated virtual account numbers, interbank direct transfers, vendor bulk payouts, automated escrow, and multi-currency digital ledgers.</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt1" xml:space="preserve">
+    <value>Dedicated virtual bank account numbers for organizations &amp; members</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt2" xml:space="preserve">
+    <value>Direct interbank transfers &amp; batch vendor/staff payouts</value>
+  </data>
+  <data name="Feat_EmbeddedBanking_Pt3" xml:space="preserve">
+    <value>Real-time transaction webhooks, escrow holding &amp; multi-currency ledger</value>
+  </data>
+
+  <data name="Feat_GoCallAi_Title" xml:space="preserve">
+    <value>GoCall AI Emergency &amp; Voice Dispatch</value>
+  </data>
+  <data name="Feat_GoCallAi_Desc" xml:space="preserve">
+    <value>Autonomous conversational AI voice and SMS calling engine with verified institutional contact pool for emergency, hospital, and service dispatch.</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt1" xml:space="preserve">
+    <value>Vetted institutional &amp; emergency facility directory pool</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt2" xml:space="preserve">
+    <value>Context-aware emergency routing &amp; autonomous phone calls</value>
+  </data>
+  <data name="Feat_GoCallAi_Pt3" xml:space="preserve">
+    <value>Natural conversational voice, real-time transcripts &amp; audio audit logs</value>
+  </data>
+
+  <data name="Feat_KycVerification_Title" xml:space="preserve">
+    <value>Official KYC &amp; Identity Verification</value>
+  </data>
+  <data name="Feat_KycVerification_Desc" xml:space="preserve">
+    <value>Official government ID OCR scanning, biometric facial liveness checks, anti-money laundering (AML) screening, and secure compliance vault.</value>
+  </data>
+  <data name="Feat_KycVerification_Pt1" xml:space="preserve">
+    <value>Government ID, passport &amp; driver's license OCR extraction</value>
+  </data>
+  <data name="Feat_KycVerification_Pt2" xml:space="preserve">
+    <value>Facial biometric matching &amp; anti-spoofing liveness check</value>
+  </data>
+  <data name="Feat_KycVerification_Pt3" xml:space="preserve">
+    <value>Tiered KYC compliance badges &amp; encrypted AML audit archive</value>
+  </data>
 </root>

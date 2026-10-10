@@ -37,7 +37,7 @@ namespace Ozikol_BCC.Application.Services
             string email,
             string callbackUrl)
         {
-            var settings = await _context.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
 
             // Provider availability is controlled from BCP Settings so billing can be enabled per tenant.
             // Missing credentials are treated as a configuration failure, not a thrown exception.
@@ -118,7 +118,7 @@ namespace Ozikol_BCC.Application.Services
         // ──────────────────────────────────────────────────────────────
         public async Task<bool> VerifyPaymentAsync(string transactionReference)
         {
-            var settings = await _context.BcpSettings.FirstOrDefaultAsync();
+            var settings = await _context.MisConfigurationSettings.FirstOrDefaultAsync();
 
             // Verification is intentionally boolean here; callers decide how to update invoices/orders.
             // This method is safe as a callback fallback, but webhooks should still use signature validation.

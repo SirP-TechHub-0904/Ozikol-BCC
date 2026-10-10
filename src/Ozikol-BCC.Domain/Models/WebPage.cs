@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Domain.Models
 {
@@ -47,7 +48,14 @@ namespace Ozikol_BCC.Domain.Models
         public bool EnableDirectUrl { get; set; } = false;
 
         /// <summary>
-        /// Sorting order for the page within the navigation menu and lists.
+        /// Explicit positioning of this page within the navigation layout (First/Left, Middle/Center, Last/Right, or Top Utility Bar).
+        /// Navigation items are grouped first by MenuPosition, then sorted by SortOrder within that group.
+        /// </summary>
+        [Display(Name = "Menu Zone Position")]
+        public MenuPosition MenuPosition { get; set; } = MenuPosition.First;
+
+        /// <summary>
+        /// Sorting order for the page within its menu position zone and lists.
         /// </summary>
         [Display(Name = "Menu Sort Order")]
         public int SortOrder { get; set; } = 0;
@@ -153,6 +161,14 @@ namespace Ozikol_BCC.Domain.Models
         [MaxLength(500)]
         [Display(Name = "Tags")]
         public string? Tags { get; set; }
+
+        /// <summary>
+        /// Optional custom CSS class string applied to this page's menu links, dropdown items, and navigation buttons (e.g. "nav-highlight", "text-gradient", "badge-pill").
+        /// Injected into templates via {{ CustomClass }}.
+        /// </summary>
+        [MaxLength(200)]
+        [Display(Name = "Custom CSS Class")]
+        public string? CustomClass { get; set; }
 
         /// <summary>
         /// Used for sub-page hierarchy; linking this page as a child of a main page.

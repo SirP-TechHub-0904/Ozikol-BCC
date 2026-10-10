@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Ozikol_BCC.Application.Interfaces.Services;
-using Ozikol_BCC.Domain.Models.Settings;
+using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.PaymentServices.Services
@@ -24,7 +24,7 @@ namespace Ozikol_BCC.PaymentServices.Services
 
         private async Task<string> GetSecretKeyAsync(CancellationToken cancellationToken)
         {
-            var paymentSetting = await _dbContext.Set<BcpTenantPaymentSetting>().FirstOrDefaultAsync(cancellationToken);
+            var paymentSetting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync(cancellationToken);
             return paymentSetting?.PaystackSecretKey ?? _configuration["Paystack:SecretKey"] ?? string.Empty;
         }
 

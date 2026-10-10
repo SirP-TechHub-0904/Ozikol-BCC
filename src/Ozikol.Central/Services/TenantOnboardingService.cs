@@ -743,32 +743,34 @@ public class TenantOnboardingService : ITenantOnboardingService
             var sectorDefaults = GetSectorDefaults(request.Sector, request.OrganizationName);
             var abbreviation = ComputeAbbreviation(request.OrganizationName);
 
-            // 3. Seed ConfigSettings
-            if (!await dbContext.ConfigSettings.AnyAsync(cancellationToken))
+            // 3. Seed MisWebsiteSettings
+            if (!await dbContext.MisWebsiteSettings.AnyAsync(cancellationToken))
             {
-                dbContext.ConfigSettings.Add(new ConfigSetting
+                dbContext.MisWebsiteSettings.Add(new MisWebsiteSetting
                 {
                     Id = Guid.NewGuid(),
+                    BrandName = request.OrganizationName,
                     CompanyName = request.OrganizationName,
                     CompanyNameAbbreviation = abbreviation,
                     CompanyDescription = sectorDefaults.Description,
+                    Tagline = sectorDefaults.Description,
                     CompanyIconUrl = null,
                     WebsiteTitle = request.OrganizationName,
+                    SiteTitle = request.OrganizationName,
                     DashboardTitle = $"{request.OrganizationName} Command Center",
                     TemplateLayoutKey = "standard",
                     ProductTitle = "Online Store",
                     ShowProductsInMenu = true,
                     ShowProductsInFooter = true,
                     ActivateProductsInHome = false,
-                    CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    IsLive = true
                 });
             }
 
-            // 4. Seed BcpSettings
-            if (!await dbContext.BcpSettings.AnyAsync(cancellationToken))
+            // 4. Seed MisConfigurationSettings
+            if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
-                dbContext.BcpSettings.Add(new BcpSetting
+                dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
                     CurrencyCode = "USD",

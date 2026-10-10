@@ -8,10 +8,15 @@ using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Application.Services.Cloudflare;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Domain.Models.Ai;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -24,6 +29,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class ContentApiController : ControllerBase
     {
         private readonly DashboardDbContext _context;
+        private readonly MasterCatalogDbContext? _masterCatalogDbContext;
         private readonly IMediator _mediator;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly ICloudflareR2StorageService _r2Storage;
@@ -34,13 +40,15 @@ namespace Ozikol_BCC.Api.Controllers
             IMediator mediator, 
             ICloudinaryService cloudinaryService,
             ICloudflareR2StorageService r2Storage,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            MasterCatalogDbContext? masterCatalogDbContext = null)
         {
             _context = context;
             _mediator = mediator;
             _cloudinaryService = cloudinaryService;
             _r2Storage = r2Storage;
             _tenantProvider = tenantProvider;
+            _masterCatalogDbContext = masterCatalogDbContext;
         }
 
         // ==========================================
@@ -95,7 +103,14 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
             }
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var rawFileName = file.FileName ?? "stylesheet.css";
+            var fileName = rawFileName;
+            if (fileName.EndsWith(".download", StringComparison.OrdinalIgnoreCase))
+            {
+                fileName = fileName.Substring(0, fileName.Length - 9);
+            }
+
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
             if (extension != ".css")
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Only CSS (.css) stylesheet files are permitted."));
@@ -103,43 +118,178 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                // Verify Cloudflare R2 storage credentials
-                if (!_r2Storage.IsConfigured())
-                {
-                    // If not yet configured in .env, read content so user can embed inline and inform them
-                    using var inlineReader = new StreamReader(file.OpenReadStream());
-                    var rawContent = await inlineReader.ReadToEndAsync();
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                string finalUrl;
+                string storageType;
+                string safeName;
+                string? contentPreview = null;
 
-                    return BadRequest(ApiResponse<object>.FailureResponse(
-                        "Cloudflare R2 storage is not configured. Please define CloudflareR2__AccountId, CloudflareR2__AccessKeyId, CloudflareR2__SecretAccessKey, CloudflareR2__BucketName, and CloudflareR2__PublicCdnUrl in your .env or environment variables. You can also click 'Import as Inline CSS' to embed the stylesheet directly without third-party storage."));
+                if (_r2Storage.IsConfigured())
+                {
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageType = "Cloudflare R2 + Cloudflare CDN";
+                        safeName = result.SafeFileName ?? fileName;
+                        contentPreview = result.ContentPreview;
+                    }
+                    else
+                    {
+                        // Fallback to local server storage if R2 bucket upload failed
+                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
+                        Directory.CreateDirectory(localDir);
+                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
+                        var localPath = Path.Combine(localDir, safeName);
+                        
+                        await using (var localStream = new FileStream(localPath, FileMode.Create))
+                        {
+                            file.OpenReadStream().CopyTo(localStream);
+                        }
+
+                        using var textReader = new StreamReader(file.OpenReadStream());
+                        contentPreview = await textReader.ReadToEndAsync();
+                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
+                        storageType = "Local Server Storage (Fallback)";
+                    }
                 }
-
-                // Resolve tenant slug for multi-tenant asset folder isolation
-                var tenantSlug = _tenantProvider?.CurrentTenant;
-
-                // Upload to Cloudflare R2 with automatic edge CDN caching headers
-                await using var stream = file.OpenReadStream();
-                var result = await _r2Storage.UploadCssAsync(stream, file.FileName, tenantSlug);
-
-                if (!result.Success)
+                else
                 {
-                    return StatusCode(500, ApiResponse<object>.FailureResponse(result.Message));
+                    // Fallback to local server storage when R2 is unconfigured
+                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "css");
+                    Directory.CreateDirectory(localDir);
+                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.css";
+                    var localPath = Path.Combine(localDir, safeName);
+                    
+                    await using (var localStream = new FileStream(localPath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(localStream);
+                    }
+
+                    using var textReader = new StreamReader(file.OpenReadStream());
+                    contentPreview = await textReader.ReadToEndAsync();
+                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/css/{safeName}";
+                    storageType = "Local Server Storage";
                 }
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = result.Url,
-                    key = result.Key,
-                    fileName = result.OriginalFileName,
-                    safeName = result.SafeFileName,
-                    size = result.FileSizeBytes,
-                    storage = "Cloudflare R2 + Cloudflare CDN",
-                    content = result.ContentPreview
-                }, "CSS stylesheet uploaded to Cloudflare R2 and distributed via Cloudflare CDN successfully."));
+                    url = finalUrl,
+                    key = safeName,
+                    fileName = fileName,
+                    safeName = safeName,
+                    size = file.Length,
+                    storage = storageType,
+                    content = contentPreview
+                }, "CSS stylesheet uploaded successfully."));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process Cloudflare R2 CSS upload: {ex.Message}"));
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process CSS upload: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Uploads a custom JavaScript file (.js or .js.download) to Cloudflare R2 Object Storage or local server storage with automatic CDN distribution.
+        /// </summary>
+        /// <param name="file">The .js script file to upload.</param>
+        /// <returns>JSON payload containing the public script URL, metadata, and raw JS content.</returns>
+        [HttpPost("upload-js")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadJs([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No file was uploaded."));
+            }
+
+            var rawFileName = file.FileName ?? "script.js";
+            var fileName = rawFileName;
+            if (fileName.EndsWith(".download", StringComparison.OrdinalIgnoreCase))
+            {
+                fileName = fileName.Substring(0, fileName.Length - 9);
+            }
+
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            if (extension != ".js")
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Only JavaScript (.js) script files are permitted."));
+            }
+
+            try
+            {
+                var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
+                string finalUrl;
+                string storageType;
+                string safeName;
+                string? contentPreview = null;
+
+                if (_r2Storage.IsConfigured())
+                {
+                    await using var stream = file.OpenReadStream();
+                    var result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+
+                    if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                    {
+                        finalUrl = result.Url;
+                        storageType = "Cloudflare R2 + Cloudflare CDN";
+                        safeName = result.SafeFileName ?? fileName;
+                        contentPreview = result.ContentPreview;
+                    }
+                    else
+                    {
+                        // Fallback to local server storage
+                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
+                        Directory.CreateDirectory(localDir);
+                        safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
+                        var localPath = Path.Combine(localDir, safeName);
+                        
+                        await using (var localStream = new FileStream(localPath, FileMode.Create))
+                        {
+                            file.OpenReadStream().CopyTo(localStream);
+                        }
+
+                        using var textReader = new StreamReader(file.OpenReadStream());
+                        contentPreview = await textReader.ReadToEndAsync();
+                        finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
+                        storageType = "Local Server Storage (Fallback)";
+                    }
+                }
+                else
+                {
+                    // Fallback to local server storage when R2 is unconfigured
+                    var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", "js");
+                    Directory.CreateDirectory(localDir);
+                    safeName = $"{Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..8]}.js";
+                    var localPath = Path.Combine(localDir, safeName);
+                    
+                    await using (var localStream = new FileStream(localPath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(localStream);
+                    }
+
+                    using var textReader = new StreamReader(file.OpenReadStream());
+                    contentPreview = await textReader.ReadToEndAsync();
+                    finalUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/js/{safeName}";
+                    storageType = "Local Server Storage";
+                }
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    url = finalUrl,
+                    key = safeName,
+                    fileName = fileName,
+                    safeName = safeName,
+                    size = file.Length,
+                    storage = storageType,
+                    content = contentPreview
+                }, "JavaScript file uploaded successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process JS upload: {ex.Message}"));
             }
         }
 
@@ -152,20 +302,79 @@ namespace Ozikol_BCC.Api.Controllers
         [AllowAnonymous]
         public IActionResult GetCssAsset(string fileName)
         {
+            return GetStaticAsset("css", fileName);
+        }
+
+        /// <summary>
+        /// Serves an uploaded JavaScript script asset with proper application/javascript content type.
+        /// </summary>
+        /// <param name="fileName">The stored JS filename.</param>
+        /// <returns>The JavaScript file stream.</returns>
+        [HttpGet("js/{fileName}")]
+        [AllowAnonymous]
+        public IActionResult GetJsAsset(string fileName)
+        {
+            return GetStaticAsset("js", fileName);
+        }
+
+        /// <summary>
+        /// Serves any uploaded static asset (CSS, JS, Fonts, Images) with appropriate MIME content type and caching headers.
+        /// </summary>
+        /// <param name="folder">Asset subfolder: "css", "js", "fonts", or "assets".</param>
+        /// <param name="fileName">The stored asset filename.</param>
+        /// <returns>The physical file stream.</returns>
+        [HttpGet("assets/{folder}/{fileName}")]
+        [AllowAnonymous]
+        public IActionResult GetStaticAsset(string folder, string fileName)
+        {
             if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || Path.GetInvalidFileNameChars().Any(fileName.Contains))
             {
                 return BadRequest("Invalid filename.");
             }
 
-            var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads", "css");
+            var cleanFolder = (folder ?? "assets").Trim().ToLowerInvariant();
+            if (cleanFolder != "css" && cleanFolder != "js" && cleanFolder != "fonts" && cleanFolder != "assets")
+            {
+                return BadRequest("Invalid asset folder.");
+            }
+
+            var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", cleanFolder);
             var filePath = Path.Combine(uploadsDir, fileName);
 
             if (!System.IO.File.Exists(filePath))
             {
-                return NotFound("CSS asset not found.");
+                // Fallback to legacy single-level uploads folder
+                var legacyPath = Path.Combine(AppContext.BaseDirectory, "uploads", cleanFolder, fileName);
+                if (System.IO.File.Exists(legacyPath))
+                {
+                    filePath = legacyPath;
+                }
+                else
+                {
+                    return NotFound($"Static asset '{fileName}' not found in folder '{cleanFolder}'.");
+                }
             }
 
-            return PhysicalFile(filePath, "text/css", enableRangeProcessing: true);
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".js" => "application/javascript",
+                ".css" => "text/css",
+                ".woff2" => "font/woff2",
+                ".woff" => "font/woff",
+                ".ttf" => "font/ttf",
+                ".otf" => "font/otf",
+                ".eot" => "application/vnd.ms-fontobject",
+                ".svg" => "image/svg+xml",
+                ".json" => "application/json",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+
+            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            return PhysicalFile(filePath, contentType, enableRangeProcessing: true);
         }
 
         // ==========================================
@@ -245,8 +454,12 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                // Unique slug generation
-                var uniqueSlug = await GenerateUniqueSlugAsync(request.Slug ?? request.DirectUrl ?? request.Title);
+                // Unique slug generation with proper whitespace handling
+                var rawSlug = !string.IsNullOrWhiteSpace(request.Slug)
+                    ? request.Slug
+                    : (!string.IsNullOrWhiteSpace(request.DirectUrl) ? request.DirectUrl : request.Title);
+
+                var uniqueSlug = await GenerateUniqueSlugAsync(rawSlug);
 
                 Guid? categoryId = request.PageCategoryId;
                 if (categoryId == Guid.Empty) categoryId = null;
@@ -267,6 +480,8 @@ namespace Ozikol_BCC.Api.Controllers
                     Publish = request.IsPublished || request.Publish,
                     SecurityPage = request.SecurityPage,
                     SortOrder = request.SortOrder,
+                    MenuPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First,
+                    CustomClass = request.CustomClass,
                     ImageUrl = request.ImageUrl,
                     ImageKey = request.ImageKey,
                     MetaTitle = request.MetaTitle,
@@ -294,9 +509,10 @@ namespace Ozikol_BCC.Api.Controllers
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Page not found."));
 
             // Ensure unique slug if modified
-            if (!string.IsNullOrWhiteSpace(updated.DirectUrl) && updated.DirectUrl != existing.DirectUrl)
+            var targetSlug = !string.IsNullOrWhiteSpace(updated.DirectUrl) ? updated.DirectUrl : updated.Title;
+            if (!string.IsNullOrWhiteSpace(targetSlug) && targetSlug != existing.DirectUrl)
             {
-                existing.DirectUrl = await GenerateUniqueSlugAsync(updated.DirectUrl, id);
+                existing.DirectUrl = await GenerateUniqueSlugAsync(targetSlug, id);
             }
 
             existing.Title = updated.Title;
@@ -310,6 +526,8 @@ namespace Ozikol_BCC.Api.Controllers
             existing.IsMenuCTA = updated.IsMenuCTA;
             existing.Tags = updated.Tags;
             existing.SortOrder = updated.SortOrder;
+            existing.MenuPosition = updated.MenuPosition != 0 ? updated.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
+            existing.CustomClass = updated.CustomClass;
             existing.PageCategoryId = updated.PageCategoryId == Guid.Empty ? null : updated.PageCategoryId;
             existing.ImageUrl = updated.ImageUrl;
             existing.ImageKey = updated.ImageKey;
@@ -337,7 +555,10 @@ namespace Ozikol_BCC.Api.Controllers
         private async Task<string> GenerateUniqueSlugAsync(string rawInput, Guid? excludePageId = null)
         {
             if (string.IsNullOrWhiteSpace(rawInput)) rawInput = "page";
-            var baseSlug = Regex.Replace(rawInput.Trim().ToLowerInvariant(), @"[^a-z0-9\-_]", "-").Trim('-');
+            // Strip leading / trailing slashes and normalize
+            var cleaned = rawInput.Trim().Trim('/');
+            var baseSlug = Regex.Replace(cleaned.ToLowerInvariant(), @"[^a-z0-9\-_]", "-");
+            baseSlug = Regex.Replace(baseSlug, @"-+", "-").Trim('-');
             if (string.IsNullOrEmpty(baseSlug)) baseSlug = "page";
 
             var slug = baseSlug;
@@ -385,37 +606,56 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Category Title is required."));
             }
 
-            var category = new PageCategory
+            try
             {
-                Id = Guid.NewGuid(),
-                Title = request.Title.Trim(),
-                MenuSortOrder = request.MenuSortOrder,
-                Publish = request.Publish,
-                ParentId = request.ParentId,
-                Icon = request.Icon,
-                CreatedAtUtc = DateTime.UtcNow
-            };
+                var category = new PageCategory
+                {
+                    Id = Guid.NewGuid(),
+                    Title = request.Title.Trim(),
+                    MenuPosition = request.MenuPosition != 0 ? request.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle,
+                    MenuSortOrder = request.MenuSortOrder,
+                    CustomClass = request.CustomClass?.Trim(),
+                    Publish = request.Publish,
+                    ParentId = request.ParentId == Guid.Empty ? null : request.ParentId,
+                    Icon = request.Icon,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
 
-            _context.PageCategories.Add(category);
-            await _context.SaveChangesAsync();
+                _context.PageCategories.Add(category);
+                await _context.SaveChangesAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(category, "Page category created successfully."));
+                return Ok(ApiResponse<object>.SuccessResponse(category, "Page category created successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.InnerException?.Message ?? ex.Message));
+            }
         }
 
         [HttpPut("categories/{id:guid}")]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] PageCategory updated)
         {
-            var existing = await _context.PageCategories.FindAsync(id);
-            if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
+            try
+            {
+                var existing = await _context.PageCategories.FindAsync(id);
+                if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
 
-            existing.Title = updated.Title;
-            existing.MenuSortOrder = updated.MenuSortOrder;
-            existing.Publish = updated.Publish;
-            existing.ParentId = updated.ParentId == Guid.Empty ? null : updated.ParentId;
-            existing.Icon = updated.Icon;
+                existing.Title = updated.Title;
+                existing.MenuPosition = updated.MenuPosition != 0 ? updated.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+                existing.MenuSortOrder = updated.MenuSortOrder;
+                existing.CustomClass = updated.CustomClass?.Trim();
+                existing.Publish = updated.Publish;
+                existing.ParentId = updated.ParentId == Guid.Empty ? null : updated.ParentId;
+                existing.Icon = updated.Icon;
+                existing.UpdatedAtUtc = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(existing, "Category updated successfully."));
+                await _context.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(existing, "Category updated successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse(ex.InnerException?.Message ?? ex.Message));
+            }
         }
 
         [HttpDelete("categories/{id:guid}")]
@@ -1063,7 +1303,7 @@ namespace Ozikol_BCC.Api.Controllers
             var catKey = template.CategoryKey.Trim().ToLowerInvariant();
             var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+                "menu", "hero", "footer", "breadcrumb", "blog", "blog_detail", "ecommerce"
             };
 
             if (singletonCategories.Contains(catKey))
@@ -1086,7 +1326,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Activates all structural layout templates (Menu, Hero, Breadcrumb, Footer, Blog, Ecommerce)
+        /// Activates all structural layout templates (Menu, Hero, Breadcrumb, Footer, Blog, Blog Detail, Ecommerce)
         /// belonging to the specified Theme Suite, while safely deactivating competing structural templates.
         /// </summary>
         /// <param name="suiteCode">The theme suite code identifier (e.g., 'suite_apexmodern', 'suite_corporate').</param>
@@ -1105,7 +1345,7 @@ namespace Ozikol_BCC.Api.Controllers
                 var allTemplates = await _context.TenantInstalledTemplates.ToListAsync();
                 var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+                    "menu", "hero", "footer", "breadcrumb", "blog", "blog_detail", "ecommerce"
                 };
 
                 // Helper to resolve the canonical theme suite code for any installed template
@@ -1206,107 +1446,165 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves all CMS content entities (WebPages, PageSections) that are currently linked to and rendered by a specific template.
+        /// Retrieves an inventory of all active PageSections using a specific installed template blueprint.
         /// Powers the interactive deletion modal allowing admins to preview affected content.
+        /// Accepts either a Guid identifier, TemplateKey, or VariantCode.
         /// </summary>
-        /// <param name="id">The unique identifier of the installed template.</param>
+        /// <param name="id">The unique identifier (Guid string, TemplateKey, or VariantCode) of the installed template.</param>
         /// <returns>A collection of linked PageSections with parent WebPage details.</returns>
-        [HttpGet("templates/{id:guid}/linked-content")]
-        public async Task<IActionResult> GetTemplateLinkedContent(Guid id)
+        [HttpGet("templates/{id}/linked-content")]
+        public async Task<IActionResult> GetTemplateLinkedContent(string id)
         {
-            var template = await _context.TenantInstalledTemplates.FindAsync(id);
-            if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
-
-            var matchingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(template.TemplateKey)) matchingKeys.Add(template.TemplateKey);
-            if (!string.IsNullOrWhiteSpace(template.VariantCode)) matchingKeys.Add(template.VariantCode);
-
-            var linkedSections = await _context.PageSections
-                .Include(s => s.WebPage)
-                .Include(s => s.PageSectionLists)
-                .Where(s => s.TemplateKey != null && matchingKeys.Contains(s.TemplateKey))
-                .Select(s => new
-                {
-                    SectionId = s.Id,
-                    SectionTitle = s.Title ?? "(Untitled Section)",
-                    MiniTitle = s.MiniTitle,
-                    WebPageId = s.WebPageId,
-                    WebPageTitle = s.WebPage != null ? s.WebPage.Title : "Unassigned Page",
-                    WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
-                    SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
-                })
-                .ToListAsync();
-
-            return Ok(ApiResponse<object>.SuccessResponse(new
+            if (string.IsNullOrWhiteSpace(id))
             {
-                TemplateId = template.Id,
-                TemplateName = template.Name,
-                TemplateKey = template.TemplateKey,
-                CategoryKey = template.CategoryKey,
-                IsDefault = template.IsDefault,
-                LinkedSectionCount = linkedSections.Count,
-                LinkedSections = linkedSections
-            }, "Linked content inventory retrieved successfully."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
+
+            try
+            {
+                TenantInstalledTemplate? template = null;
+
+                // 1. Resolve template by Guid primary key if parsed successfully
+                if (Guid.TryParse(id, out var guidId))
+                {
+                    template = await _context.TenantInstalledTemplates.FindAsync(guidId);
+                }
+
+                // 2. Fallback to resolving by TemplateKey or VariantCode
+                if (template == null)
+                {
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.TemplateKey == id || t.VariantCode == id);
+                }
+
+                if (template == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse($"Installed template '{id}' not found."));
+                }
+
+                var tKey = template.TemplateKey;
+                var vCode = template.VariantCode;
+
+                var linkedSections = await _context.PageSections
+                    .Where(s => s.TemplateKey != null && (s.TemplateKey == tKey || (vCode != null && s.TemplateKey == vCode)))
+                    .Select(s => new
+                    {
+                        SectionId = s.Id,
+                        SectionTitle = s.Title ?? "(Untitled Section)",
+                        MiniTitle = s.MiniTitle,
+                        WebPageId = s.WebPageId,
+                        WebPageTitle = s.WebPage != null ? s.WebPage.Title : "Unassigned Page",
+                        WebPageSlug = s.WebPage != null ? (s.WebPage.DirectUrl ?? s.WebPage.Title) : "home",
+                        SubItemCount = s.PageSectionLists != null ? s.PageSectionLists.Count : 0
+                    })
+                    .ToListAsync();
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    TemplateId = template.Id,
+                    TemplateName = template.Name,
+                    TemplateKey = template.TemplateKey,
+                    CategoryKey = template.CategoryKey,
+                    IsDefault = template.IsDefault,
+                    LinkedSectionCount = linkedSections.Count,
+                    LinkedSections = linkedSections
+                }, "Linked content inventory retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to retrieve template linked content: {msg}"));
+            }
         }
 
         /// <summary>
         /// Uninstalls / removes a template from the tenant database, with optional cascading deletion of linked page sections.
+        /// Accepts either a Guid identifier, TemplateKey, or VariantCode.
         /// </summary>
-        /// <param name="id">The unique identifier of the installed template.</param>
+        /// <param name="id">The unique identifier (Guid string, TemplateKey, or VariantCode) of the installed template.</param>
         /// <param name="deleteLinkedContent">If true, permanently deletes all PageSections linked to this template. If false, unlinks the TemplateKey.</param>
         /// <returns>Confirmation of the deletion operation.</returns>
-        [HttpDelete("templates/installed/{id:guid}")]
-        public async Task<IActionResult> UninstallTemplate(Guid id, [FromQuery] bool deleteLinkedContent = false)
+        [HttpDelete("templates/installed/{id}")]
+        public async Task<IActionResult> UninstallTemplate(string id, [FromQuery] bool deleteLinkedContent = false)
         {
-            var template = await _context.TenantInstalledTemplates.FindAsync(id);
-            if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
-
-            var matchingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(template.TemplateKey)) matchingKeys.Add(template.TemplateKey);
-            if (!string.IsNullOrWhiteSpace(template.VariantCode)) matchingKeys.Add(template.VariantCode);
-
-            var linkedSections = await _context.PageSections
-                .Include(s => s.PageSectionLists)
-                .Where(s => s.TemplateKey != null && matchingKeys.Contains(s.TemplateKey))
-                .ToListAsync();
-
-            int affectedSectionCount = linkedSections.Count;
-
-            if (deleteLinkedContent)
+            if (string.IsNullOrWhiteSpace(id))
             {
-                // Cascade delete linked sections and their sub-items
-                if (linkedSections.Count > 0)
-                {
-                    var sectionIds = linkedSections.Select(s => s.Id).ToList();
-                    var childLists = await _context.PageSectionLists
-                        .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
-                        .ToListAsync();
+                return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
 
-                    if (childLists.Count > 0)
+            try
+            {
+                TenantInstalledTemplate? template = null;
+
+                // 1. Resolve template by Guid primary key if parsed successfully
+                if (Guid.TryParse(id, out var guidId))
+                {
+                    template = await _context.TenantInstalledTemplates.FindAsync(guidId);
+                }
+
+                // 2. Fallback to resolving by TemplateKey or VariantCode
+                if (template == null)
+                {
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.TemplateKey == id || t.VariantCode == id);
+                }
+
+                if (template == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse($"Installed template '{id}' not found."));
+                }
+
+                var tKey = template.TemplateKey;
+                var vCode = template.VariantCode;
+
+                var linkedSections = await _context.PageSections
+                    .Where(s => s.TemplateKey != null && (s.TemplateKey == tKey || (vCode != null && s.TemplateKey == vCode)))
+                    .ToListAsync();
+
+                int affectedSectionCount = linkedSections.Count;
+
+                if (deleteLinkedContent)
+                {
+                    // Cascade delete linked sections and their sub-items
+                    if (linkedSections.Count > 0)
                     {
-                        _context.PageSectionLists.RemoveRange(childLists);
+                        var sectionIds = linkedSections.Select(s => s.Id).ToList();
+                        var childLists = await _context.PageSectionLists
+                            .Where(l => l.PageSectionId.HasValue && sectionIds.Contains(l.PageSectionId.Value))
+                            .ToListAsync();
+
+                        if (childLists.Count > 0)
+                        {
+                            _context.PageSectionLists.RemoveRange(childLists);
+                        }
+
+                        _context.PageSections.RemoveRange(linkedSections);
                     }
-
-                    _context.PageSections.RemoveRange(linkedSections);
                 }
-            }
-            else
-            {
-                // Preserve section content; unassign template key
-                foreach (var sec in linkedSections)
+                else
                 {
-                    sec.TemplateKey = null;
+                    // Preserve section content; unassign template key so layout fallback is engaged safely
+                    foreach (var sec in linkedSections)
+                    {
+                        sec.TemplateKey = null;
+                    }
                 }
+
+                // Remove the template record permanently from tenant database
+                _context.TenantInstalledTemplates.Remove(template);
+                await _context.SaveChangesAsync();
+
+                string msg = deleteLinkedContent && affectedSectionCount > 0
+                    ? $"Template '{template.Name}' and {affectedSectionCount} linked page section(s) were permanently deleted."
+                    : $"Template '{template.Name}' removed from library. {affectedSectionCount} page section(s) were unlinked and preserved.";
+
+                return Ok(ApiResponse<object>.SuccessResponse(new { templateId = template.Id, templateKey = template.TemplateKey }, msg));
             }
-
-            _context.TenantInstalledTemplates.Remove(template);
-            await _context.SaveChangesAsync();
-
-            string msg = deleteLinkedContent && affectedSectionCount > 0
-                ? $"Template '{template.Name}' and {affectedSectionCount} linked page section(s) were permanently deleted."
-                : $"Template '{template.Name}' removed from library. {affectedSectionCount} page section(s) were unlinked and preserved.";
-
-            return Ok(ApiResponse<object>.SuccessResponse(null, msg));
+            catch (Exception ex)
+            {
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to delete installed template: {msg}"));
+            }
         }
 
         /// <summary>
@@ -1378,12 +1676,11 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var suiteTemplates = allTemplates.Where(BelongsToSuite).ToList();
-            var templateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var t in suiteTemplates)
-            {
-                if (!string.IsNullOrWhiteSpace(t.TemplateKey)) templateKeys.Add(t.TemplateKey);
-                if (!string.IsNullOrWhiteSpace(t.VariantCode)) templateKeys.Add(t.VariantCode);
-            }
+            var templateKeysList = suiteTemplates
+                .SelectMany(t => new[] { t.TemplateKey, t.VariantCode })
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             var suiteTags = await _context.SiteCodeInjectionTags
                 .Where(t => t.SuiteCode != null && t.SuiteCode.ToLower() == cleanCode)
@@ -1392,7 +1689,7 @@ namespace Ozikol_BCC.Api.Controllers
             var linkedSections = await _context.PageSections
                 .Include(s => s.WebPage)
                 .Include(s => s.PageSectionLists)
-                .Where(s => s.TemplateKey != null && templateKeys.Contains(s.TemplateKey))
+                .Where(s => s.TemplateKey != null && templateKeysList.Contains(s.TemplateKey))
                 .Select(s => new
                 {
                     SectionId = s.Id,
@@ -1474,16 +1771,15 @@ namespace Ozikol_BCC.Api.Controllers
                     return NotFound(ApiResponse<object>.FailureResponse($"No installed templates found for suite '{suiteCode}'."));
                 }
 
-                var templateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var t in suiteTemplates)
-                {
-                    if (!string.IsNullOrWhiteSpace(t.TemplateKey)) templateKeys.Add(t.TemplateKey);
-                    if (!string.IsNullOrWhiteSpace(t.VariantCode)) templateKeys.Add(t.VariantCode);
-                }
+                var templateKeysList = suiteTemplates
+                    .SelectMany(t => new[] { t.TemplateKey, t.VariantCode })
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
 
                 var linkedSections = await _context.PageSections
                     .Include(s => s.PageSectionLists)
-                    .Where(s => s.TemplateKey != null && templateKeys.Contains(s.TemplateKey))
+                    .Where(s => s.TemplateKey != null && templateKeysList.Contains(s.TemplateKey))
                     .ToListAsync();
 
                 int affectedSectionCount = linkedSections.Count;
@@ -1550,8 +1846,8 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                var config = await _context.ConfigSettings.FirstOrDefaultAsync();
-                var brandName = !string.IsNullOrWhiteSpace(config?.CompanyName) ? config.CompanyName : "Organization";
+                var site = await _context.MisWebsiteSettings.FirstOrDefaultAsync();
+                var brandName = !string.IsNullOrWhiteSpace(site?.BrandName) ? site.BrandName : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization");
 
                 await DefaultThemeSeeder.ReinstallDefaultsAsync(_context, brandName);
                 return Ok(ApiResponse<object>.SuccessResponse(null, "Default Corporate Theme Suite (16 templates) and default code injections have been cleanly restored."));
@@ -1663,6 +1959,1371 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
                 return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to save custom template: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Snapshot of a single form input field, label, placeholder, and value from the active screen DOM.
+        /// </summary>
+        public class PageFormFieldSnapshotDto
+        {
+            public string? Name { get; set; }
+            public string? Id { get; set; }
+            public string? Label { get; set; }
+            public string? Value { get; set; }
+            public string? Placeholder { get; set; }
+            public string? Type { get; set; }
+        }
+
+        /// <summary>
+        /// Request model for AI template co-pilot analysis and generation.
+        /// </summary>
+        public class AiTemplateCopilotRequest
+        {
+            /// <summary>Prompt instructions from the user.</summary>
+            public string Prompt { get; set; } = string.Empty;
+
+            /// <summary>Raw HTML to study or convert.</summary>
+            public string? RawHtml { get; set; }
+
+            /// <summary>Raw CSS stylesheet to scope and study.</summary>
+            public string? RawCss { get; set; }
+
+            /// <summary>Raw JavaScript logic.</summary>
+            public string? RawJs { get; set; }
+
+            /// <summary>Selected AI provider engine (gemini, deepseek, qwen, ozi-flash, ozi-coder, ozi-deep).</summary>
+            public string Provider { get; set; } = "ozi-flash";
+
+            /// <summary>Category role hint (e.g. hero, cards, pricing, bento, faq, footer).</summary>
+            public string? Category { get; set; }
+
+            /// <summary>Current template name if editing.</summary>
+            public string? CurrentTemplateName { get; set; }
+
+            /// <summary>Console or studio page route where prompt was sent (e.g. /content/console/templates/create).</summary>
+            public string? PageRoute { get; set; }
+
+            /// <summary>Page title hint for history auditing.</summary>
+            public string? PageTitle { get; set; }
+
+            /// <summary>Optional uploaded or pasted visual mockup image URL or base64 data.</summary>
+            public string? AttachedImageUrl { get; set; }
+
+            /// <summary>Real-time harvested form fields, labels, placeholders, and current values from the active screen.</summary>
+            public List<PageFormFieldSnapshotDto>? FormFields { get; set; }
+        }
+
+        /// <summary>
+        /// Request model for marking an AI generated blueprint as implemented with snapshot.
+        /// </summary>
+        public class AiHistoryImplementRequest
+        {
+            /// <summary>The ID of the chat history interaction record.</summary>
+            public Guid HistoryId { get; set; }
+
+            /// <summary>Serialized JSON snapshot of the editor state prior to applying this AI result.</summary>
+            public string? SnapshotJson { get; set; }
+        }
+
+        /// <summary>
+        /// Request model for rolling back an implemented AI blueprint.
+        /// </summary>
+        public class AiHistoryRestoreRequest
+        {
+            /// <summary>The ID of the chat history interaction record to roll back.</summary>
+            public Guid HistoryId { get; set; }
+        }
+
+        /// <summary>
+        /// AI Template Co-pilot endpoint.
+        /// Studies pasted raw code or generative prompts, cleans/scopes CSS,
+        /// and converts hardcoded HTML elements into standard Ozikol CMS tokens.
+        /// Automatically saves the interaction in the persistent tenant chat history.
+        /// Outputs real-time execution logs to the developer console/terminal.
+        /// </summary>
+        /// <param name="request">The co-pilot request parameters.</param>
+        /// <returns>Structured template blueprint with tokens, scoped styles, and history record identifier.</returns>
+        [HttpPost("templates/ai-copilot")]
+        public async Task<IActionResult> ProcessAiTemplateCopilot([FromBody] AiTemplateCopilotRequest request)
+        {
+            if (request == null || (string.IsNullOrWhiteSpace(request.Prompt) && string.IsNullOrWhiteSpace(request.RawHtml) && string.IsNullOrWhiteSpace(request.AttachedImageUrl)))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Please provide a prompt, image, or raw code for the AI to analyze."));
+            }
+
+            var totalTimer = Stopwatch.StartNew();
+
+            try
+            {
+                var prompt = request.Prompt?.Trim() ?? string.Empty;
+                var rawHtml = request.RawHtml?.Trim() ?? string.Empty;
+                var rawCss = request.RawCss?.Trim() ?? string.Empty;
+                var rawJs = request.RawJs?.Trim() ?? string.Empty;
+                var provider = string.IsNullOrWhiteSpace(request.Provider) ? "ozi-flash" : request.Provider.Trim().ToLowerInvariant();
+                var cat = string.IsNullOrWhiteSpace(request.Category) ? "cards" : request.Category.Trim().ToLowerInvariant();
+
+                var brandModelName = provider switch
+                {
+                    "ozi-coder" or "qwen" => "Ozi Coder",
+                    "ozi-deep" or "deepseek" => "Ozi Deep",
+                    _ => "Ozi Flash"
+                };
+
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var currentUserEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "Studio User";
+
+                // Formatted Boxed Header for Developer Terminal / CMD
+                Console.WriteLine();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ╔═══════════════════════════════════════════════════════════════════════════════╗");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ [OZI AI CO-PILOT] Incoming Request from {currentUserEmail}".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ Model Engine  : {brandModelName} ({provider})".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ Active Screen : {request.PageTitle ?? "Studio Console"} ({request.PageRoute ?? "/content/console"})".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ║ User Prompt   : \"{(prompt.Length > 55 ? prompt[..52] + "..." : prompt)}\"".PadRight(79) + "║");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ╚═══════════════════════════════════════════════════════════════════════════════╝");
+
+                // Construct real-time screen and DOM context summary
+                var screenContextBuilder = new System.Text.StringBuilder();
+                screenContextBuilder.AppendLine($"ACTIVE SCREEN CONTEXT:");
+                screenContextBuilder.AppendLine($"- Page: {request.PageTitle ?? "Studio Console"} ({request.PageRoute ?? "/content/console"})");
+
+                if (request.FormFields != null && request.FormFields.Count > 0)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 📋 Harvested {request.FormFields.Count} Screen Form Input(s) / Placeholder(s):");
+                    screenContextBuilder.AppendLine("- Visible Form Inputs & Placeholders on Screen:");
+                    foreach (var field in request.FormFields.Take(20))
+                    {
+                        var labelStr = !string.IsNullOrWhiteSpace(field.Label) ? $"Label: \"{field.Label}\"" : $"Field: \"{field.Name ?? field.Id}\"";
+                        var valStr = !string.IsNullOrWhiteSpace(field.Value) ? $"Current Value: \"{field.Value}\"" : "Current Value: (empty)";
+                        var phStr = !string.IsNullOrWhiteSpace(field.Placeholder) ? $"Placeholder: \"{field.Placeholder}\"" : "Placeholder: (none)";
+                        screenContextBuilder.AppendLine($"  * {labelStr} | {valStr} | {phStr}");
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • {labelStr} | {valStr} | {phStr}");
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.AttachedImageUrl))
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🖼️ Visual Mockup Image Attached ({request.AttachedImageUrl.Length} chars/bytes)");
+                    screenContextBuilder.AppendLine("- User attached a visual mockup image for conversion/inspection.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(rawHtml))
+                {
+                    screenContextBuilder.AppendLine($"- Active HTML in Editor Buffer:\n{rawHtml}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 📄 Active Editor HTML Buffer: {rawHtml.Length} chars");
+                }
+                if (!string.IsNullOrWhiteSpace(rawCss))
+                {
+                    screenContextBuilder.AppendLine($"- Active CSS in Editor Buffer:\n{rawCss}");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🎨 Active Editor CSS Buffer: {rawCss.Length} chars");
+                }
+
+                var screenContext = screenContextBuilder.ToString();
+
+                var lowerPrompt = prompt.ToLowerInvariant().Trim();
+                var explicitCreationKeywords = new[] { "build", "create", "generate", "make", "design", "write code", "tokenize", "convert this", "refactor this", "re-style", "create section", "build section", "pricing table", "hero section", "cards section", "blueprint", "clean it up", "put placeholder", "menu", "navbar", "header" };
+                
+                // Comprehensive HTML, XML, doctypes, and comment symbols detection
+                var isHtmlMarkup = Regex.IsMatch(prompt, @"(<!--[\s\S]*?-->|<\/?(?:html|head|body|header|nav|main|section|article|aside|footer|div|span|p|a|ul|ol|li|table|thead|tbody|tr|td|th|form|input|button|textarea|select|option|img|svg|i|h[1-6]|style|script|link|meta|figure|figcaption|video|audio|canvas|iframe|template|slot)\b|<!DOCTYPE)", RegexOptions.IgnoreCase)
+                    || prompt.Contains("<!--")
+                    || prompt.Contains("-->")
+                    || prompt.Contains("</")
+                    || (prompt.Contains("<") && prompt.Contains(">") && (prompt.Contains("class=") || prompt.Contains("id=") || prompt.Contains("href=") || prompt.Contains("src=") || prompt.Contains("style=")));
+
+                var isExplicitQuestion = !isHtmlMarkup && (lowerPrompt.StartsWith("how") || lowerPrompt.StartsWith("what") || lowerPrompt.StartsWith("why") || lowerPrompt.StartsWith("where") || lowerPrompt.StartsWith("can you explain") || lowerPrompt.StartsWith("tell me"));
+                var isCodeBlueprint = isHtmlMarkup || (!isExplicitQuestion && explicitCreationKeywords.Any(k => lowerPrompt.Contains(k))) || !string.IsNullOrWhiteSpace(request.AttachedImageUrl);
+
+                string? parsedReply = null;
+                string? generatedHtml = null;
+                string? generatedCss = null;
+                string? generatedCategory = cat;
+                string? generatedTemplateName = null;
+
+                var isSurgicalTransformation = prompt.Contains("surgical code transformer", StringComparison.OrdinalIgnoreCase) 
+                                            || prompt.Contains("SURGICAL REPLACEMENT", StringComparison.OrdinalIgnoreCase)
+                                            || prompt.Contains("YOUR MISSION:", StringComparison.OrdinalIgnoreCase)
+                                            || prompt.Contains("TARGET PLACEHOLDERS:", StringComparison.OrdinalIgnoreCase);
+
+                // Prompt construction for LLM with complete canonical Ozikol token reference
+                string llmPrompt;
+                if (isSurgicalTransformation && !string.IsNullOrWhiteSpace(rawHtml))
+                {
+                    isCodeBlueprint = true;
+                    llmPrompt = $@"{prompt}
+
+RAW HTML CODE TO SURGICALLY TRANSFORM (REPLACE PLACEHOLDERS IN-PLACE, PRESERVE 100% OF CSS CLASSES, TAGS, AND STRUCTURE):
+```html
+{rawHtml}
+```
+
+ABSOLUTE MANDATORY ARCHITECTURAL RULES:
+1. 100% PRESERVATION: Keep EVERY single existing CSS class, ID, HTML tag, attribute, style, and structure from the RAW HTML CODE above exactly as-is.
+2. ZERO INVENTIONS: DO NOT inject, invent, or append any element (such as sidebars, search boxes, widgets, newsletter boxes, or footer columns) that does not exist in the RAW HTML CODE above.
+3. ZERO GENERIC OVERWRITES: NEVER replace original CSS classes with generic classes (e.g. NEVER use 'oz-blog-section', 'oz-blog-card', 'oz-blog-grid', etc.). Keep the original classes from the RAW HTML CODE verbatim.
+4. REPEATED ITEMS: When repeated cards/columns/slides are found, keep ONLY ONE instance wrapped in the appropriate loop (e.g. {{{{#each Articles}}}} ... {{{{#/each}}}}) and remove the duplicate static cards.
+5. ROOT CLASS: Ensure the root container element includes {{{{ CustomClass }}}}.
+6. OUTPUT ONLY: Return ONLY the complete transformed raw HTML. No markdown code fences, no explanations, no <style> tags.";
+                }
+                else if (isCodeBlueprint)
+                {
+                    llmPrompt = $@"You are Ozi AI, an expert front-end design copilot for Ozikol CMS.
+Active Screen: {request.PageTitle ?? "Studio Console"} ({request.PageRoute ?? "/content/console"})
+
+Context & Form Fields on Active Screen:
+{screenContext}
+
+User Request: ""{prompt}""
+
+CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TOKENS):
+
+1. Navigation Menus & Headers (Category: menu / header):
+   - Brand Logo Anchor:
+     <a href=""{{{{ HomeUrl }}}}"">
+       {{{{#if BrandLogo}}}}
+         <img src=""{{{{ BrandLogo }}}}"" alt=""{{{{ BrandName }}}}"" class=""[keep original classes]"" />
+       {{{{else}}}}
+         <span class=""[keep original classes]"">{{{{ BrandName }}}}</span>
+       {{{{/if}}}}
+     </a>
+   - Sequential 3-Zone Navigation (Desktop <ul> and Off-Canvas Mobile Drawer <ul>):
+     Inside every navigation <ul> list, render the 3 sequential zones:
+     {{{{#each NavItems=""first""}}}}
+       {{{{#if IsDropdown}}}}
+         <li class=""[original dropdown classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original toggle classes]"">{{{{ Title }}}} [keep original chevron/indicator]</a>
+           {{{{#if Pages}}}}
+             <ul class=""[original dropdown-menu classes]"">
+               {{{{#each Pages}}}}
+                 <li><a href=""{{{{ Url }}}}"" class=""[original item classes] {{{{ CustomClass }}}}"">{{{{ Title }}}}</a></li>
+               {{{{/each}}}}
+             </ul>
+           {{{{/if}}}}
+         </li>
+       {{{{else}}}}
+         <li class=""[original classes] {{{{ CustomClass }}}}"">
+           <a href=""{{{{ Url }}}}"" class=""[original classes]"">{{{{ Title }}}}</a>
+         </li>
+       {{{{/if}}}}
+     {{{{/each}}}}
+
+     {{{{#each NavItems=""middle""}}}} ... {{{{/each}}}}
+     {{{{#each NavItems=""last""}}}} ... {{{{/each}}}}
+
+   - CTA BUTTONS & DYNAMIC AUTHENTICATION (LOGIN) POSITIONING:
+     * Condition A (Navbar has an original CTA button, e.g. [Add Listing], [Book Now], [Get Started]):
+       - Replace the CTA button with:
+         {{{{#each MenuCtaButtons}}}}
+           <li class=""[original button classes] {{{{ CustomClass }}}}""><a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a></li>
+         {{{{/each}}}}
+       - Include the dynamic Login link alongside the CTA area: href=""{{{{ LoginUrl }}}}"" with {{{{ LoginText }}}}.
+     * Condition B (Navbar has NO original CTA button):
+       - DO NOT invent or add {{{{#each MenuCtaButtons}}}}.
+       - Instead, append the dynamic Login link as the last item inside the navigation <ul> list (right after NavItems=""last""):
+         <li class=""[original nav item classes]""><a href=""{{{{ LoginUrl }}}}"" class=""[original nav link classes]"">{{{{ LoginText }}}}</a></li>
+
+   - Top Utility Bar Site Links:
+     ONLY if the topbar has site navigation page links:
+     {{{{#each MainMenuItems=""top""}}}}<a href=""{{{{ Url }}}}"" class=""{{{{ CustomClass }}}}"">{{{{ Title }}}}</a>{{{{/each}}}}
+
+   - MULTIPLE NAVIGATION INSTANCES (Desktop, Sticky Clones & Off-Canvas Mobile Drawers):
+     Raw HTML templates frequently contain separate desktop navbars, clone sticky navbars, and mobile slide-out drawers (e.g. #ltn__utilize-mobile-menu).
+     * DO NOT CUT OFF, DROP, ASSUME, OR SUMMARIZE ANY PART.
+     * You MUST replace the navigation items with the 3 sequential zones (first, middle, last) and logo in EVERY SINGLE navigation <ul> and logo instance found across the entire document.
+
+   - ZERO PHANTOM TOKENS & 100% PRESERVATION:
+     * Keep all email links (mailto:...), phone numbers (tel:...), physical street addresses, support widgets, language selectors, social icons, off-canvas cart drawers (#ltn__utilize-cart-menu), and mobile slide-out menus 100% intact as static HTML.
+     * NEVER invent non-existent tokens like Brand.Email, Brand.Address, Brand.Phone, Brand.LogoUrl, or PageCategories.
+     * NEVER truncate or stop after closing header tags. Return 100% of the entire HTML document including all sibling drawers and overlays.
+
+2. Body Sections & Content Blocks (Category: body / bodysections / PageSection):
+   - Page Headline: {{{{ Title }}}}
+   - Subtitle / Eyebrow Badge: {{{{ MiniTitle }}}}
+   - Summary Paragraph: {{{{ Description }}}}
+   - Pure Rich HTML Body (Terms & Conditions, Privacy Policy, Story Narrative): {{{{ FullDescription }}}}
+   - Highlight / Quote: {{{{ Qoute }}}}
+   - Primary Image: src=""{{{{ ImageUrl }}}}""
+   - Secondary Image / Collage: src=""{{{{ SecondImageUrl }}}}""
+   - Video URL: src=""{{{{ VideoUrl }}}}""
+   - YouTube Embed: src=""{{{{ YoutubeUrlLink }}}}""
+   - Root Icon Class: <i class=""{{{{ IconText }}}}""></i>
+   - Primary CTA Button: {{{{ ButtonText }}}} with href=""{{{{ ButtonLink }}}}""
+   - Secondary CTA Button: {{{{ SecondaryButtonText }}}} with href=""{{{{ SecondaryButtonLink }}}}""
+   - Route / Anchor: href=""{{{{ DirectUrl }}}}""
+   - Dynamic Form Embeds (Contact Us, Newsletter, Quote Request): {{{{ Form ""Contact_Us"" }}}} or {{{{ FormEmbed }}}}
+   - Custom Container Class: {{{{ CustomClass }}}}
+
+3. Repeatable Child Cards (PageSectionList for Feature Grids, Services, FAQs, Pricing, Testimonials):
+   Wrap repeating cards/items in:
+   {{{{#each PageSectionLists}}}}
+     <div class=""card"">
+       <i class=""{{{{ IconText }}}}""></i>
+       <span class=""badge"">{{{{ MiniTitle }}}}</span>
+       <img src=""{{{{ ImageUrl }}}}"" alt=""{{{{ Title }}}}"" />
+       <h3>{{{{ Title }}}}</h3>
+       <p>{{{{ Description }}}}</p>
+       <small>{{{{ MoreDescription }}}}</small>
+       <a href=""{{{{ ButtonLink }}}}"" class=""btn"">{{{{ ButtonText }}}}</a>
+     </div>
+   {{{{/each}}}}
+
+4. Footers (Category: footer):
+   - Brand Identity: {{{{ BrandIdentity }}}} (or {{{{ BrandName }}}})
+   - Description / Tagline: {{{{ Description }}}}
+   - Multi-Column Category Links Loop:
+     {{{{#each FooterCategories}}}}
+       <div class=""oz-col"">
+         <h4>{{{{ Title }}}}</h4>
+         <ul>
+           {{{{#each Pages}}}}
+             <li><a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a></li>
+           {{{{/each}}}}
+         </ul>
+       </div>
+     {{{{/each}}}}
+   - Legal Policy Links Loop:
+     {{{{#each LegalPages}}}}
+       <a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a>
+     {{{{/each}}}}
+   - Social Media Channels Loop:
+     {{{{#each SocialLinks}}}}
+       <a href=""{{{{ Url }}}}"" title=""{{{{ Platform }}}}""><span class=""material-symbols-outlined"">{{{{ Icon }}}}</span></a>
+     {{{{/each}}}}
+   - Newsletter Subscription Form: {{{{ Form ""Newsletter_Subscribe"" }}}}
+   - Copyright Notice: {{{{ Copyright }}}} {{{{ BrandName }}}}
+   - Support & Contact: {{{{ Email }}}}, {{{{ Phone }}}}, {{{{ Address }}}}
+
+5. Blog Feeds & Archives (Category: blog):
+   - Section Header: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Intro {{{{ Description }}}}
+   - Article Cards Feed Loop:
+     {{{{#each Articles}}}}
+       <article class=""blog-card"">
+         <img src=""{{{{ CoverImageUrl }}}}"" alt=""{{{{ Title }}}}"" />
+         <span class=""category"">{{{{ Category }}}}</span>
+         <span class=""date"">{{{{ PublishedDate }}}}</span>
+         <span class=""author"">{{{{ AuthorName }}}}</span>
+         <h3><a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a></h3>
+         <p>{{{{ Summary }}}}</p>
+         <a href=""{{{{ Url }}}}"">Read Article</a>
+       </article>
+     {{{{/each}}}}
+   - Sidebar Categories Loop:
+     {{{{#each BlogCategories}}}}
+       <li><a href=""{{{{ Url }}}}""><span>{{{{ Name }}}}</span> ({{{{ Count }}}})</a></li>
+     {{{{/each}}}}
+   - Sidebar Recent Articles Loop:
+     {{{{#each RecentArticles}}}}
+       <a href=""{{{{ Url }}}}""><img src=""{{{{ CoverImageUrl }}}}"" /><h5>{{{{ Title }}}}</h5><span>{{{{ PublishedDate }}}}</span></a>
+     {{{{/each}}}}
+   - Sidebar Newsletter Form: {{{{ Form ""Newsletter_Subscribe"" }}}}
+
+6. Blog Article Details (Category: blog_detail):
+   - Article Header & Meta: Headline {{{{ Article.Title }}}}, Category {{{{ Article.Category }}}}, Date {{{{ Article.PublishedDate }}}}, Read Time {{{{ Article.ReadTime }}}}, Cover Image src=""{{{{ Article.CoverImageUrl }}}}""
+   - Article Content Body: {{{{ Article.Body }}}}
+   - Article Summary / Lead Excerpt: {{{{ Article.Summary }}}}
+   - Author Profile Card: {{{{ Article.AuthorName }}}}, {{{{ Article.AuthorRole }}}}, Avatar src=""{{{{ Article.AuthorAvatarUrl }}}}""
+   - Topic Tags Loop: {{{{#each Article.Tags}}}}<span class=""tag"">{{{{ this }}}}</span>{{{{/each}}}}
+   - Social Sharing Strip: {{{{ PostShareStrip }}}}
+   - Sidebar / Related Reads: {{{{#each RecentArticles}}}} ... {{{{#/each}}}}, {{{{#each BlogCategories}}}} ... {{{{#/each}}}}
+   - Custom Class: {{{{ CustomClass }}}}
+
+7. Breadcrumbs & Page Banners (Category: breadcrumb):
+   - Page Headline / Title: {{{{ PageTitle }}}} or {{{{ Title }}}}
+   - Subtitle / Eyebrow: {{{{ SubTitle }}}} or {{{{ MiniTitle }}}}
+   - Banner Background Image: src=""{{{{ BackgroundImageUrl }}}}"" or style=""background-image: url('{{{{ BackgroundImageUrl }}}}')""
+   - Navigational Trail Repeater:
+     {{{{#each Breadcrumbs}}}}
+       <li class=""breadcrumb-item {{{{if IsActive}}}}active{{{{/if}}}}"">
+         {{{{#if IsActive}}}}
+           <span>{{{{ Title }}}}</span>
+         {{{{else}}}}
+           <a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a>
+         {{{{/if}}}}
+       </li>
+     {{{{/each}}}}
+   - Custom Class: {{{{ CustomClass }}}}
+
+Task:
+1. Provide a 1-sentence friendly confirmation of what you designed.
+2. Generate the complete HTML template without truncating. Use ONLY the canonical Ozikol tokens above.
+3. Generate modern scoped CSS inside <style>...</style>.";
+                }
+                else
+                {
+                    llmPrompt = $@"You are Ozi AI, an intelligent, helpful, and friendly studio co-pilot for Ozikol CMS.
+Active Screen: {request.PageTitle ?? "Studio Console"} ({request.PageRoute ?? "/content/console"})
+
+Context & Form Fields on Active Screen:
+{screenContext}
+
+User Message: ""{prompt}""
+
+CANONICAL OZIKOL TOKENS KNOWLEDGE:
+- Navigation Menus: {{{{ HomeUrl }}}}, {{{{ BrandLogo }}}}, {{{{ BrandName }}}}, {{{{ BrandIdentity }}}}, {{{{#each NavItems=""first""}}}}, {{{{#each NavItems=""middle""}}}}, {{{{#each NavItems=""last""}}}}, {{{{#each MainMenuItems=""top""}}}}, {{{{#each MenuCtaButtons}}}}, {{{{ LoginUrl }}}}, {{{{ LoginText }}}}.
+- Root Section Tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ FullDescription }}}}, {{{{ Qoute }}}}, {{{{ ImageUrl }}}}, {{{{ SecondImageUrl }}}}, {{{{ VideoUrl }}}}, {{{{ YoutubeUrlLink }}}}, {{{{ IconText }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}, {{{{ SecondButtonText }}}}, {{{{ SecondButtonLink }}}}, {{{{ DirectUrl }}}}.
+- Repeating Cards Loop: {{{{#SectionLists}}}} ... {{{{#/SectionLists}}}} (using child tokens: {{{{ Title }}}}, {{{{ MiniTitle }}}}, {{{{ Description }}}}, {{{{ MoreDescription }}}}, {{{{ IconText }}}}, {{{{ ImageUrl }}}}, {{{{ ButtonText }}}}, {{{{ ButtonLink }}}}).
+
+Instructions:
+- If the user is greeting you (e.g. 'hi', 'hello', 'hey'), respond warmly, concisely and naturally as Ozi AI, mentioning how you can assist them on this active screen ({request.PageTitle ?? "Studio Console"}). Do NOT repeat robotic scripts.
+- If the user asks about placeholders, form inputs, or how tokens work, explain the exact canonical tokens above clearly.
+- Keep your response friendly, professional, and concise. Do NOT output raw HTML/CSS unless explicitly requested.";
+                }
+
+                // =========================================================
+                // 1. PRIMARY ENGINE: Google Gemini from Central DB Key Pool
+                // =========================================================
+                MasterAiApiKey? activeGeminiKey = null;
+                if (_masterCatalogDbContext != null)
+                {
+                    try
+                    {
+                        var nowUtc = DateTime.UtcNow;
+                        activeGeminiKey = await _masterCatalogDbContext.MasterAiApiKeys
+                            .Where(k => k.Provider == "Gemini" && k.IsActive 
+                                     && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
+                                     && k.TodayRequestsCount < k.DailyQuotaLimit)
+                            .OrderBy(k => k.TodayRequestsCount)
+                            .FirstOrDefaultAsync();
+                    }
+                    catch (Exception dbKeyEx)
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Key Pool check exception: {dbKeyEx.Message}");
+                    }
+                }
+
+                if (activeGeminiKey != null && !string.IsNullOrWhiteSpace(activeGeminiKey.ApiKey))
+                {
+                    provider = $"Gemini 2.5 Flash ({activeGeminiKey.KeyAlias})";
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Primary Provider: Google Gemini ({activeGeminiKey.KeyAlias}) ...");
+                    var geminiTimer = Stopwatch.StartNew();
+
+                    try
+                    {
+                        using var geminiClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                        var geminiPayload = new
+                        {
+                            contents = new[]
+                            {
+                                new
+                                {
+                                    role = "user",
+                                    parts = new[] { new { text = llmPrompt } }
+                                }
+                            },
+                            generationConfig = new
+                            {
+                                temperature = 0.2,
+                                maxOutputTokens = 8192
+                            }
+                        };
+
+                        var geminiModels = new[] { "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash-8b" };
+                        HttpResponseMessage? geminiResponse = null;
+                        string matchedModel = "gemini-1.5-flash";
+
+                        foreach (var gModel in geminiModels)
+                        {
+                            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{gModel}:generateContent?key={activeGeminiKey.ApiKey}";
+                            try
+                            {
+                                using var modelCts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                                geminiResponse = await geminiClient.PostAsJsonAsync(geminiUrl, geminiPayload, modelCts.Token);
+                                if (geminiResponse.IsSuccessStatusCode)
+                                {
+                                    matchedModel = gModel;
+                                    break;
+                                }
+                                else
+                                {
+                                    var errContent = await geminiResponse.Content.ReadAsStringAsync();
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) with key [{activeGeminiKey.KeyAlias}] returned {(int)geminiResponse.StatusCode} {geminiResponse.StatusCode}: {errContent}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini ({gModel}) dispatch exception: {ex.Message}");
+                            }
+                        }
+
+                        geminiTimer.Stop();
+
+                        if (geminiResponse != null && geminiResponse.IsSuccessStatusCode)
+                        {
+                            using var gDoc = await JsonDocument.ParseAsync(await geminiResponse.Content.ReadAsStreamAsync());
+                            var gText = string.Empty;
+                            if (gDoc.RootElement.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
+                            {
+                                var firstCand = cands[0];
+                                if (firstCand.TryGetProperty("content", out var candContent) && candContent.TryGetProperty("parts", out var candParts) && candParts.GetArrayLength() > 0)
+                                {
+                                    if (candParts[0].TryGetProperty("text", out var textProp))
+                                    {
+                                        gText = textProp.GetString()?.Trim() ?? string.Empty;
+                                    }
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(gText))
+                            {
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Google Gemini completed in {geminiTimer.ElapsedMilliseconds}ms ({gText.Length} chars)");
+
+                                try
+                                {
+                                    activeGeminiKey.TodayRequestsCount++;
+                                    activeGeminiKey.TotalRequestsCount++;
+                                    activeGeminiKey.LastUsedAtUtc = DateTime.UtcNow;
+                                    await _masterCatalogDbContext!.SaveChangesAsync();
+                                }
+                                catch (Exception dbKeySaveEx)
+                                {
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini key usage save notice: {dbKeySaveEx.Message}");
+                                }
+
+                                if (isCodeBlueprint || gText.Contains("<") && gText.Contains(">"))
+                                {
+                                    isCodeBlueprint = true;
+
+                                    var cssMatch = Regex.Match(gText, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                    if (cssMatch.Success) generatedCss = cssMatch.Groups[1].Value.Trim();
+
+                                    // Extract from ```html markdown codeblock if present
+                                    var codeBlockMatch = Regex.Match(gText, @"```html\s*([\s\S]*?)```", RegexOptions.IgnoreCase);
+                                    if (codeBlockMatch.Success)
+                                    {
+                                        var rawBlock = codeBlockMatch.Groups[1].Value.Trim();
+                                        if (!cssMatch.Success)
+                                        {
+                                            var innerCss = Regex.Match(rawBlock, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                            if (innerCss.Success) generatedCss = innerCss.Groups[1].Value.Trim();
+                                        }
+                                        generatedHtml = Regex.Replace(rawBlock, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                    }
+                                    else
+                                    {
+                                        var fullHtml = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                        fullHtml = Regex.Replace(fullHtml, @"^```(?:html|css)?\s*", "", RegexOptions.IgnoreCase);
+                                        fullHtml = Regex.Replace(fullHtml, @"\s*```$", "", RegexOptions.IgnoreCase).Trim();
+                                        generatedHtml = fullHtml;
+                                    }
+
+                                    var cleanReply = Regex.Replace(gText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase);
+                                    cleanReply = Regex.Replace(cleanReply, @"```(?:html|css)?[\s\S]*?```", "", RegexOptions.IgnoreCase).Trim();
+
+                                    parsedReply = !string.IsNullOrWhiteSpace(cleanReply)
+                                        ? cleanReply
+                                        : $"Generated template blueprint with Google Gemini using canonical Ozikol tokens.";
+                                }
+                                else
+                                {
+                                    parsedReply = gText;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception gEx)
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini error: {gEx.Message} -> Falling over to secondary providers...");
+                    }
+                }
+
+                // =========================================================
+                // 2. SECONDARY FAILOVER: DeepSeek from Central DB Key Pool
+                // =========================================================
+                if (string.IsNullOrWhiteSpace(parsedReply) && _masterCatalogDbContext != null)
+                {
+                    MasterAiApiKey? activeDeepSeekKey = null;
+                    try
+                    {
+                        var nowUtc = DateTime.UtcNow;
+                        activeDeepSeekKey = await _masterCatalogDbContext.MasterAiApiKeys
+                            .Where(k => k.Provider == "DeepSeek" && k.IsActive 
+                                     && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
+                                     && k.TodayRequestsCount < k.DailyQuotaLimit)
+                            .OrderBy(k => k.TodayRequestsCount)
+                            .FirstOrDefaultAsync();
+                    }
+                    catch { }
+
+                    if (activeDeepSeekKey != null && !string.IsNullOrWhiteSpace(activeDeepSeekKey.ApiKey))
+                    {
+                        provider = $"DeepSeek ({activeDeepSeekKey.KeyAlias})";
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Secondary Provider: DeepSeek ({activeDeepSeekKey.KeyAlias}) ...");
+                        var dsTimer = Stopwatch.StartNew();
+
+                        try
+                        {
+                            using var dsClient = new HttpClient { Timeout = TimeSpan.FromSeconds(35) };
+                            dsClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", activeDeepSeekKey.ApiKey);
+
+                            var dsPayload = new
+                            {
+                                model = "deepseek-chat",
+                                messages = new[] { new { role = "user", content = llmPrompt } },
+                                max_tokens = 8192,
+                                temperature = 0.2
+                            };
+
+                            var dsResponse = await dsClient.PostAsJsonAsync("https://api.deepseek.com/chat/completions", dsPayload);
+                            dsTimer.Stop();
+
+                            if (dsResponse.IsSuccessStatusCode)
+                            {
+                                using var dsDoc = await JsonDocument.ParseAsync(await dsResponse.Content.ReadAsStreamAsync());
+                                var dsText = string.Empty;
+                                if (dsDoc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+                                {
+                                    var firstChoice = choices[0];
+                                    if (firstChoice.TryGetProperty("message", out var msgProp) && msgProp.TryGetProperty("content", out var contentProp))
+                                    {
+                                        dsText = contentProp.GetString()?.Trim() ?? string.Empty;
+                                    }
+                                }
+
+                                if (!string.IsNullOrWhiteSpace(dsText))
+                                {
+                                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ DeepSeek completed in {dsTimer.ElapsedMilliseconds}ms ({dsText.Length} chars)");
+
+                                    try
+                                    {
+                                        activeDeepSeekKey.TodayRequestsCount++;
+                                        activeDeepSeekKey.TotalRequestsCount++;
+                                        activeDeepSeekKey.LastUsedAtUtc = DateTime.UtcNow;
+                                        await _masterCatalogDbContext.SaveChangesAsync();
+                                    }
+                                    catch (Exception dbKeySaveEx)
+                                    {
+                                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ DeepSeek key usage save notice: {dbKeySaveEx.Message}");
+                                    }
+
+                                    if (isCodeBlueprint || dsText.Contains("<", StringComparison.OrdinalIgnoreCase) && dsText.Contains(">", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        isCodeBlueprint = true;
+
+                                        var cssMatch = Regex.Match(dsText, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                        if (cssMatch.Success) generatedCss = cssMatch.Groups[1].Value.Trim();
+
+                                        // Extract full code without slicing at </header> or </section>
+                                        var codeBlockMatch = Regex.Match(dsText, @"```html\s*([\s\S]*?)```", RegexOptions.IgnoreCase);
+                                        if (codeBlockMatch.Success)
+                                        {
+                                            var rawBlock = codeBlockMatch.Groups[1].Value.Trim();
+                                            if (!cssMatch.Success)
+                                            {
+                                                var innerCss = Regex.Match(rawBlock, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                                if (innerCss.Success) generatedCss = innerCss.Groups[1].Value.Trim();
+                                            }
+                                            generatedHtml = Regex.Replace(rawBlock, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                        }
+                                        else
+                                        {
+                                            var fullHtml = Regex.Replace(dsText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                            fullHtml = Regex.Replace(fullHtml, @"^```(?:html|css)?\s*", "", RegexOptions.IgnoreCase);
+                                            fullHtml = Regex.Replace(fullHtml, @"\s*```$", "", RegexOptions.IgnoreCase).Trim();
+                                            generatedHtml = fullHtml;
+                                        }
+
+                                        var cleanReply = Regex.Replace(dsText, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase);
+                                        cleanReply = Regex.Replace(cleanReply, @"```(?:html|css)?[\s\S]*?```", "", RegexOptions.IgnoreCase).Trim();
+
+                                        parsedReply = !string.IsNullOrWhiteSpace(cleanReply)
+                                            ? cleanReply
+                                            : $"Generated template blueprint with DeepSeek using canonical Ozikol tokens.";
+                                    }
+                                    else
+                                    {
+                                        parsedReply = dsText;
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception dsEx)
+                        {
+                            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ DeepSeek error: {dsEx.Message}");
+                        }
+                    }
+                }
+
+                // =========================================================
+                // 3. TERTIARY FALLBACK: Local Ollama / Standby Runner
+                // =========================================================
+                if (string.IsNullOrWhiteSpace(parsedReply))
+                {
+                    try
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🚀 Dispatching prompt to Ollama LLM (qwen2.5-coder:1.5b) at https://ozi-ai.ozikol.cloud/api/generate ...");
+                        var llmTimer = Stopwatch.StartNew();
+
+                        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+                        var ollamaPayload = new
+                        {
+                            model = "qwen2.5-coder:1.5b",
+                            prompt = llmPrompt,
+                            stream = false
+                        };
+
+                        var response = await httpClient.PostAsJsonAsync("https://ozi-ai.ozikol.cloud/api/generate", ollamaPayload);
+                        llmTimer.Stop();
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                            if (doc.RootElement.TryGetProperty("response", out var respProp))
+                            {
+                                var rawResponseStr = respProp.GetString()?.Trim() ?? string.Empty;
+                                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ Ollama response received in {llmTimer.ElapsedMilliseconds}ms ({rawResponseStr.Length} chars)");
+
+                                if (isCodeBlueprint || rawResponseStr.Contains("<section", StringComparison.OrdinalIgnoreCase) || rawResponseStr.Contains("<header", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    isCodeBlueprint = true;
+
+                                    // Extract CSS if present
+                                    var cssMatch = Regex.Match(rawResponseStr, @"<style[^>]*>([\s\S]*?)<\/style>", RegexOptions.IgnoreCase);
+                                    if (cssMatch.Success)
+                                    {
+                                        generatedCss = cssMatch.Groups[1].Value.Trim();
+                                    }
+
+                                    // Extract HTML section if present
+                                    var sectionMatch = Regex.Match(rawResponseStr, @"(<(?:section|header)[\s\S]*?<\/(?:section|header)>)", RegexOptions.IgnoreCase);
+                                    if (sectionMatch.Success)
+                                    {
+                                        generatedHtml = Regex.Replace(sectionMatch.Groups[1].Value.Trim(), @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase).Trim();
+                                    }
+
+                                    // Clean explanation text
+                                    var cleanReply = Regex.Replace(rawResponseStr, @"<style[\s\S]*?<\/style>", "", RegexOptions.IgnoreCase);
+                                    cleanReply = Regex.Replace(cleanReply, @"```(?:html|css)?[\s\S]*?```", "", RegexOptions.IgnoreCase);
+                                    cleanReply = Regex.Replace(cleanReply, @"<(?:section|header)[\s\S]*?<\/(?:section|header)>", "", RegexOptions.IgnoreCase).Trim();
+
+                                    parsedReply = !string.IsNullOrWhiteSpace(cleanReply) 
+                                        ? cleanReply 
+                                        : $"Generated custom section blueprint tailored for '{request.PageTitle ?? "Studio"}' with scoped styles and dynamic tokens.";
+                                }
+                                else
+                                {
+                                    parsedReply = rawResponseStr;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Ollama returned HTTP {response.StatusCode} ({llmTimer.ElapsedMilliseconds}ms) -> Using local fallback");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Ollama endpoint notice: {ex.Message} -> Engaging local fallback");
+                    }
+                }
+
+                // If all external AI providers failed to return a response, report clear error
+                if (string.IsNullOrWhiteSpace(parsedReply))
+                {
+                    return StatusCode(503, ApiResponse<object>.FailureResponse("All AI provider keys are currently offline or unreachable. Please verify your active Gemini / DeepSeek API keys in Central Works (/centralwks/aikeys)."));
+                }
+
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🎯 Final Resolved Intent: {(isCodeBlueprint ? "Code Blueprint Generation" : "Conversational Q&A / DOM Inspection")}");
+
+                // Case 1: Pure Conversational / Q&A / Form Assistance
+                if (!isCodeBlueprint)
+                {
+                    var chatRecord = new BcpAiChatHistory
+                    {
+                        UserId = currentUserId,
+                        UserEmail = currentUserEmail,
+                        PageRoute = string.IsNullOrWhiteSpace(request.PageRoute) ? "/content/console" : request.PageRoute.Trim(),
+                        PageTitle = request.PageTitle ?? "Studio Page",
+                        ProviderUsed = provider,
+                        PromptText = prompt,
+                        ResponseText = parsedReply,
+                        GeneratedCodeJson = null,
+                        IsImplemented = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    try
+                    {
+                        _context.AiChatHistories.Add(chatRecord);
+                        await _context.SaveChangesAsync();
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 💾 Persisted Interaction Record to BcpAiChatHistories (ID: {chatRecord.Id})");
+                    }
+                    catch (Exception histEx)
+                    {
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Chat history save notice: {histEx.Message}");
+                    }
+
+                    totalTimer.Stop();
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🏁 Total Ozi AI Execution Completed in {totalTimer.ElapsedMilliseconds}ms");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ═══════════════════════════════════════════════════════════════════════════════\n");
+
+                    return Ok(ApiResponse<object>.SuccessResponse(new
+                    {
+                        historyId = chatRecord.Id,
+                        explanation = parsedReply,
+                        htmlTemplate = (string?)null,
+                        isImplemented = false,
+                        createdAt = chatRecord.CreatedAt
+                    }, "AI response generated successfully."));
+                }
+
+                // Case 2: Generative Code Blueprint
+                var finalHtml = generatedHtml;
+                var tokensFound = new List<string>();
+
+                if (string.IsNullOrWhiteSpace(finalHtml))
+                {
+                    if (!string.IsNullOrWhiteSpace(rawHtml))
+                    {
+                        finalHtml = rawHtml;
+                        if (Regex.IsMatch(finalHtml, @"<h[1-2][^>]*>(.*?)<\/h[1-2]>", RegexOptions.IgnoreCase))
+                        {
+                            finalHtml = Regex.Replace(finalHtml, @"<h[1-2][^>]*>(.*?)<\/h[1-2]>", "<h1 class=\"oz-title\">{{ Title }}</h1>", RegexOptions.IgnoreCase);
+                            tokensFound.Add("Title");
+                        }
+                        if (Regex.IsMatch(finalHtml, @"<p[^>]*class=""[^""]*(?:lead|desc|subtitle)[^""]*""[^>]*>(.*?)<\/p>", RegexOptions.IgnoreCase))
+                        {
+                            finalHtml = Regex.Replace(finalHtml, @"<p([^>]*)class=""([^""]*(?:lead|desc|subtitle)[^""]*)""([^>]*)>(.*?)<\/p>", "<p$1class=\"$2\"$3>{{ Description }}</p>", RegexOptions.IgnoreCase);
+                            tokensFound.Add("Description");
+                        }
+                    }
+                    else if (generatedCategory == "pricing")
+                    {
+                        finalHtml = @"<section class=""oz-pricing-section"">
+  <div class=""oz-pricing-container"">
+    <span class=""oz-pill"">{{ MiniTitle }}</span>
+    <h2 class=""oz-title"">{{ Title }}</h2>
+    <p class=""oz-desc"">{{ Description }}</p>
+    <div class=""oz-pricing-grid"">
+      {{#each PageSectionLists}}
+      <div class=""oz-price-card"">
+        <span class=""material-symbols-outlined oz-card-icon"">{{ Icon }}</span>
+        <h3 class=""oz-card-title"">{{ Title }}</h3>
+        <span class=""oz-price-tag"">{{ SubTitle }}</span>
+        <p class=""oz-card-desc"">{{ Description }}</p>
+        <a href=""{{ ButtonLink }}"" class=""btn oz-btn-tier"">{{ ButtonText }}</a>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>";
+                        tokensFound.AddRange(new[] { "MiniTitle", "Title", "Description", "PageSectionLists", "Icon", "SubTitle", "ButtonText", "ButtonLink" });
+                    }
+                    else
+                    {
+                        finalHtml = @"<section class=""oz-custom-section"">
+  <div class=""oz-custom-container"">
+    <span class=""oz-eyebrow"">{{ MiniTitle }}</span>
+    <h2 class=""oz-headline"">{{ Title }}</h2>
+    <p class=""oz-body-lead"">{{ Description }}</p>
+    <div class=""oz-cards-grid"">
+      {{#each PageSectionLists}}
+      <div class=""oz-feature-box"">
+        <span class=""material-symbols-outlined"">{{ Icon }}</span>
+        <h4>{{ Title }}</h4>
+        <p>{{ Description }}</p>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>";
+                        tokensFound.AddRange(new[] { "MiniTitle", "Title", "Description", "PageSectionLists", "Icon" });
+                    }
+                }
+                else
+                {
+                    if (finalHtml.Contains("{{ Title }}")) tokensFound.Add("Title");
+                    if (finalHtml.Contains("{{ MiniTitle }}")) tokensFound.Add("MiniTitle");
+                    if (finalHtml.Contains("{{ Description }}")) tokensFound.Add("Description");
+                    if (finalHtml.Contains("{{ ButtonText }}")) tokensFound.Add("ButtonText");
+                    if (finalHtml.Contains("{{ PageSectionLists }}")) tokensFound.Add("PageSectionLists");
+                }
+
+                var finalTemplateName = !string.IsNullOrWhiteSpace(generatedTemplateName)
+                    ? generatedTemplateName
+                    : (!string.IsNullOrWhiteSpace(request.CurrentTemplateName) ? request.CurrentTemplateName : $"{char.ToUpper(generatedCategory[0])}{generatedCategory[1..]} Blueprint ({brandModelName})");
+
+                var resultPayload = new
+                {
+                    templateName = finalTemplateName,
+                    categoryKey = generatedCategory,
+                    variantCode = $"OZI_{generatedCategory.ToUpper()}_{Guid.NewGuid().ToString("N")[..5].ToUpper()}",
+                    htmlTemplate = finalHtml,
+                    cssStyles = generatedCss ?? rawCss,
+                    jsScript = rawJs,
+                    explanation = parsedReply,
+                    tokensExtracted = tokensFound,
+                    mockContent = new
+                    {
+                        title = "Enterprise Grade Digital Architecture",
+                        miniTitle = "SCALABLE PLATFORM",
+                        description = "Deploy resilient components with integrated tokenization and responsive layout structures.",
+                        buttonText = "Get Started Now",
+                        buttonLink = "#pricing"
+                    }
+                };
+
+                // Persist interaction to BcpAiChatHistories table
+                var historyRecord = new BcpAiChatHistory
+                {
+                    UserId = currentUserId,
+                    UserEmail = currentUserEmail,
+                    PageRoute = string.IsNullOrWhiteSpace(request.PageRoute) ? "/content/console" : request.PageRoute.Trim(),
+                    PageTitle = request.PageTitle ?? "Studio Page",
+                    ProviderUsed = provider,
+                    PromptText = !string.IsNullOrWhiteSpace(prompt) ? prompt : "Analyze attached visual mockup",
+                    ResponseText = parsedReply,
+                    AttachedImageUrl = request.AttachedImageUrl,
+                    GeneratedCodeJson = JsonSerializer.Serialize(resultPayload),
+                    IsImplemented = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                try
+                {
+                    _context.AiChatHistories.Add(historyRecord);
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 💾 Persisted Blueprint Record to BcpAiChatHistories (ID: {historyRecord.Id})");
+                }
+                catch (Exception histEx)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Blueprint history save notice: {histEx.Message}");
+                }
+
+                totalTimer.Stop();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🛠️ Generated Blueprint '{finalTemplateName}' ({tokensFound.Count} tokens: {string.Join(", ", tokensFound)})");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🏁 Total Ozi AI Request Latency: {totalTimer.ElapsedMilliseconds}ms");
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ═══════════════════════════════════════════════════════════════════════════════\n");
+
+                var responseData = new
+                {
+                    historyId = historyRecord.Id,
+                    templateName = resultPayload.templateName,
+                    categoryKey = resultPayload.categoryKey,
+                    variantCode = resultPayload.variantCode,
+                    htmlTemplate = resultPayload.htmlTemplate,
+                    cssStyles = resultPayload.cssStyles,
+                    jsScript = resultPayload.jsScript,
+                    explanation = resultPayload.explanation,
+                    tokensExtracted = resultPayload.tokensExtracted,
+                    mockContent = resultPayload.mockContent,
+                    isImplemented = false,
+                    createdAt = historyRecord.CreatedAt
+                };
+
+                return Ok(ApiResponse<object>.SuccessResponse(responseData, "AI template blueprint generated and saved to history."));
+            }
+            catch (Exception ex)
+            {
+                totalTimer.Stop();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ [OZI AI ERROR] Exception after {totalTimer.ElapsedMilliseconds}ms: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • Inner Exception: {ex.InnerException.Message}");
+                }
+                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"AI Generation error: {msg}"));
+            }
+        }
+
+        /// <summary>
+        /// Analyzes real-time browser runtime errors, network failures, and template code using the Central AI key pool.
+        /// </summary>
+        /// <param name="request">The captured runtime diagnostic payload.</param>
+        /// <returns>A structured AI health report card with root-cause explanations and fix suggestions.</returns>
+        [HttpPost("ai/diagnose-runtime")]
+        public async Task<IActionResult> DiagnoseRuntime([FromBody] DiagnoseRuntimeRequest request)
+        {
+            var totalTimer = Stopwatch.StartNew();
+            var currentUserEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? "anonymous@ozikol.cloud";
+
+            Console.WriteLine($"\n[{DateTime.Now:HH:mm:ss.fff}] ═══════════════════════════════════════════════════════════════════════════════");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] 🩺 [AI RUNTIME DIAGNOSTIC] Initiating Deep Analysis for {currentUserEmail}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • Captured Errors: {request.CapturedErrors.Count}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • Captured Warnings: {request.CapturedWarnings.Count}");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}]    • Header Tags: {request.HeaderTags.Count} | Footer Scripts: {request.FooterScripts.Count}");
+
+            var errorSummary = request.CapturedErrors.Count > 0 ? string.Join("\n - ", request.CapturedErrors) : "None (No runtime exceptions thrown)";
+            var warningSummary = request.CapturedWarnings.Count > 0 ? string.Join("\n - ", request.CapturedWarnings) : "None";
+            var headerSummary = request.HeaderTags.Count > 0 ? string.Join("\n - ", request.HeaderTags) : "None";
+            var footerSummary = request.FooterScripts.Count > 0 ? string.Join("\n - ", request.FooterScripts) : "None";
+
+            var prompt = $@"You are the Ozikol CMS Web Platform AI Diagnostic Engine.
+Analyze the following REAL runtime telemetry and browser console errors captured from the user's live website bundle:
+
+ACTIVE TEMPLATE: {request.ActiveTemplateName} ({request.ActiveTemplateCategory})
+
+CAPTURED BROWSER RUNTIME ERRORS:
+ - {errorSummary}
+
+CAPTURED NETWORK / CORS WARNINGS:
+ - {warningSummary}
+
+ACTIVE HEADER TAGS (<head>):
+ - {headerSummary}
+
+ACTIVE FOOTER SCRIPTS (</body> in order):
+ - {footerSummary}
+
+INSTRUCTIONS:
+1. Examine the exact errors that occurred (e.g. ReferenceErrors, missing variables/libraries, execution order inversions, CORS font blocks, 404 dead links).
+2. For each error, provide a clear, non-technical plain English Root Cause and a direct, actionable Step-by-Step Fix.
+3. Calculate an overall Health Score (0 to 100).
+
+You MUST respond strictly with a valid JSON object matching this schema without markdown code blocks:
+{{
+  ""healthScore"": 75,
+  ""statusTitle"": ""Action Required"",
+  ""criticalIssues"": [
+    {{
+      ""title"": ""Clear issue title"",
+      ""rootCause"": ""Detailed explanation of what failed and why"",
+      ""recommendation"": ""Exact step-by-step instructions on how to fix it""
+    }}
+  ],
+  ""warnings"": [
+    {{
+      ""title"": ""Warning title"",
+      ""rootCause"": ""Impact explanation"",
+      ""recommendation"": ""Actionable suggestion""
+    }}
+  ],
+  ""passedChecks"": [
+     ""List of checks that passed cleanly""
+  ]
+}}";
+
+            string? rawAiJson = null;
+
+            // 1. Primary AI Provider: Gemini
+            try
+            {
+                string? geminiKey = null;
+                if (_masterCatalogDbContext != null)
+                {
+                    var nowUtc = DateTime.UtcNow;
+                    var keyEntity = await _masterCatalogDbContext.MasterAiApiKeys
+                        .Where(k => k.Provider == "Gemini" && k.IsActive 
+                                 && (!k.RateLimitCooldownUntilUtc.HasValue || k.RateLimitCooldownUntilUtc.Value <= nowUtc)
+                                 && k.TodayRequestsCount < k.DailyQuotaLimit)
+                        .OrderBy(k => k.TodayRequestsCount)
+                        .FirstOrDefaultAsync();
+                    geminiKey = keyEntity?.ApiKey;
+                }
+
+                if (!string.IsNullOrWhiteSpace(geminiKey))
+                {
+                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                    var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiKey}";
+                    var geminiPayload = new
+                    {
+                        contents = new[] { new { parts = new[] { new { text = prompt } } } },
+                        generationConfig = new { temperature = 0.2, maxOutputTokens = 2048, responseMimeType = "application/json" }
+                    };
+
+                    var response = await httpClient.PostAsJsonAsync(geminiUrl, geminiPayload);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                        {
+                            var text = candidates[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString();
+                            rawAiJson = text?.Trim();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Gemini diagnostic probe notice: {ex.Message}");
+            }
+
+            // 2. Secondary Failover: DeepSeek / Ollama Qwen
+            if (string.IsNullOrWhiteSpace(rawAiJson))
+            {
+                try
+                {
+                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+                    var ollamaPayload = new { model = "qwen2.5-coder:1.5b", prompt = prompt, stream = false };
+                    var response = await httpClient.PostAsJsonAsync("https://ozi-ai.ozikol.cloud/api/generate", ollamaPayload);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                        if (doc.RootElement.TryGetProperty("response", out var respProp))
+                        {
+                            rawAiJson = respProp.GetString()?.Trim();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ Ollama diagnostic notice: {ex.Message}");
+                }
+            }
+
+            // If AI returned JSON, parse and return
+            if (!string.IsNullOrWhiteSpace(rawAiJson))
+            {
+                try
+                {
+                    var cleanJson = rawAiJson.Replace("```json", "").Replace("```", "").Trim();
+                    var parsedObj = JsonSerializer.Deserialize<object>(cleanJson);
+                    totalTimer.Stop();
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ✔ AI Runtime Diagnostic successfully completed in {totalTimer.ElapsedMilliseconds}ms");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ═══════════════════════════════════════════════════════════════════════════════\n");
+                    return Ok(ApiResponse<object>.SuccessResponse(parsedObj, "AI runtime diagnostic completed."));
+                }
+                catch (Exception parseEx)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ⚠️ AI output parse notice: {parseEx.Message}");
+                }
+            }
+
+            // Fallback dynamic heuristic analysis if external AI is temporarily offline
+            totalTimer.Stop();
+            var dynamicFallback = GenerateDynamicFallbackReport(request);
+            return Ok(ApiResponse<object>.SuccessResponse(dynamicFallback, "Dynamic runtime diagnostic completed."));
+        }
+
+        private static object GenerateDynamicFallbackReport(DiagnoseRuntimeRequest req)
+        {
+            var criticalIssues = new List<object>();
+            var warnings = new List<object>();
+            var passedChecks = new List<string>();
+
+            // Parse real captured runtime errors dynamically
+            foreach (var err in req.CapturedErrors)
+            {
+                if (err.Contains("ReferenceError", StringComparison.OrdinalIgnoreCase))
+                {
+                    var missingMatch = Regex.Match(err, @"ReferenceError:\s*(\w+)\s*is not defined", RegexOptions.IgnoreCase);
+                    var missingVar = missingMatch.Success ? missingMatch.Groups[1].Value : "a required library variable";
+
+                    criticalIssues.Add(new
+                    {
+                        title = $"Uncaught ReferenceError: {missingVar} is not defined",
+                        rootCause = $"A script attempted to access '{missingVar}', but '{missingVar}' has not been loaded into the window context.",
+                        recommendation = $"Verify that the library providing '{missingVar}' is added as a Header/Footer script tag and scheduled before dependent scripts."
+                    });
+                }
+                else
+                {
+                    criticalIssues.Add(new
+                    {
+                        title = "Uncaught JavaScript Runtime Exception",
+                        rootCause = err,
+                        recommendation = "Review the script line mentioned above and ensure all dependent libraries are loaded in proper sequence."
+                    });
+                }
+            }
+
+            // Parse real captured CORS / network warnings dynamically
+            foreach (var warn in req.CapturedWarnings)
+            {
+                if (warn.Contains("CORS", StringComparison.OrdinalIgnoreCase))
+                {
+                    var urlMatch = Regex.Match(warn, @"'(https?:\/\/[^']+)'", RegexOptions.IgnoreCase);
+                    var blockedUrl = urlMatch.Success ? urlMatch.Groups[1].Value : "an external asset";
+
+                    warnings.Add(new
+                    {
+                        title = "Cross-Origin Font / Asset Blocked (CORS)",
+                        rootCause = $"The browser blocked loading '{blockedUrl}' because the host server does not send the 'Access-Control-Allow-Origin: *' response header.",
+                        recommendation = $"Enable CORS on the hosting storage bucket (e.g. Cloudflare R2 CORS Settings) or serve the asset from your own domain."
+                    });
+                }
+                else
+                {
+                    warnings.Add(new
+                    {
+                        title = "Browser Warning",
+                        rootCause = warn,
+                        recommendation = "Inspect the referenced asset or API call to ensure it is published and accessible."
+                    });
+                }
+            }
+
+            if (req.HeaderTags.Count > 0) passedChecks.Add($"{req.HeaderTags.Count} active Header tag(s) loaded");
+            if (req.FooterScripts.Count > 0) passedChecks.Add($"{req.FooterScripts.Count} active Footer script(s) loaded");
+            if (!string.IsNullOrWhiteSpace(req.ActiveTemplateName)) passedChecks.Add($"Active Template: '{req.ActiveTemplateName}'");
+
+            int score = Math.Max(30, 100 - (criticalIssues.Count * 25) - (warnings.Count * 8));
+            var status = criticalIssues.Count > 0 ? "Action Required" : (warnings.Count > 0 ? "Good (Minor Warnings)" : "Excellent");
+
+            return new
+            {
+                healthScore = score,
+                statusTitle = status,
+                criticalIssues,
+                warnings,
+                passedChecks
+            };
+        }
+
+        /// <summary>
+        /// Retrieves saved AI chat history interactions and blueprints for the current user and page route.
+        /// </summary>
+        /// <param name="pageRoute">Optional page route to filter by. If omitted, returns recent workspace history.</param>
+        /// <returns>List of saved AI interactions, code snapshots, and implementation statuses.</returns>
+        [HttpGet("ai/history")]
+        public async Task<IActionResult> GetAiChatHistory([FromQuery] string? pageRoute = null)
+        {
+            try
+            {
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var query = _context.AiChatHistories.AsNoTracking().AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(currentUserId))
+                {
+                    query = query.Where(h => h.UserId == currentUserId);
+                }
+
+                if (!string.IsNullOrWhiteSpace(pageRoute))
+                {
+                    var normalizedRoute = pageRoute.Trim().ToLowerInvariant();
+                    query = query.Where(h => h.PageRoute.ToLower() == normalizedRoute);
+                }
+
+                var records = await query
+                    .OrderByDescending(h => h.CreatedAt)
+                    .Take(50)
+                    .ToListAsync();
+
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [OZI AI] 📚 History requested for route '{pageRoute ?? "ALL"}' -> Loaded {records.Count} interaction records");
+
+                return Ok(ApiResponse<object>.SuccessResponse(records, "AI Chat history retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ [OZI AI] Failed to retrieve AI history: {ex.Message}");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to retrieve AI history: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Marks an AI proposal as implemented and saves the pre-change snapshot JSON for undo/restore support.
+        /// </summary>
+        /// <param name="request">The implementation payload containing HistoryId and SnapshotJson.</param>
+        /// <returns>Confirmation response with implementation status.</returns>
+        [HttpPost("ai/implement")]
+        public async Task<IActionResult> ImplementAiProposal([FromBody] AiHistoryImplementRequest request)
+        {
+            if (request == null || request.HistoryId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("History ID is required."));
+            }
+
+            try
+            {
+                var record = await _context.AiChatHistories.FindAsync(request.HistoryId);
+                if (record == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("AI chat history record not found."));
+                }
+
+                record.PreviousSnapshotJson = request.SnapshotJson;
+                record.IsImplemented = true;
+                record.ImplementedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [OZI AI] ✔ Blueprint Implemented for History ID: {record.Id} (by {User.Identity?.Name ?? "User"})");
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    historyId = record.Id,
+                    isImplemented = true,
+                    implementedAt = record.ImplementedAt
+                }, "AI proposal marked as implemented."));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ [OZI AI] Failed to record implementation: {ex.Message}");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to record implementation: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Rolls back an implemented AI proposal and returns the previous editor snapshot JSON for one-click restore.
+        /// </summary>
+        /// <param name="request">The restore payload containing HistoryId.</param>
+        /// <returns>Previous snapshot JSON and status.</returns>
+        [HttpPost("ai/restore")]
+        public async Task<IActionResult> RestoreAiProposal([FromBody] AiHistoryRestoreRequest request)
+        {
+            if (request == null || request.HistoryId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("History ID is required."));
+            }
+
+            try
+            {
+                var record = await _context.AiChatHistories.FindAsync(request.HistoryId);
+                if (record == null)
+                {
+                    return NotFound(ApiResponse<object>.FailureResponse("AI chat history record not found."));
+                }
+
+                record.IsImplemented = false;
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [OZI AI] ↩ Rollback / Restore Triggered for History ID: {record.Id}");
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    historyId = record.Id,
+                    isImplemented = false,
+                    previousSnapshotJson = record.PreviousSnapshotJson
+                }, "AI proposal rolled back. Restored previous snapshot."));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ [OZI AI] Failed to restore AI proposal: {ex.Message}");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to restore AI proposal: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Clears AI chat history records for the current user and specified page route (or all).
+        /// </summary>
+        /// <param name="pageRoute">Optional page route to clear.</param>
+        /// <param name="historyId">Optional specific record ID to delete.</param>
+        /// <returns>Confirmation response.</returns>
+        [HttpDelete("ai/history")]
+        public async Task<IActionResult> ClearAiChatHistory([FromQuery] string? pageRoute = null, [FromQuery] Guid? historyId = null)
+        {
+            try
+            {
+                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var query = _context.AiChatHistories.AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(currentUserId))
+                {
+                    query = query.Where(h => h.UserId == currentUserId);
+                }
+
+                if (historyId.HasValue && historyId.Value != Guid.Empty)
+                {
+                    query = query.Where(h => h.Id == historyId.Value);
+                }
+                else if (!string.IsNullOrWhiteSpace(pageRoute))
+                {
+                    var normalized = pageRoute.Trim().ToLowerInvariant();
+                    query = query.Where(h => h.PageRoute.ToLower() == normalized);
+                }
+
+                var toRemove = await query.ToListAsync();
+                if (toRemove.Count > 0)
+                {
+                    _context.AiChatHistories.RemoveRange(toRemove);
+                    await _context.SaveChangesAsync();
+                }
+
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [OZI AI] 🗑️ Cleared {toRemove.Count} interaction history record(s) for Route: '{pageRoute ?? "ALL"}'");
+
+                return Ok(ApiResponse<object>.SuccessResponse(new { deletedCount = toRemove.Count }, "AI Chat history cleared successfully."));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ❌ [OZI AI] Failed to clear AI history: {ex.Message}");
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to clear AI history: {ex.Message}"));
             }
         }
 
@@ -1999,21 +3660,21 @@ namespace Ozikol_BCC.Api.Controllers
                 }).OrderBy(g => g.tag).ToList();
 
                 // 5. Tenant Brand Settings
-                var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
+                var config = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
                 var brand = new
                 {
-                    name = config?.CompanyName ?? "Organization Portal",
-                    logoUrl = config?.CompanyLogoUrl ?? string.Empty,
-                    whiteLogoUrl = config?.CompanyWhiteLogoUrl ?? string.Empty,
-                    tagline = config?.CompanyDescription ?? string.Empty,
-                    email = config?.EmailOne ?? string.Empty,
-                    phone = config?.PhoneOne ?? string.Empty,
-                    address = config?.AddressOne ?? string.Empty,
-                    facebook = config?.FacebookPage ?? string.Empty,
-                    twitter = config?.TwitterPage ?? string.Empty,
-                    instagram = config?.InstagramPage ?? string.Empty,
-                    youtube = config?.YoutubeChannel ?? string.Empty,
-                    tiktok = config?.TiktokPage ?? string.Empty
+                    name = config?.BrandName ?? config?.CompanyName ?? "Organization Portal",
+                    logoUrl = config?.LogoUrl ?? config?.CompanyLogoUrl ?? string.Empty,
+                    whiteLogoUrl = config?.WhiteLogoUrl ?? config?.CompanyWhiteLogoUrl ?? string.Empty,
+                    tagline = config?.Tagline ?? config?.CompanyDescription ?? string.Empty,
+                    email = config?.ContactEmail ?? config?.EmailOne ?? string.Empty,
+                    phone = config?.PrimaryPhone ?? config?.PhoneOne ?? string.Empty,
+                    address = config?.Address ?? config?.AddressOne ?? string.Empty,
+                    facebook = config?.FacebookUrl ?? config?.FacebookPage ?? string.Empty,
+                    twitter = config?.TwitterUrl ?? config?.TwitterPage ?? string.Empty,
+                    instagram = config?.InstagramUrl ?? config?.InstagramPage ?? string.Empty,
+                    youtube = config?.YouTubeUrl ?? config?.YoutubeChannel ?? string.Empty,
+                    tiktok = config?.TikTokUrl ?? config?.TiktokPage ?? string.Empty
                 };
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
@@ -2066,7 +3727,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var singletonCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    "menu", "hero", "footer", "breadcrumb", "blog", "ecommerce"
+                    "menu", "hero", "footer", "breadcrumb", "blog", "blog_detail", "ecommerce"
                 };
 
                 // If adopting / overriding, deactivate previous competing singleton templates
@@ -2395,7 +4056,6 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves code injection tags for the tenant, optionally filtered by zone ("head", "body_open", "footer").
         /// Sorted by SortOrder ascending.
         /// </summary>
-        /// <param name="zone">Optional zone filter: "head", "body_open", or "footer".</param>
         /// <summary>
         /// Retrieves all ordered code injection tags for the tenant, with optional zone or suite filtering.
         /// </summary>
@@ -2480,11 +4140,11 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Uploads multiple CSS or JS asset files to Cloudflare R2 Object Storage in bulk,
-        /// automatically extracts the tag name from the filename prefix (before the first dot),
-        /// generates global CDN URLs, and creates active SiteCodeInjectionTag entries with incrementing SortOrders.
+        /// Uploads multiple CSS or JS asset files in bulk to Cloudflare R2 or local server storage,
+        /// extracts/applies custom or auto-derived tag names, and creates active SiteCodeInjectionTag entries.
         /// </summary>
         /// <param name="files">The collection of files to upload.</param>
+        /// <param name="names">Optional list of custom tag names corresponding to each file in the queue.</param>
         /// <param name="zone">Target browser zone: 'head', 'body_open', or 'footer'. Defaults to 'head'.</param>
         /// <param name="suiteCode">Theme suite scope: 'global' or a specific theme suite code. Defaults to 'global'.</param>
         /// <param name="startSortOrder">Starting sort order. Defaults to 10.</param>
@@ -2494,6 +4154,7 @@ namespace Ozikol_BCC.Api.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> BulkUploadCodeInjections(
             [FromForm] List<IFormFile> files,
+            [FromForm] List<string>? names = null,
             [FromForm] string zone = "head",
             [FromForm] string suiteCode = "global",
             [FromForm] int startSortOrder = 10,
@@ -2529,17 +4190,34 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            foreach (var file in files)
+            for (int i = 0; i < files.Count; i++)
             {
+                var file = files[i];
                 if (file == null || file.Length == 0) continue;
 
-                var fileName = file.FileName;
-                // Auto-Naming Rule: use string before the first dot as the tag name
-                var nameBeforeDot = fileName.Contains('.') ? fileName.Substring(0, fileName.IndexOf('.')) : fileName;
-                var tagName = string.IsNullOrWhiteSpace(nameBeforeDot) ? fileName : nameBeforeDot.Trim();
+                var rawFileName = file.FileName ?? "asset";
+                var fileName = rawFileName;
+
+                // Handle files ending with .download (e.g. main.js.download or style.css.download)
+                if (fileName.EndsWith(".download", StringComparison.OrdinalIgnoreCase))
+                {
+                    fileName = fileName.Substring(0, fileName.Length - 9);
+                }
+
+                // Determine tag name: prioritize custom user input from names array, otherwise extract prefix before first dot
+                string tagName;
+                if (names != null && names.Count > i && !string.IsNullOrWhiteSpace(names[i]))
+                {
+                    tagName = names[i].Trim();
+                }
+                else
+                {
+                    var nameBeforeDot = fileName.Contains('.') ? fileName.Substring(0, fileName.IndexOf('.')) : fileName;
+                    tagName = string.IsNullOrWhiteSpace(nameBeforeDot) ? fileName : nameBeforeDot.Trim();
+                }
 
                 var ext = Path.GetExtension(fileName).ToLowerInvariant();
-                var isJs = ext == ".js";
+                var isJs = ext == ".js" || rawFileName.EndsWith(".js.download", StringComparison.OrdinalIgnoreCase);
                 var isFont = ext == ".woff2" || ext == ".woff" || ext == ".ttf" || ext == ".otf" || ext == ".eot" || ext == ".svg";
                 var tagType = isJs 
                     ? (cleanZone == "footer" ? "footer_script_url" : "script_url") 
@@ -2547,36 +4225,81 @@ namespace Ozikol_BCC.Api.Controllers
 
                 try
                 {
-                    using var stream = file.OpenReadStream();
-                    CloudflareR2UploadResult result;
-                    if (isJs)
+                    string assetUrl;
+
+                    if (_r2Storage.IsConfigured())
                     {
-                        result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", "js");
-                    }
-                    else if (isFont)
-                    {
-                        var contentType = ext switch
+                        await using var stream = file.OpenReadStream();
+                        CloudflareR2UploadResult result;
+                        if (isJs)
                         {
-                            ".woff2" => "font/woff2",
-                            ".woff" => "font/woff",
-                            ".ttf" => "font/ttf",
-                            ".otf" => "font/otf",
-                            ".eot" => "application/vnd.ms-fontobject",
-                            ".svg" => "image/svg+xml",
-                            _ => "application/octet-stream"
-                        };
-                        result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
+                            result = await _r2Storage.UploadAssetAsync(stream, fileName, "application/javascript", $"tenants/{tenantSlug}/js");
+                        }
+                        else if (isFont)
+                        {
+                            var contentType = ext switch
+                            {
+                                ".woff2" => "font/woff2",
+                                ".woff" => "font/woff",
+                                ".ttf" => "font/ttf",
+                                ".otf" => "font/otf",
+                                ".eot" => "application/vnd.ms-fontobject",
+                                ".svg" => "image/svg+xml",
+                                _ => "application/octet-stream"
+                            };
+                            result = await _r2Storage.UploadAssetAsync(stream, fileName, contentType, $"tenants/{tenantSlug}/fonts");
+                        }
+                        else
+                        {
+                            result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+                        }
+
+                        if (result.Success && !string.IsNullOrWhiteSpace(result.Url))
+                        {
+                            assetUrl = result.Url;
+                        }
+                        else
+                        {
+                            // Fallback to local server storage if R2 upload fails
+                            var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
+                            var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
+                            Directory.CreateDirectory(localDir);
+
+                            var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
+                            var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
+                            var localPath = Path.Combine(localDir, uniqueFileName);
+
+                            await using (var localStream = new FileStream(localPath, FileMode.Create))
+                            {
+                                file.OpenReadStream().CopyTo(localStream);
+                            }
+
+                            assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
+                        }
                     }
                     else
                     {
-                        result = await _r2Storage.UploadCssAsync(stream, fileName, tenantSlug);
+                        // Fallback to local server storage when R2 is unconfigured
+                        var subFolder = isJs ? "js" : (isFont ? "fonts" : "css");
+                        var localDir = Path.Combine(AppContext.BaseDirectory, "uploads", "assets", subFolder);
+                        Directory.CreateDirectory(localDir);
+
+                        var safeBaseName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "-").ToLowerInvariant();
+                        var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}{ext}";
+                        var localPath = Path.Combine(localDir, uniqueFileName);
+
+                        await using (var localStream = new FileStream(localPath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(localStream);
+                        }
+
+                        assetUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/ContentApi/assets/{subFolder}/{uniqueFileName}";
                     }
 
-                    var cdnUrl = result.Url;
                     string tagContent;
                     if (isJs)
                     {
-                        tagContent = $"<script src=\"{cdnUrl}\"></script>";
+                        tagContent = $"<script src=\"{assetUrl}\"></script>";
                     }
                     else if (isFont)
                     {
@@ -2590,11 +4313,11 @@ namespace Ozikol_BCC.Api.Controllers
                             ".svg" => "svg",
                             _ => "woff2"
                         };
-                        tagContent = $"<style>\n@font-face {{\n  font-family: '{tagName}';\n  src: url('{cdnUrl}') format('{fontFormat}');\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n}}\n</style>";
+                        tagContent = $"<style>\n@font-face {{\n  font-family: '{tagName}';\n  src: url('{assetUrl}') format('{fontFormat}');\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n}}\n</style>";
                     }
                     else
                     {
-                        tagContent = $"<link rel=\"stylesheet\" href=\"{cdnUrl}\" />";
+                        tagContent = $"<link rel=\"stylesheet\" href=\"{assetUrl}\" />";
                     }
 
                     var tag = new SiteCodeInjectionTag
@@ -3068,6 +4791,8 @@ namespace Ozikol_BCC.Api.Controllers
         public bool Publish { get; set; } = true;
         public bool SecurityPage { get; set; } = false;
         public int SortOrder { get; set; } = 0;
+        public Ozikol_BCC.Domain.Enum.Enum.MenuPosition MenuPosition { get; set; } = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
+        public string? CustomClass { get; set; }
         public string? ImageUrl { get; set; }
         public string? ImageKey { get; set; }
         public string? MetaTitle { get; set; }
@@ -3081,6 +4806,8 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string Title { get; set; } = string.Empty;
         public int MenuSortOrder { get; set; } = 0;
+        public Ozikol_BCC.Domain.Enum.Enum.MenuPosition MenuPosition { get; set; } = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+        public string? CustomClass { get; set; }
         public bool Publish { get; set; } = true;
         public Guid? ParentId { get; set; }
         public string? Icon { get; set; }
@@ -3212,6 +4939,21 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public Guid Id { get; set; }
         public int SortOrder { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for submitting real-time browser telemetry, captured errors, and active tags for AI diagnostic analysis.
+    /// </summary>
+    public class DiagnoseRuntimeRequest
+    {
+        public List<string> HeaderTags { get; set; } = new();
+        public List<string> FooterScripts { get; set; } = new();
+        public List<string> CapturedErrors { get; set; } = new();
+        public List<string> CapturedWarnings { get; set; } = new();
+        public string ActiveTemplateName { get; set; } = string.Empty;
+        public string ActiveTemplateCategory { get; set; } = string.Empty;
+        public string? ScopedCss { get; set; }
+        public string? ScopedJs { get; set; }
     }
 }
 

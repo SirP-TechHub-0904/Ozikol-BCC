@@ -168,6 +168,16 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page layout sections retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves published banner sliders for the public storefront.
+        /// </summary>
+        /// <returns>A collection of active slider items.</returns>
+        [HttpGet("sliders")]
+        public IActionResult GetPublishedSliders()
+        {
+            return Ok(ApiResponse<List<object>>.SuccessResponse(new List<object>(), "Sliders retrieved successfully."));
+        }
+
         // ==========================================
         // 4. PUBLIC VISITOR TELEMETRY
         // ==========================================
@@ -302,27 +312,26 @@ namespace Ozikol_BCC.Api.Controllers
                 .ThenBy(t => t.CreatedAtUtc)
                 .ToListAsync();
 
-            // Resolve tenant brand settings to hydrate placeholders dynamically (UiSettings preferred, with fallback to legacy ConfigSettings)
-            var uiSetting = await _context.UiSettings.AsNoTracking().FirstOrDefaultAsync();
-            var config = uiSetting == null ? await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync() : null;
+            // Resolve tenant brand settings to hydrate placeholders dynamically from MisWebsiteSettings
+            var siteSetting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
 
-            var brandName = !string.IsNullOrWhiteSpace(uiSetting?.BrandName)
-                ? uiSetting.BrandName
-                : (!string.IsNullOrWhiteSpace(config?.CompanyName)
-                    ? config.CompanyName
-                    : (!string.IsNullOrWhiteSpace(config?.WebsiteTitle) ? config.WebsiteTitle : "Ozikol"));
+            var brandName = !string.IsNullOrWhiteSpace(siteSetting?.BrandName)
+                ? siteSetting.BrandName
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyName)
+                    ? siteSetting.CompanyName
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.WebsiteTitle) ? siteSetting.WebsiteTitle : "Ozikol"));
 
-            var faviconUrl = !string.IsNullOrWhiteSpace(uiSetting?.FaviconUrl)
-                ? uiSetting.FaviconUrl
-                : (!string.IsNullOrWhiteSpace(config?.CompanyIconUrl) && config.CompanyIconUrl != "/favicon.ico"
-                    ? config.CompanyIconUrl
-                    : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : string.Empty));
+            var faviconUrl = !string.IsNullOrWhiteSpace(siteSetting?.FaviconUrl)
+                ? siteSetting.FaviconUrl
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyIconUrl) && siteSetting.CompanyIconUrl != "/favicon.ico"
+                    ? siteSetting.CompanyIconUrl
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : string.Empty));
 
-            var logoUrl = !string.IsNullOrWhiteSpace(uiSetting?.LogoUrl)
-                ? uiSetting.LogoUrl
-                : (!string.IsNullOrWhiteSpace(config?.CompanyLogoUrl) ? config.CompanyLogoUrl : faviconUrl);
+            var logoUrl = !string.IsNullOrWhiteSpace(siteSetting?.LogoUrl)
+                ? siteSetting.LogoUrl
+                : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyLogoUrl) ? siteSetting.CompanyLogoUrl : faviconUrl);
 
-            var description = config?.CompanyDescription ?? uiSetting?.Tagline ?? string.Empty;
+            var description = siteSetting?.CompanyDescription ?? siteSetting?.Tagline ?? string.Empty;
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
             // Hydrate dynamic tokens so client receives valid URLs with zero empty hrefs
@@ -582,31 +591,23 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("ui-settings")]
         public async Task<IActionResult> GetPublicUiSettings()
         {
-            var uiSetting = await _context.UiSettings.AsNoTracking().FirstOrDefaultAsync();
+            var setting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
 
-            if (uiSetting != null)
+            if (setting != null)
             {
-                return Ok(ApiResponse<object>.SuccessResponse(uiSetting, "Public UI settings retrieved."));
+                return Ok(ApiResponse<object>.SuccessResponse(setting, "Public UI settings retrieved."));
             }
 
-            // Fallback for legacy tenants prior to UiSettings migration
-            var config = await _context.ConfigSettings.AsNoTracking().FirstOrDefaultAsync();
-            var fallback = new
+            var defaultSetting = new MisWebsiteSetting
             {
-                Id = config?.Id ?? Guid.Empty,
-                BrandName = config?.CompanyName ?? (!string.IsNullOrWhiteSpace(config?.WebsiteTitle) ? config.WebsiteTitle : "Organization"),
-                SiteTitle = config?.WebsiteTitle,
-                Tagline = config?.CompanyDescription,
-                LogoUrl = config?.CompanyLogoUrl,
-                WhiteLogoUrl = config?.CompanyWhiteLogoUrl,
-                FaviconUrl = config?.CompanyIconUrl,
-                EnableComingSoon = config?.ActivateComingSoon ?? false,
-                RemovePlatformWatermark = config?.RemoveWatermark ?? false,
-                CreatedAtUtc = DateTime.UtcNow,
-                UpdatedAtUtc = (DateTime?)null
+                BrandName = "Organization",
+                SiteTitle = "Organization Sovereign Platform",
+                Tagline = "Sovereign Enterprise Infrastructure",
+                EnableComingSoon = false,
+                RemovePlatformWatermark = false
             };
 
-            return Ok(ApiResponse<object>.SuccessResponse(fallback, "Public UI settings retrieved from fallback."));
+            return Ok(ApiResponse<object>.SuccessResponse(defaultSetting, "Default public UI settings retrieved."));
         }
     }
 

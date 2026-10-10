@@ -1,1391 +1,1171 @@
 @page "/centralwks/templates/import"
 @model Ozikol.Central.Areas.Centralwks.Pages.Templates.ImportModel
 @{
-    ViewData["Title"] = "Website Extractor & Section Builder Studio";
+    ViewData["Title"] = "Modular Section Studio";
     ViewData["BreadcrumbSection"] = "Marketplace";
 }
 
+@section Styles {
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css" />
+<style>
+    /* ── CodeMirror Full-Height Editor & Code Folding ── */
+    .CodeMirror {
+        height: 100% !important;
+        font-family: 'JetBrains Mono', Consolas, 'Fira Code', monospace;
+        font-size: 13px;
+        line-height: 1.55;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--admin-border);
+        background: #181a20 !important;
+        color: #e2e8f0 !important;
+    }
+    .CodeMirror-gutters {
+        background: #131418 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding-right: 4px;
+    }
+    .CodeMirror-linenumber {
+        color: #64748b !important;
+        font-size: 11.5px;
+    }
+    .CodeMirror-foldmarker {
+        color: #60a5fa !important;
+        text-shadow: none;
+        font-family: monospace;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 4px;
+        background: rgba(59, 130, 246, 0.2);
+        border-radius: 3px;
+    }
+    .CodeMirror-foldgutter {
+        width: 14px;
+    }
+    .CodeMirror-foldgutter-open:after {
+        content: "▾";
+        color: #94a3b8;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .CodeMirror-foldgutter-folded:after {
+        content: "▸";
+        color: #f59e0b;
+        font-size: 13px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .code-editor-container {
+        flex: 1;
+        width: 100%;
+        height: calc(100% - 30px);
+        min-height: 300px;
+        overflow: hidden;
+        border-radius: var(--radius-md);
+    }
+
+    /* ── Modal Inspector Tab Buttons (Distinct Button Styling) ── */
+    .preview-modal-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 8px 16px;
+        flex-shrink: 0;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .modal-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--admin-text-muted);
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }
+    .modal-tab-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+        border-color: var(--admin-border-focus);
+    }
+    .modal-tab-btn.active {
+        color: #ffffff !important;
+        background: var(--admin-primary) !important;
+        border-color: var(--admin-primary) !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px var(--admin-primary-glow);
+    }
+    .modal-tab-btn.active .material-symbols-outlined {
+        color: #ffffff !important;
+    }
+    .studio-step-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--admin-text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .studio-step-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+    }
+    .studio-step-btn.active {
+        background: var(--admin-primary);
+        color: #ffffff;
+        box-shadow: 0 2px 8px var(--admin-primary-glow);
+    }
+    .studio-step-btn .step-number {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* ── Tab Bar Navigation ── */
+    .studio-nav-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--admin-border);
+        background: var(--admin-bg-surface);
+    }
+    .studio-tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--admin-text-muted);
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .studio-tab-btn:hover {
+        color: var(--admin-text);
+        background: var(--admin-bg-hover);
+    }
+    .studio-tab-btn.active {
+        color: var(--admin-primary);
+        border-bottom-color: var(--admin-primary);
+        background: var(--admin-primary-light);
+    }
+
+    /* ── Dropzone Area ── */
+    .studio-dropzone {
+        display: block;
+        border: 2px dashed var(--admin-border);
+        border-radius: var(--radius-lg);
+        padding: 36px 24px;
+        text-align: center;
+        background: var(--admin-bg-surface-elevated);
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        transition: var(--transition);
+    }
+    .studio-dropzone.dragover,
+    .studio-dropzone:hover {
+        border-color: var(--admin-primary);
+        background: var(--admin-primary-light);
+    }
+    .studio-dropzone input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 5;
+    }
+    .studio-dropzone * {
+        pointer-events: none;
+    }
+
+    /* ── Prominent Attached File Box ── */
+    .attached-file-box {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        background: var(--admin-bg-surface-elevated);
+        border: 2px solid var(--admin-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 16px var(--admin-primary-glow);
+        gap: 16px;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    .attached-file-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+    }
+    .attached-file-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        background: var(--admin-primary-light);
+        color: var(--admin-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .attached-file-icon .material-symbols-outlined {
+        font-size: 28px;
+    }
+    .attached-file-thumb {
+        width: 54px;
+        height: 54px;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+        border: 1px solid var(--admin-border);
+        flex-shrink: 0;
+    }
+    .attached-file-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+    .attached-file-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--admin-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .attached-file-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+    }
+
+    /* ── Form Layout Utilities ── */
+    .form-row-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    @@media (max-width: 768px) {
+        .form-row-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .form-group-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 20px;
+    }
+    .form-label-bold {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--admin-text);
+    }
+    .form-input-styled {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 13.5px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface);
+        color: var(--admin-text);
+        outline: none;
+        transition: var(--transition);
+    }
+    .form-input-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
+    }
+    .form-textarea-styled {
+        width: 100%;
+        padding: 12px 14px;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 13px;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-md);
+        background: var(--admin-bg-surface);
+        color: var(--admin-text);
+        outline: none;
+        resize: vertical;
+        transition: var(--transition);
+    }
+    .form-textarea-styled:focus {
+        border-color: var(--admin-border-focus);
+        box-shadow: 0 0 0 3px var(--admin-primary-light);
+    }
+
+    /* ── Workbench Layout: Grid & Table Views ── */
+    .section-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+    }
+    .section-card-item {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition);
+    }
+    .section-card-item:hover {
+        border-color: rgba(255, 255, 255, 0.18);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .section-card-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--admin-bg-surface-elevated);
+    }
+    .section-card-body {
+        padding: 18px;
+        flex: 1;
+    }
+    .section-card-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--admin-border);
+        background: var(--admin-bg-surface-elevated);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    /* ── Workbench Table Matrix View ── */
+    .workbench-table-wrap {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .workbench-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 13.5px;
+    }
+    .workbench-table th {
+        background: var(--admin-bg-surface-elevated);
+        padding: 14px 16px;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--admin-text-muted);
+        border-bottom: 1px solid var(--admin-border);
+    }
+    .workbench-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text);
+        vertical-align: middle;
+    }
+    .workbench-table tr:hover td {
+        background: var(--admin-bg-hover);
+    }
+
+    /* ── Badge Pill ── */
+    .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .badge-pill-primary { background: var(--admin-primary-light); color: var(--admin-primary); }
+    .badge-pill-success { background: var(--admin-success-light); color: var(--admin-success); }
+    .badge-pill-info { background: var(--admin-info-light); color: var(--admin-info); }
+    /* ── Floating Preview Modal Dialog ── */
+    .preview-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+    .preview-modal-overlay.is-active {
+        display: flex;
+        animation: modalBackdropFadeIn 0.2s ease-out;
+    }
+    @@keyframes modalBackdropFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .preview-modal-dialog {
+        width: 95vw;
+        max-width: 1540px;
+        height: 90vh;
+        max-height: 920px;
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: modalCardSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @@keyframes modalCardSlideUp {
+        from { opacity: 0; transform: translateY(16px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .preview-modal-bar {
+        height: 56px;
+        background: var(--admin-bg-surface);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        gap: 16px;
+    }
+    .preview-modal-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        padding: 0 20px;
+        flex-shrink: 0;
+    }
+    .preview-modal-content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        background: var(--admin-bg);
+    }
+    .preview-viewport-wrap {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        overflow: auto;
+        background: var(--admin-bg);
+    }
+    .preview-viewport-frame {
+        background: #0b0f19;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--admin-border);
+        transition: width 0.3s ease, background 0.2s ease;
+        height: 100%;
+        max-width: 100%;
+    }
+    .preview-viewport-frame.canvas-bright {
+        background: #ffffff !important;
+    }
+    .preview-viewport-frame.canvas-dark {
+        background: #0b0f19 !important;
+    }
+    .preview-tab-pane {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        animation: tabPaneFadeIn 0.15s ease-out;
+    }
+    @@keyframes tabPaneFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Interactive Tokens Matrix Table in Inspector ── */
+    .tokens-editor-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+    .tokens-editor-table th {
+        padding: 10px 12px;
+        background: var(--admin-bg-surface-elevated);
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .tokens-editor-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--admin-border);
+    }
+
+    /* ── High-Visibility Studio Loading Overlay ── */
+    .studio-loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(11, 15, 25, 0.88);
+        backdrop-filter: blur(12px);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .studio-loading-card {
+        background: var(--admin-bg-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--radius-lg);
+        padding: 36px 40px;
+        max-width: 520px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
+    }
+    .loading-pulse-ring {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 3px solid var(--admin-primary-light);
+        border-top-color: var(--admin-primary);
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .loading-step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+        text-align: left;
+        background: var(--admin-bg-surface-elevated);
+        padding: 16px 20px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--admin-border);
+    }
+    .loading-step-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--admin-text-muted);
+        transition: var(--transition);
+    }
+    .loading-step-item .material-symbols-outlined {
+        font-size: 18px;
+        color: var(--admin-text-dim);
+    }
+    .loading-step-item.step-active {
+        color: var(--admin-primary);
+        font-weight: 600;
+    }
+    .loading-step-item.step-active .material-symbols-outlined {
+        color: var(--admin-primary);
+        animation: spin 1s linear infinite;
+    }
+    .loading-step-item.step-done {
+        color: var(--admin-success);
+    }
+    .loading-step-item.step-done .material-symbols-outlined {
+        color: var(--admin-success);
+    }
+
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+}
+
+<!-- Header -->
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
-            <span class="material-symbols-outlined" style="color: #6366f1; font-size: 32px;">view_in_ar</span>
-            <span>Website Extractor &amp; Section Builder Studio</span>
-        </h1>
-        <p class="admin-subtitle">Unified 5-step studio: Ingest raw source, inspect code &amp; assets, slice into modular sections with scoped CSS, preview in sandbox, and install to Marketplace.</p>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <a href="/centralwks/templates" class="btn-admin btn-admin-secondary btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                Templates
+            </a>
+            <span class="badge-pill badge-pill-primary">
+                <span class="material-symbols-outlined" style="font-size: 14px;">magic_button</span>
+                Multi-Channel Ingestion Studio
+            </span>
+        </div>
+        <h1 class="admin-title">Modular Section Studio</h1>
+        <p class="admin-subtitle">Decompose templates, live demo URLs, or UI screenshots into zero-collision modular marketplace sections.</p>
     </div>
-    <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
-        <a href="/centralwks/templates" class="btn-admin btn-admin-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 18px;">storefront</span>
-            <span>Back to Marketplace</span>
-        </a>
-        <a href="/centralwks/templates/create" class="btn-admin btn-admin-primary" style="display: inline-flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
-            <span>Create Section Manually</span>
-        </a>
+
+    <!-- Studio Step Selector -->
+    <div class="studio-stepper">
+        <button type="button" class="studio-step-btn active" id="pillStep1" onclick="jumpToStep(1)">
+            <span class="step-number">1</span> Ingest
+        </button>
+        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">chevron_right</span>
+        <button type="button" class="studio-step-btn" id="pillStep2" onclick="jumpToStep(2)">
+            <span class="step-number">2</span> Workbench
+        </button>
+        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">chevron_right</span>
+        <button type="button" class="studio-step-btn" id="pillStep3" onclick="jumpToStep(3)">
+            <span class="step-number">3</span> Preview &amp; Publish
+        </button>
     </div>
 </div>
 
-<div class="admin-content-body" id="section-builder-app">
+<!-- Hidden State Holder -->
+<div id="rawExtractionJsonData" style="display:none;">@Model.ExtractionResultJson</div>
 
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-            <span class="material-symbols-outlined" style="font-size: 24px;">error</span>
-            <div style="flex: 1; font-size: 14px;">@Model.ErrorMessage</div>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.StatusMessage))
-    {
-        <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-            <span class="material-symbols-outlined" style="font-size: 24px;">check_circle</span>
-            <div style="flex: 1; font-size: 14px;">@Model.StatusMessage</div>
-        </div>
-    }
-
-    <!-- Streamlined 3-Step Progress Stepper -->
-    <div class="studio-stepper-bar">
-        <div class="step-pill @(Model.CurrentStep == 1 ? "active" : (Model.CurrentStep > 1 ? "completed" : ""))" onclick="jumpToStep(1)">
-            <span class="step-number">1</span>
-            <span class="step-label">Input Source (HTML, URL &amp; Image)</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep >= 2 ? "active" : "")" onclick="jumpToStep(2)">
-            <span class="step-number">2</span>
-            <span class="step-label">Modular Section Workbench</span>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-pill @(Model.CurrentStep >= 4 ? "active" : "")" onclick="jumpToStep(3)">
-            <span class="step-number">3</span>
-            <span class="step-label">Live Preview &amp; Marketplace Publish</span>
-        </div>
-    </div>
-
-    <!-- ========================================================================= -->
-    <!-- STEP 1: Input Source & Asset Target -->
-    <!-- ========================================================================= -->
-    <div id="stepPanel1" style="@(Model.CurrentStep == 1 ? "display: block;" : "display: none;")">
-        <!-- Ingestion Mode Choice Cards -->
-        <div class="import-tab-cards-container">
-            <button type="button" class="tab-mode-btn tab-mode-card @(Model.ActiveTab == "source" ? "active" : "")" id="tabBtnSource" onclick="switchImportTab('source')">
-                <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
-                    <div class="tab-mode-icon-box mode-icon-source">
-                        <span class="material-symbols-outlined" style="font-size: 22px;">code_blocks</span>
-                    </div>
-                    <div class="tab-mode-text-group">
-                        <span class="tab-mode-title">Paste Page Source / Upload HTML</span>
-                        <span class="badge-tab-mode badge-source">Recommended (Zero Latency)</span>
-                    </div>
-                </div>
-                <div class="tab-mode-radio-circle">
-                    <span class="material-symbols-outlined radio-check-icon">check</span>
-                </div>
+<!-- ========================================================================= -->
+<!-- STEP 1: INPUT CHANNELS -->
+<!-- ========================================================================= -->
+<div id="stepPanel1" class="studio-step-panel">
+    <div class="admin-card" style="width: 100%; overflow: hidden;">
+        <!-- Tabs Header -->
+        <div class="studio-nav-tabs">
+            <button type="button" class="studio-tab-btn active" id="tabBtnSource" onclick="switchImportTab('source')">
+                <span class="material-symbols-outlined">html</span>
+                1. HTML File / Paste Source
             </button>
-
-            <button type="button" class="tab-mode-btn tab-mode-card @(Model.ActiveTab == "url" ? "active" : "")" id="tabBtnUrl" onclick="switchImportTab('url')">
-                <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
-                    <div class="tab-mode-icon-box mode-icon-url">
-                        <span class="material-symbols-outlined" style="font-size: 22px;">language</span>
-                    </div>
-                    <div class="tab-mode-text-group">
-                        <span class="tab-mode-title">Live Website URL Crawler</span>
-                        <span class="badge-tab-mode badge-url">Automated Discovery</span>
-                    </div>
-                </div>
-                <div class="tab-mode-radio-circle">
-                    <span class="material-symbols-outlined radio-check-icon">check</span>
-                </div>
+            <button type="button" class="studio-tab-btn" id="tabBtnUrl" onclick="switchImportTab('url')">
+                <span class="material-symbols-outlined">language</span>
+                2. Live Website URL
             </button>
-
-            <button type="button" class="tab-mode-btn tab-mode-card @(Model.ActiveTab == "image" ? "active" : "")" id="tabBtnImage" onclick="switchImportTab('image')">
-                <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
-                    <div class="tab-mode-icon-box mode-icon-image">
-                        <span class="material-symbols-outlined" style="font-size: 22px;">image</span>
-                    </div>
-                    <div class="tab-mode-text-group">
-                        <span class="tab-mode-title">UI Screenshot / Mockup to Section</span>
-                        <span class="badge-tab-mode badge-image">Gemini Vision AI ($0 Free)</span>
-                    </div>
-                </div>
-                <div class="tab-mode-radio-circle">
-                    <span class="material-symbols-outlined radio-check-icon">check</span>
-                </div>
+            <button type="button" class="studio-tab-btn" id="tabBtnImage" onclick="switchImportTab('image')">
+                <span class="material-symbols-outlined">image</span>
+                3. UI Screenshot Mockup
             </button>
         </div>
 
-        <!-- Mode C: UI Screenshot / Mockup Vision Decomposition -->
-        <div id="panelImageExtractor" style="@(Model.ActiveTab == "image" ? "display: block;" : "display: none;")">
-            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
-                <div class="card-header-styled" style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: var(--admin-card-bg, #ffffff);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-header-icon" style="background: rgba(234, 179, 8, 0.12); color: #eab308; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                            <span class="material-symbols-outlined" style="font-size: 22px;">filter_vintage</span>
+        <div style="padding: 28px;">
+            <!-- TAB 1: HTML FILE / PASTE -->
+            <div id="panelSourceExtractor">
+                <form id="formSourceIngest" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="sourceSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Creative Agency Suite" required />
                         </div>
-                        <div>
-                            <h3 class="card-header-title" style="margin: 0; font-size: 17px; font-weight: 700; color: var(--admin-text, #0f172a);">Step 1: Upload UI Mockup or Screenshot Image</h3>
-                            <p class="card-header-subtitle" style="margin: 2px 0 0; font-size: 13px; color: var(--admin-text-muted, #64748b);">Upload any UI design screenshot (Figma, Dribbble, or web component). Gemini Multimodal Vision AI decomposes it into modular sections with scoped CSS and placeholders.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
-                    <form method="post" enctype="multipart/form-data" asp-page-handler="ExtractFromImage" id="extractImageForm" onsubmit="return showImageVisionLoading(event)">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="ActiveTab" value="image" />
-                        <input type="hidden" asp-for="CurrentStep" value="3" />
-
-                        <div class="form-group" style="margin-bottom: 24px;">
-                            <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a); margin-bottom: 8px; display: block;">
-                                UI Mockup / Screenshot Image <span style="color: #ef4444; font-weight: bold;">*</span>
-                            </label>
-                            <div id="imageDropZone" style="border: 2px dashed #cbd5e1; border-radius: 16px; padding: 36px 20px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s ease;" onclick="document.getElementById('imageMockupFileInput').click()">
-                                <span class="material-symbols-outlined" style="font-size: 48px; color: #6366f1; margin-bottom: 10px; display: block;">add_photo_alternate</span>
-                                <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Click to select or drag &amp; drop UI screenshot here</div>
-                                <div style="font-size: 12px; color: #64748b;">Supports PNG, JPG, and WebP mockups up to 10MB (Uploaded to Cloudinary)</div>
-                                <input type="file" asp-for="ImageMockupFile" id="imageMockupFileInput" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="handleImageFileSelect(event)" required />
-                            </div>
-
-                            <!-- Selected Image Preview Box -->
-                            <div id="imageSelectedPreview" style="display: none; margin-top: 16px; align-items: center; gap: 16px; background: #f1f5f9; padding: 12px 18px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                                <img id="imagePreviewImg" src="" alt="Selected Mockup" style="max-height: 80px; max-width: 120px; border-radius: 8px; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-                                <div style="flex: 1;">
-                                    <div id="imagePreviewName" style="font-size: 13px; font-weight: 700; color: #0f172a;">mockup.png</div>
-                                    <div id="imagePreviewSize" style="font-size: 12px; color: #64748b;">0 KB</div>
-                                </div>
-                                <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 5px 12px;" onclick="clearSelectedImage(event)">Remove</button>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Suite Name (Theme Family)
-                                </label>
-                                <input type="text" asp-for="ImageSuiteName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Apex Visual Suite" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Brand Identity Name
-                                </label>
-                                <input type="text" asp-for="ImageBrandName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Enterprise Workspace" />
-                            </div>
-                        </div>
-
-                        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                            <button type="submit" class="btn-admin btn-admin-primary" id="btnExtractImageAction" style="height: 46px; padding: 0 32px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; background: #6366f1; border-color: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);">
-                                <span class="material-symbols-outlined" style="font-size: 20px;">magic_button</span>
-                                <span>Decompose Image with Gemini Vision AI &rarr;</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mode A: Paste Page Source / HTML File Form -->
-        <div id="panelSourceExtractor" style="@(Model.ActiveTab == "source" ? "display: block;" : "display: none;")">
-            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
-                <div class="card-header-styled" style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: var(--admin-card-bg, #ffffff);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-header-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                            <span class="material-symbols-outlined" style="font-size: 22px;">code</span>
-                        </div>
-                        <div>
-                            <h3 class="card-header-title" style="margin: 0; font-size: 17px; font-weight: 700; color: var(--admin-text, #0f172a);">Step 1: Paste Raw HTML Page Source &amp; Asset URL</h3>
-                            <p class="card-header-subtitle" style="margin: 2px 0 0; font-size: 13px; color: var(--admin-text-muted, #64748b);">Upload a <code>.html</code> file or paste page markup (Ctrl+U). In Step 2, you will inspect all extracted CSS files and scripts.</p>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Brand Name to Debrand</label>
+                            <input type="text" class="form-input-styled" id="sourceBrandName" name="brandName" value="@Model.BrandName" placeholder="e.g. Enterprise Workspace" />
                         </div>
                     </div>
-                    <div>
-                        <label class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 7px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                            <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
-                            <span>Upload .html File</span>
-                            <input type="file" id="sourceFileInput" accept=".html,.htm,.txt" onchange="handleSourceFileUpload(event)" style="display: none;" />
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Base URL / Demo Asset Origin <span style="font-weight: 400; color: var(--admin-text-muted); font-size: 12px;">(Optional — for resolving relative CSS, JS, and images)</span></label>
+                        <input type="url" class="form-input-styled" id="sourceBaseUrl" name="baseUrl" placeholder="e.g. https://demo.example.com" />
+                        <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">info</span>
+                            Used to download relative assets (e.g. <code>assets/css/style.css</code>, <code>assets/img/hero.jpg</code>) and upload them to your CDN.
+                        </div>
+                    </div>
+
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Upload Template .html File</label>
+                        
+                        <!-- Initial Dropzone -->
+                        <label for="sourceHtmlFileInput" class="studio-dropzone" id="htmlDropzoneArea">
+                            <input type="file" id="sourceHtmlFileInput" name="htmlFile" accept=".html,.htm" onchange="handleHtmlFileSelect(this)" />
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-primary); margin-bottom: 8px; display: block;">cloud_upload</span>
+                            <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;">Drag &amp; drop your template .html file here, or click to browse</div>
+                            <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-top: 4px;">Supports full landing pages with embedded or external stylesheet links</div>
                         </label>
-                    </div>
-                </div>
 
-                <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
-                    <form method="post" asp-page-handler="InspectAssets" id="inspectAssetsForm" onsubmit="return showInspectionLoading(event)">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="ActiveTab" value="source" />
-                        <input type="hidden" asp-for="CurrentStep" value="2" />
-                        
-                        <div class="form-group" style="margin-bottom: 20px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <label class="form-label" style="font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a); margin: 0;">
-                                    HTML Page Source Markup <span style="color: #ef4444; font-weight: bold;">*</span>
-                                </label>
-                                <span style="font-size: 12px; color: var(--admin-text-muted, #64748b);">Tip: Press Ctrl+U on the website, select all (Ctrl+A), copy and paste here</span>
-                            </div>
-                            <textarea asp-for="HtmlSource" id="inputHtmlSource" class="form-control" rows="10" 
-                                      style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.5; border-radius: 10px; background: #0f172a; color: #f8fafc; padding: 14px;" 
-                                      placeholder="Paste full HTML page source code here (e.g. from Ctrl+U or View Page Source)..." required></textarea>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Target Website Base URL (For Relative CSS &amp; Images)
-                                </label>
-                                <div style="position: relative; display: flex; align-items: center;">
-                                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; color: #94a3b8; font-size: 20px;">language</span>
-                                    <input type="url" asp-for="SourceBaseUrl" id="inputSourceBaseUrl" class="form-control" style="padding-left: 44px; height: 46px; border-radius: 10px; font-size: 14px;" 
-                                           placeholder="https://example.com/demo/index.html" />
+                        <!-- Prominent Attached File Card -->
+                        <div class="attached-file-box" id="attachedHtmlFileBox">
+                            <div class="attached-file-info">
+                                <div class="attached-file-icon">
+                                    <span class="material-symbols-outlined">html</span>
                                 </div>
-                                <div style="font-size: 12px; color: var(--admin-text-muted, #64748b); margin-top: 6px;">
-                                    Used in Step 2 to download all referenced stylesheets (e.g. <code>bootstrap.min.css</code>, <code>main.css</code>).
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Suite Name (Theme Family)
-                                </label>
-                                <input type="text" asp-for="SourceSuiteName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Corporate Theme Suite" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Debrand Name
-                                </label>
-                                <input type="text" asp-for="SourceBrandName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Organization Name" />
-                            </div>
-                        </div>
-
-                        <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 20px; flex-wrap: wrap; gap: 12px;">
-                            <button type="submit" class="btn-admin btn-admin-primary" id="btnFetchInspectAssets" style="height: 46px; padding: 0 32px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; background: #6366f1; border-color: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);">
-                                <span class="material-symbols-outlined" style="font-size: 20px;">manage_search</span>
-                                <span>Step 2: Fetch &amp; Inspect Raw Code &amp; Assets &rarr;</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mode B: Live Website URL Crawler Form -->
-        <div id="panelUrlExtractor" style="@(Model.ActiveTab == "url" ? "display: block;" : "display: none;")">
-            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
-                <div class="card-header-styled" style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: var(--admin-card-bg, #ffffff);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-header-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                            <span class="material-symbols-outlined" style="font-size: 22px;">link</span>
-                        </div>
-                        <div>
-                            <h3 class="card-header-title" style="margin: 0; font-size: 17px; font-weight: 700; color: var(--admin-text, #0f172a);">Live Website Crawler &amp; Menu Discovery</h3>
-                            <p class="card-header-subtitle" style="margin: 2px 0 0; font-size: 13px; color: var(--admin-text-muted, #64748b);">Crawls the demo website homepage and navigation menu automatically.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="padding: 24px; background: var(--admin-card-bg, #ffffff);">
-                    <form method="post" asp-page-handler="Extract" id="extractForm" onsubmit="showExtractionLoading()">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="ActiveTab" value="url" />
-                        <input type="hidden" asp-for="SelectedPageUrlsJson" id="hiddenSelectedPageUrlsJson" />
-                        
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Target Website URL <span style="color: #ef4444; font-weight: bold;">*</span>
-                                </label>
-                                <div style="position: relative; display: flex; align-items: center;">
-                                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; color: #94a3b8; font-size: 20px;">globe</span>
-                                    <input type="url" asp-for="TargetUrl" id="inputTargetUrl" class="form-control" style="padding-left: 44px; height: 46px; border-radius: 10px; font-size: 14px;" 
-                                           placeholder="https://example.com/demo" />
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Suite Name (Theme Family)
-                                </label>
-                                <input type="text" asp-for="SuiteName" id="inputSuiteName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Theme Suite Name" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text, #0f172a);">
-                                    Debrand Name
-                                </label>
-                                <input type="text" asp-for="BrandName" class="form-control" style="height: 46px; border-radius: 10px; font-size: 14px;" 
-                                       placeholder="e.g. Organization Name" />
-                            </div>
-                        </div>
-
-                        <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 20px; flex-wrap: wrap; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <button type="button" class="btn-admin btn-admin-primary" id="btnDiscoverPages" onclick="triggerPageDiscovery()" style="height: 44px; padding: 0 24px; border-radius: 10px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);">
-                                    <span class="material-symbols-outlined" style="font-size: 20px;">explore</span>
-                                    <span id="btnDiscoverPagesText">Discover Pages from Menu</span>
-                                </button>
-                                <span style="font-size: 13px; color: var(--admin-text-muted, #64748b);">— or —</span>
-                                <button type="submit" class="btn-admin btn-admin-secondary" id="btnDirectExtract" style="height: 44px; padding: 0 20px; border-radius: 10px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                                    <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
-                                    <span>Extract Direct</span>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Discovered Menu Pages Checklist Card -->
-            <div id="discoveredPagesCard" style="display: none; margin-bottom: 24px; background: var(--admin-card-bg, #ffffff); border-radius: 16px; border: 1px solid var(--admin-border, #e2e8f0); box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;">
-                <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); background: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="material-symbols-outlined" style="font-size: 20px; color: #10b981;">checklist</span>
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a);" id="discoveryHeaderTitle">Discovered Pages</h3>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="toggleAllDiscoveredPages(true)">Select All</button>
-                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="toggleAllDiscoveredPages(false)">Deselect All</button>
-                    </div>
-                </div>
-                <div style="padding: 20px 24px;">
-                    <div id="discoveredPagesListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; max-height: 280px; overflow-y: auto; margin-bottom: 20px;"></div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 16px;">
-                        <div id="selectedPagesCountText" style="font-size: 13px; color: var(--admin-text-muted, #64748b);">Selected 0 pages</div>
-                        <button type="button" class="btn-admin btn-admin-primary" id="btnExtractSelectedPages" onclick="submitExtractionForSelectedPages()">Extract Sections from Selected Pages</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================================================= -->
-    <!-- STEP 2: Raw Code & Asset Inspection Workbench -->
-    <!-- ========================================================================= -->
-    <div id="stepPanel2" style="@(Model.CurrentStep == 2 ? "display: block;" : "display: none;")">
-        <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.06); border: 1px solid var(--admin-border, #e2e8f0);">
-            
-            <!-- Workbench Header Toolbar -->
-            <div style="padding: 18px 24px; border-bottom: 1px solid var(--admin-border, #e2e8f0); display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #ffffff; flex-wrap: wrap; gap: 14px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(99, 102, 241, 0.25); color: #818cf8; display: flex; align-items: center; justify-content: center;">
-                        <span class="material-symbols-outlined" style="font-size: 24px;">terminal</span>
-                    </div>
-                    <div>
-                        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #ffffff;">Step 2: Raw Code &amp; Asset Inspection Workbench</h3>
-                        <p style="margin: 2px 0 0; font-size: 13px; color: #94a3b8;">Review extracted HTML, individual CSS stylesheets, scripts, and fonts before section slicing.</p>
-                    </div>
-                </div>
-
-                <!-- Asset Metrics Badges -->
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" id="workbenchAssetBadges">
-                    @if (Model.InspectResult != null)
-                    {
-                        <span style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
-                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">css</span>
-                            @Model.InspectResult.Stylesheets.Count CSS Files (@Model.InspectResult.TotalCssKb KB)
-                        </span>
-                        <span style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
-                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">javascript</span>
-                            @Model.InspectResult.Scripts.Count Scripts
-                        </span>
-                        <span style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
-                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">font_download</span>
-                            @Model.InspectResult.Fonts.Count Web Fonts
-                        </span>
-                    }
-                </div>
-            </div>
-
-            <!-- Workbench Navigation Tabs -->
-            <div style="background: #1e293b; padding: 8px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px; overflow-x: auto;">
-                <button type="button" class="wb-tab-btn active" id="wbTab_html" onclick="switchWorkbenchTab('html')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">code</span>
-                    <span>Raw HTML Source</span>
-                </button>
-                <button type="button" class="wb-tab-btn" id="wbTab_css" onclick="switchWorkbenchTab('css')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">css</span>
-                    <span id="wbCssTabTitle">CSS Stylesheets</span>
-                </button>
-                <button type="button" class="wb-tab-btn" id="wbTab_js" onclick="switchWorkbenchTab('js')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">javascript</span>
-                    <span id="wbJsTabTitle">JS Scripts</span>
-                </button>
-                <button type="button" class="wb-tab-btn" id="wbTab_fonts" onclick="switchWorkbenchTab('fonts')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">font_download</span>
-                    <span id="wbFontsTabTitle">Font &amp; Icon CDNs</span>
-                </button>
-                <button type="button" class="wb-tab-btn" id="wbTab_overrides" onclick="switchWorkbenchTab('overrides')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">edit_note</span>
-                    <span>Custom CSS Overrides</span>
-                </button>
-            </div>
-
-            <form method="post" asp-page-handler="SliceAndScope" id="sliceAndScopeForm" onsubmit="return showSlicingLoading(event)">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="HtmlSource" id="wbFormHtmlSource" />
-                <input type="hidden" asp-for="EditedHtmlSource" id="wbFormEditedHtmlSource" />
-                <input type="hidden" asp-for="EditedStylesheetsJson" id="wbFormEditedStylesheetsJson" />
-                <input type="hidden" asp-for="SourceBaseUrl" id="wbFormSourceBaseUrl" />
-                <input type="hidden" asp-for="SourceSuiteName" id="wbFormSourceSuiteName" />
-                <input type="hidden" asp-for="SourceBrandName" id="wbFormSourceBrandName" />
-                <input type="hidden" asp-for="CurrentStep" value="3" />
-
-                <div style="padding: 20px; background: #0f172a; min-height: 480px;">
-                    
-                    <!-- Workbench Pane 1: Raw HTML Source -->
-                    <div id="wbPane_html" class="wb-pane" style="display: block;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #94a3b8; font-size: 12px;">
-                            <span>Editable HTML markup (will be sliced into modular sections):</span>
-                            <span id="wbHtmlCharCount">0 characters</span>
-                        </div>
-                        <textarea id="wbHtmlEditor" class="form-control" rows="18" 
-                                  style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); width: 100%; padding: 14px;"
-                                  oninput="handleWbHtmlChange()">@(Model.InspectResult?.HtmlSource ?? Model.HtmlSource ?? "")</textarea>
-                    </div>
-
-                    <!-- Workbench Pane 2: Extracted CSS Stylesheets -->
-                    <div id="wbPane_css" class="wb-pane" style="display: none;">
-                        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; height: 460px;">
-                            <!-- Stylesheets Sidebar List -->
-                            <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); overflow-y: auto; padding: 10px;" id="wbCssFilesList">
-                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; padding: 6px 10px; font-weight: 700;">Downloaded Stylesheets</div>
-                                <!-- Dynamically populated by JS -->
-                            </div>
-
-                            <!-- Selected Stylesheet Code Viewer/Editor -->
-                            <div style="display: flex; flex-direction: column;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #94a3b8; font-size: 12px;">
-                                    <span id="wbCurrentCssFileName">Select a stylesheet</span>
-                                    <span id="wbCurrentCssSize">0 KB</span>
-                                </div>
-                                <textarea id="wbCssEditor" class="form-control" rows="17" 
-                                          style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); flex: 1; padding: 14px;"
-                                          oninput="handleWbCssChange()"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Workbench Pane 3: JS Scripts (Split-View Inspector & Code Editor) -->
-                    <div id="wbPane_js" class="wb-pane" style="display: none;">
-                        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; height: 460px;">
-                            <!-- Scripts Sidebar List -->
-                            <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); overflow-y: auto; padding: 10px;" id="wbJsFilesList">
-                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; padding: 6px 10px; font-weight: 700;">Detected JavaScripts</div>
-                                <!-- Dynamically populated by JS -->
-                            </div>
-
-                            <!-- Selected Script Code Viewer/Editor -->
-                            <div style="display: flex; flex-direction: column;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #94a3b8; font-size: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span id="wbCurrentJsFileName" style="color: #fde047; font-weight: 600;">Select a script</span>
-                                        <span id="wbCurrentJsUrl" style="font-size: 11px; color: #64748b; font-family: monospace; max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                <div class="attached-file-meta">
+                                    <div class="attached-file-name" id="attachedHtmlFileName">template.html</div>
+                                    <div class="attached-file-sub">
+                                        <span class="badge-pill badge-pill-secondary" id="attachedHtmlFileSize">0 KB</span>
+                                        <span class="badge-pill badge-pill-success">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Ready to Ingest
+                                        </span>
                                     </div>
-                                    <span id="wbCurrentJsSize" style="background: rgba(234, 179, 8, 0.15); color: #fde047; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">0 KB</span>
                                 </div>
-                                <textarea id="wbJsEditor" class="form-control" rows="17" 
-                                          style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); flex: 1; padding: 14px;"
-                                          oninput="handleWbJsChange()"></textarea>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <label for="sourceHtmlFileInput" class="btn-admin btn-admin-secondary btn-admin-sm" style="cursor: pointer;">
+                                    <span class="material-symbols-outlined">sync</span> Change File
+                                </label>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="clearHtmlFile()">
+                                    <span class="material-symbols-outlined">close</span> Remove
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Workbench Pane 4: Font & Icon CDNs -->
-                    <div id="wbPane_fonts" class="wb-pane" style="display: none;">
-                        <div style="background: #1e293b; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); padding: 20px;" id="wbFontsContainer">
-                            <!-- Populated by JS -->
+                    <div class="form-group-block">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label class="form-label-bold">Or Paste HTML Page Source Markup</label>
+                            <span class="badge-pill badge-pill-secondary" id="htmlCharCounter">0 characters</span>
                         </div>
+                        <textarea class="form-textarea-styled" id="sourcePastedHtml" name="pastedHtml" rows="6" placeholder="Paste your HTML markup here..." oninput="updateHtmlCharCount()"></textarea>
                     </div>
 
-                    <!-- Workbench Pane 5: Custom CSS Overrides -->
-                    <div id="wbPane_overrides" class="wb-pane" style="display: none;">
-                        <div style="margin-bottom: 8px; color: #94a3b8; font-size: 12px;">Add optional CSS variables, resets, or overrides to combine with the extracted stylesheets:</div>
-                        <textarea asp-for="SourceCustomCss" id="wbCustomCssEditor" class="form-control" rows="18" 
-                                  style="font-family: 'Fira Code', Consolas, Monaco, monospace; font-size: 12px; line-height: 1.5; border-radius: 10px; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.1); width: 100%; padding: 14px;"
-                                  placeholder="/* Optional custom stylesheet content or design system variables */"></textarea>
-                    </div>
-                </div>
-
-                <!-- Workbench Footer Actions -->
-                <div style="padding: 18px 24px; background: #0f172a; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-                    <button type="button" class="btn-admin btn-admin-secondary" onclick="jumpToStep(1)" style="color: #cbd5e1; border-color: rgba(255,255,255,0.2);">
-                        &larr; Back to Step 1: Input Source
-                    </button>
-
-                    <button type="submit" class="btn-admin btn-admin-primary" id="btnSliceSectionsAction" style="height: 46px; padding: 0 32px; border-radius: 10px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; background: #10b981; border-color: #10b981; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
-                        <span class="material-symbols-outlined" style="font-size: 20px;">pie_chart</span>
-                        <span>Step 3: Slice Modular Sections &amp; Scope CSS &rarr;</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Loading Overlay for Slicing / Extraction -->
-    <div id="slicingLoadingState" style="display: none; background: var(--admin-card-bg, #ffffff); border-radius: 16px; padding: 50px 30px; text-align: center; margin-bottom: 28px; border: 1px solid var(--admin-border, #e2e8f0); box-shadow: 0 8px 30px rgba(0,0,0,0.06);">
-        <div class="spinner-pulse" style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--admin-text, #0f172a);">Slicing Modular Sections &amp; Scoping CSS...</h3>
-        <p style="color: var(--admin-text-muted, #64748b); max-width: 580px; margin: 0 auto; font-size: 14px; line-height: 1.6;">
-            Decomposing the confirmed HTML markup, matching class-specific CSS rules, injecting typography CDN fonts, and preparing live sandbox previews.
-        </p>
-    </div>
-
-    <!-- ========================================================================= -->
-    <!-- STEP 3 & 4: Sliced Sections Gallery & Live Preview -->
-    <!-- ========================================================================= -->
-    <div id="stepPanel3" style="@(Model.ExtractionResult != null && Model.ExtractionResult.Sections.Any() ? "display: block;" : "display: none;")">
-        @if (Model.ExtractionResult != null && Model.ExtractionResult.Sections.Any())
-        {
-            var res = Model.ExtractionResult;
-            
-            <!-- Summary Banner -->
-            <div class="admin-card" style="margin-bottom: 24px; border-radius: 16px; overflow: hidden; padding: 24px; background: var(--admin-card-bg, #ffffff); box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;">
-                            <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: var(--admin-text, #0f172a);">@res.SuiteName</h2>
-                            
-                            <!-- Suite Group Code Badge -->
-                            <span style="background: #0f172a; color: #ffffff; font-family: monospace; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.5px;">
-                                <span class="material-symbols-outlined" style="font-size: 16px; color: #38bdf8;">style</span>
-                                <span>SUITE: @res.GroupCode.ToUpperInvariant()</span>
-                            </span>
-
-                            <span style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;">
-                                @res.TotalSections Modular Sections Sliced
-                            </span>
-                        </div>
-                        <div style="font-size: 13px; color: var(--admin-text-muted, #64748b);">
-                            Source: <a href="@res.SourceUrl" target="_blank" style="color: #6366f1; text-decoration: none; font-weight: 500;">@res.SourceUrl</a>
-                        </div>
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Optional Custom Author CSS (if not embedded in HTML)</label>
+                        <textarea class="form-textarea-styled" id="sourceCustomCss" name="customCss" rows="3" placeholder="/* Paste custom author stylesheet rules here */"></textarea>
                     </div>
 
-                    <!-- Batch Actions (Step 5) -->
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px;" onclick="selectAllSections(true)">Select All</button>
-                        <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px;" onclick="selectAllSections(false)">Deselect All</button>
-                        <button type="button" class="btn-admin" id="btnBatchAiClean" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; border: none; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);" onclick="batchCleanAllSectionsWithAi()">
-                            <span class="material-symbols-outlined" style="font-size: 18px;" id="batchAiCleanIcon">auto_fix_high</span>
-                            <span id="batchAiCleanText">AI Clean &amp; Tree-Shake All</span>
-                        </button>
-                        <button type="button" class="btn-admin" style="background: #10b981; color: #ffffff; border: none; font-size: 13px; font-weight: 600; padding: 9px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onclick="publishSelectedBatch()">
-                            <span class="material-symbols-outlined" style="font-size: 18px;">publish</span>
-                            <span id="btnBatchPublishText">Publish Selected to Marketplace</span>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunSourceIngest" onclick="executeSourceIngest()">
+                            <span class="material-symbols-outlined">memory</span>
+                            Ingest &amp; Decompose Sections
                         </button>
                     </div>
-                </div>
+                </form>
+            </div>
 
-                <!-- Page Groups -->
-                <div style="background: rgba(241, 245, 249, 0.6); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: 16px 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-                        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--admin-text, #0f172a); display: flex; align-items: center; gap: 6px;">
-                            <span class="material-symbols-outlined" style="font-size: 18px; color: #6366f1;">account_tree</span>
-                            <span>Discovered Pages &bull; @res.TotalPages Pages:</span>
+            <!-- TAB 2: LIVE WEBSITE URL -->
+            <div id="panelUrlExtractor" style="display:none;">
+                <form id="formUrlIngest">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="urlSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Modern SaaS Suite" required />
+                        </div>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Brand Name to Debrand</label>
+                            <input type="text" class="form-input-styled" id="urlBrandName" name="brandName" value="@Model.BrandName" placeholder="e.g. Enterprise Workspace" />
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="pageFilterGroup">
-                        <button type="button" class="page-filter-pill active" onclick="filterByPage('all', this)" style="border: 1px solid #0f172a; background: #0f172a; color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                            <span>All Pages</span>
-                            <span style="background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 10px; font-size: 11px;">@res.TotalSections</span>
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Live Website or Landing Page URL</label>
+                        <input type="url" class="form-input-styled" id="targetWebsiteUrl" name="targetUrl" placeholder="https://example.com" style="font-size: 15px; padding: 12px 16px;" required />
+                        <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">info</span>
+                            Our asset pipeline crawls the page, bundles custom CSS/JS to Cloudinary, and optimizes images to WebP.
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunUrlIngest" onclick="executeUrlIngest()">
+                            <span class="material-symbols-outlined">download</span>
+                            Crawl &amp; Bundle Assets
                         </button>
-
-                        @foreach (var pageItem in res.Pages)
-                        {
-                            var pageCode = $"PAGE_{pageItem.Slug.ToUpperInvariant()}";
-                            <button type="button" class="page-filter-pill" onclick="filterByPage('@pageItem.Slug', this)" style="border: 1px solid var(--admin-border, #cbd5e1); background: #ffffff; color: var(--admin-text, #334155); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                                <span>@pageItem.Title</span>
-                                <span style="background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;">@pageItem.SectionIds.Count</span>
-                                <span style="font-family: monospace; font-size: 10px; color: #94a3b8;">@pageCode</span>
-                            </button>
-                        }
                     </div>
-                </div>
+                </form>
             </div>
 
-            <!-- Category Filter Tabs -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 6px;" id="categoryFilterBar">
-                <button type="button" class="cat-filter-btn active" onclick="filterByCategory('all', this)">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">apps</span>
-                    <span>All Sections</span>
-                    <span class="cat-count">@res.TotalSections</span>
-                </button>
-
-                @foreach (var cat in new[] {
-                    new { Key = "menu", Name = "Navigation", Icon = "menu" },
-                    new { Key = "hero", Name = "Hero Sliders", Icon = "view_carousel" },
-                    new { Key = "body", Name = "Body Features", Icon = "view_quilt" },
-                    new { Key = "footer", Name = "Footers", Icon = "dock_to_bottom" },
-                    new { Key = "blog", Name = "Blogs & News", Icon = "newspaper" },
-                    new { Key = "ecommerce", Name = "E-Commerce", Icon = "shopping_bag" },
-                    new { Key = "breadcrumb", Name = "Breadcrumbs", Icon = "linear_scale" }
-                })
-                {
-                    var count = res.CategoryBreakdown.ContainsKey(cat.Key) ? res.CategoryBreakdown[cat.Key] : 0;
-                    if (count > 0)
-                    {
-                        <button type="button" class="cat-filter-btn" onclick="filterByCategory('@cat.Key', this)">
-                            <span class="material-symbols-outlined" style="font-size: 18px;">@cat.Icon</span>
-                            <span>@cat.Name</span>
-                            <span class="cat-count">@count</span>
-                        </button>
-                    }
-                }
-            </div>
-
-            <!-- Section Cards Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;" id="sectionsGridContainer">
-                @for (int i = 0; i < res.Sections.Count; i++)
-                {
-                    var sec = res.Sections[i];
-                    var pagesStr = string.Join(",", sec.ParentPageSlugs);
-                    var cssKb = Math.Round(sec.ScopedCss.Length / 1024.0, 1);
-
-                    <div class="section-card-col" 
-                         data-category="@sec.CategoryKey" 
-                         data-pages="@pagesStr" 
-                         data-section-id="@sec.Id">
-                        <div class="admin-card section-card-item" style="border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; height: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease;">
-                            
-                            <!-- Card Header Banner with Gradient -->
-                            <div style="background: @sec.ThumbnailGradient; min-height: 80px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; position: relative; color: #ffffff;">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input class="section-select-check" type="checkbox" data-index="@i" checked onchange="updateBatchPublishCount()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #6366f1;" />
-                                    <span style="background: rgba(0,0,0,0.4); color: #ffffff; text-transform: uppercase; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px;">
-                                        @sec.CategoryKey
-                                    </span>
-                                    <span style="background: #ffffff; color: #0f172a; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">
-                                        @sec.Label
-                                    </span>
-                                </div>
-
-                                <span style="background: rgba(255,255,255,0.25); color: #ffffff; font-family: monospace; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 8px;">
-                                    @sec.VariantCode
-                                </span>
-                            </div>
-
-                            <!-- Card Body -->
-                            <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; background: var(--admin-card-bg, #ffffff);">
-                                <h4 style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--admin-text, #0f172a);">@sec.Name</h4>
-                                <p style="margin: 0 0 16px; font-size: 13px; color: var(--admin-text-muted, #64748b); line-height: 1.5; flex-grow: 1;">@sec.Description</p>
-
-                                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;">
-                                    <span style="background: rgba(241, 245, 249, 0.8); color: #334155; border: 1px solid #cbd5e1; font-family: monospace; font-size: 11px; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <span class="material-symbols-outlined" style="font-size: 13px;">style</span> @res.GroupCode
-                                    </span>
-                                    <span id="cardCssBadge_@i" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">
-                                        Scoped CSS: @cssKb KB
-                                    </span>
-                                </div>
-
-                                <!-- Actions -->
-                                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--admin-border, #e2e8f0); padding-top: 16px; gap: 10px; margin-top: auto;">
-                                    <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" onclick="openSectionPreviewModal(@i)">
-                                        <span class="material-symbols-outlined" style="font-size: 16px; color: #6366f1;">visibility</span>
-                                        <span>Live Preview</span>
-                                    </button>
-
-                                    <button type="button" class="btn-admin btn-admin-primary" style="font-size: 13px; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" id="btnPublish_@sec.Id" onclick="publishSingleSection(@i, this)">
-                                        <span class="material-symbols-outlined" style="font-size: 16px;">add_shopping_cart</span>
-                                        <span>Add to Market</span>
-                                    </button>
-                                </div>
-                            </div>
+            <!-- TAB 3: UI SCREENSHOT MOCKUP (VISION AI) -->
+            <div id="panelImageExtractor" style="display:none;">
+                <form id="formImageIngest" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row-grid">
+                        <div class="form-group-block">
+                            <label class="form-label-bold">Theme Suite / Family Name</label>
+                            <input type="text" class="form-input-styled" id="imgSuiteName" name="suiteName" value="@Model.SuiteName" placeholder="e.g. Portfolio Mockup Suite" required />
                         </div>
-                    </div>
-                }
-            </div>
-        }
-    </div>
-</div>
-
-<!-- ========================================================================= -->
-<!-- Multi-Tab Live Preview Sandbox Modal -->
-<!-- ========================================================================= -->
-<div id="sectionPreviewModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.75); z-index: 9999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border-radius: 20px; width: 100%; max-width: 1200px; height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
-        
-        <!-- Modal Header Toolbar -->
-        <div style="padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; background: #0f172a;">
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center;">
-                    <span class="material-symbols-outlined" style="font-size: 24px;" id="modalPreviewIcon">view_in_ar</span>
-                </div>
-                <div>
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #ffffff;" id="modalPreviewTitle">Section Preview</h3>
-                    <div style="font-family: monospace; font-size: 12px; color: #94a3b8;" id="modalPreviewSubtitle">Category &bull; VariantCode &bull; Scoped CSS</div>
-                </div>
-            </div>
-
-            <!-- Viewport Controls & Actions -->
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button type="button" class="btn-admin" id="btnModalViewFullSuiteDemo" style="background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" onclick="openFullSuiteDemoFromImport()" title="View Complete Multi-Section Website Suite">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">web</span>
-                    <span>Full Website Demo</span>
-                </button>
-
-                <button type="button" class="btn-admin" id="btnModalCleanSectionWithAi" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; border: none; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);" onclick="cleanActiveSectionWithAi()">
-                    <span class="material-symbols-outlined" style="font-size: 16px;" id="modalAiCleanIcon">auto_fix_high</span>
-                    <span id="modalAiCleanText">Clean Section with AI</span>
-                </button>
-
-                <div style="background: rgba(0,0,0,0.4); padding: 4px; border-radius: 24px; display: flex; gap: 4px; border: 1px solid rgba(255,255,255,0.1);">
-                    <button type="button" class="vp-toggle-btn active" id="btnVpDesktop" onclick="setPreviewViewport('desktop')">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop
-                    </button>
-                    <button type="button" class="vp-toggle-btn" id="btnVpTablet" onclick="setPreviewViewport('tablet')">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">tablet</span> Tablet (768px)
-                    </button>
-                    <button type="button" class="vp-toggle-btn" id="btnVpMobile" onclick="setPreviewViewport('mobile')">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile (375px)
-                    </button>
-                </div>
-
-                <button type="button" onclick="closeSectionPreviewModal()" style="background: rgba(255,255,255,0.1); border: none; color: #cbd5e1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Modal Navigation Tabs & Sandbox Modes -->
-        <div style="background: #1e293b; padding: 8px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; gap: 8px; overflow-x: auto;">
-                <button type="button" class="modal-tab-btn active" id="tabBtn_sandbox" onclick="switchPreviewTab('sandbox')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">play_circle</span> Live Sandbox
-                </button>
-                <button type="button" class="modal-tab-btn" id="tabBtn_ai" onclick="switchPreviewTab('ai')" style="color: #c084fc;">
-                    <span class="material-symbols-outlined" style="font-size: 18px; color: #c084fc;">psychology</span> AI Co-Pilot
-                </button>
-                <button type="button" class="modal-tab-btn" id="tabBtn_html" onclick="switchPreviewTab('html')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">code</span> HTML Markup
-                    <span class="badge-tab-metric" id="tabMetricHtml">0 L</span>
-                </button>
-                <button type="button" class="modal-tab-btn" id="tabBtn_css" onclick="switchPreviewTab('css')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">css</span> Scoped CSS
-                    <span class="badge-tab-metric" id="tabMetricCss">0 L • 0 R</span>
-                </button>
-                <button type="button" class="modal-tab-btn" id="tabBtn_js" onclick="switchPreviewTab('js')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">javascript</span> Script (JS)
-                    <span class="badge-tab-metric" id="tabMetricJs">0 L</span>
-                </button>
-                <button type="button" class="modal-tab-btn" id="tabBtn_content" onclick="switchPreviewTab('content')">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">data_object</span> Mock Content (JSON)
-                    <span class="badge-tab-metric" id="tabMetricJson">0 T</span>
-                </button>
-            </div>
-
-            <!-- Preview Sandbox Scope Selector (Single vs Full Page vs Full Suite) -->
-            <div style="display: flex; align-items: center; gap: 6px; padding-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; margin-right: 4px;">Sandbox Scope:</span>
-                <button type="button" class="preview-scope-pill active" id="scopeBtn_single" onclick="setSandboxScope('single')">Section</button>
-                <button type="button" class="preview-scope-pill" id="scopeBtn_page" onclick="setSandboxScope('page')">Full Page</button>
-                <button type="button" class="preview-scope-pill" id="scopeBtn_suite" onclick="setSandboxScope('suite')">Full Suite</button>
-            </div>
-        </div>
-
-        <!-- Modal Content Body -->
-        <div style="flex: 1; overflow-y: auto; background: #0f172a; position: relative;">
-            
-            <!-- Live Sandbox Pane -->
-            <div id="pane_sandbox" class="modal-tab-pane" style="height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; background: #334155;">
-                <div id="iframeWrapper" style="width: 100%; height: 100%; max-height: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: width 0.3s ease;">
-                    <iframe id="sectionPreviewIframe" src="about:blank" style="width: 100%; height: 100%; border: none;"></iframe>
-                </div>
-            </div>
-
-            <!-- AI Co-Pilot Tab Pane -->
-            <div id="pane_ai" class="modal-tab-pane" style="display: none; padding: 24px;">
-                <div style="max-width: 900px; margin: 0 auto;">
-                    
-                    <!-- AI Pool Banner -->
-                    <div style="background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.25); border-radius: 14px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span class="material-symbols-outlined" style="font-size: 26px; color: #c084fc;">auto_awesome</span>
-                            <div>
-                                <div style="font-size: 14px; font-weight: 700; color: #f3e8ff;">AI Section Co-Pilot &amp; Visual Refiner</div>
-                                <div style="font-size: 12px; color: #d8b4fe;">Conversational AI modifies this section's HTML, Scoped CSS, and Placeholders in real-time.</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <label style="font-size: 12px; color: #e2e8f0; font-weight: 600; margin: 0;">AI Engine:</label>
-                            <select id="aiModelProviderSelect" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;">
-                                <option value="Gemini">Google Gemini (Auto-Failover Pool - $0 Free)</option>
-                                <option value="Qwen">Local Qwen (1.5B Scoper &amp; Sanitizer - $0 Free)</option>
-                                <option value="DeepSeek">DeepSeek (Complex Interactivity &amp; Logic)</option>
+                        <div class="form-group-block">
+                            <label class="form-label-bold">AI Model Engine</label>
+                            <select class="form-input-styled" id="visionAiProvider" name="provider">
+                                <option value="Gemini" selected>Gemini 2.5 Flash (Multimodal Vision)</option>
+                                <option value="DeepSeek">DeepSeek Failover</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Prompt Instruction Box -->
-                    <div style="background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <label style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0;">What would you like the AI to tweak or redesign?</label>
-                            <span style="font-size: 11px; color: #94a3b8;">Preserves scoped CSS &amp; {{placeholders}}</span>
-                        </div>
+                    <div class="form-group-block">
+                        <label class="form-label-bold">Upload UI Screenshot or Figma Export (PNG, JPG, WebP)</label>
+                        
+                        <!-- Initial Image Dropzone -->
+                        <label for="visionScreenshotInput" class="studio-dropzone" id="imageDropzoneArea">
+                            <input type="file" id="visionScreenshotInput" name="screenshotFile" accept="image/png,image/jpeg,image/webp" onchange="handleImageFileSelect(this)" />
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-indigo); margin-bottom: 8px; display: block;">add_photo_alternate</span>
+                            <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;">Select or drop a UI mockup screenshot here</div>
+                            <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-top: 4px;">Multimodal AI decomposes screenshot into semantic HTML, scoped CSS, and Mustache tokens</div>
+                        </label>
 
-                        <textarea id="aiTweakUserPrompt" rows="4" 
-                                  style="width: 100%; font-size: 13.5px; border-radius: 10px; background: #0f172a; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); padding: 14px; line-height: 1.5; resize: vertical; box-sizing: border-box;" 
-                                  placeholder="e.g. Change accent colors to modern emerald gradient (#10b981), add smooth hover scale animations on cards, and standardize all placeholder variables..."></textarea>
-
-                        <!-- Quick Action Chips -->
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
-                            <button type="button" class="ai-quick-chip" style="background: rgba(99, 102, 241, 0.25); border-color: #818cf8; color: #e0e7ff; font-weight: 700;" onclick="triggerAiPrecisionFilter()">🎯 AI Precision Filter (Zero Hallucination Tree-Shake)</button>
-                            <button type="button" class="ai-quick-chip" onclick="setAiQuickPrompt('Tree-shake all unused CSS and extract exact interactive JavaScript handlers for this section. Do not invent any new rules.')">🧹 Tree-Shake Unused CSS</button>
-                            <button type="button" class="ai-quick-chip" onclick="setAiQuickPrompt('Add modern glassmorphism with subtle borders, blur backdrops, and glowing gradients')">✨ Glassmorphism UI</button>
-                            <button type="button" class="ai-quick-chip" onclick="setAiQuickPrompt('Make color scheme dark mode with deep slate #0f172a and vibrant indigo accents')">🌙 Dark Slate Theme</button>
-                            <button type="button" class="ai-quick-chip" onclick="setAiQuickPrompt('Optimize layout for 3-column responsive card grid with hover shadow elevation')">📱 3-Col Card Grid</button>
-                            <button type="button" class="ai-quick-chip" onclick="setAiQuickPrompt('Extract clean placeholders for all headings, subheadings, buttons, and image URLs')">🏷️ Standardize Placeholders</button>
-                        </div>
-
-                        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-                            <button type="button" class="btn-admin" id="btnExecuteAiTweak" onclick="executeSectionAiTweak()" style="background: #9333ea; color: #ffffff; border: none; font-size: 13px; font-weight: 700; padding: 10px 24px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);">
-                                <span class="material-symbols-outlined" style="font-size: 18px;" id="aiTweakBtnIcon">magic_button</span>
-                                <span id="aiTweakBtnText">Execute AI Tweak</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- AI Result Explanation Card -->
-                    <div id="aiTweakResultCard" style="display: none; background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="material-symbols-outlined" style="color: #10b981; font-size: 20px;">check_circle</span>
-                                <span style="font-size: 14px; font-weight: 700; color: #34d399;">AI Optimization Applied Successfully</span>
+                        <!-- Prominent Attached Image Card -->
+                        <div class="attached-file-box" id="attachedImageFileBox">
+                            <div class="attached-file-info">
+                                <img id="attachedImageThumb" class="attached-file-thumb" src="" alt="Thumbnail" />
+                                <div class="attached-file-meta">
+                                    <div class="attached-file-name" id="attachedImageFileName">screenshot.png</div>
+                                    <div class="attached-file-sub">
+                                        <span class="badge-pill badge-pill-secondary" id="attachedImageFileSize">0 KB</span>
+                                        <span class="badge-pill badge-pill-success">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span> Image Ready
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="revertAiTweak()">Revert</button>
-                                <button type="button" class="btn-admin" style="background: #10b981; color: #ffffff; border: none; font-size: 12px; font-weight: 700; padding: 6px 16px; border-radius: 8px; cursor: pointer;" onclick="applyAiTweakAndShowSandbox()">Preview in Sandbox &rarr;</button>
+                                <label for="visionScreenshotInput" class="btn-admin btn-admin-secondary btn-admin-sm" style="cursor: pointer;">
+                                    <span class="material-symbols-outlined">sync</span> Change Image
+                                </label>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="clearImageFile()">
+                                    <span class="material-symbols-outlined">close</span> Remove
+                                </button>
                             </div>
                         </div>
-
-                        <p id="aiTweakExplanationText" style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin: 0 0 14px;"></p>
-
-                        <!-- Placeholders Discovered -->
-                        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
-                            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px;">Active Dynamic Placeholders:</div>
-                            <div id="aiTweakPlaceholdersList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
-                        </div>
                     </div>
 
-                </div>
-            </div>
-
-            <!-- HTML Pane -->
-            <div id="pane_html" class="modal-tab-pane" style="display: none; padding: 24px;">
-                <div style="background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(15,23,42,0.6); border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94a3b8;">
-                        <span id="codeHeaderInfoHtml">0 lines • 0 characters</span>
-                        <button type="button" class="btn-copy-code" onclick="copyCodeFromBlock('codeBlockHtml', this)">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy HTML
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn-admin btn-admin-primary btn-admin-lg" id="btnRunImageIngest" onclick="executeImageIngest()">
+                            <span class="material-symbols-outlined">auto_awesome</span>
+                            Synthesize Sections via Vision AI
                         </button>
                     </div>
-                    <pre style="margin: 0; background: transparent; color: #f8fafc; padding: 20px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockHtml"></code></pre>
-                </div>
+                </form>
             </div>
-
-            <!-- Scoped CSS Pane -->
-            <div id="pane_css" class="modal-tab-pane" style="display: none; padding: 24px;">
-                <div style="background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(15,23,42,0.6); border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94a3b8; flex-wrap: wrap; gap: 8px;">
-                        <span id="codeHeaderInfoCss">0 lines • 0 rules • 0 properties</span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <button type="button" class="btn-admin" id="btnAiFilterCssAction" onclick="triggerAiPrecisionFilter()" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; border: none; font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);">
-                                <span class="material-symbols-outlined" style="font-size: 16px;" id="aiFilterCssIcon">filter_alt</span>
-                                <span id="aiFilterCssText">AI Precision Tree-Shake &amp; Filter</span>
-                            </button>
-                            <button type="button" class="btn-copy-code" onclick="copyCodeFromBlock('codeBlockCss', this)">
-                                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy Scoped CSS
-                            </button>
-                        </div>
-                    </div>
-                    <pre style="margin: 0; background: transparent; color: #f8fafc; padding: 20px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockCss"></code></pre>
-                </div>
-            </div>
-
-            <!-- JS Pane -->
-            <div id="pane_js" class="modal-tab-pane" style="display: none; padding: 24px;">
-                <div style="background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(15,23,42,0.6); border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94a3b8; flex-wrap: wrap; gap: 8px;">
-                        <span id="codeHeaderInfoJs">0 lines</span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <button type="button" class="btn-admin" id="btnAiFilterJsAction" onclick="triggerAiPrecisionFilter()" style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <span class="material-symbols-outlined" style="font-size: 16px;">psychology</span>
-                                <span>Filter Exact JS Handlers</span>
-                            </button>
-                            <button type="button" class="btn-copy-code" onclick="copyCodeFromBlock('codeBlockJs', this)">
-                                <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy JS
-                            </button>
-                        </div>
-                    </div>
-                    <pre style="margin: 0; background: transparent; color: #f8fafc; padding: 20px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockJs">// No interactive script required for this section</code></pre>
-                </div>
-            </div>
-
-            <!-- Content Pane -->
-            <div id="pane_content" class="modal-tab-pane" style="display: none; padding: 24px;">
-                <div style="background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(15,23,42,0.6); border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94a3b8;">
-                        <span id="codeHeaderInfoJson">0 tokens</span>
-                        <button type="button" class="btn-copy-code" onclick="copyCodeFromBlock('codeBlockJson', this)">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy Mock Data JSON
-                        </button>
-                    </div>
-                    <pre style="margin: 0; background: transparent; color: #f8fafc; padding: 20px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;"><code id="codeBlockJson"></code></pre>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Footer Actions -->
-        <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0f172a;">
-            <button type="button" class="btn-admin btn-admin-secondary" style="font-size: 13px; padding: 8px 18px; border-radius: 8px; color: #ffffff;" onclick="closeSectionPreviewModal()">Close</button>
-            
-            <button type="button" class="btn-admin btn-admin-primary" style="font-size: 14px; font-weight: 600; padding: 10px 24px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;" id="btnModalPublishAction">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add_shopping_cart</span>
-                <span>Publish Section to Marketplace</span>
-            </button>
         </div>
     </div>
 </div>
 
-<style>
-    @@keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    .studio-stepper-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 28px;
-        background: var(--admin-card-bg, #ffffff);
-        border: 1px solid var(--admin-border, #e2e8f0);
-        border-radius: 16px;
-        padding: 14px 24px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-        overflow-x: auto;
-    }
-    .step-pill {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        padding: 6px 14px;
-        border-radius: 20px;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }
-    .step-pill .step-number {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #e2e8f0;
-        color: #475569;
-        font-weight: 700;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .step-pill .step-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--admin-text-muted, #64748b);
-    }
-    .step-pill.active {
-        background: rgba(99, 102, 241, 0.1);
-    }
-    .step-pill.active .step-number {
-        background: #6366f1;
-        color: #ffffff;
-    }
-    .step-pill.active .step-label {
-        color: #6366f1;
-    }
-    .step-pill.completed .step-number {
-        background: #10b981;
-        color: #ffffff;
-    }
-    .step-pill.completed .step-label {
-        color: var(--admin-text, #0f172a);
-    }
-    .step-connector {
-        flex: 1;
-        height: 2px;
-        background: #e2e8f0;
-        margin: 0 10px;
-        min-width: 15px;
-    }
-    .wb-tab-btn {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        padding: 10px 18px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s ease;
-    }
-    .wb-tab-btn:hover {
-        color: #ffffff;
-    }
-    .wb-tab-btn.active {
-        color: #818cf8;
-        border-bottom-color: #818cf8;
-    }
-    .css-file-pill {
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 6px;
-        font-size: 12px;
-        color: #cbd5e1;
-        transition: all 0.15s ease;
-    }
-    .css-file-pill:hover {
-        background: rgba(255,255,255,0.08);
-        color: #ffffff;
-    }
-    .css-file-pill.active {
-        background: #6366f1 !important;
-        color: #ffffff !important;
-    }
-    .js-file-pill {
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 6px;
-        font-size: 12px;
-        color: #cbd5e1;
-        transition: all 0.15s ease;
-    }
-    .js-file-pill:hover {
-        background: rgba(255,255,255,0.08);
-        color: #ffffff;
-    }
-    .js-file-pill.active {
-        background: rgba(234, 179, 8, 0.25) !important;
-        border: 1px solid #fde047 !important;
-        color: #fde047 !important;
-        font-weight: 700;
-    }
-    .import-tab-cards-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-    @@media (max-width: 992px) {
-        .import-tab-cards-container {
-            grid-template-columns: 1fr;
-        }
-    }
-    .tab-mode-card {
-        background: var(--admin-bg-surface, #ffffff);
-        border: 1.5px solid var(--admin-border, #e2e8f0);
-        border-radius: 14px;
-        padding: 16px 20px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        text-align: left;
-        width: 100%;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-        position: relative;
-    }
-    .tab-mode-card:hover {
-        border-color: #94a3b8;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-    }
-    .tab-mode-card.active {
-        background: #ffffff;
-        border: 2px solid #6366f1;
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.18);
-        transform: none;
-    }
-    .tab-mode-card#tabBtnSource.active {
-        border-color: #059669;
-        box-shadow: 0 4px 20px rgba(5, 150, 105, 0.18);
-    }
-    .tab-mode-card#tabBtnUrl.active {
-        border-color: #6366f1;
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.18);
-    }
-    .tab-mode-card#tabBtnImage.active {
-        border-color: #d97706;
-        box-shadow: 0 4px 20px rgba(217, 119, 6, 0.18);
-    }
-    .tab-mode-icon-box {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-    }
-    .mode-icon-source {
-        background: rgba(16, 185, 129, 0.1);
-        color: #059669;
-    }
-    .mode-icon-url {
-        background: rgba(99, 102, 241, 0.1);
-        color: #6366f1;
-    }
-    .mode-icon-image {
-        background: rgba(234, 179, 8, 0.12);
-        color: #d97706;
-    }
-    .tab-mode-card.active .mode-icon-source {
-        background: #059669;
-        color: #ffffff;
-        box-shadow: 0 2px 10px rgba(5, 150, 105, 0.35);
-    }
-    .tab-mode-card.active .mode-icon-url {
-        background: #6366f1;
-        color: #ffffff;
-        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
-    }
-    .tab-mode-card.active .mode-icon-image {
-        background: #d97706;
-        color: #ffffff;
-        box-shadow: 0 2px 10px rgba(217, 119, 6, 0.35);
-    }
-    .tab-mode-text-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1;
-        min-width: 0;
-    }
-    .tab-mode-title {
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--admin-text, #0f172a);
-        line-height: 1.3;
-    }
-    .badge-tab-mode {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 9px;
-        border-radius: 6px;
-        display: inline-block;
-        width: fit-content;
-        letter-spacing: 0.02em;
-    }
-    .badge-source {
-        background: rgba(16, 185, 129, 0.12);
-        color: #059669;
-    }
-    .badge-url {
-        background: rgba(99, 102, 241, 0.12);
-        color: #6366f1;
-    }
-    .badge-image {
-        background: rgba(234, 179, 8, 0.14);
-        color: #b45309;
-    }
-    .tab-mode-radio-circle {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 2px solid #cbd5e1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-        background: transparent;
-    }
-    .radio-check-icon {
-        font-size: 16px;
-        color: #ffffff;
-        display: none;
-    }
-    .tab-mode-card.active .tab-mode-radio-circle {
-        border-color: transparent;
-    }
-    .tab-mode-card#tabBtnSource.active .tab-mode-radio-circle {
-        background: #059669;
-    }
-    .tab-mode-card#tabBtnUrl.active .tab-mode-radio-circle {
-        background: #6366f1;
-    }
-    .tab-mode-card#tabBtnImage.active .tab-mode-radio-circle {
-        background: #d97706;
-    }
-    .tab-mode-card.active .radio-check-icon {
-        display: block;
-    }
-    .cat-filter-btn {
-        background: var(--admin-card-bg, #ffffff);
-        border: 1px solid var(--admin-border, #e2e8f0);
-        color: var(--admin-text, #334155);
-        padding: 8px 18px;
-        border-radius: 24px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
-        transition: all 0.2s ease;
-    }
-    .cat-filter-btn:hover {
-        border-color: #6366f1;
-        color: #6366f1;
-    }
-    .cat-filter-btn.active {
-        background: #6366f1 !important;
-        border-color: #6366f1 !important;
-        color: #ffffff !important;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-    .cat-filter-btn .cat-count {
-        background: rgba(0,0,0,0.06);
-        color: inherit;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-    }
-    .cat-filter-btn.active .cat-count {
-        background: rgba(255,255,255,0.25) !important;
-        color: #ffffff !important;
-    }
-    .vp-toggle-btn {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        padding: 6px 14px;
-        border-radius: 16px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        transition: all 0.2s ease;
-    }
-    .vp-toggle-btn.active {
-        background: #6366f1;
-        color: #ffffff;
-    }
-    .modal-tab-btn {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        padding: 10px 18px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s ease;
-    }
-    .modal-tab-btn:hover {
-        color: #ffffff;
-    }
-    .modal-tab-btn.active {
-        color: #38bdf8;
-        border-bottom-color: #38bdf8;
-    }
-    #iframeWrapper.vp-tablet { width: 768px !important; }
-    #iframeWrapper.vp-mobile { width: 375px !important; }
-    .ai-quick-chip {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.15);
-        color: #e2e8f0;
-        padding: 5px 12px;
-        border-radius: 16px;
-        font-size: 11.5px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .ai-quick-chip:hover {
-        background: rgba(192, 132, 252, 0.2);
-        border-color: #c084fc;
-        color: #ffffff;
-    }
-    .preview-scope-pill {
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.15);
-        color: #94a3b8;
-        padding: 4px 12px;
-        border-radius: 14px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-    .preview-scope-pill:hover {
-        color: #ffffff;
-        border-color: rgba(255,255,255,0.3);
-    }
-    .preview-scope-pill.active {
-        background: #38bdf8 !important;
-        border-color: #38bdf8 !important;
-        color: #0f172a !important;
-        font-weight: 700 !important;
-    }
-    .badge-tab-metric {
-        background: rgba(255,255,255,0.12);
-        color: #cbd5e1;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 7px;
-        border-radius: 10px;
-        letter-spacing: 0.2px;
-        margin-left: 2px;
-        transition: all 0.2s ease;
-    }
-    .modal-tab-btn.active .badge-tab-metric {
-        background: rgba(56, 189, 248, 0.25);
-        color: #38bdf8;
-    }
-    .btn-copy-code {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.12);
-        color: #cbd5e1;
-        font-size: 11.5px;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 6px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-    .btn-copy-code:hover {
-        background: rgba(255,255,255,0.15);
-        color: #ffffff;
-        border-color: rgba(255,255,255,0.25);
-    }
-    .btn-copy-code.copied {
-        background: rgba(16, 185, 129, 0.2) !important;
-        border-color: #10b981 !important;
-        color: #34d399 !important;
-    }
-</style>
+<!-- ========================================================================= -->
+<!-- STEP 2: SECTION WORKBENCH (GRID & TABLE MATRIX) -->
+<!-- ========================================================================= -->
+<div id="stepPanel2" class="studio-step-panel" style="display:none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 class="admin-title" style="font-size: 20px;">
+                <span id="workbenchSuiteTitle">Extracted Sections</span>
+                <span class="badge-pill badge-pill-primary ms-2" id="workbenchCountBadge">0 sections</span>
+            </h2>
+            <p class="admin-subtitle">Review staged components in the database, adjust categories, and inspect tokenized Mustache placeholders.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- View Mode Switcher -->
+            <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated);">
+                <button type="button" class="studio-step-btn active" id="btnViewGrid" onclick="setWorkbenchView('grid')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">grid_view</span> Grid
+                </button>
+                <button type="button" class="studio-step-btn" id="btnViewTable" onclick="setWorkbenchView('table')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">table_rows</span> Table Matrix
+                </button>
+            </div>
 
-<script type="application/json" id="rawInspectionJsonData">@Html.Raw(Model.InspectResultJson)</script>
-<script type="application/json" id="rawExtractionJsonData">@Html.Raw(Model.ExtractionResultJson)</script>
-<script src="~/js/section-builder-import.js" asp-append-version="true"></script>
+            <button type="button" class="btn-admin btn-admin-secondary" onclick="jumpToStep(1)">
+                <span class="material-symbols-outlined">restart_alt</span> Re-ingest
+            </button>
+            <button type="button" class="btn-admin btn-admin-primary" onclick="publishAllSectionsToMarketplace()">
+                <span class="material-symbols-outlined">cloud_upload</span> Batch Publish Suite
+            </button>
+        </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;" id="categoryFilterContainer">
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="filterSectionsByCategory('all', this)">All Sections</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('menu', this)">Menus &amp; Nav</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('hero', this)">Heros</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('bodysections', this)">Body &amp; Features</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('blog', this)">Blog &amp; Cards</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('contact', this)">Contact</button>
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="filterSectionsByCategory('footer', this)">Footers</button>
+    </div>
+
+    <!-- VIEW 1: Sliced Sections Grid -->
+    <div class="section-cards-grid" id="extractedSectionsGrid">
+        <!-- Dynamically populated via JavaScript -->
+    </div>
+
+    <!-- VIEW 2: Sliced Sections Table Matrix -->
+    <div class="workbench-table-wrap" id="extractedSectionsTableWrap" style="display:none;">
+        <table class="workbench-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Variant</th>
+                    <th>Section Title &amp; Description</th>
+                    <th style="width: 130px;">Category</th>
+                    <th style="width: 150px;">Code Metrics</th>
+                    <th style="width: 140px;">CSS Libraries</th>
+                    <th style="width: 140px;">JS Libraries</th>
+                    <th style="width: 180px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="extractedSectionsTableBody">
+                <!-- Dynamically populated via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STEP 3 / MODAL: LIVE PREVIEW & CODE INSPECTOR -->
+<!-- ========================================================================= -->
+<div class="preview-modal-overlay" id="sectionPreviewModal">
+    <div class="preview-modal-dialog" onclick="event.stopPropagation()">
+        <!-- ROW 1: TOP CONTROL BAR -->
+        <div class="preview-modal-bar">
+            <!-- Title & Status -->
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 220px;">
+                <div>
+                    <div style="font-weight: 700; color: var(--admin-text); font-size: 14px;" id="previewModalSectionTitle">Section Preview</div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                        <span class="badge-pill badge-pill-secondary" id="previewModalVariantCode">sec_variant_01</span>
+                        <span class="badge-pill badge-pill-info" id="previewModalStatusBadge">Staged in DB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Viewport & Canvas Theme Controls -->
+            <div style="display: flex; align-items: center; gap: 12px;" id="previewModalCenterControls">
+                <!-- Device Viewport Switcher -->
+                <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated); padding: 3px;">
+                    <button type="button" class="studio-step-btn active" id="vpBtnDesktop" onclick="setPreviewViewport('100%', this)" title="Desktop Full Viewport">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">desktop_windows</span> Desktop
+                    </button>
+                    <button type="button" class="studio-step-btn" id="vpBtnTablet" onclick="setPreviewViewport('768px', this)" title="Tablet (768px)">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">tablet_mac</span> Tablet
+                    </button>
+                    <button type="button" class="studio-step-btn" id="vpBtnMobile" onclick="setPreviewViewport('375px', this)" title="Mobile (375px)">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">smartphone</span> Mobile
+                    </button>
+                </div>
+
+                <!-- Canvas Background Theme Switcher -->
+                <div class="studio-stepper" style="background: var(--admin-bg-surface-elevated); padding: 3px;">
+                    <button type="button" class="studio-step-btn active" id="themeBtnDark" onclick="setPreviewCanvasTheme('dark', this)" title="Dark Canvas">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">dark_mode</span> Dark
+                    </button>
+                    <button type="button" class="studio-step-btn" id="themeBtnBright" onclick="setPreviewCanvasTheme('bright', this)" title="Bright Canvas">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">light_mode</span> Bright
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Changes, Save, Close -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div id="previewUnsavedChangesIndicator" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: #f59e0b; font-weight: 600; padding: 4px 8px; background: rgba(245, 158, 11, 0.12); border-radius: var(--radius-sm);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">pending</span> Unsaved Changes
+                </div>
+                <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSaveDraftModal" onclick="saveDraftEditsToDatabase()">
+                    <span class="material-symbols-outlined">save</span> Save Draft
+                </button>
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="closeSectionPreviewModal()" title="Close Modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 2: CENTERED TABS BAR (Single Line, Interactive Button Look) -->
+        <div class="preview-modal-tabs">
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <button type="button" class="modal-tab-btn active" id="inspTabPreview" onclick="switchInspectorTab('preview')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span> Preview
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabHtml" onclick="switchInspectorTab('html')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">code</span> HTML
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabCss" onclick="switchInspectorTab('css')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">css</span> Scoped CSS
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabJs" onclick="switchInspectorTab('js')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">javascript</span> JS
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabMock" onclick="switchInspectorTab('mock')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">data_object</span> Mock Data
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabCssLibs" onclick="switchInspectorTab('csslibs')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">palette</span> CSS Libraries <span class="badge-pill badge-pill-secondary" style="font-size: 10px; padding: 2px 6px;" id="cssLibsCountBadge">0</span>
+                </button>
+                <button type="button" class="modal-tab-btn" id="inspTabJsLibs" onclick="switchInspectorTab('jslibs')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">integration_instructions</span> JS Libraries <span class="badge-pill badge-pill-secondary" style="font-size: 10px; padding: 2px 6px;" id="jsLibsCountBadge">0</span>
+                </button>
+                <button type="button" class="modal-tab-btn" style="color: var(--admin-primary);" id="inspTabAi" onclick="switchInspectorTab('ai')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">auto_awesome</span> AI Studio
+                </button>
+            </div>
+        </div>
+
+        <!-- ROW 3: FULL-WIDTH TAB CONTENT PANES -->
+        <div class="preview-modal-content" style="flex: 1; display: flex; overflow: hidden; background: var(--admin-bg); position: relative;">
+            
+            <!-- TAB 1: LIVE PREVIEW -->
+            <div id="inspectorPanelPreview" style="flex: 1; display: flex; flex-direction: column; width: 100%; height: 100%; background: var(--admin-bg);">
+                <div class="preview-viewport-wrap" id="previewViewportContainer" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; overflow: auto; background: var(--admin-bg);">
+                    <iframe id="previewSandboxFrame" class="preview-viewport-frame" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+
+            <!-- TAB 2: HTML -->
+            <div id="inspectorPanelHtml" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">code</span> Mustache Parameterized Template Editor (Tags, Classes, IDs &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorHtmlCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 3: SCOPED CSS -->
+            <div id="inspectorPanelCss" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">css</span> Scoped Author Stylesheet Editor (CSS Selectors, Properties &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorCssCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 4: JS -->
+            <div id="inspectorPanelJs" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">javascript</span> Component JavaScript Interaction Editor (Functions, Objects &amp; Code Folding)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorJsCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 5: MOCK DATA -->
+            <div id="inspectorPanelMock" style="flex: 1; display: none; flex-direction: column; padding: 14px 20px; background: var(--admin-bg); width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">data_object</span> Sample Content JSON (Hydration Data Schema)
+                </div>
+                <div class="code-editor-container">
+                    <textarea id="editorMockJsonCode" style="display: none;"></textarea>
+                </div>
+            </div>
+
+            <!-- TAB 6: CSS LIBRARIES (BADGES ONLY - NO CHECKBOXES) -->
+            <div id="inspectorPanelCsslibs" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #60a5fa;">palette</span> CSS Stylesheet Dependencies
+                    </div>
+                    <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-bottom: 16px;">External stylesheet assets loaded into the document &lt;head&gt; for this section.</div>
+                    <div id="inspectorCssLibsBadgeList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Dynamically populated via JS with badges only -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: JS LIBRARIES (BADGES ONLY - NO CHECKBOXES) -->
+            <div id="inspectorPanelJslibs" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--admin-text); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #34d399;">integration_instructions</span> JavaScript Script Dependencies
+                    </div>
+                    <div style="font-size: 12.5px; color: var(--admin-text-muted); margin-bottom: 16px;">External script engines loaded at the bottom of &lt;body&gt; for this section.</div>
+                    <div id="inspectorJsLibsBadgeList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Dynamically populated via JS with badges only -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: AI STUDIO -->
+            <div id="inspectorPanelAi" style="flex: 1; display: none; padding: 24px 32px; background: var(--admin-bg); flex-direction: column; gap: 16px; overflow-y: auto; width: 100%; height: 100%; box-sizing: border-box;">
+                <div style="max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 14px;">
+                    <div style="font-weight: 700; font-size: 15px; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">auto_awesome</span> Conversational AI Section Refiner
+                    </div>
+                    <div style="font-size: 13px; color: var(--admin-text-muted); line-height: 1.5;">Provide plain-English instructions. AI will rewrite the HTML, scoped CSS, and token schema, and update the staging database row.</div>
+                    
+                    <textarea class="form-textarea-styled" id="aiRefineInputPrompt" rows="6" placeholder="e.g. Make this section dark mode, add a secondary outline button, and improve mobile padding..."></textarea>
+                    
+                    <button type="button" class="btn-admin btn-admin-primary" style="align-self: flex-start;" id="btnExecuteAiRefine" onclick="executeAiRefineOnCurrentSection()">
+                        <span class="material-symbols-outlined">auto_fix_high</span> Execute AI Refinement
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- HIGH-VISIBILITY PROCESSING LOADER MODAL -->
+<!-- ========================================================================= -->
+<div class="studio-loading-overlay" id="studioLoadingOverlay">
+    <div class="studio-loading-card">
+        <div class="loading-pulse-ring">
+            <span class="material-symbols-outlined" style="font-size: 32px; color: var(--admin-primary);">auto_awesome</span>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text); margin: 0 0 6px 0;" id="loadingOverlayTitle">Preparing Your Sections...</h3>
+        <p style="font-size: 13px; color: var(--admin-text-muted); margin: 0 0 16px 0;" id="loadingOverlaySubtitle">Reading your design, organizing sections, styling components, and preparing your live preview.</p>
+        <span class="badge-pill badge-pill-secondary" id="loadingOverlayTimer">0s elapsed</span>
+
+        <div class="loading-step-list">
+            <div class="loading-step-item step-active" id="loadStep1">
+                <span class="material-symbols-outlined">sync</span>
+                <span>1. Reading page layout and stylesheets</span>
+            </div>
+            <div class="loading-step-item" id="loadStep2">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>2. Creating customizable text and image tags</span>
+            </div>
+            <div class="loading-step-item" id="loadStep3">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>3. Cleaning and scoping component styles</span>
+            </div>
+            <div class="loading-step-item" id="loadStep4">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>4. Saving modular sections ready for preview</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- CodeMirror 5 Core & Modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    
+    <!-- CodeMirror Code Folding Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+
+    <script src="~/js/section-library-resolver.js" asp-append-version="true"></script>
+    <script src="~/js/section-compiler-renderer.js" asp-append-version="true"></script>
+    <script src="~/js/section-builder-import.js" asp-append-version="true"></script>
+}

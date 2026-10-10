@@ -370,9 +370,7 @@ public class CentralMigrationService : ICentralMigrationService
                 CreatedUtc = tenant.CreatedUtc
             };
 
-            string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-                ? tenant.ConnectionString
-                : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+            string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
             var dbStatus = new DatabaseMigrationStatus
             {
@@ -441,9 +439,7 @@ public class CentralMigrationService : ICentralMigrationService
             ?? _tenantOptions.Value.ConnectionString
             ?? string.Empty;
 
-        string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-            ? tenant.ConnectionString
-            : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+        string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
         var deepDive = new TenantDatabaseDeepDive
         {
@@ -572,9 +568,7 @@ public class CentralMigrationService : ICentralMigrationService
             ?? _tenantOptions.Value.ConnectionString
             ?? string.Empty;
 
-        string tenantConnStr = !string.IsNullOrWhiteSpace(tenant.ConnectionString)
-            ? tenant.ConnectionString
-            : BuildTenantConnectionString(masterConnStr, tenant.DatabaseName);
+        string tenantConnStr = TenantConnectionHarmonizer.Harmonize(masterConnStr, tenant.ConnectionString, tenant.DatabaseName);
 
         var result = new MigrationExecutionResult
         {
@@ -845,10 +839,6 @@ public class CentralMigrationService : ICentralMigrationService
 
     private static string BuildTenantConnectionString(string masterConnStr, string targetDbName)
     {
-        var builder = new SqlConnectionStringBuilder(masterConnStr)
-        {
-            InitialCatalog = targetDbName
-        };
-        return builder.ConnectionString;
+        return TenantConnectionHarmonizer.Harmonize(masterConnStr, null, targetDbName);
     }
 }

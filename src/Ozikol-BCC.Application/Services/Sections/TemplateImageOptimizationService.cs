@@ -134,34 +134,40 @@ namespace Ozikol_BCC.Application.Services.Sections
             byte[]? imageBytes = null;
             string contentType = "image/webp";
 
-            try
-            {
-                var client = _httpClientFactory.CreateClient();
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            var isAbsoluteHttpUrl = Uri.TryCreate(resolvedSourceUrl, UriKind.Absolute, out var validUri) &&
+                                    (validUri.Scheme == Uri.UriSchemeHttp || validUri.Scheme == Uri.UriSchemeHttps);
 
-                using var response = await client.GetAsync(resolvedSourceUrl, cancellationToken);
-                if (response.IsSuccessStatusCode)
+            if (isAbsoluteHttpUrl)
+            {
+                try
                 {
-                    var rawBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-                    if (rawBytes != null && rawBytes.Length > 0)
+                    var client = _httpClientFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(15);
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+                    using var response = await client.GetAsync(resolvedSourceUrl, cancellationToken);
+                    if (response.IsSuccessStatusCode)
                     {
-                        imageBytes = rawBytes;
-                        var rawType = response.Content.Headers.ContentType?.MediaType;
-                        if (!string.IsNullOrWhiteSpace(rawType))
+                        var rawBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                        if (rawBytes != null && rawBytes.Length > 0)
                         {
-                            contentType = rawType;
+                            imageBytes = rawBytes;
+                            var rawType = response.Content.Headers.ContentType?.MediaType;
+                            if (!string.IsNullOrWhiteSpace(rawType))
+                            {
+                                contentType = rawType;
+                            }
                         }
                     }
+                    else
+                    {
+                        _logger.LogWarning("Failed to download image from {Url} (HTTP {StatusCode}). Triggering stock fallback.", resolvedSourceUrl, response.StatusCode);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("Failed to download image from {Url} (HTTP {StatusCode}). Triggering stock fallback.", resolvedSourceUrl, response.StatusCode);
+                    _logger.LogWarning(ex, "Exception downloading image from {Url}. Triggering stock fallback.", resolvedSourceUrl);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Exception downloading image from {Url}. Triggering stock fallback.", resolvedSourceUrl);
             }
 
             // If image is missing or unreachable, download curated royalty-free fallback

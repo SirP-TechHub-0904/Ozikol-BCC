@@ -93,11 +93,20 @@ export class ApiService {
     });
   }
 
-  delete<T>(path: string): Observable<T> {
+  delete<T>(path: string, params?: any): Observable<T> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+          httpParams = httpParams.set(key, params[key]);
+        }
+      });
+    }
     const fullUrl = this.buildUrl(path);
-    this.logRequest('DELETE', fullUrl);
+    this.logRequest('DELETE', fullUrl, params);
     return this.http.delete<T>(fullUrl, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      params: httpParams
     });
   }
 }

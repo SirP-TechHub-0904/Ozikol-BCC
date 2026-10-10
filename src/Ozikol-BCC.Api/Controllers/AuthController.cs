@@ -222,7 +222,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             // Check tenant policy: Enforce Email Confirmation before login
-            var tenantSetting = activeDbContext != null ? await activeDbContext.BcpSettings.FirstOrDefaultAsync() : null;
+            var tenantSetting = activeDbContext != null ? await activeDbContext.MisConfigurationSettings.FirstOrDefaultAsync() : null;
             if (tenantSetting != null && tenantSetting.RequireConfirmedEmailToLogin && !user.EmailConfirmed)
             {
                 return StatusCode(403, ApiResponse<object>.FailureResponse("Email confirmation is required by workspace policy before you can sign in."));
@@ -886,7 +886,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Passwords do not match."));
 
             // Dynamic Password policy screening
-            var settings = _dbContext != null ? await _dbContext.BcpSettings.FirstOrDefaultAsync() : null;
+            var settings = _dbContext != null ? await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync() : null;
             if (settings != null)
             {
                 var password = model.Password;

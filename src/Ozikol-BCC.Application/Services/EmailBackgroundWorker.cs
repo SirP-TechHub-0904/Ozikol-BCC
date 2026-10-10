@@ -74,7 +74,7 @@ namespace Ozikol_BCC.Application.Services
                             var context = scope.ServiceProvider.GetRequiredService<DashboardDbContext>();
                             var zeptoMailService = scope.ServiceProvider.GetRequiredService<IZeptoMailService>();
 
-                             var settings = await context.BcpSettings.FirstOrDefaultAsync();
+                             var settings = await context.MisConfigurationSettings.FirstOrDefaultAsync();
                             if (settings == null || string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey))
                                 continue; // ZeptoMail not configured for this tenant
 

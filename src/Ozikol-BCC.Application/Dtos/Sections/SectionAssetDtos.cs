@@ -125,7 +125,7 @@ namespace Ozikol_BCC.Application.Dtos.Sections
         public string SectionKey { get; set; } = string.Empty;
 
         /// <summary>
-        /// Container scoping CSS class to isolate styles and scripts (e.g. "sec-variant-hero_split_01").
+        /// Root container CSS class or selector of the section (e.g. "at-header-area", "tp-service").
         /// </summary>
         public string ContainerClass { get; set; } = string.Empty;
 
