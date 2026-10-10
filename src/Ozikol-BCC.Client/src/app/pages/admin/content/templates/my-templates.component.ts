@@ -6,6 +6,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiService } from '../../../../core/services/api.service';
 import { TemplateHydrationService } from './services/template-hydration.service';
+import { ContentHydrationService } from './services/content-hydration.service';
+import { HtmlAssemblerService } from './services/html-assembler.service';
 
 export interface InstalledTemplateItem {
   id: string;
@@ -592,17 +594,65 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   // Dedicated Menu Sample Content Replacements
   previewMenuContent: {
     brandName: string;
+    brandLogo?: string;
     logoUrl: string;
+    homeUrl?: string;
+    customClass?: string;
+    hasTopBar?: boolean;
+    hasContactInfo?: boolean;
+    email?: string;
+    phone?: string;
+    address?: string;
+    showLoginButton?: boolean;
     loginUrl?: string;
     loginText?: string;
+    topBarPages?: Array<{ title: string; url: string; icon?: string; customClass?: string }>;
+    navigationMenu?: Array<any>;
     topMenuItems: Array<{ title: string; url: string }>;
     dropdowns: Array<{ title: string; pages: Array<{ title: string; url: string }> }>;
-    menuCtaButtons: Array<{ title: string; url: string }>;
+    menuCtaButtons: Array<{ title: string; url: string; buttonClass?: string; customClass?: string }>;
   } = {
-    brandName: 'Acme Global',
-    logoUrl: '',
+    brandName: 'Ozikol Cloud',
+    brandLogo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+    homeUrl: '/',
+    customClass: '',
+    hasTopBar: true,
+    hasContactInfo: true,
+    email: 'support@ozikol.cloud',
+    phone: '+1 (555) 019-2834',
+    address: '',
+    showLoginButton: true,
     loginUrl: '/auth/login',
     loginText: 'Sign In',
+    topBarPages: [
+      { title: 'Support', url: '/support' },
+      { title: 'Docs', url: '/docs' }
+    ],
+    navigationMenu: [
+      {
+        title: 'Solutions',
+        url: '/solutions',
+        zone: 'first',
+        isDropdown: true,
+        pages: [
+          { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
+          { title: 'Enterprise Security', url: '/solutions/security' }
+        ]
+      },
+      {
+        title: 'Platform',
+        url: '/platform',
+        zone: 'middle',
+        isDropdown: false
+      },
+      {
+        title: 'Company',
+        url: '/company',
+        zone: 'last',
+        isDropdown: false
+      }
+    ],
     topMenuItems: [
       { title: 'Home', url: '/' },
       { title: 'Blog', url: '/blog' },
@@ -613,22 +663,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         title: 'Services',
         pages: [
           { title: 'Strategic Consulting', url: '/strategic-advisory' },
-          { title: 'Systems Modernization', url: '/systems-modernization' },
-          { title: 'Performance & Scale', url: '/performance-scale' },
-          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
-        ]
-      },
-      {
-        title: 'Company',
-        pages: [
-          { title: 'About Us', url: '/about' },
-          { title: 'Our History', url: '/history' },
-          { title: 'Leadership Team', url: '/team' }
+          { title: 'Systems Modernization', url: '/systems-modernization' }
         ]
       }
     ],
     menuCtaButtons: [
-      { title: 'Request a Service', url: '/request-service' }
+      { title: 'Get Started', url: '/get-started', customClass: 'oz-btn-primary' }
     ]
   };
 
@@ -811,7 +851,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private toast: ToastService,
     private sanitizer: DomSanitizer,
-    private hydrationService: TemplateHydrationService
+    private hydrationService: TemplateHydrationService,
+    private contentHydrator: ContentHydrationService,
+    private htmlAssembler: HtmlAssemblerService
   ) {}
 
   ngOnInit(): void {
@@ -2684,10 +2726,68 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }
 
     if (item.category === 'menu') {
+      let defaultMenuData: any = null;
+      if (item.defaultContentJson) {
+        try {
+          defaultMenuData = JSON.parse(item.defaultContentJson);
+        } catch (e) {}
+      }
+
       const brand = this.editorTokens?.brand;
+      const brandName = defaultMenuData?.brandName || brand?.name || this.currentTenantBrandName || 'Ozikol Cloud';
+      const brandLogo = defaultMenuData?.brandLogo || brand?.logoUrl || '';
+
       this.previewMenuContent = {
-        brandName: brand?.name || this.currentTenantBrandName || 'Acme Global',
-        logoUrl: brand?.logoUrl || '',
+        brandName,
+        brandLogo,
+        logoUrl: brandLogo,
+        homeUrl: defaultMenuData?.homeUrl || '/',
+        customClass: defaultMenuData?.customClass || '',
+        hasTopBar: defaultMenuData?.hasTopBar ?? true,
+        hasContactInfo: defaultMenuData?.hasContactInfo ?? true,
+        email: defaultMenuData?.email || 'support@ozikol.cloud',
+        phone: defaultMenuData?.phone || '+1 (555) 019-2834',
+        address: defaultMenuData?.address || '',
+        showLoginButton: defaultMenuData?.showLoginButton ?? true,
+        loginUrl: defaultMenuData?.loginUrl || '/auth/login',
+        loginText: defaultMenuData?.loginText || 'Sign In',
+        topBarPages: (defaultMenuData?.topBarPages && Array.isArray(defaultMenuData.topBarPages))
+          ? defaultMenuData.topBarPages
+          : [
+              { title: 'Support', url: '/support' },
+              { title: 'Docs', url: '/docs' }
+            ],
+        navigationMenu: (defaultMenuData?.navigationMenu && Array.isArray(defaultMenuData.navigationMenu))
+          ? defaultMenuData.navigationMenu
+          : [
+              {
+                title: 'Solutions',
+                url: '/solutions',
+                zone: 'first',
+                isDropdown: true,
+                pages: [
+                  { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
+                  { title: 'Enterprise Security', url: '/solutions/security' }
+                ]
+              },
+              {
+                title: 'Platform',
+                url: '/platform',
+                zone: 'middle',
+                isDropdown: false
+              },
+              {
+                title: 'Company',
+                url: '/company',
+                zone: 'last',
+                isDropdown: false
+              }
+            ],
+        menuCtaButtons: (defaultMenuData?.menuCtaButtons && Array.isArray(defaultMenuData.menuCtaButtons))
+          ? defaultMenuData.menuCtaButtons
+          : [
+              { title: 'Get Started', url: '/get-started', customClass: 'oz-btn-primary' }
+            ],
         topMenuItems: (this.editorTokens?.topMenuItems && this.editorTokens.topMenuItems.length > 0)
           ? JSON.parse(JSON.stringify(this.editorTokens.topMenuItems))
           : [
@@ -2702,24 +2802,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
                 title: 'Services',
                 pages: [
                   { title: 'Strategic Consulting', url: '/strategic-advisory' },
-                  { title: 'Systems Modernization', url: '/systems-modernization' },
-                  { title: 'Performance & Scale', url: '/performance-scale' },
-                  { title: 'Enterprise Advisory', url: '/enterprise-governance' }
-                ]
-              },
-              {
-                title: 'Company',
-                pages: [
-                  { title: 'About Us', url: '/about' },
-                  { title: 'Our History', url: '/history' },
-                  { title: 'Leadership Team', url: '/team' }
+                  { title: 'Systems Modernization', url: '/systems-modernization' }
                 ]
               }
-            ],
-        menuCtaButtons: (this.editorTokens?.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
-          ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons)).map((b: any) => ({ title: b.title, url: b.url }))
-          : [
-              { title: 'Request a Service', url: '/request-service' }
             ]
       };
     }
@@ -2825,7 +2910,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       combinedHtml = sim.combinedHtml;
       combinedJs = sim.combinedJs;
     } else {
-      const dataContext = (this.activePreviewItem.category === 'footer')
+      const dataContext: any = (this.activePreviewItem.category === 'footer')
         ? { ...this.previewContent, ...this.previewFooterContent }
         : (this.activePreviewItem.category === 'menu')
         ? { ...this.previewContent, ...this.previewMenuContent }
@@ -2851,7 +2936,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
             sectionLists: this.previewContent.items,
             SectionLists: this.previewContent.items
           };
-      let hydrated = this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
+      let hydrated = (this.activePreviewItem.category === 'menu')
+        ? this.contentHydrator.hydrate(this.activePreviewItem.htmlTemplate, dataContext, 'menu')
+        : this.hydrateTemplate(this.activePreviewItem.htmlTemplate, dataContext);
       if (this.activePreviewItem.category === 'footer') {
         hydrated = this.enforceOzikolCredit(hydrated);
       }
@@ -2865,46 +2952,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       ? this.selectedGroup
       : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
 
-    // Dynamic suite-specific + global head stylesheets, Google Fonts, and footer scripts
-    const activeHeadTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'head' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
-
-    const activeBodyOpenTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'body_open' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
-
-    const activeFooterTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'footer' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
-
     const cleanCombinedStyles = (combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
     const cleanCombinedJs = (combinedJs || '').replace(/<\/?script[^>]*>/gi, '').trim();
 
     const combined = `<style>${cleanCombinedStyles}</style>\n${combinedHtml}`;
     this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
 
-    const singleIframeDoc = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  ${activeHeadTagsMarkup}
-  ${cleanCombinedStyles ? `<style>\n${cleanCombinedStyles}\n</style>` : ''}
-</head>
-<body>
-  ${activeBodyOpenTagsMarkup}
-  ${combinedHtml}
-  ${cleanCombinedJs ? `\n  <script>\n${cleanCombinedJs}\n  </script>` : ''}
-  ${activeFooterTagsMarkup}
-</body>
-</html>`;
+    const singleIframeDoc = this.htmlAssembler.assembleSectionPreview({
+      html: combinedHtml,
+      css: cleanCombinedStyles,
+      js: cleanCombinedJs,
+      category: this.activePreviewItem.category,
+      pageTitle: `${this.activePreviewItem.name || 'Section'} Preview`,
+      codeInjections: this.allCodeInjections,
+      suiteCode: suiteCode
+    });
     this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
   }
 
@@ -3705,7 +3767,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         };
       }
 
-      let hydratedBlockHtml = this.hydrateTemplate(b.htmlTemplate, ctx);
+      let hydratedBlockHtml = (b.category === 'menu')
+        ? this.contentHydrator.hydrate(b.htmlTemplate, ctx as any, 'menu')
+        : this.hydrateTemplate(b.htmlTemplate, ctx);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, this.currentTenantBrandName);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*Year\s*\}\}/g, new Date().getFullYear().toString());
 

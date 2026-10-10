@@ -6,6 +6,8 @@ import {
   OnInit,
   OnDestroy,
   AfterViewInit,
+  OnChanges,
+  SimpleChanges,
   ViewChild,
   ElementRef,
   ChangeDetectorRef
@@ -18,6 +20,7 @@ import { HtmlAssemblerService } from '../services/html-assembler.service';
 import { TemplateHydrationService } from '../services/template-hydration.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { ApiService } from '../../../../../core/services/api.service';
+import { TemplateAiService } from '../services/template-ai.service';
 
 /**
  * Reusable full-featured visual code and content editor component for CMS template blueprints.
@@ -34,7 +37,7 @@ import { ApiService } from '../../../../../core/services/api.service';
       <div class="editor-toolbar">
         <div class="toolbar-left">
           <!-- Editor Code & Data Tabs -->
-          <div class="editor-tabs-group">
+          <div class="editor-tabs-group" *ngIf="!hideInternalTabs">
             <button
               type="button"
               class="tab-btn"
@@ -78,37 +81,6 @@ import { ApiService } from '../../../../../core/services/api.service';
         </div>
 
         <div class="toolbar-right">
-          <!-- Viewport Toggle Buttons for Preview -->
-          <div class="viewport-toggle-group">
-            <button
-              type="button"
-              class="vp-btn"
-              [class.active]="previewViewport === 'desktop'"
-              (click)="previewViewport = 'desktop'"
-              title="Desktop Viewport (100%)"
-            >
-              <span class="material-symbols-outlined">desktop_windows</span>
-            </button>
-            <button
-              type="button"
-              class="vp-btn"
-              [class.active]="previewViewport === 'tablet'"
-              (click)="previewViewport = 'tablet'"
-              title="Tablet Viewport (768px)"
-            >
-              <span class="material-symbols-outlined">tablet</span>
-            </button>
-            <button
-              type="button"
-              class="vp-btn"
-              [class.active]="previewViewport === 'mobile'"
-              (click)="previewViewport = 'mobile'"
-              title="Mobile Viewport (375px)"
-            >
-              <span class="material-symbols-outlined">smartphone</span>
-            </button>
-          </div>
-
           <!-- Code Folding Actions -->
           <div class="folding-actions-group">
             <button
@@ -131,16 +103,19 @@ import { ApiService } from '../../../../../core/services/api.service';
             </button>
           </div>
 
-          <!-- AI Auto-Transform Copilot Button -->
+          <!-- AI Auto-Transform Copilot Button (Strictly Visible Only in Semantic HTML Tab) -->
           <button
             type="button"
             class="ai-transform-btn"
+            *ngIf="activeTab === 'html'"
             [disabled]="isAiTransforming"
             (click)="triggerAiTransform()"
-            title="Use Gemini AI to surgically replace raw text with standard CMS tokens"
+            [title]="'Use AI to analyze ' + categoryName + ' markup and inject standard CMS placeholders'"
           >
             <span class="material-symbols-outlined" [class.spin]="isAiTransforming">auto_awesome</span>
-            <span>{{ isAiTransforming ? 'Transforming...' : 'Smart AI Tokens' }}</span>
+            <span>
+              {{ isAiTransforming ? 'Injecting ' + categoryName + ' Placeholders...' : 'Smart Auto-Inject Placeholders (' + categoryName + ')' }}
+            </span>
           </button>
         </div>
       </div>
@@ -157,7 +132,7 @@ import { ApiService } from '../../../../../core/services/api.service';
                 type="button"
                 class="token-chip"
                 *ngFor="let t of specificTokens"
-                (click)="insertToken(t.token)"
+                (click)="onTokenChipClick(t)"
                 [title]="t.label"
               >
                 + {{ t.label }}
@@ -168,6 +143,25 @@ import { ApiService } from '../../../../../core/services/api.service';
           <!-- Monaco Editor Containers -->
           <div class="monaco-wrapper" [class.hidden]="activeTab !== 'html'">
             <div #monacoHtmlContainer class="monaco-host"></div>
+
+            <!-- HTML Area Loading Overlay during AI Tokenization -->
+            <div class="ai-editor-loading-overlay" *ngIf="isAiTransforming">
+              <div class="ai-loading-card">
+                <div class="ai-loading-spinner-wrap">
+                  <div class="ai-spinner-ring"></div>
+                  <span class="material-symbols-outlined ai-spinner-icon">auto_awesome</span>
+                </div>
+                <div class="ai-loading-text-block">
+                  <h4 class="ai-loading-title">AI Auto-Injecting {{ categoryName }} Placeholders...</h4>
+                  <p class="ai-loading-desc">
+                    Analyzing markup structure and surgically replacing static elements with standard CMS tokens while preserving 100% of your styling &amp; markup.
+                  </p>
+                  <div class="ai-loading-bar-wrap">
+                    <div class="ai-loading-bar-fill"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="monaco-wrapper" [class.hidden]="activeTab !== 'css'">
@@ -195,27 +189,47 @@ import { ApiService } from '../../../../../core/services/api.service';
             ></textarea>
           </div>
         </div>
+      </div>
 
-        <!-- Right Panel: Isolated Live Preview Iframe -->
-        <div class="preview-pane">
-          <div class="preview-header">
-            <div class="preview-status">
-              <span class="status-dot"></span>
-              <span class="status-text">Live Preview Simulation</span>
+      <!-- Token Confirmation & Code Preview Modal -->
+      <div class="token-modal-backdrop" *ngIf="showTokenConfirmModal" (click)="closeTokenModal()">
+        <div class="token-modal-card" (click)="$event.stopPropagation()">
+          <div class="token-modal-header">
+            <div class="modal-title-wrap">
+              <span class="material-symbols-outlined token-modal-icon">integration_instructions</span>
+              <h3 class="token-modal-title">Insert Placeholder: {{ selectedTokenForInsert?.label }}</h3>
             </div>
-            <div class="preview-viewport-label">
-              {{ previewViewport === 'desktop' ? 'Desktop Viewport' : previewViewport === 'tablet' ? 'Tablet (768px)' : 'Mobile (375px)' }}
+            <button type="button" class="btn-close-modal" (click)="closeTokenModal()" title="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="token-modal-body">
+            <div class="token-guide-banner">
+              <span class="material-symbols-outlined guide-icon">info</span>
+              <div class="guide-text">
+                <strong>Placeholder Sample Template</strong>
+                <p>This is a placeholder sample snippet. Adjust it with your divs and classes to fit your design.</p>
+              </div>
+            </div>
+
+            <div class="token-code-preview-wrap">
+              <div class="code-preview-header">
+                <span class="preview-badge">HTML Snippet</span>
+                <span class="preview-hint">Will be inserted at your cursor position</span>
+              </div>
+              <pre class="token-code-preview"><code>{{ selectedTokenForInsert?.token }}</code></pre>
             </div>
           </div>
 
-          <div class="preview-stage" [ngClass]="'viewport-' + previewViewport">
-            <iframe
-              #previewIframe
-              class="preview-iframe"
-              [src]="safePreviewUrl"
-              sandbox="allow-scripts allow-same-origin"
-              title="Live Section Preview"
-            ></iframe>
+          <div class="token-modal-footer">
+            <button type="button" class="btn btn-modal-cancel" (click)="closeTokenModal()">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-modal-confirm" (click)="confirmInsertToken()">
+              <span class="material-symbols-outlined">add_circle</span>
+              <span>Click to Add</span>
+            </button>
           </div>
         </div>
       </div>
@@ -223,7 +237,7 @@ import { ApiService } from '../../../../../core/services/api.service';
   `,
   styleUrls: ['./visual-editor.component.scss']
 })
-export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
+export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   @Input() htmlTemplate: string = '';
   @Input() cssStyles: string = '';
   @Input() jsScript: string = '';
@@ -245,11 +259,28 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('monacoJsContainer', { static: false }) monacoJsContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('previewIframe', { static: false }) previewIframe?: ElementRef<HTMLIFrameElement>;
 
-  activeTab: 'html' | 'css' | 'js' | 'data' = 'html';
+  @Input() hideInternalTabs: boolean = false;
+
+  @Input()
+  get activeTab(): 'html' | 'css' | 'js' | 'data' {
+    return this._activeTab;
+  }
+  set activeTab(val: 'html' | 'css' | 'js' | 'data') {
+    if (val && val !== this._activeTab) {
+      this._activeTab = val;
+      this.switchTab(val);
+    }
+  }
+  private _activeTab: 'html' | 'css' | 'js' | 'data' = 'html';
+
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   rawJsonText: string = '{}';
   safePreviewUrl: SafeResourceUrl | null = null;
   isAiTransforming: boolean = false;
+
+  // Token Confirmation Modal State
+  showTokenConfirmModal: boolean = false;
+  selectedTokenForInsert: { label: string; token: string } | null = null;
 
   private monacoHtmlInstance: any = null;
   private monacoCssInstance: any = null;
@@ -264,6 +295,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
     private sanitizer: DomSanitizer,
     private toast: ToastService,
     private api: ApiService,
+    private templateAiService: TemplateAiService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -274,6 +306,27 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
       this.rawJsonText = '{}';
     }
     this.updatePreviewIframe();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['htmlTemplate'] && !changes['htmlTemplate'].firstChange) {
+      if (this.monacoHtmlInstance && this.monacoHtmlInstance.getValue() !== this.htmlTemplate) {
+        this.monacoHtmlInstance.setValue(this.htmlTemplate || '');
+        this.updatePreviewIframe();
+      }
+    }
+    if (changes['cssStyles'] && !changes['cssStyles'].firstChange) {
+      if (this.monacoCssInstance && this.monacoCssInstance.getValue() !== this.cssStyles) {
+        this.monacoCssInstance.setValue(this.cssStyles || '');
+        this.updatePreviewIframe();
+      }
+    }
+    if (changes['jsScript'] && !changes['jsScript'].firstChange) {
+      if (this.monacoJsInstance && this.monacoJsInstance.getValue() !== this.jsScript) {
+        this.monacoJsInstance.setValue(this.jsScript || '');
+        this.updatePreviewIframe();
+      }
+    }
   }
 
   ngAfterViewInit(): void {
@@ -334,6 +387,35 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.activeTab === 'css') return this.monacoCssInstance;
     if (this.activeTab === 'js') return this.monacoJsInstance;
     return null;
+  }
+
+  /**
+   * Opens the placeholder sample confirmation modal before inserting into editor.
+   * @param tokenObj Token object containing label and HTML snippet.
+   */
+  onTokenChipClick(tokenObj: { label: string; token: string }): void {
+    this.selectedTokenForInsert = tokenObj;
+    this.showTokenConfirmModal = true;
+  }
+
+  /**
+   * Closes the placeholder confirmation modal.
+   */
+  closeTokenModal(): void {
+    this.showTokenConfirmModal = false;
+    this.selectedTokenForInsert = null;
+  }
+
+  /**
+   * Confirms insertion and injects the sample placeholder snippet into Monaco editor.
+   */
+  confirmInsertToken(): void {
+    if (!this.selectedTokenForInsert) return;
+    const snippet = this.selectedTokenForInsert.token;
+    const label = this.selectedTokenForInsert.label;
+    this.closeTokenModal();
+    this.insertToken(snippet);
+    this.toast.success(`Inserted ${label} placeholder!`);
   }
 
   /**
@@ -447,7 +529,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
     this.monacoLoader.loadMonaco().then((monaco) => {
       this.monacoGlobal = monaco;
 
-      // Common Monaco options with code folding enabled (minimise divs and properties)
+      // Common Monaco options with dark theme and code folding enabled
       const commonOptions = {
         theme: 'ozikol-studio-dark',
         automaticLayout: true,
@@ -524,48 +606,42 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Triggers the AI Copilot to surgically transform raw HTML into standard Handlebars placeholders.
+   * Triggers the AI Copilot to surgically transform raw HTML into standard Handlebars placeholders
+   * using the category-specific strategy rules and the unified backend AI copilot pipeline.
    */
   triggerAiTransform(): void {
-    const rawHtml = (this.htmlTemplate || '').trim();
+    const rawHtml = (this.monacoHtmlInstance ? this.monacoHtmlInstance.getValue() : this.htmlTemplate || '').trim();
     if (!rawHtml) {
       this.toast.warning('Please enter HTML markup first.');
       return;
     }
 
     this.isAiTransforming = true;
+    this.cdr.detectChanges();
     this.toast.info(`✨ AI is analyzing ${this.categoryName} structure and transforming placeholders...`);
 
-    const payload = {
-      prompt: `You are a surgical code transformer for the Ozikol BCC CMS platform.
-Category: ${this.category} (${this.categoryName}).
-Replace raw text with standard Handlebars placeholders ({{ Title }}, {{#each NavItems="first"}}, {{ BrandName }}, etc.).
-Preserve 100% of original CSS classes, IDs, wrappers, and styling. No explanations, no markdown fences.`,
-      rawHtml,
-      rawCss: this.cssStyles || '',
-      category: this.category,
-      currentTemplateName: this.categoryName
-    };
+    const rawCss = (this.monacoCssInstance ? this.monacoCssInstance.getValue() : this.cssStyles) || '';
 
-    this.api.post<any>('ContentApi/templates/ai-copilot', payload).subscribe({
-      next: (res) => {
+    this.templateAiService.transformCategoryPlaceholders({
+      category: this.category,
+      rawHtml,
+      rawCss,
+      templateName: this.categoryName
+    }).subscribe({
+      next: (transformedHtml) => {
         this.isAiTransforming = false;
-        let transformed = res?.data?.htmlTemplate || res?.data?.codeResult?.htmlTemplate || '';
-        if (transformed) {
-          transformed = transformed.replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim();
-          this.htmlTemplate = transformed;
-          this.monacoHtmlInstance?.setValue(transformed);
-          this.htmlTemplateChange.emit(transformed);
-          this.updatePreviewIframe();
-          this.toast.success(`✨ Successfully transformed ${this.categoryName} with smart AI placeholders!`);
-        } else {
-          this.toast.warning('AI response did not return transformed HTML.');
-        }
+        this.htmlTemplate = transformedHtml;
+        this.monacoHtmlInstance?.setValue(transformedHtml);
+        this.htmlTemplateChange.emit(transformedHtml);
+        this.updatePreviewIframe();
+        this.toast.success(`✨ Successfully injected placeholders for ${this.categoryName}!`);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.isAiTransforming = false;
-        const msg = err?.error?.message || err?.message || 'Failed to reach AI service.';
+        const msg = err?.message || 'Failed to reach AI service.';
         this.toast.error(`AI Transformation error: ${msg}`);
+        this.cdr.detectChanges();
       }
     });
   }

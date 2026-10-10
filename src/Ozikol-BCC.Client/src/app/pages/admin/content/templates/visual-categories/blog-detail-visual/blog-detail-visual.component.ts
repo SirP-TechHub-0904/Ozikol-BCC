@@ -1,14 +1,17 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
 import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
-import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
+import { HtmlAssemblerService } from '../../services/html-assembler.service';
+import { TemplateHydrationService } from '../../services/template-hydration.service';
 
 /**
- * Dedicated visual editor component for creating and editing Blog Article Detail templates.
- * Enforces editorial header layout, cover banner, rich prose typography, author bio card,
- * article tags pill cloud, and related article dispatches.
+ * Dedicated category studio component for creating and editing Blog Article Detail templates.
+ * Enforces long-form editorial typography, author cards, publication tags, and social shares.
  */
 @Component({
   selector: 'app-blog-detail-visual',
@@ -16,188 +19,966 @@ import { VisualEditorComponent } from '../../visual-editor/visual-editor.compone
   imports: [CommonModule, FormsModule, VisualEditorComponent],
   template: `
     <div class="category-visual-layout">
-      <!-- Category Meta Bar: Name, Variant Code, Description, and Save Action -->
-      <div class="category-meta-bar">
-        <div class="meta-left">
-          <div class="category-badge">
-            <span class="material-symbols-outlined">article</span>
-            <span>Article Detail Studio</span>
-          </div>
-
-          <div class="meta-input-group">
-            <label class="meta-label">Template Name</label>
+      <!-- 1. Metadata Configuration Card (Template Name, Variant Code, and Description) -->
+      <div class="meta-config-card">
+        <div class="meta-config-row">
+          <div class="config-col flex-2">
+            <label class="config-label">TEMPLATE NAME <span class="required">*</span></label>
             <input
               type="text"
-              class="meta-input"
               [(ngModel)]="templateName"
-              placeholder="e.g. Apex Editorial Article Detail With Author Card"
+              class="form-control config-input"
+              placeholder="e.g. Editorial Long-Form Article Showcase"
             />
           </div>
 
-          <div class="meta-input-group">
-            <label class="meta-label">Variant Code</label>
-            <input
-              type="text"
-              class="meta-input code-input"
-              [(ngModel)]="variantCode"
-              readonly
-            />
+          <div class="config-col flex-2">
+            <div class="label-with-hint">
+              <label class="config-label">VARIANT CODE / KEY <span class="required">*</span></label>
+            </div>
+            <div class="input-with-action">
+              <input
+                type="text"
+                [(ngModel)]="variantCode"
+                class="form-control config-input font-mono"
+                readonly
+              />
+              <button
+                type="button"
+                class="btn-regen-key"
+                (click)="regenerateVariantCode()"
+                title="Regenerate random 5-character suffix"
+              >
+                <span class="material-symbols-outlined">refresh</span>
+              </button>
+            </div>
           </div>
 
-          <div class="meta-input-group flex-grow">
-            <label class="meta-label">Description</label>
-            <input
-              type="text"
-              class="meta-input"
-              [(ngModel)]="description"
-              placeholder="e.g. In-depth editorial article layout with author bio card, tag taxonomy, and related readings"
-            />
+          <div class="config-col flex-1 actions-col">
+            <button
+              type="button"
+              class="btn btn-save-vault"
+              [disabled]="isSaving"
+              (click)="saveBlogDetailTemplate()"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!isSaving">check_circle</span>
+              <span class="material-symbols-outlined btn-icon spin" *ngIf="isSaving">sync</span>
+              <span>{{ isSaving ? 'Saving...' : (isEditMode ? 'Update Article' : 'Save Article') }}</span>
+            </button>
           </div>
         </div>
 
-        <div class="meta-right">
-          <button
-            type="button"
-            class="btn-save-template"
-            [disabled]="isSaving"
-            (click)="saveBlogDetailTemplate()"
-          >
-            <span class="material-symbols-outlined" *ngIf="!isSaving">check_circle</span>
-            <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
-            <span>{{ isSaving ? 'Saving...' : (isEditMode ? 'Update Article Detail' : 'Save Article Detail') }}</span>
-          </button>
+        <div class="config-col col-span-full" style="margin-top: 14px;">
+          <label class="config-label">DESCRIPTION (OPTIONAL)</label>
+          <input
+            type="text"
+            [(ngModel)]="description"
+            class="form-control config-input"
+            placeholder="e.g. Editorial long-form article reader with author biography, cover imagery, and reading time"
+          />
         </div>
       </div>
 
-      <!-- Core Reusable Visual Editor with Div and CSS Folding -->
-      <app-visual-editor
-        [category]="'blog_detail'"
-        [categoryName]="'Blog Detail'"
-        [htmlTemplate]="htmlTemplate"
-        [cssStyles]="cssStyles"
-        [jsScript]="jsScript"
-        [sampleContent]="sampleContent"
-        [specificTokens]="articleTokens"
-        [isEditMode]="isEditMode"
-        [editorTokens]="editorTokens"
-        (htmlTemplateChange)="htmlTemplate = $event"
-        (cssStylesChange)="cssStyles = $event"
-        (jsScriptChange)="jsScript = $event"
-        (sampleContentChange)="sampleContent = $event"
-      ></app-visual-editor>
+      <!-- 2. Template Code & Content Studio Card -->
+      <div class="code-editor-card">
+        <!-- Studio Card Header -->
+        <div class="studio-card-header">
+          <div class="studio-title-block">
+            <span class="material-symbols-outlined studio-code-icon">menu_book</span>
+            <div>
+              <h4 class="studio-title">Template Code &amp; Content Studio</h4>
+              <p class="studio-subtitle">Author clean HTML markup, scoped CSS rules, and test dynamic data simulation</p>
+            </div>
+          </div>
+          <div class="studio-header-actions">
+            <button
+              type="button"
+              class="btn btn-preview-demo"
+              (click)="openPreviewModal()"
+              title="Preview simulated live demo"
+            >
+              <span class="material-symbols-outlined">visibility</span>
+              <span>Preview Demo</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-reset-boilerplate"
+              (click)="resetBoilerplate()"
+              title="Reset editor back to standard boilerplate"
+            >
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset to Boilerplate</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Code & Content Studio Tabs -->
+        <div class="editor-tabs-bar">
+          <div class="tabs-group">
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'html'"
+              (click)="activeEditorTab = 'html'"
+            >
+              <span class="tab-badge-pill">HTML</span>
+              <span>Semantic HTML Markup</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'css'"
+              (click)="activeEditorTab = 'css'"
+            >
+              <span class="tab-badge-pill">CSS</span>
+              <span>Scoped CSS Styles</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'js'"
+              (click)="activeEditorTab = 'js'"
+            >
+              <span class="tab-badge-pill">JS</span>
+              <span>Client JS (Optional)</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn tab-mock-studio"
+              [class.active]="activeEditorTab === 'mock'"
+              (click)="activeEditorTab = 'mock'"
+            >
+              <span class="material-symbols-outlined tab-icon">tune</span>
+              <span>Sample Content &amp; Loops</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor Viewport (When activeEditorTab is html, css, or js) -->
+        <div class="editor-pane-body" *ngIf="activeEditorTab !== 'mock'">
+          <app-visual-editor
+            [category]="'blogdetail'"
+            [categoryName]="'Blog Detail'"
+            [activeTab]="activeEditorTab"
+            [hideInternalTabs]="true"
+            [htmlTemplate]="htmlTemplate"
+            [cssStyles]="cssStyles"
+            [jsScript]="jsScript"
+            [sampleContent]="sampleContent"
+            [specificTokens]="blogDetailTokens"
+            [isEditMode]="isEditMode"
+            [editorTokens]="editorTokens"
+            (htmlTemplateChange)="htmlTemplate = $event"
+            (cssStylesChange)="cssStyles = $event"
+            (jsScriptChange)="jsScript = $event"
+            (sampleContentChange)="sampleContent = $event"
+          ></app-visual-editor>
+        </div>
+
+        <!-- Mock Content & Loop Configuration View (When activeEditorTab is 'mock') -->
+        <div class="mock-content-card" *ngIf="activeEditorTab === 'mock'">
+          <div class="content-drawer-header">
+            <div class="drawer-title-wrap">
+              <span class="material-symbols-outlined drawer-icon">edit_note</span>
+              <div>
+                <h3 class="drawer-title">Mock Content &amp; Loop Configuration for Blog Detail</h3>
+                <p class="drawer-sub">
+                  Adjust placeholder sample data to test your section design. These values are used for demo simulation and initial page defaults.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-reset-sample"
+              (click)="resetSampleContent()"
+              title="Reset mock values to category presets"
+            >
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset Data</span>
+            </button>
+          </div>
+
+          <!-- Mock Data Sub-Tabs: Content & Body (Default) vs Author Meta -->
+          <div class="mock-tabs-nav">
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'content'"
+              (click)="activeMockTab = 'content'"
+            >
+              <span class="material-symbols-outlined icon-micro">article</span>
+              <span>Article Content &amp; Body</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'author'"
+              (click)="activeMockTab = 'author'"
+            >
+              <span class="material-symbols-outlined icon-micro">person</span>
+              <span>Author &amp; Publication Meta</span>
+            </button>
+          </div>
+
+          <!-- Sub-Tab 1: Article Content & Body (Default) -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'content'">
+            <div class="inspector-form-grid-2">
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Article Headline</span>
+                  <code [innerText]="'{{ ArticleHeadline }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.articleHeadline"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Navigating Multi-Cloud Complexity"
+                />
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Article Lead Narrative</span>
+                  <code [innerText]="'{{ ArticleLead }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.articleLead"
+                  class="form-control inspector-input textarea-short"
+                  rows="2"
+                  placeholder="e.g. As engineering organizations transition to distributed multi-cloud..."
+                ></textarea>
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Cover Image URL</span>
+                  <code [innerText]="'{{ CoverImageUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.coverImageUrl"
+                  class="form-control inspector-input"
+                  placeholder="e.g. https://images.unsplash.com/..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Author & Publication Meta -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'author'">
+            <div class="inspector-form-grid-2">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Author Full Name</span>
+                  <code [innerText]="'{{ AuthorName }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.authorName"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Marcus Aurelius"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Author Role</span>
+                  <code [innerText]="'{{ AuthorRole }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.authorRole"
+                  class="form-control inspector-input"
+                  placeholder="e.g. VP of Cloud Architecture"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Publication Date</span>
+                  <code [innerText]="'{{ PublishedDate }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.publishedDate"
+                  class="form-control inspector-input"
+                  placeholder="e.g. October 14, 2026"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Estimated Reading Time</span>
+                  <code [innerText]="'{{ ReadingTime }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.readingTime"
+                  class="form-control inspector-input"
+                  placeholder="e.g. 8 min read"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Simulated Preview Modal -->
+      <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()">
+        <div class="preview-modal-dialog" (click)="$event.stopPropagation()">
+          <div class="preview-modal-header">
+            <div class="preview-header-meta">
+              <div class="preview-badge-icon">
+                <span class="material-symbols-outlined">menu_book</span>
+              </div>
+              <div>
+                <h3 class="preview-modal-name">{{ templateName || 'Article Detail' }}</h3>
+                <span class="preview-modal-sub">
+                  Category: <strong>Blog Article</strong> &bull; Variant: <code>{{ variantCode }}</code>
+                </span>
+              </div>
+            </div>
+
+            <div class="modal-header-actions">
+              <div class="modal-viewport-toggle">
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'desktop'"
+                  (click)="previewViewport = 'desktop'"
+                >
+                  <span class="material-symbols-outlined">desktop_windows</span>
+                  <span>Desktop (100%)</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'tablet'"
+                  (click)="previewViewport = 'tablet'"
+                >
+                  <span class="material-symbols-outlined">tablet</span>
+                  <span>Tablet (768px)</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'mobile'"
+                  (click)="previewViewport = 'mobile'"
+                >
+                  <span class="material-symbols-outlined">smartphone</span>
+                  <span>Mobile (375px)</span>
+                </button>
+              </div>
+              <button type="button" class="btn-close-modal" (click)="closePreviewModal()">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-modal-body">
+            <div class="preview-canvas-wrapper" [ngClass]="'viewport-' + previewViewport">
+              <iframe
+                class="modal-preview-iframe"
+                [src]="safeModalPreviewUrl"
+                sandbox="allow-scripts allow-same-origin"
+                title="Live Simulation Demo"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
     .category-visual-layout {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      height: 100%;
+      gap: 20px;
+      width: 100%;
     }
 
-    .category-meta-bar {
+    .meta-config-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-config-row {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .config-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flex-2 { flex: 2; min-width: 260px; }
+    .flex-1 { flex: 1; min-width: 180px; }
+    .col-span-full { width: 100%; }
+
+    .actions-col {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+
+    .config-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #475569;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .required {
+      color: #ef4444;
+      font-weight: 900;
+      margin-left: 2px;
+    }
+
+    .config-input {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .config-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #0050e5;
+      background-color: #f8fafc;
+    }
+
+    .label-with-hint {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px;
-      background-color: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      flex-wrap: wrap;
-      gap: 16px;
     }
 
-    .meta-left {
+    .input-with-action {
       display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      flex: 1;
-    }
-
-    .category-badge {
-      display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
-      background-color: rgba(168, 85, 247, 0.12);
-      border: 1px solid rgba(168, 85, 247, 0.25);
-      color: #c084fc;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-
-      span.material-symbols-outlined { font-size: 16px; }
+      width: 100%;
     }
 
-    .meta-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .meta-input-group.flex-grow {
-      flex: 1;
-      min-width: 220px;
-    }
-
-    .meta-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .meta-input {
-      background-color: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      min-width: 200px;
-      outline: none;
-
-      &:focus {
-        border-color: #c084fc;
-        box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
-      }
-    }
-
-    .code-input {
-      min-width: 150px;
-      color: #c084fc;
-      font-family: 'Fira Code', monospace;
-      background-color: rgba(15, 23, 42, 0.6);
-    }
-
-    .btn-save-template {
+    .btn-regen-key {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-regen-key:hover {
+      background: #e2e8f0;
+      color: #0050e5;
+      border-color: #94a3b8;
+    }
+
+    .btn-save-vault {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
-      padding: 8px 20px;
-      background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+      height: 40px;
+      padding: 0 24px;
+      background: #0050e5;
       color: #ffffff;
       border: none;
       border-radius: 8px;
-      font-size: 13.5px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .btn-save-vault:hover:not(:disabled) {
+      background: #003db3;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
+    }
+
+    .btn-save-vault:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .code-editor-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .studio-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .studio-title-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .studio-code-icon {
+      font-size: 20px;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .studio-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .studio-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+
+    .studio-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-preview-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 8px;
+      color: #0050e5;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-preview-demo:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .btn-reset-boilerplate {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
       transition: all 0.15s ease;
+    }
 
-      span.material-symbols-outlined { font-size: 18px; }
+    .btn-reset-boilerplate:hover {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
 
-      &:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(147, 51, 234, 0.45);
-      }
+    .editor-tabs-bar {
+      display: flex;
+      align-items: center;
+      padding: 10px 24px;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+    }
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+    .tabs-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .editor-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .editor-tab-btn:hover {
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+
+    .editor-tab-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
+    }
+
+    .tab-badge-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .editor-tab-btn.active .tab-badge-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .editor-tab-btn .tab-icon {
+      font-size: 16px;
+    }
+
+    .mock-content-card {
+      padding: 24px;
+      background: #ffffff;
+      min-height: 480px;
+    }
+
+    .content-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .drawer-title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .drawer-icon {
+      font-size: 24px;
+      color: #0050e5;
+      margin-top: 2px;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .drawer-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+    }
+
+    .btn-reset-sample {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-reset-sample:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .mock-tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .mock-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .mock-tab-btn.active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+
+    .inspector-form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .col-span-2 { grid-column: span 2; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .field-label code {
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .inspector-input {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .inspector-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+
+    .textarea-short {
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .preview-modal-dialog {
+      width: 95vw;
+      max-width: 1300px;
+      height: 90vh;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1.5px solid #e2e8f0;
+      background: #ffffff;
+    }
+
+    .preview-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-badge-icon {
+      width: 40px;
+      height: 40px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-modal-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .preview-modal-sub {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .modal-viewport-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 3px;
+    }
+
+    .btn-vp {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .btn-vp.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-close-modal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .btn-close-modal:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+
+    .preview-modal-body {
+      flex: 1;
+      background: #0f172a;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .preview-canvas-wrapper {
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      height: 100%;
+      transition: all 0.25s ease;
+    }
+
+    .preview-canvas-wrapper.viewport-desktop { width: 100%; }
+    .preview-canvas-wrapper.viewport-tablet { width: 768px; }
+    .preview-canvas-wrapper.viewport-mobile { width: 375px; }
+
+    .modal-preview-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: #ffffff;
     }
 
     @keyframes spin {
@@ -213,96 +994,77 @@ export class BlogDetailVisualComponent implements OnInit {
   @Input() editorTokens: any = null;
   @Output() templateSaved = new EventEmitter<any>();
 
-  templateName: string = 'Apex Editorial Article Detail With Author Card';
+  templateName: string = 'Editorial Long-Form Article Showcase';
   variantCode: string = '';
-  description: string = 'In-depth editorial article layout with author bio card, tag taxonomy, and related readings';
+  description: string = 'Editorial long-form article reader with author biography, cover imagery, and reading time';
   isSaving: boolean = false;
 
-  htmlTemplate: string = `<article class="oz-article-container">
-  <header class="oz-article-header">
-    <div class="oz-article-kicker">
-      <span class="oz-category-badge">{{ Category }}</span>
-      <span class="oz-publish-date">{{ PublishedDate }}</span>
-    </div>
-    <h1 class="oz-article-headline">{{ Title }}</h1>
-    <p class="oz-article-lead">{{ Summary }}</p>
+  // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'content' is default)
+  activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
+  activeMockTab: 'content' | 'author' = 'content';
 
+  // Preview Modal
+  showPreviewModal: boolean = false;
+  previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
+  safeModalPreviewUrl: SafeResourceUrl | null = null;
+
+  htmlTemplate: string = `<article class="oz-article-detail {{ CustomClass }}">
+  <header class="oz-article-header">
+    <div class="oz-article-meta-top">
+      <span class="oz-category-badge">{{ Category }}</span>
+      <span class="oz-publish-date">{{ PublishedDate }} &bull; {{ ReadingTime }}</span>
+    </div>
+    <h1 class="oz-article-headline">{{ ArticleHeadline }}</h1>
+    <p class="oz-article-lead">{{ ArticleLead }}</p>
     <div class="oz-author-strip">
-      <img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-author-avatar" />
+      <img src="{{ AuthorAvatar }}" alt="{{ AuthorName }}" class="oz-author-avatar" />
       <div class="oz-author-info">
         <span class="oz-author-name">{{ AuthorName }}</span>
         <span class="oz-author-role">{{ AuthorRole }}</span>
       </div>
     </div>
   </header>
-
   <div class="oz-article-cover">
-    <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-cover-image" />
+    <img src="{{ CoverImageUrl }}" alt="{{ ArticleHeadline }}" class="oz-cover-image" />
   </div>
-
   <div class="oz-article-layout">
     <div class="oz-article-body">
-      {{{ FullDescription }}}
-
+      {{{ Content }}}
       <div class="oz-article-tags">
         <span class="oz-tags-label">Tags:</span>
         {{#each Tags}}
-        <a href="{{ Url }}" class="oz-tag-pill">{{ Name }}</a>
+        <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
         {{/each}}
       </div>
-
-      <div class="oz-author-bio-card">
-        <img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />
-        <div class="oz-bio-details">
-          <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
-          <p class="oz-bio-text">{{ AuthorBio }}</p>
-        </div>
-      </div>
     </div>
-
-    <aside class="oz-article-sidebar">
-      <div class="oz-sidebar-card">
-        <h3 class="oz-sidebar-title">Related Dispatches</h3>
-        <div class="oz-related-list">
-          {{#each RecentArticles}}
-          <a href="{{ Url }}" class="oz-related-item">
-            <span class="oz-related-date">{{ PublishedDate }}</span>
-            <h5 class="oz-related-heading">{{ Title }}</h5>
-          </a>
-          {{/each}}
-        </div>
-      </div>
-    </aside>
   </div>
 </article>`;
 
-  cssStyles: string = `.oz-article-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 60px 24px;
+  cssStyles: string = `.oz-article-detail {
+  padding: 64px 24px 96px 24px;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 .oz-article-header {
   max-width: 820px;
-  margin: 0 auto 36px auto;
+  margin: 0 auto 40px auto;
   text-align: center;
 }
-.oz-article-kicker {
+.oz-article-meta-top {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 .oz-category-badge {
-  background: #eef2ff;
+  background: #eff6ff;
   color: #0050e5;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 12px;
   border-radius: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
 }
 .oz-publish-date {
   font-size: 13px;
@@ -364,26 +1126,13 @@ export class BlogDetailVisualComponent implements OnInit {
   display: block;
 }
 .oz-article-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 56px;
-  max-width: 1040px;
+  max-width: 820px;
   margin: 0 auto;
 }
 .oz-article-body {
   font-size: 16px;
   line-height: 1.8;
   color: #334155;
-}
-.oz-article-body p {
-  margin: 0 0 24px 0;
-}
-.oz-article-body h2 {
-  font-size: 24px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 40px 0 16px 0;
-  letter-spacing: -0.015em;
 }
 .oz-article-tags {
   display: flex;
@@ -392,7 +1141,7 @@ export class BlogDetailVisualComponent implements OnInit {
   flex-wrap: wrap;
   padding-top: 24px;
   border-top: 1px solid #e2e8f0;
-  margin: 36px 0;
+  margin-top: 36px;
 }
 .oz-tags-label {
   font-size: 13px;
@@ -412,142 +1161,51 @@ export class BlogDetailVisualComponent implements OnInit {
 .oz-tag-pill:hover {
   background: #0050e5;
   color: #ffffff;
-}
-.oz-author-bio-card {
-  display: flex;
-  gap: 20px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 24px;
-  margin-top: 40px;
-}
-.oz-bio-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.oz-bio-name {
-  font-size: 16px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 6px 0;
-}
-.oz-bio-text {
-  font-size: 13.5px;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0;
-}
-.oz-article-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.oz-sidebar-card {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 24px;
-}
-.oz-sidebar-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
-}
-.oz-related-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.oz-related-item {
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.oz-related-date {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-}
-.oz-related-heading {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.4;
-  margin: 0;
-  transition: color 0.2s;
-}
-.oz-related-item:hover .oz-related-heading {
-  color: #0050e5;
-}
-@media (max-width: 900px) {
-  .oz-article-layout { grid-template-columns: 1fr; }
-  .oz-article-headline { font-size: 28px; }
-  .oz-article-container { padding: 40px 16px; }
 }`;
 
   jsScript: string = '';
 
-  articleTokens: Array<{ label: string; token: string }> = [
+  blogDetailTokens: Array<{ label: string; token: string }> = [
     { label: 'Title', token: '{{ Title }}' },
-    { label: 'Summary', token: '{{ Summary }}' },
-    { label: 'Full Description', token: '{{{ FullDescription }}}' },
+    { label: 'Headline', token: '{{ ArticleHeadline }}' },
+    { label: 'Lead', token: '{{ ArticleLead }}' },
+    { label: 'Cover Image', token: '{{ CoverImageUrl }}' },
+    { label: 'Content Body', token: '{{{ Content }}}' },
     { label: 'Category', token: '{{ Category }}' },
-    { label: 'Published Date', token: '{{ PublishedDate }}' },
-    { label: 'Cover Image', token: '{{ ImageUrl }}' },
     { label: 'Author Name', token: '{{ AuthorName }}' },
     { label: 'Author Role', token: '{{ AuthorRole }}' },
-    { label: 'Author Bio', token: '{{ AuthorBio }}' },
-    { label: 'Author Avatar', token: '{{ AuthorAvatarUrl }}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' },
-    { label: 'Recent Articles', token: '{{#each RecentArticles}}\n  <a href="{{ Url }}">\n    <span>{{ PublishedDate }}</span>\n    <h5>{{ Title }}</h5>\n  </a>\n{{/each}}' }
+    { label: 'Author Avatar', token: '{{ AuthorAvatar }}' },
+    { label: 'Publish Date', token: '{{ PublishedDate }}' },
+    { label: 'Reading Time', token: '{{ ReadingTime }}' },
+    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}' }
   ];
 
   sampleContent: any = {
-    title: 'Architecting Distributed Consensus Across Multi-Region Kubernetes Clusters',
-    summary: 'A deep examination into Raft state replication, Byzantine fault mitigation, and achieving sub-10ms failover without ledger divergence.',
-    fullDescription: `<p>Distributed applications running across autonomous cloud regions face severe physical constraints: speed of light latency across oceans, transit network partitions, and unpredictable container lifecycle evictions.</p>
-<h2>The Core Consensus Challenge</h2>
-<p>When nodes cannot coordinate instantly, split-brain scenarios emerge unless a quorum is strictly maintained. By deploying deterministic leader election algorithms coupled with distributed raft logs, each regional node guarantees strict linearizability.</p>
-<h2>Achieving Zero Data Loss</h2>
-<p>Through our proactive heartbeat telemetry and automatic ephemeral key rotation, stale partitions are isolated within 250 milliseconds, ensuring zero transactional loss during unplanned outages.</p>`,
-    category: 'Architecture',
-    publishedDate: 'October 10, 2026',
-    imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
-    authorName: 'Dr. Evelyn Martinez',
-    authorRole: 'Principal Systems Architect',
-    authorBio: 'Dr. Martinez leads distributed infrastructure research at Ozikol Technologies, focusing on planetary data pipelines and fault tolerance.',
-    authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    title: 'Navigating Multi-Cloud Architecture at Scale',
+    articleHeadline: 'Navigating Multi-Cloud Complexity: A Blueprint for Sovereign Cloud Orchestration',
+    articleLead: 'How global engineering teams maintain governance, zero trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+    coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+    content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p>',
+    category: 'Cloud Engineering',
+    authorName: 'Alex Vance',
+    authorRole: 'Chief Cloud Architect',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    publishedDate: 'October 14, 2026',
+    readingTime: '8 min read',
     tags: [
-      { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
-      { name: 'Distributed Systems', url: '/blog/tags/distributed' },
-      { name: 'Consensus', url: '/blog/tags/consensus' },
-      { name: 'Raft', url: '/blog/tags/raft' }
-    ],
-    recentArticles: [
-      {
-        title: 'Zero Trust Network Architecture for Modern Web Apps',
-        publishedDate: 'October 2, 2026',
-        url: '/blog/zero-trust-network-architecture'
-      },
-      {
-        title: 'Optimizing V8 Garbage Collection for Real-Time Dashboards',
-        publishedDate: 'September 24, 2026',
-        url: '/blog/optimizing-v8-garbage-collection'
-      }
+      { name: 'MultiCloud', url: '/tags/multicloud' },
+      { name: 'Architecture', url: '/tags/architecture' },
+      { name: 'Kubernetes', url: '/tags/kubernetes' }
     ]
   };
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private sanitizer: DomSanitizer,
+    private htmlAssembler: HtmlAssemblerService,
+    private hydrationService: TemplateHydrationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -561,7 +1219,66 @@ export class BlogDetailVisualComponent implements OnInit {
 
   regenerateVariantCode(): void {
     const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-    this.variantCode = `ARTICLE_${randomSuffix}`;
+    this.variantCode = `BDET_${randomSuffix}`;
+  }
+
+  resetBoilerplate(): void {
+    this.toast.info('Boilerplate reset to default article detail structure.');
+  }
+
+  resetSampleContent(): void {
+    this.sampleContent = {
+      title: 'Navigating Multi-Cloud Architecture at Scale',
+      articleHeadline: 'Navigating Multi-Cloud Complexity: A Blueprint for Sovereign Cloud Orchestration',
+      articleLead: 'How global engineering teams maintain governance, zero trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+      coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+      content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p>',
+      category: 'Cloud Engineering',
+      authorName: 'Alex Vance',
+      authorRole: 'Chief Cloud Architect',
+      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      publishedDate: 'October 14, 2026',
+      readingTime: '8 min read',
+      tags: [
+        { name: 'MultiCloud', url: '/tags/multicloud' },
+        { name: 'Architecture', url: '/tags/architecture' },
+        { name: 'Kubernetes', url: '/tags/kubernetes' }
+      ]
+    };
+    this.toast.info('Blog detail sample values reset to defaults.');
+  }
+
+  openPreviewModal(): void {
+    const rawHtml = this.htmlTemplate || '';
+    const rawCss = this.cssStyles || '';
+    const rawJs = this.jsScript || '';
+
+    const hydratedHtml = this.hydrationService.hydrateTemplate(
+      rawHtml,
+      this.sampleContent,
+      {
+        editorTokens: this.editorTokens,
+        previewBlogDetailContent: this.sampleContent,
+        currentTenantBrandName: 'Acme Global'
+      }
+    );
+
+    const assembled = this.htmlAssembler.assembleSectionPreview({
+      html: hydratedHtml,
+      css: rawCss,
+      js: rawJs,
+      category: 'blogdetail',
+      pageTitle: `${this.templateName || 'Article Detail'} Preview`
+    });
+
+    const blob = new Blob([assembled], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    this.safeModalPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.showPreviewModal = true;
+  }
+
+  closePreviewModal(): void {
+    this.showPreviewModal = false;
   }
 
   loadExistingTemplate(id: string): void {
@@ -583,7 +1300,7 @@ export class BlogDetailVisualComponent implements OnInit {
         }
       },
       error: () => {
-        this.toast.error('Failed to load existing Blog Detail template.');
+        this.toast.error('Failed to load existing Article Detail template.');
       }
     });
   }
@@ -598,8 +1315,9 @@ export class BlogDetailVisualComponent implements OnInit {
     this.isSaving = true;
     const payload = {
       name,
-      category: 'blog_detail',
+      category: 'blogdetail',
       variantCode: this.variantCode,
+      description: this.description,
       htmlTemplate: this.htmlTemplate,
       cssStyles: this.cssStyles,
       jsScript: this.jsScript,
@@ -620,6 +1338,7 @@ export class BlogDetailVisualComponent implements OnInit {
             : `Successfully created Article Detail template "${name}".`
         );
         this.templateSaved.emit(res?.data || res);
+        this.router.navigate(['/content/console/templates']);
       },
       error: (err: any) => {
         this.isSaving = false;

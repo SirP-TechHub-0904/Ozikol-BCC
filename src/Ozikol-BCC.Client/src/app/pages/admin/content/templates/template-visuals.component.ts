@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 
@@ -14,45 +14,21 @@ import { BlogVisualComponent } from './visual-categories/blog-visual/blog-visual
 import { BlogDetailVisualComponent } from './visual-categories/blog-detail-visual/blog-detail-visual.component';
 
 /**
- * Dropdown option descriptor representing a target category or concrete template.
+ * Definition descriptor for supported template categories in CMS Template Visual Studio.
  */
-export interface CategoryDropdownOption {
-  /** Unique option identifier. */
-  id: string;
-  /** Category taxonomy key. */
-  categoryKey: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail';
-  /** Human-readable category label. */
-  categoryLabel: string;
-  /** Whether selecting this option engages edit mode. */
-  isEditMode: boolean;
-  /** Specific template identifier when editing an existing template. */
-  templateId?: string;
-  /** Name of the template being edited. */
-  templateName?: string;
-  /** Formatted display label rendered inside the selector. */
-  displayLabel: string;
-  /** Google Material Symbol icon identifier. */
-  icon: string;
+export interface CategoryPresetItem {
+  /** Canonical category identifier. */
+  id: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail';
+  /** Human-readable category display name. */
+  name: string;
+  /** Descriptive role or tagline explaining category purpose. */
+  tagline: string;
 }
 
 /**
- * Category definition descriptor used to populate category navigation tabs.
- */
-export interface CategoryTabDef {
-  /** Category taxonomy key. */
-  key: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail';
-  /** Display label for the category. */
-  label: string;
-  /** Google Material Symbol icon. */
-  icon: string;
-  /** Brief description of category purpose. */
-  description: string;
-}
-
-/**
- * Landing hub component for CMS Template Visual Studio.
- * Serves as the central coordinator managing the smart category dropdown, database template detection
- * (distinguishing Create vs Edit modes), route synchronization, and hosting dedicated category visual editors.
+ * Landing coordinator component for CMS Template Visual Studio.
+ * Presents a focused Category Selection dropdown on entry and dynamically reveals
+ * the corresponding visual category editor workspace once a category is selected.
  */
 @Component({
   selector: 'app-template-visuals',
@@ -92,7 +68,7 @@ export interface CategoryTabDef {
               <div class="title-text-wrap">
                 <div class="title-heading-row">
                   <h1 class="page-title">CMS Template Visual Studio</h1>
-                  <span class="mode-badge" [class.badge-edit]="isEditMode" [class.badge-create]="!isEditMode">
+                  <span class="mode-badge" *ngIf="selectedCategory" [class.badge-edit]="isEditMode" [class.badge-create]="!isEditMode">
                     <span class="material-symbols-outlined">{{ isEditMode ? 'edit_note' : 'add_circle' }}</span>
                     {{ isEditMode ? 'EDIT MODE' : 'CREATE MODE' }}
                   </span>
@@ -112,55 +88,50 @@ export interface CategoryTabDef {
             </a>
           </div>
         </div>
+      </div>
 
-        <!-- Smart Category Selector Bar -->
-        <div class="category-coordinator-bar">
-          <div class="selector-field-wrap">
-            <label class="selector-label">
-              <span class="material-symbols-outlined label-icon">tune</span>
-              ACTIVE CATEGORY &amp; BLUEPRINT
-            </label>
-            <div class="custom-select-box">
-              <select
-                class="form-select smart-dropdown"
-                [(ngModel)]="selectedDropdownOptionId"
-                (ngModelChange)="onDropdownOptionChange($event)"
-              >
-                <optgroup *ngFor="let group of groupedOptions" [label]="group.categoryLabel">
-                  <option *ngFor="let opt of group.options" [value]="opt.id">
-                    {{ opt.displayLabel }}
-                  </option>
-                </optgroup>
-              </select>
-              <span class="material-symbols-outlined dropdown-arrow">expand_more</span>
-            </div>
+      <!-- Step 1: Category Selection Card (Always Visible) -->
+      <div class="category-selection-card">
+        <div class="category-field-header">
+          <div class="category-title-wrap">
+            <span class="step-badge">1. SECTION CATEGORY</span>
+            <label class="config-label mb-0">CHOOSE SECTION ROLE / CATEGORY <span class="required">*</span></label>
           </div>
-
-          <!-- Quick Category Tab Pills -->
-          <div class="category-tabs-strip">
+          <span class="category-field-hint" *ngIf="!isEditMode">Select a category below to reveal template configuration</span>
+          <div class="category-lock-actions" *ngIf="isEditMode">
+            <span class="lock-status-badge">
+              <span class="material-symbols-outlined lock-icon">lock</span>
+              Editing Template (Locked)
+            </span>
             <button
               type="button"
-              *ngFor="let tab of categoryTabs"
-              class="category-tab-btn"
-              [class.active]="selectedCategory === tab.key"
-              (click)="onSelectCategoryTab(tab.key)"
-              [title]="tab.description"
+              class="btn-change-category"
+              (click)="unlockCategory()"
+              title="Unlock and select a different category"
             >
-              <span class="material-symbols-outlined tab-icon">{{ tab.icon }}</span>
-              <span class="tab-label">{{ tab.label }}</span>
-              <span
-                class="tab-count-pill"
-                *ngIf="getCategoryTemplateCount(tab.key) > 0"
-              >
-                {{ getCategoryTemplateCount(tab.key) }}
-              </span>
+              <span class="material-symbols-outlined btn-change-icon">swap_horiz</span>
+              <span>Change Category</span>
             </button>
           </div>
         </div>
+        <div class="custom-select-box">
+          <select
+            [(ngModel)]="selectedCategory"
+            (ngModelChange)="onCategoryChange($event)"
+            class="form-select category-select-styled"
+            [disabled]="isEditMode"
+          >
+            <option value="" disabled selected>-- Select Category (Navigation, Hero Sliders, Body Sections, Footers, Blogs...) --</option>
+            <option *ngFor="let cat of categoryPresets" [value]="cat.id">
+              {{ cat.name }} — {{ cat.tagline }}
+            </option>
+          </select>
+          <span class="material-symbols-outlined dropdown-arrow">expand_more</span>
+        </div>
       </div>
 
-      <!-- Active Category Visual Editor Host -->
-      <div class="category-host-container">
+      <!-- Active Category Visual Editor Host (Revealed ONLY when selectedCategory is set) -->
+      <div class="category-host-container" *ngIf="selectedCategory">
         <!-- Navigation Menu Visual -->
         <app-menu-visual
           *ngIf="selectedCategory === 'menu'"
@@ -403,36 +374,112 @@ export interface CategoryTabDef {
       font-size: 18px;
     }
 
-    .category-coordinator-bar {
-      display: flex;
-      align-items: flex-end;
-      gap: 20px;
-      padding-top: 18px;
-      border-top: 1.5px solid #f1f5f9;
-      flex-wrap: wrap;
-    }
-
-    .selector-field-wrap {
+    /* Step 1 Category Selection Card */
+    .category-selection-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      min-width: 320px;
+      gap: 12px;
     }
 
-    .selector-label {
+    .category-field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .category-title-wrap {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+    }
+
+    .step-badge {
+      display: inline-block;
       font-size: 11px;
       font-weight: 800;
-      color: #64748b;
-      letter-spacing: 0.6px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .config-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.5px;
       margin: 0;
     }
 
-    .label-icon {
+    .required {
+      color: #ef4444;
+      font-weight: 900;
+      margin-left: 2px;
+    }
+
+    .category-field-hint {
+      font-size: 12.5px;
+      color: #64748b;
+    }
+
+    .category-lock-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .lock-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .lock-icon {
       font-size: 15px;
+    }
+
+    .btn-change-category {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-change-category:hover {
+      background: #f1f5f9;
+      border-color: #0050e5;
       color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.1);
+    }
+
+    .btn-change-icon {
+      font-size: 16px;
     }
 
     .custom-select-box {
@@ -440,14 +487,14 @@ export interface CategoryTabDef {
       width: 100%;
     }
 
-    .smart-dropdown {
+    .category-select-styled {
       width: 100%;
-      height: 42px;
-      padding: 0 36px 0 14px;
+      height: 48px;
+      padding: 0 40px 0 16px;
       border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       font-size: 13.5px;
-      font-weight: 700;
+      font-weight: 600;
       color: #0f172a;
       background: #f8fafc;
       appearance: none;
@@ -455,76 +502,28 @@ export interface CategoryTabDef {
       transition: all 0.2s ease;
     }
 
-    .smart-dropdown:focus {
+    .category-select-styled:focus {
       outline: none;
       border-color: #0050e5;
       background: #ffffff;
       box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
     }
 
+    .category-select-styled:disabled {
+      background-color: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+    }
+
     .dropdown-arrow {
       position: absolute;
-      right: 12px;
+      right: 14px;
       top: 50%;
       transform: translateY(-50%);
       pointer-events: none;
       color: #64748b;
-      font-size: 20px;
-    }
-
-    .category-tabs-strip {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      flex: 1;
-      align-items: center;
-    }
-
-    .category-tab-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      height: 42px;
-      padding: 0 14px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      background: #ffffff;
-      color: #64748b;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .category-tab-btn:hover {
-      background: #f8fafc;
-      color: #0f172a;
-      border-color: #cbd5e1;
-    }
-
-    .category-tab-btn.active {
-      background: #eef2ff;
-      color: #0050e5;
-      border-color: #0050e5;
-      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.12);
-    }
-
-    .tab-icon {
-      font-size: 17px;
-    }
-
-    .tab-count-pill {
-      font-size: 10.5px;
-      font-weight: 800;
-      background: #e2e8f0;
-      color: #475569;
-      padding: 1px 6px;
-      border-radius: 10px;
-    }
-
-    .category-tab-btn.active .tab-count-pill {
-      background: #0050e5;
-      color: #ffffff;
+      font-size: 22px;
     }
 
     .category-host-container {
@@ -538,22 +537,12 @@ export interface CategoryTabDef {
       .header-main-row {
         flex-direction: column;
       }
-      .category-coordinator-bar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .selector-field-wrap {
-        min-width: 100%;
-      }
     }
   `]
 })
 export class TemplateVisualsComponent implements OnInit {
-  /** Taxonomy key of the currently active category. */
-  selectedCategory: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail' = 'menu';
-
-  /** Selected option ID in the smart dropdown. */
-  selectedDropdownOptionId: string = 'menu_create';
+  /** Taxonomy key of the currently active category. Empty string when no category is selected. */
+  selectedCategory: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail' | '' = '';
 
   /** Whether the active category view is editing an existing template. */
   isEditMode: boolean = false;
@@ -567,21 +556,45 @@ export class TemplateVisualsComponent implements OnInit {
   /** Cache of installed template blueprints loaded from the backend API. */
   installedTemplates: any[] = [];
 
-  /** Flattened list of dropdown options. */
-  dropdownOptions: CategoryDropdownOption[] = [];
-
-  /** Grouped dropdown options for optical select rendering. */
-  groupedOptions: Array<{ categoryLabel: string; options: CategoryDropdownOption[] }> = [];
-
-  /** Registered category tab definitions. */
-  readonly categoryTabs: CategoryTabDef[] = [
-    { key: 'menu', label: 'Menu', icon: 'menu', description: 'Top navigation bar with 3-zone menus and CTA actions' },
-    { key: 'hero', label: 'Hero', icon: 'view_headline', description: 'Hero banner showcases with headlines and action buttons' },
-    { key: 'breadcrumb', label: 'Breadcrumb', icon: 'linear_scale', description: 'Page hierarchy trails and sub-banners' },
-    { key: 'body', label: 'Body Sections', icon: 'dashboard_customize', description: 'Multi-column feature grids and modular content sections' },
-    { key: 'footer', label: 'Footer', icon: 'dock', description: 'Sovereign footers, legal compliance, and social channels' },
-    { key: 'blog', label: 'Blog Feed', icon: 'rss_feed', description: 'Article cards grid with authors, dates, and categories' },
-    { key: 'blog_detail', label: 'Blog Detail', icon: 'article', description: 'In-depth article layout with author bio card and related dispatches' }
+  /**
+   * The official system categories supported in CMS Template Visual Studio.
+   */
+  readonly categoryPresets: CategoryPresetItem[] = [
+    {
+      id: 'menu',
+      name: 'Navigation',
+      tagline: 'Sticky light corporate navbar with dynamic logo/brand identity, dropdowns, and CTA buttons'
+    },
+    {
+      id: 'hero',
+      name: 'Hero Sliders',
+      tagline: 'High-impact landing hero loop slider with bold headline, dual CTAs, badge, graphic layout, and Swiper controls'
+    },
+    {
+      id: 'breadcrumb',
+      name: 'Breadcrumbs',
+      tagline: 'Page hierarchy trails and sub-banners'
+    },
+    {
+      id: 'body',
+      name: 'Body Sections',
+      tagline: 'Multi-column feature grids, stats, process steps, and modular content sections'
+    },
+    {
+      id: 'footer',
+      name: 'Footers',
+      tagline: 'Sovereign footers, legal compliance, and social channels'
+    },
+    {
+      id: 'blog',
+      name: 'Blog Feed',
+      tagline: 'Article cards grid with authors, dates, and categories'
+    },
+    {
+      id: 'blog_detail',
+      name: 'Blog Detail',
+      tagline: 'In-depth article layout with author bio card and related dispatches'
+    }
   ];
 
   constructor(
@@ -623,12 +636,10 @@ export class TemplateVisualsComponent implements OnInit {
       next: (res) => {
         const raw = res?.data || res || [];
         this.installedTemplates = Array.isArray(raw) ? raw : [];
-        this.rebuildDropdownOptions();
         this.evaluateRouteParams();
       },
       error: () => {
         this.installedTemplates = [];
-        this.rebuildDropdownOptions();
         this.evaluateRouteParams();
       }
     });
@@ -636,6 +647,7 @@ export class TemplateVisualsComponent implements OnInit {
 
   /**
    * Evaluates route path parameter `:id` or query parameter `category`.
+   * If no parameter is provided, leaves category empty so only the Category Selection dropdown is visible.
    */
   evaluateRouteParams(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -649,154 +661,50 @@ export class TemplateVisualsComponent implements OnInit {
         this.selectedCategory = catKey;
         this.isEditMode = true;
         this.currentTemplateId = found.id || found.dbId;
-        const matchingOpt = this.dropdownOptions.find(o => o.templateId === this.currentTemplateId);
-        if (matchingOpt) {
-          this.selectedDropdownOptionId = matchingOpt.id;
-        }
         return;
       }
     }
 
     if (queryCat) {
       const normalizedCat = this.normalizeCategoryKey(queryCat);
-      this.onSelectCategoryTab(normalizedCat);
+      this.onCategoryChange(normalizedCat);
     } else {
-      // Default to first available option
-      if (this.dropdownOptions.length > 0) {
-        const firstOpt = this.dropdownOptions[0];
-        this.selectedDropdownOptionId = firstOpt.id;
-        this.applySelectedOption(firstOpt);
-      }
-    }
-  }
-
-  /**
-   * Constructs the grouped and flat options list for the smart dropdown based on installed templates.
-   */
-  rebuildDropdownOptions(): void {
-    const options: CategoryDropdownOption[] = [];
-    const grouped: Array<{ categoryLabel: string; options: CategoryDropdownOption[] }> = [];
-
-    for (const tab of this.categoryTabs) {
-      const groupOptions: CategoryDropdownOption[] = [];
-      const matchingTemplates = this.installedTemplates.filter(t => {
-        const cat = this.normalizeCategoryKey(t.category || t.categoryKey);
-        return cat === tab.key;
-      });
-
-      if (tab.key === 'body') {
-        // Body sections can have multiple templates installed
-        // 1. Create New option
-        groupOptions.push({
-          id: 'body_create_new',
-          categoryKey: 'body',
-          categoryLabel: tab.label,
-          isEditMode: false,
-          displayLabel: '+ Create New Body Section',
-          icon: 'add_circle'
-        });
-
-        // 2. Existing installed body templates
-        for (const tmpl of matchingTemplates) {
-          const tmplId = tmpl.id || tmpl.dbId;
-          groupOptions.push({
-            id: `body_edit_${tmplId}`,
-            categoryKey: 'body',
-            categoryLabel: tab.label,
-            isEditMode: true,
-            templateId: tmplId,
-            templateName: tmpl.name,
-            displayLabel: `Edit: ${tmpl.name}`,
-            icon: 'edit'
-          });
-        }
-      } else {
-        // Singleton categories: Menu, Hero, Breadcrumbs, Footer, Blog, Blog Detail
-        if (matchingTemplates.length > 0) {
-          const tmpl = matchingTemplates[0];
-          const tmplId = tmpl.id || tmpl.dbId;
-          groupOptions.push({
-            id: `${tab.key}_edit_${tmplId}`,
-            categoryKey: tab.key,
-            categoryLabel: tab.label,
-            isEditMode: true,
-            templateId: tmplId,
-            templateName: tmpl.name,
-            displayLabel: `${tab.label} (Edit - ${tmpl.name})`,
-            icon: 'edit_note'
-          });
-        } else {
-          groupOptions.push({
-            id: `${tab.key}_create`,
-            categoryKey: tab.key,
-            categoryLabel: tab.label,
-            isEditMode: false,
-            displayLabel: `${tab.label} (Create New)`,
-            icon: 'add_circle'
-          });
-        }
-      }
-
-      options.push(...groupOptions);
-      grouped.push({
-        categoryLabel: tab.label,
-        options: groupOptions
-      });
-    }
-
-    this.dropdownOptions = options;
-    this.groupedOptions = grouped;
-  }
-
-  /**
-   * Handles user selection from the smart dropdown.
-   * @param optionId Identifier of the selected dropdown option.
-   */
-  onDropdownOptionChange(optionId: string): void {
-    const selected = this.dropdownOptions.find(o => o.id === optionId);
-    if (!selected) return;
-    this.applySelectedOption(selected);
-  }
-
-  /**
-   * Applies selected dropdown option state to the component.
-   * @param option The selected category dropdown option.
-   */
-  applySelectedOption(option: CategoryDropdownOption): void {
-    this.selectedCategory = option.categoryKey;
-    this.isEditMode = option.isEditMode;
-    this.currentTemplateId = option.templateId;
-  }
-
-  /**
-   * Handles user clicking one of the top quick category tab pills.
-   * Automatically selects the first option belonging to that category in the dropdown.
-   * @param catKey Target category taxonomy key.
-   */
-  onSelectCategoryTab(catKey: 'menu' | 'hero' | 'breadcrumb' | 'body' | 'footer' | 'blog' | 'blog_detail'): void {
-    this.selectedCategory = catKey;
-    const catOptions = this.dropdownOptions.filter(o => o.categoryKey === catKey);
-    if (catOptions.length > 0) {
-      // Prefer edit option if exists, otherwise create
-      const opt = catOptions.find(o => o.isEditMode) || catOptions[0];
-      this.selectedDropdownOptionId = opt.id;
-      this.applySelectedOption(opt);
-    } else {
+      // Keep empty: initially only the Category Selection dropdown is shown
+      this.selectedCategory = '';
       this.isEditMode = false;
       this.currentTemplateId = undefined;
     }
   }
 
   /**
-   * Counts how many installed templates exist for the given category key.
-   * @param catKey Category taxonomy key.
-   * @returns Count of matching installed templates.
+   * Handles user selecting a category from the Category Selection dropdown.
+   * Reveals the corresponding visual editor workspace and binds any existing installed template.
+   * @param catId Selected category key.
    */
-  getCategoryTemplateCount(catKey: string): number {
-    return this.installedTemplates.filter(t => {
-      const cat = this.normalizeCategoryKey(t.category || t.categoryKey);
-      return cat === catKey;
-    }).length;
+  onCategoryChange(catId: string): void {
+    if (!catId) {
+      this.selectedCategory = '';
+      this.currentTemplateId = undefined;
+      this.isEditMode = false;
+      return;
+    }
+
+    const normalized = this.normalizeCategoryKey(catId);
+    this.selectedCategory = normalized;
+
+    // Check if an installed template exists for this category
+    const matchingTemplate = this.installedTemplates.find(t => {
+      const c = this.normalizeCategoryKey(t.category || t.categoryKey);
+      return c === normalized;
+    });
+
+    if (matchingTemplate) {
+      this.currentTemplateId = matchingTemplate.id || matchingTemplate.dbId;
+      this.isEditMode = true;
+    } else {
+      this.currentTemplateId = undefined;
+      this.isEditMode = false;
+    }
   }
 
   /**
@@ -816,12 +724,20 @@ export class TemplateVisualsComponent implements OnInit {
   }
 
   /**
+   * Unlocks category selection from edit mode and resets the visual studio to the category picker.
+   */
+  unlockCategory(): void {
+    this.selectedCategory = '';
+    this.isEditMode = false;
+    this.currentTemplateId = undefined;
+  }
+
+  /**
    * Callback invoked whenever any child category visual component saves a template.
-   * Refreshes installed templates list to keep dropdown options synchronized.
+   * Redirects user back to My Templates page.
    * @param savedData Payload received from child component save event.
    */
   onTemplateSaved(savedData: any): void {
-    this.toast.success(`Template saved. Refreshing blueprint registry...`);
-    this.loadInstalledTemplates();
+    this.router.navigate(['/content/console/templates']);
   }
 }

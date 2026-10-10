@@ -1,14 +1,17 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
 import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
-import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
+import { HtmlAssemblerService } from '../../services/html-assembler.service';
+import { TemplateHydrationService } from '../../services/template-hydration.service';
 
 /**
- * Dedicated visual editor component for creating and editing Blog Feed / Article Grid templates.
- * Enforces responsive multi-column article cards, category badges, publication dates, author metadata,
- * and category/tag navigation loops.
+ * Dedicated category studio component for creating and editing Blog Section & Article Grid templates.
+ * Enforces dynamic Articles loop, category/tag chips, publication metadata, and responsive cards.
  */
 @Component({
   selector: 'app-blog-visual',
@@ -16,188 +19,1024 @@ import { VisualEditorComponent } from '../../visual-editor/visual-editor.compone
   imports: [CommonModule, FormsModule, VisualEditorComponent],
   template: `
     <div class="category-visual-layout">
-      <!-- Category Meta Bar: Name, Variant Code, Description, and Save Action -->
-      <div class="category-meta-bar">
-        <div class="meta-left">
-          <div class="category-badge">
-            <span class="material-symbols-outlined">rss_feed</span>
-            <span>Blog Feed Studio</span>
-          </div>
-
-          <div class="meta-input-group">
-            <label class="meta-label">Template Name</label>
+      <!-- 1. Metadata Configuration Card (Template Name, Variant Code, and Description) -->
+      <div class="meta-config-card">
+        <div class="meta-config-row">
+          <div class="config-col flex-2">
+            <label class="config-label">TEMPLATE NAME <span class="required">*</span></label>
             <input
               type="text"
-              class="meta-input"
               [(ngModel)]="templateName"
-              placeholder="e.g. Apex 3-Column Blog Card Grid"
+              class="form-control config-input"
+              placeholder="e.g. Modern Magazine 3-Column Blog Feed"
             />
           </div>
 
-          <div class="meta-input-group">
-            <label class="meta-label">Variant Code</label>
-            <input
-              type="text"
-              class="meta-input code-input"
-              [(ngModel)]="variantCode"
-              readonly
-            />
+          <div class="config-col flex-2">
+            <div class="label-with-hint">
+              <label class="config-label">VARIANT CODE / KEY <span class="required">*</span></label>
+            </div>
+            <div class="input-with-action">
+              <input
+                type="text"
+                [(ngModel)]="variantCode"
+                class="form-control config-input font-mono"
+                readonly
+              />
+              <button
+                type="button"
+                class="btn-regen-key"
+                (click)="regenerateVariantCode()"
+                title="Regenerate random 5-character suffix"
+              >
+                <span class="material-symbols-outlined">refresh</span>
+              </button>
+            </div>
           </div>
 
-          <div class="meta-input-group flex-grow">
-            <label class="meta-label">Description</label>
-            <input
-              type="text"
-              class="meta-input"
-              [(ngModel)]="description"
-              placeholder="e.g. Modern three-column blog article index with category filters, cover images, and author credits"
-            />
+          <div class="config-col flex-1 actions-col">
+            <button
+              type="button"
+              class="btn btn-save-vault"
+              [disabled]="isSaving"
+              (click)="saveBlogTemplate()"
+            >
+              <span class="material-symbols-outlined btn-icon" *ngIf="!isSaving">check_circle</span>
+              <span class="material-symbols-outlined btn-icon spin" *ngIf="isSaving">sync</span>
+              <span>{{ isSaving ? 'Saving...' : (isEditMode ? 'Update Feed' : 'Save Feed') }}</span>
+            </button>
           </div>
         </div>
 
-        <div class="meta-right">
-          <button
-            type="button"
-            class="btn-save-template"
-            [disabled]="isSaving"
-            (click)="saveBlogTemplate()"
-          >
-            <span class="material-symbols-outlined" *ngIf="!isSaving">check_circle</span>
-            <span class="material-symbols-outlined spin" *ngIf="isSaving">sync</span>
-            <span>{{ isSaving ? 'Saving...' : (isEditMode ? 'Update Blog Feed' : 'Save Blog Feed') }}</span>
-          </button>
+        <div class="config-col col-span-full" style="margin-top: 14px;">
+          <label class="config-label">DESCRIPTION (OPTIONAL)</label>
+          <input
+            type="text"
+            [(ngModel)]="description"
+            class="form-control config-input"
+            placeholder="e.g. Responsive 3-column article cards grid with publication badges, thumbnails, and author avatars"
+          />
         </div>
       </div>
 
-      <!-- Core Reusable Visual Editor with Div and CSS Folding -->
-      <app-visual-editor
-        [category]="'blog'"
-        [categoryName]="'Blog Feed'"
-        [htmlTemplate]="htmlTemplate"
-        [cssStyles]="cssStyles"
-        [jsScript]="jsScript"
-        [sampleContent]="sampleContent"
-        [specificTokens]="blogTokens"
-        [isEditMode]="isEditMode"
-        [editorTokens]="editorTokens"
-        (htmlTemplateChange)="htmlTemplate = $event"
-        (cssStylesChange)="cssStyles = $event"
-        (jsScriptChange)="jsScript = $event"
-        (sampleContentChange)="sampleContent = $event"
-      ></app-visual-editor>
+      <!-- 2. Template Code & Content Studio Card -->
+      <div class="code-editor-card">
+        <!-- Studio Card Header -->
+        <div class="studio-card-header">
+          <div class="studio-title-block">
+            <span class="material-symbols-outlined studio-code-icon">newspaper</span>
+            <div>
+              <h4 class="studio-title">Template Code &amp; Content Studio</h4>
+              <p class="studio-subtitle">Author clean HTML markup, scoped CSS rules, and test dynamic data simulation</p>
+            </div>
+          </div>
+          <div class="studio-header-actions">
+            <button
+              type="button"
+              class="btn btn-preview-demo"
+              (click)="openPreviewModal()"
+              title="Preview simulated live demo"
+            >
+              <span class="material-symbols-outlined">visibility</span>
+              <span>Preview Demo</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-reset-boilerplate"
+              (click)="resetBoilerplate()"
+              title="Reset editor back to standard boilerplate"
+            >
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset to Boilerplate</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Code & Content Studio Tabs -->
+        <div class="editor-tabs-bar">
+          <div class="tabs-group">
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'html'"
+              (click)="activeEditorTab = 'html'"
+            >
+              <span class="tab-badge-pill">HTML</span>
+              <span>Semantic HTML Markup</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'css'"
+              (click)="activeEditorTab = 'css'"
+            >
+              <span class="tab-badge-pill">CSS</span>
+              <span>Scoped CSS Styles</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn"
+              [class.active]="activeEditorTab === 'js'"
+              (click)="activeEditorTab = 'js'"
+            >
+              <span class="tab-badge-pill">JS</span>
+              <span>Client JS (Optional)</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab-btn tab-mock-studio"
+              [class.active]="activeEditorTab === 'mock'"
+              (click)="activeEditorTab = 'mock'"
+            >
+              <span class="material-symbols-outlined tab-icon">tune</span>
+              <span>Sample Content &amp; Loops</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor Viewport (When activeEditorTab is html, css, or js) -->
+        <div class="editor-pane-body" *ngIf="activeEditorTab !== 'mock'">
+          <app-visual-editor
+            [category]="'blog'"
+            [categoryName]="'Article Cards'"
+            [activeTab]="activeEditorTab"
+            [hideInternalTabs]="true"
+            [htmlTemplate]="htmlTemplate"
+            [cssStyles]="cssStyles"
+            [jsScript]="jsScript"
+            [sampleContent]="sampleContent"
+            [specificTokens]="blogTokens"
+            [isEditMode]="isEditMode"
+            [editorTokens]="editorTokens"
+            (htmlTemplateChange)="htmlTemplate = $event"
+            (cssStylesChange)="cssStyles = $event"
+            (jsScriptChange)="jsScript = $event"
+            (sampleContentChange)="sampleContent = $event"
+          ></app-visual-editor>
+        </div>
+
+        <!-- Mock Content & Loop Configuration View (When activeEditorTab is 'mock') -->
+        <div class="mock-content-card" *ngIf="activeEditorTab === 'mock'">
+          <div class="content-drawer-header">
+            <div class="drawer-title-wrap">
+              <span class="material-symbols-outlined drawer-icon">edit_note</span>
+              <div>
+                <h3 class="drawer-title">Mock Content &amp; Loop Configuration for Blog Grid</h3>
+                <p class="drawer-sub">
+                  Adjust placeholder sample data to test your section design. These values are used for demo simulation and initial page defaults.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn-reset-sample"
+              (click)="resetSampleContent()"
+              title="Reset mock values to category presets"
+            >
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset Data</span>
+            </button>
+          </div>
+
+          <!-- Mock Data Sub-Tabs: Articles (Default) vs Section Header -->
+          <div class="mock-tabs-nav">
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'articles'"
+              (click)="activeMockTab = 'articles'"
+            >
+              <span class="material-symbols-outlined icon-micro">newspaper</span>
+              <span>Article Cards Grid</span>
+              <span class="mock-tab-badge">{{ (sampleContent.articles?.length || 3) }}</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'header'"
+              (click)="activeMockTab = 'header'"
+            >
+              <span class="material-symbols-outlined icon-micro">title</span>
+              <span>Section Header &amp; Filters</span>
+            </button>
+          </div>
+
+          <!-- Sub-Tab 1: Article Cards Grid (Default) -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'articles'">
+            <div class="cards-repeater-container">
+              <div class="repeater-item-card" *ngFor="let item of (sampleContent.articles || []); let idx = index">
+                <div class="repeater-header">
+                  <span class="material-symbols-outlined icon-badge">article</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="item.title"
+                    class="form-control inspector-input item-title-input"
+                    placeholder="e.g. Article Headline"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="item.category"
+                    class="form-control inspector-input item-icon-input"
+                    placeholder="e.g. Architecture"
+                  />
+                  <button type="button" class="btn-remove-item" (click)="removeArticleItem(idx)" title="Remove article">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+                <div class="repeater-body">
+                  <textarea
+                    [(ngModel)]="item.summary"
+                    class="form-control inspector-input textarea-short"
+                    rows="2"
+                    placeholder="e.g. Article excerpt narrative..."
+                  ></textarea>
+                </div>
+              </div>
+              <button type="button" class="btn-add-item" (click)="addArticleItem()">
+                <span class="material-symbols-outlined">add</span>
+                <span>Add Article Card</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Section Header & Filters -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'header'">
+            <div class="inspector-form-grid-2">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Badge / Mini Headline</span>
+                  <code [innerText]="'{{ MiniTitle }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.miniTitle"
+                  class="form-control inspector-input"
+                  placeholder="e.g. INSIGHTS & EDITORIALS"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Section Headline Title</span>
+                  <code [innerText]="'{{ Title }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.title"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Latest Insights & Technical Papers"
+                />
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Section Lead Description</span>
+                  <code [innerText]="'{{ Description }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.description"
+                  class="form-control inspector-input textarea-short"
+                  rows="2"
+                  placeholder="e.g. Explore in-depth engineering breakdowns..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Simulated Preview Modal -->
+      <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()">
+        <div class="preview-modal-dialog" (click)="$event.stopPropagation()">
+          <div class="preview-modal-header">
+            <div class="preview-header-meta">
+              <div class="preview-badge-icon">
+                <span class="material-symbols-outlined">newspaper</span>
+              </div>
+              <div>
+                <h3 class="preview-modal-name">{{ templateName || 'Article Cards' }}</h3>
+                <span class="preview-modal-sub">
+                  Category: <strong>Blog Section</strong> &bull; Variant: <code>{{ variantCode }}</code>
+                </span>
+              </div>
+            </div>
+
+            <div class="modal-header-actions">
+              <div class="modal-viewport-toggle">
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'desktop'"
+                  (click)="previewViewport = 'desktop'"
+                >
+                  <span class="material-symbols-outlined">desktop_windows</span>
+                  <span>Desktop (100%)</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'tablet'"
+                  (click)="previewViewport = 'tablet'"
+                >
+                  <span class="material-symbols-outlined">tablet</span>
+                  <span>Tablet (768px)</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-vp"
+                  [class.active]="previewViewport === 'mobile'"
+                  (click)="previewViewport = 'mobile'"
+                >
+                  <span class="material-symbols-outlined">smartphone</span>
+                  <span>Mobile (375px)</span>
+                </button>
+              </div>
+              <button type="button" class="btn-close-modal" (click)="closePreviewModal()">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-modal-body">
+            <div class="preview-canvas-wrapper" [ngClass]="'viewport-' + previewViewport">
+              <iframe
+                class="modal-preview-iframe"
+                [src]="safeModalPreviewUrl"
+                sandbox="allow-scripts allow-same-origin"
+                title="Live Simulation Demo"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
     .category-visual-layout {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      height: 100%;
+      gap: 20px;
+      width: 100%;
     }
 
-    .category-meta-bar {
+    .meta-config-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-config-row {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .config-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flex-2 { flex: 2; min-width: 260px; }
+    .flex-1 { flex: 1; min-width: 180px; }
+    .col-span-full { width: 100%; }
+
+    .actions-col {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+
+    .config-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #475569;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .required {
+      color: #ef4444;
+      font-weight: 900;
+      margin-left: 2px;
+    }
+
+    .config-input {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .config-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #0050e5;
+      background-color: #f8fafc;
+    }
+
+    .label-with-hint {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px;
-      background-color: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      flex-wrap: wrap;
-      gap: 16px;
     }
 
-    .meta-left {
+    .input-with-action {
       display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      flex: 1;
-    }
-
-    .category-badge {
-      display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
-      background-color: rgba(236, 72, 153, 0.12);
-      border: 1px solid rgba(236, 72, 153, 0.25);
-      color: #f472b6;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-
-      span.material-symbols-outlined { font-size: 16px; }
+      width: 100%;
     }
 
-    .meta-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .meta-input-group.flex-grow {
-      flex: 1;
-      min-width: 220px;
-    }
-
-    .meta-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .meta-input {
-      background-color: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      min-width: 200px;
-      outline: none;
-
-      &:focus {
-        border-color: #f472b6;
-        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
-      }
-    }
-
-    .code-input {
-      min-width: 150px;
-      color: #f472b6;
-      font-family: 'Fira Code', monospace;
-      background-color: rgba(15, 23, 42, 0.6);
-    }
-
-    .btn-save-template {
+    .btn-regen-key {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-regen-key:hover {
+      background: #e2e8f0;
+      color: #0050e5;
+      border-color: #94a3b8;
+    }
+
+    .btn-save-vault {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
-      padding: 8px 20px;
-      background: linear-gradient(135deg, #db2777 0%, #be185d 100%);
+      height: 40px;
+      padding: 0 24px;
+      background: #0050e5;
       color: #ffffff;
       border: none;
       border-radius: 8px;
-      font-size: 13.5px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .btn-save-vault:hover:not(:disabled) {
+      background: #003db3;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
+    }
+
+    .btn-save-vault:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .code-editor-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .studio-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .studio-title-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .studio-code-icon {
+      font-size: 20px;
+      color: #0050e5;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .studio-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .studio-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+
+    .studio-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-preview-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 8px;
+      color: #0050e5;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-preview-demo:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .btn-reset-boilerplate {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
       transition: all 0.15s ease;
+    }
 
-      span.material-symbols-outlined { font-size: 18px; }
+    .btn-reset-boilerplate:hover {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
 
-      &:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(219, 39, 119, 0.45);
-      }
+    .editor-tabs-bar {
+      display: flex;
+      align-items: center;
+      padding: 10px 24px;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+    }
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+    .tabs-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .editor-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .editor-tab-btn:hover {
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+
+    .editor-tab-btn.active {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
+    }
+
+    .tab-badge-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .editor-tab-btn.active .tab-badge-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .editor-tab-btn .tab-icon {
+      font-size: 16px;
+    }
+
+    .mock-content-card {
+      padding: 24px;
+      background: #ffffff;
+      min-height: 480px;
+    }
+
+    .content-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .drawer-title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .drawer-icon {
+      font-size: 24px;
+      color: #0050e5;
+      margin-top: 2px;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .drawer-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+    }
+
+    .btn-reset-sample {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-reset-sample:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .mock-tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .mock-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .mock-tab-btn.active {
+      background: #eff6ff;
+      border-color: #0050e5;
+      color: #0050e5;
+    }
+
+    .mock-tab-badge {
+      background: #dbeafe;
+      color: #0050e5;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    .cards-repeater-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .repeater-item-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .repeater-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-badge {
+      font-size: 22px;
+      color: #0050e5;
+    }
+
+    .item-title-input { flex: 3; }
+    .item-icon-input { flex: 1; max-width: 140px; }
+
+    .textarea-short {
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .btn-remove-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 6px;
+      color: #ef4444;
+      cursor: pointer;
+    }
+
+    .btn-remove-item:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .btn-add-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #ffffff;
+      border: 1.5px dashed #0050e5;
+      color: #0050e5;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .btn-add-item:hover {
+      background: #eff6ff;
+    }
+
+    .inspector-form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .col-span-2 { grid-column: span 2; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .field-label code {
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .inspector-input {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .inspector-input:focus {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .preview-modal-dialog {
+      width: 95vw;
+      max-width: 1300px;
+      height: 90vh;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1.5px solid #e2e8f0;
+      background: #ffffff;
+    }
+
+    .preview-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-badge-icon {
+      width: 40px;
+      height: 40px;
+      background: #eff6ff;
+      color: #0050e5;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-modal-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .preview-modal-sub {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .modal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .modal-viewport-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 3px;
+    }
+
+    .btn-vp {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .btn-vp.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-close-modal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .btn-close-modal:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+
+    .preview-modal-body {
+      flex: 1;
+      background: #0f172a;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .preview-canvas-wrapper {
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      height: 100%;
+      transition: all 0.25s ease;
+    }
+
+    .preview-canvas-wrapper.viewport-desktop { width: 100%; }
+    .preview-canvas-wrapper.viewport-tablet { width: 768px; }
+    .preview-canvas-wrapper.viewport-mobile { width: 375px; }
+
+    .modal-preview-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: #ffffff;
     }
 
     @keyframes spin {
@@ -213,87 +1052,93 @@ export class BlogVisualComponent implements OnInit {
   @Input() editorTokens: any = null;
   @Output() templateSaved = new EventEmitter<any>();
 
-  templateName: string = 'Apex 3-Column Blog Card Grid';
+  templateName: string = 'Modern Magazine 3-Column Blog Feed';
   variantCode: string = '';
-  description: string = 'Modern three-column blog article index with category filters, cover images, and author credits';
+  description: string = 'Responsive 3-column article cards grid with publication badges, thumbnails, and author avatars';
   isSaving: boolean = false;
 
-  htmlTemplate: string = `<section class="oz-blog-section">
-  <div class="oz-blog-header">
-    <span class="oz-blog-kicker">{{ MiniTitle }}</span>
-    <h2 class="oz-blog-title">{{ Title }}</h2>
-    <p class="oz-blog-desc">{{ Description }}</p>
-  </div>
+  // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'articles' is default)
+  activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
+  activeMockTab: 'articles' | 'header' = 'articles';
 
-  <div class="oz-articles-grid">
-    {{#each Articles}}
-    <article class="oz-article-card">
-      <div class="oz-card-media">
-        <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
-        <span class="oz-card-category">{{ Category }}</span>
-      </div>
-      <div class="oz-card-content">
-        <div class="oz-card-meta">
-          <span class="oz-card-date">{{ PublishedDate }}</span>
-          <span class="oz-meta-bullet">&bull;</span>
-          <span class="oz-card-author">{{ AuthorName }}</span>
+  // Preview Modal
+  showPreviewModal: boolean = false;
+  previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
+  safeModalPreviewUrl: SafeResourceUrl | null = null;
+
+  htmlTemplate: string = `<section class="oz-blog-section {{ CustomClass }}">
+  <div class="oz-blog-container">
+    <div class="oz-blog-header">
+      {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
+      <h2 class="oz-blog-title">{{ Title }}</h2>
+      {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
+    </div>
+    <div class="oz-articles-grid">
+      {{#each Articles}}
+      <article class="oz-article-card">
+        <div class="oz-card-media">
+          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
+          <span class="oz-card-category">{{ Category }}</span>
         </div>
-        <h3 class="oz-card-title">
-          <a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a>
-        </h3>
-        <p class="oz-card-summary">{{ Summary }}</p>
-        <div class="oz-card-footer">
-          <a href="{{ Url }}" class="oz-card-read-more">
-            Read Article
-            <span class="material-symbols-outlined">arrow_forward</span>
-          </a>
+        <div class="oz-card-content">
+          <div class="oz-card-meta">
+            <span class="oz-meta-date">{{ PublishedDate }}</span>
+            <span class="oz-meta-bullet">&bull;</span>
+            <span class="oz-meta-author">{{ AuthorName }}</span>
+          </div>
+          <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
+          <p class="oz-card-summary">{{ Summary }}</p>
+          <div class="oz-card-footer">
+            <a href="{{ Url }}" class="oz-card-read-more">Read Article <span class="material-symbols-outlined">arrow_forward</span></a>
+          </div>
         </div>
-      </div>
-    </article>
-    {{/each}}
+      </article>
+      {{/each}}
+    </div>
   </div>
 </section>`;
 
   cssStyles: string = `.oz-blog-section {
-  padding: 72px 24px;
-  background: #f8fafc;
+  padding: 80px 24px;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-.oz-blog-header {
-  max-width: 760px;
-  margin: 0 auto 52px auto;
-  text-align: center;
+.oz-blog-container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
-.oz-blog-kicker {
+.oz-blog-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 56px auto;
+}
+.oz-blog-badge {
   display: inline-block;
-  background: #eef2ff;
+  background: #eff6ff;
   color: #0050e5;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 12px;
-  border-radius: 16px;
+  border-radius: 14px;
+  letter-spacing: 0.5px;
   margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
 }
 .oz-blog-title {
   font-size: 34px;
-  font-weight: 900;
+  font-weight: 800;
   color: #0f172a;
-  margin: 0 0 14px 0;
+  margin: 0 0 16px 0;
   letter-spacing: -0.02em;
 }
 .oz-blog-desc {
-  font-size: 16px;
+  font-size: 15px;
   color: #64748b;
   line-height: 1.6;
   margin: 0;
 }
 .oz-articles-grid {
-  max-width: 1200px;
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 .oz-article-card {
@@ -354,9 +1199,6 @@ export class BlogVisualComponent implements OnInit {
   color: #94a3b8;
   margin-bottom: 12px;
 }
-.oz-meta-bullet {
-  font-size: 14px;
-}
 .oz-card-title {
   font-size: 19px;
   font-weight: 800;
@@ -393,12 +1235,8 @@ export class BlogVisualComponent implements OnInit {
   text-decoration: none;
   transition: gap 0.2s ease;
 }
-.oz-card-read-more:hover {
-  gap: 10px;
-}
-.oz-card-read-more .material-symbols-outlined {
-  font-size: 16px;
-}
+.oz-card-read-more:hover { gap: 10px; }
+.oz-card-read-more .material-symbols-outlined { font-size: 16px; }
 @media (max-width: 768px) {
   .oz-blog-section { padding: 48px 16px; }
   .oz-articles-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -413,53 +1251,51 @@ export class BlogVisualComponent implements OnInit {
     { label: 'Description', token: '{{ Description }}' },
     { label: 'Articles Loop', token: '{{#each Articles}}\n  <article class="oz-article-card">\n    <img src="{{ CoverImageUrl }}" />\n    <span>{{ Category }}</span>\n    <h3><a href="{{ Url }}">{{ Title }}</a></h3>\n    <p>{{ Summary }}</p>\n    <span>{{ PublishedDate }} - {{ AuthorName }}</span>\n  </article>\n{{/each}}' },
     { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' },
-    { label: 'Newsletter Form', token: '{{ Form "Newsletter_Subscribe" }}' }
+    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' }
   ];
 
   sampleContent: any = {
-    title: 'Insights, Technical Architectures, & Engineering Breakthroughs',
-    miniTitle: 'LATEST DISPATCHES',
-    description: 'Deep dives from our engineering leads on distributed systems, infrastructure resiliency, and security posture.',
+    title: 'Latest Insights & Technical Papers',
+    miniTitle: 'INSIGHTS & EDITORIALS',
+    description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
     articles: [
       {
-        title: 'Building Resilient Multi-Region Active-Active Systems with Zero Downtime',
-        summary: 'How our engineering team eliminated single points of failure across planetary distributed data stores using consensus clustering.',
+        title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
+        summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce cryptographic verification.',
         category: 'Architecture',
-        publishedDate: 'October 8, 2026',
-        authorName: 'Alex Thorne',
-        url: '/blog/multi-region-zero-downtime',
-        coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80'
+        coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+        authorName: 'Alex Vance',
+        publishedDate: 'Oct 12, 2026',
+        url: '/blog/zero-trust-architecture'
       },
       {
-        title: 'Deep Dive into Sovereign Cloud Telemetry and Real-Time Anomaly Detection',
-        summary: 'Inside the mathematical algorithms that scrub sensitive customer data while predicting container memory leaks in real-time.',
-        category: 'Observability',
-        publishedDate: 'September 29, 2026',
+        title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
+        summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties.',
+        category: 'Cloud Engineering',
+        coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
         authorName: 'Sarah Jenkins',
-        url: '/blog/sovereign-cloud-telemetry',
-        coverImageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80'
+        publishedDate: 'Sep 28, 2026',
+        url: '/blog/distributed-data-fabrics'
       },
       {
-        title: 'Migrating Monoliths to Isolated Modular Web Frameworks Cleanly',
-        summary: 'Lessons learned decomposing multi-thousand line files into single-responsibility, tree-shakable standalone micro-components.',
-        category: 'Frontend',
-        publishedDate: 'September 15, 2026',
-        authorName: 'David Vance',
-        url: '/blog/modular-web-frameworks',
-        coverImageUrl: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80'
+        title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
+        summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes.',
+        category: 'Compliance',
+        coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
+        authorName: 'Michael Chen',
+        publishedDate: 'Sep 15, 2026',
+        url: '/blog/compliance-guardrails'
       }
-    ],
-    blogCategories: [
-      { name: 'Architecture', count: 12, url: '/blog/category/architecture' },
-      { name: 'Observability', count: 8, url: '/blog/category/observability' },
-      { name: 'Frontend', count: 15, url: '/blog/category/frontend' }
     ]
   };
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private sanitizer: DomSanitizer,
+    private htmlAssembler: HtmlAssemblerService,
+    private hydrationService: TemplateHydrationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -474,6 +1310,100 @@ export class BlogVisualComponent implements OnInit {
   regenerateVariantCode(): void {
     const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
     this.variantCode = `BLOG_${randomSuffix}`;
+  }
+
+  resetBoilerplate(): void {
+    this.toast.info('Boilerplate reset to default blog grid structure.');
+  }
+
+  resetSampleContent(): void {
+    this.sampleContent = {
+      title: 'Latest Insights & Technical Papers',
+      miniTitle: 'INSIGHTS & EDITORIALS',
+      description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
+      articles: [
+        {
+          title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
+          summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce cryptographic verification.',
+          category: 'Architecture',
+          coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+          authorName: 'Alex Vance',
+          publishedDate: 'Oct 12, 2026',
+          url: '/blog/zero-trust-architecture'
+        },
+        {
+          title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
+          summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties.',
+          category: 'Cloud Engineering',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+          authorName: 'Sarah Jenkins',
+          publishedDate: 'Sep 28, 2026',
+          url: '/blog/distributed-data-fabrics'
+        },
+        {
+          title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
+          summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes.',
+          category: 'Compliance',
+          coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
+          authorName: 'Michael Chen',
+          publishedDate: 'Sep 15, 2026',
+          url: '/blog/compliance-guardrails'
+        }
+      ]
+    };
+    this.toast.info('Blog sample values reset to defaults.');
+  }
+
+  addArticleItem(): void {
+    if (!this.sampleContent.articles) this.sampleContent.articles = [];
+    this.sampleContent.articles.push({
+      title: 'New Article Headline',
+      summary: 'Summary excerpt of the new article explaining the core topic and value.',
+      category: 'General',
+      coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+      authorName: 'Editorial Staff',
+      publishedDate: 'Today',
+      url: '/blog/new-article'
+    });
+  }
+
+  removeArticleItem(index: number): void {
+    if (this.sampleContent.articles && this.sampleContent.articles.length > index) {
+      this.sampleContent.articles.splice(index, 1);
+    }
+  }
+
+  openPreviewModal(): void {
+    const rawHtml = this.htmlTemplate || '';
+    const rawCss = this.cssStyles || '';
+    const rawJs = this.jsScript || '';
+
+    const hydratedHtml = this.hydrationService.hydrateTemplate(
+      rawHtml,
+      this.sampleContent,
+      {
+        editorTokens: this.editorTokens,
+        previewBlogContent: this.sampleContent,
+        currentTenantBrandName: 'Acme Global'
+      }
+    );
+
+    const assembled = this.htmlAssembler.assembleSectionPreview({
+      html: hydratedHtml,
+      css: rawCss,
+      js: rawJs,
+      category: 'blog',
+      pageTitle: `${this.templateName || 'Blog'} Preview`
+    });
+
+    const blob = new Blob([assembled], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    this.safeModalPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.showPreviewModal = true;
+  }
+
+  closePreviewModal(): void {
+    this.showPreviewModal = false;
   }
 
   loadExistingTemplate(id: string): void {
@@ -495,7 +1425,7 @@ export class BlogVisualComponent implements OnInit {
         }
       },
       error: () => {
-        this.toast.error('Failed to load existing Blog Feed template.');
+        this.toast.error('Failed to load existing Blog template.');
       }
     });
   }
@@ -512,6 +1442,7 @@ export class BlogVisualComponent implements OnInit {
       name,
       category: 'blog',
       variantCode: this.variantCode,
+      description: this.description,
       htmlTemplate: this.htmlTemplate,
       cssStyles: this.cssStyles,
       jsScript: this.jsScript,
@@ -528,14 +1459,15 @@ export class BlogVisualComponent implements OnInit {
         this.isSaving = false;
         this.toast.success(
           this.isEditMode
-            ? `Successfully updated Blog Feed template "${name}".`
-            : `Successfully created Blog Feed template "${name}".`
+            ? `Successfully updated Blog template "${name}".`
+            : `Successfully created Blog template "${name}".`
         );
         this.templateSaved.emit(res?.data || res);
+        this.router.navigate(['/content/console/templates']);
       },
       error: (err: any) => {
         this.isSaving = false;
-        const msg = err?.error?.message || err?.message || 'Failed to save Blog Feed template.';
+        const msg = err?.error?.message || err?.message || 'Failed to save Blog template.';
         this.toast.error(`Save error: ${msg}`);
       }
     });
