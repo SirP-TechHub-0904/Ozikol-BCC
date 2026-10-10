@@ -142,7 +142,7 @@ export interface TokenDoc {
             class="form-select config-select category-select-styled"
             [disabled]="isEditMode"
           >
-            <option value="" disabled selected>-- Select Category (Navigation, Hero Sliders, Body Sections, Footers, Blogs...) --</option>
+            <option value="" disabled selected>-- Select Category (Navigation, Hero Sliders, Breadcrumbs, Body Sections, Footers, Blogs...) --</option>
             <option *ngFor="let cat of categoryPresets" [value]="cat.id">
               {{ cat.name }} — {{ cat.tagline }}
             </option>
@@ -198,21 +198,82 @@ export interface TokenDoc {
         </div>
       </div>
 
-      <!-- Smart AI Navigation Placeholder Auto-Injection Banner (Screenshot 4) -->
-      <div class="smart-ai-banner" *ngIf="(selectedCategory || isEditMode) && selectedCategory === 'menu'">
-        <div class="smart-ai-content">
-          <div class="ai-sparkle-badge">
-            <span class="material-symbols-outlined">auto_awesome</span>
+      <!-- AI & Manual Placeholder Integration Suite (Screenshot 4 & 5) -->
+      <div class="ai-mode-container-card" *ngIf="selectedCategory || isEditMode">
+        <div class="ai-mode-header-row">
+          <div class="ai-mode-nav-tabs">
+            <button
+              type="button"
+              class="ai-mode-nav-btn"
+              [class.active]="aiPlaceTab === 'manual'"
+              (click)="aiPlaceTab = 'manual'"
+            >
+              <span class="material-symbols-outlined nav-icon">handyman</span>
+              <span>Manual Mode</span>
+            </button>
+            <button
+              type="button"
+              class="ai-mode-nav-btn"
+              [class.active]="aiPlaceTab === 'ai'"
+              (click)="aiPlaceTab = 'ai'"
+            >
+              <span class="material-symbols-outlined nav-icon">auto_awesome</span>
+              <span>Smart AI Mode</span>
+            </button>
           </div>
-          <div class="smart-ai-texts">
-            <h5 class="smart-ai-title">Smart AI Navigation Placeholder Auto-Injection</h5>
-            <p class="smart-ai-desc">Intelligently analyzes your HTML markup, maps static content to dynamic Navigation tokens, and enforces pure CSS classes — strictly zero inline styles.</p>
+          <span class="ai-mode-status-tag" *ngIf="aiPlaceTab === 'manual'">
+            <span class="material-symbols-outlined fs-6 text-primary">touch_app</span>
+            <span>Manual precision cursor insertion active</span>
+          </span>
+          <span class="ai-mode-status-tag tag-ai" *ngIf="aiPlaceTab === 'ai'">
+            <span class="material-symbols-outlined fs-6 text-purple">psychology</span>
+            <span>Ozi AI Auto-Injector engine ready</span>
+          </span>
+        </div>
+
+        <!-- Tab 1: Smart AI Mode View -->
+        <div class="smart-ai-banner" *ngIf="aiPlaceTab === 'ai'">
+          <div class="smart-ai-content">
+            <div class="ai-sparkle-badge">
+              <span class="material-symbols-outlined">auto_awesome</span>
+            </div>
+            <div class="smart-ai-texts">
+              <h5 class="smart-ai-title">Smart AI {{ currentPreset.name }} Placeholder Auto-Injection</h5>
+              <p class="smart-ai-desc">
+                Intelligently analyzes your HTML markup, maps static content to dynamic {{ currentPreset.name }} tokens and loops, and enforces pure CSS classes — strictly zero inline styles.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn btn-smart-ai"
+            (click)="runAiTransformForCategory()"
+            [disabled]="isAiTransforming"
+          >
+            <span class="material-symbols-outlined">{{ isAiTransforming ? 'hourglass_empty' : 'auto_awesome' }}</span>
+            <span>{{ isAiTransforming ? 'Transforming...' : ('Smart Auto-Inject ' + currentPreset.name + ' Placeholders') }}</span>
+          </button>
+        </div>
+
+        <!-- Tab 2: Manual Mode Information View -->
+        <div class="manual-mode-guide-banner" *ngIf="aiPlaceTab === 'manual'">
+          <div class="manual-guide-content">
+            <div class="manual-mode-badge">
+              <span class="material-symbols-outlined">tune</span>
+            </div>
+            <div class="manual-guide-texts">
+              <h5 class="manual-guide-title">Manual Placeholder Placement Mode</h5>
+              <p class="manual-guide-desc">
+                Click any token chip in the <strong>{{ currentPreset.name }} Tokens</strong> toolbar below to inject dynamic variables and repeater loops directly at your cursor position in the HTML editor.
+              </p>
+            </div>
+          </div>
+          <div class="manual-guide-actions">
+            <span class="badge bg-light text-secondary border px-3 py-2 fw-semibold">
+              Category: {{ currentPreset.name }}
+            </span>
           </div>
         </div>
-        <button type="button" class="btn btn-smart-ai" (click)="aiTransformMenuPlaceholders()" [disabled]="isAiTransforming">
-          <span class="material-symbols-outlined">auto_awesome</span>
-          <span>{{ isAiTransforming ? 'Transforming...' : 'Smart Auto-Inject Navigation Placeholders' }}</span>
-        </button>
       </div>
 
       <!-- Full-Width 100% Code Studio Workspace (Revealed when Category Chosen or in Edit Mode) -->
@@ -2235,16 +2296,119 @@ export interface TokenDoc {
       box-shadow: 0 0 0 4px rgba(0, 80, 229, 0.25);
     }
 
+    /* AI & Manual Mode Workspace Card (Screenshot 4 & 5) */
+    .ai-mode-container-card {
+      margin-bottom: 24px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+    .ai-mode-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ai-mode-nav-tabs {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+      gap: 4px;
+    }
+    .ai-mode-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ai-mode-nav-btn .nav-icon {
+      font-size: 18px;
+    }
+    .ai-mode-nav-btn:hover {
+      color: #0f172a;
+    }
+    .ai-mode-nav-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .ai-mode-status-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ai-mode-status-tag.tag-ai {
+      color: #7c3aed;
+    }
+    .manual-mode-guide-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .manual-guide-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 260px;
+    }
+    .manual-mode-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: #e2e8f0;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .manual-mode-badge .material-symbols-outlined { font-size: 20px; }
+    .manual-guide-texts { flex: 1; }
+    .manual-guide-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin: 0 0 3px 0;
+    }
+    .manual-guide-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.4;
+    }
+
     /* Smart AI Auto-Injection Banner (Screenshot 4) */
     .smart-ai-banner {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
+      padding: 16px 20px;
       background: linear-gradient(135deg, #f0f7ff 0%, #e0effe 100%);
       border: 1px solid #bae6fd;
-      border-radius: 12px;
-      margin-bottom: 24px;
+      border-radius: 10px;
+      margin-bottom: 0;
       gap: 20px;
       flex-wrap: wrap;
     }
@@ -4728,6 +4892,48 @@ export class TemplateVisualsComponent implements OnInit, OnDestroy, AfterViewIni
       ]
     },
     {
+      id: 'breadcrumb',
+      codePrefix: 'BCRUMB',
+      name: 'Breadcrumbs / Header',
+      icon: 'linear_scale',
+      tagline: 'Centered page header banner with responsive dynamic breadcrumb trail and background imagery',
+      defaultName: 'Modern Breadcrumb Page Banner',
+      html: `<section class="oz-breadcrumb-banner py-5 bg-dark text-white position-relative" style="background-image: url('{{ BackgroundImageUrl }}'); background-size: cover; background-position: center;">
+  <div class="oz-breadcrumb-overlay position-absolute top-0 start-0 w-100 h-100 bg-black opacity-75"></div>
+  <div class="container position-relative py-4 text-center">
+    <h1 class="display-5 fw-bold mb-2">{{ Title }}</h1>
+    <p class="lead text-white-50 mb-4">{{ SubTitle }}</p>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb justify-content-center mb-0">
+        {{#each Breadcrumbs}}
+          <li class="breadcrumb-item {{#if IsActive}}active text-white{{/if}}">
+            {{#if Url}}<a href="{{ Url }}" class="text-white-50 text-decoration-none">{{ Title }}</a>{{else}}{{ Title }}{{/if}}
+          </li>
+        {{/each}}
+      </ol>
+    </nav>
+  </div>
+</section>`,
+      css: `.oz-breadcrumb-banner { min-height: 260px; display: flex; align-items: center; }
+.oz-breadcrumb-banner .breadcrumb-item + .breadcrumb-item::before { color: rgba(255, 255, 255, 0.4); }
+.oz-breadcrumb-banner .breadcrumb-item a:hover { color: #ffffff !important; }`,
+      sampleContent: {
+        title: 'Enterprise Architecture & Cloud Solutions',
+        subTitle: 'Discover our cloud migration, microservices, and enterprise consulting frameworks.',
+        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+        items: [
+          { title: 'Home', buttonLink: '/' },
+          { title: 'Solutions', buttonLink: '/solutions' },
+          { title: 'Enterprise Architecture', buttonLink: '' }
+        ]
+      },
+      specificTokens: [
+        { label: 'Breadcrumb Trail', token: '{{ BreadcrumbTrail }}' },
+        { label: 'SubTitle', token: '{{ SubTitle }}' },
+        { label: 'Background Image URL', token: '{{ BackgroundImageUrl }}' }
+      ]
+    },
+    {
       id: 'bodysections',
       codePrefix: 'BODY',
       name: 'Body Sections',
@@ -5174,6 +5380,9 @@ export class TemplateVisualsComponent implements OnInit, OnDestroy, AfterViewIni
     }
   ];
 
+  /** Active sub-tab inside the AI/Manual suite above the studio ('manual' | 'ai') */
+  aiPlaceTab: 'manual' | 'ai' = 'manual';
+
   /** Flag indicating active background AI navbar analysis and placeholder transformation */
   isAiTransforming: boolean = false;
 
@@ -5536,7 +5745,7 @@ export class TemplateVisualsComponent implements OnInit, OnDestroy, AfterViewIni
    * Returns the currently active category preset configuration.
    */
   get currentPreset(): CategoryPreset {
-    return this.categoryPresets.find(c => c.id === this.selectedCategory) || this.categoryPresets[1]; // default hero
+    return this.categoryPresets.find(c => c.id === this.selectedCategory) || this.categoryPresets[0]; // default hero
   }
 
   /**
@@ -5915,6 +6124,76 @@ export class TemplateVisualsComponent implements OnInit, OnDestroy, AfterViewIni
 </div>
 {{/if}}\n`;
     this.insertTokenAtCursor(loopBlock);
+  }
+
+  /**
+   * Intelligently routes AI placeholder auto-transformation based on the active section category.
+   * Preserves 100% of original CSS classes, IDs, togglers, and layout structure.
+   */
+  runAiTransformForCategory(): void {
+    if (this.selectedCategory === 'menu') {
+      this.aiTransformMenuPlaceholders();
+      return;
+    }
+
+    const rawHtml = (this.htmlTemplate || '').trim();
+    if (!rawHtml) {
+      this.toast.warning(`Please paste or type raw ${this.currentPreset.name} HTML into the editor first.`);
+      return;
+    }
+
+    this.isAiTransforming = true;
+    this.toast.info(`✨ AI is analyzing ${this.currentPreset.name} structure and transforming placeholders...`);
+
+    const prompt = `You are a surgical code transformer for the Ozikol BCC CMS platform.
+YOUR ONLY MISSION:
+Replace SPECIFIC placeholders in the provided raw HTML for the '${this.selectedCategory}' category (${this.currentPreset.name}) and leave EVERY SINGLE OTHER LINE 100% UNTOUCHED.
+Preserve 100% of all CSS classes, IDs, wrappers, and styling.
+
+SURGICAL REPLACEMENT TARGETS:
+- Title/Headline: replace with {{ Title }}
+- Eyebrow/Sub-badge/Subtitle: replace with {{ MiniTitle }} or {{ SubTitle }}
+- Narrative description/body: replace with {{ Description }} or {{{ FullDescription }}}
+- Buttons/CTAs: replace with {{ ButtonText }}, href="{{ ButtonLink }}", and {{ SecondaryButtonText }}, href="{{ SecondaryButtonLink }}"
+- Images: replace src with {{ ImageUrl }} or {{ BackgroundImageUrl }}
+- Card items / repeaters: if repeating cards/elements exist, wrap in {{#each PageSectionLists}}...{{/each}} using {{ Title }}, {{ Description }}, {{ Icon }}, {{ ButtonLink }}.
+- Breadcrumbs (if category is breadcrumb): wrap in {{#each Breadcrumbs}}...{{/each}} using {{ Title }}, {{ Url }}, {{#if IsActive}}.
+- Articles (if category is blog): wrap in {{#each Articles}}...{{/each}} using {{ Title }}, {{ Summary }}, {{ Url }}, {{ ImageUrl }}.
+- Footers (if category is footer): wrap columns in {{#each FooterCategories}}...{{/each}} using {{ CategoryName }}, {{#each Pages}}...{{/each}}.
+
+ABSOLUTE ZERO-TOUCH & ZERO-TRUNCATION RULE:
+Do not drop or modify CSS classes. Do not summarize code.
+Output ONLY the complete transformed raw HTML. No explanations, no markdown fences.`;
+
+    const payload = {
+      prompt,
+      rawHtml,
+      rawCss: this.cssStyles || '',
+      category: this.selectedCategory || 'bodysections',
+      currentTemplateName: this.templateName || this.currentPreset.name,
+      pageRoute: '/content/console/templates/create',
+      pageTitle: 'Custom Section Blueprint Studio'
+    };
+
+    this.api.post<any>('ContentApi/templates/ai-copilot', payload).subscribe({
+      next: (res) => {
+        this.isAiTransforming = false;
+        let transformed = res?.data?.htmlTemplate || res?.data?.codeResult?.htmlTemplate || '';
+        if (transformed) {
+          transformed = transformed.replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim();
+          this.htmlTemplate = transformed;
+          this.updatePreviewSimulation();
+          this.toast.success(`✨ Successfully transformed ${this.currentPreset.name} with smart AI placeholders!`);
+        } else {
+          this.toast.warning('AI response did not return HTML code. Please try again.');
+        }
+      },
+      error: (err) => {
+        this.isAiTransforming = false;
+        const msg = err?.error?.message || err?.message || 'Failed to reach AI service.';
+        this.toast.error(`AI Transformation error: ${msg}`);
+      }
+    });
   }
 
   /**

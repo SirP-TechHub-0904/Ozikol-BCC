@@ -113,9 +113,26 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Dynamic Pool Governance**:
   * **Round-Robin Load Distribution**: The least-used healthy key (`TodayRequestsCount < DailyQuotaLimit`) is selected first.
   * **Automatic Rate-Limit Cooldown**: When a provider returns `429 Too Many Requests` or quota exhaustion, the key is immediately put into cooldown (300s for Gemini, 120s for DeepSeek) and traffic automatically rotates to the next available key in the pool.
-  * **Telemetry Logging**: Every AI dispatch must record status codes, token counts, and latency to `MasterAiApiKeyUsageLogs`.
 
+---
 
-
-
-
+## 10. Template Modular Hydration, Assembler & Preview Architecture (Mandatory)
+* **Master HTML Document Assembler (`HtmlAssemblerService`)**:
+  * **Location**: `src/Ozikol-BCC.Client/src/app/pages/admin/content/templates/services/html-assembler.service.ts`
+  * **Responsibilities**:
+    * `assembleSectionPreview(options: SectionPreviewOptions)`: Assembles complete, self-contained HTML5 documents for single category previews in iframe isolation, dynamically linking zone code injections (head, body-open, footer), suite fonts, reset CSS, and scripts.
+    * `assembleFullPage(options: FullPageAssemblyOptions)`: Synthesizes production-ready multi-section web pages (Navbar + Hero + Breadcrumbs + Body sections + Footer + Injections).
+* **Modular Content Placeholder Replacement Engine (Hydrators)**:
+  * **Master Hydration Services**: `template-hydration.service.ts` and `content-hydration.service.ts`.
+  * **Modular Category Hydrators** (`services/hydrators/`):
+    * `navigation-hydrator.ts`: Multi-zone and sequential nav items (`NavItems="first|middle|last"`), top bar pages (`TopBarPages`), menu dropdown categories with nested pages (`MenuDropdowns`), CTA action buttons (`MenuCtaButtons`), and auth triggers (`ActivateLoginInMenu`).
+    * `hero-hydrator.ts`: Hero headlines, descriptions, action buttons, image URLs, and repeater item loops.
+    * `breadcrumb-hydrator.ts`: Breadcrumb roots, child navigation links, and active page trail.
+    * `body-sections-hydrator.ts`: Feature cards, stats counters, process steps, split showcases, and FAQ accordion loops.
+    * `footer-hydrator.ts`: Navigation groups, legal compliance links, copyright, and powered-by credits.
+    * `blog-feed-hydrator.ts` & `blog-detail-hydrator.ts`: Article grid, tag pills, author metadata, publication dates, and sanitized post bodies.
+    * `hydration-core.utils.ts`: Balanced block regex parsers, token sanitization, and fallback placeholder resolution.
+* **Live Database Tokens vs. Static Sample JSON Separation**:
+  * Live tenant database tokens fetched via `ContentApi/templates/editor-tokens` (`topMenuItems`, `menuDropdowns`, `menuCtaButtons`, `footerGroups`, `legalPages`, `brand`) MUST take precedence during preview hydration to reflect real tenant configuration.
+  * Static `sampleContent` / preset JSON acts strictly as fallback demonstration mock data when database collections are unpopulated.
+  * Never conflate preview simulation output with static sample JSON inspector state.
