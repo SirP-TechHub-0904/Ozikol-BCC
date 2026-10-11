@@ -2539,14 +2539,15 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Page Headline / Title: {{{{ PageTitle }}}} or {{{{ Title }}}}
    - Subtitle / Eyebrow: {{{{ SubTitle }}}} or {{{{ MiniTitle }}}}
    - Banner Background Image: src=""{{{{ BackgroundImageUrl }}}}"" or style=""background-image: url('{{{{ BackgroundImageUrl }}}}')""
-   - Navigational Trail Repeater:
+   - Navigational Trail Repeater (collapse all static items into 1 dynamic item):
      {{{{#each Breadcrumbs}}}}
-       <li class=""breadcrumb-item {{{{if IsActive}}}}active{{{{/if}}}}"">
+       <li class=""breadcrumb-item {{{{if IsActive}}}}active{{{{/if}}}}"" {{{{if IsActive}}}}aria-current=""page""{{{{/if}}}}>
          {{{{#if IsActive}}}}
            <span>{{{{ Title }}}}</span>
          {{{{else}}}}
            <a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a>
          {{{{/if}}}}
+         {{{{#unless IsLast}}}}[preserve original separator icon or slash here if present inside li]{{{{/unless}}}}
        </li>
      {{{{/each}}}}
    - Custom Class: {{{{ CustomClass }}}}

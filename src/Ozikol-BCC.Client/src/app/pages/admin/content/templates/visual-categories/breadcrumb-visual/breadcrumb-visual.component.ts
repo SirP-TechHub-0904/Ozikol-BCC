@@ -1148,11 +1148,66 @@ export class BreadcrumbVisualComponent implements OnInit {
 
   jsScript: string = '';
 
-  breadcrumbTokens: Array<{ label: string; token: string }> = [
-    { label: 'Title', token: '{{ Title }}' },
-    { label: 'SubTitle', token: '{{ SubTitle }}' },
-    { label: 'BackgroundImageUrl', token: '{{ BackgroundImageUrl }}' },
-    { label: 'Breadcrumbs Loop', token: '{{#each Breadcrumbs}}\n  <li class="oz-breadcrumb-item {{#if IsActive}}active{{/if}}">\n    {{#if Url}}<a href="{{ Url }}" class="oz-breadcrumb-link">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}\n  </li>\n{{/each}}' }
+  breadcrumbTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
+    {
+      label: 'Banner',
+      token: `{{ Title }}`,
+      htmlSnippet: `<header class="breadcrumb-banner position-relative {{ CustomClass }}" style="background-image: url('{{ BackgroundImageUrl }}'); background-size: cover; background-position: center;">
+  <div class="banner-overlay"></div>
+  <div class="container position-relative py-5 text-center text-white">
+    <h1 class="display-4 fw-bold">{{ Title }}</h1>
+    {{#if SubTitle}}<p class="lead text-white-50">{{ SubTitle }}</p>{{/if}}
+    <nav aria-label="breadcrumb" class="d-inline-block mt-3">
+      <ol class="breadcrumb bg-dark bg-opacity-50 px-4 py-2 rounded-pill mb-0">
+        {{#each Breadcrumbs}}
+        <li class="breadcrumb-item {{#if IsActive}}active text-white{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>
+          {{#if Url}}<a href="{{ Url }}" class="text-white-50 text-decoration-none">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </nav>
+  </div>
+</header>`,
+      description: 'Complete subpage header banner with responsive breadcrumb trail, background image, and dark contrast overlay.'
+    },
+    {
+      label: 'Trail Loop',
+      token: `{{#each Breadcrumbs}}\n<li class="breadcrumb-item {{#if IsActive}}active{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>\n  {{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}\n</li>\n{{/each}}`,
+      htmlSnippet: `<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    {{#each Breadcrumbs}}
+    <li class="breadcrumb-item {{#if IsActive}}active{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>
+      {{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}
+    </li>
+    {{/each}}
+  </ol>
+</nav>`,
+      description: 'Responsive breadcrumb list loop with active item highlighting.'
+    },
+    {
+      label: 'Title',
+      token: '{{ Title }}',
+      htmlSnippet: '<h1 class="page-title">{{ Title }}</h1>',
+      description: 'Primary subpage headline text.'
+    },
+    {
+      label: 'SubTitle',
+      token: '{{ SubTitle }}',
+      htmlSnippet: '{{#if SubTitle}}<p class="page-subtitle">{{ SubTitle }}</p>{{/if}}',
+      description: 'Subpage summary, description, or subtitle text.'
+    },
+    {
+      label: 'BackgroundImageUrl',
+      token: '{{ BackgroundImageUrl }}',
+      htmlSnippet: 'style="background-image: url(' + "'{{ BackgroundImageUrl }}'" + ');"',
+      description: 'Subpage banner background photo or graphic texture URL.'
+    },
+    {
+      label: 'Breadcrumb Link',
+      token: '{{ Url }}',
+      htmlSnippet: '{{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}',
+      description: 'Clickable parent crumb link with fallback span for current page.'
+    }
   ];
 
   sampleContent: any = {
