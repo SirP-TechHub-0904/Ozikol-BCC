@@ -1112,7 +1112,9 @@ export class FooterVisualComponent implements OnInit {
   </div>
 </footer>`;
 
-  cssStyles: string = `.oz-footer-section {
+  cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+.oz-footer-section {
   background: #090d16;
   color: #94a3b8;
   padding: 72px 24px 36px 24px;
@@ -1482,36 +1484,36 @@ export class FooterVisualComponent implements OnInit {
   ];
 
   sampleContent: any = {
-    brandName: 'Ozikol Technologies',
+    brandName: 'Apex Global',
     brandLogo: '',
     logoUrl: '',
     homeUrl: '/',
-    description: 'Autonomous cloud management, enterprise high availability, and sovereign workload control at planetary scale.',
-    copyright: '© 2026 Ozikol Technologies LLC. All rights reserved.',
+    description: 'Empowering modern enterprises with resilient cloud architectures, continuous integration pipelines, and high-availability systems.',
+    copyright: '© 2026 Apex Global. All rights reserved.',
     year: '2026',
     hasContactInfo: true,
     hasSocialLinks: true,
-    email: 'contact@company.com',
+    email: 'contact@example.com',
     phone: '+1 (555) 019-2834',
-    address: 'One Sovereign Way, Suite 400',
+    address: '100 Enterprise Boulevard, Suite 500',
     workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
     socialLinks: [
       { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
-      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
       { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
     ],
     contactItems: [
       { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '100 Enterprise Boulevard, Suite 500', content: '100 Enterprise Boulevard, Suite 500', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
     ],
     taggedPages: {
       quicklinks: [
         { title: 'Release Notes', url: '/releases' },
         { title: 'System Status', url: '/status' },
-        { title: 'Security Advisories', url: '/security' },
-        { title: 'Knowledge Base', url: '/kb' }
+        { title: 'Trust & Compliance', url: '/compliance' },
+        { title: 'Help Center', url: '/help' }
       ]
     },
     legalPages: [
@@ -1522,27 +1524,30 @@ export class FooterVisualComponent implements OnInit {
     ],
     footerCategories: [
       {
-        title: 'Platform',
+        title: 'Solutions',
         pages: [
-          { title: 'Overview', url: '/platform' },
-          { title: 'Security Architecture', url: '/security' },
-          { title: 'Edge Cloud', url: '/edge' }
+          { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
+          { title: 'Enterprise Security', url: '/solutions/security' },
+          { title: 'High Availability', url: '/solutions/ha' },
+          { title: 'Data Analytics', url: '/solutions/analytics' }
         ]
       },
       {
         title: 'Resources',
         pages: [
-          { title: 'Developer Portal', url: '/docs' },
-          { title: 'API References', url: '/api' },
-          { title: 'Status Dashboard', url: '/status' }
+          { title: 'Documentation', url: '/docs' },
+          { title: 'Developer Portal', url: '/developers' },
+          { title: 'API Reference', url: '/api' },
+          { title: 'Architecture Guides', url: '/guides' }
         ]
       },
       {
         title: 'Company',
         pages: [
           { title: 'About Us', url: '/about' },
-          { title: 'Careers', url: '/careers' },
-          { title: 'Press & Media', url: '/press' }
+          { title: 'Leadership Team', url: '/leadership' },
+          { title: 'Careers & Openings', url: '/careers' },
+          { title: 'News & Press', url: '/press' }
         ]
       }
     ]
@@ -1660,7 +1665,9 @@ export class FooterVisualComponent implements OnInit {
   </div>
 </footer>`;
 
-    this.cssStyles = `.oz-footer-section {
+    this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+.oz-footer-section {
   background: #090d16;
   color: #94a3b8;
   padding: 72px 24px 36px 24px;
@@ -1790,7 +1797,13 @@ export class FooterVisualComponent implements OnInit {
   justify-content: center;
   color: #cbd5e1;
   text-decoration: none;
+  font-size: 15px;
   transition: all 0.2s ease;
+}
+.oz-footer-social-icon i {
+  font-size: 15px;
+  line-height: 1;
+  color: inherit;
 }
 .oz-footer-social-icon:hover {
   background: #38bdf8;
@@ -1926,36 +1939,36 @@ export class FooterVisualComponent implements OnInit {
 
   resetSampleContent(): void {
     this.sampleContent = {
-      brandName: 'Ozikol Technologies',
+      brandName: 'Apex Global',
       brandLogo: '',
       logoUrl: '',
       homeUrl: '/',
-      description: 'Autonomous cloud management, enterprise high availability, and sovereign workload control at planetary scale.',
-      copyright: '© 2026 Ozikol Technologies LLC. All rights reserved.',
+      description: 'Empowering modern enterprises with resilient cloud architectures, continuous integration pipelines, and high-availability systems.',
+      copyright: '© 2026 Apex Global. All rights reserved.',
       year: '2026',
       hasContactInfo: true,
       hasSocialLinks: true,
-      email: 'contact@company.com',
+      email: 'contact@example.com',
       phone: '+1 (555) 019-2834',
-      address: 'One Sovereign Way, Suite 400',
+      address: '100 Enterprise Boulevard, Suite 500',
       workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
       socialLinks: [
         { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-        { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
-        { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+        { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+        { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
         { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
       ],
       contactItems: [
         { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-        { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-        { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+        { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+        { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '100 Enterprise Boulevard, Suite 500', content: '100 Enterprise Boulevard, Suite 500', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
       ],
       taggedPages: {
         quicklinks: [
           { title: 'Release Notes', url: '/releases' },
           { title: 'System Status', url: '/status' },
-          { title: 'Security Advisories', url: '/security' },
-          { title: 'Knowledge Base', url: '/kb' }
+          { title: 'Trust & Compliance', url: '/compliance' },
+          { title: 'Help Center', url: '/help' }
         ]
       },
       legalPages: [
@@ -1966,27 +1979,30 @@ export class FooterVisualComponent implements OnInit {
       ],
       footerCategories: [
         {
-          title: 'Platform',
+          title: 'Solutions',
           pages: [
-            { title: 'Overview', url: '/platform' },
-            { title: 'Security Architecture', url: '/security' },
-            { title: 'Edge Cloud', url: '/edge' }
+            { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
+            { title: 'Enterprise Security', url: '/solutions/security' },
+            { title: 'High Availability', url: '/solutions/ha' },
+            { title: 'Data Analytics', url: '/solutions/analytics' }
           ]
         },
         {
           title: 'Resources',
           pages: [
-            { title: 'Developer Portal', url: '/docs' },
-            { title: 'API References', url: '/api' },
-            { title: 'Status Dashboard', url: '/status' }
+            { title: 'Documentation', url: '/docs' },
+            { title: 'Developer Portal', url: '/developers' },
+            { title: 'API Reference', url: '/api' },
+            { title: 'Architecture Guides', url: '/guides' }
           ]
         },
         {
           title: 'Company',
           pages: [
             { title: 'About Us', url: '/about' },
-            { title: 'Careers', url: '/careers' },
-            { title: 'Press & Media', url: '/press' }
+            { title: 'Leadership Team', url: '/leadership' },
+            { title: 'Careers & Openings', url: '/careers' },
+            { title: 'News & Press', url: '/press' }
           ]
         }
       ]

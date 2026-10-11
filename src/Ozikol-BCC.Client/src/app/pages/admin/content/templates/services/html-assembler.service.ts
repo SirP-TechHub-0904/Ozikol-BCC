@@ -130,7 +130,7 @@ export class HtmlAssemblerService {
    * @returns Fully formed HTML5 document string.
    */
   assembleSectionPreview(options: SectionPreviewOptions): string {
-    const title = options.pageTitle || 'Section Preview | Ozikol Studio';
+    const title = options.pageTitle || 'Section Preview';
     const suite = options.suiteCode || 'suite_corporate';
 
     // 1. Pillar 1: Header Tags (<head>)
@@ -159,6 +159,8 @@ export class HtmlAssemblerService {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   ${sortedHeadTags ? `<!-- [PILLAR 1] Header Tags (<head>) -->\n  ${sortedHeadTags}` : ''}
   ${cleanStyle ? `<!-- Scoped Section Styles -->\n  <style>\n${cleanStyle}\n  </style>` : ''}
 </head>
@@ -185,7 +187,7 @@ export class HtmlAssemblerService {
    * @returns Complete HTML5 document string.
    */
   assembleFullPage(options: FullPageAssemblyOptions): string {
-    const title = options.pageTitle || 'Home | Ozikol Platform';
+    const title = options.pageTitle || 'Home | Enterprise Portal';
     const lang = options.language || 'en';
     const suite = options.suiteCode || 'suite_corporate';
 
@@ -281,6 +283,8 @@ export class HtmlAssemblerService {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   ${options.metaDescription ? `<meta name="description" content="${options.metaDescription}">` : ''}
   ${options.faviconUrl ? `<link rel="icon" type="image/x-icon" href="${options.faviconUrl}">` : ''}
   ${sortedHeadTags ? `<!-- [PILLAR 1] Header Tags (<head>) -->\n  ${sortedHeadTags}` : ''}
