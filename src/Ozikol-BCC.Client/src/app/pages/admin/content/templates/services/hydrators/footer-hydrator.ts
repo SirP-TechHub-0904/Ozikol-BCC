@@ -77,12 +77,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
     return rawFooterCategories.map((col: any, cIdx: number) => {
       let colRendered = innerTemplate;
 
-      // Replace Column Title & Sort Order
-      colRendered = colRendered.replace(/\{\{\s*Title\s*\}\}/gi, col.title || `Column ${cIdx + 1}`);
-      colRendered = colRendered.replace(/\{\{\s*DisplayTitle\s*\}\}/gi, col.title || `Column ${cIdx + 1}`);
-      colRendered = colRendered.replace(/\{\{\s*@index\s*\}\}/gi, String(cIdx));
-
-      // Nested child pages loop: {{#each Pages}}
+      // 1. Process nested child pages loop FIRST so {{ Title }} inside child pages binds to page.title
       const pagesMatcher = (pTag: string) => {
         return /^\{\{#each\s+Pages\b[^}]*\}\}/i.test(pTag) ? { matched: true } : null;
       };
@@ -98,6 +93,10 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
           return pageRendered;
         }).join('\n');
       });
+
+      // 2. Process column title and index on the remaining parent container
+      colRendered = colRendered.replace(/\{\{\s*(?:CategoryTitle|ColumnTitle|Title|DisplayTitle)\s*\}\}/gi, col.title || `Column ${cIdx + 1}`);
+      colRendered = colRendered.replace(/\{\{\s*@index\s*\}\}/gi, String(cIdx));
 
       return colRendered;
     }).join('\n');
@@ -194,8 +193,8 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   // 5. Social Media Channels Loop: {{#each SocialLinks}}
   const rawSocials = (ctx.socialLinks && ctx.socialLinks.length > 0) ? ctx.socialLinks : [
     { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-    { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
-    { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+    { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+    { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
     { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
   ];
 
@@ -220,7 +219,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   // 5b. Structured Contact Items Loops: {{#each ContactItems}}, {{#each ContactChannels}}
   const rawContactItems = (ctx.contactItems && ctx.contactItems.length > 0) ? ctx.contactItems : [
     { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: ctx.phone || '+1 (555) 019-2834', content: ctx.phone || '+1 (555) 019-2834', url: `tel:${(ctx.phone || '+15550192834').replace(/[^0-9+]/g, '')}`, icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-    { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: ctx.email || 'support@ozikol.cloud', content: ctx.email || 'support@ozikol.cloud', url: `mailto:${ctx.email || 'support@ozikol.cloud'}`, icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+    { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: ctx.email || 'contact@example.com', content: ctx.email || 'contact@example.com', url: `mailto:${ctx.email || 'contact@example.com'}`, icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
     { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: ctx.address || '1200 Innovation Way, Suite 400', content: ctx.address || '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
   ];
 
