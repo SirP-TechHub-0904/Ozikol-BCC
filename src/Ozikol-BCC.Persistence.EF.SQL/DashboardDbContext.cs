@@ -18,6 +18,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     // Tenant-level website UI/brand settings and operational configuration settings.
     public DbSet<MisWebsiteSetting> MisWebsiteSettings { get; set; } = null!;
     public DbSet<MisConfigurationSetting> MisConfigurationSettings { get; set; } = null!;
+    public DbSet<MisWebsiteContactChannel> MisWebsiteContactChannels { get; set; } = null!;
 
     // Console dashboard widgets and guided-tour/wizard persistence.
     public DbSet<BcpWidget> BcpWidgets { get; set; } = null!;
@@ -488,6 +489,12 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
             .WithMany()
             .HasForeignKey(s => s.PageFormId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // --- Website Contact Channels Indexing for Fast Querying by Type and Status ---
+        modelBuilder.Entity<MisWebsiteContactChannel>(entity =>
+        {
+            entity.HasIndex(c => new { c.ChannelType, c.IsPublished, c.SortOrder });
+        });
 
         // ConfigureCustomer(modelBuilder);
     }

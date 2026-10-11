@@ -2375,7 +2375,20 @@ export class MenuVisualComponent implements OnInit {
         url: '/get-started',
         customClass: 'oz-btn-primary'
       }
-    ]
+    ],
+    hasSocialLinks: true,
+    socialLinks: [
+      { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
+      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+      { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+    ],
+    contactItems: [
+      { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '1200 Innovation Way, Suite 400', content: '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+    ],
+    workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM'
   };
 
   // Handlebars tokens available for insertion with complete, working HTML structures
@@ -2410,9 +2423,44 @@ export class MenuVisualComponent implements OnInit {
         <a href="{{ Url }}" class="oz-top-link">{{ Title }}</a>
       {{/each}}
     </div>
+    {{#if HasSocialLinks}}
+      <div class="oz-top-socials">
+        {{#each SocialLinks}}
+          <a href="{{ Url }}" title="{{ Platform }}" class="oz-top-social-link" target="_blank" rel="noopener">
+            <i class="{{ IconClass }}"></i>
+          </a>
+        {{/each}}
+      </div>
+    {{/if}}
   </div>
 </div>
 {{/if}}`
+    },
+    {
+      label: 'Social Media Channels',
+      token: `{{#if HasSocialLinks}}
+<div class="oz-social-links">
+  {{#each SocialLinks}}
+    <a href="{{ Url }}" title="{{ Platform }}" class="oz-social-icon" target="_blank" rel="noopener">
+      <i class="{{ IconClass }}"></i>
+    </a>
+  {{/each}}
+</div>
+{{/if}}`
+    },
+    {
+      label: 'Contact Channels (Loop)',
+      token: `<div class="oz-contact-channels">
+  {{#each ContactItems}}
+    <div class="oz-contact-channel-item">
+      <i class="{{ IconClass }}"></i>
+      <div class="oz-contact-channel-details">
+        <span class="oz-contact-channel-title">{{ Title }}</span>
+        <a href="{{ Url }}" class="oz-contact-channel-val">{{ Content }}</a>
+      </div>
+    </div>
+  {{/each}}
+</div>`
     },
     {
       label: 'Navigation Menu Tree',
@@ -2617,7 +2665,20 @@ export class MenuVisualComponent implements OnInit {
           url: '/get-started',
           customClass: 'oz-btn-primary'
         }
-      ]
+      ],
+      hasSocialLinks: true,
+      socialLinks: [
+        { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+        { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
+        { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+        { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+      ],
+      contactItems: [
+        { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+        { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+        { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '1200 Innovation Way, Suite 400', content: '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+      ],
+      workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM'
     };
     this.toast.info('Sample data restored to initial defaults.');
   }

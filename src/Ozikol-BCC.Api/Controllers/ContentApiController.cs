@@ -3887,6 +3887,98 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     tiktok = config?.TikTokUrl ?? config?.TiktokPage ?? string.Empty
                 };
 
+                // 5a. Dynamic Contact Channels & Social Media Profiles
+                var contactChannels = new List<object>();
+                var socialLinks = new List<object>();
+                var contactPhones = new List<object>();
+                var contactEmails = new List<object>();
+                var contactAddresses = new List<object>();
+
+                try
+                {
+                    var dbChannels = await _context.MisWebsiteContactChannels
+                        .AsNoTracking()
+                        .Where(c => c.IsPublished)
+                        .OrderBy(c => c.SortOrder)
+                        .ToListAsync();
+
+                    if (dbChannels.Any())
+                    {
+                        foreach (var c in dbChannels)
+                        {
+                            var item = new
+                            {
+                                id = c.Id,
+                                channelType = c.ChannelType,
+                                platform = c.Platform ?? c.ChannelType,
+                                title = c.Title,
+                                description = c.Description ?? string.Empty,
+                                value = c.Value,
+                                content = c.Value,
+                                url = c.Value,
+                                iconClass = c.IconClass ?? string.Empty,
+                                isDefault = c.IsDefault,
+                                sortOrder = c.SortOrder
+                            };
+
+                            contactChannels.Add(item);
+
+                            if (string.Equals(c.ChannelType, ContactChannelTypes.SocialMedia, StringComparison.OrdinalIgnoreCase))
+                            {
+                                socialLinks.Add(item);
+                            }
+                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Phone, StringComparison.OrdinalIgnoreCase))
+                            {
+                                contactPhones.Add(item);
+                            }
+                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Email, StringComparison.OrdinalIgnoreCase))
+                            {
+                                contactEmails.Add(item);
+                            }
+                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Address, StringComparison.OrdinalIgnoreCase))
+                            {
+                                contactAddresses.Add(item);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Table not yet migrated in tenant database; fallback to MisWebsiteSettings below.
+                }
+
+                // Fallback to MisWebsiteSettings if contact channels table is empty or unmigrated
+                if (!socialLinks.Any() && config != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(config.TwitterUrl ?? config.TwitterPage))
+                        socialLinks.Add(new { platform = "Twitter / X", title = "Twitter / X", url = config.TwitterUrl ?? config.TwitterPage, iconClass = "fa-brands fa-x-twitter" });
+                    if (!string.IsNullOrWhiteSpace(config.LinkedInUrl))
+                        socialLinks.Add(new { platform = "LinkedIn", title = "LinkedIn", url = config.LinkedInUrl, iconClass = "fa-brands fa-linkedin" });
+                    if (!string.IsNullOrWhiteSpace(config.FacebookUrl ?? config.FacebookPage))
+                        socialLinks.Add(new { platform = "Facebook", title = "Facebook", url = config.FacebookUrl ?? config.FacebookPage, iconClass = "fa-brands fa-facebook" });
+                    if (!string.IsNullOrWhiteSpace(config.InstagramUrl ?? config.InstagramPage))
+                        socialLinks.Add(new { platform = "Instagram", title = "Instagram", url = config.InstagramUrl ?? config.InstagramPage, iconClass = "fa-brands fa-instagram" });
+                    if (!string.IsNullOrWhiteSpace(config.YouTubeUrl ?? config.YoutubeChannel))
+                        socialLinks.Add(new { platform = "YouTube", title = "YouTube", url = config.YouTubeUrl ?? config.YoutubeChannel, iconClass = "fa-brands fa-youtube" });
+                    if (!string.IsNullOrWhiteSpace(config.GitHubUrl))
+                        socialLinks.Add(new { platform = "GitHub", title = "GitHub", url = config.GitHubUrl, iconClass = "fa-brands fa-github" });
+                    if (!string.IsNullOrWhiteSpace(config.TikTokUrl ?? config.TiktokPage))
+                        socialLinks.Add(new { platform = "TikTok", title = "TikTok", url = config.TikTokUrl ?? config.TiktokPage, iconClass = "fa-brands fa-tiktok" });
+                }
+
+                if (!contactPhones.Any() && config != null && !string.IsNullOrWhiteSpace(config.PrimaryPhone ?? config.PhoneOne))
+                {
+                    contactPhones.Add(new { type = "phone", channelType = "Phone", platform = "Primary", title = "Primary Phone", value = config.PrimaryPhone ?? config.PhoneOne, content = config.PrimaryPhone ?? config.PhoneOne, iconClass = "fa-solid fa-phone", isDefault = true });
+                }
+                if (!contactEmails.Any() && config != null && !string.IsNullOrWhiteSpace(config.ContactEmail ?? config.EmailOne))
+                {
+                    contactEmails.Add(new { type = "email", channelType = "Email", platform = "General", title = "Contact Email", value = config.ContactEmail ?? config.EmailOne, content = config.ContactEmail ?? config.EmailOne, iconClass = "fa-solid fa-envelope", isDefault = true });
+                }
+                if (!contactAddresses.Any() && config != null && !string.IsNullOrWhiteSpace(config.Address ?? config.AddressOne))
+                {
+                    contactAddresses.Add(new { type = "address", channelType = "Address", platform = "HQ", title = "Physical Address", value = config.Address ?? config.AddressOne, content = config.Address ?? config.AddressOne, iconClass = "fa-solid fa-location-dot", isDefault = true });
+                }
+
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     publishedForms = forms,
@@ -3896,7 +3988,12 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     footerGroups = footerGroups,
                     taggedPages = taggedPages,
                     legalPages = legalPages,
-                    brand = brand
+                    brand = brand,
+                    contactChannels = contactChannels,
+                    socialLinks = socialLinks,
+                    contactPhones = contactPhones,
+                    contactEmails = contactEmails,
+                    contactAddresses = contactAddresses
                 }, "Template editor tokens loaded successfully."));
             }
             catch (Exception ex)
