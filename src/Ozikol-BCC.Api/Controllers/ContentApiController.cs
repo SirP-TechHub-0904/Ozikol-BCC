@@ -1636,7 +1636,29 @@ namespace Ozikol_BCC.Api.Controllers
         {
             try
             {
-                await DefaultThemeSeeder.ClearAllTemplatesAndInjectionsAsync(_context, wipeContent);
+                var templates = await _context.TenantInstalledTemplates.ToListAsync();
+                if (templates.Count > 0)
+                {
+                    _context.TenantInstalledTemplates.RemoveRange(templates);
+                }
+
+                var tags = await _context.SiteCodeInjectionTags.ToListAsync();
+                if (tags.Count > 0)
+                {
+                    _context.SiteCodeInjectionTags.RemoveRange(tags);
+                }
+
+                if (wipeContent)
+                {
+                    var sectionLists = await _context.PageSectionLists.ToListAsync();
+                    if (sectionLists.Count > 0) _context.PageSectionLists.RemoveRange(sectionLists);
+
+                    var sections = await _context.PageSections.ToListAsync();
+                    if (sections.Count > 0) _context.PageSections.RemoveRange(sections);
+                }
+
+                await _context.SaveChangesAsync();
+
                 string msg = wipeContent
                     ? "All installed templates, code injections, and website page sections have been permanently wiped."
                     : "All installed templates and code injections have been successfully cleared from the tenant database.";
@@ -1862,19 +1884,8 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("templates/reinstall-defaults")]
         public async Task<IActionResult> ReinstallDefaultTemplates()
         {
-            try
-            {
-                var site = await _context.MisWebsiteSettings.FirstOrDefaultAsync();
-                var brandName = !string.IsNullOrWhiteSpace(site?.BrandName) ? site.BrandName : (!string.IsNullOrWhiteSpace(site?.CompanyName) ? site.CompanyName : "Organization");
-
-                await DefaultThemeSeeder.ReinstallDefaultsAsync(_context, brandName);
-                return Ok(ApiResponse<object>.SuccessResponse(null, "Default Corporate Theme Suite (16 templates) and default code injections have been cleanly restored."));
-            }
-            catch (Exception ex)
-            {
-                var msg = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to reinstall default templates: {msg}"));
-            }
+            await Task.CompletedTask;
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Templates and defaults are authored and managed directly via Category Visual Studios."));
         }
 
         // ==========================================
