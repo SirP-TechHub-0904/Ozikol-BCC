@@ -2488,9 +2488,9 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
 
 4. Footers (Category: footer):
    - Brand Identity:
-     <a href="{{{{ HomeUrl }}}}">
+     <a href=""{{{{ HomeUrl }}}}"">
        {{{{#if BrandLogo}}}}
-         <img src="{{{{ BrandLogo }}}}" alt="{{{{ BrandName }}}}" class=""[original logo classes]"" />
+         <img src=""{{{{ BrandLogo }}}}"" alt=""{{{{ BrandName }}}}"" class=""[original logo classes]"" />
        {{{{else}}}}
          <span class=""[original brand text classes]"">{{{{ BrandName }}}}</span>
        {{{{/if}}}}
