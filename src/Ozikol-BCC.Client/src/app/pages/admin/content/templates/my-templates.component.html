@@ -318,7 +318,7 @@
               </button>
 
               <a
-                [routerLink]="['/content/console/templates/visuals', item.id || item.variantCode]"
+                [routerLink]="['/content/console/templates/visuals', item.dbId || item.id || item.variantCode]"
                 class="btn btn-card-edit"
                 title="Edit component in Visual Studio"
               >
@@ -427,7 +427,7 @@
                         Preview
                       </button>
                       <a
-                        [routerLink]="['/content/console/templates/visuals', item.id || item.variantCode]"
+                        [routerLink]="['/content/console/templates/visuals', item.dbId || item.id || item.variantCode]"
                         class="btn-tbl-action edit"
                         title="Edit in Visual Studio"
                       >
@@ -703,7 +703,7 @@
             </div>
 
             <a
-              [routerLink]="['/content/console/templates/visuals', activePreviewItem.id || activePreviewItem.variantCode]"
+              [routerLink]="['/content/console/templates/visuals', activePreviewItem.dbId || activePreviewItem.id || activePreviewItem.variantCode]"
               (click)="closeSinglePreviewModal()"
               class="btn btn-primary"
               style="font-size: 12.5px; height: 36px; padding: 0 14px; gap: 6px; display: inline-flex; align-items: center;"

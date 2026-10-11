@@ -654,15 +654,43 @@ export class TemplateVisualsComponent implements OnInit {
     const queryCat = this.route.snapshot.queryParamMap.get('category');
 
     if (routeId) {
-      // Find template matching route id
-      const found = this.installedTemplates.find(t => (t.id || t.dbId) === routeId);
+      const normalizedRouteId = routeId.trim().toLowerCase();
+      // Match against id, dbId, variantCode, or templateKey
+      const found = this.installedTemplates.find(t => {
+        const tid = (t.id || '').toString().toLowerCase();
+        const tdbId = (t.dbId || '').toString().toLowerCase();
+        const tVariant = (t.variantCode || '').toString().toLowerCase();
+        const tKey = (t.templateKey || '').toString().toLowerCase();
+        return tid === normalizedRouteId || tdbId === normalizedRouteId || tVariant === normalizedRouteId || tKey === normalizedRouteId;
+      });
+
       if (found) {
         const catKey = this.normalizeCategoryKey(found.category || found.categoryKey);
         this.selectedCategory = catKey;
         this.isEditMode = true;
-        this.currentTemplateId = found.id || found.dbId;
+        this.currentTemplateId = found.dbId || found.id || found.variantCode;
         return;
       }
+
+      // If not found in the initial array, directly query backend API by routeId (Guid, VariantCode, or TemplateKey)
+      this.api.get<any>(`ContentApi/templates/${encodeURIComponent(routeId)}`).subscribe({
+        next: (res) => {
+          const t = res?.data || res;
+          if (t) {
+            const catKey = this.normalizeCategoryKey(t.category || t.categoryKey);
+            this.selectedCategory = catKey;
+            this.isEditMode = true;
+            this.currentTemplateId = t.id || t.dbId || t.variantCode || routeId;
+          }
+        },
+        error: () => {
+          if (queryCat) {
+            const normalizedCat = this.normalizeCategoryKey(queryCat);
+            this.onCategoryChange(normalizedCat);
+          }
+        }
+      });
+      return;
     }
 
     if (queryCat) {
@@ -720,6 +748,7 @@ export class TemplateVisualsComponent implements OnInit {
     if (lower === 'footer' || lower === 'footers') return 'footer';
     if (lower === 'blog_detail' || lower === 'article' || lower === 'blogdetail') return 'blog_detail';
     if (lower === 'blog' || lower === 'blogs' || lower === 'articles') return 'blog';
+    if (lower === 'body' || lower === 'bodysections' || lower === 'section' || lower === 'sections' || lower === 'cards' || lower === 'features' || lower === 'faq') return 'body';
     return 'body';
   }
 

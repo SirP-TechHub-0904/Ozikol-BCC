@@ -28,10 +28,10 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   output = injectDynamicForms(output, ctx);
 
   // 2. Slider / Carousel Loop Hydration: {{#each PageSectionLists}} or {{#SectionLists}} or {{#each Slides}}
-  const rawItems = ctx.items || [];
+  const rawItems: any[] = ctx.items || (ctx as any).pageSectionLists || (ctx as any).slides || [];
   const activeItems = rawItems
-    .filter(i => i.publish !== false)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    .filter((i: any) => i.publish !== false)
+    .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const slideLoopMatcher = (openTag: string) => {
     return /^\{\{#(?:each\s+)?(?:PageSectionLists|SectionLists|Slides|Items)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -40,8 +40,15 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
   output = replaceDepthAwareEach(output, slideLoopMatcher, (innerTemplate) => {
     if (activeItems.length === 0) return '';
 
-    return activeItems.map((item, idx) => {
+    return activeItems.map((item: any, idx: number) => {
       let rendered = innerTemplate;
+
+      // Slide Loop Conditionals (@first, @last)
+      rendered = rendered.replace(/\{\{#if\s+@first\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, c) => idx === 0 ? c : '');
+      rendered = rendered.replace(/\{\{#if\s+@last\}\}([\s\S]*?)\{\{\/if\}\}/gi, (_m, c) => idx === activeItems.length - 1 ? c : '');
+      rendered = rendered.replace(/\{\{\s*@first\s*\}\}/gi, idx === 0 ? 'true' : 'false');
+      rendered = rendered.replace(/\{\{\s*@last\s*\}\}/gi, idx === activeItems.length - 1 ? 'true' : 'false');
+      rendered = rendered.replace(/\{\{\s*@activeClass\s*\}\}/gi, idx === 0 ? 'active' : '');
 
       // Slide Item Conditionals
       rendered = resolveDepthAwareIf(rendered, 'MiniTitle', Boolean(item.miniTitle || item.subTitle));

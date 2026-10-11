@@ -1291,13 +1291,31 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Sets a specific installed template as active (e.g. switching active menu, hero, breadcrumb, or footer).
         /// Automatically deactivates competing templates within the same singleton category.
+        /// Accepts either a Guid identifier, TemplateKey, or VariantCode.
         /// </summary>
-        /// <param name="id">The unique identifier of the template to activate.</param>
+        /// <param name="id">The unique identifier, variant code, or template key to activate.</param>
         /// <returns>The activated template record.</returns>
-        [HttpPost("templates/{id:guid}/set-active")]
-        public async Task<IActionResult> SetActiveTemplate(Guid id)
+        [HttpPost("templates/{id}/set-active")]
+        public async Task<IActionResult> SetActiveTemplate(string id)
         {
-            var template = await _context.TenantInstalledTemplates.FindAsync(id);
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
+
+            TenantInstalledTemplate? template = null;
+            if (Guid.TryParse(id, out var guidId))
+            {
+                template = await _context.TenantInstalledTemplates.FindAsync(guidId);
+            }
+
+            if (template == null)
+            {
+                var normalizedId = id.Trim().ToLowerInvariant();
+                template = await _context.TenantInstalledTemplates
+                    .FirstOrDefaultAsync(t => t.VariantCode.ToLower() == normalizedId || t.TemplateKey.ToLower() == normalizedId);
+            }
+
             if (template == null) return NotFound(ApiResponse<object>.FailureResponse("Installed template not found."));
 
             var catKey = template.CategoryKey.Trim().ToLowerInvariant();
@@ -1309,7 +1327,7 @@ namespace Ozikol_BCC.Api.Controllers
             if (singletonCategories.Contains(catKey))
             {
                 var sameCategory = await _context.TenantInstalledTemplates
-                    .Where(t => t.CategoryKey.ToLower() == catKey && t.Id != id && t.IsActive)
+                    .Where(t => t.CategoryKey.ToLower() == catKey && t.Id != template.Id && t.IsActive)
                     .ToListAsync();
 
                 foreach (var item in sameCategory)
@@ -1969,16 +1987,33 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves an installed UI template by its unique identifier.
+        /// Retrieves an installed UI template by its unique identifier (Guid string, TemplateKey, or VariantCode).
         /// </summary>
-        /// <param name="id">The unique identifier of the template.</param>
+        /// <param name="id">The unique identifier, template key, or variant code of the template.</param>
         /// <returns>The installed template record.</returns>
-        [HttpGet("templates/{id:guid}")]
-        public async Task<IActionResult> GetTemplateById(Guid id)
+        [HttpGet("templates/{id}")]
+        public async Task<IActionResult> GetTemplateById(string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
+
             try
             {
-                var template = await _context.TenantInstalledTemplates.FindAsync(id);
+                TenantInstalledTemplate? template = null;
+                if (Guid.TryParse(id, out var guidId))
+                {
+                    template = await _context.TenantInstalledTemplates.FindAsync(guidId);
+                }
+
+                if (template == null)
+                {
+                    var normalizedId = id.Trim().ToLowerInvariant();
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.VariantCode.ToLower() == normalizedId || t.TemplateKey.ToLower() == normalizedId);
+                }
+
                 if (template == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("Template not found."));
@@ -1994,17 +2029,34 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Updates an existing installed UI template by its unique identifier.
+        /// Updates an existing installed UI template by its unique identifier (Guid string, TemplateKey, or VariantCode).
         /// </summary>
-        /// <param name="id">The unique identifier of the template to update.</param>
+        /// <param name="id">The unique identifier, template key, or variant code of the template to update.</param>
         /// <param name="request">The updated template content.</param>
         /// <returns>The updated template record.</returns>
-        [HttpPut("templates/{id:guid}")]
-        public async Task<IActionResult> UpdateTemplate(Guid id, [FromBody] CreateCustomTemplateRequest request)
+        [HttpPut("templates/{id}")]
+        public async Task<IActionResult> UpdateTemplate(string id, [FromBody] CreateCustomTemplateRequest request)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
+
             try
             {
-                var template = await _context.TenantInstalledTemplates.FindAsync(id);
+                TenantInstalledTemplate? template = null;
+                if (Guid.TryParse(id, out var guidId))
+                {
+                    template = await _context.TenantInstalledTemplates.FindAsync(guidId);
+                }
+
+                if (template == null)
+                {
+                    var normalizedId = id.Trim().ToLowerInvariant();
+                    template = await _context.TenantInstalledTemplates
+                        .FirstOrDefaultAsync(t => t.VariantCode.ToLower() == normalizedId || t.TemplateKey.ToLower() == normalizedId);
+                }
+
                 if (template == null)
                 {
                     return NotFound(ApiResponse<object>.FailureResponse("Template not found."));
@@ -2017,14 +2069,14 @@ namespace Ozikol_BCC.Api.Controllers
                 if (catKey == "menu")
                 {
                     var existingMenus = await _context.TenantInstalledTemplates
-                        .Where(t => t.CategoryKey.ToLower() == "menu" && t.Id != id && t.IsActive)
+                        .Where(t => t.CategoryKey.ToLower() == "menu" && t.Id != template.Id && t.IsActive)
                         .ToListAsync();
                     foreach (var m in existingMenus) m.IsActive = false;
                 }
                 else if (catKey == "footer")
                 {
                     var existingFooters = await _context.TenantInstalledTemplates
-                        .Where(t => t.CategoryKey.ToLower() == "footer" && t.Id != id && t.IsActive)
+                        .Where(t => t.CategoryKey.ToLower() == "footer" && t.Id != template.Id && t.IsActive)
                         .ToListAsync();
                     foreach (var f in existingFooters) f.IsActive = false;
                 }
@@ -2254,7 +2306,14 @@ ABSOLUTE MANDATORY ARCHITECTURAL RULES:
 1. 100% PRESERVATION: Keep EVERY single existing CSS class, ID, HTML tag, attribute, style, and structure from the RAW HTML CODE above exactly as-is.
 2. ZERO INVENTIONS: DO NOT inject, invent, or append any element (such as sidebars, search boxes, widgets, newsletter boxes, or footer columns) that does not exist in the RAW HTML CODE above.
 3. ZERO GENERIC OVERWRITES: NEVER replace original CSS classes with generic classes (e.g. NEVER use 'oz-blog-section', 'oz-blog-card', 'oz-blog-grid', etc.). Keep the original classes from the RAW HTML CODE verbatim.
-4. REPEATED ITEMS: When repeated cards/columns/slides are found, keep ONLY ONE instance wrapped in the appropriate loop (e.g. {{{{#each Articles}}}} ... {{{{#/each}}}}) and remove the duplicate static cards.
+4. REPEATED ITEMS & SLIDERS:
+   - When repeated cards/columns/slides are found, keep ONLY ONE clean instance wrapped in the appropriate loop (e.g. {{{{#each PageSectionLists}}}} ... {{{{#/each}}}}) and remove the duplicate static cards.
+   - SLIDERS/CAROUSELS CLEANUP (Swiper, Slick, Owl, Splide, Bootstrap, etc.):
+     * Discard all cloned slides (e.g. 'swiper-slide-duplicate', 'slick-cloned', 'cloned').
+     * Strip library runtime state classes from slides (remove 'swiper-slide-active', 'swiper-slide-duplicate', 'swiper-slide-visible', 'slick-active', etc.) while keeping base layout classes ('swiper-slide', 'slide-item', etc.).
+     * Strip library runtime classes from slider containers (remove 'swiper-initialized', 'swiper-pointer-events', 'swiper-watch-progress', 'slick-initialized', etc.) while keeping base classes ('swiper', 'hero-slider', etc.).
+     * Strip runtime inline styles ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1', 'transition-duration: ...') injected by slider engines, while preserving intentional background design styles (e.g. style=""background-image: url('{{{{ ImageUrl }}}}');"").
+     * Strip auto-generated IDs (e.g. id=""swiper-wrapper-..."") and runtime aria attributes (data-swiper-slide-index=""..."", aria-label=""1 / 2"").
 5. ROOT CLASS: Ensure the root container element includes {{{{ CustomClass }}}}.
 6. OUTPUT ONLY: Return ONLY the complete transformed raw HTML. No markdown code fences, no explanations, no <style> tags.";
                 }
@@ -2364,7 +2423,28 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
      * NEVER invent non-existent tokens like Brand.Email, Brand.Address, Brand.Phone, Brand.LogoUrl, or PageCategories.
      * NEVER truncate or stop after closing header tags. Return 100% of the entire HTML document including all sibling drawers and overlays.
 
-2. Body Sections & Content Blocks (Category: body / bodysections / PageSection):
+2. Hero Banners & Image Sliders (Category: hero / slider):
+   - Static Hero: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Lead {{{{ Description }}}}, Image src=""{{{{ ImageUrl }}}}"" or style=""background-image: url('{{{{ ImageUrl }}}}');"".
+   - Primary Action Button: {{{{ #if ButtonText }}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{ /if }}}}.
+   - Secondary Action Button: {{{{ #if SecondaryButtonText }}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{ /if }}}}.
+   - Slider / Carousel Mode (Swiper, Slick, Owl, Splide, Bootstrap Carousel):
+     * Discard infinite-loop cloned slides (e.g. 'swiper-slide-duplicate', 'slick-cloned').
+     * Strip library runtime state classes from slides ('swiper-slide-active', 'swiper-slide-visible', 'slick-active') and containers ('swiper-initialized', 'slick-initialized').
+     * Strip runtime inline styling ('width: ...px', 'transform: translate3d(...)', 'opacity: 0|1') while keeping background-image: url('{{{{ ImageUrl }}}}').
+     * Strip auto-generated IDs and aria attributes (id=""swiper-wrapper-..."", data-swiper-slide-index=""..."").
+     * Wrap repeating slides in:
+       {{{{#each PageSectionLists}}}}
+         <div class=""[clean slide classes]"">
+           {{{{#if ImageUrl}}}}<div class=""item-bg"" style=""background-image: url('{{{{ ImageUrl }}}}');""></div>{{{{/if}}}}
+           {{{{#if MiniTitle}}}}<span class=""[original classes]"">{{{{ MiniTitle }}}}</span>{{{{/if}}}}
+           <h1 class=""[original classes]"">{{{{ Title }}}}</h1>
+           <p class=""[original classes]"">{{{{ Description }}}}</p>
+           {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"">{{{{ ButtonText }}}}</a>{{{{/if}}}}
+           {{{{#if SecondaryButtonText}}}}<a href=""{{{{ SecondaryButtonLink }}}}"">{{{{ SecondaryButtonText }}}}</a>{{{{/if}}}}
+         </div>
+       {{{{/each}}}}
+
+3. Body Sections & Content Blocks (Category: body / bodysections / PageSection):
    - Page Headline: {{{{ Title }}}}
    - Subtitle / Eyebrow Badge: {{{{ MiniTitle }}}}
    - Summary Paragraph: {{{{ Description }}}}
