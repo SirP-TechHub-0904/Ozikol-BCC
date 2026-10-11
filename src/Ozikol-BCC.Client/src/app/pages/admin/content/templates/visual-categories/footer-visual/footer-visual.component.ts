@@ -1115,7 +1115,7 @@ export class FooterVisualComponent implements OnInit {
   cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
 .oz-footer-section {
-  background: #f8fafc;
+  background: #ffffff;
   color: #475569;
   padding: 72px 24px 36px 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -1163,7 +1163,7 @@ export class FooterVisualComponent implements OnInit {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 14px;
@@ -1239,7 +1239,7 @@ export class FooterVisualComponent implements OnInit {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   display: inline-flex;
   align-items: center;
@@ -1681,7 +1681,7 @@ export class FooterVisualComponent implements OnInit {
     this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
 .oz-footer-section {
-  background: #f8fafc;
+  background: #ffffff;
   color: #475569;
   padding: 72px 24px 36px 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -1729,7 +1729,7 @@ export class FooterVisualComponent implements OnInit {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 14px;
@@ -1805,7 +1805,7 @@ export class FooterVisualComponent implements OnInit {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   display: inline-flex;
   align-items: center;
