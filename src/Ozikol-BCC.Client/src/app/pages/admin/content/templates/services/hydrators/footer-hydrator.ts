@@ -28,45 +28,53 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   output = injectDynamicForms(output, ctx);
 
   // 2. Footer Dynamic Category Columns Loop: {{#each FooterCategories}}
-  const rawFooterCategories = ctx.footerCategories || [
-    {
-      title: 'Solutions',
-      sortOrder: 1,
-      pages: [
-        { title: 'Enterprise Cloud', url: '/solutions/cloud', sortOrder: 1 },
-        { title: 'Edge Security', url: '/solutions/security', sortOrder: 2 },
-        { title: 'Pipeline Orchestration', url: '/solutions/pipeline', sortOrder: 3 },
-        { title: 'High Availability', url: '/solutions/ha', sortOrder: 4 }
-      ]
-    },
-    {
-      title: 'Company',
-      sortOrder: 2,
-      pages: [
-        { title: 'About Us', url: '/about', sortOrder: 1 },
-        { title: 'Leadership', url: '/leadership', sortOrder: 2 },
-        { title: 'Careers', url: '/careers', sortOrder: 3 },
-        { title: 'News & Press', url: '/press', sortOrder: 4 }
-      ]
-    },
-    {
-      title: 'Resources',
-      sortOrder: 3,
-      pages: [
-        { title: 'Documentation', url: '/docs', sortOrder: 1 },
-        { title: 'API Reference', url: '/api', sortOrder: 2 },
-        { title: 'Developer Portal', url: '/developers', sortOrder: 3 },
-        { title: 'System Status', url: '/status', sortOrder: 4 }
-      ]
-    }
-  ];
+  const rawFooterCategories = (ctx.footerCategories && ctx.footerCategories.length > 0)
+    ? ctx.footerCategories
+    : ((ctx as any).categories && (ctx as any).categories.length > 0)
+      ? (ctx as any).categories.map((c: any) => ({
+          title: c.title || c.displayTitle || c.name || 'Category',
+          sortOrder: c.sortOrder ?? 1,
+          pages: c.pages || []
+        }))
+      : [
+          {
+            title: 'Solutions',
+            sortOrder: 1,
+            pages: [
+              { title: 'Enterprise Cloud', url: '/solutions/cloud', sortOrder: 1 },
+              { title: 'Edge Security', url: '/solutions/security', sortOrder: 2 },
+              { title: 'Pipeline Orchestration', url: '/solutions/pipeline', sortOrder: 3 },
+              { title: 'High Availability', url: '/solutions/ha', sortOrder: 4 }
+            ]
+          },
+          {
+            title: 'Company',
+            sortOrder: 2,
+            pages: [
+              { title: 'About Us', url: '/about', sortOrder: 1 },
+              { title: 'Leadership', url: '/leadership', sortOrder: 2 },
+              { title: 'Careers', url: '/careers', sortOrder: 3 },
+              { title: 'News & Press', url: '/press', sortOrder: 4 }
+            ]
+          },
+          {
+            title: 'Resources',
+            sortOrder: 3,
+            pages: [
+              { title: 'Documentation', url: '/docs', sortOrder: 1 },
+              { title: 'API Reference', url: '/api', sortOrder: 2 },
+              { title: 'Developer Portal', url: '/developers', sortOrder: 3 },
+              { title: 'System Status', url: '/status', sortOrder: 4 }
+            ]
+          }
+        ];
 
   const footerCategoriesMatcher = (openTag: string) => {
     return /^\{\{#each\s+FooterCategories\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };
 
   output = replaceDepthAwareEach(output, footerCategoriesMatcher, (innerTemplate) => {
-    return rawFooterCategories.map((col, cIdx) => {
+    return rawFooterCategories.map((col: any, cIdx: number) => {
       let colRendered = innerTemplate;
 
       // Replace Column Title & Sort Order
@@ -81,7 +89,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
 
       const childPages = col.pages || [];
       colRendered = replaceDepthAwareEach(colRendered, pagesMatcher, (pageTemplate) => {
-        return childPages.map((page, pIdx) => {
+        return childPages.map((page: any, pIdx: number) => {
           let pageRendered = pageTemplate;
           pageRendered = pageRendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
           pageRendered = pageRendered.replace(/\{\{\s*Url\s*\}\}/gi, page.url || '#');
@@ -109,7 +117,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
       pages = ctx.categoryPages[catName];
     } else {
       // Find inside footerCategories matching by title
-      const foundCol = rawFooterCategories.find(c => c.title.toLowerCase() === (catName || '').toLowerCase());
+      const foundCol = rawFooterCategories.find((c: any) => (c.title || '').toLowerCase() === (catName || '').toLowerCase());
       if (foundCol && foundCol.pages) {
         pages = foundCol.pages;
       } else {
@@ -122,32 +130,63 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
     }
 
     const activePages = pages.filter(p => p.publish !== false).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-    return activePages.map(page => {
+    return activePages.map((page, pIdx) => {
       let rendered = innerTemplate;
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
       rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, page.url || '#');
       rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, page.customClass || '');
+      rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(pIdx));
       return rendered;
     }).join('\n');
   });
 
-  // 4. Tagged Pages Loop: {{#each TaggedPages "..."}}
-  const taggedPagesMatcher = (openTag: string) => {
+  // 4. Tagged Pages Loop: {{#each TaggedPages "..."}}, {{#each TaggedPages}}, and {{#each QuickLinks}}
+  const defaultTaggedPages: Array<{ title: string; url: string; sortOrder?: number; publish?: boolean; customClass?: string }> = [
+    { title: 'Release Notes', url: '/releases' },
+    { title: 'System Status', url: '/status' },
+    { title: 'Security Advisories', url: '/security' },
+    { title: 'Knowledge Base', url: '/kb' }
+  ];
+
+  const taggedPagesParamMatcher = (openTag: string) => {
     const match = openTag.match(/\{\{#each\s+TaggedPages\s+["']([^"']+)["']\}\}/i);
     return match ? { matched: true, params: match[1] } : null;
   };
 
-  output = replaceDepthAwareEach(output, taggedPagesMatcher, (innerTemplate, tagName) => {
-    const pages = (ctx.taggedPages && ctx.taggedPages[tagName]) ? ctx.taggedPages[tagName] : [
-      { title: `${tagName} Item 1`, url: '#' },
-      { title: `${tagName} Item 2`, url: '#' },
-      { title: `${tagName} Item 3`, url: '#' }
-    ];
-    return pages.map(page => {
+  output = replaceDepthAwareEach(output, taggedPagesParamMatcher, (innerTemplate, tagName) => {
+    const key = tagName || 'quicklinks';
+    const pages = (ctx.taggedPages && ctx.taggedPages[key] && ctx.taggedPages[key].length > 0)
+      ? ctx.taggedPages[key]
+      : (ctx.taggedPages && ctx.taggedPages['quicklinks'] && ctx.taggedPages['quicklinks'].length > 0)
+        ? ctx.taggedPages['quicklinks']
+        : defaultTaggedPages;
+
+    return pages.map((page, idx) => {
       let rendered = innerTemplate;
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
       rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, page.url || '#');
       rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, page.customClass || '');
+      rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
+      return rendered;
+    }).join('\n');
+  });
+
+  const taggedPagesBareMatcher = (openTag: string) => {
+    return /^\{\{#each\s+(?:TaggedPages|QuickLinks)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  };
+
+  output = replaceDepthAwareEach(output, taggedPagesBareMatcher, (innerTemplate) => {
+    const firstTag = ctx.taggedPages ? Object.keys(ctx.taggedPages)[0] : null;
+    const pages = (firstTag && ctx.taggedPages?.[firstTag] && ctx.taggedPages[firstTag].length > 0)
+      ? ctx.taggedPages[firstTag]
+      : defaultTaggedPages;
+
+    return pages.map((page, idx) => {
+      let rendered = innerTemplate;
+      rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
+      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, page.url || '#');
+      rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, page.customClass || '');
+      rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
       return rendered;
     }).join('\n');
   });
@@ -248,6 +287,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   output = resolveDepthAwareIf(output, 'Phone', hasPhone);
   output = resolveDepthAwareIf(output, 'Address', hasAddress);
   output = resolveDepthAwareIf(output, 'WorkingHours', hasWorkingHours);
+  output = resolveDepthAwareIf(output, 'Description', Boolean(ctx.description && ctx.description.trim().length > 0));
 
   const currentYear = new Date().getFullYear().toString();
   const brandName = ctx.brandName || 'Apex Global';

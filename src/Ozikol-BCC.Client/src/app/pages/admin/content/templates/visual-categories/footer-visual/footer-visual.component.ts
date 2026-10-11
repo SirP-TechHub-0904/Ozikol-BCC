@@ -311,6 +311,19 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   placeholder="e.g. +1 (800) 555-0199"
                 />
               </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Working Hours</span>
+                  <code [innerText]="'{{ WorkingHours }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.workingHours"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Mon - Fri: 8:00 AM - 6:00 PM"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1007,7 +1020,7 @@ export class FooterVisualComponent implements OnInit {
   <div class="oz-footer-container">
     <!-- Top Row: Brand & Mission, Multi-Column Navigation, and Newsletter -->
     <div class="oz-footer-grid">
-      <!-- Zone 1: Brand, Tagline & Contact Touchpoints -->
+      <!-- Zone 1: Brand, Tagline, Business Hours & Contact Touchpoints -->
       <div class="oz-footer-brand-col">
         <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
           {{#if BrandLogo}}
@@ -1017,6 +1030,16 @@ export class FooterVisualComponent implements OnInit {
           {{/if}}
         </a>
         <p class="oz-footer-desc">{{ Description }}</p>
+
+        {{#if WorkingHours}}
+        <div class="oz-footer-hours">
+          <i class="fa-regular fa-clock"></i>
+          <div class="oz-footer-hours-text">
+            <span class="oz-footer-hours-label">Business Hours</span>
+            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
+          </div>
+        </div>
+        {{/if}}
 
         {{#if HasContactInfo}}
         <div class="oz-footer-contacts">
@@ -1043,7 +1066,7 @@ export class FooterVisualComponent implements OnInit {
         {{/if}}
       </div>
 
-      <!-- Zone 2: Dynamic Multi-Column Navigation -->
+      <!-- Zone 2: Dynamic Multi-Column Navigation (Categories & Tagged Quick Links) -->
       <div class="oz-footer-nav-group">
         {{#each FooterCategories}}
         <div class="oz-footer-col">
@@ -1055,9 +1078,19 @@ export class FooterVisualComponent implements OnInit {
           </ul>
         </div>
         {{/each}}
+
+        <!-- Zone 3: Tagged Pages (e.g. Quick Links) -->
+        <div class="oz-footer-col">
+          <h4 class="oz-footer-col-title">Quick Links</h4>
+          <ul class="oz-footer-links">
+            {{#each TaggedPages "quicklinks"}}
+            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+            {{/each}}
+          </ul>
+        </div>
       </div>
 
-      <!-- Zone 3: Interactive Newsletter Subscription Block -->
+      <!-- Zone 4: Interactive Newsletter Subscription Block -->
       <div class="oz-footer-newsletter-col">
         <h4 class="oz-footer-col-title">Stay Informed</h4>
         <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
@@ -1067,7 +1100,7 @@ export class FooterVisualComponent implements OnInit {
       </div>
     </div>
 
-    <!-- Zone 4: Bottom Compliance Bar & Legal Links -->
+    <!-- Zone 5: Bottom Compliance Bar & Legal Links -->
     <div class="oz-footer-bottom">
       <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
       <div class="oz-footer-legal-links">
@@ -1123,6 +1156,37 @@ export class FooterVisualComponent implements OnInit {
   line-height: 1.65;
   color: #94a3b8;
   margin: 0;
+}
+.oz-footer-hours {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 4px;
+}
+.oz-footer-hours i {
+  color: #38bdf8;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.oz-footer-hours-text {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-hours-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  font-weight: 700;
+}
+.oz-footer-hours-val {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 500;
 }
 .oz-footer-contacts {
   display: flex;
@@ -1230,6 +1294,43 @@ export class FooterVisualComponent implements OnInit {
 .oz-footer-form-wrapper {
   margin-top: 4px;
 }
+.oz-footer-form-wrapper form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.oz-footer-form-wrapper input[type="email"],
+.oz-footer-form-wrapper input[type="text"] {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.oz-footer-form-wrapper input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+.oz-footer-form-wrapper button,
+.oz-footer-form-wrapper input[type="submit"] {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.oz-footer-form-wrapper button:hover,
+.oz-footer-form-wrapper input[type="submit"]:hover {
+  background: #7dd3fc;
+  transform: translateY(-1px);
+}
 .oz-footer-bottom {
   display: flex;
   justify-content: space-between;
@@ -1298,6 +1399,29 @@ export class FooterVisualComponent implements OnInit {
   </ul>
 </div>
 {{/each}}`
+    },
+    {
+      label: 'Tagged Pages (Loop)',
+      token: `<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">Quick Links</h4>
+  <ul class="oz-footer-links">
+    {{#each TaggedPages "quicklinks"}}
+    <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>`
+    },
+    {
+      label: 'Working Hours',
+      token: `{{#if WorkingHours}}
+<div class="oz-footer-hours">
+  <i class="fa-regular fa-clock"></i>
+  <div class="oz-footer-hours-text">
+    <span class="oz-footer-hours-label">Business Hours</span>
+    <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
+  </div>
+</div>
+{{/if}}`
     },
     {
       label: 'Social Media Channels',
@@ -1382,6 +1506,14 @@ export class FooterVisualComponent implements OnInit {
       { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
       { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
     ],
+    taggedPages: {
+      quicklinks: [
+        { title: 'Release Notes', url: '/releases' },
+        { title: 'System Status', url: '/status' },
+        { title: 'Security Advisories', url: '/security' },
+        { title: 'Knowledge Base', url: '/kb' }
+      ]
+    },
     legalPages: [
       { title: 'Privacy Policy', url: '/privacy-policy' },
       { title: 'Terms of Service', url: '/terms-and-conditions' },
@@ -1438,6 +1570,357 @@ export class FooterVisualComponent implements OnInit {
   }
 
   resetBoilerplate(): void {
+    this.htmlTemplate = `<footer class="oz-footer-section {{ CustomClass }}">
+  <div class="oz-footer-container">
+    <div class="oz-footer-grid">
+      <div class="oz-footer-brand-col">
+        <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
+          {{#if BrandLogo}}
+            <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
+          {{else}}
+            <span class="oz-footer-brand-title">{{ BrandName }}</span>
+          {{/if}}
+        </a>
+        <p class="oz-footer-desc">{{ Description }}</p>
+
+        {{#if WorkingHours}}
+        <div class="oz-footer-hours">
+          <i class="fa-regular fa-clock"></i>
+          <div class="oz-footer-hours-text">
+            <span class="oz-footer-hours-label">Business Hours</span>
+            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if HasContactInfo}}
+        <div class="oz-footer-contacts">
+          {{#each ContactItems}}
+          <div class="oz-footer-contact-item">
+            <i class="{{ IconClass }}"></i>
+            <div class="oz-footer-contact-text">
+              <span class="oz-footer-contact-label">{{ Title }}</span>
+              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        {{#if HasSocialLinks}}
+        <div class="oz-footer-socials">
+          {{#each SocialLinks}}
+          <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
+            <i class="{{ IconClass }}"></i>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+
+      <div class="oz-footer-nav-group">
+        {{#each FooterCategories}}
+        <div class="oz-footer-col">
+          <h4 class="oz-footer-col-title">{{ Title }}</h4>
+          <ul class="oz-footer-links">
+            {{#each Pages}}
+            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/each}}
+
+        <div class="oz-footer-col">
+          <h4 class="oz-footer-col-title">Quick Links</h4>
+          <ul class="oz-footer-links">
+            {{#each TaggedPages "quicklinks"}}
+            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+            {{/each}}
+          </ul>
+        </div>
+      </div>
+
+      <div class="oz-footer-newsletter-col">
+        <h4 class="oz-footer-col-title">Stay Informed</h4>
+        <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
+        <div class="oz-footer-form-wrapper">
+          {{ Form "Newsletter_Subscribe" }}
+        </div>
+      </div>
+    </div>
+
+    <div class="oz-footer-bottom">
+      <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
+      <div class="oz-footer-legal-links">
+        {{#each LegalPages}}
+        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</footer>`;
+
+    this.cssStyles = `.oz-footer-section {
+  background: #090d16;
+  color: #94a3b8;
+  padding: 72px 24px 36px 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.oz-footer-container {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.oz-footer-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 2fr 1.1fr;
+  gap: 48px;
+  padding-bottom: 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.oz-footer-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.oz-footer-brand-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.oz-footer-brand-logo {
+  max-height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+.oz-footer-brand-title {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.oz-footer-desc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #94a3b8;
+  margin: 0;
+}
+.oz-footer-hours {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 4px;
+}
+.oz-footer-hours i {
+  color: #38bdf8;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.oz-footer-hours-text {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-hours-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  font-weight: 700;
+}
+.oz-footer-hours-val {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+.oz-footer-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+.oz-footer-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13.5px;
+}
+.oz-footer-contact-item i {
+  color: #38bdf8;
+  font-size: 15px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.oz-footer-contact-text {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-contact-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+.oz-footer-contact-val {
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.oz-footer-contact-val:hover {
+  color: #38bdf8;
+}
+.oz-footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.oz-footer-social-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.oz-footer-social-icon:hover {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+}
+.oz-footer-nav-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 32px;
+}
+.oz-footer-col-title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 0 0 18px 0;
+}
+.oz-footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.oz-footer-link {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+.oz-footer-link:hover {
+  color: #38bdf8;
+  padding-left: 3px;
+}
+.oz-footer-newsletter-col {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-newsletter-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+}
+.oz-footer-form-wrapper {
+  margin-top: 4px;
+}
+.oz-footer-form-wrapper form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.oz-footer-form-wrapper input[type="email"],
+.oz-footer-form-wrapper input[type="text"] {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.oz-footer-form-wrapper input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+.oz-footer-form-wrapper button,
+.oz-footer-form-wrapper input[type="submit"] {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.oz-footer-form-wrapper button:hover,
+.oz-footer-form-wrapper input[type="submit"]:hover {
+  background: #7dd3fc;
+  transform: translateY(-1px);
+}
+.oz-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 32px;
+  font-size: 13.5px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.oz-footer-copyright {
+  margin: 0;
+  color: #64748b;
+}
+.oz-footer-legal-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.oz-footer-legal-link {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.oz-footer-legal-link:hover {
+  color: #ffffff;
+}
+@media (max-width: 1024px) {
+  .oz-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+@media (max-width: 640px) {
+  .oz-footer-nav-group {
+    grid-template-columns: 1fr 1fr;
+  }
+  .oz-footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}`;
     this.toast.info('Boilerplate reset to default footer structure.');
   }
 
@@ -1467,6 +1950,14 @@ export class FooterVisualComponent implements OnInit {
         { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
         { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
       ],
+      taggedPages: {
+        quicklinks: [
+          { title: 'Release Notes', url: '/releases' },
+          { title: 'System Status', url: '/status' },
+          { title: 'Security Advisories', url: '/security' },
+          { title: 'Knowledge Base', url: '/kb' }
+        ]
+      },
       legalPages: [
         { title: 'Privacy Policy', url: '/privacy-policy' },
         { title: 'Terms of Service', url: '/terms-and-conditions' },
