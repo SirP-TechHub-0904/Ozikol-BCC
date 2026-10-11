@@ -12,6 +12,7 @@ import { BodyVisualComponent } from './visual-categories/body-visual/body-visual
 import { FooterVisualComponent } from './visual-categories/footer-visual/footer-visual.component';
 import { BlogVisualComponent } from './visual-categories/blog-visual/blog-visual.component';
 import { BlogDetailVisualComponent } from './visual-categories/blog-detail-visual/blog-detail-visual.component';
+import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
 
 /**
  * Definition descriptor for supported template categories in CMS Template Visual Studio.
@@ -43,7 +44,8 @@ export interface CategoryPresetItem {
     BodyVisualComponent,
     FooterVisualComponent,
     BlogVisualComponent,
-    BlogDetailVisualComponent
+    BlogDetailVisualComponent,
+    UniversalPreviewModalComponent
   ],
   template: `
     <div class="visuals-studio-page">
@@ -195,6 +197,9 @@ export interface CategoryPresetItem {
           (templateSaved)="onTemplateSaved($event)"
         ></app-blog-detail-visual>
       </div>
+
+      <!-- Universal Centralized Template Preview Modal -->
+      <app-universal-preview-modal></app-universal-preview-modal>
     </div>
   `,
   styles: [`
