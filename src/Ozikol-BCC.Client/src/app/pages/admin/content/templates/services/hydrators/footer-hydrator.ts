@@ -1,5 +1,6 @@
 import {
   HydrationContext,
+  resolveDepthAwareIf,
   replaceDepthAwareEach,
   replaceCommonScalars,
   scrubRemainingTokens,
@@ -198,14 +199,18 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
 
   // 7. Brand Identity & Text
   const currentYear = new Date().getFullYear().toString();
-  const brandName = ctx.brandName || 'Acme Global';
-  const logoUrl = ctx.brandLogo || ctx.logoUrl || '';
-  const brandIdentityHtml = (logoUrl && logoUrl.trim().length > 0)
+  const brandName = ctx.brandName || 'Apex Global';
+  const logoUrl = (ctx.brandLogo || ctx.logoUrl || '').trim();
+
+  output = resolveDepthAwareIf(output, 'BrandLogo', Boolean(logoUrl.length > 0));
+  output = resolveDepthAwareIf(output, 'LogoUrl', Boolean(logoUrl.length > 0));
+
+  const brandIdentityHtml = (logoUrl.length > 0)
     ? `<img src="${logoUrl}" alt="${brandName}" class="oz-footer-brand-logo" />`
     : `<span class="oz-footer-brand-text">${brandName}</span>`;
 
   output = output.replace(/\{\{\s*(?:BrandIdentity|BrandLogoOrName)\s*\}\}/gi, brandIdentityHtml);
-  output = output.replace(/\{\{\s*BrandLogo\s*\}\}/gi, logoUrl);
+  output = output.replace(/\{\{\s*(?:BrandLogo|LogoUrl)\s*\}\}/gi, logoUrl);
   output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
   output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
   output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} ${brandName}. All rights reserved.`);
