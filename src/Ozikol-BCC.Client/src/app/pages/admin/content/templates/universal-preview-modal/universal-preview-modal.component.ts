@@ -623,6 +623,7 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'breadcrumb':
       case 'breadcrumbs':
         return {
+          ...custom,
           title: custom.title || p.title || 'Enterprise Architecture & Cloud Solutions',
           pageTitle: custom.pageTitle || custom.title || p.title || 'Enterprise Architecture & Cloud Solutions',
           subTitle: custom.subTitle || custom.miniTitle || 'Discover our cloud migration, microservices, and enterprise consulting frameworks.',
@@ -640,13 +641,14 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'navigation':
       case 'navbar':
         return {
+          ...custom,
           brandName: custom.brandName || 'Apex Global',
           brandLogo: custom.brandLogo || custom.logoUrl || '',
           logoUrl: custom.logoUrl || custom.brandLogo || '',
           homeUrl: custom.homeUrl || '/',
           hasTopBar: custom.hasTopBar ?? true,
           hasContactInfo: custom.hasContactInfo ?? true,
-          email: custom.email || 'support@ozikol.cloud',
+          email: custom.email || 'contact@example.com',
           phone: custom.phone || '+1 (555) 019-2834',
           loginUrl: custom.loginUrl || '/auth/login',
           loginText: custom.loginText || 'Sign In',
@@ -681,6 +683,7 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'hero':
       case 'herosection':
         return {
+          ...custom,
           title: custom.title || p.title || 'Empower Your Global Enterprise with Autonomous Cloud Scale',
           miniTitle: custom.miniTitle || 'ENTERPRISE INFRASTRUCTURE PLATFORM',
           description: custom.description || 'Hardened cloud orchestration, sub-millisecond data replication, and continuous compliance for mission-critical workloads.',
@@ -699,12 +702,15 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
 
       case 'footer':
         return {
-          brandName: custom.brandName || 'Ozikol Technologies',
+          ...custom,
+          brandName: custom.brandName || 'Apex Global',
+          brandLogo: custom.brandLogo || custom.logoUrl || '',
+          logoUrl: custom.logoUrl || custom.brandLogo || '',
           description: custom.description || 'Empowering global workloads with autonomous cloud resilience, sub-millisecond execution, and sovereign tenant governance.',
-          email: custom.email || 'contact@ozikol.cloud',
+          email: custom.email || 'contact@example.com',
           phone: custom.phone || '+1 (555) 019-2834',
-          address: custom.address || 'One Sovereign Way, Suite 400, San Francisco, CA',
-          copyright: custom.copyright || '© 2026 Ozikol Technologies LLC. All rights reserved.',
+          address: custom.address || '1200 Innovation Way, Suite 400',
+          copyright: custom.copyright || '© 2026 Apex Global. All rights reserved.',
           footerCategories: custom.footerCategories || [
             { title: 'Solutions', pages: [{ title: 'Enterprise Cloud', url: '/cloud' }, { title: 'Edge Security', url: '/security' }, { title: 'Database Mesh', url: '/db' }] },
             { title: 'Company', pages: [{ title: 'About Us', url: '/about' }, { title: 'Leadership', url: '/leadership' }, { title: 'Careers', url: '/careers' }] },
@@ -726,6 +732,7 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'bodysections':
       case 'cards':
         return {
+          ...custom,
           title: custom.title || p.title || 'Architected for High-Throughput Performance',
           miniTitle: custom.miniTitle || 'MODULAR CAPABILITIES',
           description: custom.description || 'Engineered from the ground up to support ultra-low latency transaction processing and autonomous distributed compute.',
@@ -740,6 +747,7 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'blog':
       case 'blog_detail':
         return {
+          ...custom,
           title: custom.title || p.title || 'Platform Insights & Architectural Dispatches',
           miniTitle: custom.miniTitle || 'KNOWLEDGE BASE',
           description: custom.description || 'Deep dives, benchmarks, and engineering standards curated by our infrastructure team.',
@@ -762,6 +770,7 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
 
       default:
         return {
+          ...custom,
           title: custom.title || p.title || 'Section Preview',
           miniTitle: custom.miniTitle || 'SECTION',
           description: custom.description || 'Dynamic CMS section component preview.',
