@@ -15,6 +15,8 @@ export class FooterAiRule implements ICategoryAiRule {
     '{{ Description }}',
     '{{#each FooterCategories}}',
     '{{#each Pages}}',
+    '{{#each TaggedPages "quicklinks"}}',
+    '{{#each TaggedPages}}',
     '{{#each LegalPages}}',
     '{{#if HasSocialLinks}}',
     '{{#each SocialLinks}}',
@@ -32,7 +34,7 @@ export class FooterAiRule implements ICategoryAiRule {
 
   buildSurgicalPrompt(context: AiRuleContext): string {
     return `You are a specialized surgical code transformer for Ozikol BCC CMS Footers.
-Your mission is to replace static text, hardcoded column links, legal pages, social icons, newsletter forms, and copyright text with canonical Ozikol Handlebars tokens.
+Your mission is to replace static text, hardcoded column links, tagged quick links, legal pages, social icons, newsletter forms, and copyright text with canonical Ozikol Handlebars tokens.
 
 TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
 1. Brand Identity & Mission:
@@ -47,18 +49,27 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
      (or use {{ BrandIdentity }})
    - Tagline / Brief Description: {{ Description }}
 
-2. Navigation Columns (Dynamic Group Loops):
-   Look for multi-column link groupings (e.g. Products, Company, Resources, Solutions). Keep ONE dynamic column instance inside:
-   {{#each FooterCategories}}
+2. Navigation Columns (Dynamic Group Loops) & Tagged Pages:
+   - Dynamic Categories Loop: Keep ONE dynamic column instance inside:
+     {{#each FooterCategories}}
+       <div class="[original column classes]">
+         <h4 class="[original title classes]">{{ Title }}</h4>
+         <ul class="[original list classes]">
+           {{#each Pages}}
+             <li><a href="{{ Url }}" class="[original link classes]">{{ Title }}</a></li>
+           {{/each}}
+         </ul>
+       </div>
+     {{/each}}
+   - Tagged Quick Links Column: If there is an independent "Quick Links" or "Helpful Links" column:
      <div class="[original column classes]">
-       <h4 class="[original title classes]">{{ Title }}</h4>
+       <h4 class="[original title classes]">Quick Links</h4>
        <ul class="[original list classes]">
-         {{#each Pages}}
+         {{#each TaggedPages "quicklinks"}}
            <li><a href="{{ Url }}" class="[original link classes]">{{ Title }}</a></li>
          {{/each}}
        </ul>
      </div>
-   {{/each}}
 
 3. Legal & Compliance Policy Links:
    Inside the legal strip, bottom bar, or policy links container:

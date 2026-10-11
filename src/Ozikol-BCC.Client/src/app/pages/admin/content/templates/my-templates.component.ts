@@ -563,6 +563,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       displayTitle?: string;
       pages: Array<{ title: string; url: string }>;
     }>;
+    footerCategories?: Array<{
+      title: string;
+      pages: Array<{ title: string; url: string }>;
+    }>;
+    taggedPages?: Record<string, Array<{ title: string; url: string }>>;
     legalPages: Array<{ title: string; url: string }>;
     socialLinks?: Array<{ platform: string; title?: string; url: string; icon?: string; iconClass?: string; customClass?: string }>;
     contactItems?: Array<{ type?: string; channelType?: string; platform?: string; title?: string; description?: string; value?: string; content?: string; url?: string; icon?: string; iconClass?: string; isDefault?: boolean; customClass?: string }>;
@@ -596,6 +601,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         ]
       }
     ],
+    footerCategories: [
+      {
+        title: 'Solutions',
+        pages: [
+          { title: 'Strategic Consulting', url: '/strategic-advisory' },
+          { title: 'Systems Modernization', url: '/systems-modernization' },
+          { title: 'Performance & Scale', url: '/performance-scale' },
+          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
+        ]
+      },
+      {
+        title: 'Company',
+        pages: [
+          { title: 'About Us', url: '/about' },
+          { title: 'Request a Service', url: '/request-service' },
+          { title: 'Contact Us', url: '/contact' }
+        ]
+      }
+    ],
+    taggedPages: {
+      quicklinks: [
+        { title: 'Release Notes', url: '/releases' },
+        { title: 'System Status', url: '/status' },
+        { title: 'Security Advisories', url: '/security' },
+        { title: 'Knowledge Base', url: '/kb' }
+      ]
+    },
     legalPages: [
       { title: 'Privacy Policy', url: '/privacy-policy' },
       { title: 'Terms & Conditions', url: '/terms-and-conditions' },
