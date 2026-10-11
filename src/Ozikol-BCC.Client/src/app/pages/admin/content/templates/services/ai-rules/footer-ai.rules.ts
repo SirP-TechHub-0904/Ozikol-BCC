@@ -29,6 +29,7 @@ export class FooterAiRule implements ICategoryAiRule {
     '{{ Phone }}',
     '{{ Email }}',
     '{{ WorkingHours }}',
+    '{{ ContactUrl }}',
     '{{ CustomClass }}'
   ];
 
@@ -92,8 +93,20 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
 5. Newsletter Form Embed:
    Replace static subscription input boxes / forms with {{ Form "Newsletter_Subscribe" }}.
 
-6. Contact Touchpoints & Address:
-   - Structured Contact Items: If contact details exist as repeated cards, list items, or rows:
+6. Contact Touchpoints, Business Hours & Schedule:
+   - Dedicated Opening Hours / Business Hours:
+     When a widget or column displays opening/working hours (e.g. titled "Opening Hours" or "Business Hours"):
+     {{#if WorkingHours}}
+       <div class="[original schedule container classes]">
+         <div class="[original schedule item classes]">
+           <span>Hours</span>
+           <span>{{ WorkingHours }}</span>
+         </div>
+       </div>
+     {{/if}}
+     (Do NOT wrap generic ContactItems like Phone/Email under an "Opening Hours" widget. Reserve WorkingHours specifically for business schedule).
+   - Structured Contact Items:
+     If general contact details exist as repeated cards, list items, or contact info rows (Phone, Email, Headquarters Address):
      {{#if HasContactInfo}}
        <div class="[original contact container classes]">
          {{#each ContactItems}}
@@ -105,6 +118,8 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
          {{/each}}
        </div>
      {{/if}}
+   - Contact CTA Action Button:
+     If a "Contact Us" button or link exists: <a href="{{ ContactUrl }}" class="[original classes]">[keep original button content]</a>
    - Simple Text / Links:
      - Phone: replace with {{ Phone }} or <a href="tel:{{ Phone }}">{{ Phone }}</a>
      - Email: replace with {{ Email }} or <a href="mailto:{{ Email }}">{{ Email }}</a>
