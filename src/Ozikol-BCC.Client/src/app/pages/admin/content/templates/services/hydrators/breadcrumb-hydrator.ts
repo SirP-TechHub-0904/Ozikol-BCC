@@ -42,8 +42,11 @@ export function hydrateBreadcrumb(template: string, ctx: HydrationContext): stri
       let rendered = innerTemplate;
       const isLast = idx === trail.length - 1;
       const isActive = Boolean(crumb.isActive || isLast);
+      const rawUrl = crumb.url != null ? String(crumb.url).trim() : '';
+      const hasUrl = Boolean(rawUrl.length > 0 && rawUrl !== '#');
 
-      // Conditionals: {{#if IsActive}}, {{#if IsLast}}, {{#unless IsLast}}
+      // Conditionals: {{#if Url}}, {{#if IsActive}}, {{#if IsLast}}, {{#unless IsLast}}
+      rendered = resolveDepthAwareIf(rendered, 'Url', hasUrl);
       rendered = resolveDepthAwareIf(rendered, 'IsActive', isActive);
       rendered = resolveDepthAwareIf(rendered, 'IsLast', isLast);
 
@@ -53,9 +56,8 @@ export function hydrateBreadcrumb(template: string, ctx: HydrationContext): stri
         !isLast ? '$1' : ''
       );
 
-      // Child Tokens
-      rendered = rendered.replace(/\{\{\s*(?:Title|Label|Name)\s*\}\}/gi, crumb.title || '');
-      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, crumb.url || '#');
+      rendered = rendered.replace(/\{\{\s*(?:Title|Label|Name)\s*\}\}/gi, crumb.title || (crumb as any).label || (crumb as any).name || '');
+      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, rawUrl || '#');
       rendered = rendered.replace(/\{\{\s*IsActive\s*\}\}/gi, isActive ? 'active' : '');
       rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, crumb.customClass || '');
 

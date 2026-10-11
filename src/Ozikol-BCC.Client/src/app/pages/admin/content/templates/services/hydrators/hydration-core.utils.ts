@@ -389,8 +389,8 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
 export function replaceCommonScalars(template: string, ctx: HydrationContext): string {
   let output = template;
 
-  output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Acme Global');
-  output = output.replace(/\{\{\s*BrandLogo\s*\}\}/gi, ctx.brandLogo || '');
+  output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Apex Global');
+  output = output.replace(/\{\{\s*(?:BrandLogo|LogoUrl)\s*\}\}/gi, ctx.brandLogo || ctx.logoUrl || '');
   output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${new Date().getFullYear()} Acme Global Corp.`);
   output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || '');
   output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '');

@@ -614,9 +614,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     dropdowns: Array<{ title: string; pages: Array<{ title: string; url: string }> }>;
     menuCtaButtons: Array<{ title: string; url: string; buttonClass?: string; customClass?: string }>;
   } = {
-    brandName: 'Ozikol Cloud',
-    brandLogo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
-    logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+    brandName: 'Apex Global',
+    brandLogo: '',
+    logoUrl: '',
     homeUrl: '/',
     customClass: '',
     hasTopBar: true,
