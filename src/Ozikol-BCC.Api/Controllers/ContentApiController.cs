@@ -2521,6 +2521,15 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
          <a href=""{{{{ Url }}}}"" title=""{{{{ Platform }}}}"" class=""[original link classes]"" target=""_blank"" rel=""noopener""><i class=""{{{{ IconClass }}}}""></i></a>
        {{{{/each}}}}
      {{{{/if}}}}
+   - Dedicated Opening Hours / Schedule Widget:
+     When a widget or column displays opening/working hours:
+     {{{{#if WorkingHours}}}}
+       <div class=""[original schedule item classes]"">
+         <span>Hours</span>
+         <span>{{{{ WorkingHours }}}}</span>
+       </div>
+     {{{{/if}}}}
+     (Do NOT wrap generic ContactItems under an Opening Hours title).
    - Structured Contact Items Loop:
      {{{{#if HasContactInfo}}}}
        {{{{#each ContactItems}}}}
@@ -2531,7 +2540,8 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
          </div>
        {{{{/each}}}}
      {{{{/if}}}}
-   - Simple Text Touchpoints: {{{{ Email }}}}, {{{{ Phone }}}}, {{{{ Address }}}}, {{{{ WorkingHours }}}}
+   - Contact CTA Action Button: <a href=""{{{{ ContactUrl }}}}"" class=""[original classes]"">[button text]</a>
+   - Simple Text Touchpoints: {{{{ Email }}}}, {{{{ Phone }}}}, {{{{ Address }}}}, {{{{ WorkingHours }}}}, {{{{ ContactUrl }}}}
    - Newsletter Subscription Form: {{{{ Form ""Newsletter_Subscribe"" }}}}
    - Copyright Notice: © {{{{ Year }}}} {{{{ BrandName }}}}. All rights reserved. (or {{{{ Copyright }}}})
    - Root Container Class: {{{{ CustomClass }}}}
