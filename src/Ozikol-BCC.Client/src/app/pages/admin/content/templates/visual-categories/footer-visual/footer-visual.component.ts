@@ -197,7 +197,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </button>
           </div>
 
-          <!-- Mock Data Sub-Tabs: Footer Columns (Default) vs Brand Info -->
+          <!-- Mock Data Sub-Tabs: Navigation Columns, Quick & Legal Links, Brand Identity, Contact & Social -->
           <div class="mock-tabs-nav">
             <button
               type="button"
@@ -206,8 +206,18 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               (click)="activeMockTab = 'columns'"
             >
               <span class="material-symbols-outlined icon-micro">view_column</span>
-              <span>Footer Columns &amp; Links</span>
-              <span class="mock-tab-badge">{{ (sampleContent.footerCategories?.length || 3) }}</span>
+              <span>Navigation Columns &amp; Links</span>
+              <span class="mock-tab-badge">{{ (sampleContent.footerCategories?.length || 0) }}</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'links'"
+              (click)="activeMockTab = 'links'"
+            >
+              <span class="material-symbols-outlined icon-micro">link</span>
+              <span>Quick &amp; Legal Links</span>
+              <span class="mock-tab-badge">{{ (sampleContent.taggedPages?.quicklinks?.length || 0) + (sampleContent.legalPages?.length || 0) }}</span>
             </button>
             <button
               type="button"
@@ -216,16 +226,26 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               (click)="activeMockTab = 'brand'"
             >
               <span class="material-symbols-outlined icon-micro">corporate_fare</span>
-              <span>Brand &amp; Social Info</span>
+              <span>Brand &amp; Identity</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'contact'"
+              (click)="activeMockTab = 'contact'"
+            >
+              <span class="material-symbols-outlined icon-micro">contact_phone</span>
+              <span>Contact &amp; Social</span>
+              <span class="mock-tab-badge">{{ (sampleContent.contactItems?.length || 0) + (sampleContent.socialLinks?.length || 0) }}</span>
             </button>
           </div>
 
-          <!-- Sub-Tab 1: Footer Columns (Default) -->
+          <!-- Sub-Tab 1: Navigation Columns & Nested Links (Default) -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'columns'">
             <div class="nav-tree-container">
               <div class="nav-parent-card" *ngFor="let col of (sampleContent.footerCategories || []); let cIdx = index">
                 <div class="nav-parent-header">
-                  <span class="material-symbols-outlined nav-item-icon">folder</span>
+                  <span class="material-symbols-outlined nav-item-icon">folder_open</span>
                   <input
                     type="text"
                     [(ngModel)]="col.title"
@@ -236,7 +256,34 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                 </div>
+
+                <!-- Nested Column Links (Pages) -->
+                <div class="nav-subpages-list">
+                  <div class="nav-subpage-item" *ngFor="let page of (col.pages || []); let pIdx = index">
+                    <span class="material-symbols-outlined sub-icon">subdirectory_arrow_right</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="page.title"
+                      class="form-control inspector-input sub-title-input"
+                      placeholder="e.g. Page Title"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="page.url"
+                      class="form-control inspector-input sub-url-input"
+                      placeholder="e.g. /page-url"
+                    />
+                    <button type="button" class="btn-remove-sub" (click)="removeFooterColumnPage(col, pIdx)" title="Remove link">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                  <button type="button" class="btn-add-subpage" (click)="addFooterColumnPage(col)">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Add Link to {{ col.title || 'Column' }}</span>
+                  </button>
+                </div>
               </div>
+
               <button type="button" class="btn-add-item" (click)="addFooterCategory()">
                 <span class="material-symbols-outlined">add</span>
                 <span>Add Navigation Column</span>
@@ -244,7 +291,78 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </div>
           </div>
 
-          <!-- Sub-Tab 2: Brand & Social Info -->
+          <!-- Sub-Tab 2: Quick Links & Legal Compliance Pages -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'links'">
+            <!-- Quick Links (Tagged Pages) Section -->
+            <div class="inspector-section-block">
+              <div class="section-block-header">
+                <div>
+                  <h4 class="section-block-title">Quick Links (Tagged Pages)</h4>
+                  <p class="section-block-desc">Mock pages rendered by <code [innerText]="'{{#each TaggedPages &quot;quicklinks&quot;}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-subpage" (click)="addQuickLink()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Quick Link</span>
+                </button>
+              </div>
+              <div class="repeater-simple-list">
+                <div class="nav-subpage-item" *ngFor="let qk of (sampleContent.taggedPages?.quicklinks || []); let qIdx = index">
+                  <span class="material-symbols-outlined sub-icon">bookmark</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="qk.title"
+                    class="form-control inspector-input sub-title-input"
+                    placeholder="e.g. Link Title"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="qk.url"
+                    class="form-control inspector-input sub-url-input"
+                    placeholder="e.g. /url"
+                  />
+                  <button type="button" class="btn-remove-sub" (click)="removeQuickLink(qIdx)" title="Remove Quick Link">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Legal Compliance Pages Section -->
+            <div class="inspector-section-block" style="margin-top: 24px;">
+              <div class="section-block-header">
+                <div>
+                  <h4 class="section-block-title">Legal &amp; Compliance Pages</h4>
+                  <p class="section-block-desc">Mock policy links rendered by <code [innerText]="'{{#each LegalPages}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-subpage" (click)="addLegalPage()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Legal Policy</span>
+                </button>
+              </div>
+              <div class="repeater-simple-list">
+                <div class="nav-subpage-item" *ngFor="let lp of (sampleContent.legalPages || []); let lIdx = index">
+                  <span class="material-symbols-outlined sub-icon">gavel</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="lp.title"
+                    class="form-control inspector-input sub-title-input"
+                    placeholder="e.g. Privacy Policy"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="lp.url"
+                    class="form-control inspector-input sub-url-input"
+                    placeholder="e.g. /privacy-policy"
+                  />
+                  <button type="button" class="btn-remove-sub" (click)="removeLegalPage(lIdx)" title="Remove Policy">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Brand Identity & Narrative -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'brand'">
             <div class="inspector-form-grid-2">
               <div class="form-group">
@@ -257,6 +375,32 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   [(ngModel)]="sampleContent.brandName"
                   class="form-control inspector-input"
                   placeholder="e.g. Acme Global"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Brand Logo URL</span>
+                  <code [innerText]="'{{ BrandLogo }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.brandLogo"
+                  class="form-control inspector-input"
+                  placeholder="e.g. https://... or leave blank for text logo"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Home Page URL</span>
+                  <code [innerText]="'{{ HomeUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.homeUrl"
+                  class="form-control inspector-input"
+                  placeholder="e.g. /"
                 />
               </div>
 
@@ -285,6 +429,24 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   placeholder="e.g. Autonomous cloud management..."
                 ></textarea>
               </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Contact Touchpoints & Social Media -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'contact'">
+            <div class="inspector-form-grid-2">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Working / Business Hours</span>
+                  <code [innerText]="'{{ WorkingHours }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.workingHours"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Mon - Fri: 8:00 AM - 6:00 PM"
+                />
+              </div>
 
               <div class="form-group">
                 <label class="field-label">
@@ -312,17 +474,107 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                 />
               </div>
 
-              <div class="form-group col-span-2">
+              <div class="form-group">
                 <label class="field-label">
-                  <span>Working Hours</span>
-                  <code [innerText]="'{{ WorkingHours }}'"></code>
+                  <span>Corporate Address</span>
+                  <code [innerText]="'{{ Address }}'"></code>
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.workingHours"
+                  [(ngModel)]="sampleContent.address"
                   class="form-control inspector-input"
-                  placeholder="e.g. Mon - Fri: 8:00 AM - 6:00 PM"
+                  placeholder="e.g. 100 Enterprise Boulevard, Suite 500"
                 />
+              </div>
+            </div>
+
+            <!-- Structured Contact Items -->
+            <div class="inspector-section-block" style="margin-top: 24px;">
+              <div class="section-block-header">
+                <div>
+                  <h4 class="section-block-title">Contact Channels &amp; Cards ({{ (sampleContent.contactItems?.length || 0) }})</h4>
+                  <p class="section-block-desc">Mock channels rendered by <code [innerText]="'{{#each ContactItems}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-subpage" (click)="addContactItem()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Contact Channel</span>
+                </button>
+              </div>
+              <div class="repeater-simple-list">
+                <div class="contact-channel-card" *ngFor="let item of (sampleContent.contactItems || []); let cIdx = index">
+                  <div class="contact-channel-grid">
+                    <input
+                      type="text"
+                      [(ngModel)]="item.title"
+                      class="form-control inspector-input"
+                      placeholder="Title (e.g. Call Us)"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.content"
+                      (ngModelChange)="item.value = item.content"
+                      class="form-control inspector-input"
+                      placeholder="Content / Value"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.url"
+                      class="form-control inspector-input"
+                      placeholder="Link (e.g. tel:... or mailto:...)"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.iconClass"
+                      class="form-control inspector-input"
+                      placeholder="Icon (e.g. fa-solid fa-phone)"
+                    />
+                    <button type="button" class="btn-remove-sub" (click)="removeContactItem(cIdx)" title="Remove Channel">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Social Media Channels -->
+            <div class="inspector-section-block" style="margin-top: 24px;">
+              <div class="section-block-header">
+                <div>
+                  <h4 class="section-block-title">Social Media Links ({{ (sampleContent.socialLinks?.length || 0) }})</h4>
+                  <p class="section-block-desc">Mock channels rendered by <code [innerText]="'{{#each SocialLinks}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-subpage" (click)="addSocialLink()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Social Channel</span>
+                </button>
+              </div>
+              <div class="repeater-simple-list">
+                <div class="social-channel-card" *ngFor="let soc of (sampleContent.socialLinks || []); let sIdx = index">
+                  <div class="social-channel-grid">
+                    <input
+                      type="text"
+                      [(ngModel)]="soc.platform"
+                      (ngModelChange)="soc.title = soc.platform"
+                      class="form-control inspector-input"
+                      placeholder="Platform (e.g. Twitter / X)"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="soc.url"
+                      class="form-control inspector-input"
+                      placeholder="Profile URL"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="soc.iconClass"
+                      class="form-control inspector-input"
+                      placeholder="Icon (e.g. fa-brands fa-x-twitter)"
+                    />
+                    <button type="button" class="btn-remove-sub" (click)="removeSocialLink(sIdx)" title="Remove Social Link">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -754,6 +1006,157 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
 
     .item-title-input { flex: 3; }
 
+    /* Subpages / Nested Column Links */
+    .nav-subpages-list {
+      margin-left: 28px;
+      margin-top: 10px;
+      padding-left: 12px;
+      border-left: 2px dashed #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-subpage-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+    }
+
+    .sub-icon {
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .sub-title-input {
+      flex: 2;
+      height: 32px;
+      font-size: 13px;
+    }
+
+    .sub-url-input {
+      flex: 3;
+      height: 32px;
+      font-size: 13px;
+    }
+
+    .btn-remove-sub {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: 1px solid #fee2e2;
+      border-radius: 4px;
+      background: #fef2f2;
+      color: #ef4444;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-remove-sub:hover {
+      background: #fee2e2;
+    }
+
+    .btn-remove-sub .material-symbols-outlined {
+      font-size: 15px;
+    }
+
+    .btn-add-subpage {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px dashed #94a3b8;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #0050e5;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      width: fit-content;
+      transition: all 0.15s ease;
+    }
+
+    .btn-add-subpage:hover {
+      border-color: #0050e5;
+      background: #eff6ff;
+    }
+
+    .btn-add-subpage .material-symbols-outlined {
+      font-size: 15px;
+    }
+
+    .inspector-section-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .section-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-block-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .section-block-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+
+    .section-block-desc code {
+      background: #e2e8f0;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #0050e5;
+    }
+
+    .repeater-simple-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .contact-channel-card, .social-channel-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .contact-channel-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 2fr 2fr 1.5fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .social-channel-grid {
+      display: grid;
+      grid-template-columns: 2fr 3fr 2fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
     .textarea-short {
       resize: vertical;
       font-family: inherit;
@@ -1014,7 +1417,7 @@ export class FooterVisualComponent implements OnInit {
 
   // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'columns' is default)
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
-  activeMockTab: 'columns' | 'brand' = 'columns';
+  activeMockTab: 'columns' | 'links' | 'brand' | 'contact' = 'columns';
 
   htmlTemplate: string = `<footer class="oz-footer-section {{ CustomClass }}">
   <div class="oz-footer-container">
@@ -1127,8 +1530,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-grid {
   display: grid;
-  grid-template-columns: 1.3fr 2fr 1.1fr;
-  gap: 48px;
+  grid-template-columns: 1.2fr 2.6fr 1.2fr;
+  gap: 40px;
   padding-bottom: 56px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -1264,8 +1667,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-nav-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
 .oz-footer-col-title {
   color: #0f172a;
@@ -1693,8 +2096,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-grid {
   display: grid;
-  grid-template-columns: 1.3fr 2fr 1.1fr;
-  gap: 48px;
+  grid-template-columns: 1.2fr 2.6fr 1.2fr;
+  gap: 40px;
   padding-bottom: 56px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -1830,8 +2233,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-nav-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
 .oz-footer-col-title {
   color: #0f172a;
@@ -2044,6 +2447,89 @@ export class FooterVisualComponent implements OnInit {
   removeFooterCategory(index: number): void {
     if (this.sampleContent.footerCategories && this.sampleContent.footerCategories.length > index) {
       this.sampleContent.footerCategories.splice(index, 1);
+    }
+  }
+
+  addFooterColumnPage(col: any): void {
+    if (!col.pages) col.pages = [];
+    col.pages.push({
+      title: 'New Page',
+      url: '/new-page'
+    });
+  }
+
+  removeFooterColumnPage(col: any, index: number): void {
+    if (col.pages && col.pages.length > index) {
+      col.pages.splice(index, 1);
+    }
+  }
+
+  addQuickLink(): void {
+    if (!this.sampleContent.taggedPages) this.sampleContent.taggedPages = {};
+    if (!this.sampleContent.taggedPages.quicklinks) this.sampleContent.taggedPages.quicklinks = [];
+    this.sampleContent.taggedPages.quicklinks.push({
+      title: 'New Quick Link',
+      url: '/quick-link'
+    });
+  }
+
+  removeQuickLink(index: number): void {
+    if (this.sampleContent.taggedPages?.quicklinks && this.sampleContent.taggedPages.quicklinks.length > index) {
+      this.sampleContent.taggedPages.quicklinks.splice(index, 1);
+    }
+  }
+
+  addLegalPage(): void {
+    if (!this.sampleContent.legalPages) this.sampleContent.legalPages = [];
+    this.sampleContent.legalPages.push({
+      title: 'New Legal Policy',
+      url: '/privacy-policy'
+    });
+  }
+
+  removeLegalPage(index: number): void {
+    if (this.sampleContent.legalPages && this.sampleContent.legalPages.length > index) {
+      this.sampleContent.legalPages.splice(index, 1);
+    }
+  }
+
+  addContactItem(): void {
+    if (!this.sampleContent.contactItems) this.sampleContent.contactItems = [];
+    this.sampleContent.contactItems.push({
+      type: 'phone',
+      channelType: 'Phone',
+      platform: 'Support',
+      title: 'Contact Channel',
+      description: 'Support Line',
+      value: '+1 (555) 019-2834',
+      content: '+1 (555) 019-2834',
+      url: 'tel:+15550192834',
+      icon: 'call',
+      iconClass: 'fa-solid fa-phone',
+      isDefault: false
+    });
+  }
+
+  removeContactItem(index: number): void {
+    if (this.sampleContent.contactItems && this.sampleContent.contactItems.length > index) {
+      this.sampleContent.contactItems.splice(index, 1);
+    }
+  }
+
+  addSocialLink(): void {
+    if (!this.sampleContent.socialLinks) this.sampleContent.socialLinks = [];
+    this.sampleContent.socialLinks.push({
+      platform: 'Platform',
+      title: 'Platform',
+      url: 'https://example.com',
+      icon: 'share',
+      iconClass: 'fa-solid fa-share-nodes'
+    });
+  }
+
+  removeSocialLink(index: number): void {
+    if (this.sampleContent.socialLinks && this.sampleContent.socialLinks.length > index) {
+      this.sampleContent.socialLinks.splice(index, 1);
     }
   }
 

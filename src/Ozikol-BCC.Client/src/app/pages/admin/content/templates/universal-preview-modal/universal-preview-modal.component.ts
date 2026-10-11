@@ -744,7 +744,15 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
             { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
             { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
             { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '1200 Innovation Way, Suite 400', content: '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
-          ]
+          ],
+          taggedPages: custom.taggedPages || {
+            quicklinks: [
+              { title: 'Release Notes', url: '/releases' },
+              { title: 'System Status', url: '/status' },
+              { title: 'Trust & Compliance', url: '/compliance' },
+              { title: 'Help Center', url: '/help' }
+            ]
+          }
         };
 
       case 'body':
