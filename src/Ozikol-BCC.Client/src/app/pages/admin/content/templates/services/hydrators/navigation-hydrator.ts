@@ -32,18 +32,22 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   output = resolveDepthAwareIf(output, 'HasNavItemsLast', lastZone.length > 0);
   output = resolveDepthAwareIf(output, 'HasNavItems', activeMenus.length > 0);
 
-  // 2. TopBar & Contact Info Conditionals
+  // 2. TopBar, Contact Info & Social Media Conditionals
   const hasEmail = Boolean(ctx.email && ctx.email.trim().length > 0);
   const hasPhone = Boolean(ctx.phone && ctx.phone.trim().length > 0);
   const hasAddress = Boolean(ctx.address && ctx.address.trim().length > 0);
-  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress));
-  const hasTopBar = Boolean(ctx.hasTopBar ?? (hasContact || (ctx.topBarPages && ctx.topBarPages.length > 0)));
+  const hasWorkingHours = Boolean(ctx.workingHours && ctx.workingHours.trim().length > 0);
+  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress || (ctx.contactItems && ctx.contactItems.length > 0)));
+  const hasSocial = Boolean(ctx.hasSocialLinks ?? ((ctx.socialLinks && ctx.socialLinks.length > 0) || true));
+  const hasTopBar = Boolean(ctx.hasTopBar ?? (hasContact || hasSocial || (ctx.topBarPages && ctx.topBarPages.length > 0)));
 
   output = resolveDepthAwareIf(output, 'HasTopBar', hasTopBar);
   output = resolveDepthAwareIf(output, 'HasContactInfo', hasContact);
+  output = resolveDepthAwareIf(output, 'HasSocialLinks', hasSocial);
   output = resolveDepthAwareIf(output, 'Email', hasEmail);
   output = resolveDepthAwareIf(output, 'Phone', hasPhone);
   output = resolveDepthAwareIf(output, 'Address', hasAddress);
+  output = resolveDepthAwareIf(output, 'WorkingHours', hasWorkingHours);
 
   output = resolveDepthAwareIf(output, 'ActivateLoginInMenu', Boolean(ctx.activateLoginInMenu));
   output = resolveDepthAwareIf(output, 'LoginUrl', Boolean(ctx.loginUrl || ctx.activateLoginInMenu));
@@ -118,6 +122,66 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
     }).join('\n');
   });
 
+  // 8b. Social Media Channels Loop: {{#each SocialLinks}}
+  const rawSocials = (ctx.socialLinks && ctx.socialLinks.length > 0) ? ctx.socialLinks : [
+    { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+    { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
+    { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+    { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+  ];
+
+  const socialMatcher = (openTag: string) => {
+    return /^\{\{#each\s+SocialLinks\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  };
+
+  output = replaceDepthAwareEach(output, socialMatcher, (innerTemplate) => {
+    return rawSocials.map(soc => {
+      let rendered = innerTemplate;
+      const iconCls = soc.iconClass || resolveDefaultIconClass(soc.platform || '');
+      rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, soc.platform || '');
+      rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, soc.title || soc.platform || '');
+      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, soc.url || '#');
+      rendered = rendered.replace(/\{\{\s*Icon\s*\}\}/gi, soc.icon || 'public');
+      rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, iconCls);
+      rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, soc.customClass || '');
+      return rendered;
+    }).join('\n');
+  });
+
+  // 8c. Structured Contact Items Loops: {{#each ContactItems}}, {{#each ContactChannels}}
+  const rawContactItems = (ctx.contactItems && ctx.contactItems.length > 0) ? ctx.contactItems : [
+    { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: ctx.phone || '+1 (555) 019-2834', content: ctx.phone || '+1 (555) 019-2834', url: `tel:${(ctx.phone || '+15550192834').replace(/[^0-9+]/g, '')}`, icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+    { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: ctx.email || 'support@ozikol.cloud', content: ctx.email || 'support@ozikol.cloud', url: `mailto:${ctx.email || 'support@ozikol.cloud'}`, icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+    { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: ctx.address || '1200 Innovation Way, Suite 400', content: ctx.address || '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+  ];
+
+  const contactItemsMatcher = (openTag: string) => {
+    return /^\{\{#each\s+(?:ContactItems|ContactChannels)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  };
+
+  output = replaceDepthAwareEach(output, contactItemsMatcher, (innerTemplate) => {
+    return renderContactItemsList(rawContactItems, innerTemplate);
+  });
+
+  // Filtered phone, email, address loops
+  const phoneMatcher = (openTag: string) => /^\{\{#each\s+(?:ContactPhones|Phones)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  output = replaceDepthAwareEach(output, phoneMatcher, (innerTemplate) => {
+    const phones = rawContactItems.filter(c => (c.type || c.channelType || '').toLowerCase() === 'phone');
+    return renderContactItemsList(phones, innerTemplate);
+  });
+
+  const emailMatcher = (openTag: string) => /^\{\{#each\s+(?:ContactEmails|Emails)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  output = replaceDepthAwareEach(output, emailMatcher, (innerTemplate) => {
+    const emails = rawContactItems.filter(c => (c.type || c.channelType || '').toLowerCase() === 'email');
+    return renderContactItemsList(emails, innerTemplate);
+  });
+
+  const addressMatcher = (openTag: string) => /^\{\{#each\s+(?:ContactAddresses|Addresses)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  output = replaceDepthAwareEach(output, addressMatcher, (innerTemplate) => {
+    const addresses = rawContactItems.filter(c => (c.type || c.channelType || '').toLowerCase() === 'address');
+    return renderContactItemsList(addresses, innerTemplate);
+  });
+
   // 9. Replace Shared Brand Scalars & Section CustomClass
   output = replaceCommonScalars(output, ctx);
 
@@ -125,6 +189,50 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   output = scrubRemainingTokens(output);
 
   return output;
+}
+
+/**
+ * Helper to render individual contact items in loops.
+ */
+function renderContactItemsList(items: any[], innerTemplate: string): string {
+  if (!items || items.length === 0) return '';
+  return items.map((item, idx) => {
+    let rendered = innerTemplate;
+    const itemValue = item.value || item.content || '';
+    const itemUrl = item.url || (item.type === 'phone' ? `tel:${itemValue.replace(/[^0-9+]/g, '')}` : (item.type === 'email' ? `mailto:${itemValue}` : '#'));
+    const iconCls = item.iconClass || resolveDefaultIconClass(item.type || item.platform || '');
+
+    rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
+    rendered = rendered.replace(/\{\{\s*(?:Value|Content)\s*\}\}/gi, itemValue);
+    rendered = rendered.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
+    rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, itemUrl);
+    rendered = rendered.replace(/\{\{\s*Type\s*\}\}/gi, item.type || item.channelType || '');
+    rendered = rendered.replace(/\{\{\s*Platform\s*\}\}/gi, item.platform || '');
+    rendered = rendered.replace(/\{\{\s*Icon\s*\}\}/gi, item.icon || 'info');
+    rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, iconCls);
+    rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, item.customClass || '');
+    rendered = rendered.replace(/\{\{\s*@index\s*\}\}/gi, String(idx));
+    return rendered;
+  }).join('\n');
+}
+
+/**
+ * Resolves standard FontAwesome icon class for common platforms and channel types.
+ */
+function resolveDefaultIconClass(key: string): string {
+  const lower = (key || '').toLowerCase();
+  if (lower.includes('twitter') || lower.includes(' x')) return 'fa-brands fa-x-twitter';
+  if (lower.includes('linkedin')) return 'fa-brands fa-linkedin';
+  if (lower.includes('facebook')) return 'fa-brands fa-facebook';
+  if (lower.includes('instagram')) return 'fa-brands fa-instagram';
+  if (lower.includes('youtube')) return 'fa-brands fa-youtube';
+  if (lower.includes('github')) return 'fa-brands fa-github';
+  if (lower.includes('tiktok')) return 'fa-brands fa-tiktok';
+  if (lower.includes('whatsapp')) return 'fa-brands fa-whatsapp';
+  if (lower.includes('phone') || lower.includes('tel') || lower.includes('call')) return 'fa-solid fa-phone';
+  if (lower.includes('mail') || lower.includes('email')) return 'fa-solid fa-envelope';
+  if (lower.includes('address') || lower.includes('location') || lower.includes('map')) return 'fa-solid fa-location-dot';
+  return 'fa-solid fa-circle-info';
 }
 
 /**

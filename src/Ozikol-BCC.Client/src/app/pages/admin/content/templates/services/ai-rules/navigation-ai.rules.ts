@@ -20,6 +20,15 @@ export class NavigationAiRule implements ICategoryAiRule {
     '{{#if ActivateLoginInMenu}}',
     '{{ LoginUrl }}',
     '{{#if HasTopBar}}',
+    '{{#if HasContactInfo}}',
+    '{{#if HasSocialLinks}}',
+    '{{#each SocialLinks}}',
+    '{{#each ContactItems}}',
+    '{{ Phone }}',
+    '{{ Email }}',
+    '{{ Address }}',
+    '{{ WorkingHours }}',
+    '{{#each TopBarPages}}',
     '{{ CustomClass }}'
   ];
 
@@ -140,12 +149,40 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
      <a href="{{ Url }}" class="[original button classes] {{ CustomClass }}">{{ Title }}</a>
    {{/each}}
 
-4. Login / User Portal Trigger:
+4. Top Utility Bar, Contact Details & Social Media Links:
+   If the header/navbar contains a top utility bar or contact strip (e.g., .top-bar, .header-top, .utility-nav):
+   - Wrap optional top bar sections with {{#if HasTopBar}}...{{/if}} or {{#if HasContactInfo}}...{{/if}}.
+   - Social Media Channels: If static social icons (Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok) are present:
+     Collapse the repeated social icon anchors into:
+     {{#if HasSocialLinks}}
+       <div class="[original social wrapper classes]">
+         {{#each SocialLinks}}
+           <a href="{{ Url }}" title="{{ Platform }}" class="[original link classes]"><i class="{{ IconClass }}"></i></a>
+         {{/each}}
+       </div>
+     {{/if}}
+   - Phone Numbers: Replace hardcoded phone text or href="tel:..." with {{ Phone }} (or wrap in {{#if Phone}}...{{/if}}).
+   - Email Addresses: Replace hardcoded emails or href="mailto:..." with {{ Email }} (or wrap in {{#if Email}}...{{/if}}).
+   - Physical Addresses: Replace hardcoded office locations with {{ Address }} (or wrap in {{#if Address}}...{{/if}}).
+   - Working Hours: Replace operational hours text with {{ WorkingHours }}.
+   - Multi-Card Contact Items: If structured contact cards exist in the top bar or header, use:
+     {{#each ContactItems}}
+       <div class="[original item classes]">
+         <i class="{{ IconClass }}"></i>
+         <span>{{ Title }}: {{ Value }}</span>
+       </div>
+     {{/each}}
+   - Top Bar Auxiliary Pages: Replace static top links (e.g. Help, FAQ, Support) with:
+     {{#each TopBarPages}}
+       <a href="{{ Url }}" class="[original link classes]">{{ Title }}</a>
+     {{/each}}
+
+5. Login / User Portal Trigger:
    {{#if ActivateLoginInMenu}}
      <a href="{{ LoginUrl }}" class="[original login classes] {{ CustomClass }}">Login</a>
    {{/if}}
 
-5. Root Container:
+6. Root Container:
    Ensure the root header/nav element includes class "{{ CustomClass }}".
 
 MANDATORY RULES:

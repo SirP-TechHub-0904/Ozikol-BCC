@@ -133,12 +133,30 @@ export interface HydrationContext {
     sortOrder?: number;
     pages?: Array<{ title: string; url: string; sortOrder?: number; publish?: boolean; customClass?: string }>;
   }>;
+  hasSocialLinks?: boolean;
   socialLinks?: Array<{
     platform: string;
+    title?: string;
     url: string;
     icon?: string;
+    iconClass?: string;
     customClass?: string;
   }>;
+  contactItems?: Array<{
+    type?: string;
+    channelType?: string;
+    platform?: string;
+    title?: string;
+    description?: string;
+    value?: string;
+    content?: string;
+    url?: string;
+    icon?: string;
+    iconClass?: string;
+    isDefault?: boolean;
+    customClass?: string;
+  }>;
+  workingHours?: string;
 
   // Legal Pages
   legalPages?: Array<{
@@ -395,6 +413,7 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
   output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || '');
   output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '');
   output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || '');
+  output = output.replace(/\{\{\s*WorkingHours\s*\}\}/gi, ctx.workingHours || '');
   output = output.replace(/\{\{\s*HomeUrl\s*\}\}/gi, ctx.homeUrl || '/');
   output = output.replace(/\{\{\s*LoginUrl\s*\}\}/gi, ctx.loginUrl || '/auth/login');
   output = output.replace(/\{\{\s*LoginText\s*\}\}/gi, ctx.loginText || 'Sign In');

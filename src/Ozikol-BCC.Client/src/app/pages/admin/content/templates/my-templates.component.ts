@@ -605,6 +605,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     email?: string;
     phone?: string;
     address?: string;
+    workingHours?: string;
+    hasSocialLinks?: boolean;
+    socialLinks?: Array<{ platform: string; title?: string; url: string; icon?: string; iconClass?: string; customClass?: string }>;
+    contactItems?: Array<{ type?: string; channelType?: string; platform?: string; title?: string; description?: string; value?: string; content?: string; url?: string; icon?: string; iconClass?: string; isDefault?: boolean; customClass?: string }>;
     showLoginButton?: boolean;
     loginUrl?: string;
     loginText?: string;
@@ -621,9 +625,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     customClass: '',
     hasTopBar: true,
     hasContactInfo: true,
+    hasSocialLinks: true,
     email: 'support@ozikol.cloud',
     phone: '+1 (555) 019-2834',
-    address: '',
+    address: '1200 Innovation Way, Suite 400',
+    workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
+    socialLinks: [
+      { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+      { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+    ],
+    contactItems: [
+      { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'support@ozikol.cloud', content: 'support@ozikol.cloud', url: 'mailto:support@ozikol.cloud', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '1200 Innovation Way, Suite 400', content: '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+    ],
     showLoginButton: true,
     loginUrl: '/auth/login',
     loginText: 'Sign In',
