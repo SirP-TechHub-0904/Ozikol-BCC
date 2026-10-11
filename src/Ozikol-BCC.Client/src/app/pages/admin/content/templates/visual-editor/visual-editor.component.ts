@@ -197,7 +197,10 @@ import { TemplateAiService } from '../services/template-ai.service';
           <div class="token-modal-header">
             <div class="modal-title-wrap">
               <span class="material-symbols-outlined token-modal-icon">integration_instructions</span>
-              <h3 class="token-modal-title">Insert Placeholder: {{ selectedTokenForInsert?.label }}</h3>
+              <div>
+                <h3 class="token-modal-title">Insert: {{ selectedTokenForInsert?.label }}</h3>
+                <p class="token-modal-subtitle" *ngIf="selectedTokenForInsert?.description">{{ selectedTokenForInsert?.description }}</p>
+              </div>
             </div>
             <button type="button" class="btn-close-modal" (click)="closeTokenModal()" title="Close">
               <span class="material-symbols-outlined">close</span>
@@ -205,28 +208,71 @@ import { TemplateAiService } from '../services/template-ai.service';
           </div>
 
           <div class="token-modal-body">
-            <div class="token-guide-banner">
-              <span class="material-symbols-outlined guide-icon">info</span>
-              <div class="guide-text">
-                <strong>Placeholder Sample Template</strong>
-                <p>This is a placeholder sample snippet. Adjust it with your divs and classes to fit your design.</p>
+            <!-- If both raw token and ready-to-use HTML snippet exist, display both clear choices -->
+            <div class="token-options-container" *ngIf="selectedTokenForInsert?.htmlSnippet; else singleTokenView">
+              
+              <!-- Choice 1: Full Ready-to-Use HTML Tag / Snippet -->
+              <div class="token-option-card highlighted-option">
+                <div class="option-header">
+                  <div class="option-info">
+                    <span class="option-tag tag-primary">HTML Element</span>
+                    <h4 class="option-title">Insert with HTML Tag / Snippet</h4>
+                    <p class="option-desc">Complete element with attributes and classes ready to customize.</p>
+                  </div>
+                  <button type="button" class="btn btn-option-insert btn-primary-insert" (click)="confirmInsertCustom(selectedTokenForInsert?.htmlSnippet)">
+                    <span class="material-symbols-outlined">code</span>
+                    <span>Insert HTML Snippet</span>
+                  </button>
+                </div>
+                <div class="code-preview-wrap">
+                  <pre class="token-code-preview"><code>{{ selectedTokenForInsert?.htmlSnippet }}</code></pre>
+                </div>
+              </div>
+
+              <!-- Choice 2: Raw Token Only -->
+              <div class="token-option-card">
+                <div class="option-header">
+                  <div class="option-info">
+                    <span class="option-tag tag-neutral">Token Only</span>
+                    <h4 class="option-title">Insert Placeholder Token Only</h4>
+                    <p class="option-desc">Inserts just the variable. Best if your HTML tags and classes are already written.</p>
+                  </div>
+                  <button type="button" class="btn btn-option-insert btn-neutral-insert" (click)="confirmInsertCustom(selectedTokenForInsert?.token)">
+                    <span class="material-symbols-outlined">data_object</span>
+                    <span>Insert Token Only</span>
+                  </button>
+                </div>
+                <div class="code-preview-wrap">
+                  <pre class="token-code-preview"><code>{{ selectedTokenForInsert?.token }}</code></pre>
+                </div>
               </div>
             </div>
 
-            <div class="token-code-preview-wrap">
-              <div class="code-preview-header">
-                <span class="preview-badge">HTML Snippet</span>
-                <span class="preview-hint">Will be inserted at your cursor position</span>
+            <!-- Fallback for tokens with only raw placeholder -->
+            <ng-template #singleTokenView>
+              <div class="token-guide-banner">
+                <span class="material-symbols-outlined guide-icon">info</span>
+                <div class="guide-text">
+                  <strong>Placeholder Token</strong>
+                  <p>Will be inserted at your active cursor position in the HTML editor.</p>
+                </div>
               </div>
-              <pre class="token-code-preview"><code>{{ selectedTokenForInsert?.token }}</code></pre>
-            </div>
+              <div class="token-code-preview-wrap">
+                <pre class="token-code-preview"><code>{{ selectedTokenForInsert?.token }}</code></pre>
+              </div>
+            </ng-template>
           </div>
 
           <div class="token-modal-footer">
             <button type="button" class="btn btn-modal-cancel" (click)="closeTokenModal()">
               Cancel
             </button>
-            <button type="button" class="btn btn-modal-confirm" (click)="confirmInsertToken()">
+            <button
+              *ngIf="!selectedTokenForInsert?.htmlSnippet"
+              type="button"
+              class="btn btn-modal-confirm"
+              (click)="confirmInsertCustom(selectedTokenForInsert?.token)"
+            >
               <span class="material-symbols-outlined">add_circle</span>
               <span>Click to Add</span>
             </button>
@@ -244,7 +290,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   @Input() sampleContent: any = {};
   @Input() category: string = 'menu';
   @Input() categoryName: string = 'Navigation';
-  @Input() specificTokens: Array<{ label: string; token: string }> = [];
+  @Input() specificTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [];
   @Input() isEditMode: boolean = false;
   @Input() editorTokens: any = null;
 
@@ -280,7 +326,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
 
   // Token Confirmation Modal State
   showTokenConfirmModal: boolean = false;
-  selectedTokenForInsert: { label: string; token: string } | null = null;
+  selectedTokenForInsert: { label: string; token: string; htmlSnippet?: string; description?: string } | null = null;
 
   private monacoHtmlInstance: any = null;
   private monacoCssInstance: any = null;
@@ -393,7 +439,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
    * Opens the placeholder sample confirmation modal before inserting into editor.
    * @param tokenObj Token object containing label and HTML snippet.
    */
-  onTokenChipClick(tokenObj: { label: string; token: string }): void {
+  onTokenChipClick(tokenObj: { label: string; token: string; htmlSnippet?: string; description?: string }): void {
     this.selectedTokenForInsert = tokenObj;
     this.showTokenConfirmModal = true;
   }
@@ -416,6 +462,18 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
     this.closeTokenModal();
     this.insertToken(snippet);
     this.toast.success(`Inserted ${label} placeholder!`);
+  }
+
+  /**
+   * Confirms insertion and injects either the raw token or the full HTML snippet into Monaco editor.
+   * @param snippetToInsert Text snippet to insert into active cursor position.
+   */
+  confirmInsertCustom(snippetToInsert?: string): void {
+    if (!snippetToInsert) return;
+    const label = this.selectedTokenForInsert?.label || 'Token';
+    this.closeTokenModal();
+    this.insertToken(snippetToInsert);
+    this.toast.success(`Inserted ${label}!`);
   }
 
   /**

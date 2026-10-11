@@ -198,30 +198,34 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
             </button>
           </div>
 
-          <!-- Mock Data Sub-Tabs: Text & Media (Default) vs CTAs -->
+          <!-- Mock Data Sub-Tabs: Slide 1 vs Slide 2 -->
           <div class="mock-tabs-nav">
             <button
               type="button"
               class="mock-tab-btn"
-              [class.active]="activeMockTab === 'text'"
-              (click)="activeMockTab = 'text'"
+              [class.active]="activeMockTab === 'slide_1'"
+              (click)="activeMockTab = 'slide_1'"
             >
-              <span class="material-symbols-outlined icon-micro">title</span>
-              <span>Hero Text &amp; Media</span>
+              <span class="slide-indicator-pill">1</span>
+              <span>Slide 1 (First Image)</span>
             </button>
             <button
               type="button"
               class="mock-tab-btn"
-              [class.active]="activeMockTab === 'ctas'"
-              (click)="activeMockTab = 'ctas'"
+              [class.active]="activeMockTab === 'slide_2'"
+              (click)="activeMockTab = 'slide_2'"
             >
-              <span class="material-symbols-outlined icon-micro">smart_button</span>
-              <span>Call To Action (CTAs)</span>
+              <span class="slide-indicator-pill">2</span>
+              <span>Slide 2 (Second Image)</span>
             </button>
           </div>
 
-          <!-- Sub-Tab 1: Hero Text & Media (Default) -->
-          <div class="mock-tab-pane" *ngIf="activeMockTab === 'text'">
+          <!-- Sub-Tab 1: Slide 1 Configuration -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'slide_1' && sampleContent.items?.[0]">
+            <div class="slide-pane-header">
+              <span class="slide-pane-tag">SLIDE 1 CONFIGURATION</span>
+              <span class="slide-pane-hint">Controls the first banner image, headline, and call to action buttons</span>
+            </div>
             <div class="inspector-form-grid-2">
               <div class="form-group">
                 <label class="field-label">
@@ -230,7 +234,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.miniTitle"
+                  [(ngModel)]="sampleContent.items[0].miniTitle"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. ENTERPRISE CLOUD PLATFORM"
                 />
@@ -243,7 +248,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.title"
+                  [(ngModel)]="sampleContent.items[0].title"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. Scale Your Digital Infrastructure"
                 />
@@ -255,7 +261,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                   <code [innerText]="'{{ Description }}'"></code>
                 </label>
                 <textarea
-                  [(ngModel)]="sampleContent.description"
+                  [(ngModel)]="sampleContent.items[0].description"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input textarea-tall"
                   rows="3"
                   placeholder="e.g. Deploy mission-critical workloads..."
@@ -264,22 +271,23 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
 
               <div class="form-group col-span-2">
                 <label class="field-label">
-                  <span>Hero Media Image URL</span>
+                  <span>Slide 1 Background Image URL</span>
                   <code [innerText]="'{{ ImageUrl }}'"></code>
                 </label>
-                <input
-                  type="text"
-                  [(ngModel)]="sampleContent.imageUrl"
-                  class="form-control inspector-input"
-                  placeholder="e.g. https://images.unsplash.com/..."
-                />
+                <div class="image-input-with-preview">
+                  <input
+                    type="text"
+                    [(ngModel)]="sampleContent.items[0].imageUrl"
+                    (ngModelChange)="onSlide1Change()"
+                    class="form-control inspector-input flex-1"
+                    placeholder="e.g. https://images.unsplash.com/..."
+                  />
+                  <div class="mini-img-preview" *ngIf="sampleContent.items[0].imageUrl">
+                    <img [src]="sampleContent.items[0].imageUrl" alt="Slide 1 Preview" />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Sub-Tab 2: CTAs & Actions -->
-          <div class="mock-tab-pane" *ngIf="activeMockTab === 'ctas'">
-            <div class="inspector-form-grid-2">
               <div class="form-group">
                 <label class="field-label">
                   <span>Primary Button Label</span>
@@ -287,7 +295,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.buttonText"
+                  [(ngModel)]="sampleContent.items[0].buttonText"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. Get Started Free"
                 />
@@ -300,7 +309,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.buttonLink"
+                  [(ngModel)]="sampleContent.items[0].buttonLink"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. #signup"
                 />
@@ -313,7 +323,8 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.secondaryButtonText"
+                  [(ngModel)]="sampleContent.items[0].secondaryButtonText"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. Explore Platform"
                 />
@@ -326,9 +337,128 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.secondaryButtonLink"
+                  [(ngModel)]="sampleContent.items[0].secondaryButtonLink"
+                  (ngModelChange)="onSlide1Change()"
                   class="form-control inspector-input"
                   placeholder="e.g. #features"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Slide 2 Configuration -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'slide_2' && sampleContent.items?.[1]">
+            <div class="slide-pane-header">
+              <span class="slide-pane-tag">SLIDE 2 CONFIGURATION</span>
+              <span class="slide-pane-hint">Controls the second banner image, headline, and call to action buttons</span>
+            </div>
+            <div class="inspector-form-grid-2">
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Badge / Mini Headline</span>
+                  <code [innerText]="'{{ MiniTitle }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].miniTitle"
+                  class="form-control inspector-input"
+                  placeholder="e.g. NEXT-GEN AI AUTOMATION"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Main Headline Title</span>
+                  <code [innerText]="'{{ Title }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].title"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Accelerate Intelligent Workflows"
+                />
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Lead Paragraph Description</span>
+                  <code [innerText]="'{{ Description }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.items[1].description"
+                  class="form-control inspector-input textarea-tall"
+                  rows="3"
+                  placeholder="e.g. Automate complex operations..."
+                ></textarea>
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Slide 2 Background Image URL</span>
+                  <code [innerText]="'{{ ImageUrl }}'"></code>
+                </label>
+                <div class="image-input-with-preview">
+                  <input
+                    type="text"
+                    [(ngModel)]="sampleContent.items[1].imageUrl"
+                    class="form-control inspector-input flex-1"
+                    placeholder="e.g. https://images.unsplash.com/..."
+                  />
+                  <div class="mini-img-preview" *ngIf="sampleContent.items[1].imageUrl">
+                    <img [src]="sampleContent.items[1].imageUrl" alt="Slide 2 Preview" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Primary Button Label</span>
+                  <code [innerText]="'{{ ButtonText }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].buttonText"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Schedule a Demo"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Primary Button Link</span>
+                  <code [innerText]="'{{ ButtonLink }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].buttonLink"
+                  class="form-control inspector-input"
+                  placeholder="e.g. #demo"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Secondary Button Label</span>
+                  <code [innerText]="'{{ SecondaryButtonText }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].secondaryButtonText"
+                  class="form-control inspector-input"
+                  placeholder="e.g. View Case Studies"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Secondary Button Link</span>
+                  <code [innerText]="'{{ SecondaryButtonLink }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.items[1].secondaryButtonLink"
+                  class="form-control inspector-input"
+                  placeholder="e.g. #case-studies"
                 />
               </div>
             </div>
@@ -795,6 +925,78 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
       color: #0050e5;
     }
 
+    .slide-indicator-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 800;
+      transition: all 0.2s ease;
+    }
+
+    .mock-tab-btn.active .slide-indicator-pill {
+      background: #0050e5;
+      color: #ffffff;
+    }
+
+    .slide-pane-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .slide-pane-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .slide-pane-hint {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .image-input-with-preview {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .flex-1 {
+      flex: 1;
+    }
+
+    .mini-img-preview {
+      width: 58px;
+      height: 40px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1.5px solid #cbd5e1;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      background: #f8fafc;
+    }
+
+    .mini-img-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
     .inspector-form-grid-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -1014,84 +1216,152 @@ export class HeroVisualComponent implements OnInit {
   @Input() editorTokens: any = null;
   @Output() templateSaved = new EventEmitter<any>();
 
-  templateName: string = 'Quantum Split Showcase Hero';
+  templateName: string = 'Quantum 2-Slide Hero Showcase';
   variantCode: string = '';
-  description: string = 'Split hero showcase with bold headline, dual CTAs, badge, and media';
+  description: string = 'Dual-image hero slider with animated background transitions, customizable CTAs, and dot pagination';
   isSaving: boolean = false;
 
-  // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'text' is default)
+  // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'slide_1' is default)
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
-  activeMockTab: 'text' | 'ctas' = 'text';
+  activeMockTab: 'slide_1' | 'slide_2' = 'slide_1';
 
   // Preview Modal
   showPreviewModal: boolean = false;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeModalPreviewUrl: SafeResourceUrl | null = null;
 
-  htmlTemplate: string = `<section class="oz-hero-section {{ CustomClass }}">
-  <div class="oz-hero-container">
-    <div class="oz-hero-content">
-      {{#if MiniTitle}}<span class="oz-hero-badge">{{ MiniTitle }}</span>{{/if}}
-      <h1 class="oz-hero-title">{{ Title }}</h1>
-      <p class="oz-hero-desc">{{ Description }}</p>
-      <div class="oz-hero-actions">
-        {{#if ButtonText}}
-        <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }}</a>
-        {{/if}}
-        {{#if SecondaryButtonText}}
-        <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
-        {{/if}}
+  htmlTemplate: string = `<section class="oz-hero-slider {{ CustomClass }}">
+  <div class="oz-slider-track">
+    {{#each PageSectionLists}}
+    <div class="oz-slide {{#if @first}}active{{/if}}" data-slide="{{ @index }}">
+      <div class="oz-slide-bg" style="background-image: url('{{ ImageUrl }}');"></div>
+      <div class="oz-slide-overlay"></div>
+      <div class="oz-slide-container">
+        <div class="oz-slide-content">
+          {{#if MiniTitle}}<span class="oz-slide-badge">{{ MiniTitle }}</span>{{/if}}
+          <h1 class="oz-slide-title">{{ Title }}</h1>
+          <p class="oz-slide-desc">{{ Description }}</p>
+          <div class="oz-slide-actions">
+            {{#if ButtonText}}
+            <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }}</a>
+            {{/if}}
+            {{#if SecondaryButtonText}}
+            <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
+            {{/if}}
+          </div>
+        </div>
       </div>
     </div>
-    <div class="oz-hero-media">
-      {{#if ImageUrl}}
-      <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-hero-img" />
-      {{/if}}
-    </div>
+    {{/each}}
+  </div>
+
+  <!-- Navigation Controls -->
+  <button type="button" class="oz-slider-arrow oz-prev" aria-label="Previous Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+  <button type="button" class="oz-slider-arrow oz-next" aria-label="Next Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- Pagination Dots -->
+  <div class="oz-slider-dots">
+    {{#each PageSectionLists}}
+    <button type="button" class="oz-slider-dot {{#if @first}}active{{/if}}" data-index="{{ @index }}" aria-label="Slide {{ @number }}"></button>
+    {{/each}}
   </div>
 </section>`;
 
-  cssStyles: string = `.oz-hero-section {
-  padding: 88px 24px;
-  background: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow: hidden;
-}
-.oz-hero-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 56px;
+  cssStyles: string = `.oz-hero-slider {
+  position: relative;
+  min-height: 580px;
+  display: flex;
   align-items: center;
+  overflow: hidden;
+  background: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-.oz-hero-badge {
+.oz-slider-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 580px;
+}
+.oz-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+.oz-slide.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+.oz-slide-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.05);
+  transition: transform 7s ease-out;
+}
+.oz-slide.active .oz-slide-bg {
+  transform: scale(1);
+}
+.oz-slide-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.68) 55%, rgba(15, 23, 42, 0.35) 100%);
+}
+.oz-slide-container {
+  position: relative;
+  z-index: 3;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 80px 32px;
+  box-sizing: border-box;
+}
+.oz-slide-content {
+  max-width: 640px;
+}
+.oz-slide-badge {
   display: inline-block;
-  background: #eef2ff;
-  color: #0050e5;
+  padding: 6px 14px;
+  background: rgba(0, 80, 229, 0.25);
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  color: #93c5fd;
+  border-radius: 20px;
   font-size: 11px;
   font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 20px;
-  margin-bottom: 16px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  backdrop-filter: blur(8px);
 }
-.oz-hero-title {
+.oz-slide-title {
   font-size: 46px;
   font-weight: 900;
+  color: #ffffff;
   line-height: 1.15;
-  color: #0f172a;
   margin: 0 0 18px 0;
   letter-spacing: -0.025em;
 }
-.oz-hero-desc {
+.oz-slide-desc {
   font-size: 16px;
-  color: #475569;
+  color: #e2e8f0;
   line-height: 1.6;
   margin: 0 0 32px 0;
-  max-width: 540px;
 }
-.oz-hero-actions {
+.oz-slide-actions {
   display: flex;
   gap: 14px;
   align-items: center;
@@ -1101,73 +1371,293 @@ export class HeroVisualComponent implements OnInit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 28px;
+  padding: 13px 30px;
   background: #0050e5;
   color: #ffffff;
-  font-weight: 700;
   font-size: 14px;
+  font-weight: 700;
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 80, 229, 0.4);
 }
 .oz-btn-primary:hover {
   background: #003db3;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
+  box-shadow: 0 6px 22px rgba(0, 80, 229, 0.5);
 }
 .oz-btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 28px;
-  background: #f8fafc;
-  color: #0f172a;
-  font-weight: 700;
+  padding: 13px 30px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-size: 14px;
+  font-weight: 700;
   border-radius: 8px;
   text-decoration: none;
-  border: 1.5px solid #cbd5e1;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   transition: all 0.2s ease;
 }
 .oz-btn-secondary:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
 }
-.oz-hero-img {
-  width: 100%;
-  max-height: 420px;
-  object-fit: cover;
-  border-radius: 16px;
-  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05);
+.oz-slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-@media (max-width: 900px) {
-  .oz-hero-section { padding: 60px 20px; }
-  .oz-hero-container { grid-template-columns: 1fr; gap: 36px; text-align: center; }
-  .oz-hero-title { font-size: 34px; }
-  .oz-hero-actions { justify-content: center; }
+.oz-slider-arrow:hover {
+  background: rgba(0, 80, 229, 0.85);
+  border-color: #0050e5;
+  transform: translateY(-50%) scale(1.08);
+}
+.oz-prev { left: 24px; }
+.oz-next { right: 24px; }
+
+.oz-slider-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+}
+.oz-slider-dot {
+  width: 28px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+}
+.oz-slider-dot.active {
+  width: 44px;
+  background: #0050e5;
+  box-shadow: 0 0 10px rgba(0, 80, 229, 0.6);
+}
+@media (max-width: 768px) {
+  .oz-hero-slider, .oz-slider-track { min-height: 500px; }
+  .oz-slide-title { font-size: 32px; }
+  .oz-slide-desc { font-size: 15px; }
+  .oz-slider-arrow { display: none; }
+  .oz-slide-container { padding: 60px 20px; }
 }
 @media (max-width: 480px) {
-  .oz-hero-section { padding: 44px 16px; }
-  .oz-hero-title { font-size: 26px; }
-  .oz-hero-desc { font-size: 14px; margin-bottom: 24px; }
-  .oz-hero-actions { flex-direction: column; width: 100%; }
+  .oz-hero-slider, .oz-slider-track { min-height: 460px; }
+  .oz-slide-title { font-size: 26px; }
+  .oz-slide-desc { font-size: 14px; margin-bottom: 24px; }
+  .oz-slide-actions { flex-direction: column; width: 100%; }
   .oz-btn-primary, .oz-btn-secondary { width: 100%; text-align: center; box-sizing: border-box; }
 }`;
 
-  jsScript: string = '';
+  jsScript: string = `(function() {
+  function initHeroSlider() {
+    var section = document.querySelector('.oz-hero-slider');
+    if (!section) return;
 
-  heroTokens: Array<{ label: string; token: string }> = [
-    { label: 'Title', token: '{{ Title }}' },
-    { label: 'MiniTitle', token: '{{ MiniTitle }}' },
-    { label: 'Description', token: '{{ Description }}' },
-    { label: 'ButtonText', token: '{{ ButtonText }}' },
-    { label: 'ButtonLink', token: '{{ ButtonLink }}' },
-    { label: 'SecondaryButtonText', token: '{{ SecondaryButtonText }}' },
-    { label: 'SecondaryButtonLink', token: '{{ SecondaryButtonLink }}' },
-    { label: 'ImageUrl', token: '{{ ImageUrl }}' },
-    { label: 'SecondImageUrl', token: '{{ SecondImageUrl }}' },
-    { label: 'VideoLink', token: '{{ VideoLink }}' }
+    var slides = section.querySelectorAll('.oz-slide');
+    var dots = section.querySelectorAll('.oz-slider-dot');
+    var prevBtn = section.querySelector('.oz-prev');
+    var nextBtn = section.querySelector('.oz-next');
+
+    if (slides.length <= 1) return;
+
+    var currentIndex = 0;
+    var timer = null;
+
+    function showSlide(index) {
+      if (index < 0) index = slides.length - 1;
+      if (index >= slides.length) index = 0;
+      currentIndex = index;
+
+      for (var i = 0; i < slides.length; i++) {
+        if (i === currentIndex) {
+          slides[i].classList.add('active');
+        } else {
+          slides[i].classList.remove('active');
+        }
+      }
+
+      for (var j = 0; j < dots.length; j++) {
+        if (j === currentIndex) {
+          dots[j].classList.add('active');
+        } else {
+          dots[j].classList.remove('active');
+        }
+      }
+    }
+
+    function nextSlide() {
+      showSlide(currentIndex + 1);
+    }
+
+    function prevSlide() {
+      showSlide(currentIndex - 1);
+    }
+
+    function startAutoPlay() {
+      stopAutoPlay();
+      timer = setInterval(nextSlide, 5000);
+    }
+
+    function stopAutoPlay() {
+      if (timer) clearInterval(timer);
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        prevSlide();
+        startAutoPlay();
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        nextSlide();
+        startAutoPlay();
+      });
+    }
+
+    for (var k = 0; k < dots.length; k++) {
+      (function(idx) {
+        dots[idx].addEventListener('click', function(e) {
+          e.preventDefault();
+          showSlide(idx);
+          startAutoPlay();
+        });
+      })(k);
+    }
+
+    section.addEventListener('mouseenter', stopAutoPlay);
+    section.addEventListener('mouseleave', startAutoPlay);
+
+    startAutoPlay();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroSlider);
+  } else {
+    initHeroSlider();
+  }
+})();`;
+
+  heroTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
+    {
+      label: 'Slider',
+      token: `{{#each PageSectionLists}}\n<div class="swiper-slide">\n  <div class="slide-item">\n    <h1>{{ Title }}</h1>\n    <p>{{ Description }}</p>\n    <img src="{{ ImageUrl }}" alt="{{ Title }}" />\n  </div>\n</div>\n{{/each}}`,
+      htmlSnippet: `<section class="slider-section position-relative {{ CustomClass }}">
+  <div class="swiper hero-slider">
+    <div class="swiper-wrapper">
+      {{#each PageSectionLists}}
+      <div class="swiper-slide">
+        <div class="slide-content">
+          {{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}
+          <h1>{{ Title }}</h1>
+          <p>{{ Description }}</p>
+          {{#if ButtonText}}
+          <a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>
+          {{/if}}
+        </div>
+        {{#if ImageUrl}}
+        <img src="{{ ImageUrl }}" alt="{{ Title }}" class="slide-img" />
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    <!-- Navigation Controls -->
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+  </div>
+</section>`,
+      description: 'Multi-slide responsive Swiper carousel for rotating promotions or hero images.'
+    },
+    {
+      label: 'Hero',
+      token: `{{ Title }}`,
+      htmlSnippet: `<section class="hero-section {{ CustomClass }}">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-6">
+        {{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}
+        <h1 class="display-4 fw-bold">{{ Title }}</h1>
+        <p class="lead">{{ Description }}</p>
+        <div class="d-flex gap-3">
+          {{#if ButtonText}}
+          <a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>
+          {{/if}}
+          {{#if SecondaryButtonText}}
+          <a href="{{ SecondaryButtonLink }}" class="btn btn-outline">{{ SecondaryButtonText }}</a>
+          {{/if}}
+        </div>
+      </div>
+      <div class="col-lg-6">
+        {{#if ImageUrl}}
+        <img src="{{ ImageUrl }}" alt="{{ Title }}" class="img-fluid" />
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</section>`,
+      description: 'Single showcase hero banner with split columns (headline on left, visual on right).'
+    },
+    {
+      label: 'Title',
+      token: '{{ Title }}',
+      htmlSnippet: '<h1>{{ Title }}</h1>',
+      description: 'Primary hero headline text.'
+    },
+    {
+      label: 'MiniTitle',
+      token: '{{ MiniTitle }}',
+      htmlSnippet: '{{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}',
+      description: 'Small category label, eyebrow, or badge above the main title.'
+    },
+    {
+      label: 'Description',
+      token: '{{ Description }}',
+      htmlSnippet: '<p>{{ Description }}</p>',
+      description: 'Hero introductory narrative or paragraph text.'
+    },
+    {
+      label: 'ImageUrl',
+      token: '{{ ImageUrl }}',
+      htmlSnippet: '{{#if ImageUrl}}<img src="{{ ImageUrl }}" alt="{{ Title }}" class="img-fluid" />{{/if}}',
+      description: 'Hero featured showcase image or slide illustration URL.'
+    },
+    {
+      label: 'Button',
+      token: '{{ ButtonText }}',
+      htmlSnippet: '{{#if ButtonText}}<a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>{{/if}}',
+      description: 'Primary call-to-action button with dynamic label and target URL.'
+    },
+    {
+      label: 'Secondary Button',
+      token: '{{ SecondaryButtonText }}',
+      htmlSnippet: '{{#if SecondaryButtonText}}<a href="{{ SecondaryButtonLink }}" class="btn btn-outline">{{ SecondaryButtonText }}</a>{{/if}}',
+      description: 'Secondary outline button with dynamic label and link.'
+    }
   ];
 
   sampleContent: any = {
@@ -1178,7 +1668,31 @@ export class HeroVisualComponent implements OnInit {
     buttonLink: '#signup',
     secondaryButtonText: 'Explore Platform',
     secondaryButtonLink: '#features',
-    imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&auto=format&fit=crop&q=80'
+    imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
+    items: [
+      {
+        sortOrder: 1,
+        miniTitle: 'ENTERPRISE CLOUD PLATFORM',
+        title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
+        description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
+        imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
+        buttonText: 'Get Started Free',
+        buttonLink: '#signup',
+        secondaryButtonText: 'Explore Platform',
+        secondaryButtonLink: '#features'
+      },
+      {
+        sortOrder: 2,
+        miniTitle: 'NEXT-GEN AI AUTOMATION',
+        title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
+        description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
+        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
+        buttonText: 'Schedule a Demo',
+        buttonLink: '#demo',
+        secondaryButtonText: 'View Case Studies',
+        secondaryButtonLink: '#case-studies'
+      }
+    ]
   };
 
   constructor(
@@ -1194,8 +1708,63 @@ export class HeroVisualComponent implements OnInit {
     if (!this.variantCode) {
       this.regenerateVariantCode();
     }
+    this.ensureSlideItems();
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    }
+  }
+
+  /**
+   * Guarantees that sampleContent.items contains both Slide 1 and Slide 2 objects.
+   */
+  ensureSlideItems(): void {
+    if (!this.sampleContent) {
+      this.sampleContent = {};
+    }
+    const defaultSlide1 = {
+      sortOrder: 1,
+      miniTitle: this.sampleContent.miniTitle || 'ENTERPRISE CLOUD PLATFORM',
+      title: this.sampleContent.title || 'Scale Your Digital Infrastructure With Unrivaled Speed',
+      description: this.sampleContent.description || 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
+      imageUrl: this.sampleContent.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
+      buttonText: this.sampleContent.buttonText || 'Get Started Free',
+      buttonLink: this.sampleContent.buttonLink || '#signup',
+      secondaryButtonText: this.sampleContent.secondaryButtonText || 'Explore Platform',
+      secondaryButtonLink: this.sampleContent.secondaryButtonLink || '#features'
+    };
+    const defaultSlide2 = {
+      sortOrder: 2,
+      miniTitle: 'NEXT-GEN AI AUTOMATION',
+      title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
+      description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
+      imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
+      buttonText: 'Schedule a Demo',
+      buttonLink: '#demo',
+      secondaryButtonText: 'View Case Studies',
+      secondaryButtonLink: '#case-studies'
+    };
+
+    if (!Array.isArray(this.sampleContent.items) || this.sampleContent.items.length === 0) {
+      this.sampleContent.items = [defaultSlide1, defaultSlide2];
+    } else if (this.sampleContent.items.length === 1) {
+      this.sampleContent.items.push(defaultSlide2);
+    }
+  }
+
+  /**
+   * Synchronizes Slide 1 field updates with top-level scalar tokens for backward compatibility.
+   */
+  onSlide1Change(): void {
+    if (this.sampleContent?.items?.[0]) {
+      const s1 = this.sampleContent.items[0];
+      this.sampleContent.title = s1.title;
+      this.sampleContent.miniTitle = s1.miniTitle;
+      this.sampleContent.description = s1.description;
+      this.sampleContent.imageUrl = s1.imageUrl;
+      this.sampleContent.buttonText = s1.buttonText;
+      this.sampleContent.buttonLink = s1.buttonLink;
+      this.sampleContent.secondaryButtonText = s1.secondaryButtonText;
+      this.sampleContent.secondaryButtonLink = s1.secondaryButtonLink;
     }
   }
 
@@ -1205,7 +1774,8 @@ export class HeroVisualComponent implements OnInit {
   }
 
   resetBoilerplate(): void {
-    this.toast.info('Boilerplate reset to default hero structure.');
+    this.resetSampleContent();
+    this.toast.info('Boilerplate reset to default 2-image hero slider.');
   }
 
   resetSampleContent(): void {
@@ -1217,9 +1787,33 @@ export class HeroVisualComponent implements OnInit {
       buttonLink: '#signup',
       secondaryButtonText: 'Explore Platform',
       secondaryButtonLink: '#features',
-      imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&auto=format&fit=crop&q=80'
+      imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
+      items: [
+        {
+          sortOrder: 1,
+          miniTitle: 'ENTERPRISE CLOUD PLATFORM',
+          title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
+          description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
+          imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
+          buttonText: 'Get Started Free',
+          buttonLink: '#signup',
+          secondaryButtonText: 'Explore Platform',
+          secondaryButtonLink: '#features'
+        },
+        {
+          sortOrder: 2,
+          miniTitle: 'NEXT-GEN AI AUTOMATION',
+          title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
+          description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
+          imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
+          buttonText: 'Schedule a Demo',
+          buttonLink: '#demo',
+          secondaryButtonText: 'View Case Studies',
+          secondaryButtonLink: '#case-studies'
+        }
+      ]
     };
-    this.toast.info('Hero sample values reset to defaults.');
+    this.toast.info('Hero 2-slider sample values reset to defaults.');
   }
 
   openPreviewModal(): void {
@@ -1268,6 +1862,7 @@ export class HeroVisualComponent implements OnInit {
           if (item.defaultContentJson) {
             try {
               this.sampleContent = JSON.parse(item.defaultContentJson);
+              this.ensureSlideItems();
             } catch (e) {}
           }
         }
