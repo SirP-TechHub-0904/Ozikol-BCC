@@ -640,9 +640,9 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
       case 'navigation':
       case 'navbar':
         return {
-          brandName: custom.brandName || 'Ozikol Cloud',
-          brandLogo: custom.brandLogo || custom.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
-          logoUrl: custom.logoUrl || custom.brandLogo || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&auto=format&fit=crop&q=80',
+          brandName: custom.brandName || 'Apex Global',
+          brandLogo: custom.brandLogo || custom.logoUrl || '',
+          logoUrl: custom.logoUrl || custom.brandLogo || '',
           homeUrl: custom.homeUrl || '/',
           hasTopBar: custom.hasTopBar ?? true,
           hasContactInfo: custom.hasContactInfo ?? true,
