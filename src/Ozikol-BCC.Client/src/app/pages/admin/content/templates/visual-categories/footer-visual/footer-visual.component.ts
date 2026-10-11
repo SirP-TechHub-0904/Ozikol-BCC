@@ -1115,11 +1115,11 @@ export class FooterVisualComponent implements OnInit {
   cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
 .oz-footer-section {
-  background: #090d16;
-  color: #94a3b8;
+  background: #f8fafc;
+  color: #475569;
   padding: 72px 24px 36px 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid #e2e8f0;
 }
 .oz-footer-container {
   max-width: 1240px;
@@ -1130,7 +1130,7 @@ export class FooterVisualComponent implements OnInit {
   grid-template-columns: 1.3fr 2fr 1.1fr;
   gap: 48px;
   padding-bottom: 56px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #e2e8f0;
 }
 .oz-footer-brand-col {
   display: flex;
@@ -1148,7 +1148,7 @@ export class FooterVisualComponent implements OnInit {
   object-fit: contain;
 }
 .oz-footer-brand-title {
-  color: #ffffff;
+  color: #0f172a;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -1156,21 +1156,22 @@ export class FooterVisualComponent implements OnInit {
 .oz-footer-desc {
   font-size: 14px;
   line-height: 1.65;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
 }
 .oz-footer-hours {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 14px;
   margin-top: 4px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 .oz-footer-hours i {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -1187,8 +1188,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-hours-val {
   font-size: 13px;
-  color: #e2e8f0;
-  font-weight: 500;
+  color: #0f172a;
+  font-weight: 600;
 }
 .oz-footer-contacts {
   display: flex;
@@ -1203,7 +1204,7 @@ export class FooterVisualComponent implements OnInit {
   font-size: 13.5px;
 }
 .oz-footer-contact-item i {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 15px;
   margin-top: 3px;
   flex-shrink: 0;
@@ -1220,12 +1221,13 @@ export class FooterVisualComponent implements OnInit {
   font-weight: 600;
 }
 .oz-footer-contact-val {
-  color: #e2e8f0;
+  color: #0f172a;
   text-decoration: none;
+  font-weight: 500;
   transition: color 0.2s ease;
 }
 .oz-footer-contact-val:hover {
-  color: #38bdf8;
+  color: #0284c7;
 }
 .oz-footer-socials {
   display: flex;
@@ -1237,20 +1239,28 @@ export class FooterVisualComponent implements OnInit {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: #475569;
   text-decoration: none;
+  font-size: 15px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
+.oz-footer-social-icon i {
+  font-size: 15px;
+  line-height: 1;
+  color: inherit;
+}
 .oz-footer-social-icon:hover {
-  background: #38bdf8;
-  color: #0f172a;
-  border-color: #38bdf8;
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
   transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
 }
 .oz-footer-nav-group {
   display: grid;
@@ -1258,9 +1268,9 @@ export class FooterVisualComponent implements OnInit {
   gap: 32px;
 }
 .oz-footer-col-title {
-  color: #ffffff;
+  color: #0f172a;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin: 0 0 18px 0;
@@ -1274,13 +1284,13 @@ export class FooterVisualComponent implements OnInit {
   gap: 12px;
 }
 .oz-footer-link {
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   font-size: 14px;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 .oz-footer-link:hover {
-  color: #38bdf8;
+  color: #0284c7;
   padding-left: 3px;
 }
 .oz-footer-newsletter-col {
@@ -1290,7 +1300,7 @@ export class FooterVisualComponent implements OnInit {
 .oz-footer-newsletter-desc {
   font-size: 13.5px;
   line-height: 1.6;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0 0 16px 0;
 }
 .oz-footer-form-wrapper {
@@ -1303,35 +1313,38 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-form-wrapper input[type="email"],
 .oz-footer-form-wrapper input[type="text"] {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 11px 14px;
   font-size: 13.5px;
-  color: #ffffff;
+  color: #0f172a;
   outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
 .oz-footer-form-wrapper input:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 .oz-footer-form-wrapper button,
 .oz-footer-form-wrapper input[type="submit"] {
-  background: #38bdf8;
-  color: #0f172a;
+  background: #0284c7;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   padding: 11px 20px;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
   transition: all 0.2s ease;
 }
 .oz-footer-form-wrapper button:hover,
 .oz-footer-form-wrapper input[type="submit"]:hover {
-  background: #7dd3fc;
+  background: #0369a1;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 .oz-footer-bottom {
   display: flex;
@@ -1353,12 +1366,12 @@ export class FooterVisualComponent implements OnInit {
   flex-wrap: wrap;
 }
 .oz-footer-legal-link {
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .oz-footer-legal-link:hover {
-  color: #ffffff;
+  color: #0f172a;
 }
 @media (max-width: 1024px) {
   .oz-footer-grid {
@@ -1668,11 +1681,11 @@ export class FooterVisualComponent implements OnInit {
     this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
 .oz-footer-section {
-  background: #090d16;
-  color: #94a3b8;
+  background: #f8fafc;
+  color: #475569;
   padding: 72px 24px 36px 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid #e2e8f0;
 }
 .oz-footer-container {
   max-width: 1240px;
@@ -1683,7 +1696,7 @@ export class FooterVisualComponent implements OnInit {
   grid-template-columns: 1.3fr 2fr 1.1fr;
   gap: 48px;
   padding-bottom: 56px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #e2e8f0;
 }
 .oz-footer-brand-col {
   display: flex;
@@ -1701,7 +1714,7 @@ export class FooterVisualComponent implements OnInit {
   object-fit: contain;
 }
 .oz-footer-brand-title {
-  color: #ffffff;
+  color: #0f172a;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -1709,21 +1722,22 @@ export class FooterVisualComponent implements OnInit {
 .oz-footer-desc {
   font-size: 14px;
   line-height: 1.65;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
 }
 .oz-footer-hours {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 14px;
   margin-top: 4px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 .oz-footer-hours i {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -1740,8 +1754,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-hours-val {
   font-size: 13px;
-  color: #e2e8f0;
-  font-weight: 500;
+  color: #0f172a;
+  font-weight: 600;
 }
 .oz-footer-contacts {
   display: flex;
@@ -1756,7 +1770,7 @@ export class FooterVisualComponent implements OnInit {
   font-size: 13.5px;
 }
 .oz-footer-contact-item i {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 15px;
   margin-top: 3px;
   flex-shrink: 0;
@@ -1773,12 +1787,13 @@ export class FooterVisualComponent implements OnInit {
   font-weight: 600;
 }
 .oz-footer-contact-val {
-  color: #e2e8f0;
+  color: #0f172a;
   text-decoration: none;
+  font-weight: 500;
   transition: color 0.2s ease;
 }
 .oz-footer-contact-val:hover {
-  color: #38bdf8;
+  color: #0284c7;
 }
 .oz-footer-socials {
   display: flex;
@@ -1790,14 +1805,15 @@ export class FooterVisualComponent implements OnInit {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: #475569;
   text-decoration: none;
   font-size: 15px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
 .oz-footer-social-icon i {
@@ -1806,10 +1822,11 @@ export class FooterVisualComponent implements OnInit {
   color: inherit;
 }
 .oz-footer-social-icon:hover {
-  background: #38bdf8;
-  color: #0f172a;
-  border-color: #38bdf8;
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
   transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
 }
 .oz-footer-nav-group {
   display: grid;
@@ -1817,9 +1834,9 @@ export class FooterVisualComponent implements OnInit {
   gap: 32px;
 }
 .oz-footer-col-title {
-  color: #ffffff;
+  color: #0f172a;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin: 0 0 18px 0;
@@ -1833,13 +1850,13 @@ export class FooterVisualComponent implements OnInit {
   gap: 12px;
 }
 .oz-footer-link {
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   font-size: 14px;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 .oz-footer-link:hover {
-  color: #38bdf8;
+  color: #0284c7;
   padding-left: 3px;
 }
 .oz-footer-newsletter-col {
@@ -1849,7 +1866,7 @@ export class FooterVisualComponent implements OnInit {
 .oz-footer-newsletter-desc {
   font-size: 13.5px;
   line-height: 1.6;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0 0 16px 0;
 }
 .oz-footer-form-wrapper {
@@ -1862,35 +1879,38 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-form-wrapper input[type="email"],
 .oz-footer-form-wrapper input[type="text"] {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 11px 14px;
   font-size: 13.5px;
-  color: #ffffff;
+  color: #0f172a;
   outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
 }
 .oz-footer-form-wrapper input:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 .oz-footer-form-wrapper button,
 .oz-footer-form-wrapper input[type="submit"] {
-  background: #38bdf8;
-  color: #0f172a;
+  background: #0284c7;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   padding: 11px 20px;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
   transition: all 0.2s ease;
 }
 .oz-footer-form-wrapper button:hover,
 .oz-footer-form-wrapper input[type="submit"]:hover {
-  background: #7dd3fc;
+  background: #0369a1;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 .oz-footer-bottom {
   display: flex;
@@ -1912,12 +1932,12 @@ export class FooterVisualComponent implements OnInit {
   flex-wrap: wrap;
 }
 .oz-footer-legal-link {
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .oz-footer-legal-link:hover {
-  color: #ffffff;
+  color: #0f172a;
 }
 @media (max-width: 1024px) {
   .oz-footer-grid {

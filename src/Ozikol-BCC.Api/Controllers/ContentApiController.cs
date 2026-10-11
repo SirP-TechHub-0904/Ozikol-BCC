@@ -2476,30 +2476,54 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    {{{{/each}}}}
 
 4. Footers (Category: footer):
-   - Brand Identity: {{{{ BrandIdentity }}}} (or {{{{ BrandName }}}})
+   - Brand Identity:
+     <a href="{{{{ HomeUrl }}}}">
+       {{{{#if BrandLogo}}}}
+         <img src="{{{{ BrandLogo }}}}" alt="{{{{ BrandName }}}}" class=""[original logo classes]"" />
+       {{{{else}}}}
+         <span class=""[original brand text classes]"">{{{{ BrandName }}}}</span>
+       {{{{/if}}}}
+     </a> (or {{{{ BrandIdentity }}}})
    - Description / Tagline: {{{{ Description }}}}
-   - Multi-Column Category Links Loop:
+   - Dynamic Categories Multi-Column Links Loop:
      {{{{#each FooterCategories}}}}
-       <div class=""oz-col"">
-         <h4>{{{{ Title }}}}</h4>
-         <ul>
+       <div class=""[original column classes]"">
+         <h4 class=""[original title classes]"">{{{{ Title }}}}</h4>
+         <ul class=""[original list classes]"">
            {{{{#each Pages}}}}
-             <li><a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a></li>
+             <li><a href=""{{{{ Url }}}}"" class=""[original link classes]"">{{{{ Title }}}}</a></li>
            {{{{/each}}}}
          </ul>
        </div>
      {{{{/each}}}}
+   - Tagged Quick Links Column:
+     {{{{#each TaggedPages ""quicklinks""}}}}
+       <li><a href=""{{{{ Url }}}}"" class=""[original link classes]"">{{{{ Title }}}}</a></li>
+     {{{{/each}}}}
    - Legal Policy Links Loop:
      {{{{#each LegalPages}}}}
-       <a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a>
+       <a href=""{{{{ Url }}}}"" class=""[original link classes]"">{{{{ Title }}}}</a>
      {{{{/each}}}}
-   - Social Media Channels Loop:
-     {{{{#each SocialLinks}}}}
-       <a href=""{{{{ Url }}}}"" title=""{{{{ Platform }}}}""><span class=""material-symbols-outlined"">{{{{ Icon }}}}</span></a>
-     {{{{/each}}}}
+   - Social Media Channels:
+     {{{{#if HasSocialLinks}}}}
+       {{{{#each SocialLinks}}}}
+         <a href=""{{{{ Url }}}}"" title=""{{{{ Platform }}}}"" class=""[original link classes]"" target=""_blank"" rel=""noopener""><i class=""{{{{ IconClass }}}}""></i></a>
+       {{{{/each}}}}
+     {{{{/if}}}}
+   - Structured Contact Items Loop:
+     {{{{#if HasContactInfo}}}}
+       {{{{#each ContactItems}}}}
+         <div class=""[original item classes]"">
+           <i class=""{{{{ IconClass }}}}""></i>
+           <span class=""[original title classes]"">{{{{ Title }}}}</span>
+           <a href=""{{{{ Url }}}}"" class=""[original link classes]"">{{{{ Content }}}}</a>
+         </div>
+       {{{{/each}}}}
+     {{{{/if}}}}
+   - Simple Text Touchpoints: {{{{ Email }}}}, {{{{ Phone }}}}, {{{{ Address }}}}, {{{{ WorkingHours }}}}
    - Newsletter Subscription Form: {{{{ Form ""Newsletter_Subscribe"" }}}}
-   - Copyright Notice: {{{{ Copyright }}}} {{{{ BrandName }}}}
-   - Support & Contact: {{{{ Email }}}}, {{{{ Phone }}}}, {{{{ Address }}}}
+   - Copyright Notice: © {{{{ Year }}}} {{{{ BrandName }}}}. All rights reserved. (or {{{{ Copyright }}}})
+   - Root Container Class: {{{{ CustomClass }}}}
 
 5. Blog Feeds & Archives (Category: blog):
    - Section Header: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Intro {{{{ Description }}}}
