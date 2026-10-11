@@ -8,6 +8,8 @@ import { ApiService } from '../../../../core/services/api.service';
 import { TemplateHydrationService } from './services/template-hydration.service';
 import { ContentHydrationService } from './services/content-hydration.service';
 import { HtmlAssemblerService } from './services/html-assembler.service';
+import { UniversalPreviewModalService } from './services/universal-preview-modal.service';
+import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
 
 export interface InstalledTemplateItem {
   id: string;
@@ -51,7 +53,7 @@ export interface CodeInjectionTag {
 @Component({
   selector: 'app-my-templates',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, UniversalPreviewModalComponent],
   templateUrl: './my-templates.component.html',
   styleUrl: './my-templates.component.scss'
 })
@@ -853,7 +855,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private hydrationService: TemplateHydrationService,
     private contentHydrator: ContentHydrationService,
-    private htmlAssembler: HtmlAssemblerService
+    private htmlAssembler: HtmlAssemblerService,
+    private universalPreviewModal: UniversalPreviewModalService
   ) {}
 
   ngOnInit(): void {
@@ -2590,301 +2593,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   // Single Preview Modal
   openSinglePreviewModal(item: InstalledTemplateItem): void {
     this.activePreviewItem = item;
-    this.previewViewport = 'desktop';
+    const editUrl = `/content/console/templates/visuals/${item.dbId || item.id || item.variantCode}`;
+    const activeSuite = this.getAvailableSuites().find(s => s.name === this.activeThemeSuiteName);
+    const suiteCode = (this.selectedGroup && this.selectedGroup !== 'all')
+      ? this.selectedGroup
+      : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
 
-    // 1. Fully reset previewContent to clean blanks so unused properties from previous templates never leak
-    this.previewContent = {
-      title: '',
-      miniTitle: '',
-      description: '',
-      fullDescription: '',
-      imageUrl: '',
-      secondImageUrl: '',
-      buttonText: '',
-      buttonLink: '',
-      secondaryButtonText: '',
-      secondaryButtonLink: '',
-      directUrl: '',
-      youtubeUrlLink: '',
-      quote: '',
-      email: '',
-      phone: '',
-      address: '',
-      workingHours: '',
-      formKey: '',
-      customClass: '',
-      backgroundColor: '',
-      items: []
-    };
-
-    // Populate initial sample content from template's unique DefaultContentJson if available
-    let hydratedFromBlueprint = false;
+    let defaultSampleContent: any = null;
     if (item.defaultContentJson) {
       try {
-        const parsed = JSON.parse(item.defaultContentJson);
-        if (parsed && typeof parsed === 'object') {
-          if (parsed.title || parsed.Title) this.previewContent.title = parsed.title || parsed.Title;
-          if (parsed.miniTitle || parsed.MiniTitle) this.previewContent.miniTitle = parsed.miniTitle || parsed.MiniTitle;
-          if (parsed.description || parsed.Description) this.previewContent.description = parsed.description || parsed.Description;
-          if (parsed.fullDescription || parsed.FullDescription) this.previewContent.fullDescription = parsed.fullDescription || parsed.FullDescription;
-          if (parsed.imageUrl || parsed.ImageUrl) this.previewContent.imageUrl = parsed.imageUrl || parsed.ImageUrl;
-          if (parsed.secondImageUrl || parsed.SecondImageUrl) this.previewContent.secondImageUrl = parsed.secondImageUrl || parsed.SecondImageUrl;
-          if (parsed.buttonText || parsed.ButtonText) this.previewContent.buttonText = parsed.buttonText || parsed.ButtonText;
-          if (parsed.buttonLink || parsed.ButtonLink) this.previewContent.buttonLink = parsed.buttonLink || parsed.ButtonLink;
-          if (parsed.secondaryButtonText || parsed.SecondaryButtonText) this.previewContent.secondaryButtonText = parsed.secondaryButtonText || parsed.SecondaryButtonText;
-          if (parsed.secondaryButtonLink || parsed.SecondaryButtonLink) this.previewContent.secondaryButtonLink = parsed.secondaryButtonLink || parsed.SecondaryButtonLink;
-          if (parsed.directUrl || parsed.DirectUrl) this.previewContent.directUrl = parsed.directUrl || parsed.DirectUrl;
-          if (parsed.youtubeUrlLink || parsed.YoutubeUrlLink) this.previewContent.youtubeUrlLink = parsed.youtubeUrlLink || parsed.YoutubeUrlLink;
-          if (parsed.quote || parsed.Quote) this.previewContent.quote = parsed.quote || parsed.Quote;
-          if (parsed.email || parsed.Email) this.previewContent.email = parsed.email || parsed.Email;
-          if (parsed.phone || parsed.Phone) this.previewContent.phone = parsed.phone || parsed.Phone;
-          if (parsed.address || parsed.Address) this.previewContent.address = parsed.address || parsed.Address;
-          if (parsed.workingHours || parsed.WorkingHours) this.previewContent.workingHours = parsed.workingHours || parsed.WorkingHours;
-          if (parsed.formKey || parsed.FormKey) this.previewContent.formKey = parsed.formKey || parsed.FormKey;
-          if (parsed.customClass || parsed.CustomClass) this.previewContent.customClass = parsed.customClass || parsed.CustomClass;
-          if (parsed.backgroundColor || parsed.BackgroundColor) this.previewContent.backgroundColor = parsed.backgroundColor || parsed.BackgroundColor;
-
-          const rawItems = parsed.pageSectionLists || parsed.PageSectionLists || parsed.items || parsed.Items || parsed.sectionLists || parsed.SectionLists;
-          if (Array.isArray(rawItems) && rawItems.length > 0) {
-            this.previewContent.items = rawItems.map((it: any, idx: number) => ({
-              title: it.title || it.Title || '',
-              miniTitle: it.miniTitle || it.MiniTitle || '',
-              description: it.description || it.Description || '',
-              moreDescription: it.moreDescription || it.MoreDescription || '',
-              iconText: it.iconText || it.IconText || '',
-              imageUrl: it.imageUrl || it.ImageUrl || '',
-              buttonText: it.buttonText || it.ButtonText || '',
-              buttonLink: it.buttonLink || it.ButtonLink || '',
-              sortOrder: it.sortOrder || it.SortOrder || (idx + 1)
-            }));
-          }
-          hydratedFromBlueprint = true;
-        }
+        defaultSampleContent = JSON.parse(item.defaultContentJson);
       } catch (e) {}
     }
 
-    if (item.category === 'hero') {
-      let defaultHeroData: any = null;
-      if (item.defaultContentJson) {
-        try {
-          defaultHeroData = JSON.parse(item.defaultContentJson);
-        } catch (e) {}
-      }
-      this.previewHeroContent = {
-        title: defaultHeroData?.title || defaultHeroData?.Title || item.previewTitle || item.name || '',
-        miniTitle: defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || defaultHeroData?.badgeText || item.previewSubtitle || '',
-        text: defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || item.previewBody || item.description || '',
-        buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || '',
-        buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '',
-        videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
-        videoLink: defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
-        url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || '',
-        secondUrl: defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
-        youtubeVideo: defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
-      };
-    }
-
-    if (item.category === 'footer') {
-      let defaultFooterData: any = null;
-      if (item.defaultContentJson) {
-        try {
-          defaultFooterData = JSON.parse(item.defaultContentJson);
-        } catch(e) {}
-      }
-      this.previewFooterContent = {
-        brandName: defaultFooterData?.brandName || this.currentTenantBrandName || 'Organization Portal',
-        description: defaultFooterData?.description || item.description || 'Empowering modern organizations with strategic solutions.',
-        email: defaultFooterData?.email || 'contact@organization.com',
-        phone: defaultFooterData?.phone || '+1 (555) 019-2834',
-        categories: (defaultFooterData?.categories && Array.isArray(defaultFooterData.categories)) ? defaultFooterData.categories : [
-          {
-            name: 'Services',
-            displayTitle: 'Solutions',
-            pages: [
-              { title: 'Strategic Consulting', url: '/strategic-advisory' },
-              { title: 'Systems Modernization', url: '/systems-modernization' },
-              { title: 'Performance & Scale', url: '/performance-scale' },
-              { title: 'Enterprise Advisory', url: '/enterprise-governance' }
-            ]
-          },
-          {
-            name: 'Company',
-            displayTitle: 'Company',
-            pages: [
-              { title: 'About Us', url: '/about' },
-              { title: 'Request a Service', url: '/request-service' },
-              { title: 'Contact Us', url: '/contact' }
-            ]
-          }
-        ],
-        legalPages: (defaultFooterData?.legalPages && Array.isArray(defaultFooterData.legalPages)) ? defaultFooterData.legalPages : [
-          { title: 'Privacy Policy', url: '/privacy-policy' },
-          { title: 'Terms & Conditions', url: '/terms-and-conditions' },
-          { title: 'Cookie Policy', url: '/cookie-policy' }
-        ]
-      };
-    }
-
-    if (item.category === 'menu') {
-      let defaultMenuData: any = null;
-      if (item.defaultContentJson) {
-        try {
-          defaultMenuData = JSON.parse(item.defaultContentJson);
-        } catch (e) {}
-      }
-
-      const brand = this.editorTokens?.brand;
-      const brandName = defaultMenuData?.brandName || brand?.name || this.currentTenantBrandName || 'Ozikol Cloud';
-      const brandLogo = defaultMenuData?.brandLogo || brand?.logoUrl || '';
-
-      this.previewMenuContent = {
-        brandName,
-        brandLogo,
-        logoUrl: brandLogo,
-        homeUrl: defaultMenuData?.homeUrl || '/',
-        customClass: defaultMenuData?.customClass || '',
-        hasTopBar: defaultMenuData?.hasTopBar ?? true,
-        hasContactInfo: defaultMenuData?.hasContactInfo ?? true,
-        email: defaultMenuData?.email || 'support@ozikol.cloud',
-        phone: defaultMenuData?.phone || '+1 (555) 019-2834',
-        address: defaultMenuData?.address || '',
-        showLoginButton: defaultMenuData?.showLoginButton ?? true,
-        loginUrl: defaultMenuData?.loginUrl || '/auth/login',
-        loginText: defaultMenuData?.loginText || 'Sign In',
-        topBarPages: (defaultMenuData?.topBarPages && Array.isArray(defaultMenuData.topBarPages))
-          ? defaultMenuData.topBarPages
-          : [
-              { title: 'Support', url: '/support' },
-              { title: 'Docs', url: '/docs' }
-            ],
-        navigationMenu: (defaultMenuData?.navigationMenu && Array.isArray(defaultMenuData.navigationMenu))
-          ? defaultMenuData.navigationMenu
-          : [
-              {
-                title: 'Solutions',
-                url: '/solutions',
-                zone: 'first',
-                isDropdown: true,
-                pages: [
-                  { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
-                  { title: 'Enterprise Security', url: '/solutions/security' }
-                ]
-              },
-              {
-                title: 'Platform',
-                url: '/platform',
-                zone: 'middle',
-                isDropdown: false
-              },
-              {
-                title: 'Company',
-                url: '/company',
-                zone: 'last',
-                isDropdown: false
-              }
-            ],
-        menuCtaButtons: (defaultMenuData?.menuCtaButtons && Array.isArray(defaultMenuData.menuCtaButtons))
-          ? defaultMenuData.menuCtaButtons
-          : [
-              { title: 'Get Started', url: '/get-started', customClass: 'oz-btn-primary' }
-            ],
-        topMenuItems: (this.editorTokens?.topMenuItems && this.editorTokens.topMenuItems.length > 0)
-          ? JSON.parse(JSON.stringify(this.editorTokens.topMenuItems))
-          : [
-              { title: 'Home', url: '/' },
-              { title: 'Blog', url: '/blog' },
-              { title: 'Contact', url: '/contact' }
-            ],
-        dropdowns: (this.editorTokens?.menuDropdowns && this.editorTokens.menuDropdowns.length > 0)
-          ? JSON.parse(JSON.stringify(this.editorTokens.menuDropdowns))
-          : [
-              {
-                title: 'Services',
-                pages: [
-                  { title: 'Strategic Consulting', url: '/strategic-advisory' },
-                  { title: 'Systems Modernization', url: '/systems-modernization' }
-                ]
-              }
-            ]
-      };
-    }
-
-    if (item.category === 'breadcrumb') {
-      let defaultBreadcrumbData: any = null;
-      if (item.defaultContentJson) {
-        try {
-          defaultBreadcrumbData = JSON.parse(item.defaultContentJson);
-        } catch (e) {}
-      }
-      this.previewBreadcrumbContent = {
-        title: defaultBreadcrumbData?.title || 'Enterprise Solutions & Insights',
-        miniTitle: defaultBreadcrumbData?.miniTitle || 'MISSION & LEADERSHIP',
-        description: defaultBreadcrumbData?.description || 'Discover how modern organizations accelerate digital workflows through hardened infrastructure.',
-        backgroundImageUrl: defaultBreadcrumbData?.backgroundImageUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
-        trailItems: (defaultBreadcrumbData?.trailItems && Array.isArray(defaultBreadcrumbData.trailItems))
-          ? defaultBreadcrumbData.trailItems
-          : [
-              { label: 'Home', url: '/', isActive: false },
-              { label: 'Capabilities', url: '/capabilities', isActive: false },
-              { label: 'Enterprise Solutions', url: '/capabilities/enterprise', isActive: true }
-            ]
-      };
-    }
-
-    if (!this.previewContent.title) {
-      if (item.previewTitle) this.previewContent.title = item.previewTitle;
-      else if (item.name) this.previewContent.title = item.name;
-    }
-
-    if (!this.previewContent.description) {
-      if (item.previewBody) this.previewContent.description = item.previewBody;
-      else if (item.description) this.previewContent.description = item.description;
-    }
-
-    if (!this.previewContent.miniTitle && item.previewSubtitle) {
-      this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
-    }
-
-    // Ensure list items are populated if this section template uses PageSectionLists
-    if (this.previewContent.items.length === 0 && this.templateUses('PageSectionLists')) {
-      const v = (item.variantCode || item.name || '').toLowerCase();
-      if (v.includes('requestservice')) {
-        this.previewContent.items = [
-          { title: 'Dedicated Solutions Lead', description: 'Direct engagement with an enterprise systems architect.', iconText: 'fa-solid fa-check', sortOrder: 1 },
-          { title: 'Feasibility & Scope Assessment', description: 'Actionable roadmap, architectural fit, and resource modeling.', iconText: 'fa-solid fa-check', sortOrder: 2 },
-          { title: 'Client Confidentiality & NDA', description: 'Strict confidentiality agreements and secure communication channels guaranteed.', iconText: 'fa-solid fa-check', sortOrder: 3 }
-        ];
-      } else if (v.includes('metric') || v.includes('counter')) {
-        this.previewContent.items = [
-          { title: '12,500+', description: 'Verified Members', iconText: 'fa-solid fa-users text-primary', sortOrder: 1 },
-          { title: '99.98%', description: 'System Reliability', iconText: 'fa-solid fa-server text-success', sortOrder: 2 },
-          { title: '45+', description: 'Global Chapters', iconText: 'fa-solid fa-earth-americas text-info', sortOrder: 3 },
-          { title: '24/7', description: 'Priority Support', iconText: 'fa-solid fa-headset text-warning', sortOrder: 4 }
-        ];
-      } else if (v.includes('faq') || v.includes('accordion')) {
-        this.previewContent.items = [
-          { title: 'How does our organization tailor its services to your business needs?', description: 'We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements.', sortOrder: 1 },
-          { title: 'What kind of ongoing support and collaboration can you expect?', description: 'Every client is paired with a dedicated account lead and receives regular milestone reviews and responsive technical support.', sortOrder: 2 },
-          { title: 'What are your standard compliance and data security standards?', description: 'We enforce enterprise-grade AES-256 encryption, strict role-based authorization protocols, and SOC2-compliant handling.', sortOrder: 3 }
-        ];
-      } else if (v.includes('testimonial') || v.includes('review')) {
-        this.previewContent.items = [
-          { title: 'Sarah Adams', miniTitle: 'SA', description: 'Working with our partners transformed our operational efficiency. Their team delivered outstanding results from day one.', moreDescription: 'Chief Operating Officer', sortOrder: 1 },
-          { title: 'Marcus Kim', miniTitle: 'MK', description: 'Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner.', moreDescription: 'Managing Director', sortOrder: 2 },
-          { title: 'Elena Rostova', miniTitle: 'EL', description: 'The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time.', moreDescription: 'VP of Business Development', sortOrder: 3 }
-        ];
-      } else {
-        this.previewContent.items = [
-          { title: 'Data Security & Privacy', description: 'Enterprise-grade encryption, role-based access management, and proactive compliance protection.', iconText: 'fa-solid fa-shield-halved', sortOrder: 1 },
-          { title: 'Collaboration Hub', description: 'Unified communication channels, real-time dispatches, and organizational announcements.', iconText: 'fa-solid fa-comments', sortOrder: 2 },
-          { title: 'Operational Efficiency', description: 'Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.', iconText: 'fa-solid fa-bolt', sortOrder: 3 }
-        ];
-      }
-    }
-
-    this.modalPreviewPageSlug = 'isolated';
-    this.updateSinglePreviewHtml();
-    this.showSinglePreviewModal = true;
+    this.universalPreviewModal.open({
+      title: item.name,
+      category: item.category,
+      variantCode: item.variantCode,
+      version: item.version,
+      badge: item.badge,
+      htmlTemplate: item.htmlTemplate,
+      cssStyles: item.cssStyles,
+      jsScript: item.jsScript,
+      sampleContent: defaultSampleContent,
+      editUrl: editUrl,
+      suiteCode: suiteCode,
+      codeInjections: this.allCodeInjections
+    });
   }
 
   /**
@@ -3513,6 +3248,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   closeSinglePreviewModal(): void {
+    this.universalPreviewModal.close();
     this.showSinglePreviewModal = false;
     this.activePreviewItem = null;
     this.safeSinglePreviewHtml = '';

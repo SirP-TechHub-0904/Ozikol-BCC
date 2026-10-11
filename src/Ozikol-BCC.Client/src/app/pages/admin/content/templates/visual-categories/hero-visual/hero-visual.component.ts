@@ -2,12 +2,10 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
 import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
-import { HtmlAssemblerService } from '../../services/html-assembler.service';
-import { TemplateHydrationService } from '../../services/template-hydration.service';
+import { UniversalPreviewModalService } from '../../services/universal-preview-modal.service';
 
 /**
  * Dedicated category studio component for creating and editing Hero Section templates.
@@ -461,71 +459,6 @@ import { TemplateHydrationService } from '../../services/template-hydration.serv
                   placeholder="e.g. #case-studies"
                 />
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Interactive Simulated Preview Modal -->
-      <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()">
-        <div class="preview-modal-dialog" (click)="$event.stopPropagation()">
-          <div class="preview-modal-header">
-            <div class="preview-header-meta">
-              <div class="preview-badge-icon">
-                <span class="material-symbols-outlined">view_headline</span>
-              </div>
-              <div>
-                <h3 class="preview-modal-name">{{ templateName || 'Hero Showcase' }}</h3>
-                <span class="preview-modal-sub">
-                  Category: <strong>Hero Section</strong> &bull; Variant: <code>{{ variantCode }}</code>
-                </span>
-              </div>
-            </div>
-
-            <div class="modal-header-actions">
-              <div class="modal-viewport-toggle">
-                <button
-                  type="button"
-                  class="btn-vp"
-                  [class.active]="previewViewport === 'desktop'"
-                  (click)="previewViewport = 'desktop'"
-                >
-                  <span class="material-symbols-outlined">desktop_windows</span>
-                  <span>Desktop (100%)</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-vp"
-                  [class.active]="previewViewport === 'tablet'"
-                  (click)="previewViewport = 'tablet'"
-                >
-                  <span class="material-symbols-outlined">tablet</span>
-                  <span>Tablet (768px)</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-vp"
-                  [class.active]="previewViewport === 'mobile'"
-                  (click)="previewViewport = 'mobile'"
-                >
-                  <span class="material-symbols-outlined">smartphone</span>
-                  <span>Mobile (375px)</span>
-                </button>
-              </div>
-              <button type="button" class="btn-close-modal" (click)="closePreviewModal()">
-                <span class="material-symbols-outlined">close</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="preview-modal-body">
-            <div class="preview-canvas-wrapper" [ngClass]="'viewport-' + previewViewport">
-              <iframe
-                class="modal-preview-iframe"
-                [src]="safeModalPreviewUrl"
-                sandbox="allow-scripts allow-same-origin"
-                title="Live Simulation Demo"
-              ></iframe>
             </div>
           </div>
         </div>
@@ -1225,11 +1158,6 @@ export class HeroVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'slide_1' | 'slide_2' = 'slide_1';
 
-  // Preview Modal
-  showPreviewModal: boolean = false;
-  previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
-  safeModalPreviewUrl: SafeResourceUrl | null = null;
-
   htmlTemplate: string = `<section class="oz-hero-slider {{ CustomClass }}">
   <div class="oz-slider-track">
     {{#each PageSectionLists}}
@@ -1698,9 +1626,7 @@ export class HeroVisualComponent implements OnInit {
   constructor(
     private api: ApiService,
     private toast: ToastService,
-    private sanitizer: DomSanitizer,
-    private htmlAssembler: HtmlAssemblerService,
-    private hydrationService: TemplateHydrationService,
+    private previewModalService: UniversalPreviewModalService,
     private router: Router
   ) {}
 
@@ -1817,35 +1743,15 @@ export class HeroVisualComponent implements OnInit {
   }
 
   openPreviewModal(): void {
-    const rawHtml = this.htmlTemplate || '';
-    const rawCss = this.cssStyles || '';
-    const rawJs = this.jsScript || '';
-
-    const hydratedHtml = this.hydrationService.hydrateTemplate(
-      rawHtml,
-      this.sampleContent,
-      {
-        editorTokens: this.editorTokens,
-        currentTenantBrandName: 'Acme Global'
-      }
-    );
-
-    const assembled = this.htmlAssembler.assembleSectionPreview({
-      html: hydratedHtml,
-      css: rawCss,
-      js: rawJs,
+    this.previewModalService.open({
+      title: this.templateName || 'Hero Showcase',
       category: 'hero',
-      pageTitle: `${this.templateName || 'Hero'} Preview`
+      variantCode: this.variantCode,
+      htmlTemplate: this.htmlTemplate || '',
+      cssStyles: this.cssStyles || '',
+      jsScript: this.jsScript || '',
+      sampleContent: this.sampleContent
     });
-
-    const blob = new Blob([assembled], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    this.safeModalPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-    this.showPreviewModal = true;
-  }
-
-  closePreviewModal(): void {
-    this.showPreviewModal = false;
   }
 
   loadExistingTemplate(id: string): void {
