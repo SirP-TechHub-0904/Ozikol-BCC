@@ -11,31 +11,44 @@ export class FooterAiRule implements ICategoryAiRule {
     '{{ BrandIdentity }}',
     '{{ BrandName }}',
     '{{ BrandLogo }}',
+    '{{ HomeUrl }}',
     '{{ Description }}',
     '{{#each FooterCategories}}',
     '{{#each Pages}}',
     '{{#each LegalPages}}',
+    '{{#if HasSocialLinks}}',
     '{{#each SocialLinks}}',
     '{{ Form "Newsletter_Subscribe" }}',
+    '{{#if HasContactInfo}}',
+    '{{#each ContactItems}}',
     '{{ Copyright }}',
     '{{ Year }}',
     '{{ Address }}',
     '{{ Phone }}',
     '{{ Email }}',
+    '{{ WorkingHours }}',
     '{{ CustomClass }}'
   ];
 
   buildSurgicalPrompt(context: AiRuleContext): string {
     return `You are a specialized surgical code transformer for Ozikol BCC CMS Footers.
-Your mission is to replace static text, hardcoded column links, legal pages, and copyright text with canonical Ozikol Handlebars tokens.
+Your mission is to replace static text, hardcoded column links, legal pages, social icons, newsletter forms, and copyright text with canonical Ozikol Handlebars tokens.
 
 TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
-1. Brand Identity & Tagline:
-   - Brand Logo / Name: {{#if BrandLogo}}<img src="{{ BrandLogo }}" alt="{{ BrandName }}" />{{else}}{{ BrandName }}{{/if}}
+1. Brand Identity & Mission:
+   - Brand Logo / Text:
+     <a href="{{ HomeUrl }}" class="[original brand link classes]">
+       {{#if BrandLogo}}
+         <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="[original logo classes]" />
+       {{else}}
+         <span class="[original brand text classes]">{{ BrandName }}</span>
+       {{/if}}
+     </a>
+     (or use {{ BrandIdentity }})
    - Tagline / Brief Description: {{ Description }}
 
 2. Navigation Columns (Dynamic Group Loops):
-   Look for multi-column link groupings (e.g. Products, Company, Resources). Keep ONE dynamic column instance inside:
+   Look for multi-column link groupings (e.g. Products, Company, Resources, Solutions). Keep ONE dynamic column instance inside:
    {{#each FooterCategories}}
      <div class="[original column classes]">
        <h4 class="[original title classes]">{{ Title }}</h4>
@@ -48,25 +61,50 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
    {{/each}}
 
 3. Legal & Compliance Policy Links:
-   Inside the legal bar or bottom policy links container:
+   Inside the legal strip, bottom bar, or policy links container:
    {{#each LegalPages}}
      <a href="{{ Url }}" class="[original link classes]">{{ Title }}</a>
    {{/each}}
 
 4. Social Media Channels:
    Inside the social icon container:
-   {{#each SocialLinks}}
-     <a href="{{ Url }}" title="{{ Platform }}" class="[original social classes]"><i class="{{ Icon }}"></i></a>
-   {{/each}}
+   {{#if HasSocialLinks}}
+     <div class="[original social wrapper classes]">
+       {{#each SocialLinks}}
+         <a href="{{ Url }}" title="{{ Platform }}" class="[original social link classes]" target="_blank" rel="noopener">
+           <i class="{{ IconClass }}"></i>
+         </a>
+       {{/each}}
+     </div>
+   {{/if}}
 
 5. Newsletter Form Embed:
-   Replace static subscription input boxes with {{ Form "Newsletter_Subscribe" }}.
+   Replace static subscription input boxes / forms with {{ Form "Newsletter_Subscribe" }}.
 
-6. Copyright Notice & Contact:
-   - Copyright: © {{ Year }} {{ BrandName }}. All rights reserved. or {{ Copyright }}
-   - Contact Info: {{ Address }}, {{ Phone }}, {{ Email }}
+6. Contact Touchpoints & Address:
+   - Structured Contact Items: If contact details exist as repeated cards, list items, or rows:
+     {{#if HasContactInfo}}
+       <div class="[original contact container classes]">
+         {{#each ContactItems}}
+           <div class="[original item classes]">
+             <i class="{{ IconClass }}"></i>
+             <span class="[original title classes]">{{ Title }}</span>
+             <a href="{{ Url }}" class="[original value classes]">{{ Content }}</a>
+           </div>
+         {{/each}}
+       </div>
+     {{/if}}
+   - Simple Text / Links:
+     - Phone: replace with {{ Phone }} or <a href="tel:{{ Phone }}">{{ Phone }}</a>
+     - Email: replace with {{ Email }} or <a href="mailto:{{ Email }}">{{ Email }}</a>
+     - Physical Address: replace with {{ Address }}
+     - Working Hours: replace with {{ WorkingHours }}
 
-7. Root Container:
+7. Copyright Notice:
+   Replace hardcoded year and copyright text with:
+   © {{ Year }} {{ BrandName }}. All rights reserved. or {{ Copyright }}
+
+8. Root Container:
    Ensure the root footer tag includes class "{{ CustomClass }}".
 
 MANDATORY RULES:

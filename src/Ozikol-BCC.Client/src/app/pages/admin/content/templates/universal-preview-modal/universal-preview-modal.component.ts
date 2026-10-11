@@ -715,10 +715,14 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
           brandName: custom.brandName || 'Apex Global',
           brandLogo: custom.brandLogo || custom.logoUrl || '',
           logoUrl: custom.logoUrl || custom.brandLogo || '',
+          homeUrl: custom.homeUrl || '/',
           description: custom.description || 'Empowering global workloads with autonomous cloud resilience, sub-millisecond execution, and sovereign tenant governance.',
+          hasContactInfo: custom.hasContactInfo ?? true,
+          hasSocialLinks: custom.hasSocialLinks ?? true,
           email: custom.email || 'contact@example.com',
           phone: custom.phone || '+1 (555) 019-2834',
           address: custom.address || '1200 Innovation Way, Suite 400',
+          workingHours: custom.workingHours || 'Mon - Fri: 8:00 AM - 6:00 PM',
           copyright: custom.copyright || '© 2026 Apex Global. All rights reserved.',
           footerCategories: custom.footerCategories || [
             { title: 'Solutions', pages: [{ title: 'Enterprise Cloud', url: '/cloud' }, { title: 'Edge Security', url: '/security' }, { title: 'Database Mesh', url: '/db' }] },
@@ -731,9 +735,15 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
             { title: 'Security & SLA', url: '/security' }
           ],
           socialLinks: custom.socialLinks || [
-            { platform: 'Twitter / X', url: 'https://x.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-            { platform: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
-            { platform: 'GitHub', url: 'https://github.com', icon: 'code', iconClass: 'fa-brands fa-github' }
+            { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://x.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+            { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+            { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+            { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+          ],
+          contactItems: custom.contactItems || [
+            { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+            { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+            { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '1200 Innovation Way, Suite 400', content: '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
           ]
         };
 
