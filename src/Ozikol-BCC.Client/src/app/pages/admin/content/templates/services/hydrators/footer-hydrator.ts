@@ -305,6 +305,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
   output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} ${brandName}. All rights reserved.`);
   output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || 'Empowering enterprise workloads with global scale, sub-millisecond resilience, and autonomous cloud pipelines.');
+  output = output.replace(/\{\{\s*ContactUrl\s*\}\}/gi, (ctx as any).contactUrl || '/contact');
 
   // 8. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);
