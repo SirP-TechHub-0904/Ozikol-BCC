@@ -409,12 +409,13 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
 
   output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Apex Global');
   output = output.replace(/\{\{\s*(?:BrandLogo|LogoUrl)\s*\}\}/gi, ctx.brandLogo || ctx.logoUrl || '');
-  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${new Date().getFullYear()} Acme Global Corp.`);
+  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${new Date().getFullYear()} Apex Global. All rights reserved.`);
   output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || '');
   output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '');
   output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || '');
   output = output.replace(/\{\{\s*WorkingHours\s*\}\}/gi, ctx.workingHours || '');
   output = output.replace(/\{\{\s*HomeUrl\s*\}\}/gi, ctx.homeUrl || '/');
+  output = output.replace(/\{\{\s*ContactUrl\s*\}\}/gi, (ctx as any).contactUrl || '/contact');
   output = output.replace(/\{\{\s*LoginUrl\s*\}\}/gi, ctx.loginUrl || '/auth/login');
   output = output.replace(/\{\{\s*LoginText\s*\}\}/gi, ctx.loginText || 'Sign In');
   output = output.replace(/\{\{\s*CustomClass\s*\}\}/gi, ctx.customClass || '');
