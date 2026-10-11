@@ -1005,16 +1005,46 @@ export class FooterVisualComponent implements OnInit {
 
   htmlTemplate: string = `<footer class="oz-footer-section {{ CustomClass }}">
   <div class="oz-footer-container">
-    <div class="oz-footer-top">
+    <!-- Top Row: Brand & Mission, Multi-Column Navigation, and Newsletter -->
+    <div class="oz-footer-grid">
+      <!-- Zone 1: Brand, Tagline & Contact Touchpoints -->
       <div class="oz-footer-brand-col">
-        <h3 class="oz-footer-brand">{{ BrandName }}</h3>
+        <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
+          {{#if BrandLogo}}
+            <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
+          {{else}}
+            <span class="oz-footer-brand-title">{{ BrandName }}</span>
+          {{/if}}
+        </a>
         <p class="oz-footer-desc">{{ Description }}</p>
-        <div class="oz-footer-contact">
-          {{#if Email}}<p>✉ {{ Email }}</p>{{/if}}
-          {{#if Phone}}<p>✆ {{ Phone }}</p>{{/if}}
+
+        {{#if HasContactInfo}}
+        <div class="oz-footer-contacts">
+          {{#each ContactItems}}
+          <div class="oz-footer-contact-item">
+            <i class="{{ IconClass }}"></i>
+            <div class="oz-footer-contact-text">
+              <span class="oz-footer-contact-label">{{ Title }}</span>
+              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
+            </div>
+          </div>
+          {{/each}}
         </div>
+        {{/if}}
+
+        {{#if HasSocialLinks}}
+        <div class="oz-footer-socials">
+          {{#each SocialLinks}}
+          <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
+            <i class="{{ IconClass }}"></i>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
       </div>
-      <div class="oz-footer-nav-cols">
+
+      <!-- Zone 2: Dynamic Multi-Column Navigation -->
+      <div class="oz-footer-nav-group">
         {{#each FooterCategories}}
         <div class="oz-footer-col">
           <h4 class="oz-footer-col-title">{{ Title }}</h4>
@@ -1026,49 +1056,139 @@ export class FooterVisualComponent implements OnInit {
         </div>
         {{/each}}
       </div>
+
+      <!-- Zone 3: Interactive Newsletter Subscription Block -->
+      <div class="oz-footer-newsletter-col">
+        <h4 class="oz-footer-col-title">Stay Informed</h4>
+        <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
+        <div class="oz-footer-form-wrapper">
+          {{ Form "Newsletter_Subscribe" }}
+        </div>
+      </div>
     </div>
+
+    <!-- Zone 4: Bottom Compliance Bar & Legal Links -->
     <div class="oz-footer-bottom">
-      <p class="oz-copyright">&copy; {{ Year }} {{ Copyright }}. All rights reserved.</p>
-      {{#if PoweredBy}}<span class="oz-powered-by">Powered by {{ PoweredBy }}</span>{{/if}}
+      <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
+      <div class="oz-footer-legal-links">
+        {{#each LegalPages}}
+        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+        {{/each}}
+      </div>
     </div>
   </div>
 </footer>`;
 
   cssStyles: string = `.oz-footer-section {
-  background: #0f172a;
+  background: #090d16;
   color: #94a3b8;
-  padding: 64px 24px 32px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 72px 24px 36px 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .oz-footer-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
 }
-.oz-footer-top {
+.oz-footer-grid {
   display: grid;
-  grid-template-columns: 1.2fr 2.8fr;
+  grid-template-columns: 1.3fr 2fr 1.1fr;
   gap: 48px;
-  padding-bottom: 48px;
+  padding-bottom: 56px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.oz-footer-brand {
+.oz-footer-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.oz-footer-brand-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.oz-footer-brand-logo {
+  max-height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+.oz-footer-brand-title {
   color: #ffffff;
   font-size: 22px;
   font-weight: 800;
-  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
 }
 .oz-footer-desc {
   font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 16px 0;
+  line-height: 1.65;
+  color: #94a3b8;
+  margin: 0;
 }
-.oz-footer-contact p {
-  font-size: 13px;
-  margin: 4px 0;
+.oz-footer-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
 }
-.oz-footer-nav-cols {
+.oz-footer-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13.5px;
+}
+.oz-footer-contact-item i {
+  color: #38bdf8;
+  font-size: 15px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.oz-footer-contact-text {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-contact-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+.oz-footer-contact-val {
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.oz-footer-contact-val:hover {
+  color: #38bdf8;
+}
+.oz-footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.oz-footer-social-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.oz-footer-social-icon:hover {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+}
+.oz-footer-nav-group {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 32px;
 }
 .oz-footer-col-title {
@@ -1076,8 +1196,8 @@ export class FooterVisualComponent implements OnInit {
   font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 16px 0;
+  letter-spacing: 0.8px;
+  margin: 0 0 18px 0;
 }
 .oz-footer-links {
   list-style: none;
@@ -1085,59 +1205,189 @@ export class FooterVisualComponent implements OnInit {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .oz-footer-link {
   color: #94a3b8;
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 14px;
   transition: color 0.2s ease;
 }
 .oz-footer-link:hover {
-  color: #ffffff;
+  color: #38bdf8;
+  padding-left: 3px;
+}
+.oz-footer-newsletter-col {
+  display: flex;
+  flex-direction: column;
+}
+.oz-footer-newsletter-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+}
+.oz-footer-form-wrapper {
+  margin-top: 4px;
 }
 .oz-footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 32px;
-  font-size: 13px;
+  font-size: 13.5px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
-.oz-copyright {
+.oz-footer-copyright {
   margin: 0;
+  color: #64748b;
 }
-@media (max-width: 900px) {
-  .oz-footer-top { grid-template-columns: 1fr; gap: 36px; }
-  .oz-footer-nav-cols { grid-template-columns: repeat(2, 1fr); }
+.oz-footer-legal-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.oz-footer-legal-link {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.oz-footer-legal-link:hover {
+  color: #ffffff;
+}
+@media (max-width: 1024px) {
+  .oz-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+@media (max-width: 640px) {
+  .oz-footer-nav-group {
+    grid-template-columns: 1fr 1fr;
+  }
+  .oz-footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }`;
 
   jsScript: string = '';
 
   footerTokens: Array<{ label: string; token: string }> = [
+    {
+      label: 'Brand Identity',
+      token: `<a class="oz-footer-brand-link" href="{{ HomeUrl }}">
+  {{#if BrandLogo}}
+    <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
+  {{else}}
+    <span class="oz-footer-brand-title">{{ BrandName }}</span>
+  {{/if}}
+</a>`
+    },
+    {
+      label: 'Category Columns (Loop)',
+      token: `{{#each FooterCategories}}
+<div class="oz-footer-col">
+  <h4 class="oz-footer-col-title">{{ Title }}</h4>
+  <ul class="oz-footer-links">
+    {{#each Pages}}
+    <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+    {{/each}}
+  </ul>
+</div>
+{{/each}}`
+    },
+    {
+      label: 'Social Media Channels',
+      token: `{{#if HasSocialLinks}}
+<div class="oz-footer-socials">
+  {{#each SocialLinks}}
+  <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
+    <i class="{{ IconClass }}"></i>
+  </a>
+  {{/each}}
+</div>
+{{/if}}`
+    },
+    {
+      label: 'Contact Channels (Loop)',
+      token: `{{#if HasContactInfo}}
+<div class="oz-footer-contacts">
+  {{#each ContactItems}}
+  <div class="oz-footer-contact-item">
+    <i class="{{ IconClass }}"></i>
+    <div class="oz-footer-contact-text">
+      <span class="oz-footer-contact-label">{{ Title }}</span>
+      <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
+    </div>
+  </div>
+  {{/each}}
+</div>
+{{/if}}`
+    },
+    {
+      label: 'Legal Pages (Strip)',
+      token: `<div class="oz-footer-legal-links">
+  {{#each LegalPages}}
+  <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+  {{/each}}
+</div>`
+    },
+    {
+      label: 'Newsletter Subscribe Form',
+      token: `<div class="oz-footer-newsletter-col">
+  <h4 class="oz-footer-col-title">Stay Informed</h4>
+  <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
+  <div class="oz-footer-form-wrapper">
+    {{ Form "Newsletter_Subscribe" }}
+  </div>
+</div>`
+    },
+    {
+      label: 'Copyright Notice',
+      token: `<p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>`
+    },
     { label: 'Brand Name', token: '{{ BrandName }}' },
     { label: 'Description', token: '{{ Description }}' },
-    { label: 'Copyright', token: '{{ Copyright }}' },
-    { label: 'Year', token: '{{ Year }}' },
-    { label: 'PoweredBy', token: '{{ PoweredBy }}' },
-    { label: 'Email', token: '{{ Email }}' },
     { label: 'Phone', token: '{{ Phone }}' },
+    { label: 'Email', token: '{{ Email }}' },
     { label: 'Address', token: '{{ Address }}' },
-    { label: 'Category Columns', token: '{{#each FooterCategories}}\n  <div class="oz-footer-col">\n    <h4>{{ Title }}</h4>\n    <ul>\n      {{#each Pages}}\n      <li><a href="{{ Url }}">{{ Title }}</a></li>\n      {{/each}}\n    </ul>\n  </div>\n{{/each}}' },
-    { label: 'Social Links', token: '{{#each SocialLinks}}\n  <a href="{{ Url }}" title="{{ Platform }}"><span class="material-symbols-outlined">{{ Icon }}</span></a>\n{{/each}}' },
-    { label: 'Legal Pages', token: '{{#each LegalPages}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}' }
+    { label: 'Working Hours', token: '{{ WorkingHours }}' }
   ];
 
   sampleContent: any = {
     brandName: 'Ozikol Technologies',
+    brandLogo: '',
+    logoUrl: '',
+    homeUrl: '/',
     description: 'Autonomous cloud management, enterprise high availability, and sovereign workload control at planetary scale.',
-    copyright: 'Ozikol Technologies LLC',
+    copyright: '© 2026 Ozikol Technologies LLC. All rights reserved.',
     year: '2026',
-    poweredBy: 'Ozikol Cloud Engine',
+    hasContactInfo: true,
+    hasSocialLinks: true,
     email: 'contact@company.com',
-    phone: '+0 (000) 000-0000',
+    phone: '+1 (555) 019-2834',
     address: 'One Sovereign Way, Suite 400',
+    workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
+    socialLinks: [
+      { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
+      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+      { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+    ],
+    contactItems: [
+      { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+    ],
+    legalPages: [
+      { title: 'Privacy Policy', url: '/privacy-policy' },
+      { title: 'Terms of Service', url: '/terms-and-conditions' },
+      { title: 'Cookie Policy', url: '/cookie-policy' },
+      { title: 'Security & SLA', url: '/security' }
+    ],
     footerCategories: [
       {
         title: 'Platform',
@@ -1194,13 +1444,35 @@ export class FooterVisualComponent implements OnInit {
   resetSampleContent(): void {
     this.sampleContent = {
       brandName: 'Ozikol Technologies',
+      brandLogo: '',
+      logoUrl: '',
+      homeUrl: '/',
       description: 'Autonomous cloud management, enterprise high availability, and sovereign workload control at planetary scale.',
-      copyright: 'Ozikol Technologies LLC',
+      copyright: '© 2026 Ozikol Technologies LLC. All rights reserved.',
       year: '2026',
-      poweredBy: 'Ozikol Cloud Engine',
+      hasContactInfo: true,
+      hasSocialLinks: true,
       email: 'contact@company.com',
-      phone: '+0 (000) 000-0000',
+      phone: '+1 (555) 019-2834',
       address: 'One Sovereign Way, Suite 400',
+      workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
+      socialLinks: [
+        { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+        { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
+        { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+        { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+      ],
+      contactItems: [
+        { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+        { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@company.com', content: 'contact@company.com', url: 'mailto:contact@company.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+        { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
+      ],
+      legalPages: [
+        { title: 'Privacy Policy', url: '/privacy-policy' },
+        { title: 'Terms of Service', url: '/terms-and-conditions' },
+        { title: 'Cookie Policy', url: '/cookie-policy' },
+        { title: 'Security & SLA', url: '/security' }
+      ],
       footerCategories: [
         {
           title: 'Platform',

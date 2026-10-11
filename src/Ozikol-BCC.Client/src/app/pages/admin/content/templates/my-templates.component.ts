@@ -554,17 +554,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     description: string;
     email: string;
     phone: string;
+    address?: string;
+    workingHours?: string;
+    hasContactInfo?: boolean;
+    hasSocialLinks?: boolean;
     categories: Array<{
       name: string;
       displayTitle?: string;
       pages: Array<{ title: string; url: string }>;
     }>;
     legalPages: Array<{ title: string; url: string }>;
+    socialLinks?: Array<{ platform: string; title?: string; url: string; icon?: string; iconClass?: string; customClass?: string }>;
+    contactItems?: Array<{ type?: string; channelType?: string; platform?: string; title?: string; description?: string; value?: string; content?: string; url?: string; icon?: string; iconClass?: string; isDefault?: boolean; customClass?: string }>;
   } = {
     brandName: 'Organization Portal',
     description: 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
     email: 'contact@organization.com',
     phone: '+1 (555) 019-2834',
+    address: 'One Sovereign Way, Suite 400',
+    workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
+    hasContactInfo: true,
+    hasSocialLinks: true,
     categories: [
       {
         name: 'Services',
@@ -590,6 +600,17 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       { title: 'Privacy Policy', url: '/privacy-policy' },
       { title: 'Terms & Conditions', url: '/terms-and-conditions' },
       { title: 'Cookie Policy', url: '/cookie-policy' }
+    ],
+    socialLinks: [
+      { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
+      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
+      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
+      { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
+    ],
+    contactItems: [
+      { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
+      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@organization.com', content: 'contact@organization.com', url: 'mailto:contact@organization.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
+      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: 'One Sovereign Way, Suite 400', content: 'One Sovereign Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
     ]
   };
 
