@@ -1,0 +1,49 @@
+{
+  "title": "Comprehensive Managed Services for Modern Cloud Operations",
+  "miniTitle": "OUR SERVICES",
+  "description": "End-to-end consulting, continuous optimization, and round-the-clock infrastructure governance.",
+  "pageSectionLists": [
+    {
+      "title": "Cloud Architecture Design",
+      "description": "Blueprints tailored to high-availability multi-region setups.",
+      "icon": "cloud_sync",
+      "buttonText": "Explore Service",
+      "buttonLink": "#cloud"
+    },
+    {
+      "title": "Database Optimization",
+      "description": "Query caching, partitioning, and automated read-replica routing.",
+      "icon": "database",
+      "buttonText": "Explore Service",
+      "buttonLink": "#db"
+    },
+    {
+      "title": "Security & Penetration Audit",
+      "description": "Vulnerability scanners, secret leak monitoring, and zero-trust policies.",
+      "icon": "security",
+      "buttonText": "Explore Service",
+      "buttonLink": "#sec"
+    },
+    {
+      "title": "Kubernetes Orchestration",
+      "description": "Production-ready container pods, ingress controllers, and auto-scalers.",
+      "icon": "deployed_code",
+      "buttonText": "Explore Service",
+      "buttonLink": "#k8s"
+    },
+    {
+      "title": "Disaster Recovery Warm-Standby",
+      "description": "Instant replication and continuous point-in-time snapshot recovery.",
+      "icon": "restore",
+      "buttonText": "Explore Service",
+      "buttonLink": "#dr"
+    },
+    {
+      "title": "Cost Allocation Governance",
+      "description": "Identify orphaned cloud resources and slash unnecessary cloud spend.",
+      "icon": "savings",
+      "buttonText": "Explore Service",
+      "buttonLink": "#cost"
+    }
+  ]
+}

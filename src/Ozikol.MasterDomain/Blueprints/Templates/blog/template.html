@@ -1,0 +1,48 @@
+<section class="oz-blog-section {{ CustomClass }}">
+  <div class="oz-blog-container">
+    <div class="oz-blog-header">
+      {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
+      <h2 class="oz-blog-title">{{ Title }}</h2>
+      {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
+      {{#if BlogCategories}}
+      <div class="oz-category-filter">
+        {{#each BlogCategories}}
+        <a href="{{ Url }}" class="oz-category-pill">{{ Name }} <span class="oz-pill-count">{{ Count }}</span></a>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+    <div class="oz-articles-grid">
+      {{#each Articles}}
+      <article class="oz-article-card">
+        {{#if CoverImageUrl}}
+        <div class="oz-card-media">
+          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
+          {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}
+        </div>
+        {{/if}}
+        <div class="oz-card-content">
+          <div class="oz-card-meta">
+            <span class="oz-meta-date"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>
+            <span class="oz-meta-bullet">&bull;</span>
+            <span class="oz-meta-author"><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>
+          </div>
+          <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
+          {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}
+          <div class="oz-card-footer">
+            <a href="{{ Url }}" class="oz-card-read-more">Read Article <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </article>
+      {{/each}}
+    </div>
+    {{#if ButtonText}}
+    <div class="oz-blog-action-wrap">
+      <a href="{{ ButtonLink }}" class="oz-btn-view-all">
+        <span>{{ ButtonText }}</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    {{/if}}
+  </div>
+</section>

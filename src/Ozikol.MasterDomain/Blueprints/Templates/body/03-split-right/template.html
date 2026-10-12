@@ -1,0 +1,37 @@
+<section class="oz-split-right-section {{ CustomClass }}">
+  <div class="oz-container">
+    <div class="oz-split-grid">
+      <div class="oz-story-col">
+        {{#if MiniTitle}}<span class="oz-pill">{{ MiniTitle }}</span>{{/if}}
+        <h2 class="oz-hero-heading">{{ Title }}</h2>
+        <p class="oz-body-lead">{{ Description }}</p>
+        <div class="oz-feature-highlights">
+          {{#each PageSectionLists}}
+          <div class="oz-highlight-card">
+            <span class="material-symbols-outlined oz-highlight-icon">{{ Icon }}</span>
+            <div>
+              <h4 class="oz-highlight-title">{{ Title }}</h4>
+              <p class="oz-highlight-desc">{{ Description }}</p>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{#if ButtonText}}
+        <div class="oz-cta-row">
+          <a href="{{ ButtonLink }}" class="oz-btn-main">{{ ButtonText }}</a>
+          {{#if SecondButtonText}}
+          <a href="{{ SecondButtonLink }}" class="oz-btn-alt">{{ SecondButtonText }}</a>
+          {{/if}}
+        </div>
+        {{/if}}
+      </div>
+      <div class="oz-graphic-col">
+        <div class="oz-graphic-frame">
+          {{#if ImageUrl}}
+          <img src="{{ ImageUrl }}" alt="{{ Title }}" class="oz-graphic-photo" />
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

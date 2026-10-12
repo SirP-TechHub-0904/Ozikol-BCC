@@ -1,0 +1,330 @@
+{
+  "pages": [
+    {
+      "sortOrder": 1,
+      "title": "Home",
+      "slug": "",
+      "metaTitle": "Official Website - Home",
+      "metaDescription": "Empowering modern organizations with sovereign cloud infrastructure, sub-millisecond execution, and turnkey digital workspaces.",
+      "menuPosition": "header",
+      "zone": "first",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_08_METRICS_COUNTERS",
+          "title": "Global Scale by the Numbers",
+          "miniTitle": "PLATFORM TELEMETRY",
+          "description": "Continuous real-time verification across distributed edge nodes and sovereign enterprise clouds.",
+          "lists": [
+            { "sortOrder": 1, "title": "99.99%", "description": "Guaranteed SLA Uptime", "icon": "verified" },
+            { "sortOrder": 2, "title": "120+", "description": "Global Edge Locations", "icon": "public" },
+            { "sortOrder": 3, "title": "< 1.2ms", "description": "Average API Latency", "icon": "speed" },
+            { "sortOrder": 4, "title": "500K+", "description": "Protected Transactions", "icon": "shield" }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_01_FEATURE_GRID",
+          "title": "Engineered For Enterprise Scale And Sub-Millisecond Speed",
+          "miniTitle": "CORE CAPABILITIES",
+          "description": "Unified cloud infrastructure designed to eliminate latency, automate compliance, and safeguard mission-critical data.",
+          "lists": [
+            { "sortOrder": 1, "title": "Edge Cloud Replication", "description": "Continuous multi-region synchronization keeps endpoints resilient against unexpected outages.", "icon": "hub", "buttonText": "Learn More", "buttonLink": "/services" },
+            { "sortOrder": 2, "title": "Zero-Trust Security Mesh", "description": "Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every call.", "icon": "verified_user", "buttonText": "Explore Security", "buttonLink": "/services" },
+            { "sortOrder": 3, "title": "Automated CI/CD Pipelines", "description": "Push code to git and deploy production containers in seconds with automated canary health probes.", "icon": "rocket_launch", "buttonText": "View Deployments", "buttonLink": "/services" }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_03_SPLIT_RIGHT",
+          "title": "Architected for Sovereign Control and Unmatched Stability",
+          "miniTitle": "NEXT-GENERATION CLOUD",
+          "description": "Take full control of your organizational assets with sovereign database isolation, private container fabrics, and round-the-clock telemetry.",
+          "buttonText": "Explore Platform",
+          "buttonLink": "/services",
+          "secondaryButtonText": "Talk to an Architect",
+          "secondaryButtonLink": "/contact",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80",
+          "lists": []
+        },
+        {
+          "sortOrder": 4,
+          "templateKey": "BODY_04_PROCESS_STEPS",
+          "title": "A Streamlined Four-Step Journey to Production",
+          "miniTitle": "HOW IT WORKS",
+          "description": "From initial onboarding to planetary scale, our automated platform guides you every step of the way.",
+          "lists": [
+            { "sortOrder": 1, "title": "Architecture Audit", "description": "Analyze your current workloads and define sovereign isolation policies.", "icon": "analytics" },
+            { "sortOrder": 2, "title": "Automated Migration", "description": "Transfer data and schemas seamlessly with zero downtime or traffic loss.", "icon": "cloud_sync" },
+            { "sortOrder": 3, "title": "Continuous Verification", "description": "Automated health checks validate encryption, endpoints, and latency.", "icon": "rule" },
+            { "sortOrder": 4, "title": "24/7 Monitored Scale", "description": "Relax as intelligent autoscaling expands capacity effortlessly.", "icon": "trending_up" }
+          ]
+        },
+        {
+          "sortOrder": 5,
+          "templateKey": "BODY_07_TESTIMONIALS",
+          "title": "Trusted by Forward-Thinking Engineering Leaders",
+          "miniTitle": "CLIENT EXPERIENCES",
+          "description": "Discover how innovative organizations leverage our infrastructure to outpace competitors.",
+          "lists": [
+            { "sortOrder": 1, "title": "David Miller", "description": "Switching to this architecture eliminated our latency bottlenecks and gave our security team complete confidence.", "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80", "buttonText": "CTO, Horizon Tech" },
+            { "sortOrder": 2, "title": "Elena Rostova", "description": "Turnkey onboarding meant our client portals were live in days rather than quarters. Absolutely transformative.", "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80", "buttonText": "VP Engineering, Apex Dynamics" },
+            { "sortOrder": 3, "title": "Marcus Chen", "description": "The sovereign data boundaries solved our international compliance headaches instantly. A masterclass in software design.", "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80", "buttonText": "Head of Infrastructure, NexaFlow" }
+          ]
+        },
+        {
+          "sortOrder": 6,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Ready to Transform Your Digital Infrastructure?",
+          "miniTitle": "START TODAY",
+          "description": "Join hundreds of thriving organizations already powered by our sovereign cloud platform.",
+          "buttonText": "Get Started Free",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Schedule a Demo",
+          "secondaryButtonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 2,
+      "title": "Services",
+      "slug": "services",
+      "metaTitle": "Our Services & Capabilities",
+      "metaDescription": "Explore our full suite of modular cloud infrastructure, managed security, and enterprise migration services.",
+      "menuPosition": "header",
+      "zone": "first",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_06_SERVICES_GRID",
+          "title": "Comprehensive Capabilities Tailored for Scale",
+          "miniTitle": "MODULAR SOLUTIONS",
+          "description": "Deploy precisely the tools your organization needs with modular billing and zero technical lock-in.",
+          "lists": [
+            { "sortOrder": 1, "title": "Managed Cloud Clusters", "description": "Dedicated microservices with automated failover and sub-millisecond edge routing.", "icon": "dns", "buttonText": "Explore Clusters", "buttonLink": "/contact" },
+            { "sortOrder": 2, "title": "Zero-Trust Identity Governance", "description": "Granular role-based access control, biometric verification, and session tokens.", "icon": "fingerprint", "buttonText": "View Security", "buttonLink": "/contact" },
+            { "sortOrder": 3, "title": "Disaster Recovery & Hot Failover", "description": "Continuous encrypted snapshots guarantee instant recovery within seconds.", "icon": "restore", "buttonText": "Learn More", "buttonLink": "/contact" },
+            { "sortOrder": 4, "title": "High-Performance Data Fabrics", "description": "Low-latency distributed state machines synchronizing data across multi-region nodes.", "icon": "storage", "buttonText": "View Architecture", "buttonLink": "/contact" },
+            { "sortOrder": 5, "title": "Compliance Automation", "description": "Pre-configured guardrails ensuring continuous SOC2, GDPR, and HIPAA compliance.", "icon": "gavel", "buttonText": "Read Guide", "buttonLink": "/contact" },
+            { "sortOrder": 6, "title": "24/7 Dedicated SRE Support", "description": "Direct access to senior site reliability engineers with a 15-minute response SLA.", "icon": "support_agent", "buttonText": "Contact Team", "buttonLink": "/contact" }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Engineered for Sub-Millisecond Speed and Reliability",
+          "miniTitle": "PERFORMANCE FIRST",
+          "description": "Our distributed architecture bypasses traditional internet bottlenecks to deliver instant, fluid interactions for global users.",
+          "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "View Infrastructure Specs",
+          "buttonLink": "/contact",
+          "lists": [
+            { "sortOrder": 1, "title": "Global Edge Caching", "description": "Assets served from nodes closest to your users.", "icon": "check_circle" },
+            { "sortOrder": 2, "title": "Cryptographic Isolation", "description": "Sovereign tenant partitions prevent data contamination.", "icon": "check_circle" },
+            { "sortOrder": 3, "title": "Automated Canary Deploys", "description": "Zero-downtime updates with instant rollback safety.", "icon": "check_circle" }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_05_PRICING_MATRIX",
+          "title": "Transparent Pricing with Predictable Value",
+          "miniTitle": "PLANS & SUBSCRIPTIONS",
+          "description": "Choose the tier that matches your current momentum. Upgrade or downgrade anytime with pro-rated billing.",
+          "lists": [
+            { "sortOrder": 1, "title": "Starter Node", "description": "$49 / month - Perfect for emerging organizations launching their initial digital portal.", "icon": "rocket", "buttonText": "Get Started", "buttonLink": "/contact" },
+            { "sortOrder": 2, "title": "Professional Mesh", "description": "$199 / month - Elevated power with multi-region replication and dedicated support.", "icon": "star", "buttonText": "Start Free Trial", "buttonLink": "/contact" },
+            { "sortOrder": 3, "title": "Enterprise Sovereign", "description": "Custom Quote - Unlimited throughput, custom compliance guarantees, and dedicated SRE.", "icon": "workspace_premium", "buttonText": "Contact Sales", "buttonLink": "/contact" }
+          ]
+        },
+        {
+          "sortOrder": 4,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Need a Tailored Architectural Solution?",
+          "miniTitle": "CUSTOM ARCHITECTURE",
+          "description": "Our senior solutions engineers are available to review your workload requirements and build a tailored deployment roadmap.",
+          "buttonText": "Book Consultation",
+          "buttonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 3,
+      "title": "About Us",
+      "slug": "about",
+      "metaTitle": "About Our Firm - Vision, Mission & Team",
+      "metaDescription": "Learn about our mission to bring sovereign cloud performance, privacy, and simplicity to forward-thinking businesses worldwide.",
+      "menuPosition": "header",
+      "zone": "middle",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Pioneering Sovereign Digital Infrastructure",
+          "miniTitle": "OUR FOUNDING VISION",
+          "description": "We started with a singular conviction: businesses should never have to sacrifice data ownership or system performance to achieve cloud scalability.",
+          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Join Our Journey",
+          "buttonLink": "/careers",
+          "lists": [
+            { "sortOrder": 1, "title": "Data Sovereignty First", "description": "Your customers' data belongs exclusively to you.", "icon": "check_circle" },
+            { "sortOrder": 2, "title": "Uncompromising Quality", "description": "Every line of code is optimized for microsecond delivery.", "icon": "check_circle" },
+            { "sortOrder": 3, "title": "Radical Transparency", "description": "Honest pricing, public roadmaps, and verifiable uptime.", "icon": "check_circle" }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_08_METRICS_COUNTERS",
+          "title": "A Track Record of Verified Excellence",
+          "miniTitle": "MILESTONES",
+          "description": "Real impact delivered daily across mission-critical client deployments.",
+          "lists": [
+            { "sortOrder": 1, "title": "10+ Years", "description": "Engineering Experience", "icon": "history" },
+            { "sortOrder": 2, "title": "45+", "description": "Patents & Inventions", "icon": "lightbulb" },
+            { "sortOrder": 3, "title": "98.6%", "description": "Client Retention Rate", "icon": "favorite" },
+            { "sortOrder": 4, "title": "24/7", "description": "Global SRE Monitoring", "icon": "lock_clock" }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_04_PROCESS_STEPS",
+          "title": "The Guiding Principles Behind Every Decision",
+          "miniTitle": "CORE VALUES",
+          "description": "How our distributed engineering team approaches problem-solving and customer partnerships.",
+          "lists": [
+            { "sortOrder": 1, "title": "Customer Empathy", "description": "We listen intently to user pain points before designing solutions.", "icon": "support" },
+            { "sortOrder": 2, "title": "Ruthless Simplification", "description": "We eliminate unnecessary friction and complexity at every turn.", "icon": "tune" },
+            { "sortOrder": 3, "title": "Zero Compromise on Security", "description": "Privacy and isolation are built directly into our foundational layer.", "icon": "security" },
+            { "sortOrder": 4, "title": "Long-Term Craftsmanship", "description": "We build sustainable software architected to endure for decades.", "icon": "construction" }
+          ]
+        }
+      ]
+    },
+    {
+      "sortOrder": 4,
+      "title": "Contact Us",
+      "slug": "contact",
+      "metaTitle": "Contact Our Solutions Team",
+      "metaDescription": "Have questions about our cloud platform? Send us a direct inquiry and our solutions team will respond promptly.",
+      "menuPosition": "header",
+      "zone": "last",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_11_CONTACT_SPLIT",
+          "title": "Get in Touch with Our Global Team",
+          "miniTitle": "DIRECT COMMUNICATION",
+          "description": "Whether you are planning a migration, exploring pricing tiers, or requesting technical assistance, we are here to support your success.",
+          "lists": [
+            { "sortOrder": 1, "title": "Global Headquarters", "description": "100 Innovation Way, Suite 500, Tech Hub", "icon": "location_on" },
+            { "sortOrder": 2, "title": "Inquiry Hotline", "description": "+1 (555) 019-2834 (Mon-Fri 8am-6pm)", "icon": "call" },
+            { "sortOrder": 3, "title": "Official Email", "description": "contact@example.com (Under 2h response)", "icon": "mail" },
+            { "sortOrder": 4, "title": "24/7 Emergency SRE", "description": "Available to all active enterprise subscribers", "icon": "support_agent" }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_09_FAQ_ACCORDION",
+          "title": "Quick Answers to Common Inquiries",
+          "miniTitle": "PRE-SALES FAQ",
+          "description": "Find immediate clarity regarding onboarding, data migration, and technical specifications.",
+          "lists": [
+            { "sortOrder": 1, "title": "How fast can our team go live on the platform?", "description": "Once your workspace is provisioned, your foundational pages, templates, and forms are live in under 5 minutes. You can begin publishing immediate updates through the CMS Studio." },
+            { "sortOrder": 2, "title": "Is our organization's database completely isolated?", "description": "Yes. Every tenant receives sovereign database boundaries and isolated encryption keys. Cross-tenant leakage is architecturally impossible." },
+            { "sortOrder": 3, "title": "Can we connect our custom domain name?", "description": "Absolutely. You can attach custom domains and subdomains with automatic SSL certificates generated and renewed seamlessly." },
+            { "sortOrder": 4, "title": "What level of technical support is included?", "description": "All standard workspaces include 24/7 ticket and email support. Enterprise tiers feature direct dedicated Slack channels and senior SRE hotline access." }
+          ]
+        }
+      ]
+    },
+    {
+      "sortOrder": 5,
+      "title": "Careers",
+      "slug": "careers",
+      "metaTitle": "Careers - Join Our Engineering Mission",
+      "metaDescription": "Help us build the next generation of sovereign cloud platforms. Explore our remote-first openings and engineering culture.",
+      "menuPosition": "header",
+      "zone": "middle",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_03_SPLIT_RIGHT",
+          "title": "Build the Future of Cloud Computing With Us",
+          "miniTitle": "WORK WITH PURPOSE",
+          "description": "We are a remote-first, globally distributed team of engineers, designers, and systems architects dedicated to solving complex infrastructure challenges.",
+          "buttonText": "View Open Positions",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Learn About Our Culture",
+          "secondaryButtonLink": "/about",
+          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_01_FEATURE_GRID",
+          "title": "Comprehensive Benefits Designed for Modern Living",
+          "miniTitle": "WHY JOIN OUR TEAM",
+          "description": "We invest heavily in the physical, mental, and professional well-being of every team member.",
+          "lists": [
+            { "sortOrder": 1, "title": "100% Remote Freedom", "description": "Work from anywhere in the world with flexible hours built around output, not clock-watching.", "icon": "public" },
+            { "sortOrder": 2, "title": "Continuous Learning Stipends", "description": "Annual budgets for books, conferences, technical certifications, and hardware upgrades.", "icon": "school" },
+            { "sortOrder": 3, "title": "Competitive Equity & Health", "description": "Top-tier health coverage, generous parental leave, and meaningful company equity grants.", "icon": "favorite" }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Don't See Your Role Listed? We Still Want to Hear From You.",
+          "miniTitle": "GENERAL APPLICATIONS",
+          "description": "Send your portfolio and engineering background directly to our talent acquisition team.",
+          "buttonText": "Send Spontaneous Application",
+          "buttonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 6,
+      "title": "FAQ & Support",
+      "slug": "faq",
+      "metaTitle": "Frequently Asked Questions & Helpdesk",
+      "metaDescription": "Browse answers to frequently asked questions about billing, deployment, security, and tenant customization.",
+      "menuPosition": "topbar",
+      "zone": "first",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BODY_09_FAQ_ACCORDION",
+          "title": "Answers to Your Most Common Questions",
+          "miniTitle": "KNOWLEDGE BASE",
+          "description": "Quickly find clarity on billing cycles, domain routing, custom styling, and enterprise security guarantees.",
+          "lists": [
+            { "sortOrder": 1, "title": "How does monthly recurring billing work?", "description": "Subscriptions are billed automatically on a 30-day recurring cycle. You can cancel or upgrade your plan anytime without termination fees." },
+            { "sortOrder": 2, "title": "Can I export or backup our tenant data at any time?", "description": "Yes. You have complete sovereign data ownership. Full database backups and content archives can be downloaded directly from your workspace admin portal." },
+            { "sortOrder": 3, "title": "Are templates customizable after installation?", "description": "Every installed template can be customized in the CMS Studio or through the Visual Editor, enabling custom CSS overrides, unique color palettes, and custom token layouts." },
+            { "sortOrder": 4, "title": "How do inquiries submitted via website forms reach us?", "description": "Inquiry submissions are immediately stored in your sovereign database and forwarded via real-time notifications to your official corporate inbox." },
+            { "sortOrder": 5, "title": "What happens if our website experiences sudden viral traffic?", "description": "Our containerized cloud mesh automatically provisions additional edge capacity in milliseconds to absorb traffic surges without performance degradation." },
+            { "sortOrder": 6, "title": "How does Ozikol ensure spam protection on broadcast emails?", "description": "The platform incorporates real-time keyword analysis, blacklist detection, and automated sender verification to protect your domain reputation." }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Still Need Assistance? Our Engineers Are Here.",
+          "miniTitle": "24/7 HELPDESK",
+          "description": "Contact our technical support desk anytime for personalized assistance.",
+          "buttonText": "Submit Helpdesk Ticket",
+          "buttonLink": "/contact",
+          "lists": []
+        }
+      ]
+    }
+  ]
+}
