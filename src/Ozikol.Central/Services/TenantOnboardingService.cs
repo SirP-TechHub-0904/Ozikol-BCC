@@ -787,6 +787,12 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5. Seed Turnkey Default Website Suite (Forms, 3 Rich Editorial Blogs, 9 Pages, 10 Body Sections, SEO tags)
+            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                dbContext,
+                request.OrganizationName,
+                cancellationToken);
         }
     }
 }

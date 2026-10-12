@@ -27,6 +27,14 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">add_circle</span>
             <span>New Web Page</span>
           </button>
+          <button type="button" class="btn btn-outline" (click)="reseedTurnkeyDefaults()" title="Re-seed the turnkey default website suite" [disabled]="loading">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <span>Seed Defaults</span>
+          </button>
+          <button type="button" class="btn btn-outline" (click)="resetToBlankCanvas()" title="Clear demo pages and sections to start with a blank canvas" [disabled]="loading">
+            <span class="material-symbols-outlined">draft</span>
+            <span>Blank Canvas</span>
+          </button>
           <button type="button" (click)="loadAll()" class="btn btn-outline" [disabled]="loading">
             <span class="material-symbols-outlined" [class.spin]="loading">refresh</span>
             <span>Refresh</span>
@@ -712,6 +720,74 @@ export class WebPagesComponent implements OnInit {
         },
         error: (err) => {
           this.toast.error(err?.error?.message || 'Failed to delete web page.');
+        }
+      });
+    }
+  }
+
+  /**
+   * Clears all demo pages, editorial blogs, and layout sections, resetting the workspace to a clean blank canvas.
+   */
+  async resetToBlankCanvas(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Reset to Blank Canvas',
+      'Are you sure you want to clear all demo pages, editorial blogs, and layout sections?',
+      'Reset to Blank Canvas',
+      'Cancel',
+      'danger',
+      undefined,
+      [
+        'All demo pages, layout sections, and sample blog posts will be removed.',
+        'Your custom dynamic forms and global brand settings will be preserved.',
+        'You can build completely bespoke pages from scratch or re-seed turnkey defaults at any time.'
+      ]
+    );
+
+    if (confirmed) {
+      this.loading = true;
+      this.api.post<any>('ContentApi/workspace/reset-blank', {}).subscribe({
+        next: () => {
+          this.loading = false;
+          this.toast.success('Workspace successfully reset to a clean blank canvas.', 'Blank Slate Ready');
+          this.loadAll();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.toast.error(err?.error?.message || 'Failed to reset workspace to blank.');
+        }
+      });
+    }
+  }
+
+  /**
+   * Re-seeds the complete turnkey default website suite (forms, blogs, pages, sections, SEO tags).
+   */
+  async reseedTurnkeyDefaults(): Promise<void> {
+    const confirmed = await this.toast.confirm(
+      'Restore Turnkey Website Defaults',
+      'Would you like to restore the complete default website suite?',
+      'Restore Turnkey Suite',
+      'Cancel',
+      'info',
+      undefined,
+      [
+        'Restores the 9 standard pages (Home, Services, About, Team, Contact, Legal).',
+        'Restores the 10 modular body sections and 3 interactive dynamic forms.',
+        'Restores the 3 rich editorial blog posts.'
+      ]
+    );
+
+    if (confirmed) {
+      this.loading = true;
+      this.api.post<any>('ContentApi/workspace/seed-defaults', {}).subscribe({
+        next: () => {
+          this.loading = false;
+          this.toast.success('Turnkey website pages, sections, and blogs restored successfully!', 'Defaults Seeded');
+          this.loadAll();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.toast.error(err?.error?.message || 'Failed to seed default website suite.');
         }
       });
     }

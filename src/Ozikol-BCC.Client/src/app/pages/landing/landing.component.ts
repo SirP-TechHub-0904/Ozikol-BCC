@@ -619,6 +619,27 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
+    // Fallback for pristine uninitialized workspace
+    if (!combinedHtml || combinedHtml.trim() === '') {
+      combinedHtml = `
+        <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); font-family: inherit;">
+          <div style="max-width: 620px; width: 100%; background: #ffffff; border-radius: 20px; padding: 48px 36px; text-align: center; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+            <div style="width: 64px; height: 64px; border-radius: 18px; background: #eff6ff; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 24px; color: #0050e5;">
+              <span class="material-symbols-outlined" style="font-size: 32px;">rocket_launch</span>
+            </div>
+            <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 12px; letter-spacing: -0.5px;">Welcome to ${this.brandName || 'Your Workspace'}</h1>
+            <p style="font-size: 15px; color: #64748b; line-height: 1.6; margin: 0 0 28px;">
+              This workspace has been provisioned. To launch your website with turnkey templates, interactive forms, and default pages, sign in to your administrator dashboard.
+            </p>
+            <a href="/auth/login" style="display: inline-flex; align-items: center; gap: 8px; background: #0050e5; color: #ffffff; font-weight: 700; font-size: 14px; padding: 13px 28px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(0,80,229,0.35);">
+              <span>Sign In to Admin Console</span>
+              <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
     this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
