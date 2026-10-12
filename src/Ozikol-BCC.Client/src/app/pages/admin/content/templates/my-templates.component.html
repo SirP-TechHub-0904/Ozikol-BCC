@@ -61,6 +61,19 @@
               <span>Preview Full Site Demo</span>
             </button>
 
+            <button
+              *ngIf="installedTemplates.length === 0"
+              type="button"
+              class="btn btn-restore-defaults-nav"
+              (click)="openReinstallDefaultsModal()"
+              [disabled]="reinstallingDefaults"
+              title="Install turnkey default Corporate Suite blueprints and 10 body sections into database"
+              style="background: #059669; color: #ffffff; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);"
+            >
+              <span class="material-symbols-outlined btn-icon">restart_alt</span>
+              <span>Install Default Suite</span>
+            </button>
+
             <div class="action-btn-item">
               <button
                 type="button"
@@ -505,7 +518,19 @@
           <button *ngIf="searchQuery" (click)="searchQuery = ''; selectedCategory = 'all'; applyFilters()" class="btn btn-outline">
             Clear Filters
           </button>
-          <a routerLink="/content/console/marketplace" class="btn btn-primary">
+          <button
+            *ngIf="installedTemplates.length === 0"
+            type="button"
+            class="btn btn-primary"
+            (click)="openReinstallDefaultsModal()"
+            [disabled]="reinstallingDefaults"
+            style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; border: none; font-weight: 700; padding: 10px 22px; border-radius: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 8px; cursor: pointer;"
+            title="Install the complete factory default Corporate Suite templates including all 10 body sections"
+          >
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span>{{ reinstallingDefaults ? 'Installing Blueprints...' : 'Install Default Corporate Suite (15 Blueprints & 10 Body Sections)' }}</span>
+          </button>
+          <a routerLink="/content/console/marketplace" class="btn btn-outline" *ngIf="installedTemplates.length > 0">
             <span class="material-symbols-outlined">storefront</span>
             <span>Browse UI Marketplace</span>
           </a>
