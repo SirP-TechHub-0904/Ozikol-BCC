@@ -308,11 +308,23 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+
     .category-visual-layout {
       display: flex;
       flex-direction: column;
       gap: 20px;
       width: 100%;
+    }
+
+    .editor-pane-body {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 650px;
     }
 
     .meta-config-card {

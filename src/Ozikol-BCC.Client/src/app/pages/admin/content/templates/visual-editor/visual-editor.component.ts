@@ -458,18 +458,21 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
     if (changes['htmlTemplate'] && !changes['htmlTemplate'].firstChange) {
       if (this.monacoHtmlInstance && this.monacoHtmlInstance.getValue() !== this.htmlTemplate) {
         this.monacoHtmlInstance.setValue(this.htmlTemplate || '');
+        this.monacoHtmlInstance.layout();
         this.updatePreviewIframe();
       }
     }
     if (changes['cssStyles'] && !changes['cssStyles'].firstChange) {
       if (this.monacoCssInstance && this.monacoCssInstance.getValue() !== this.cssStyles) {
         this.monacoCssInstance.setValue(this.cssStyles || '');
+        this.monacoCssInstance.layout();
         this.updatePreviewIframe();
       }
     }
     if (changes['jsScript'] && !changes['jsScript'].firstChange) {
       if (this.monacoJsInstance && this.monacoJsInstance.getValue() !== this.jsScript) {
         this.monacoJsInstance.setValue(this.jsScript || '');
+        this.monacoJsInstance.layout();
         this.updatePreviewIframe();
       }
     }
@@ -536,12 +539,13 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   }
 
   /**
-   * Opens the placeholder sample confirmation modal before inserting into editor.
-   * @param tokenObj Token object containing label and HTML snippet.
+   * Directly inserts the placeholder token into the HTML editor at active cursor position.
+   * If editor is not currently focused, safely inserts at current position or appends.
+   * @param tokenObj Token object containing label and token string.
    */
   onTokenChipClick(tokenObj: { label: string; token: string; htmlSnippet?: string; description?: string }): void {
-    this.selectedTokenForInsert = tokenObj;
-    this.showTokenConfirmModal = true;
+    if (!tokenObj) return;
+    this.insertToken(tokenObj.token);
   }
 
   /**
@@ -558,10 +562,8 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   confirmInsertToken(): void {
     if (!this.selectedTokenForInsert) return;
     const snippet = this.selectedTokenForInsert.token;
-    const label = this.selectedTokenForInsert.label;
     this.closeTokenModal();
     this.insertToken(snippet);
-    this.toast.success(`Inserted ${label} placeholder!`);
   }
 
   /**
@@ -570,36 +572,17 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
    */
   confirmInsertCustom(snippetToInsert?: string): void {
     if (!snippetToInsert) return;
-    const label = this.selectedTokenForInsert?.label || 'Token';
     this.closeTokenModal();
     this.insertToken(snippetToInsert);
-    this.toast.success(`Inserted ${label}!`);
   }
 
   /**
-   * Opens the section archetype preset confirmation modal.
+   * Instantly applies complete archetype blueprint (HTML markup + scoped CSS styles + mock sample data)
+   * on click with immediate feedback and automatic Monaco layout update.
    * @param preset Blueprint preset object with name, html, css, and sampleContent.
    */
   onSamplePresetClick(preset: SectionPreset): void {
-    this.selectedPresetForApply = preset;
-    this.showPresetConfirmModal = true;
-  }
-
-  /**
-   * Closes the section archetype preset confirmation modal.
-   */
-  closePresetModal(): void {
-    this.showPresetConfirmModal = false;
-    this.selectedPresetForApply = null;
-  }
-
-  /**
-   * Applies complete archetype blueprint (HTML markup + scoped CSS styles + mock data).
-   */
-  applyFullPreset(): void {
-    if (!this.selectedPresetForApply) return;
-    const preset = this.selectedPresetForApply;
-    this.closePresetModal();
+    if (!preset) return;
 
     this.htmlTemplate = preset.html;
     this.cssStyles = preset.css;
@@ -617,12 +600,15 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
 
     if (this.monacoHtmlInstance) {
       this.monacoHtmlInstance.setValue(this.htmlTemplate);
+      this.monacoHtmlInstance.layout();
     }
     if (this.monacoCssInstance) {
       this.monacoCssInstance.setValue(this.cssStyles);
+      this.monacoCssInstance.layout();
     }
     if (this.monacoJsInstance) {
       this.monacoJsInstance.setValue(this.jsScript);
+      this.monacoJsInstance.layout();
     }
 
     this.htmlTemplateChange.emit(this.htmlTemplate);
@@ -630,7 +616,26 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
     this.jsScriptChange.emit(this.jsScript);
 
     this.updatePreviewIframe();
+    this.cdr.detectChanges();
     this.toast.success(`Applied "${preset.name}" blueprint with HTML, Scoped CSS & Sample Data!`);
+  }
+
+  /**
+   * Closes the section archetype preset confirmation modal.
+   */
+  closePresetModal(): void {
+    this.showPresetConfirmModal = false;
+    this.selectedPresetForApply = null;
+  }
+
+  /**
+   * Applies complete archetype blueprint (HTML markup + scoped CSS styles + mock data).
+   */
+  applyFullPreset(): void {
+    if (!this.selectedPresetForApply) return;
+    const preset = this.selectedPresetForApply;
+    this.closePresetModal();
+    this.onSamplePresetClick(preset);
   }
 
   /**
@@ -639,22 +644,39 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   applyPresetHtmlOnly(): void {
     if (!this.selectedPresetForApply) return;
     const html = this.selectedPresetForApply.html;
-    const name = this.selectedPresetForApply.name;
     this.closePresetModal();
     this.insertToken(html);
-    this.toast.success(`Inserted ${name} HTML markup!`);
   }
 
   /**
    * Inserts a dynamic Handlebars token at the current cursor position in the HTML editor.
+   * If editor is unfocused, safely defaults to current cursor or beginning of document.
    * @param token Handlebars placeholder string (e.g. '{{ Title }}').
    */
   insertToken(token: string): void {
-    if (this.activeTab !== 'html' || !this.monacoHtmlInstance) {
-      this.toast.warning('Please switch to the HTML Markup tab to insert placeholders.');
+    if (this.activeTab !== 'html') {
+      this.switchTab('html');
+    }
+
+    if (!this.monacoHtmlInstance) {
+      this.htmlTemplate = (this.htmlTemplate || '') + (this.htmlTemplate ? '\n' : '') + token;
+      this.htmlTemplateChange.emit(this.htmlTemplate);
+      this.schedulePreviewUpdate();
+      this.toast.success(`Inserted ${token}!`);
       return;
     }
-    const selection = this.monacoHtmlInstance.getSelection();
+
+    let selection = this.monacoHtmlInstance.getSelection();
+    if (!selection) {
+      const position = this.monacoHtmlInstance.getPosition() || { lineNumber: 1, column: 1 };
+      selection = {
+        startLineNumber: position.lineNumber,
+        startColumn: position.column,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column
+      };
+    }
+
     const op = {
       range: selection,
       text: token,
@@ -662,9 +684,11 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
     };
     this.monacoHtmlInstance.executeEdits('insertToken', [op]);
     this.monacoHtmlInstance.focus();
+    this.monacoHtmlInstance.layout();
     this.htmlTemplate = this.monacoHtmlInstance.getValue();
     this.htmlTemplateChange.emit(this.htmlTemplate);
     this.schedulePreviewUpdate();
+    this.toast.success(`Inserted ${token}!`);
   }
 
   /**
@@ -825,6 +849,17 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
           }
         });
       }
+
+      setTimeout(() => {
+        this.monacoHtmlInstance?.layout();
+        this.monacoCssInstance?.layout();
+        this.monacoJsInstance?.layout();
+      }, 100);
+      setTimeout(() => {
+        this.monacoHtmlInstance?.layout();
+        this.monacoCssInstance?.layout();
+        this.monacoJsInstance?.layout();
+      }, 400);
 
       this.updatePreviewIframe();
     }).catch((err) => {
