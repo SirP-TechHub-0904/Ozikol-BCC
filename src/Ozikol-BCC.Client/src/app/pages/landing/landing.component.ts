@@ -8,6 +8,12 @@ import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
+import {
+  CANONICAL_CORPORATE_TEMPLATES,
+  DEFAULT_SHOWCASE_SECTIONS,
+  DEFAULT_PAGE_BLUEPRINTS,
+  DEFAULT_SAMPLE_BLOGS
+} from './corporate-suite-defaults';
 
 /**
  * Public dynamic website orchestration component.
@@ -390,6 +396,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
         next: (res: any) => {
           this.activeTemplates = res?.data || [];
+          if (!this.activeTemplates || this.activeTemplates.length === 0) {
+            this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
+          }
           resolve();
         },
         error: () => {
@@ -398,9 +407,15 @@ export class LandingComponent implements OnInit, OnDestroy {
             next: (adminRes: any) => {
               const all = adminRes?.data || [];
               this.activeTemplates = all.filter((t: any) => t.isActive);
+              if (!this.activeTemplates || this.activeTemplates.length === 0) {
+                this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
+              }
               resolve();
             },
-            error: () => resolve()
+            error: () => {
+              this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
+              resolve();
+            }
           });
         }
       });
@@ -409,18 +424,44 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchNavigationCategories(): Promise<void> {
     return new Promise((resolve) => {
+      const applyFallback = () => {
+        if (!this.categories || this.categories.length === 0) {
+          this.categories = [
+            {
+              id: 'cat-services',
+              title: 'Services',
+              categoryName: 'Services',
+              publish: true,
+              showInFooter: true,
+              menuSortOrder: 2,
+              menuPosition: 2,
+              webPages: [
+                { title: 'Enterprise Advisory', directUrl: 'services', publish: true },
+                { title: 'Cloud Infrastructure', directUrl: 'services', publish: true },
+                { title: 'Security & Governance', directUrl: 'services', publish: true }
+              ]
+            }
+          ];
+        }
+      };
+
       this.apiService.get('WebsiteContentApi/categories').subscribe({
         next: (res: any) => {
           this.categories = res?.data || [];
+          applyFallback();
           resolve();
         },
         error: () => {
           this.apiService.get('ContentApi/categories').subscribe({
             next: (cRes: any) => {
               this.categories = cRes?.data || [];
+              applyFallback();
               resolve();
             },
-            error: () => resolve()
+            error: () => {
+              applyFallback();
+              resolve();
+            }
           });
         }
       });
@@ -429,18 +470,38 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchPublishedPages(): Promise<void> {
     return new Promise((resolve) => {
+      const applyFallback = () => {
+        if (!this.publishedPages || this.publishedPages.length === 0) {
+          this.publishedPages = [
+            { title: 'Home', directUrl: '/', showInMainMenu: true, sortOrder: 0, publish: true, menuPosition: 1 },
+            { title: 'About Us', directUrl: 'about', showInMainMenu: true, sortOrder: 1, publish: true, menuPosition: 1 },
+            { title: 'Services', directUrl: 'services', showInMainMenu: true, sortOrder: 2, publish: true, menuPosition: 2 },
+            { title: 'Contact', directUrl: 'contact', showInMainMenu: true, sortOrder: 3, publish: true, menuPosition: 2 },
+            { title: 'Blog', directUrl: 'blog', showInMainMenu: true, sortOrder: 4, publish: true, menuPosition: 3 },
+            { title: 'Request Service', directUrl: 'request-service', showInMainMenu: true, isMenuCTA: true, sortOrder: 5, publish: true },
+            { title: 'Privacy Policy', directUrl: 'privacy-policy', isLegal: true, publish: true },
+            { title: 'Terms & Conditions', directUrl: 'terms-and-conditions', isLegal: true, publish: true }
+          ];
+        }
+      };
+
       this.apiService.get('WebsiteContentApi/pages').subscribe({
         next: (res: any) => {
           this.publishedPages = res?.data || [];
+          applyFallback();
           resolve();
         },
         error: () => {
           this.apiService.get('ContentApi/pages').subscribe({
             next: (pRes: any) => {
               this.publishedPages = pRes?.data || [];
+              applyFallback();
               resolve();
             },
-            error: () => resolve()
+            error: () => {
+              applyFallback();
+              resolve();
+            }
           });
         }
       });
@@ -492,10 +553,13 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
         next: (res: any) => {
-          this.blogs = res?.data || [];
+          this.blogs = (res?.data && res.data.length > 0) ? res.data : [...DEFAULT_SAMPLE_BLOGS];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.blogs = [...DEFAULT_SAMPLE_BLOGS];
+          resolve();
+        }
       });
     });
   }
@@ -504,10 +568,13 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs').subscribe({
         next: (res: any) => {
-          this.blogs = res?.data || [];
+          this.blogs = (res?.data && res.data.length > 0) ? res.data : [...DEFAULT_SAMPLE_BLOGS];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.blogs = [...DEFAULT_SAMPLE_BLOGS];
+          resolve();
+        }
       });
     });
   }
@@ -516,10 +583,13 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get(`WebsiteContentApi/blogs/${id}`).subscribe({
         next: (res: any) => {
-          this.currentArticle = res?.data || null;
+          this.currentArticle = res?.data || DEFAULT_SAMPLE_BLOGS.find(b => b.id === id) || DEFAULT_SAMPLE_BLOGS[0];
           resolve();
         },
-        error: () => resolve()
+        error: () => {
+          this.currentArticle = DEFAULT_SAMPLE_BLOGS.find(b => b.id === id) || DEFAULT_SAMPLE_BLOGS[0];
+          resolve();
+        }
       });
     });
   }
@@ -564,9 +634,9 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeHomepage(): void {
     this.titleService.setTitle(`${this.brandName} | Official Website`);
 
-    const menuTemplate = this.findActiveTemplate('menu');
-    const heroTemplate = this.findActiveTemplate('hero');
-    const footerTemplate = this.findActiveTemplate('footer');
+    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
+    const heroTemplate = this.findActiveTemplate('hero') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'hero');
+    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
 
     let combinedStyles = '';
     let combinedHtml = '';
@@ -592,7 +662,12 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     // 3. Modular Body Sections (exclude section consumed as Hero to prevent duplicate display)
-    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
+    let bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
+    if (bodySections.length === 0) {
+      // Use turnkey canonical Corporate Suite showcase sections
+      bodySections = DEFAULT_SHOWCASE_SECTIONS;
+    }
+
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
@@ -619,27 +694,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
     }
 
-    // Fallback for pristine uninitialized workspace
-    if (!combinedHtml || combinedHtml.trim() === '') {
-      combinedHtml = `
-        <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); font-family: inherit;">
-          <div style="max-width: 620px; width: 100%; background: #ffffff; border-radius: 20px; padding: 48px 36px; text-align: center; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
-            <div style="width: 64px; height: 64px; border-radius: 18px; background: #eff6ff; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 24px; color: #0050e5;">
-              <span class="material-symbols-outlined" style="font-size: 32px;">rocket_launch</span>
-            </div>
-            <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 12px; letter-spacing: -0.5px;">Welcome to ${this.brandName || 'Your Workspace'}</h1>
-            <p style="font-size: 15px; color: #64748b; line-height: 1.6; margin: 0 0 28px;">
-              This workspace has been provisioned. To launch your website with turnkey templates, interactive forms, and default pages, sign in to your administrator dashboard.
-            </p>
-            <a href="/auth/login" style="display: inline-flex; align-items: center; gap: 8px; background: #0050e5; color: #ffffff; font-weight: 700; font-size: 14px; padding: 13px 28px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(0,80,229,0.35);">
-              <span>Sign In to Admin Console</span>
-              <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
-            </a>
-          </div>
-        </div>
-      `;
-    }
-
     this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
   }
 
@@ -648,16 +702,37 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
    */
   private composeContentPage(): void {
+    const cleanSlug = (this.currentSlug || '').trim().toLowerCase().replace(/^\/+/, '');
+
     if (!this.currentPage) {
-      this.composeNotFoundPage();
-      return;
+      const blueprint = DEFAULT_PAGE_BLUEPRINTS[cleanSlug] ||
+                        (cleanSlug.includes('about') ? DEFAULT_PAGE_BLUEPRINTS['about'] : null) ||
+                        (cleanSlug.includes('service') && !cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['services'] : null) ||
+                        (cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['request-service'] : null) ||
+                        (cleanSlug.includes('contact') ? DEFAULT_PAGE_BLUEPRINTS['contact'] : null) ||
+                        (cleanSlug.includes('privacy') ? DEFAULT_PAGE_BLUEPRINTS['privacy-policy'] : null) ||
+                        (cleanSlug.includes('term') ? DEFAULT_PAGE_BLUEPRINTS['terms-and-conditions'] : null);
+
+      if (blueprint) {
+        this.currentPage = {
+          title: blueprint.title,
+          miniTitle: blueprint.miniTitle,
+          description: blueprint.description,
+          headerImageUrl: blueprint.headerImageUrl,
+          fullDescription: blueprint.fullDescription,
+          pageSections: blueprint.sections || []
+        };
+      } else {
+        this.composeNotFoundPage();
+        return;
+      }
     }
 
     this.titleService.setTitle(`${this.currentPage.title || 'Page'} | ${this.brandName}`);
 
-    const menuTemplate = this.findActiveTemplate('menu');
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const footerTemplate = this.findActiveTemplate('footer');
+    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'breadcrumb');
+    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
 
     let combinedStyles = '';
     let combinedHtml = '';
@@ -672,7 +747,18 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
 
     // 2. Breadcrumb Header
-    const rawSections: any[] = this.currentPage.pageSections || [];
+    let rawSections: any[] = this.currentPage.pageSections || [];
+    if (rawSections.length === 0) {
+      const blueprint = DEFAULT_PAGE_BLUEPRINTS[cleanSlug] ||
+                        (cleanSlug.includes('about') ? DEFAULT_PAGE_BLUEPRINTS['about'] : null) ||
+                        (cleanSlug.includes('service') && !cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['services'] : null) ||
+                        (cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['request-service'] : null) ||
+                        (cleanSlug.includes('contact') ? DEFAULT_PAGE_BLUEPRINTS['contact'] : null);
+      if (blueprint?.sections) {
+        rawSections = blueprint.sections;
+      }
+    }
+
     const heroSection = rawSections.find(
       (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
     );
@@ -681,7 +767,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
         title: heroSection?.title || this.currentPage.title || '',
-        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || '',
+        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || this.currentPage.miniTitle || '',
         description: heroSection?.description || this.currentPage.description || '',
         backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || '',
         breadcrumbTrail: [
@@ -735,7 +821,20 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 4. Footer
+    // 4. Newsletter Bar (Corporate Suite signature footer bridge)
+    const newsletterTemplate = this.findTemplateForSection({ templateKey: 'News_MinimalBar' });
+    if (newsletterTemplate && !pageSections.some(s => (s.templateKey || '').toLowerCase() === 'news_minimalbar')) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+    }
+
+    // 5. Footer
     if (footerTemplate) {
       combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
       const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
@@ -753,10 +852,10 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeBlogArchive(): void {
     this.titleService.setTitle(`Blog | ${this.brandName}`);
 
-    const menuTemplate = this.findActiveTemplate('menu');
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
-    const footerTemplate = this.findActiveTemplate('footer');
+    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'breadcrumb');
+    const blogTemplate = this.findActiveTemplate('blog') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'blog');
+    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
 
     let combinedStyles = '';
     let combinedHtml = '';
@@ -771,10 +870,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: 'Blog',
-        miniTitle: '',
-        description: '',
-        backgroundImageUrl: '',
+        title: 'Insights & Publications',
+        miniTitle: 'CORPORATE JOURNAL',
+        description: 'In-depth perspectives on modern architecture, technology governance, and digital scale.',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '#', isActive: true }
@@ -784,27 +883,54 @@ export class LandingComponent implements OnInit, OnDestroy {
       if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
     }
 
-    // Render Blog Grid from database
+    // Render Blog Grid from database or default sample insights
+    const activeBlogList = (this.blogs && this.blogs.length > 0) ? this.blogs : DEFAULT_SAMPLE_BLOGS;
+    const articlesList = activeBlogList.map(b => ({
+      id: b.id,
+      title: b.title || '',
+      Title: b.title || '',
+      excerpt: b.description || '',
+      Excerpt: b.description || '',
+      category: b.blogCategory?.categoryName || b.categoryName || '',
+      Category: b.blogCategory?.categoryName || b.categoryName || '',
+      date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+      Date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+      author: b.author || '',
+      Author: b.author || '',
+      imageUrl: b.imageUrl || '',
+      ImageUrl: b.imageUrl || '',
+      directUrl: `/blog/${b.id}`,
+      DirectUrl: `/blog/${b.id}`
+    }));
+
     const blogContext = {
-      title: '',
-      miniTitle: '',
-      description: '',
-      articles: this.blogs.map(b => ({
-        id: b.id,
-        title: b.title || '',
-        excerpt: b.description || '',
-        category: b.blogCategory?.categoryName || b.categoryName || '',
-        date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-        author: b.author || '',
-        imageUrl: b.imageUrl || '',
-        directUrl: `/blog/${b.id}`
-      }))
+      title: 'Latest News & Briefings',
+      Title: 'Latest News & Briefings',
+      miniTitle: 'OUR WRITINGS',
+      MiniTitle: 'OUR WRITINGS',
+      description: 'Explore analyses and field reports published by our cross-functional teams.',
+      Description: 'Explore analyses and field reports published by our cross-functional teams.',
+      articles: articlesList,
+      Articles: articlesList
     };
 
     if (blogTemplate) {
       if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
       combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
       if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
+    }
+
+    // Newsletter Bar
+    const newsletterTemplate = this.findTemplateForSection({ templateKey: 'News_MinimalBar' });
+    if (newsletterTemplate) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
     }
 
     if (footerTemplate) {
@@ -1545,55 +1671,72 @@ export class LandingComponent implements OnInit, OnDestroy {
   private buildHeroContext(dbHeroSection?: any): any {
     if (dbHeroSection) {
       return {
-        title: dbHeroSection.title || '',
-        Title: dbHeroSection.title || '',
-        miniTitle: dbHeroSection.miniTitle || '',
-        MiniTitle: dbHeroSection.miniTitle || '',
-        description: dbHeroSection.description || '',
-        Description: dbHeroSection.description || '',
-        imageUrl: dbHeroSection.imageUrl || '',
-        ImageUrl: dbHeroSection.imageUrl || '',
-        buttonText: dbHeroSection.buttonText || '',
-        ButtonText: dbHeroSection.buttonText || '',
-        buttonLink: dbHeroSection.buttonLink || '',
-        ButtonLink: dbHeroSection.buttonLink || '',
-        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '',
-        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || ''
+        title: dbHeroSection.title || `Engineering Sovereign Solutions for ${this.brandName}`,
+        Title: dbHeroSection.title || `Engineering Sovereign Solutions for ${this.brandName}`,
+        miniTitle: dbHeroSection.miniTitle || 'ENTERPRISE PLATFORM',
+        MiniTitle: dbHeroSection.miniTitle || 'ENTERPRISE PLATFORM',
+        description: dbHeroSection.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+        Description: dbHeroSection.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        ImageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        buttonText: dbHeroSection.buttonText || 'Explore Solutions',
+        ButtonText: dbHeroSection.buttonText || 'Explore Solutions',
+        buttonLink: dbHeroSection.buttonLink || '/services',
+        ButtonLink: dbHeroSection.buttonLink || '/services',
+        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || 'Request Intake',
+        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || 'Request Intake',
+        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '/request-service',
+        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '/request-service'
       };
     }
 
     if (this.sliders && this.sliders.length > 0) {
       const activeSlider = this.sliders[0];
       return {
-        title: activeSlider.title || '',
-        Title: activeSlider.title || '',
-        miniTitle: activeSlider.miniTitle || '',
-        MiniTitle: activeSlider.miniTitle || '',
-        description: activeSlider.description || '',
-        Description: activeSlider.description || '',
-        imageUrl: activeSlider.imageUrl || '',
-        ImageUrl: activeSlider.imageUrl || '',
-        buttonText: activeSlider.buttonText || '',
-        ButtonText: activeSlider.buttonText || '',
-        buttonLink: activeSlider.buttonLink || '',
-        ButtonLink: activeSlider.buttonLink || '',
-        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
-        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
-        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '',
-        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || ''
+        title: activeSlider.title || `Engineering Sovereign Solutions for ${this.brandName}`,
+        Title: activeSlider.title || `Engineering Sovereign Solutions for ${this.brandName}`,
+        miniTitle: activeSlider.miniTitle || 'ENTERPRISE PLATFORM',
+        MiniTitle: activeSlider.miniTitle || 'ENTERPRISE PLATFORM',
+        description: activeSlider.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+        Description: activeSlider.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+        imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        ImageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        buttonText: activeSlider.buttonText || 'Explore Solutions',
+        ButtonText: activeSlider.buttonText || 'Explore Solutions',
+        buttonLink: activeSlider.buttonLink || '/services',
+        ButtonLink: activeSlider.buttonLink || '/services',
+        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || 'Request Intake',
+        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || 'Request Intake',
+        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '/request-service',
+        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '/request-service'
       };
     }
 
-    return {};
+    return {
+      title: `Engineering Sovereign Solutions for ${this.brandName}`,
+      Title: `Engineering Sovereign Solutions for ${this.brandName}`,
+      miniTitle: 'MODULAR ENTERPRISE ARCHITECTURE',
+      MiniTitle: 'MODULAR ENTERPRISE ARCHITECTURE',
+      description: 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+      Description: 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
+      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      ImageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      buttonText: 'Explore Solutions',
+      ButtonText: 'Explore Solutions',
+      buttonLink: '/services',
+      ButtonLink: '/services',
+      secondaryButtonText: 'Request Intake',
+      SecondaryButtonText: 'Request Intake',
+      secondaryButtonLink: '/request-service',
+      SecondaryButtonLink: '/request-service'
+    };
   }
 
   /**
    * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
    */
   private buildSectionContext(sec: any): any {
-    const listItems = (sec.pageSectionLists || []).map((item: any, idx: number) => ({
+    const listItems = (sec.pageSectionLists || sec.items || []).map((item: any, idx: number) => ({
       id: item.id,
       title: item.title || '',
       Title: item.title || '',
@@ -1669,40 +1812,67 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   private findActiveTemplate(category: string): any {
-    return this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+    const found = this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+    if (found) return found;
+    return CANONICAL_CORPORATE_TEMPLATES.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
   }
 
   private findTemplateForSection(sec: any): any {
-    if (sec.templateKey) {
-      // 1. Exact match by TemplateKey or VariantCode
+    const rawKey = sec.templateKey || sec.variantCode || sec.directUrl || '';
+    if (rawKey) {
+      const normalizedKey = rawKey.toLowerCase();
+      // 1. Exact match in activeTemplates
       const exactMatch = this.activeTemplates.find(t => 
-        (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase() ||
-        (t.variantCode || '').toLowerCase() === sec.templateKey.toLowerCase()
+        (t.templateKey || '').toLowerCase() === normalizedKey ||
+        (t.variantCode || '').toLowerCase() === normalizedKey
       );
       if (exactMatch) return exactMatch;
 
-      // 2. Smart alias mapping between seeded template keys and installed theme keys
+      // 2. Exact match in CANONICAL_CORPORATE_TEMPLATES
+      const canonicalExact = CANONICAL_CORPORATE_TEMPLATES.find(t => 
+        (t.templateKey || '').toLowerCase() === normalizedKey ||
+        (t.variantCode || '').toLowerCase() === normalizedKey
+      );
+      if (canonicalExact) return canonicalExact;
+
+      // 3. Smart alias mapping between seeded template keys and installed theme keys
       const keyAliases: { [key: string]: string[] } = {
         'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
-        'body_statscounters': ['body_metricscounter', 'body_statscounter4'],
-        'body_metricscounter': ['body_metricscounter'],
-        'body_processsteps': ['body_missionsplit', 'body_featuregrid3'],
+        'split-media-showcase': ['body_missionsplit', 'body_featuregrid3'],
+        'body_statscounters': ['body_statscounters', 'body_metricscounter', 'body_statscounter4'],
+        'stats-counter': ['body_statscounters', 'body_metricscounter'],
+        'body_metricscounter': ['body_statscounters', 'body_metricscounter'],
+        'body_processsteps': ['body_processsteps', 'body_missionsplit', 'body_featuregrid3'],
+        'process-steps': ['body_processsteps', 'body_missionsplit'],
         'body_missionsplit': ['body_missionsplit'],
-        'body_ctasplit': ['body_ctabanner', 'body_ctabannerfull'],
-        'body_ctabanner': ['body_ctabanner'],
+        'body_ctasplit': ['body_ctasplit', 'body_ctabanner', 'body_ctabannerfull'],
+        'cta-banner': ['body_ctasplit', 'body_ctabanner'],
+        'body_ctabanner': ['body_ctasplit', 'body_ctabanner'],
         'news_minimalbar': ['news_minimalbar'],
+        'newsletter-bar': ['news_minimalbar'],
         'contact_splitdetails': ['contact_splitdetails'],
+        'contact-split': ['contact_splitdetails'],
         'body_requestservice': ['body_requestservice'],
+        'request-service': ['body_requestservice'],
         'body_featuregrid3': ['body_featuregrid3'],
+        'features-3col': ['body_featuregrid3'],
+        'feature-cards-grid': ['body_featuregrid3'],
         'body_testimonials': ['body_testimonials'],
-        'body_faqaccordion': ['body_faqaccordion']
+        'testimonials': ['body_testimonials'],
+        'testimonials-grid': ['body_testimonials'],
+        'body_faqaccordion': ['body_faqaccordion'],
+        'faq': ['body_faqaccordion'],
+        'faq-accordion': ['body_faqaccordion'],
+        'team-grid': ['body_featuregrid3']
       };
 
-      const normalizedKey = sec.templateKey.toLowerCase();
       const aliases = keyAliases[normalizedKey];
       if (aliases) {
         for (const alias of aliases) {
           const aliasMatch = this.activeTemplates.find(t => 
+            (t.templateKey || '').toLowerCase() === alias ||
+            (t.variantCode || '').toLowerCase() === alias
+          ) || CANONICAL_CORPORATE_TEMPLATES.find(t => 
             (t.templateKey || '').toLowerCase() === alias ||
             (t.variantCode || '').toLowerCase() === alias
           );
@@ -1710,8 +1880,8 @@ export class LandingComponent implements OnInit, OnDestroy {
         }
       }
     }
-    // Fallback to active body template
-    return this.findActiveTemplate('body');
+    // Fallback to active body template or canonical feature grid
+    return this.findActiveTemplate('body') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.templateKey === 'Body_FeatureGrid3');
   }
 
   private getHydrationOptions(): any {
