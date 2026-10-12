@@ -3538,10 +3538,9 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         if (b.defaultContentJson) {
           try {
             const parsed = JSON.parse(b.defaultContentJson);
-            if (parsed?.title) ctx.title = parsed.title;
-            if (parsed?.miniTitle) ctx.miniTitle = parsed.miniTitle;
-            if (parsed?.description) ctx.description = parsed.description;
-            if (parsed?.items && Array.isArray(parsed.items)) ctx.items = parsed.items;
+            ctx = { ...ctx, ...parsed };
+            if (parsed?.pageSectionLists && !ctx.items) ctx.items = parsed.pageSectionLists;
+            if (parsed?.items && !ctx.pageSectionLists) ctx.pageSectionLists = parsed.items;
           } catch (e) {}
         }
       } else if (b.category === 'blog' || b.category === 'blog_detail') {
@@ -3573,9 +3572,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         };
       }
 
-      let hydratedBlockHtml = (b.category === 'menu')
-        ? this.contentHydrator.hydrate(b.htmlTemplate, ctx as any, 'menu')
-        : this.hydrateTemplate(b.htmlTemplate, ctx);
+      let hydratedBlockHtml = this.contentHydrator.hydrate(
+        b.htmlTemplate,
+        ctx as any,
+        b.category
+      );
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*BrandName\s*\}\}/g, this.currentTenantBrandName);
       hydratedBlockHtml = hydratedBlockHtml.replace(/\{\{\s*Year\s*\}\}/g, new Date().getFullYear().toString());
 
@@ -3668,6 +3669,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   ${activeHeadTagsMarkup}
   ${combinedStyles ? `<style>\n${combinedStyles}\n</style>` : ''}
 </head>
