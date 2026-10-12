@@ -136,3 +136,10 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Live tenant database tokens fetched via `ContentApi/templates/editor-tokens` (`topMenuItems`, `menuDropdowns`, `menuCtaButtons`, `footerGroups`, `legalPages`, `brand`) MUST take precedence during preview hydration to reflect real tenant configuration.
   * Static `sampleContent` / preset JSON acts strictly as fallback demonstration mock data when database collections are unpopulated.
   * Never conflate preview simulation output with static sample JSON inspector state.
+
+---
+
+## 11. Background Task Lifecycle & Queue Protection (Mandatory)
+* **Zero Hung or Zombie Background Tasks**: Never leave background tasks running indefinitely. If any background task (e.g., builds, tests, git operations, or shell commands) runs longer than required or appears idle/unresponsive, the agent MUST immediately terminate (`kill`) it via `manage_task` to keep the user's chat thread unblocked.
+* **Non-Blocking Git Operations**: Never leave git operations (`git push`, `git pull`, `git fetch`) hanging in the background where credential prompts or network latency can stall silently. If a remote git command does not complete within 15–20 seconds, terminate it immediately and report the outcome to the user.
+* **Proactive Queue Health Check**: The agent must never finish an interaction while leaving orphaned, silent background processes running that cause incoming user messages to wait in a pending queue. Always verify and terminate stale background processes before concluding.
