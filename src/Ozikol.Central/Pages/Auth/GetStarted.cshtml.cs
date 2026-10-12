@@ -496,6 +496,8 @@ namespace Ozikol.Central.Pages
                 {
                     success = true,
                     redirectUrl = oneTimeDetailsUrl,
+                    tenantKey = result.TenantKey,
+                    orgName = Input.OrganizationName,
                     message = SuccessMessage
                 });
             }
@@ -547,6 +549,34 @@ namespace Ozikol.Central.Pages
             }
 
             return result.Trim('-');
+        }
+
+        /// <summary>
+        /// AJAX handler: Seeds the turnkey default website suite for the newly provisioned tenant.
+        /// </summary>
+        public async Task<IActionResult> OnPostSeedDefaultsAsync([FromQuery] string tenantKey, [FromQuery] string? orgName = null)
+        {
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                return new JsonResult(new { success = false, message = "Missing tenant key." });
+            }
+
+            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(tenantKey.Trim(), orgName);
+            return new JsonResult(new { success = success, message = success ? "Default website seeded successfully!" : "Failed to seed default website." });
+        }
+
+        /// <summary>
+        /// AJAX handler: Skips default website seeding and marks tenant in blank canvas mode.
+        /// </summary>
+        public async Task<IActionResult> OnPostSkipDefaultsAsync([FromQuery] string tenantKey)
+        {
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                return new JsonResult(new { success = false, message = "Missing tenant key." });
+            }
+
+            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(tenantKey.Trim());
+            return new JsonResult(new { success = success, message = "Blank canvas initialized." });
         }
     }
 }
