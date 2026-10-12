@@ -1705,7 +1705,7 @@ export class BlogVisualComponent implements OnInit {
     private toast: ToastService,
     private previewModalService: UniversalPreviewModalService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (!this.variantCode) {
@@ -2161,7 +2161,7 @@ export class BlogVisualComponent implements OnInit {
           if (item.defaultContentJson) {
             try {
               this.sampleContent = JSON.parse(item.defaultContentJson);
-            } catch (e) {}
+            } catch (e) { }
           }
         }
       },
