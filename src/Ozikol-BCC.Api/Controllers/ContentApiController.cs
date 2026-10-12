@@ -2582,8 +2582,11 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
      * Discard infinite cloned slides ('swiper-slide-duplicate', 'slick-cloned').
      * Strip runtime state classes ('swiper-slide-active', 'swiper-initialized', etc.) and runtime inline styles.
      * Wrap the single clean slide inside {{{{#each Articles}}}} ... {{{{#/each}}}}.
-   - Footer Action Button (View All Articles / Blog Page Link):
-     {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"" class=""[original view-all button classes]"">{{{{ ButtonText }}}}</a>{{{{/if}}}}
+   - View All Posts / More News Action Button:
+     If a container <div> or button for ""View All Posts"", ""View All News"", ""All Articles"", ""More Posts"", or similar blog page link is present in the input HTML:
+     * Preserve the wrapper <div> and all layout, centering, alignment, and spacing classes (e.g. text-center, mt-5, action-wrap, col-12).
+     * Implement the placeholder: {{{{#if ButtonText}}}}<div class=""[original wrapper classes]""><a href=""{{{{ ButtonLink }}}}"" class=""[original button classes]""><span>{{{{ ButtonText }}}}</span> [preserve original icon/arrow if present]</a></div>{{{{/if}}}} (or wrap the <a> tag inside the existing container: {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"" ...>{{{{ ButtonText }}}}</a>{{{{/if}}}}).
+     * If no such container <div> or button exists in the original HTML, do not invent one.
    - Tags Cloud (if present):
      {{{{#each Tags}}}}<a href=""{{{{ Url }}}}"" class=""[original tag classes]"">{{{{ Name }}}}</a>{{{{/each}}}}
    - Root Container Class: {{{{ CustomClass }}}}

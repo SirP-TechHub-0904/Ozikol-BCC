@@ -79,11 +79,30 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
    - Strip auto-generated IDs (id="swiper-wrapper-...") and runtime aria attributes.
    - Wrap the single clean slide inside {{#each Articles}} ... {{/each}}.
 
-5. Footer Action Button (View All Articles / Blog Page Link):
-   Look for a bottom button leading to the main blog page (e.g. "View All News", "All Posts", "More Articles"):
-   {{#if ButtonText}}
-     <a href="{{ ButtonLink }}" class="[original view-all button classes]">{{ ButtonText }}</a>
-   {{/if}}
+5. View All Posts / More News Action Button:
+   Check if the input HTML contains a container <div> or button for "View All Posts", "View All News", "All Articles", "More Posts", or a link leading to the main blog page:
+   - IF THE CONTAINER <div> OR BUTTON IS PRESENT:
+     * Preserve the wrapper <div> and all of its layout, centering, alignment, and spacing classes exactly as in the original HTML (e.g. <div class="text-center mt-5">, <div class="oz-blog-action-wrap">, <div class="col-12 text-center">, <div class="blog-btn-wrap">, etc.).
+     * Implement the Handlebars placeholder using {{#if ButtonText}} and {{ ButtonLink }}:
+       {{#if ButtonText}}
+         <div class="[original wrapper classes]">
+           <a href="{{ ButtonLink }}" class="[original view-all button classes]">
+             <span>{{ ButtonText }}</span>
+             [preserve any original arrow or icon tag, e.g. <i class="fa-solid fa-arrow-right"></i>]
+           </a>
+         </div>
+       {{/if}}
+       (or if the button is nested inside an existing layout grid column:
+       <div class="[original column classes]">
+         {{#if ButtonText}}
+           <a href="{{ ButtonLink }}" class="[original view-all button classes]">{{ ButtonText }}</a>
+         {{/if}}
+       </div>)
+     * Replace any static button text (e.g. "View All Posts", "More News", "All Articles", "Browse More") with {{ ButtonText }}.
+     * Replace the href attribute with {{ ButtonLink }}.
+     * DO NOT delete, strip, or flatten this container <div> or button when present.
+   - IF NO SUCH CONTAINER OR BUTTON EXISTS:
+     * DO NOT invent, inject, or synthesize a new button or div. Only implement the placeholder if the div or button is present in the input HTML.
 
 6. Tags Cloud (if sidebar or footer tag strip exists):
    {{#each Tags}}<a href="{{ Url }}" class="[original tag classes]">{{ Name }}</a>{{/each}}

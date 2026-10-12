@@ -28,6 +28,7 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
   output = resolveDepthAwareIf(output, 'MiniTitle', Boolean(ctx.miniTitle && ctx.miniTitle.trim().length > 0));
   output = resolveDepthAwareIf(output, 'Description', Boolean(ctx.description && ctx.description.trim().length > 0));
   output = resolveDepthAwareIf(output, 'ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
+  output = resolveDepthAwareIf(output, 'ButtonLink', Boolean(ctx.buttonLink && ctx.buttonLink.trim().length > 0));
 
   // 3. Articles Loop: {{#each Articles}}
   const rawArticles = ctx.articles || [];
