@@ -2582,6 +2582,8 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
      * Discard infinite cloned slides ('swiper-slide-duplicate', 'slick-cloned').
      * Strip runtime state classes ('swiper-slide-active', 'swiper-initialized', etc.) and runtime inline styles.
      * Wrap the single clean slide inside {{{{#each Articles}}}} ... {{{{#/each}}}}.
+   - Footer Action Button (View All Articles / Blog Page Link):
+     {{{{#if ButtonText}}}}<a href=""{{{{ ButtonLink }}}}"" class=""[original view-all button classes]"">{{{{ ButtonText }}}}</a>{{{{/if}}}}
    - Tags Cloud (if present):
      {{{{#each Tags}}}}<a href=""{{{{ Url }}}}"" class=""[original tag classes]"">{{{{ Name }}}}</a>{{{{/each}}}}
    - Root Container Class: {{{{ CustomClass }}}}

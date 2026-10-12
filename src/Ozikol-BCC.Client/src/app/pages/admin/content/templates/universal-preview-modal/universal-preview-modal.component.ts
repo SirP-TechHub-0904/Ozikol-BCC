@@ -778,6 +778,8 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
           title: custom.title || p.title || 'Platform Insights & Architectural Dispatches',
           miniTitle: custom.miniTitle || 'KNOWLEDGE BASE',
           description: custom.description || 'Deep dives, benchmarks, and engineering standards curated by our infrastructure team.',
+          buttonText: custom.buttonText || 'View All Articles',
+          buttonLink: custom.buttonLink || '/blog',
           articles: custom.articles || [
             { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', category: 'Architecture', publishedDate: 'Sep 12, 2026', authorName: 'Alex Vance', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80', summary: 'Proven patterns for high-throughput tenant isolation and state synchronization.', url: '/blog/1' },
             { title: 'The Shift to Zero-Downtime Data Migration Pipelines', category: 'DevOps', publishedDate: 'Sep 08, 2026', authorName: 'Sarah Jenkins', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80', summary: 'How leading teams execute petabyte-scale database cutovers without dropped packets.', url: '/blog/2' },

@@ -11,6 +11,8 @@ export class BlogFeedAiRule implements ICategoryAiRule {
     '{{ Title }}',
     '{{ MiniTitle }}',
     '{{ Description }}',
+    '{{ ButtonText }}',
+    '{{ ButtonLink }}',
     '{{#each Articles}}',
     '{{ Title }}',
     '{{ Summary }}',
@@ -77,10 +79,16 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
    - Strip auto-generated IDs (id="swiper-wrapper-...") and runtime aria attributes.
    - Wrap the single clean slide inside {{#each Articles}} ... {{/each}}.
 
-5. Tags Cloud (if sidebar or footer tag strip exists):
+5. Footer Action Button (View All Articles / Blog Page Link):
+   Look for a bottom button leading to the main blog page (e.g. "View All News", "All Posts", "More Articles"):
+   {{#if ButtonText}}
+     <a href="{{ ButtonLink }}" class="[original view-all button classes]">{{ ButtonText }}</a>
+   {{/if}}
+
+6. Tags Cloud (if sidebar or footer tag strip exists):
    {{#each Tags}}<a href="{{ Url }}" class="[original tag classes]">{{ Name }}</a>{{/each}}
 
-6. Root Container:
+7. Root Container:
    Ensure the root blog section wrapper element includes class "{{ CustomClass }}".
 
 MANDATORY RULES:
