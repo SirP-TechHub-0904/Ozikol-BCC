@@ -2029,23 +2029,103 @@ export class BlogDetailVisualComponent implements OnInit {
 
   jsScript: string = '';
 
-  blogDetailTokens: Array<{ label: string; token: string }> = [
-    { label: 'Title', token: '{{ Title }}' },
-    { label: 'Summary', token: '{{ Summary }}' },
-    { label: 'Body (HTML)', token: '{{{ Body }}}' },
-    { label: 'Category', token: '{{ Category }}' },
-    { label: 'Published Date', token: '{{ PublishedDate }}' },
-    { label: 'Reading Time', token: '{{ ReadingTime }}' },
-    { label: 'Cover Image', token: '{{ CoverImageUrl }}' },
-    { label: 'Author Name', token: '{{ AuthorName }}' },
-    { label: 'Author Role', token: '{{ AuthorRole }}' },
-    { label: 'Author Avatar', token: '{{ AuthorAvatarUrl }}' },
-    { label: 'Author Bio', token: '{{ AuthorBio }}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}' },
-    { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
-    { label: 'Recent Articles', token: '{{#each RecentArticles}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}' },
-    { label: 'Comment Form', token: '{{ Form "Comment_Submit" }}' },
-    { label: 'Newsletter Form', token: '{{ Form "Newsletter_Subscribe" }}' }
+  blogDetailTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
+    {
+      label: 'Title',
+      token: '{{ Title }}',
+      htmlSnippet: '<h1 class="oz-article-headline">{{ Title }}</h1>',
+      description: 'Primary article headline text (H1).'
+    },
+    {
+      label: 'Summary',
+      token: '{{ Summary }}',
+      htmlSnippet: '{{#if Summary}}\n<p class="oz-article-lead">{{ Summary }}</p>\n{{/if}}',
+      description: 'Introductory article lead paragraph or executive summary.'
+    },
+    {
+      label: 'Body (HTML)',
+      token: '{{{ Body }}}',
+      htmlSnippet: '<div class="oz-article-body">\n  {{{ Body }}}\n</div>',
+      description: 'Unescaped rich-text HTML editorial article body. Note: triple curly braces are required so formatting is not escaped.'
+    },
+    {
+      label: 'Category',
+      token: '{{ Category }}',
+      htmlSnippet: '{{#if Category}}\n<span class="oz-category-badge">{{ Category }}</span>\n{{/if}}',
+      description: 'Primary topic category badge above headline.'
+    },
+    {
+      label: 'Published Date',
+      token: '{{ PublishedDate }}',
+      htmlSnippet: '{{#if PublishedDate}}\n<span class="oz-publish-meta"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>\n{{/if}}',
+      description: 'Article publication date with calendar icon.'
+    },
+    {
+      label: 'Reading Time',
+      token: '{{ ReadingTime }}',
+      htmlSnippet: '{{#if ReadingTime}}\n<span class="oz-publish-meta">&bull; <i class="fa-regular fa-clock"></i> {{ ReadingTime }}</span>\n{{/if}}',
+      description: 'Estimated reading time indicator (e.g. 8 min read).'
+    },
+    {
+      label: 'Cover Image',
+      token: '{{ CoverImageUrl }}',
+      htmlSnippet: '{{#if CoverImageUrl}}\n<div class="oz-article-cover">\n  <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-cover-image" />\n</div>\n{{/if}}',
+      description: 'Featured article cover/hero imagery with alt text.'
+    },
+    {
+      label: 'Author Strip',
+      token: '{{ AuthorName }}',
+      htmlSnippet: '<div class="oz-author-strip">\n  {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-author-avatar" />{{/if}}\n  <div class="oz-author-info">\n    <span class="oz-author-name">{{ AuthorName }}</span>\n    {{#if AuthorRole}}<span class="oz-author-role">{{ AuthorRole }}</span>{{/if}}\n  </div>\n</div>',
+      description: 'Byline metadata strip showing author avatar, author name, and professional title.'
+    },
+    {
+      label: 'Author Bio Card',
+      token: '{{ AuthorBio }}',
+      htmlSnippet: '{{#if AuthorBio}}\n<div class="oz-author-bio-card">\n  <div class="oz-author-bio-avatar-wrap">\n    {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}\n  </div>\n  <div class="oz-author-bio-content">\n    <h4 class="oz-bio-name">About {{ AuthorName }}</h4>\n    {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}\n    <p class="oz-bio-text">{{ AuthorBio }}</p>\n  </div>\n</div>\n{{/if}}',
+      description: 'Full author profile card with circular avatar, headline, role, and biography narrative.'
+    },
+    {
+      label: 'Tags Loop',
+      token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}',
+      htmlSnippet: '{{#if Tags}}\n<div class="oz-article-tags">\n  <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>\n  {{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n  {{/each}}\n</div>\n{{/if}}',
+      description: 'Loop over article taxonomy topic tags with link and hashtag prefix.'
+    },
+    {
+      label: 'Categories Loop',
+      token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}',
+      htmlSnippet: '{{#if BlogCategories}}\n<div class="oz-sidebar-widget">\n  <h4 class="oz-widget-title">Categories</h4>\n  <ul class="oz-widget-categories">\n    {{#each BlogCategories}}\n    <li>\n      <a href="{{ Url }}" class="oz-cat-item">\n        <span class="oz-cat-name">{{ Name }}</span>\n        {{#if Count}}<span class="oz-cat-count">({{ Count }})</span>{{/if}}\n      </a>\n    </li>\n    {{/each}}\n  </ul>\n</div>\n{{/if}}',
+      description: 'Sidebar categories widget with category names, links, and article count badges.'
+    },
+    {
+      label: 'Recent Articles',
+      token: '{{#each RecentArticles}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}',
+      htmlSnippet: '{{#if RecentArticles}}\n<div class="oz-sidebar-widget">\n  <h4 class="oz-widget-title">Recent Reads</h4>\n  <div class="oz-widget-recent-list">\n    {{#each RecentArticles}}\n    <a href="{{ Url }}" class="oz-recent-mini-card">\n      {{#if CoverImageUrl}}<div class="oz-recent-mini-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}\n      <div class="oz-recent-mini-info">\n        {{#if PublishedDate}}<span class="oz-recent-mini-date">{{ PublishedDate }}</span>{{/if}}\n        <h5 class="oz-recent-mini-title">{{ Title }}</h5>\n      </div>\n    </a>\n    {{/each}}\n  </div>\n</div>\n{{/if}}',
+      description: 'Recommended/recent reads widget with thumbnail image, publication date, and title.'
+    },
+    {
+      label: 'Comment Form',
+      token: '{{ Form "Comment_Submit" }}',
+      htmlSnippet: '<div class="oz-comments-section">\n  <div class="oz-comments-header">\n    <h3 class="oz-comments-title">Discussion &amp; Responses</h3>\n    <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>\n  </div>\n  {{ Form "Comment_Submit" }}\n</div>',
+      description: 'Discussion and comment responses section with interactive submission form.'
+    },
+    {
+      label: 'Newsletter Form',
+      token: '{{ Form "Newsletter_Subscribe" }}',
+      htmlSnippet: '<div class="oz-sidebar-widget oz-widget-newsletter">\n  <div class="oz-newsletter-icon"><i class="fa-solid fa-envelope-open-text"></i></div>\n  <h4 class="oz-widget-title">Weekly Digest</h4>\n  <p class="oz-newsletter-copy">Get the latest cloud architecture, security, and scalability breakdowns in your inbox.</p>\n  {{ Form "Newsletter_Subscribe" }}\n</div>',
+      description: 'Sidebar newsletter subscription widget with icon, callout copy, and email input.'
+    },
+    {
+      label: 'Back Link',
+      token: '<a href="/blog" class="oz-back-btn">All Articles</a>',
+      htmlSnippet: '<div class="oz-article-top-nav">\n  <a href="/blog" class="oz-back-btn">\n    <i class="fa-solid fa-arrow-left"></i>\n    <span>All Articles</span>\n  </a>\n</div>',
+      description: 'Top return navigation link back to the main blog feed directory.'
+    },
+    {
+      label: 'CustomClass',
+      token: '{{ CustomClass }}',
+      htmlSnippet: '<article class="oz-article-detail {{ CustomClass }}">',
+      description: 'Root container CSS hook dynamically injected by the CMS.'
+    }
   ];
 
   sampleContent: any = {
