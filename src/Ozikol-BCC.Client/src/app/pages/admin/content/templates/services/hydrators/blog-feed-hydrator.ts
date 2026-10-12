@@ -27,6 +27,7 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
   // 2. Resolve Top-Level Conditionals
   output = resolveDepthAwareIf(output, 'MiniTitle', Boolean(ctx.miniTitle && ctx.miniTitle.trim().length > 0));
   output = resolveDepthAwareIf(output, 'Description', Boolean(ctx.description && ctx.description.trim().length > 0));
+  output = resolveDepthAwareIf(output, 'ButtonText', Boolean(ctx.buttonText && ctx.buttonText.trim().length > 0));
 
   // 3. Articles Loop: {{#each Articles}}
   const rawArticles = ctx.articles || [];
@@ -99,10 +100,12 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
     }).join('\n');
   });
 
-  // 6. Section Scalars
+  // 6. Section Scalars & Action Button
   output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
   output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
+  output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || 'View All Articles');
+  output = output.replace(/\{\{\s*(?:ButtonLink|DirectUrl|BlogUrl)\s*\}\}/gi, ctx.buttonLink || ctx.directUrl || '/blog');
 
   // 7. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);

@@ -367,6 +367,32 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   placeholder="e.g. Explore in-depth engineering breakdowns..."
                 ></textarea>
               </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Action Button Text</span>
+                  <code [innerText]="'{{ ButtonText }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.buttonText"
+                  class="form-control inspector-input"
+                  placeholder="e.g. View All Articles"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="field-label">
+                  <span>Action Button Link (Blog Page)</span>
+                  <code [innerText]="'{{ ButtonLink }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.buttonLink"
+                  class="form-control inspector-input"
+                  placeholder="e.g. /blog"
+                />
+              </div>
             </div>
           </div>
 
@@ -981,11 +1007,20 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
 
     .flex-1 { flex: 1; }
     .flex-2 { flex: 2; }
-    .flex-3 { flex: 3; }
+    .repeater-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      margin-top: 4px;
+    }
 
     .textarea-short {
+      width: 100% !important;
+      box-sizing: border-box !important;
       resize: vertical;
       font-family: inherit;
+      min-height: 72px;
     }
 
     .btn-remove-item {
@@ -1058,6 +1093,8 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
     }
 
     .inspector-input {
+      width: 100%;
+      box-sizing: border-box;
       border: 1.5px solid #cbd5e1;
       border-radius: 8px;
       padding: 9px 12px;
@@ -1283,6 +1320,14 @@ export class BlogVisualComponent implements OnInit {
       </article>
       {{/each}}
     </div>
+    {{#if ButtonText}}
+    <div class="oz-blog-action-wrap">
+      <a href="{{ ButtonLink }}" class="oz-btn-view-all">
+        <span>{{ ButtonText }}</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    {{/if}}
   </div>
 </section>`;
 
@@ -1490,6 +1535,39 @@ export class BlogVisualComponent implements OnInit {
 .oz-card-read-more:hover i {
   transform: translateX(4px);
 }
+.oz-blog-action-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 56px;
+}
+.oz-btn-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 34px;
+  background: #0050e5;
+  color: #ffffff;
+  border-radius: 30px;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.oz-btn-view-all:hover {
+  background: #003dbb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 80, 229, 0.35);
+  color: #ffffff;
+}
+.oz-btn-view-all i {
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+.oz-btn-view-all:hover i {
+  transform: translateX(4px);
+}
 @media (max-width: 1024px) {
   .oz-articles-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1507,6 +1585,10 @@ export class BlogVisualComponent implements OnInit {
     grid-template-columns: 1fr;
     gap: 20px;
   }
+  .oz-btn-view-all {
+    width: 100%;
+    justify-content: center;
+  }
 }`;
 
   jsScript: string = '';
@@ -1515,6 +1597,8 @@ export class BlogVisualComponent implements OnInit {
     { label: 'Title', token: '{{ Title }}' },
     { label: 'MiniTitle', token: '{{ MiniTitle }}' },
     { label: 'Description', token: '{{ Description }}' },
+    { label: 'ButtonText', token: '{{ ButtonText }}' },
+    { label: 'ButtonLink', token: '{{ ButtonLink }}' },
     { label: 'Articles Loop', token: '{{#each Articles}}\n  <article class="oz-article-card">\n    <img src="{{ CoverImageUrl }}" />\n    <span>{{ Category }}</span>\n    <h3><a href="{{ Url }}">{{ Title }}</a></h3>\n    <p>{{ Summary }}</p>\n    <span>{{ PublishedDate }} - {{ AuthorName }}</span>\n  </article>\n{{/each}}' },
     { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
     { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' },
@@ -1525,6 +1609,8 @@ export class BlogVisualComponent implements OnInit {
     title: 'Latest Insights & Technical Papers',
     miniTitle: 'INSIGHTS & EDITORIALS',
     description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
+    buttonText: 'View All Articles',
+    buttonLink: '/blog',
     articles: [
       {
         title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
@@ -1629,6 +1715,14 @@ export class BlogVisualComponent implements OnInit {
       </article>
       {{/each}}
     </div>
+    {{#if ButtonText}}
+    <div class="oz-blog-action-wrap">
+      <a href="{{ ButtonLink }}" class="oz-btn-view-all">
+        <span>{{ ButtonText }}</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    {{/if}}
   </div>
 </section>`;
 
@@ -1836,6 +1930,39 @@ export class BlogVisualComponent implements OnInit {
 .oz-card-read-more:hover i {
   transform: translateX(4px);
 }
+.oz-blog-action-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 56px;
+}
+.oz-btn-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 34px;
+  background: #0050e5;
+  color: #ffffff;
+  border-radius: 30px;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.oz-btn-view-all:hover {
+  background: #003dbb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 80, 229, 0.35);
+  color: #ffffff;
+}
+.oz-btn-view-all i {
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+.oz-btn-view-all:hover i {
+  transform: translateX(4px);
+}
 @media (max-width: 1024px) {
   .oz-articles-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1853,6 +1980,10 @@ export class BlogVisualComponent implements OnInit {
     grid-template-columns: 1fr;
     gap: 20px;
   }
+  .oz-btn-view-all {
+    width: 100%;
+    justify-content: center;
+  }
 }`;
     this.resetSampleContent();
     this.toast.info('Boilerplate reset to default blog grid structure.');
@@ -1863,6 +1994,8 @@ export class BlogVisualComponent implements OnInit {
       title: 'Latest Insights & Technical Papers',
       miniTitle: 'INSIGHTS & EDITORIALS',
       description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
+      buttonText: 'View All Articles',
+      buttonLink: '/blog',
       articles: [
         {
           title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
