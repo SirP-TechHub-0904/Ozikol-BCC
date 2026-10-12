@@ -553,6 +553,25 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Remove Platform Watermark")]
         public bool RemovePlatformWatermark { get; set; } = false;
 
+        /// <summary>
+        /// Indicates whether the initial workspace onboarding choice (defaults vs. blank canvas) has been completed.
+        /// </summary>
+        [Display(Name = "Workspace Initialized")]
+        public bool IsWorkspaceInitialized { get; set; } = false;
+
+        /// <summary>
+        /// Exact timestamp in UTC when the workspace was initialized (or when setup was skipped).
+        /// </summary>
+        [Display(Name = "Workspace Initialized At (UTC)")]
+        public DateTime? WorkspaceInitializedUtc { get; set; }
+
+        /// <summary>
+        /// Initialization mode chosen during workspace setup ("default_suite" or "blank_canvas").
+        /// </summary>
+        [MaxLength(50)]
+        [Display(Name = "Workspace Initialization Mode")]
+        public string? WorkspaceInitializationMode { get; set; }
+
         // ── Timestamps ──
 
         /// <summary>
