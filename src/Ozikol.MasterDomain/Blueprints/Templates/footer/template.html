@@ -1,0 +1,95 @@
+<footer class="oz-footer-section {{ CustomClass }}">
+  <div class="oz-footer-container">
+    <!-- Top Row: Brand & Mission, Multi-Column Navigation, and Newsletter -->
+    <div class="oz-footer-grid">
+      <!-- Zone 1: Brand, Tagline, Business Hours & Contact Touchpoints -->
+      <div class="oz-footer-brand-col">
+        <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
+          {{#if BrandLogo}}
+            <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
+          {{else}}
+            <span class="oz-footer-brand-title">{{ BrandName }}</span>
+          {{/if}}
+        </a>
+        <p class="oz-footer-desc">{{ Description }}</p>
+
+        {{#if WorkingHours}}
+        <div class="oz-footer-hours">
+          <i class="fa-regular fa-clock"></i>
+          <div class="oz-footer-hours-text">
+            <span class="oz-footer-hours-label">Business Hours</span>
+            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if HasContactInfo}}
+        <div class="oz-footer-contacts">
+          {{#each ContactItems}}
+          <div class="oz-footer-contact-item">
+            <i class="{{ IconClass }}"></i>
+            <div class="oz-footer-contact-text">
+              <span class="oz-footer-contact-label">{{ Title }}</span>
+              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        {{#if HasSocialLinks}}
+        <div class="oz-footer-socials">
+          {{#each SocialLinks}}
+          <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
+            <i class="{{ IconClass }}"></i>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+
+      <!-- Zone 2: Dynamic Multi-Column Navigation (Categories & Tagged Quick Links) -->
+      <div class="oz-footer-nav-group">
+        {{#each FooterCategories}}
+        <div class="oz-footer-col">
+          <h4 class="oz-footer-col-title">{{ Title }}</h4>
+          <ul class="oz-footer-links">
+            {{#each Pages}}
+            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/each}}
+
+        <!-- Zone 3: Tagged Pages (e.g. Quick Links) -->
+        <div class="oz-footer-col">
+          <h4 class="oz-footer-col-title">Quick Links</h4>
+          <ul class="oz-footer-links">
+            {{#each TaggedPages "quicklinks"}}
+            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
+            {{/each}}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Zone 4: Interactive Newsletter Subscription Block -->
+      <div class="oz-footer-newsletter-col">
+        <h4 class="oz-footer-col-title">Stay Informed</h4>
+        <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
+        <div class="oz-footer-form-wrapper">
+          {{ Form "Newsletter_Subscribe" }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone 5: Bottom Compliance Bar & Legal Links -->
+    <div class="oz-footer-bottom">
+      <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
+      <div class="oz-footer-legal-links">
+        {{#each LegalPages}}
+        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</footer>
