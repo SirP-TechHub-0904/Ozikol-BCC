@@ -28,8 +28,11 @@ export class BlogDetailAiRule implements ICategoryAiRule {
     '{{#each Tags}}',
     '{{ Name }}',
     '{{ Url }}',
+    '{{#each BlogCategories}}',
+    '{{ Count }}',
     '{{#each RecentArticles}}',
     '{{ Form "Comment_Submit" }}',
+    '{{ Form "Newsletter_Subscribe" }}',
     '{{ CustomClass }}'
   ];
 
@@ -81,8 +84,33 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
      <a href="{{ Url }}" class="[original tag classes]">#{{ Name }}</a>
    {{/each}}
 
-6. Related / Recent Articles (if present in sidebar or bottom grid):
-   Look for repeating related/recent article items. Keep ONLY ONE representative card inside {{#each RecentArticles}} and discard duplicates:
+6. Sidebar & Two-Column Layout (if present):
+   If the input HTML contains a sidebar column (<aside>, .sidebar, .blog-sidebar, .col-lg-4, etc.):
+   - Preserve the sidebar container, its grid column layout, and every widget within it.
+   - Sidebar Categories Widget:
+     Keep ONLY ONE category item inside {{#each BlogCategories}} and discard duplicates:
+     {{#each BlogCategories}}
+       <a href="{{ Url }}" class="[original category link classes]">
+         <span>{{ Name }}</span>
+         {{#if Count}}<span class="[original count classes]">({{ Count }})</span>{{/if}}
+       </a>
+     {{/each}}
+   - Sidebar Recent / Recommended Posts Widget:
+     Keep ONLY ONE item inside {{#each RecentArticles}} and discard duplicates:
+     {{#each RecentArticles}}
+       <a href="{{ Url }}" class="[original item classes]">
+         {{#if CoverImageUrl}}<img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="[original thumbnail classes]" />{{/if}}
+         <span class="[original date classes]">{{ PublishedDate }}</span>
+         <h5 class="[original title classes]">{{ Title }}</h5>
+       </a>
+     {{/each}}
+   - Sidebar Tags Cloud Widget:
+     {{#each Tags}}<a href="{{ Url }}" class="[original tag classes]">#{{ Name }}</a>{{/each}}
+   - Sidebar Newsletter / Subscription Widget:
+     Replace the subscription form with: {{ Form "Newsletter_Subscribe" }}
+   - Search Widget: Preserve the original search form and input fields.
+
+7. Related / Recent Articles Bottom Grid (if present outside sidebar):
    {{#each RecentArticles}}
      <div class="[original related card classes]">
        {{#if CoverImageUrl}}<img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="[original thumbnail classes]" />{{/if}}
@@ -91,16 +119,16 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
      </div>
    {{/each}}
 
-7. Comments Section / Submission Form (if present):
+8. Comments Section / Submission Form (if present):
    Look for the comment list and response form block (e.g. <div class="comments-area">, <form class="comment-form">):
    - Keep the surrounding container card and replace/augment the form with:
      {{ Form "Comment_Submit" }}
 
-8. Back to Articles / Navigation Button (if present):
+9. Back to Articles / Navigation Button (if present):
    If there is a return link to the blog feed (e.g. "Back to Blog", "All Articles"):
    <a href="/blog" class="[original back link classes]">[original text & icons]</a>
 
-9. Root Container:
+10. Root Container:
    Ensure the root article/section wrapper element includes class "{{ CustomClass }}".
 
 MANDATORY RULES:

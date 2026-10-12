@@ -433,8 +433,50 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </div>
           </div>
 
-          <!-- Sub-Tab 4: Related Articles & Discussion -->
+          <!-- Sub-Tab 4: Sidebar & Related Content -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'related'">
+            <div class="tax-group-block" style="margin-bottom: 24px;">
+              <div class="tax-header-row">
+                <div>
+                  <h4 class="tax-group-title">Sidebar Categories</h4>
+                  <p class="tax-group-sub">Rendered via loop: <code [innerText]="'{{#each BlogCategories}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-mini" (click)="addCategory()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Category</span>
+                </button>
+              </div>
+
+              <div class="tax-list">
+                <div class="tax-item-row" *ngFor="let cat of (sampleContent.blogCategories || []); let idx = index">
+                  <input
+                    type="text"
+                    [(ngModel)]="cat.name"
+                    class="form-control inspector-input flex-2"
+                    placeholder="Category name e.g. Cloud Architecture"
+                  />
+                  <input
+                    type="number"
+                    [(ngModel)]="cat.count"
+                    class="form-control inspector-input flex-1"
+                    placeholder="Count e.g. 14"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="cat.url"
+                    class="form-control inspector-input flex-2"
+                    placeholder="URL e.g. /blog/categories/cloud"
+                  />
+                  <button type="button" class="btn-remove-item" (click)="removeCategory(idx)" title="Remove category">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+                <div *ngIf="!sampleContent.blogCategories || sampleContent.blogCategories.length === 0" class="empty-list-notice">
+                  No categories added. Click "Add Category" to add sidebar categories.
+                </div>
+              </div>
+            </div>
+
             <div class="tax-group-block">
               <div class="tax-header-row">
                 <div>
@@ -482,9 +524,9 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                 <div class="comments-note-header">
                   <span class="material-symbols-outlined note-icon">chat</span>
                   <div>
-                    <h5 class="note-title">Comments &amp; Responses Engine: <code [innerText]="'{{ Form &quot;Comment_Submit&quot; }}'"></code></h5>
+                    <h5 class="note-title">Sidebar Widgets &amp; Dynamic Forms: <code [innerText]="'{{ Form &quot;Comment_Submit&quot; }}'"></code></h5>
                     <p class="note-desc">
-                      Dynamic comment submission forms simulate automatically in preview mode. When the Comment database model is connected, submissions will bind natively without requiring template changes.
+                      The sidebar displays live search, categories, recent reads, tags cloud, and newsletter subscription form. When the Comment database model is connected, submissions will bind natively without requiring template changes.
                     </p>
                   </div>
                 </div>
@@ -1352,90 +1394,141 @@ export class BlogDetailVisualComponent implements OnInit {
   </div>
   {{/if}}
 
-  <div class="oz-article-layout">
-    <div class="oz-article-body">
-      {{{ Body }}}
-    </div>
-
-    {{#if Tags}}
-    <div class="oz-article-tags">
-      <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
-      {{#each Tags}}
-      <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
-      {{/each}}
-    </div>
-    {{/if}}
-
-    {{#if AuthorBio}}
-    <div class="oz-author-bio-card">
-      <div class="oz-author-bio-avatar-wrap">
-        {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+  <!-- Two-Column Editorial Layout (Main Article + Sidebar) -->
+  <div class="oz-article-layout-grid">
+    <!-- Left Column: Main Article Body, Tags, Author Bio & Comments -->
+    <main class="oz-article-main">
+      <div class="oz-article-body">
+        {{{ Body }}}
       </div>
-      <div class="oz-author-bio-content">
-        <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
-        {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
-        <p class="oz-bio-text">{{ AuthorBio }}</p>
-      </div>
-    </div>
-    {{/if}}
 
-    {{#if RecentArticles}}
-    <div class="oz-related-articles-section">
-      <h3 class="oz-related-title">Recommended Reads</h3>
-      <div class="oz-related-grid">
-        {{#each RecentArticles}}
-        <a href="{{ Url }}" class="oz-related-card">
-          {{#if CoverImageUrl}}<div class="oz-related-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
-          <div class="oz-related-info">
-            {{#if PublishedDate}}<span class="oz-related-date">{{ PublishedDate }}</span>{{/if}}
-            <h5 class="oz-related-headline">{{ Title }}</h5>
-          </div>
-        </a>
+      {{#if Tags}}
+      <div class="oz-article-tags">
+        <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
+        {{#each Tags}}
+        <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
         {{/each}}
       </div>
-    </div>
-    {{/if}}
+      {{/if}}
 
-    <div class="oz-comments-section">
-      <div class="oz-comments-header">
-        <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
-        <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+      {{#if AuthorBio}}
+      <div class="oz-author-bio-card">
+        <div class="oz-author-bio-avatar-wrap">
+          {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+        </div>
+        <div class="oz-author-bio-content">
+          <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
+          {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
+          <p class="oz-bio-text">{{ AuthorBio }}</p>
+        </div>
       </div>
-      {{ Form "Comment_Submit" }}
-    </div>
+      {{/if}}
+
+      <div class="oz-comments-section">
+        <div class="oz-comments-header">
+          <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
+          <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+        </div>
+        {{ Form "Comment_Submit" }}
+      </div>
+    </main>
+
+    <!-- Right Column: Sidebar -->
+    <aside class="oz-article-sidebar">
+      <!-- Search Widget -->
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Search Articles</h4>
+        <form class="oz-search-form" onsubmit="event.preventDefault();">
+          <input type="text" class="oz-search-input" placeholder="Search insights..." />
+          <button type="submit" class="oz-search-btn" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+      </div>
+
+      <!-- Categories Widget -->
+      {{#if BlogCategories}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Categories</h4>
+        <ul class="oz-widget-categories">
+          {{#each BlogCategories}}
+          <li>
+            <a href="{{ Url }}" class="oz-cat-item">
+              <span class="oz-cat-name">{{ Name }}</span>
+              {{#if Count}}<span class="oz-cat-count">({{ Count }})</span>{{/if}}
+            </a>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+      {{/if}}
+
+      <!-- Recent Reads Widget -->
+      {{#if RecentArticles}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Recent Reads</h4>
+        <div class="oz-widget-recent-list">
+          {{#each RecentArticles}}
+          <a href="{{ Url }}" class="oz-recent-mini-card">
+            {{#if CoverImageUrl}}<div class="oz-recent-mini-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
+            <div class="oz-recent-mini-info">
+              {{#if PublishedDate}}<span class="oz-recent-mini-date">{{ PublishedDate }}</span>{{/if}}
+              <h5 class="oz-recent-mini-title">{{ Title }}</h5>
+            </div>
+          </a>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Popular Tags Widget -->
+      {{#if Tags}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Popular Tags</h4>
+        <div class="oz-widget-tags-cloud">
+          {{#each Tags}}
+          <a href="{{ Url }}" class="oz-sidebar-tag">#{{ Name }}</a>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Newsletter Widget -->
+      <div class="oz-sidebar-widget oz-widget-newsletter">
+        <div class="oz-newsletter-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+        <h4 class="oz-widget-title">Weekly Digest</h4>
+        <p class="oz-newsletter-copy">Get the latest cloud architecture, security, and scalability breakdowns in your inbox.</p>
+        {{ Form "Newsletter_Subscribe" }}
+      </div>
+    </aside>
   </div>
 </article>`;
 
-  cssStyles: string = `.oz-article-detail {
+  cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+.oz-article-detail {
   padding: 48px 24px 96px 24px;
   background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
   color: #0f172a;
 }
 .oz-article-top-nav {
-  max-width: 860px;
+  max-width: 1200px;
   margin: 0 auto 32px auto;
 }
 .oz-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: #64748b;
+  text-decoration: none;
   font-size: 13.5px;
   font-weight: 700;
-  color: #0050e5;
-  text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 8px;
-  background: #eff6ff;
-  transition: all 0.2s ease;
+  transition: color 0.15s ease;
 }
 .oz-back-btn:hover {
-  background: #dbeafe;
-  color: #003bb5;
-  transform: translateX(-2px);
+  color: #0050e5;
 }
 .oz-article-header {
-  max-width: 860px;
+  max-width: 900px;
   margin: 0 auto 40px auto;
   text-align: center;
 }
@@ -1444,53 +1537,54 @@ export class BlogDetailVisualComponent implements OnInit {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 .oz-category-badge {
   background: #eff6ff;
   color: #0050e5;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  padding: 5px 14px;
+  padding: 4px 14px;
   border-radius: 20px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  border: 1px solid #bfdbfe;
 }
 .oz-publish-meta {
   font-size: 13px;
   color: #64748b;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 .oz-article-headline {
-  font-size: 42px;
-  font-weight: 900;
+  font-size: 40px;
+  font-weight: 800;
   color: #0f172a;
   line-height: 1.25;
   margin: 0 0 20px 0;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
 }
 .oz-article-lead {
-  font-size: 20px;
+  font-size: 19px;
   color: #475569;
   line-height: 1.6;
-  margin: 0 0 32px 0;
-  font-weight: 400;
+  margin: 0 0 28px 0;
 }
 .oz-author-strip {
   display: inline-flex;
   align-items: center;
   gap: 12px;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 8px 20px;
+  padding: 8px 20px 8px 12px;
   border-radius: 40px;
+  border: 1px solid #e2e8f0;
 }
 .oz-author-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -1509,8 +1603,8 @@ export class BlogDetailVisualComponent implements OnInit {
   color: #64748b;
 }
 .oz-article-cover {
-  max-width: 1040px;
-  margin: 0 auto 48px auto;
+  max-width: 1200px;
+  margin: 0 auto 52px auto;
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
@@ -1520,12 +1614,21 @@ export class BlogDetailVisualComponent implements OnInit {
   height: auto;
   display: block;
 }
-.oz-article-layout {
-  max-width: 820px;
+
+/* 2-Column Grid Layout */
+.oz-article-layout-grid {
+  max-width: 1200px;
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 48px;
+  align-items: start;
+}
+.oz-article-main {
+  min-width: 0;
 }
 .oz-article-body {
-  font-size: 17px;
+  font-size: 17.5px;
   line-height: 1.85;
   color: #334155;
 }
@@ -1549,6 +1652,8 @@ export class BlogDetailVisualComponent implements OnInit {
   font-style: italic;
   color: #1e293b;
 }
+
+/* Article Tags */
 .oz-article-tags {
   display: flex;
   align-items: center;
@@ -1581,6 +1686,8 @@ export class BlogDetailVisualComponent implements OnInit {
   color: #ffffff;
   transform: translateY(-1px);
 }
+
+/* Author Bio Card */
 .oz-author-bio-card {
   margin-top: 48px;
   padding: 24px;
@@ -1620,68 +1727,15 @@ export class BlogDetailVisualComponent implements OnInit {
   line-height: 1.6;
   margin: 0;
 }
-.oz-related-articles-section {
-  margin-top: 56px;
-  padding-top: 40px;
-  border-top: 1.5px solid #e2e8f0;
-}
-.oz-related-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 24px 0;
-}
-.oz-related-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-}
-.oz-related-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-}
-.oz-related-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  border-color: #cbd5e1;
-}
-.oz-related-thumb img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  display: block;
-}
-.oz-related-info {
-  padding: 14px 16px;
-  flex: 1;
-}
-.oz-related-date {
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
-  display: block;
-  margin-bottom: 6px;
-}
-.oz-related-headline {
-  font-size: 14px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.4;
-  margin: 0;
-}
+
+/* Discussion & Comments Section */
 .oz-comments-section {
   margin-top: 56px;
   padding: 32px;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 .oz-comments-header {
   margin-bottom: 24px;
@@ -1697,9 +1751,278 @@ export class BlogDetailVisualComponent implements OnInit {
   color: #64748b;
   margin: 0;
 }
+
+/* Form Controls Styling (Injected Comment & Newsletter Forms) */
+.oz-injected-form {
+  display: block;
+  width: 100%;
+}
+.oz-injected-form .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -8px;
+}
+.oz-injected-form .col-md-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.oz-injected-form .col-12 {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.oz-injected-form .form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+.oz-injected-form .form-control {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+.oz-injected-form .form-control:focus {
+  outline: none;
+  border-color: #0050e5;
+  box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+}
+.oz-injected-form textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+.oz-injected-form .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 24px;
+  background: #0050e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 80, 229, 0.25);
+  transition: all 0.2s ease;
+}
+.oz-injected-form .btn-primary:hover {
+  background: #003db3;
+  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Sidebar Widgets */
+.oz-article-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.oz-sidebar-widget {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+.oz-widget-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+/* Widget: Search */
+.oz-search-form, .oz-search-box {
+  display: flex;
+  position: relative;
+  width: 100%;
+}
+.oz-search-input {
+  width: 100%;
+  padding: 10px 42px 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s;
+}
+.oz-search-input:focus {
+  border-color: #0050e5;
+  box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.12);
+}
+.oz-search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 8px;
+  font-size: 14px;
+  transition: color 0.15s;
+}
+.oz-search-btn:hover {
+  color: #0050e5;
+}
+
+/* Widget: Categories */
+.oz-widget-categories {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.oz-cat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #334155;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.oz-cat-item:hover {
+  background: #eff6ff;
+  color: #0050e5;
+  transform: translateX(3px);
+}
+.oz-cat-count {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+.oz-cat-item:hover .oz-cat-count {
+  color: #0050e5;
+}
+
+/* Widget: Recent Reads */
+.oz-widget-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.oz-recent-mini-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+.oz-recent-mini-card:hover .oz-recent-mini-title {
+  color: #0050e5;
+}
+.oz-recent-mini-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.oz-recent-mini-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.oz-recent-mini-info {
+  flex: 1;
+  min-width: 0;
+}
+.oz-recent-mini-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  display: block;
+  margin-bottom: 3px;
+}
+.oz-recent-mini-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  margin: 0;
+  transition: color 0.15s;
+}
+
+/* Widget: Tags Cloud */
+.oz-widget-tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.oz-sidebar-tag {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.oz-sidebar-tag:hover {
+  background: #0050e5;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Widget: Newsletter */
+.oz-widget-newsletter {
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  border-color: #bfdbfe;
+}
+.oz-newsletter-icon {
+  font-size: 24px;
+  color: #0050e5;
+  margin-bottom: 10px;
+}
+.oz-newsletter-copy {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 14px 0;
+}
+.oz-widget-newsletter .oz-newsletter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 991px) {
+  .oz-article-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
 @media (max-width: 768px) {
   .oz-article-headline { font-size: 30px; }
-  .oz-article-lead { font-size: 17px; }
+  .oz-article-lead { font-size: 16.5px; }
+  .oz-injected-form .col-md-6 { flex: 0 0 100%; max-width: 100%; }
   .oz-author-bio-card { flex-direction: column; align-items: center; text-align: center; }
   .oz-comments-section { padding: 20px; }
 }`;
@@ -1719,8 +2042,10 @@ export class BlogDetailVisualComponent implements OnInit {
     { label: 'Author Avatar', token: '{{ AuthorAvatarUrl }}' },
     { label: 'Author Bio', token: '{{ AuthorBio }}' },
     { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}' },
+    { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
     { label: 'Recent Articles', token: '{{#each RecentArticles}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}' },
-    { label: 'Comment Form', token: '{{ Form "Comment_Submit" }}' }
+    { label: 'Comment Form', token: '{{ Form "Comment_Submit" }}' },
+    { label: 'Newsletter Form', token: '{{ Form "Newsletter_Subscribe" }}' }
   ];
 
   sampleContent: any = {
@@ -1748,6 +2073,13 @@ export class BlogDetailVisualComponent implements OnInit {
       { name: 'Architecture', url: '/blog/tags/architecture' },
       { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
       { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
+    ],
+    blogCategories: [
+      { name: 'Cloud Architecture', count: 14, url: '/blog/categories/cloud-architecture' },
+      { name: 'DevOps & CI/CD', count: 9, url: '/blog/categories/devops' },
+      { name: 'Security & Zero-Trust', count: 7, url: '/blog/categories/security' },
+      { name: 'Microservices & Mesh', count: 12, url: '/blog/categories/microservices' },
+      { name: 'Platform Engineering', count: 5, url: '/blog/categories/platform' }
     ],
     recentArticles: [
       {
@@ -1804,6 +2136,25 @@ export class BlogDetailVisualComponent implements OnInit {
     }
   }
 
+  addCategory(): void {
+    if (!this.sampleContent.blogCategories) {
+      this.sampleContent.blogCategories = [];
+    }
+    this.sampleContent.blogCategories.push({
+      name: 'New Category',
+      count: 1,
+      url: '/blog/categories/new'
+    });
+    this.toast.info('Added sidebar category.');
+  }
+
+  removeCategory(idx: number): void {
+    if (this.sampleContent.blogCategories && this.sampleContent.blogCategories.length > idx) {
+      this.sampleContent.blogCategories.splice(idx, 1);
+      this.toast.info('Removed sidebar category.');
+    }
+  }
+
   addRecentArticle(): void {
     if (!this.sampleContent.recentArticles) {
       this.sampleContent.recentArticles = [];
@@ -1856,60 +2207,114 @@ export class BlogDetailVisualComponent implements OnInit {
   </div>
   {{/if}}
 
-  <div class="oz-article-layout">
-    <div class="oz-article-body">
-      {{{ Body }}}
-    </div>
-
-    {{#if Tags}}
-    <div class="oz-article-tags">
-      <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
-      {{#each Tags}}
-      <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
-      {{/each}}
-    </div>
-    {{/if}}
-
-    {{#if AuthorBio}}
-    <div class="oz-author-bio-card">
-      <div class="oz-author-bio-avatar-wrap">
-        {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+  <!-- Two-Column Editorial Layout (Main Article + Sidebar) -->
+  <div class="oz-article-layout-grid">
+    <!-- Left Column: Main Article Body, Tags, Author Bio & Comments -->
+    <main class="oz-article-main">
+      <div class="oz-article-body">
+        {{{ Body }}}
       </div>
-      <div class="oz-author-bio-content">
-        <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
-        {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
-        <p class="oz-bio-text">{{ AuthorBio }}</p>
-      </div>
-    </div>
-    {{/if}}
 
-    {{#if RecentArticles}}
-    <div class="oz-related-articles-section">
-      <h3 class="oz-related-title">Recommended Reads</h3>
-      <div class="oz-related-grid">
-        {{#each RecentArticles}}
-        <a href="{{ Url }}" class="oz-related-card">
-          {{#if CoverImageUrl}}<div class="oz-related-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
-          <div class="oz-related-info">
-            {{#if PublishedDate}}<span class="oz-related-date">{{ PublishedDate }}</span>{{/if}}
-            <h5 class="oz-related-headline">{{ Title }}</h5>
-          </div>
-        </a>
+      {{#if Tags}}
+      <div class="oz-article-tags">
+        <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
+        {{#each Tags}}
+        <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
         {{/each}}
       </div>
-    </div>
-    {{/if}}
+      {{/if}}
 
-    <div class="oz-comments-section">
-      <div class="oz-comments-header">
-        <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
-        <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+      {{#if AuthorBio}}
+      <div class="oz-author-bio-card">
+        <div class="oz-author-bio-avatar-wrap">
+          {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+        </div>
+        <div class="oz-author-bio-content">
+          <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
+          {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
+          <p class="oz-bio-text">{{ AuthorBio }}</p>
+        </div>
       </div>
-      {{ Form "Comment_Submit" }}
-    </div>
+      {{/if}}
+
+      <div class="oz-comments-section">
+        <div class="oz-comments-header">
+          <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
+          <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+        </div>
+        {{ Form "Comment_Submit" }}
+      </div>
+    </main>
+
+    <!-- Right Column: Sidebar -->
+    <aside class="oz-article-sidebar">
+      <!-- Search Widget -->
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Search Articles</h4>
+        <form class="oz-search-form" onsubmit="event.preventDefault();">
+          <input type="text" class="oz-search-input" placeholder="Search insights..." />
+          <button type="submit" class="oz-search-btn" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+      </div>
+
+      <!-- Categories Widget -->
+      {{#if BlogCategories}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Categories</h4>
+        <ul class="oz-widget-categories">
+          {{#each BlogCategories}}
+          <li>
+            <a href="{{ Url }}" class="oz-cat-item">
+              <span class="oz-cat-name">{{ Name }}</span>
+              {{#if Count}}<span class="oz-cat-count">({{ Count }})</span>{{/if}}
+            </a>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+      {{/if}}
+
+      <!-- Recent Reads Widget -->
+      {{#if RecentArticles}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Recent Reads</h4>
+        <div class="oz-widget-recent-list">
+          {{#each RecentArticles}}
+          <a href="{{ Url }}" class="oz-recent-mini-card">
+            {{#if CoverImageUrl}}<div class="oz-recent-mini-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
+            <div class="oz-recent-mini-info">
+              {{#if PublishedDate}}<span class="oz-recent-mini-date">{{ PublishedDate }}</span>{{/if}}
+              <h5 class="oz-recent-mini-title">{{ Title }}</h5>
+            </div>
+          </a>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Popular Tags Widget -->
+      {{#if Tags}}
+      <div class="oz-sidebar-widget">
+        <h4 class="oz-widget-title">Popular Tags</h4>
+        <div class="oz-widget-tags-cloud">
+          {{#each Tags}}
+          <a href="{{ Url }}" class="oz-sidebar-tag">#{{ Name }}</a>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Newsletter Widget -->
+      <div class="oz-sidebar-widget oz-widget-newsletter">
+        <div class="oz-newsletter-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+        <h4 class="oz-widget-title">Weekly Digest</h4>
+        <p class="oz-newsletter-copy">Get the latest cloud architecture, security, and scalability breakdowns in your inbox.</p>
+        {{ Form "Newsletter_Subscribe" }}
+      </div>
+    </aside>
   </div>
 </article>`;
-    this.toast.info('Boilerplate reset to default article detail structure.');
+    this.toast.info('Boilerplate reset to default 2-column sidebar article layout.');
   }
 
   resetSampleContent(): void {
@@ -1938,6 +2343,13 @@ export class BlogDetailVisualComponent implements OnInit {
         { name: 'Architecture', url: '/blog/tags/architecture' },
         { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
         { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
+      ],
+      blogCategories: [
+        { name: 'Cloud Architecture', count: 14, url: '/blog/categories/cloud-architecture' },
+        { name: 'DevOps & CI/CD', count: 9, url: '/blog/categories/devops' },
+        { name: 'Security & Zero-Trust', count: 7, url: '/blog/categories/security' },
+        { name: 'Microservices & Mesh', count: 12, url: '/blog/categories/microservices' },
+        { name: 'Platform Engineering', count: 5, url: '/blog/categories/platform' }
       ],
       recentArticles: [
         {

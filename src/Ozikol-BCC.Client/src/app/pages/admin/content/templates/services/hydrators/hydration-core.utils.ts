@@ -114,7 +114,7 @@ export interface HydrationContext {
   }>;
   blogCategories?: Array<{ name: string; count?: number; url?: string; customClass?: string }>;
   tags?: Array<{ name: string; url?: string; customClass?: string }>;
-  recentArticles?: Array<{ title: string; url: string; publishedDate?: string; coverImageUrl?: string }>;
+  recentArticles?: Array<{ title: string; url?: string; publishedDate?: string; coverImageUrl?: string; customClass?: string }>;
 
   // Blog Article Details Specifics
   authorName?: string;
