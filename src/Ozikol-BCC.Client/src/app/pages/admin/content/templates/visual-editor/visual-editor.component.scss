@@ -242,6 +242,78 @@
   }
 }
 
+.sample-presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: linear-gradient(90deg, #0e1726 0%, #111c30 100%);
+  border-bottom: 1px solid rgba(129, 140, 248, 0.16);
+  overflow-x: auto;
+}
+
+.presets-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #a5b4fc;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  .label-icon {
+    font-size: 14px;
+    color: #818cf8;
+  }
+}
+
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3.5px 10px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  color: #e0e7ff;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+
+  .chip-icon {
+    font-size: 13px;
+    color: #818cf8;
+    transition: color 0.18s ease;
+  }
+
+  .preset-pill-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    padding: 1px 5px;
+    border-radius: 8px;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.28);
+    border-color: #818cf8;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.22);
+
+    .chip-icon {
+      color: #ffffff;
+    }
+  }
+}
+
 .monaco-wrapper {
   flex: 1;
   position: relative;
