@@ -110,6 +110,23 @@ public interface ITenantOnboardingService
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>The matching sovereign workspace catalog, or null if not found.</returns>
     Task<MasterTenantCatalog?> FindWorkspaceByKeyAsync(string workspaceKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Seeds the complete turnkey default website suite (forms, blogs, pages, sections, SEO tags) into the specified tenant's database.
+    /// </summary>
+    /// <param name="tenantKey">The tenant identifier or slug.</param>
+    /// <param name="orgName">Optional organization name for brand personalization.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if seeded successfully; false otherwise.</returns>
+    Task<bool> SeedTenantDefaultWebsiteAsync(string tenantKey, string? orgName = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the tenant's workspace to blank canvas mode, skipping default content generation.
+    /// </summary>
+    /// <param name="tenantKey">The tenant identifier or slug.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if marked successfully; false otherwise.</returns>
+    Task<bool> SkipTenantDefaultWebsiteAsync(string tenantKey, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -787,12 +804,66 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
 
-            // 5. Seed Turnkey Default Website Suite (Forms, 3 Rich Editorial Blogs, 9 Pages, 10 Body Sections, SEO tags)
+    /// <summary>
+    /// Seeds the complete turnkey default website suite (forms, blogs, pages, sections, SEO tags) into the specified tenant's database.
+    /// </summary>
+    /// <param name="tenantKey">The tenant identifier or slug.</param>
+    /// <param name="orgName">Optional organization name for brand personalization.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if seeded successfully; false otherwise.</returns>
+    public async Task<bool> SeedTenantDefaultWebsiteAsync(string tenantKey, string? orgName = null, CancellationToken cancellationToken = default)
+    {
+        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+        if (catalog == null) return false;
+
+        string tenantConnStr = catalog.ConnectionString;
+        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+        optionsBuilder.UseSqlServer(tenantConnStr)
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+        using var scope = _serviceProvider.CreateScope();
+        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+        using (tenantProvider.BeginScope(tenantConnStr))
+        {
+            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
             await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
                 dbContext,
-                request.OrganizationName,
+                orgName ?? catalog.OrganizationName,
                 cancellationToken);
         }
+        return true;
+    }
+
+    /// <summary>
+    /// Sets the tenant's workspace to blank canvas mode, skipping default content generation.
+    /// </summary>
+    /// <param name="tenantKey">The tenant identifier or slug.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>True if marked successfully; false otherwise.</returns>
+    public async Task<bool> SkipTenantDefaultWebsiteAsync(string tenantKey, CancellationToken cancellationToken = default)
+    {
+        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+        if (catalog == null) return false;
+
+        string tenantConnStr = catalog.ConnectionString;
+        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+        optionsBuilder.UseSqlServer(tenantConnStr)
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+        using var scope = _serviceProvider.CreateScope();
+        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+        using (tenantProvider.BeginScope(tenantConnStr))
+        {
+            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
+            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(
+                dbContext,
+                cancellationToken);
+        }
+        return true;
     }
 }

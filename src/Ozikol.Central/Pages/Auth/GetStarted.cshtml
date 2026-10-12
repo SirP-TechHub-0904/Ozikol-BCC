@@ -361,26 +361,56 @@
 </div>
 
 <!-- Enterprise Provisioning Progress Modal Overlay -->
-<div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border-radius: 16px; padding: 36px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center;">
-        <div style="width: 60px; height: 60px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
-        <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
+<div id="provisioningModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 20px; padding: 36px 32px; max-width: 490px; width: 100%; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.3); text-align: center; border: 1px solid rgba(226, 232, 240, 0.8);">
+        
+        <!-- Step A: Database & Environment Provisioning View -->
+        <div id="provisioningProgressView">
+            <div style="width: 56px; height: 56px; border-radius: 50%; border: 4px solid #e2e8f0; border-top-color: var(--ozikol-primary); animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Setting Up Your Workspace</h2>
+            <p style="font-size: 14px; color: #64748b; margin: 0 0 24px;">Please wait while we provision your dedicated cloud environment...</p>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13.5px;">
-            <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
-                <span style="color: var(--ozikol-primary);">●</span> Validating workspace parameters...
-            </div>
-            <div id="step2" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Provisioning dedicated cloud environment...
-            </div>
-            <div id="step3" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Initializing organization modules & admin credentials...
-            </div>
-            <div id="step4" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
-                <span>○</span> Finalizing business command center...
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 13.5px;">
+                <div id="step1" style="display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 600;">
+                    <span style="color: var(--ozikol-primary);">●</span> Validating workspace parameters...
+                </div>
+                <div id="step2" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Provisioning dedicated cloud environment...
+                </div>
+                <div id="step3" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Initializing organization modules & admin credentials...
+                </div>
+                <div id="step4" style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+                    <span>○</span> Finalizing business command center...
+                </div>
             </div>
         </div>
+
+        <!-- Step B: Interactive Seed Default Website Choice View -->
+        <div id="seedChoiceView" style="display: none; text-align: center;">
+            <div style="width: 58px; height: 58px; border-radius: 18px; background: #eff6ff; border: 1.5px solid #dbeafe; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: #0050e5;">auto_awesome</span>
+            </div>
+            <h2 style="font-size: 21px; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.3px;">Initialize Default Website?</h2>
+            <p style="font-size: 13.5px; color: #64748b; margin: 0 auto 22px; line-height: 1.5; max-width: 400px;">
+                Would you like to seed turnkey website templates, interactive forms, and sample blogs? Your public URL will have live, working content right away.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: #0050e5; color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,80,229,0.3); transition: all 0.2s;">
+                    <span>🚀 Yes, Seed Default Website (Recommended)</span>
+                </button>
+                <button type="button" id="btnSeedNo" onclick="submitSeedChoice(false)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                    <span>No, Start with Blank Slate</span>
+                </button>
+            </div>
+
+            <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: #0050e5; font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
+                <div style="width: 14px; height: 14px; border: 2px solid #0050e5; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <span>Applying turnkey website suite...</span>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -701,7 +731,7 @@ async function handleOnboardingSubmit(e) {
 
         if (result.success) {
             const step4 = document.getElementById('step4');
-            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready! Launching portal...'; }
+            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready!'; }
 
             const regPwd = document.getElementById('regPassword');
             if (regPwd) {
@@ -709,9 +739,17 @@ async function handleOnboardingSubmit(e) {
             }
             form.reset();
 
-            setTimeout(() => {
+            pendingOnboardingResult = result;
+            const progressView = document.getElementById('provisioningProgressView');
+            const choiceView = document.getElementById('seedChoiceView');
+            if (progressView && choiceView) {
+                setTimeout(() => {
+                    progressView.style.display = 'none';
+                    choiceView.style.display = 'block';
+                }, 700);
+            } else {
                 window.location.href = result.redirectUrl;
-            }, 800);
+            }
         } else {
             modal.style.display = 'none';
             alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
@@ -719,6 +757,43 @@ async function handleOnboardingSubmit(e) {
     } catch (err) {
         form.submit();
     }
+}
+
+let pendingOnboardingResult = null;
+
+async function submitSeedChoice(seedDefaults) {
+    const btnYes = document.getElementById('btnSeedYes');
+    const btnNo = document.getElementById('btnSeedNo');
+    const statusNotice = document.getElementById('seedingProgressStatus');
+
+    if (btnYes) btnYes.disabled = true;
+    if (btnNo) btnNo.disabled = true;
+    if (statusNotice) statusNotice.style.display = 'inline-flex';
+
+    const tenantKey = pendingOnboardingResult?.tenantKey || '';
+    const orgName = pendingOnboardingResult?.orgName || '';
+    const redirectUrl = pendingOnboardingResult?.redirectUrl || '/';
+
+    const handler = seedDefaults ? 'SeedDefaults' : 'SkipDefaults';
+    const postUrl = `${window.location.pathname}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+
+    try {
+        const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenEl ? tokenEl.value : '';
+
+        await fetch(postUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'RequestVerificationToken': token
+            }
+        });
+    } catch (e) {
+        console.warn('Seeding request notice:', e);
+    }
+
+    // Now proceed directly to the finish page
+    window.location.href = redirectUrl;
 }
 </script>
 
