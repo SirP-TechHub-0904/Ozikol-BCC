@@ -28,14 +28,19 @@
           </div>
 
           <div class="header-actions">
-            <a
-              routerLink="/content/console/templates/import"
-              class="btn btn-import-website"
-              title="Import, crawl, clean, debrand, and adopt any external website template"
-            >
-              <span class="material-symbols-outlined btn-icon">cloud_download</span>
-              <span>Import Website</span>
-            </a>
+            <div class="action-btn-item">
+              <button
+                type="button"
+                class="btn btn-import-website btn-disabled"
+                disabled
+                title="Import Website — Coming Soon"
+              >
+                <span class="material-symbols-outlined btn-icon">cloud_download</span>
+                <span>Import Website</span>
+              </button>
+              <span class="coming-soon-label">Coming Soon</span>
+            </div>
+
             <a
               routerLink="/content/console/templates/visuals"
               class="btn btn-add-custom-template"
@@ -44,6 +49,7 @@
               <span class="material-symbols-outlined btn-icon">add_circle</span>
               <span>Create Custom Section</span>
             </a>
+
             <button
               type="button"
               class="btn btn-full-demo-hero"
@@ -54,10 +60,20 @@
               <span class="material-symbols-outlined btn-icon">public</span>
               <span>Preview Full Site Demo</span>
             </button>
-            <a routerLink="/content/console/marketplace" class="btn btn-primary-market" title="Browse and install more section components">
-              <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
-              <span>Explore Marketplace (36+)</span>
-            </a>
+
+            <div class="action-btn-item">
+              <button
+                type="button"
+                class="btn btn-primary-market btn-disabled"
+                disabled
+                title="Explore Marketplace — Coming Soon"
+              >
+                <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
+                <span>Explore Marketplace (36+)</span>
+              </button>
+              <span class="coming-soon-label">Coming Soon</span>
+            </div>
+
             <button
               type="button"
               class="btn btn-ai-debugger"
@@ -70,15 +86,20 @@
               <span *ngIf="!isDiagnosingWebsite">Inspect &amp; Debug Website</span>
               <span *ngIf="isDiagnosingWebsite">Diagnosing...</span>
             </button>
+
             <!-- Direct Link to Dedicated Maintenance Page -->
-            <a
-              routerLink="/content/console/templates/maintenance"
-              class="btn btn-vault-settings-trigger"
-              title="Template Vault Reset, Factory Restore &amp; Deep Maintenance"
-            >
-              <span class="material-symbols-outlined btn-icon">tune</span>
-              <span>Maintenance</span>
-            </a>
+            <div class="action-btn-item">
+              <button
+                type="button"
+                class="btn btn-vault-settings-trigger btn-disabled"
+                disabled
+                title="Template Vault Maintenance — Coming Soon"
+              >
+                <span class="material-symbols-outlined btn-icon">tune</span>
+                <span>Maintenance</span>
+              </button>
+              <span class="coming-soon-label">Coming Soon</span>
+            </div>
           </div>
         </div>
       </div>

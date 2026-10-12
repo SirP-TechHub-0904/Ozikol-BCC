@@ -84,9 +84,40 @@
 
     .header-actions {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
       flex-wrap: wrap;
+    }
+
+    .action-btn-item {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .coming-soon-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      user-select: none;
+      line-height: 1;
+      padding: 1px 6px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+
+    .btn.btn-disabled,
+    .btn-disabled,
+    button.btn:disabled {
+      opacity: 0.55 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      box-shadow: none !important;
+      transform: none !important;
     }
     .btn-import-website {
       height: 42px;
