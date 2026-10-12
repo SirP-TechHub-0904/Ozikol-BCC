@@ -1593,16 +1593,61 @@ export class BlogVisualComponent implements OnInit {
 
   jsScript: string = '';
 
-  blogTokens: Array<{ label: string; token: string }> = [
-    { label: 'Title', token: '{{ Title }}' },
-    { label: 'MiniTitle', token: '{{ MiniTitle }}' },
-    { label: 'Description', token: '{{ Description }}' },
-    { label: 'ButtonText', token: '{{ ButtonText }}' },
-    { label: 'ButtonLink', token: '{{ ButtonLink }}' },
-    { label: 'Articles Loop', token: '{{#each Articles}}\n  <article class="oz-article-card">\n    <img src="{{ CoverImageUrl }}" />\n    <span>{{ Category }}</span>\n    <h3><a href="{{ Url }}">{{ Title }}</a></h3>\n    <p>{{ Summary }}</p>\n    <span>{{ PublishedDate }} - {{ AuthorName }}</span>\n  </article>\n{{/each}}' },
-    { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' },
-    { label: 'CustomClass', token: '{{ CustomClass }}' }
+  blogTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
+    {
+      label: 'Title',
+      token: '{{ Title }}',
+      htmlSnippet: '<h2 class="oz-blog-title">{{ Title }}</h2>',
+      description: 'Section headline for the blog/articles feed.'
+    },
+    {
+      label: 'MiniTitle',
+      token: '{{ MiniTitle }}',
+      htmlSnippet: '{{#if MiniTitle}}\n<span class="oz-blog-badge">{{ MiniTitle }}</span>\n{{/if}}',
+      description: 'Small category label, eyebrow, or sub-title badge.'
+    },
+    {
+      label: 'Description',
+      token: '{{ Description }}',
+      htmlSnippet: '{{#if Description}}\n<p class="oz-blog-subtitle">{{ Description }}</p>\n{{/if}}',
+      description: 'Section introductory description narrative.'
+    },
+    {
+      label: 'Articles Grid Loop',
+      token: '{{#each Articles}}\n  <article class="oz-article-card">\n    {{#if CoverImageUrl}}<div class="oz-card-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}\n    <div class="oz-card-content">\n      {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}\n      <h3 class="oz-card-title"><a href="{{ Url }}">{{ Title }}</a></h3>\n      <p class="oz-card-summary">{{ Summary }}</p>\n      <div class="oz-card-meta">\n        {{#if PublishedDate}}<span>{{ PublishedDate }}</span>{{/if}}\n        {{#if AuthorName}}<span>{{ AuthorName }}</span>{{/if}}\n      </div>\n    </div>\n  </article>\n{{/each}}',
+      htmlSnippet: '<div class="oz-articles-grid">\n  {{#each Articles}}\n  <article class="oz-article-card {{ CustomClass }}">\n    {{#if CoverImageUrl}}\n    <div class="oz-card-thumb">\n      <img src="{{ CoverImageUrl }}" alt="{{ Title }}" />\n      {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}\n    </div>\n    {{/if}}\n    <div class="oz-card-content">\n      <div class="oz-card-meta">\n        {{#if PublishedDate}}<span><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>{{/if}}\n        {{#if AuthorName}}<span class="oz-meta-bullet">&bull;</span><span><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>{{/if}}\n      </div>\n      <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>\n      {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}\n      <div class="oz-card-footer">\n        <a href="{{ Url }}" class="oz-card-read-more">\n          <span>Read Article</span>\n          <i class="fa-solid fa-arrow-right"></i>\n        </a>\n      </div>\n    </div>\n  </article>\n  {{/each}}\n</div>',
+      description: 'Multi-column responsive grid repeating article cards with thumbnail, meta, title, summary, and read more link.'
+    },
+    {
+      label: 'Categories Filter',
+      token: '{{#each BlogCategories}}\n  <a href="{{ Url }}" class="oz-category-pill">\n    <span>{{ Name }}</span>\n    {{#if Count}}<span class="oz-pill-count">{{ Count }}</span>{{/if}}\n  </a>\n{{/each}}',
+      htmlSnippet: '{{#if BlogCategories}}\n<div class="oz-categories-bar">\n  {{#each BlogCategories}}\n  <a href="{{ Url }}" class="oz-category-pill {{ CustomClass }}">\n    <span>{{ Name }}</span>\n    {{#if Count}}<span class="oz-pill-count">{{ Count }}</span>{{/if}}\n  </a>\n  {{/each}}\n</div>\n{{/if}}',
+      description: 'Horizontal filter strip repeating category pills with count badges.'
+    },
+    {
+      label: 'Tags Cloud',
+      token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}',
+      htmlSnippet: '{{#if Tags}}\n<div class="oz-tags-cloud">\n  {{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n  {{/each}}\n</div>\n{{/if}}',
+      description: 'Tag taxonomy cloud repeating hashtag links.'
+    },
+    {
+      label: 'View All Button',
+      token: '{{ ButtonText }}',
+      htmlSnippet: '{{#if ButtonText}}\n<div class="oz-blog-action-wrap">\n  <a href="{{ ButtonLink }}" class="oz-btn-view-all">\n    <span>{{ ButtonText }}</span>\n    <i class="fa-solid fa-arrow-right"></i>\n  </a>\n</div>\n{{/if}}',
+      description: 'Centered call-to-action button linking to the complete articles catalog.'
+    },
+    {
+      label: 'ButtonLink',
+      token: '{{ ButtonLink }}',
+      htmlSnippet: '<a href="{{ ButtonLink }}">View All</a>',
+      description: 'Target URL link for the all articles action.'
+    },
+    {
+      label: 'CustomClass',
+      token: '{{ CustomClass }}',
+      htmlSnippet: '<section class="oz-blog-section {{ CustomClass }}">',
+      description: 'Root container CSS hook dynamically injected by the CMS.'
+    }
   ];
 
   sampleContent: any = {
