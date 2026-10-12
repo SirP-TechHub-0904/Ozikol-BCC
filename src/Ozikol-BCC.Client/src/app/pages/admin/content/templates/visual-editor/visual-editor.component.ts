@@ -539,13 +539,18 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   }
 
   /**
-   * Directly inserts the placeholder token into the HTML editor at active cursor position.
-   * If editor is not currently focused, safely inserts at current position or appends.
+   * Handles token chip click. If a dedicated HTML snippet option exists, opens
+   * the choice modal; otherwise directly injects the token into active cursor position.
    * @param tokenObj Token object containing label and token string.
    */
   onTokenChipClick(tokenObj: { label: string; token: string; htmlSnippet?: string; description?: string }): void {
     if (!tokenObj) return;
-    this.insertToken(tokenObj.token);
+    if (tokenObj.htmlSnippet) {
+      this.selectedTokenForInsert = tokenObj;
+      this.showTokenConfirmModal = true;
+    } else {
+      this.insertToken(tokenObj.token);
+    }
   }
 
   /**
@@ -577,12 +582,32 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   }
 
   /**
-   * Instantly applies complete archetype blueprint (HTML markup + scoped CSS styles + mock sample data)
-   * on click with immediate feedback and automatic Monaco layout update.
+   * Opens the section archetype preset modal, offering the choice between:
+   * 1. Complete Blueprint (HTML markup + scoped CSS styles + mock sample data)
+   * 2. HTML Markup Only (without overriding existing styles)
    * @param preset Blueprint preset object with name, html, css, and sampleContent.
    */
   onSamplePresetClick(preset: SectionPreset): void {
     if (!preset) return;
+    this.selectedPresetForApply = preset;
+    this.showPresetConfirmModal = true;
+  }
+
+  /**
+   * Closes the section archetype preset confirmation modal.
+   */
+  closePresetModal(): void {
+    this.showPresetConfirmModal = false;
+    this.selectedPresetForApply = null;
+  }
+
+  /**
+   * Applies complete archetype blueprint (HTML markup + scoped CSS styles + mock data).
+   */
+  applyFullPreset(): void {
+    if (!this.selectedPresetForApply) return;
+    const preset = this.selectedPresetForApply;
+    this.closePresetModal();
 
     this.htmlTemplate = preset.html;
     this.cssStyles = preset.css;
@@ -621,31 +646,15 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   }
 
   /**
-   * Closes the section archetype preset confirmation modal.
-   */
-  closePresetModal(): void {
-    this.showPresetConfirmModal = false;
-    this.selectedPresetForApply = null;
-  }
-
-  /**
-   * Applies complete archetype blueprint (HTML markup + scoped CSS styles + mock data).
-   */
-  applyFullPreset(): void {
-    if (!this.selectedPresetForApply) return;
-    const preset = this.selectedPresetForApply;
-    this.closePresetModal();
-    this.onSamplePresetClick(preset);
-  }
-
-  /**
    * Inserts only the HTML markup of the archetype at the current cursor position.
    */
   applyPresetHtmlOnly(): void {
     if (!this.selectedPresetForApply) return;
     const html = this.selectedPresetForApply.html;
+    const name = this.selectedPresetForApply.name;
     this.closePresetModal();
     this.insertToken(html);
+    this.toast.success(`Inserted "${name}" HTML markup only!`);
   }
 
   /**
