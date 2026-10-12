@@ -24,9 +24,14 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
   // 1. Dynamic Forms Injection
   output = injectDynamicForms(output, ctx);
 
-  // 2. Articles Loop: {{#each Articles}}
+  // 2. Resolve Top-Level Conditionals
+  output = resolveDepthAwareIf(output, 'MiniTitle', Boolean(ctx.miniTitle && ctx.miniTitle.trim().length > 0));
+  output = resolveDepthAwareIf(output, 'Description', Boolean(ctx.description && ctx.description.trim().length > 0));
+
+  // 3. Articles Loop: {{#each Articles}}
   const rawArticles = ctx.articles || [];
   const activeArticles = rawArticles.filter(a => a.publish !== false);
+  output = resolveDepthAwareIf(output, 'Articles', activeArticles.length > 0);
 
   const articleMatcher = (openTag: string) => {
     return /^\{\{#each\s+Articles\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -40,6 +45,9 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
 
       rendered = resolveDepthAwareIf(rendered, 'CoverImageUrl', Boolean(art.coverImageUrl && art.coverImageUrl.trim().length > 0));
       rendered = resolveDepthAwareIf(rendered, 'Summary', Boolean(art.summary && art.summary.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'Category', Boolean(art.category && art.category.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'AuthorName', Boolean(art.authorName && art.authorName.trim().length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'PublishedDate', Boolean(art.publishedDate && art.publishedDate.trim().length > 0));
 
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title || '');
       rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, art.summary || '');
@@ -54,8 +62,9 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
     }).join('\n');
   });
 
-  // 3. Blog Categories Loop: {{#each BlogCategories}}
+  // 4. Blog Categories Loop: {{#each BlogCategories}}
   const rawCategories = ctx.blogCategories || [];
+  output = resolveDepthAwareIf(output, 'BlogCategories', rawCategories.length > 0);
   const categoryMatcher = (openTag: string) => {
     return /^\{\{#each\s+BlogCategories\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };
@@ -72,8 +81,9 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
     }).join('\n');
   });
 
-  // 4. Blog Tags Cloud Loop: {{#each Tags}}
+  // 5. Blog Tags Cloud Loop: {{#each Tags}}
   const rawTags = ctx.tags || [];
+  output = resolveDepthAwareIf(output, 'Tags', rawTags.length > 0);
   const tagMatcher = (openTag: string) => {
     return /^\{\{#each\s+Tags\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };
@@ -89,15 +99,15 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
     }).join('\n');
   });
 
-  // 5. Section Scalars
+  // 6. Section Scalars
   output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
   output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
 
-  // 6. Replace Brand Scalars & CustomClass
+  // 7. Replace Brand Scalars & CustomClass
   output = replaceCommonScalars(output, ctx);
 
-  // 7. Final scrub
+  // 8. Final scrub
   output = scrubRemainingTokens(output);
 
   return output;

@@ -2547,28 +2547,44 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Root Container Class: {{{{ CustomClass }}}}
 
 5. Blog Feeds & Archives (Category: blog):
-   - Section Header: Headline {{{{ Title }}}}, Eyebrow {{{{ MiniTitle }}}}, Intro {{{{ Description }}}}
+   - Section Header:
+     * Eyebrow / Tagline: {{{{ #if MiniTitle }}}}<span class=""[original eyebrow classes]"">{{{{ MiniTitle }}}}</span>{{{{ /if }}}}
+     * Section Headline: <h2 class=""[original title classes]"">{{{{ Title }}}}</h2>
+     * Intro Description: {{{{ #if Description }}}}<p class=""[original desc classes]"">{{{{ Description }}}}</p>{{{{ /if }}}}
+   - Category Filter Pills / Taxonomy Bar (if present):
+     {{{{#each BlogCategories}}}}
+       <a href=""{{{{ Url }}}}"" class=""[original filter link classes]"">{{{{ Name }}}} <span class=""[original count classes]"">({{{{ Count }}}})</span></a>
+     {{{{/each}}}}
    - Article Cards Feed Loop:
+     Keep ONLY ONE representative article card/column and discard static duplicate cards:
      {{{{#each Articles}}}}
-       <article class=""blog-card"">
-         <img src=""{{{{ CoverImageUrl }}}}"" alt=""{{{{ Title }}}}"" />
-         <span class=""category"">{{{{ Category }}}}</span>
-         <span class=""date"">{{{{ PublishedDate }}}}</span>
-         <span class=""author"">{{{{ AuthorName }}}}</span>
-         <h3><a href=""{{{{ Url }}}}"">{{{{ Title }}}}</a></h3>
-         <p>{{{{ Summary }}}}</p>
-         <a href=""{{{{ Url }}}}"">Read Article</a>
+       <article class=""[original article classes]"">
+         {{{{#if CoverImageUrl}}}}
+           <div class=""[original media wrapper classes]"">
+             <img src=""{{{{ CoverImageUrl }}}}"" alt=""{{{{ Title }}}}"" class=""[original thumbnail classes]"" />
+             {{{{#if Category}}}}<span class=""[original category badge classes]"">{{{{ Category }}}}</span>{{{{/if}}}}
+           </div>
+         {{{{/if}}}}
+         <div class=""[original content classes]"">
+           <div class=""[original meta classes]"">
+             {{{{#if PublishedDate}}}}<span class=""[original date classes]"">{{{{ PublishedDate }}}}</span>{{{{/if}}}}
+             {{{{#if AuthorName}}}}<span class=""[original author classes]"">{{{{ AuthorName }}}}</span>{{{{/if}}}}
+           </div>
+           <h3 class=""[original title classes]""><a href=""{{{{ Url }}}}"" class=""[original title link classes]"">{{{{ Title }}}}</a></h3>
+           {{{{#if Summary}}}}<p class=""[original summary classes]"">{{{{ Summary }}}}</p>{{{{/if}}}}
+           <div class=""[original footer classes]"">
+             <a href=""{{{{ Url }}}}"" class=""[original read-more link classes]"">Read Article</a>
+           </div>
+         </div>
        </article>
      {{{{/each}}}}
-   - Sidebar Categories Loop:
-     {{{{#each BlogCategories}}}}
-       <li><a href=""{{{{ Url }}}}""><span>{{{{ Name }}}}</span> ({{{{ Count }}}})</a></li>
-     {{{{/each}}}}
-   - Sidebar Recent Articles Loop:
-     {{{{#each RecentArticles}}}}
-       <a href=""{{{{ Url }}}}""><img src=""{{{{ CoverImageUrl }}}}"" /><h5>{{{{ Title }}}}</h5><span>{{{{ PublishedDate }}}}</span></a>
-     {{{{/each}}}}
-   - Sidebar Newsletter Form: {{{{ Form ""Newsletter_Subscribe"" }}}}
+   - Slider / Carousel Mode (Swiper, Slick, Owl, Splide):
+     * Discard infinite cloned slides ('swiper-slide-duplicate', 'slick-cloned').
+     * Strip runtime state classes ('swiper-slide-active', 'swiper-initialized', etc.) and runtime inline styles.
+     * Wrap the single clean slide inside {{{{#each Articles}}}} ... {{{{#/each}}}}.
+   - Tags Cloud (if present):
+     {{{{#each Tags}}}}<a href=""{{{{ Url }}}}"" class=""[original tag classes]"">{{{{ Name }}}}</a>{{{{/each}}}}
+   - Root Container Class: {{{{ CustomClass }}}}
 
 6. Blog Article Details (Category: blog_detail):
    - Article Header & Meta: Headline {{{{ Article.Title }}}}, Category {{{{ Article.Category }}}}, Date {{{{ Article.PublishedDate }}}}, Read Time {{{{ Article.ReadTime }}}}, Cover Image src=""{{{{ Article.CoverImageUrl }}}}""

@@ -779,8 +779,21 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
           miniTitle: custom.miniTitle || 'KNOWLEDGE BASE',
           description: custom.description || 'Deep dives, benchmarks, and engineering standards curated by our infrastructure team.',
           articles: custom.articles || [
-            { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', category: 'Architecture', publishedDate: 'Sep 12, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80', summary: 'Proven patterns for high-throughput tenant isolation and state synchronization.', url: '/blog/1' },
-            { title: 'The Shift to Zero-Downtime Data Migration Pipelines', category: 'DevOps', publishedDate: 'Sep 08, 2026', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80', summary: 'How leading teams execute petabyte-scale database cutovers without dropped packets.', url: '/blog/2' }
+            { title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems', category: 'Architecture', publishedDate: 'Sep 12, 2026', authorName: 'Alex Vance', coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80', summary: 'Proven patterns for high-throughput tenant isolation and state synchronization.', url: '/blog/1' },
+            { title: 'The Shift to Zero-Downtime Data Migration Pipelines', category: 'DevOps', publishedDate: 'Sep 08, 2026', authorName: 'Sarah Jenkins', coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80', summary: 'How leading teams execute petabyte-scale database cutovers without dropped packets.', url: '/blog/2' },
+            { title: 'Continuous Automated Compliance Across Container Meshes', category: 'Compliance', publishedDate: 'Aug 29, 2026', authorName: 'Michael Chen', coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80', summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies dynamically at cloud scale.', url: '/blog/3' }
+          ],
+          blogCategories: custom.blogCategories || [
+            { name: 'All Articles', count: 18, url: '/blog' },
+            { name: 'Architecture', count: 6, url: '/blog/category/architecture' },
+            { name: 'Security', count: 5, url: '/blog/category/security' },
+            { name: 'DevOps', count: 4, url: '/blog/category/devops' }
+          ],
+          tags: custom.tags || [
+            { name: 'Cloud Native', url: '/blog/tag/cloud-native' },
+            { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
+            { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
+            { name: 'Compliance', url: '/blog/tag/compliance' }
           ],
           article: custom.article || {
             title: custom.title || p.title || 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',

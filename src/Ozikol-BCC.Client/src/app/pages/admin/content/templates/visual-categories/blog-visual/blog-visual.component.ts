@@ -156,7 +156,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
         <div class="editor-pane-body" *ngIf="activeEditorTab !== 'mock'">
           <app-visual-editor
             [category]="'blog'"
-            [categoryName]="'Article Cards'"
+            [categoryName]="'Blog Feed'"
             [activeTab]="activeEditorTab"
             [hideInternalTabs]="true"
             [htmlTemplate]="htmlTemplate"
@@ -196,7 +196,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </button>
           </div>
 
-          <!-- Mock Data Sub-Tabs: Articles (Default) vs Section Header -->
+          <!-- Mock Data Sub-Tabs: Articles (Default) vs Section Header vs Taxonomies -->
           <div class="mock-tabs-nav">
             <button
               type="button"
@@ -206,7 +206,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             >
               <span class="material-symbols-outlined icon-micro">newspaper</span>
               <span>Article Cards Grid</span>
-              <span class="mock-tab-badge">{{ (sampleContent.articles?.length || 3) }}</span>
+              <span class="mock-tab-badge">{{ (sampleContent.articles?.length || 0) }}</span>
             </button>
             <button
               type="button"
@@ -215,7 +215,17 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               (click)="activeMockTab = 'header'"
             >
               <span class="material-symbols-outlined icon-micro">title</span>
-              <span>Section Header &amp; Filters</span>
+              <span>Section Header</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'taxonomies'"
+              (click)="activeMockTab = 'taxonomies'"
+            >
+              <span class="material-symbols-outlined icon-micro">sell</span>
+              <span>Categories &amp; Tags</span>
+              <span class="mock-tab-badge">{{ ((sampleContent.blogCategories?.length || 0) + (sampleContent.tags?.length || 0)) }}</span>
             </button>
           </div>
 
@@ -224,24 +234,82 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             <div class="cards-repeater-container">
               <div class="repeater-item-card" *ngFor="let item of (sampleContent.articles || []); let idx = index">
                 <div class="repeater-header">
-                  <span class="material-symbols-outlined icon-badge">article</span>
-                  <input
-                    type="text"
-                    [(ngModel)]="item.title"
-                    class="form-control inspector-input item-title-input"
-                    placeholder="e.g. Article Headline"
-                  />
-                  <input
-                    type="text"
-                    [(ngModel)]="item.category"
-                    class="form-control inspector-input item-icon-input"
-                    placeholder="e.g. Architecture"
-                  />
+                  <span class="material-symbols-outlined icon-badge">newspaper</span>
+                  <div class="header-inputs-row">
+                    <input
+                      type="text"
+                      [(ngModel)]="item.title"
+                      class="form-control inspector-input item-title-input"
+                      placeholder="e.g. Article Headline"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="item.category"
+                      class="form-control inspector-input item-cat-input"
+                      placeholder="e.g. Architecture"
+                    />
+                  </div>
                   <button type="button" class="btn-remove-item" (click)="removeArticleItem(idx)" title="Remove article">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                 </div>
+
+                <div class="repeater-grid-2">
+                  <div class="input-cell">
+                    <label class="cell-label">
+                      <span>Cover Image URL</span>
+                      <code [innerText]="'{{ CoverImageUrl }}'"></code>
+                    </label>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.coverImageUrl"
+                      class="form-control inspector-input"
+                      placeholder="e.g. https://images.unsplash.com/..."
+                    />
+                  </div>
+                  <div class="input-cell">
+                    <label class="cell-label">
+                      <span>Target Article URL</span>
+                      <code [innerText]="'{{ Url }}'"></code>
+                    </label>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.url"
+                      class="form-control inspector-input"
+                      placeholder="e.g. /blog/article-slug"
+                    />
+                  </div>
+                  <div class="input-cell">
+                    <label class="cell-label">
+                      <span>Author Name</span>
+                      <code [innerText]="'{{ AuthorName }}'"></code>
+                    </label>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.authorName"
+                      class="form-control inspector-input"
+                      placeholder="e.g. Alex Vance"
+                    />
+                  </div>
+                  <div class="input-cell">
+                    <label class="cell-label">
+                      <span>Published Date</span>
+                      <code [innerText]="'{{ PublishedDate }}'"></code>
+                    </label>
+                    <input
+                      type="text"
+                      [(ngModel)]="item.publishedDate"
+                      class="form-control inspector-input"
+                      placeholder="e.g. Oct 12, 2026"
+                    />
+                  </div>
+                </div>
+
                 <div class="repeater-body">
+                  <label class="cell-label">
+                    <span>Summary Excerpt</span>
+                    <code [innerText]="'{{ Summary }}'"></code>
+                  </label>
                   <textarea
                     [(ngModel)]="item.summary"
                     class="form-control inspector-input textarea-short"
@@ -250,6 +318,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   ></textarea>
                 </div>
               </div>
+
               <button type="button" class="btn-add-item" (click)="addArticleItem()">
                 <span class="material-symbols-outlined">add</span>
                 <span>Add Article Card</span>
@@ -257,7 +326,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </div>
           </div>
 
-          <!-- Sub-Tab 2: Section Header & Filters -->
+          <!-- Sub-Tab 2: Section Header -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'header'">
             <div class="inspector-form-grid-2">
               <div class="form-group">
@@ -297,6 +366,83 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   rows="2"
                   placeholder="e.g. Explore in-depth engineering breakdowns..."
                 ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Categories & Tags Taxonomies -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'taxonomies'">
+            <div class="taxonomies-container">
+              <!-- Section 1: Blog Categories Filter Pills -->
+              <div class="tax-group-block">
+                <div class="tax-header-row">
+                  <div>
+                    <h4 class="tax-group-title">Blog Categories</h4>
+                    <p class="tax-group-sub">Rendered via <code [innerText]="'{{#each BlogCategories}}'"></code></p>
+                  </div>
+                  <button type="button" class="btn-add-mini" (click)="addBlogCategory()">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Add Category</span>
+                  </button>
+                </div>
+                <div class="tax-list">
+                  <div class="tax-item-row" *ngFor="let cat of (sampleContent.blogCategories || []); let idx = index">
+                    <input
+                      type="text"
+                      [(ngModel)]="cat.name"
+                      class="form-control inspector-input flex-2"
+                      placeholder="e.g. Cloud Architecture"
+                    />
+                    <input
+                      type="number"
+                      [(ngModel)]="cat.count"
+                      class="form-control inspector-input flex-1"
+                      placeholder="Count (e.g. 6)"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="cat.url"
+                      class="form-control inspector-input flex-2"
+                      placeholder="URL e.g. /blog/category/architecture"
+                    />
+                    <button type="button" class="btn-remove-item" (click)="removeBlogCategory(idx)" title="Remove category">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 2: Topic Tags Cloud -->
+              <div class="tax-group-block">
+                <div class="tax-header-row">
+                  <div>
+                    <h4 class="tax-group-title">Topic Tags</h4>
+                    <p class="tax-group-sub">Rendered via <code [innerText]="'{{#each Tags}}'"></code></p>
+                  </div>
+                  <button type="button" class="btn-add-mini" (click)="addBlogTag()">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Add Tag</span>
+                  </button>
+                </div>
+                <div class="tax-list">
+                  <div class="tax-item-row" *ngFor="let tag of (sampleContent.tags || []); let idx = index">
+                    <input
+                      type="text"
+                      [(ngModel)]="tag.name"
+                      class="form-control inspector-input flex-2"
+                      placeholder="e.g. Zero-Trust"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="tag.url"
+                      class="form-control inspector-input flex-3"
+                      placeholder="URL e.g. /blog/tag/zero-trust"
+                    />
+                    <button type="button" class="btn-remove-item" (click)="removeBlogTag(idx)" title="Remove tag">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -729,8 +875,113 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
       color: #0050e5;
     }
 
+    .header-inputs-row {
+      display: flex;
+      flex: 1;
+      gap: 10px;
+    }
+
     .item-title-input { flex: 3; }
-    .item-icon-input { flex: 1; max-width: 140px; }
+    .item-cat-input { flex: 1; max-width: 160px; }
+
+    .repeater-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .input-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cell-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .cell-label code {
+      font-family: 'Fira Code', monospace;
+      font-size: 10.5px;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .taxonomies-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tax-group-block {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .tax-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .tax-group-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .tax-group-sub {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 2px 0 0 0;
+    }
+
+    .btn-add-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      background: #ffffff;
+      border: 1.5px dashed #0050e5;
+      color: #0050e5;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-add-mini:hover {
+      background: #eff6ff;
+    }
+
+    .tax-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tax-item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .flex-1 { flex: 1; }
+    .flex-2 { flex: 2; }
+    .flex-3 { flex: 3; }
 
     .textarea-short {
       resize: vertical;
@@ -992,7 +1243,7 @@ export class BlogVisualComponent implements OnInit {
 
   // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'articles' is default)
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
-  activeMockTab: 'articles' | 'header' = 'articles';
+  activeMockTab: 'articles' | 'header' | 'taxonomies' = 'articles';
 
   htmlTemplate: string = `<section class="oz-blog-section {{ CustomClass }}">
   <div class="oz-blog-container">
@@ -1000,24 +1251,33 @@ export class BlogVisualComponent implements OnInit {
       {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
       <h2 class="oz-blog-title">{{ Title }}</h2>
       {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
+      {{#if BlogCategories}}
+      <div class="oz-category-filter">
+        {{#each BlogCategories}}
+        <a href="{{ Url }}" class="oz-category-pill">{{ Name }} <span class="oz-pill-count">{{ Count }}</span></a>
+        {{/each}}
+      </div>
+      {{/if}}
     </div>
     <div class="oz-articles-grid">
       {{#each Articles}}
       <article class="oz-article-card">
+        {{#if CoverImageUrl}}
         <div class="oz-card-media">
           <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
-          <span class="oz-card-category">{{ Category }}</span>
+          {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}
         </div>
+        {{/if}}
         <div class="oz-card-content">
           <div class="oz-card-meta">
-            <span class="oz-meta-date">{{ PublishedDate }}</span>
+            <span class="oz-meta-date"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>
             <span class="oz-meta-bullet">&bull;</span>
-            <span class="oz-meta-author">{{ AuthorName }}</span>
+            <span class="oz-meta-author"><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>
           </div>
           <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
-          <p class="oz-card-summary">{{ Summary }}</p>
+          {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}
           <div class="oz-card-footer">
-            <a href="{{ Url }}" class="oz-card-read-more">Read Article <span class="material-symbols-outlined">arrow_forward</span></a>
+            <a href="{{ Url }}" class="oz-card-read-more">Read Article <i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
       </article>
@@ -1026,10 +1286,13 @@ export class BlogVisualComponent implements OnInit {
   </div>
 </section>`;
 
-  cssStyles: string = `.oz-blog-section {
+  cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+.oz-blog-section {
   padding: 80px 24px;
   background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
 }
 .oz-blog-container {
   max-width: 1200px;
@@ -1037,8 +1300,8 @@ export class BlogVisualComponent implements OnInit {
 }
 .oz-blog-header {
   text-align: center;
-  max-width: 680px;
-  margin: 0 auto 56px auto;
+  max-width: 720px;
+  margin: 0 auto 50px auto;
 }
 .oz-blog-badge {
   display: inline-block;
@@ -1046,23 +1309,66 @@ export class BlogVisualComponent implements OnInit {
   color: #0050e5;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 14px;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  border: 1px solid #dbeafe;
 }
 .oz-blog-title {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 800;
   color: #0f172a;
   margin: 0 0 16px 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
 }
 .oz-blog-desc {
-  font-size: 15px;
+  font-size: 16px;
   color: #64748b;
-  line-height: 1.6;
-  margin: 0;
+  line-height: 1.65;
+  margin: 0 0 28px 0;
+}
+.oz-category-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.oz-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.oz-category-pill:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0050e5;
+  transform: translateY(-1px);
+}
+.oz-pill-count {
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+.oz-category-pill:hover .oz-pill-count {
+  background: #0050e5;
+  color: #ffffff;
 }
 .oz-articles-grid {
   display: grid;
@@ -1071,22 +1377,23 @@ export class BlogVisualComponent implements OnInit {
 }
 .oz-article-card {
   background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 .oz-article-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  transform: translateY(-6px);
   border-color: #cbd5e1;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 .oz-card-media {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 220px;
   background: #0f172a;
   overflow: hidden;
 }
@@ -1094,10 +1401,10 @@ export class BlogVisualComponent implements OnInit {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
 }
 .oz-article-card:hover .oz-card-img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 .oz-card-category {
   position: absolute;
@@ -1110,8 +1417,9 @@ export class BlogVisualComponent implements OnInit {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .oz-card-content {
   padding: 24px;
@@ -1122,16 +1430,25 @@ export class BlogVisualComponent implements OnInit {
 .oz-card-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 12.5px;
   color: #94a3b8;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+.oz-card-meta i {
+  color: #64748b;
+  margin-right: 4px;
+}
+.oz-meta-bullet {
+  color: #cbd5e1;
+  font-weight: 800;
 }
 .oz-card-title {
   font-size: 19px;
   font-weight: 800;
   line-height: 1.4;
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.015em;
 }
 .oz-card-title-link {
   color: #0f172a;
@@ -1142,10 +1459,10 @@ export class BlogVisualComponent implements OnInit {
   color: #0050e5;
 }
 .oz-card-summary {
-  font-size: 13.5px;
+  font-size: 14px;
   color: #64748b;
-  line-height: 1.55;
-  margin: 0 0 20px 0;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
   flex-grow: 1;
 }
 .oz-card-footer {
@@ -1156,19 +1473,40 @@ export class BlogVisualComponent implements OnInit {
 .oz-card-read-more {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #0050e5;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
   text-decoration: none;
-  transition: gap 0.2s ease;
+  transition: all 0.2s ease;
 }
-.oz-card-read-more:hover { gap: 10px; }
-.oz-card-read-more .material-symbols-outlined { font-size: 16px; }
-@media (max-width: 768px) {
-  .oz-blog-section { padding: 48px 16px; }
-  .oz-articles-grid { grid-template-columns: 1fr; gap: 20px; }
-  .oz-blog-title { font-size: 26px; }
+.oz-card-read-more i {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+.oz-card-read-more:hover {
+  color: #003dbb;
+}
+.oz-card-read-more:hover i {
+  transform: translateX(4px);
+}
+@media (max-width: 1024px) {
+  .oz-articles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .oz-blog-section {
+    padding: 56px 16px;
+  }
+  .oz-blog-title {
+    font-size: 28px;
+  }
+  .oz-articles-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }`;
 
   jsScript: string = '';
@@ -1179,7 +1517,8 @@ export class BlogVisualComponent implements OnInit {
     { label: 'Description', token: '{{ Description }}' },
     { label: 'Articles Loop', token: '{{#each Articles}}\n  <article class="oz-article-card">\n    <img src="{{ CoverImageUrl }}" />\n    <span>{{ Category }}</span>\n    <h3><a href="{{ Url }}">{{ Title }}</a></h3>\n    <p>{{ Summary }}</p>\n    <span>{{ PublishedDate }} - {{ AuthorName }}</span>\n  </article>\n{{/each}}' },
     { label: 'Categories Loop', token: '{{#each BlogCategories}}\n  <a href="{{ Url }}">{{ Name }} ({{ Count }})</a>\n{{/each}}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' }
+    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}">{{ Name }}</a>\n{{/each}}' },
+    { label: 'CustomClass', token: '{{ CustomClass }}' }
   ];
 
   sampleContent: any = {
@@ -1189,7 +1528,7 @@ export class BlogVisualComponent implements OnInit {
     articles: [
       {
         title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
-        summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce cryptographic verification.',
+        summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce continuous cryptographic verification across edge nodes.',
         category: 'Architecture',
         coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
         authorName: 'Alex Vance',
@@ -1198,7 +1537,7 @@ export class BlogVisualComponent implements OnInit {
       },
       {
         title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
-        summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties.',
+        summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties or split-brain partitions.',
         category: 'Cloud Engineering',
         coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
         authorName: 'Sarah Jenkins',
@@ -1207,13 +1546,26 @@ export class BlogVisualComponent implements OnInit {
       },
       {
         title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
-        summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes.',
+        summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes and serverless pipelines.',
         category: 'Compliance',
         coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
         authorName: 'Michael Chen',
         publishedDate: 'Sep 15, 2026',
         url: '/blog/compliance-guardrails'
       }
+    ],
+    blogCategories: [
+      { name: 'All Articles', count: 18, url: '/blog' },
+      { name: 'Architecture', count: 6, url: '/blog/category/architecture' },
+      { name: 'Security & Zero-Trust', count: 5, url: '/blog/category/security' },
+      { name: 'Cloud Engineering', count: 4, url: '/blog/category/engineering' },
+      { name: 'Compliance', count: 3, url: '/blog/category/compliance' }
+    ],
+    tags: [
+      { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
+      { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
+      { name: 'Cloud Native', url: '/blog/tag/cloud-native' },
+      { name: 'Compliance', url: '/blog/tag/compliance' }
     ]
   };
 
@@ -1239,6 +1591,270 @@ export class BlogVisualComponent implements OnInit {
   }
 
   resetBoilerplate(): void {
+    this.htmlTemplate = `<section class="oz-blog-section {{ CustomClass }}">
+  <div class="oz-blog-container">
+    <div class="oz-blog-header">
+      {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
+      <h2 class="oz-blog-title">{{ Title }}</h2>
+      {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
+      {{#if BlogCategories}}
+      <div class="oz-category-filter">
+        {{#each BlogCategories}}
+        <a href="{{ Url }}" class="oz-category-pill">{{ Name }} <span class="oz-pill-count">{{ Count }}</span></a>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+    <div class="oz-articles-grid">
+      {{#each Articles}}
+      <article class="oz-article-card">
+        {{#if CoverImageUrl}}
+        <div class="oz-card-media">
+          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
+          {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}
+        </div>
+        {{/if}}
+        <div class="oz-card-content">
+          <div class="oz-card-meta">
+            <span class="oz-meta-date"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>
+            <span class="oz-meta-bullet">&bull;</span>
+            <span class="oz-meta-author"><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>
+          </div>
+          <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
+          {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}
+          <div class="oz-card-footer">
+            <a href="{{ Url }}" class="oz-card-read-more">Read Article <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </article>
+      {{/each}}
+    </div>
+  </div>
+</section>`;
+
+    this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+.oz-blog-section {
+  padding: 80px 24px;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+}
+.oz-blog-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.oz-blog-header {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 50px auto;
+}
+.oz-blog-badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #0050e5;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  border: 1px solid #dbeafe;
+}
+.oz-blog-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+.oz-blog-desc {
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.65;
+  margin: 0 0 28px 0;
+}
+.oz-category-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.oz-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.oz-category-pill:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0050e5;
+  transform: translateY(-1px);
+}
+.oz-pill-count {
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+.oz-category-pill:hover .oz-pill-count {
+  background: #0050e5;
+  color: #ffffff;
+}
+.oz-articles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.oz-article-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+.oz-article-card:hover {
+  transform: translateY(-6px);
+  border-color: #cbd5e1;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+.oz-card-media {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: #0f172a;
+  overflow: hidden;
+}
+.oz-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.oz-article-card:hover .oz-card-img {
+  transform: scale(1.05);
+}
+.oz-card-category {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.oz-card-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.oz-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+.oz-card-meta i {
+  color: #64748b;
+  margin-right: 4px;
+}
+.oz-meta-bullet {
+  color: #cbd5e1;
+  font-weight: 800;
+}
+.oz-card-title {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.015em;
+}
+.oz-card-title-link {
+  color: #0f172a;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.oz-card-title-link:hover {
+  color: #0050e5;
+}
+.oz-card-summary {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+  flex-grow: 1;
+}
+.oz-card-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+.oz-card-read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0050e5;
+  font-size: 13.5px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.oz-card-read-more i {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+.oz-card-read-more:hover {
+  color: #003dbb;
+}
+.oz-card-read-more:hover i {
+  transform: translateX(4px);
+}
+@media (max-width: 1024px) {
+  .oz-articles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .oz-blog-section {
+    padding: 56px 16px;
+  }
+  .oz-blog-title {
+    font-size: 28px;
+  }
+  .oz-articles-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}`;
+    this.resetSampleContent();
     this.toast.info('Boilerplate reset to default blog grid structure.');
   }
 
@@ -1250,7 +1866,7 @@ export class BlogVisualComponent implements OnInit {
       articles: [
         {
           title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
-          summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce cryptographic verification.',
+          summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce continuous cryptographic verification across edge nodes.',
           category: 'Architecture',
           coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
           authorName: 'Alex Vance',
@@ -1259,7 +1875,7 @@ export class BlogVisualComponent implements OnInit {
         },
         {
           title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
-          summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties.',
+          summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties or split-brain partitions.',
           category: 'Cloud Engineering',
           coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
           authorName: 'Sarah Jenkins',
@@ -1268,13 +1884,26 @@ export class BlogVisualComponent implements OnInit {
         },
         {
           title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
-          summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes.',
+          summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes and serverless pipelines.',
           category: 'Compliance',
           coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
           authorName: 'Michael Chen',
           publishedDate: 'Sep 15, 2026',
           url: '/blog/compliance-guardrails'
         }
+      ],
+      blogCategories: [
+        { name: 'All Articles', count: 18, url: '/blog' },
+        { name: 'Architecture', count: 6, url: '/blog/category/architecture' },
+        { name: 'Security & Zero-Trust', count: 5, url: '/blog/category/security' },
+        { name: 'Cloud Engineering', count: 4, url: '/blog/category/engineering' },
+        { name: 'Compliance', count: 3, url: '/blog/category/compliance' }
+      ],
+      tags: [
+        { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
+        { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
+        { name: 'Cloud Native', url: '/blog/tag/cloud-native' },
+        { name: 'Compliance', url: '/blog/tag/compliance' }
       ]
     };
     this.toast.info('Blog sample values reset to defaults.');
@@ -1296,6 +1925,35 @@ export class BlogVisualComponent implements OnInit {
   removeArticleItem(index: number): void {
     if (this.sampleContent.articles && this.sampleContent.articles.length > index) {
       this.sampleContent.articles.splice(index, 1);
+    }
+  }
+
+  addBlogCategory(): void {
+    if (!this.sampleContent.blogCategories) this.sampleContent.blogCategories = [];
+    this.sampleContent.blogCategories.push({
+      name: 'New Category',
+      count: 1,
+      url: '/blog/category/new'
+    });
+  }
+
+  removeBlogCategory(index: number): void {
+    if (this.sampleContent.blogCategories && this.sampleContent.blogCategories.length > index) {
+      this.sampleContent.blogCategories.splice(index, 1);
+    }
+  }
+
+  addBlogTag(): void {
+    if (!this.sampleContent.tags) this.sampleContent.tags = [];
+    this.sampleContent.tags.push({
+      name: 'New Tag',
+      url: '/blog/tag/new'
+    });
+  }
+
+  removeBlogTag(index: number): void {
+    if (this.sampleContent.tags && this.sampleContent.tags.length > index) {
+      this.sampleContent.tags.splice(index, 1);
     }
   }
 
