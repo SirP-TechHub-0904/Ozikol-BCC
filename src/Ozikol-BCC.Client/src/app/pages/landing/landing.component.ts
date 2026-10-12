@@ -8,12 +8,7 @@ import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
-import {
-  CANONICAL_CORPORATE_TEMPLATES,
-  DEFAULT_SHOWCASE_SECTIONS,
-  DEFAULT_PAGE_BLUEPRINTS,
-  DEFAULT_SAMPLE_BLOGS
-} from './corporate-suite-defaults';
+import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
  * Public dynamic website orchestration component.
@@ -229,11 +224,23 @@ export class LandingComponent implements OnInit, OnDestroy {
     public cartService: CartService,
     private toastService: ToastService,
     private templateHydration: TemplateHydrationService,
+    private htmlAssembler: HtmlAssemblerService,
     private sanitizer: DomSanitizer,
     private titleService: Title,
     private metaService: Meta,
     private elementRef: ElementRef
   ) {}
+
+  /**
+   * Aggregates live database code injections for HtmlAssemblerService zones.
+   */
+  private get allCodeInjectionsList(): CodeInjectionTag[] {
+    const list: CodeInjectionTag[] = [];
+    (this.codeInjections.head || []).forEach(t => list.push({ ...t, zone: 'head', isActive: t.isActive !== false }));
+    (this.codeInjections.bodyOpen || []).forEach(t => list.push({ ...t, zone: 'body_open', isActive: t.isActive !== false }));
+    (this.codeInjections.footer || []).forEach(t => list.push({ ...t, zone: 'footer', isActive: t.isActive !== false }));
+    return list;
+  }
 
   ngOnInit(): void {
     // Unlock native document scrolling for public website mode
@@ -396,9 +403,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
         next: (res: any) => {
           this.activeTemplates = res?.data || [];
-          if (!this.activeTemplates || this.activeTemplates.length === 0) {
-            this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
-          }
           resolve();
         },
         error: () => {
@@ -407,15 +411,9 @@ export class LandingComponent implements OnInit, OnDestroy {
             next: (adminRes: any) => {
               const all = adminRes?.data || [];
               this.activeTemplates = all.filter((t: any) => t.isActive);
-              if (!this.activeTemplates || this.activeTemplates.length === 0) {
-                this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
-              }
               resolve();
             },
-            error: () => {
-              this.activeTemplates = [...CANONICAL_CORPORATE_TEMPLATES];
-              resolve();
-            }
+            error: () => resolve()
           });
         }
       });
@@ -424,44 +422,18 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchNavigationCategories(): Promise<void> {
     return new Promise((resolve) => {
-      const applyFallback = () => {
-        if (!this.categories || this.categories.length === 0) {
-          this.categories = [
-            {
-              id: 'cat-services',
-              title: 'Services',
-              categoryName: 'Services',
-              publish: true,
-              showInFooter: true,
-              menuSortOrder: 2,
-              menuPosition: 2,
-              webPages: [
-                { title: 'Enterprise Advisory', directUrl: 'services', publish: true },
-                { title: 'Cloud Infrastructure', directUrl: 'services', publish: true },
-                { title: 'Security & Governance', directUrl: 'services', publish: true }
-              ]
-            }
-          ];
-        }
-      };
-
       this.apiService.get('WebsiteContentApi/categories').subscribe({
         next: (res: any) => {
           this.categories = res?.data || [];
-          applyFallback();
           resolve();
         },
         error: () => {
           this.apiService.get('ContentApi/categories').subscribe({
             next: (cRes: any) => {
               this.categories = cRes?.data || [];
-              applyFallback();
               resolve();
             },
-            error: () => {
-              applyFallback();
-              resolve();
-            }
+            error: () => resolve()
           });
         }
       });
@@ -470,38 +442,18 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchPublishedPages(): Promise<void> {
     return new Promise((resolve) => {
-      const applyFallback = () => {
-        if (!this.publishedPages || this.publishedPages.length === 0) {
-          this.publishedPages = [
-            { title: 'Home', directUrl: '/', showInMainMenu: true, sortOrder: 0, publish: true, menuPosition: 1 },
-            { title: 'About Us', directUrl: 'about', showInMainMenu: true, sortOrder: 1, publish: true, menuPosition: 1 },
-            { title: 'Services', directUrl: 'services', showInMainMenu: true, sortOrder: 2, publish: true, menuPosition: 2 },
-            { title: 'Contact', directUrl: 'contact', showInMainMenu: true, sortOrder: 3, publish: true, menuPosition: 2 },
-            { title: 'Blog', directUrl: 'blog', showInMainMenu: true, sortOrder: 4, publish: true, menuPosition: 3 },
-            { title: 'Request Service', directUrl: 'request-service', showInMainMenu: true, isMenuCTA: true, sortOrder: 5, publish: true },
-            { title: 'Privacy Policy', directUrl: 'privacy-policy', isLegal: true, publish: true },
-            { title: 'Terms & Conditions', directUrl: 'terms-and-conditions', isLegal: true, publish: true }
-          ];
-        }
-      };
-
       this.apiService.get('WebsiteContentApi/pages').subscribe({
         next: (res: any) => {
           this.publishedPages = res?.data || [];
-          applyFallback();
           resolve();
         },
         error: () => {
           this.apiService.get('ContentApi/pages').subscribe({
             next: (pRes: any) => {
               this.publishedPages = pRes?.data || [];
-              applyFallback();
               resolve();
             },
-            error: () => {
-              applyFallback();
-              resolve();
-            }
+            error: () => resolve()
           });
         }
       });
@@ -553,13 +505,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
         next: (res: any) => {
-          this.blogs = (res?.data && res.data.length > 0) ? res.data : [...DEFAULT_SAMPLE_BLOGS];
+          this.blogs = res?.data || [];
           resolve();
         },
-        error: () => {
-          this.blogs = [...DEFAULT_SAMPLE_BLOGS];
-          resolve();
-        }
+        error: () => resolve()
       });
     });
   }
@@ -568,13 +517,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs').subscribe({
         next: (res: any) => {
-          this.blogs = (res?.data && res.data.length > 0) ? res.data : [...DEFAULT_SAMPLE_BLOGS];
+          this.blogs = res?.data || [];
           resolve();
         },
-        error: () => {
-          this.blogs = [...DEFAULT_SAMPLE_BLOGS];
-          resolve();
-        }
+        error: () => resolve()
       });
     });
   }
@@ -583,13 +529,10 @@ export class LandingComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       this.apiService.get(`WebsiteContentApi/blogs/${id}`).subscribe({
         next: (res: any) => {
-          this.currentArticle = res?.data || DEFAULT_SAMPLE_BLOGS.find(b => b.id === id) || DEFAULT_SAMPLE_BLOGS[0];
+          this.currentArticle = res?.data || null;
           resolve();
         },
-        error: () => {
-          this.currentArticle = DEFAULT_SAMPLE_BLOGS.find(b => b.id === id) || DEFAULT_SAMPLE_BLOGS[0];
-          resolve();
-        }
+        error: () => resolve()
       });
     });
   }
@@ -634,67 +577,77 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeHomepage(): void {
     this.titleService.setTitle(`${this.brandName} | Official Website`);
 
-    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
-    const heroTemplate = this.findActiveTemplate('hero') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'hero');
-    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
+    // 1. Navigation Header Section Unit
+    const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'home'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    // 1. Menu Section
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, 'home');
-      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
-    // 2. Hero Section
-    // Locate if a hero section was seeded in DB (directUrl == 'home-hero' or homePageSortOrder == 1)
+    // 2. Hero Section Unit
+    const heroTemplate = this.findActiveTemplate('hero');
     const dbHeroSection = this.sections.find(s => s.directUrl === 'home-hero' || s.homePageSortOrder === 1);
-    if (heroTemplate) {
-      combinedStyles += `\n${heroTemplate.cssStyles || ''}\n`;
-      const heroData = this.buildHeroContext(dbHeroSection);
-      const heroHtml = this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, heroData, this.getHydrationOptions());
-      combinedHtml += `<!-- Hero -->\n${heroHtml}\n`;
-      if (heroTemplate.jsScript) combinedJs += `\n${heroTemplate.jsScript}\n`;
-    }
+    const heroSection: SectionTemplateUnit | undefined = heroTemplate ? {
+      id: heroTemplate.id,
+      name: heroTemplate.name,
+      category: 'hero',
+      html: this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, this.buildHeroContext(dbHeroSection), this.getHydrationOptions()),
+      css: heroTemplate.cssStyles,
+      js: heroTemplate.jsScript
+    } : undefined;
 
-    // 3. Modular Body Sections (exclude section consumed as Hero to prevent duplicate display)
-    let bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
-    if (bodySections.length === 0) {
-      // Use turnkey canonical Corporate Suite showcase sections
-      bodySections = DEFAULT_SHOWCASE_SECTIONS;
-    }
+    // 3. Modular Body Section Units from database
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
 
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
       if (secTemplate) {
-        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
-        if (activeCss && !combinedStyles.includes(activeCss)) {
-          combinedStyles += `\n${activeCss}\n`;
-        }
         const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
         const sectionData = this.buildSectionContext(sec);
-        const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
-        combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
-        if (activeJs && !combinedJs.includes(activeJs)) {
-          combinedJs += `\n${activeJs}\n`;
-        }
+        bodySectionsList.push({
+          id: sec.id || secTemplate.id,
+          name: sec.title || secTemplate.name,
+          category: 'body',
+          html: this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions()),
+          css: activeCss,
+          js: activeJs,
+          sortOrder: sec.homePageSortOrder ?? sec.pageSortOrder ?? 0
+        });
       }
     }
 
-    // 4. Footer Section
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
-      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.brandName} | Official Website`,
+      pageSlug: 'home',
+      metaDescription: this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      heroSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -702,69 +655,33 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
    */
   private composeContentPage(): void {
-    const cleanSlug = (this.currentSlug || '').trim().toLowerCase().replace(/^\/+/, '');
-
     if (!this.currentPage) {
-      const blueprint = DEFAULT_PAGE_BLUEPRINTS[cleanSlug] ||
-                        (cleanSlug.includes('about') ? DEFAULT_PAGE_BLUEPRINTS['about'] : null) ||
-                        (cleanSlug.includes('service') && !cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['services'] : null) ||
-                        (cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['request-service'] : null) ||
-                        (cleanSlug.includes('contact') ? DEFAULT_PAGE_BLUEPRINTS['contact'] : null) ||
-                        (cleanSlug.includes('privacy') ? DEFAULT_PAGE_BLUEPRINTS['privacy-policy'] : null) ||
-                        (cleanSlug.includes('term') ? DEFAULT_PAGE_BLUEPRINTS['terms-and-conditions'] : null);
-
-      if (blueprint) {
-        this.currentPage = {
-          title: blueprint.title,
-          miniTitle: blueprint.miniTitle,
-          description: blueprint.description,
-          headerImageUrl: blueprint.headerImageUrl,
-          fullDescription: blueprint.fullDescription,
-          pageSections: blueprint.sections || []
-        };
-      } else {
-        this.composeNotFoundPage();
-        return;
-      }
+      this.composeNotFoundPage();
+      return;
     }
 
     this.titleService.setTitle(`${this.currentPage.title || 'Page'} | ${this.brandName}`);
 
-    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'breadcrumb');
-    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
+    // 1. Navigation Header Section Unit
+    const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    // 1. Menu
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug);
-      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
-    // 2. Breadcrumb Header
-    let rawSections: any[] = this.currentPage.pageSections || [];
-    if (rawSections.length === 0) {
-      const blueprint = DEFAULT_PAGE_BLUEPRINTS[cleanSlug] ||
-                        (cleanSlug.includes('about') ? DEFAULT_PAGE_BLUEPRINTS['about'] : null) ||
-                        (cleanSlug.includes('service') && !cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['services'] : null) ||
-                        (cleanSlug.includes('request') ? DEFAULT_PAGE_BLUEPRINTS['request-service'] : null) ||
-                        (cleanSlug.includes('contact') ? DEFAULT_PAGE_BLUEPRINTS['contact'] : null);
-      if (blueprint?.sections) {
-        rawSections = blueprint.sections;
-      }
-    }
-
+    // 2. Breadcrumb Header Section Unit
+    const rawSections: any[] = this.currentPage.pageSections || [];
     const heroSection = rawSections.find(
       (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
     );
 
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
         title: heroSection?.title || this.currentPage.title || '',
         miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || this.currentPage.miniTitle || '',
@@ -775,74 +692,89 @@ export class LandingComponent implements OnInit, OnDestroy {
           { label: this.currentPage.title || '', url: '#', isActive: true }
         ]
       };
-      const breadcrumbHtml = this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
-      combinedHtml += `<!-- Breadcrumb Header -->\n${breadcrumbHtml}\n`;
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
     }
 
-    // 3. Page Layout Sections (excluding hero consumed as breadcrumb header banner)
+    // 3. Page Layout Sections from database
+    const bodySectionsList: SectionTemplateUnit[] = [];
     const pageSections = rawSections.filter(
       (sec: any) => sec !== heroSection && (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit'
     );
+
     if (pageSections.length > 0) {
       for (const sec of pageSections) {
         const secTemplate = this.findTemplateForSection(sec);
         if (secTemplate) {
-          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
-          if (activeCss && !combinedStyles.includes(activeCss)) {
-            combinedStyles += `\n${activeCss}\n`;
-          }
           const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : secTemplate.cssStyles;
+          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : secTemplate.jsScript;
           const sectionData = this.buildSectionContext(sec);
-          const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
-          combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
-          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
-          if (activeJs && !combinedJs.includes(activeJs)) {
-            combinedJs += `\n${activeJs}\n`;
-          }
+          bodySectionsList.push({
+            id: sec.id || secTemplate.id,
+            name: sec.title || secTemplate.name,
+            category: 'body',
+            html: this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions()),
+            css: activeCss,
+            js: activeJs,
+            sortOrder: sec.pageSortOrder ?? 0
+          });
         }
       }
     } else {
       const bodyContent = this.currentPage.fullDescription || this.currentPage.description || '';
       if (bodyContent) {
-        combinedHtml += `
-          <section class="py-5 bg-white border-bottom">
-            <div class="container py-4">
-              <div class="row justify-content-center">
-                <div class="col-lg-9">
-                  <article class="prose-content fs-5 leading-relaxed text-secondary">
-                    ${bodyContent}
-                  </article>
+        bodySectionsList.push({
+          name: 'Page Content',
+          category: 'body',
+          html: `
+            <section class="py-5 bg-white border-bottom">
+              <div class="container py-4">
+                <div class="row justify-content-center">
+                  <div class="col-lg-9">
+                    <article class="prose-content fs-5 leading-relaxed text-secondary">
+                      ${bodyContent}
+                    </article>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
-        `;
+            </section>
+          `
+        });
       }
     }
 
-    // 4. Newsletter Bar (Corporate Suite signature footer bridge)
-    const newsletterTemplate = this.findTemplateForSection({ templateKey: 'News_MinimalBar' });
-    if (newsletterTemplate && !pageSections.some(s => (s.templateKey || '').toLowerCase() === 'news_minimalbar')) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
-      const newsContext = {
-        title: 'Subscribe to Executive Insights',
-        miniTitle: 'NEWSLETTER',
-        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
-      };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
-    }
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    // 5. Footer
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
-      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.currentPage.title || 'Page'} | ${this.brandName}`,
+      pageSlug: this.currentSlug,
+      metaDescription: this.currentPage.description || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -852,94 +784,110 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeBlogArchive(): void {
     this.titleService.setTitle(`Blog | ${this.brandName}`);
 
-    const menuTemplate = this.findActiveTemplate('menu') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'menu');
-    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'breadcrumb');
-    const blogTemplate = this.findActiveTemplate('blog') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'blog');
-    const footerTemplate = this.findActiveTemplate('footer') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.categoryKey === 'footer');
+    // 1. Navigation Header Section Unit
+    const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'blog'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
+    // 2. Breadcrumb Header Section Unit
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
-        title: 'Insights & Publications',
-        miniTitle: 'CORPORATE JOURNAL',
-        description: 'In-depth perspectives on modern architecture, technology governance, and digital scale.',
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
+        title: 'Blog',
+        miniTitle: 'PUBLICATIONS',
+        description: '',
+        backgroundImageUrl: '',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '#', isActive: true }
         ]
       };
-      combinedHtml += `<!-- Breadcrumb Header -->\n` + this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()) + `\n`;
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
-    }
-
-    // Render Blog Grid from database or default sample insights
-    const activeBlogList = (this.blogs && this.blogs.length > 0) ? this.blogs : DEFAULT_SAMPLE_BLOGS;
-    const articlesList = activeBlogList.map(b => ({
-      id: b.id,
-      title: b.title || '',
-      Title: b.title || '',
-      excerpt: b.description || '',
-      Excerpt: b.description || '',
-      category: b.blogCategory?.categoryName || b.categoryName || '',
-      Category: b.blogCategory?.categoryName || b.categoryName || '',
-      date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-      Date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-      author: b.author || '',
-      Author: b.author || '',
-      imageUrl: b.imageUrl || '',
-      ImageUrl: b.imageUrl || '',
-      directUrl: `/blog/${b.id}`,
-      DirectUrl: `/blog/${b.id}`
-    }));
-
-    const blogContext = {
-      title: 'Latest News & Briefings',
-      Title: 'Latest News & Briefings',
-      miniTitle: 'OUR WRITINGS',
-      MiniTitle: 'OUR WRITINGS',
-      description: 'Explore analyses and field reports published by our cross-functional teams.',
-      Description: 'Explore analyses and field reports published by our cross-functional teams.',
-      articles: articlesList,
-      Articles: articlesList
-    };
-
-    if (blogTemplate) {
-      if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
-      combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
-      if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
-    }
-
-    // Newsletter Bar
-    const newsletterTemplate = this.findTemplateForSection({ templateKey: 'News_MinimalBar' });
-    if (newsletterTemplate) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
-      const newsContext = {
-        title: 'Subscribe to Executive Insights',
-        miniTitle: 'NEWSLETTER',
-        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
       };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
     }
 
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    // 3. Blog Grid Body Section Unit
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
+    if (blogTemplate) {
+      const articlesList = this.blogs.map(b => ({
+        id: b.id,
+        title: b.title || '',
+        Title: b.title || '',
+        excerpt: b.description || '',
+        Excerpt: b.description || '',
+        category: b.blogCategory?.categoryName || b.categoryName || '',
+        Category: b.blogCategory?.categoryName || b.categoryName || '',
+        date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+        Date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+        author: b.author || '',
+        Author: b.author || '',
+        imageUrl: b.imageUrl || '',
+        ImageUrl: b.imageUrl || '',
+        directUrl: `/blog/${b.id}`,
+        DirectUrl: `/blog/${b.id}`
+      }));
+
+      const blogContext = {
+        title: 'Blog Articles',
+        Title: 'Blog Articles',
+        miniTitle: '',
+        MiniTitle: '',
+        description: '',
+        Description: '',
+        articles: articlesList,
+        Articles: articlesList
+      };
+
+      bodySectionsList.push({
+        id: blogTemplate.id,
+        name: blogTemplate.name || 'Blog Grid',
+        category: 'body',
+        html: this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()),
+        css: blogTemplate.cssStyles,
+        js: blogTemplate.jsScript,
+        sortOrder: 1
+      });
     }
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    // 4. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
+
+    // 5. Delegate full page synthesis to HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `Blog | ${this.brandName}`,
+      pageSlug: 'blog',
+      metaDescription: this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -1671,65 +1619,48 @@ export class LandingComponent implements OnInit, OnDestroy {
   private buildHeroContext(dbHeroSection?: any): any {
     if (dbHeroSection) {
       return {
-        title: dbHeroSection.title || `Engineering Sovereign Solutions for ${this.brandName}`,
-        Title: dbHeroSection.title || `Engineering Sovereign Solutions for ${this.brandName}`,
-        miniTitle: dbHeroSection.miniTitle || 'ENTERPRISE PLATFORM',
-        MiniTitle: dbHeroSection.miniTitle || 'ENTERPRISE PLATFORM',
-        description: dbHeroSection.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-        Description: dbHeroSection.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-        ImageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-        buttonText: dbHeroSection.buttonText || 'Explore Solutions',
-        ButtonText: dbHeroSection.buttonText || 'Explore Solutions',
-        buttonLink: dbHeroSection.buttonLink || '/services',
-        ButtonLink: dbHeroSection.buttonLink || '/services',
-        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || 'Request Intake',
-        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || 'Request Intake',
-        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '/request-service',
-        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '/request-service'
+        title: dbHeroSection.title || '',
+        Title: dbHeroSection.title || '',
+        miniTitle: dbHeroSection.miniTitle || '',
+        MiniTitle: dbHeroSection.miniTitle || '',
+        description: dbHeroSection.description || '',
+        Description: dbHeroSection.description || '',
+        imageUrl: dbHeroSection.imageUrl || '',
+        ImageUrl: dbHeroSection.imageUrl || '',
+        buttonText: dbHeroSection.buttonText || '',
+        ButtonText: dbHeroSection.buttonText || '',
+        buttonLink: dbHeroSection.buttonLink || '',
+        ButtonLink: dbHeroSection.buttonLink || '',
+        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '',
+        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || ''
       };
     }
 
     if (this.sliders && this.sliders.length > 0) {
       const activeSlider = this.sliders[0];
       return {
-        title: activeSlider.title || `Engineering Sovereign Solutions for ${this.brandName}`,
-        Title: activeSlider.title || `Engineering Sovereign Solutions for ${this.brandName}`,
-        miniTitle: activeSlider.miniTitle || 'ENTERPRISE PLATFORM',
-        MiniTitle: activeSlider.miniTitle || 'ENTERPRISE PLATFORM',
-        description: activeSlider.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-        Description: activeSlider.description || 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-        imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-        ImageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-        buttonText: activeSlider.buttonText || 'Explore Solutions',
-        ButtonText: activeSlider.buttonText || 'Explore Solutions',
-        buttonLink: activeSlider.buttonLink || '/services',
-        ButtonLink: activeSlider.buttonLink || '/services',
-        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || 'Request Intake',
-        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || 'Request Intake',
-        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '/request-service',
-        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '/request-service'
+        title: activeSlider.title || '',
+        Title: activeSlider.title || '',
+        miniTitle: activeSlider.miniTitle || '',
+        MiniTitle: activeSlider.miniTitle || '',
+        description: activeSlider.description || '',
+        Description: activeSlider.description || '',
+        imageUrl: activeSlider.imageUrl || '',
+        ImageUrl: activeSlider.imageUrl || '',
+        buttonText: activeSlider.buttonText || '',
+        ButtonText: activeSlider.buttonText || '',
+        buttonLink: activeSlider.buttonLink || '',
+        ButtonLink: activeSlider.buttonLink || '',
+        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
+        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
+        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '',
+        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || ''
       };
     }
 
-    return {
-      title: `Engineering Sovereign Solutions for ${this.brandName}`,
-      Title: `Engineering Sovereign Solutions for ${this.brandName}`,
-      miniTitle: 'MODULAR ENTERPRISE ARCHITECTURE',
-      MiniTitle: 'MODULAR ENTERPRISE ARCHITECTURE',
-      description: 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-      Description: 'Deploy turnkey organizational websites, interactive service intake forms, and sovereign tenant infrastructure with zero technical debt.',
-      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      ImageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      buttonText: 'Explore Solutions',
-      ButtonText: 'Explore Solutions',
-      buttonLink: '/services',
-      ButtonLink: '/services',
-      secondaryButtonText: 'Request Intake',
-      SecondaryButtonText: 'Request Intake',
-      secondaryButtonLink: '/request-service',
-      SecondaryButtonLink: '/request-service'
-    };
+    return {};
   }
 
   /**
@@ -1812,9 +1743,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   private findActiveTemplate(category: string): any {
-    const found = this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
-    if (found) return found;
-    return CANONICAL_CORPORATE_TEMPLATES.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+    return this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
   }
 
   private findTemplateForSection(sec: any): any {
@@ -1828,14 +1757,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       );
       if (exactMatch) return exactMatch;
 
-      // 2. Exact match in CANONICAL_CORPORATE_TEMPLATES
-      const canonicalExact = CANONICAL_CORPORATE_TEMPLATES.find(t => 
-        (t.templateKey || '').toLowerCase() === normalizedKey ||
-        (t.variantCode || '').toLowerCase() === normalizedKey
-      );
-      if (canonicalExact) return canonicalExact;
-
-      // 3. Smart alias mapping between seeded template keys and installed theme keys
+      // 2. Smart alias mapping between seeded template keys and installed theme keys
       const keyAliases: { [key: string]: string[] } = {
         'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
         'split-media-showcase': ['body_missionsplit', 'body_featuregrid3'],
@@ -1872,16 +1794,13 @@ export class LandingComponent implements OnInit, OnDestroy {
           const aliasMatch = this.activeTemplates.find(t => 
             (t.templateKey || '').toLowerCase() === alias ||
             (t.variantCode || '').toLowerCase() === alias
-          ) || CANONICAL_CORPORATE_TEMPLATES.find(t => 
-            (t.templateKey || '').toLowerCase() === alias ||
-            (t.variantCode || '').toLowerCase() === alias
           );
           if (aliasMatch) return aliasMatch;
         }
       }
     }
-    // Fallback to active body template or canonical feature grid
-    return this.findActiveTemplate('body') || CANONICAL_CORPORATE_TEMPLATES.find(t => t.templateKey === 'Body_FeatureGrid3');
+    // Fallback to active body template
+    return this.findActiveTemplate('body');
   }
 
   private getHydrationOptions(): any {

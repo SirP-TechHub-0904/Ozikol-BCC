@@ -63,6 +63,20 @@ export interface FullPageAssemblyOptions {
 }
 
 /**
+ * Structured output of page assembly separating document markup, scoped stylesheets, and scripts.
+ */
+export interface PageAssemblyBundle {
+  fullDocumentHtml: string;
+  visualBodyMarkup: string;
+  combinedStyles: string;
+  combinedScripts: string;
+  sortedHeadTags: string;
+  sortedBodyOpenTags: string;
+  sortedFooterTags: string;
+  orderedSections: SectionTemplateUnit[];
+}
+
+/**
  * Master HTML5 Document Assembler and Page Synthesizer.
  * Stitches together the 4 foundational site pillars:
  * 1. Header Tags (<head>) - Sorted by SortOrder
@@ -176,17 +190,12 @@ export class HtmlAssemblerService {
   }
 
   /**
-   * Assembles a full, production-ready multi-section webpage.
-   * Handles categorical page layout:
-   * 1. Navigation (Singleton at top)
-   * 2. Hero Slider (Singleton under navbar)
-   * 3. Body Sections (Multi-instance looped by SortOrder)
-   * 4. Footer (Singleton at bottom)
-   * Bundles all scoped CSS de-duplicated into `<head>` and all section scripts before closing `</body>`.
+   * Assembles a structured page bundle with separated visual body markup, combined styles,
+   * scripts, and full document HTML string.
    * @param options Full page assembly options.
-   * @returns Complete HTML5 document string.
+   * @returns Detailed PageAssemblyBundle.
    */
-  assembleFullPage(options: FullPageAssemblyOptions): string {
+  assemblePageBundle(options: FullPageAssemblyOptions): PageAssemblyBundle {
     const title = options.pageTitle || 'Home | Enterprise Portal';
     const lang = options.language || 'en';
     const suite = options.suiteCode || 'suite_corporate';
@@ -277,7 +286,7 @@ export class HtmlAssemblerService {
       .map(t => t.content)
       .join('\n  ');
 
-    return `<!DOCTYPE html>
+    const fullDocumentHtml = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
   <meta charset="utf-8">
@@ -299,5 +308,31 @@ export class HtmlAssemblerService {
   ${sortedFooterTags ? `<!-- [PILLAR 4] Footer Scripts (</body>) -->\n  ${sortedFooterTags}` : ''}
 </body>
 </html>`;
+
+    return {
+      fullDocumentHtml,
+      visualBodyMarkup,
+      combinedStyles,
+      combinedScripts,
+      sortedHeadTags,
+      sortedBodyOpenTags,
+      sortedFooterTags,
+      orderedSections
+    };
+  }
+
+  /**
+   * Assembles a full, production-ready multi-section webpage.
+   * Handles categorical page layout:
+   * 1. Navigation (Singleton at top)
+   * 2. Hero Slider (Singleton under navbar)
+   * 3. Body Sections (Multi-instance looped by SortOrder)
+   * 4. Footer (Singleton at bottom)
+   * Bundles all scoped CSS de-duplicated into `<head>` and all section scripts before closing `</body>`.
+   * @param options Full page assembly options.
+   * @returns Complete HTML5 document string.
+   */
+  assembleFullPage(options: FullPageAssemblyOptions): string {
+    return this.assemblePageBundle(options).fullDocumentHtml;
   }
 }
