@@ -804,6 +804,20 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5. Automatically provision turnkey Corporate Suite website templates, 10 body sections, web pages, forms, and code injections
+            try
+            {
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                    dbContext,
+                    request.OrganizationName,
+                    cancellationToken);
+                _logger.LogInformation("✅ Turnkey Corporate Suite website templates, pages, and 10 body sections successfully seeded for tenant [{TenantKey}]", request.TenantKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "⚠️ Failed to automatically seed default website suite for tenant [{TenantKey}]: {Message}", request.TenantKey, ex.Message);
+            }
         }
     }
 
