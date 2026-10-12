@@ -155,7 +155,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
         <!-- Editor Viewport (When activeEditorTab is html, css, or js) -->
         <div class="editor-pane-body" *ngIf="activeEditorTab !== 'mock'">
           <app-visual-editor
-            [category]="'blogdetail'"
+            [category]="'blog_detail'"
             [categoryName]="'Blog Detail'"
             [activeTab]="activeEditorTab"
             [hideInternalTabs]="true"
@@ -181,7 +181,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               <div>
                 <h3 class="drawer-title">Mock Content &amp; Loop Configuration for Blog Detail</h3>
                 <p class="drawer-sub">
-                  Adjust placeholder sample data to test your section design. These values are used for demo simulation and initial page defaults.
+                  Adjust placeholder sample data to test your article template design. These values are used for demo simulation and live preview hydration.
                 </p>
               </div>
             </div>
@@ -196,7 +196,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             </button>
           </div>
 
-          <!-- Mock Data Sub-Tabs: Content & Body (Default) vs Author Meta -->
+          <!-- Mock Data Sub-Tabs: 1. Content & Body | 2. Author Profile | 3. Tags | 4. Related Reads & Comments -->
           <div class="mock-tabs-nav">
             <button
               type="button"
@@ -205,7 +205,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               (click)="activeMockTab = 'content'"
             >
               <span class="material-symbols-outlined icon-micro">article</span>
-              <span>Article Content &amp; Body</span>
+              <span>1. Article Content &amp; Body</span>
             </button>
             <button
               type="button"
@@ -214,7 +214,25 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
               (click)="activeMockTab = 'author'"
             >
               <span class="material-symbols-outlined icon-micro">person</span>
-              <span>Author &amp; Publication Meta</span>
+              <span>2. Author &amp; Publication</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'tags'"
+              (click)="activeMockTab = 'tags'"
+            >
+              <span class="material-symbols-outlined icon-micro">sell</span>
+              <span>3. Topic Tags ({{ (sampleContent.tags || []).length }})</span>
+            </button>
+            <button
+              type="button"
+              class="mock-tab-btn"
+              [class.active]="activeMockTab === 'related'"
+              (click)="activeMockTab = 'related'"
+            >
+              <span class="material-symbols-outlined icon-micro">dynamic_feed</span>
+              <span>4. Related &amp; Discussion</span>
             </button>
           </div>
 
@@ -223,33 +241,34 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             <div class="inspector-form-grid-2">
               <div class="form-group col-span-2">
                 <label class="field-label">
-                  <span>Article Headline</span>
-                  <code [innerText]="'{{ ArticleHeadline }}'"></code>
+                  <span>Article Headline (H1 / Title)</span>
+                  <code [innerText]="'{{ Title }}'"></code>
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="sampleContent.articleHeadline"
+                  [(ngModel)]="sampleContent.title"
+                  (ngModelChange)="sampleContent.articleHeadline = sampleContent.title"
                   class="form-control inspector-input"
-                  placeholder="e.g. Navigating Multi-Cloud Complexity"
+                  placeholder="e.g. Navigating Multi-Cloud Architecture at Scale"
                 />
               </div>
 
-              <div class="form-group col-span-2">
+              <div class="form-group">
                 <label class="field-label">
-                  <span>Article Lead Narrative</span>
-                  <code [innerText]="'{{ ArticleLead }}'"></code>
+                  <span>Category Badge</span>
+                  <code [innerText]="'{{ Category }}'"></code>
                 </label>
-                <textarea
-                  [(ngModel)]="sampleContent.articleLead"
-                  class="form-control inspector-input textarea-short"
-                  rows="2"
-                  placeholder="e.g. As engineering organizations transition to distributed multi-cloud..."
-                ></textarea>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.category"
+                  class="form-control inspector-input"
+                  placeholder="e.g. Cloud Engineering"
+                />
               </div>
 
-              <div class="form-group col-span-2">
+              <div class="form-group">
                 <label class="field-label">
-                  <span>Cover Image URL</span>
+                  <span>Featured Cover Image URL</span>
                   <code [innerText]="'{{ CoverImageUrl }}'"></code>
                 </label>
                 <input
@@ -259,10 +278,38 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   placeholder="e.g. https://images.unsplash.com/..."
                 />
               </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Lead Narrative / Excerpt</span>
+                  <code [innerText]="'{{ Summary }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.summary"
+                  (ngModelChange)="sampleContent.articleLead = sampleContent.summary; sampleContent.description = sampleContent.summary"
+                  class="form-control inspector-input textarea-short"
+                  rows="2"
+                  placeholder="e.g. How global engineering teams maintain governance, zero trust security, and low latency..."
+                ></textarea>
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Editorial Article Body (HTML Allowed)</span>
+                  <code [innerText]="'{{{ Body }}}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.body"
+                  (ngModelChange)="sampleContent.content = sampleContent.body; sampleContent.fullDescription = sampleContent.body"
+                  class="form-control inspector-input textarea-short"
+                  rows="5"
+                  placeholder="e.g. <p>Modern enterprise platforms increasingly face...</p>"
+                ></textarea>
+              </div>
             </div>
           </div>
 
-          <!-- Sub-Tab 2: Author & Publication Meta -->
+          <!-- Sub-Tab 2: Author Profile & Publication Meta -->
           <div class="mock-tab-pane" *ngIf="activeMockTab === 'author'">
             <div class="inspector-form-grid-2">
               <div class="form-group">
@@ -274,20 +321,34 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                   type="text"
                   [(ngModel)]="sampleContent.authorName"
                   class="form-control inspector-input"
-                  placeholder="e.g. Marcus Aurelius"
+                  placeholder="e.g. Alex Vance"
                 />
               </div>
 
               <div class="form-group">
                 <label class="field-label">
-                  <span>Author Role</span>
+                  <span>Author Role / Designation</span>
                   <code [innerText]="'{{ AuthorRole }}'"></code>
                 </label>
                 <input
                   type="text"
                   [(ngModel)]="sampleContent.authorRole"
                   class="form-control inspector-input"
-                  placeholder="e.g. VP of Cloud Architecture"
+                  placeholder="e.g. Chief Cloud Architect"
+                />
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Author Avatar URL</span>
+                  <code [innerText]="'{{ AuthorAvatarUrl }}'"></code>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="sampleContent.authorAvatarUrl"
+                  (ngModelChange)="sampleContent.authorAvatar = sampleContent.authorAvatarUrl"
+                  class="form-control inspector-input"
+                  placeholder="e.g. https://images.unsplash.com/..."
                 />
               </div>
 
@@ -312,9 +373,121 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
                 <input
                   type="text"
                   [(ngModel)]="sampleContent.readingTime"
+                  (ngModelChange)="sampleContent.readTime = sampleContent.readingTime"
                   class="form-control inspector-input"
                   placeholder="e.g. 8 min read"
                 />
+              </div>
+
+              <div class="form-group col-span-2">
+                <label class="field-label">
+                  <span>Author Biography</span>
+                  <code [innerText]="'{{ AuthorBio }}'"></code>
+                </label>
+                <textarea
+                  [(ngModel)]="sampleContent.authorBio"
+                  class="form-control inspector-input textarea-short"
+                  rows="2"
+                  placeholder="e.g. Specializing in distributed systems, sovereign cloud meshes, and container security."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Topic Tags Taxonomy -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'tags'">
+            <div class="tax-group-block">
+              <div class="tax-header-row">
+                <div>
+                  <h4 class="tax-group-title">Article Topic Tags</h4>
+                  <p class="tax-group-sub">Rendered via loop: <code [innerText]="'{{#each Tags}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-mini" (click)="addTag()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Tag</span>
+                </button>
+              </div>
+
+              <div class="tax-list">
+                <div class="tax-item-row" *ngFor="let tag of (sampleContent.tags || []); let idx = index">
+                  <input
+                    type="text"
+                    [(ngModel)]="tag.name"
+                    class="form-control inspector-input flex-2"
+                    placeholder="Tag name e.g. MultiCloud"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="tag.url"
+                    class="form-control inspector-input flex-2"
+                    placeholder="URL e.g. /blog/tags/multicloud"
+                  />
+                  <button type="button" class="btn-remove-item" (click)="removeTag(idx)" title="Remove tag">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+                <div *ngIf="!sampleContent.tags || sampleContent.tags.length === 0" class="empty-list-notice">
+                  No tags added. Click "Add Tag" to add topic labels.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Related Articles & Discussion -->
+          <div class="mock-tab-pane" *ngIf="activeMockTab === 'related'">
+            <div class="tax-group-block">
+              <div class="tax-header-row">
+                <div>
+                  <h4 class="tax-group-title">Recommended / Recent Articles</h4>
+                  <p class="tax-group-sub">Rendered via loop: <code [innerText]="'{{#each RecentArticles}}'"></code></p>
+                </div>
+                <button type="button" class="btn-add-mini" (click)="addRecentArticle()">
+                  <span class="material-symbols-outlined">add</span>
+                  <span>Add Article</span>
+                </button>
+              </div>
+
+              <div class="recent-list">
+                <div class="repeater-card" *ngFor="let rec of (sampleContent.recentArticles || []); let idx = index">
+                  <div class="repeater-header">
+                    <span class="badge-item-num">#{{ idx + 1 }}</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="rec.title"
+                      class="form-control inspector-input font-bold"
+                      placeholder="e.g. Sovereign Compliance Across Regions"
+                    />
+                    <button type="button" class="btn-remove-item" (click)="removeRecentArticle(idx)" title="Remove item">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                  <div class="repeater-grid-2">
+                    <div class="input-cell">
+                      <label class="cell-label"><span>Target Link</span><code [innerText]="'{{ Url }}'"></code></label>
+                      <input type="text" [(ngModel)]="rec.url" class="form-control inspector-input" placeholder="e.g. /blog/2" />
+                    </div>
+                    <div class="input-cell">
+                      <label class="cell-label"><span>Published Date</span><code [innerText]="'{{ PublishedDate }}'"></code></label>
+                      <input type="text" [(ngModel)]="rec.publishedDate" class="form-control inspector-input" placeholder="e.g. Sep 28, 2026" />
+                    </div>
+                    <div class="input-cell col-span-2">
+                      <label class="cell-label"><span>Cover Image URL</span><code [innerText]="'{{ CoverImageUrl }}'"></code></label>
+                      <input type="text" [(ngModel)]="rec.coverImageUrl" class="form-control inspector-input" placeholder="e.g. https://images.unsplash.com/..." />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="comments-note-box mt-4">
+                <div class="comments-note-header">
+                  <span class="material-symbols-outlined note-icon">chat</span>
+                  <div>
+                    <h5 class="note-title">Comments &amp; Responses Engine: <code [innerText]="'{{ Form &quot;Comment_Submit&quot; }}'"></code></h5>
+                    <p class="note-desc">
+                      Dynamic comment submission forms simulate automatically in preview mode. When the Comment database model is connected, submissions will bind natively without requiring template changes.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -761,6 +934,218 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
     .textarea-short {
       resize: vertical;
       font-family: inherit;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      min-height: 72px;
+    }
+
+    .tax-group-block {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .tax-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tax-group-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    .tax-group-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 3px 0 0 0;
+    }
+
+    .tax-group-sub code {
+      font-family: 'Fira Code', monospace;
+      color: #0050e5;
+    }
+
+    .btn-add-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      color: #0050e5;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-mini:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+
+    .tax-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tax-item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .flex-2 { flex: 2; }
+    .flex-1 { flex: 1; }
+
+    .btn-remove-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid #fecaca;
+      background: #fff5f5;
+      color: #ef4444;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-remove-item:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+
+    .empty-list-notice {
+      padding: 18px;
+      text-align: center;
+      font-size: 12.5px;
+      color: #94a3b8;
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+    }
+
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .repeater-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .repeater-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-item-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 3px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .font-bold {
+      font-weight: 700;
+    }
+
+    .repeater-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .input-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .cell-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .cell-label code {
+      font-family: 'Fira Code', monospace;
+      font-size: 10px;
+      color: #0050e5;
+    }
+
+    .comments-note-box {
+      background: #ffffff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .comments-note-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .note-icon {
+      color: #0050e5;
+      font-size: 24px;
+      margin-top: 2px;
+    }
+
+    .note-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+
+    .note-title code {
+      font-family: 'Fira Code', monospace;
+      color: #0050e5;
+      background: #eff6ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .note-desc {
+      font-size: 12.5px;
+      color: #475569;
+      margin: 0;
+      line-height: 1.5;
     }
 
     .modal-backdrop {
@@ -934,47 +1319,123 @@ export class BlogDetailVisualComponent implements OnInit {
 
   // Studio Tab Controls (HTML tab is default; Mock sub-tab 1 'content' is default)
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
-  activeMockTab: 'content' | 'author' = 'content';
+  activeMockTab: 'content' | 'author' | 'tags' | 'related' = 'content';
 
   htmlTemplate: string = `<article class="oz-article-detail {{ CustomClass }}">
+  <div class="oz-article-top-nav">
+    <a href="/blog" class="oz-back-btn">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>All Articles</span>
+    </a>
+  </div>
+
   <header class="oz-article-header">
     <div class="oz-article-meta-top">
-      <span class="oz-category-badge">{{ Category }}</span>
-      <span class="oz-publish-date">{{ PublishedDate }} &bull; {{ ReadingTime }}</span>
+      {{#if Category}}<span class="oz-category-badge">{{ Category }}</span>{{/if}}
+      {{#if PublishedDate}}<span class="oz-publish-meta"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>{{/if}}
+      {{#if ReadingTime}}<span class="oz-publish-meta">&bull; <i class="fa-regular fa-clock"></i> {{ ReadingTime }}</span>{{/if}}
     </div>
-    <h1 class="oz-article-headline">{{ ArticleHeadline }}</h1>
-    <p class="oz-article-lead">{{ ArticleLead }}</p>
+    <h1 class="oz-article-headline">{{ Title }}</h1>
+    {{#if Summary}}<p class="oz-article-lead">{{ Summary }}</p>{{/if}}
     <div class="oz-author-strip">
-      <img src="{{ AuthorAvatar }}" alt="{{ AuthorName }}" class="oz-author-avatar" />
+      {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-author-avatar" />{{/if}}
       <div class="oz-author-info">
         <span class="oz-author-name">{{ AuthorName }}</span>
-        <span class="oz-author-role">{{ AuthorRole }}</span>
+        {{#if AuthorRole}}<span class="oz-author-role">{{ AuthorRole }}</span>{{/if}}
       </div>
     </div>
   </header>
+
+  {{#if CoverImageUrl}}
   <div class="oz-article-cover">
-    <img src="{{ CoverImageUrl }}" alt="{{ ArticleHeadline }}" class="oz-cover-image" />
+    <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-cover-image" />
   </div>
+  {{/if}}
+
   <div class="oz-article-layout">
     <div class="oz-article-body">
-      {{{ Content }}}
-      <div class="oz-article-tags">
-        <span class="oz-tags-label">Tags:</span>
-        {{#each Tags}}
-        <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
+      {{{ Body }}}
+    </div>
+
+    {{#if Tags}}
+    <div class="oz-article-tags">
+      <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
+      {{#each Tags}}
+      <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if AuthorBio}}
+    <div class="oz-author-bio-card">
+      <div class="oz-author-bio-avatar-wrap">
+        {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+      </div>
+      <div class="oz-author-bio-content">
+        <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
+        {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
+        <p class="oz-bio-text">{{ AuthorBio }}</p>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if RecentArticles}}
+    <div class="oz-related-articles-section">
+      <h3 class="oz-related-title">Recommended Reads</h3>
+      <div class="oz-related-grid">
+        {{#each RecentArticles}}
+        <a href="{{ Url }}" class="oz-related-card">
+          {{#if CoverImageUrl}}<div class="oz-related-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
+          <div class="oz-related-info">
+            {{#if PublishedDate}}<span class="oz-related-date">{{ PublishedDate }}</span>{{/if}}
+            <h5 class="oz-related-headline">{{ Title }}</h5>
+          </div>
+        </a>
         {{/each}}
       </div>
+    </div>
+    {{/if}}
+
+    <div class="oz-comments-section">
+      <div class="oz-comments-header">
+        <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
+        <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+      </div>
+      {{ Form "Comment_Submit" }}
     </div>
   </div>
 </article>`;
 
   cssStyles: string = `.oz-article-detail {
-  padding: 64px 24px 96px 24px;
+  padding: 48px 24px 96px 24px;
   background: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+  color: #0f172a;
+}
+.oz-article-top-nav {
+  max-width: 860px;
+  margin: 0 auto 32px auto;
+}
+.oz-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0050e5;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #eff6ff;
+  transition: all 0.2s ease;
+}
+.oz-back-btn:hover {
+  background: #dbeafe;
+  color: #003bb5;
+  transform: translateX(-2px);
 }
 .oz-article-header {
-  max-width: 820px;
+  max-width: 860px;
   margin: 0 auto 40px auto;
   text-align: center;
 }
@@ -984,33 +1445,39 @@ export class BlogDetailVisualComponent implements OnInit {
   justify-content: center;
   gap: 12px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 .oz-category-badge {
   background: #eff6ff;
   color: #0050e5;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 14px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
-.oz-publish-date {
+.oz-publish-meta {
   font-size: 13px;
   color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .oz-article-headline {
-  font-size: 38px;
+  font-size: 42px;
   font-weight: 900;
   color: #0f172a;
   line-height: 1.25;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.025em;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.03em;
 }
 .oz-article-lead {
-  font-size: 18px;
+  font-size: 20px;
   color: #475569;
   line-height: 1.6;
-  margin: 0 0 28px 0;
+  margin: 0 0 32px 0;
+  font-weight: 400;
 }
 .oz-author-strip {
   display: inline-flex;
@@ -1018,12 +1485,12 @@ export class BlogDetailVisualComponent implements OnInit {
   gap: 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  padding: 8px 18px;
+  padding: 8px 20px;
   border-radius: 40px;
 }
 .oz-author-avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -1033,20 +1500,20 @@ export class BlogDetailVisualComponent implements OnInit {
   text-align: left;
 }
 .oz-author-name {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #0f172a;
 }
 .oz-author-role {
-  font-size: 11px;
+  font-size: 11.5px;
   color: #64748b;
 }
 .oz-article-cover {
   max-width: 1040px;
   margin: 0 auto 48px auto;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 .oz-cover-image {
   width: 100%;
@@ -1058,72 +1525,243 @@ export class BlogDetailVisualComponent implements OnInit {
   margin: 0 auto;
 }
 .oz-article-body {
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 17px;
+  line-height: 1.85;
   color: #334155;
+}
+.oz-article-body p {
+  margin-bottom: 24px;
+}
+.oz-article-body h2 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 40px 0 16px 0;
+  letter-spacing: -0.02em;
+}
+.oz-article-body blockquote {
+  border-left: 4px solid #0050e5;
+  padding: 16px 24px;
+  margin: 32px 0;
+  background: #f8fafc;
+  border-radius: 0 12px 12px 0;
+  font-size: 18px;
+  font-style: italic;
+  color: #1e293b;
 }
 .oz-article-tags {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  padding-top: 24px;
+  padding-top: 28px;
   border-top: 1px solid #e2e8f0;
-  margin-top: 36px;
+  margin-top: 40px;
 }
 .oz-tags-label {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 800;
   color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .oz-tag-pill {
   background: #f1f5f9;
   color: #475569;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 .oz-tag-pill:hover {
   background: #0050e5;
   color: #ffffff;
+  transform: translateY(-1px);
+}
+.oz-author-bio-card {
+  margin-top: 48px;
+  padding: 24px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.oz-bio-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.oz-author-bio-content {
+  flex: 1;
+}
+.oz-bio-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+.oz-bio-role {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0050e5;
+  display: block;
+  margin-bottom: 8px;
+}
+.oz-bio-text {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+.oz-related-articles-section {
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: 1.5px solid #e2e8f0;
+}
+.oz-related-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 24px 0;
+}
+.oz-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+.oz-related-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.oz-related-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+.oz-related-thumb img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.oz-related-info {
+  padding: 14px 16px;
+  flex: 1;
+}
+.oz-related-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  display: block;
+  margin-bottom: 6px;
+}
+.oz-related-headline {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.4;
+  margin: 0;
+}
+.oz-comments-section {
+  margin-top: 56px;
+  padding: 32px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+}
+.oz-comments-header {
+  margin-bottom: 24px;
+}
+.oz-comments-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+.oz-comments-desc {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+}
+@media (max-width: 768px) {
+  .oz-article-headline { font-size: 30px; }
+  .oz-article-lead { font-size: 17px; }
+  .oz-author-bio-card { flex-direction: column; align-items: center; text-align: center; }
+  .oz-comments-section { padding: 20px; }
 }`;
 
   jsScript: string = '';
 
   blogDetailTokens: Array<{ label: string; token: string }> = [
     { label: 'Title', token: '{{ Title }}' },
-    { label: 'Headline', token: '{{ ArticleHeadline }}' },
-    { label: 'Lead', token: '{{ ArticleLead }}' },
-    { label: 'Cover Image', token: '{{ CoverImageUrl }}' },
-    { label: 'Content Body', token: '{{{ Content }}}' },
+    { label: 'Summary', token: '{{ Summary }}' },
+    { label: 'Body (HTML)', token: '{{{ Body }}}' },
     { label: 'Category', token: '{{ Category }}' },
+    { label: 'Published Date', token: '{{ PublishedDate }}' },
+    { label: 'Reading Time', token: '{{ ReadingTime }}' },
+    { label: 'Cover Image', token: '{{ CoverImageUrl }}' },
     { label: 'Author Name', token: '{{ AuthorName }}' },
     { label: 'Author Role', token: '{{ AuthorRole }}' },
-    { label: 'Author Avatar', token: '{{ AuthorAvatar }}' },
-    { label: 'Publish Date', token: '{{ PublishedDate }}' },
-    { label: 'Reading Time', token: '{{ ReadingTime }}' },
-    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}' }
+    { label: 'Author Avatar', token: '{{ AuthorAvatarUrl }}' },
+    { label: 'Author Bio', token: '{{ AuthorBio }}' },
+    { label: 'Tags Loop', token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}' },
+    { label: 'Recent Articles', token: '{{#each RecentArticles}}\n  <a href="{{ Url }}">{{ Title }}</a>\n{{/each}}' },
+    { label: 'Comment Form', token: '{{ Form "Comment_Submit" }}' }
   ];
 
   sampleContent: any = {
     title: 'Navigating Multi-Cloud Architecture at Scale',
-    articleHeadline: 'Navigating Multi-Cloud Complexity: A Blueprint for Sovereign Cloud Orchestration',
-    articleLead: 'How global engineering teams maintain governance, zero trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
-    coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
-    content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p>',
+    articleHeadline: 'Navigating Multi-Cloud Architecture at Scale',
+    summary: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+    articleLead: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+    description: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+    body: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
+    content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
+    fullDescription: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
     category: 'Cloud Engineering',
     authorName: 'Alex Vance',
     authorRole: 'Chief Cloud Architect',
+    authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
     authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    authorBio: 'Specializing in distributed systems, sovereign cloud meshes, and zero-trust container security across global enterprises.',
     publishedDate: 'October 14, 2026',
     readingTime: '8 min read',
+    readTime: '8 min read',
+    coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
     tags: [
-      { name: 'MultiCloud', url: '/tags/multicloud' },
-      { name: 'Architecture', url: '/tags/architecture' },
-      { name: 'Kubernetes', url: '/tags/kubernetes' }
+      { name: 'MultiCloud', url: '/blog/tags/multicloud' },
+      { name: 'Architecture', url: '/blog/tags/architecture' },
+      { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
+      { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
+    ],
+    recentArticles: [
+      {
+        title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+        url: '/blog/resilient-multi-tenant',
+        coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80',
+        publishedDate: 'Sep 28, 2026'
+      },
+      {
+        title: 'Automated Compliance Guardrails for Regulated FinTech',
+        url: '/blog/automated-compliance-guardrails',
+        coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
+        publishedDate: 'Sep 15, 2026'
+      }
     ]
   };
 
@@ -1148,27 +1786,172 @@ export class BlogDetailVisualComponent implements OnInit {
     this.variantCode = `BDET_${randomSuffix}`;
   }
 
+  addTag(): void {
+    if (!this.sampleContent.tags) {
+      this.sampleContent.tags = [];
+    }
+    this.sampleContent.tags.push({
+      name: 'NewTopic',
+      url: '/blog/tags/newtopic'
+    });
+    this.toast.info('Added new topic tag.');
+  }
+
+  removeTag(idx: number): void {
+    if (this.sampleContent.tags && this.sampleContent.tags.length > idx) {
+      this.sampleContent.tags.splice(idx, 1);
+      this.toast.info('Removed topic tag.');
+    }
+  }
+
+  addRecentArticle(): void {
+    if (!this.sampleContent.recentArticles) {
+      this.sampleContent.recentArticles = [];
+    }
+    this.sampleContent.recentArticles.push({
+      title: 'New Related Article Headline',
+      url: '/blog/new-article',
+      coverImageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&auto=format&fit=crop&q=80',
+      publishedDate: 'Recently Published'
+    });
+    this.toast.info('Added recommended article.');
+  }
+
+  removeRecentArticle(idx: number): void {
+    if (this.sampleContent.recentArticles && this.sampleContent.recentArticles.length > idx) {
+      this.sampleContent.recentArticles.splice(idx, 1);
+      this.toast.info('Removed recommended article.');
+    }
+  }
+
   resetBoilerplate(): void {
+    this.htmlTemplate = `<article class="oz-article-detail {{ CustomClass }}">
+  <div class="oz-article-top-nav">
+    <a href="/blog" class="oz-back-btn">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>All Articles</span>
+    </a>
+  </div>
+
+  <header class="oz-article-header">
+    <div class="oz-article-meta-top">
+      {{#if Category}}<span class="oz-category-badge">{{ Category }}</span>{{/if}}
+      {{#if PublishedDate}}<span class="oz-publish-meta"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>{{/if}}
+      {{#if ReadingTime}}<span class="oz-publish-meta">&bull; <i class="fa-regular fa-clock"></i> {{ ReadingTime }}</span>{{/if}}
+    </div>
+    <h1 class="oz-article-headline">{{ Title }}</h1>
+    {{#if Summary}}<p class="oz-article-lead">{{ Summary }}</p>{{/if}}
+    <div class="oz-author-strip">
+      {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-author-avatar" />{{/if}}
+      <div class="oz-author-info">
+        <span class="oz-author-name">{{ AuthorName }}</span>
+        {{#if AuthorRole}}<span class="oz-author-role">{{ AuthorRole }}</span>{{/if}}
+      </div>
+    </div>
+  </header>
+
+  {{#if CoverImageUrl}}
+  <div class="oz-article-cover">
+    <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-cover-image" />
+  </div>
+  {{/if}}
+
+  <div class="oz-article-layout">
+    <div class="oz-article-body">
+      {{{ Body }}}
+    </div>
+
+    {{#if Tags}}
+    <div class="oz-article-tags">
+      <span class="oz-tags-label"><i class="fa-solid fa-tags"></i> Topics:</span>
+      {{#each Tags}}
+      <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if AuthorBio}}
+    <div class="oz-author-bio-card">
+      <div class="oz-author-bio-avatar-wrap">
+        {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="oz-bio-avatar" />{{/if}}
+      </div>
+      <div class="oz-author-bio-content">
+        <h4 class="oz-bio-name">About {{ AuthorName }}</h4>
+        {{#if AuthorRole}}<span class="oz-bio-role">{{ AuthorRole }}</span>{{/if}}
+        <p class="oz-bio-text">{{ AuthorBio }}</p>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if RecentArticles}}
+    <div class="oz-related-articles-section">
+      <h3 class="oz-related-title">Recommended Reads</h3>
+      <div class="oz-related-grid">
+        {{#each RecentArticles}}
+        <a href="{{ Url }}" class="oz-related-card">
+          {{#if CoverImageUrl}}<div class="oz-related-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}
+          <div class="oz-related-info">
+            {{#if PublishedDate}}<span class="oz-related-date">{{ PublishedDate }}</span>{{/if}}
+            <h5 class="oz-related-headline">{{ Title }}</h5>
+          </div>
+        </a>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="oz-comments-section">
+      <div class="oz-comments-header">
+        <h3 class="oz-comments-title">Discussion &amp; Responses</h3>
+        <p class="oz-comments-desc">Leave a thought, question, or architectural critique on this post.</p>
+      </div>
+      {{ Form "Comment_Submit" }}
+    </div>
+  </div>
+</article>`;
     this.toast.info('Boilerplate reset to default article detail structure.');
   }
 
   resetSampleContent(): void {
     this.sampleContent = {
       title: 'Navigating Multi-Cloud Architecture at Scale',
-      articleHeadline: 'Navigating Multi-Cloud Complexity: A Blueprint for Sovereign Cloud Orchestration',
-      articleLead: 'How global engineering teams maintain governance, zero trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
-      coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
-      content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p>',
+      articleHeadline: 'Navigating Multi-Cloud Architecture at Scale',
+      summary: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+      articleLead: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+      description: 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+      body: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
+      content: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
+      fullDescription: '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
       category: 'Cloud Engineering',
       authorName: 'Alex Vance',
       authorRole: 'Chief Cloud Architect',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      authorBio: 'Specializing in distributed systems, sovereign cloud meshes, and zero-trust container security across global enterprises.',
       publishedDate: 'October 14, 2026',
       readingTime: '8 min read',
+      readTime: '8 min read',
+      coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
       tags: [
-        { name: 'MultiCloud', url: '/tags/multicloud' },
-        { name: 'Architecture', url: '/tags/architecture' },
-        { name: 'Kubernetes', url: '/tags/kubernetes' }
+        { name: 'MultiCloud', url: '/blog/tags/multicloud' },
+        { name: 'Architecture', url: '/blog/tags/architecture' },
+        { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
+        { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
+      ],
+      recentArticles: [
+        {
+          title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+          url: '/blog/resilient-multi-tenant',
+          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80',
+          publishedDate: 'Sep 28, 2026'
+        },
+        {
+          title: 'Automated Compliance Guardrails for Regulated FinTech',
+          url: '/blog/automated-compliance-guardrails',
+          coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
+          publishedDate: 'Sep 15, 2026'
+        }
       ]
     };
     this.toast.info('Blog detail sample values reset to defaults.');
@@ -1220,7 +2003,7 @@ export class BlogDetailVisualComponent implements OnInit {
     this.isSaving = true;
     const payload = {
       name,
-      category: 'blogdetail',
+      category: 'blog_detail',
       variantCode: this.variantCode,
       description: this.description,
       htmlTemplate: this.htmlTemplate,

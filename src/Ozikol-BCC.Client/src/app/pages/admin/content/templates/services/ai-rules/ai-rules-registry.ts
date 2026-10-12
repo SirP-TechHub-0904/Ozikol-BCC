@@ -58,8 +58,11 @@ const CATEGORY_RULES_MAP: Record<string, ICategoryAiRule> = {
   // Blog Detail & Single Articles
   'blog_detail': blogDetailRule,
   'blog-detail': blogDetailRule,
+  'blogdetail': blogDetailRule,
   'article': blogDetailRule,
-  'article-detail': blogDetailRule
+  'article-detail': blogDetailRule,
+  'post_detail': blogDetailRule,
+  'post-detail': blogDetailRule
 };
 
 /**
