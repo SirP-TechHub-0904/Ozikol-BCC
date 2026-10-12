@@ -23,6 +23,20 @@ import { ApiService } from '../../../../../core/services/api.service';
 import { TemplateAiService } from '../services/template-ai.service';
 
 /**
+ * Blueprint archetype preset definition.
+ */
+export interface SectionPreset {
+  name: string;
+  icon?: string;
+  badge?: string;
+  description?: string;
+  html: string;
+  css: string;
+  js?: string;
+  sampleContent?: any;
+}
+
+/**
  * Reusable full-featured visual code and content editor component for CMS template blueprints.
  * Features Monaco Editor with deep code folding (minimizing HTML divs, CSS rulesets, and JS functions),
  * live responsive iframe preview (Desktop, Tablet, Mobile), token insertion, and AI placeholder copilot.
@@ -124,7 +138,7 @@ import { TemplateAiService } from '../services/template-ai.service';
       <div class="editor-workspace">
         <!-- Left Panel: Monaco Code Editor / Mock Data JSON -->
         <div class="editor-pane">
-          <!-- Quick Token Insertion Chips Bar -->
+          <!-- Quick Token Insertion Chips Bar (Row 1: Individual Placeholders) -->
           <div class="token-chips-bar" *ngIf="specificTokens && specificTokens.length > 0 && activeTab === 'html'">
             <span class="chips-label">Insert Token:</span>
             <div class="chips-scroll">
@@ -136,6 +150,27 @@ import { TemplateAiService } from '../services/template-ai.service';
                 [title]="t.label"
               >
                 + {{ t.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Section Samples & Archetypes Bar (Row 2: Full Pre-built Blueprints) -->
+          <div class="sample-presets-bar" *ngIf="samplePresets && samplePresets.length > 0 && activeTab === 'html'">
+            <span class="presets-label">
+              <span class="material-symbols-outlined label-icon">widgets</span>
+              <span>Samples:</span>
+            </span>
+            <div class="chips-scroll">
+              <button
+                type="button"
+                class="preset-chip"
+                *ngFor="let p of samplePresets"
+                (click)="onSamplePresetClick(p)"
+                [title]="p.description || p.name"
+              >
+                <span class="material-symbols-outlined chip-icon" *ngIf="p.icon">{{ p.icon }}</span>
+                <span>{{ p.name }}</span>
+                <span class="preset-pill-badge" *ngIf="p.badge">{{ p.badge }}</span>
               </button>
             </div>
           </div>
@@ -278,6 +313,64 @@ import { TemplateAiService } from '../services/template-ai.service';
             </button>
           </div>
         </div>
+      <!-- Archetype / Preset Confirmation Modal -->
+      <div class="token-modal-backdrop" *ngIf="showPresetConfirmModal" (click)="closePresetModal()">
+        <div class="token-modal-card preset-modal-card" (click)="$event.stopPropagation()">
+          <div class="token-modal-header preset-modal-header">
+            <div class="modal-title-wrap">
+              <span class="material-symbols-outlined token-modal-icon preset-modal-icon">dashboard_customize</span>
+              <div>
+                <h3 class="token-modal-title">Load Section Blueprint: {{ selectedPresetForApply?.name }}</h3>
+                <p class="token-modal-subtitle" *ngIf="selectedPresetForApply?.description">{{ selectedPresetForApply?.description }}</p>
+              </div>
+            </div>
+            <button type="button" class="btn-close-modal" (click)="closePresetModal()" title="Close">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="token-modal-body">
+            <div class="token-options-container">
+              <!-- Choice 1: Complete Archetype (HTML + CSS + Sample Data) -->
+              <div class="token-option-card highlighted-option preset-option-card">
+                <div class="option-header">
+                  <div class="option-info">
+                    <span class="option-tag tag-primary">Complete Blueprint (Recommended)</span>
+                    <h4 class="option-title">Apply HTML + Scoped CSS + Sample Data</h4>
+                    <p class="option-desc">
+                      Instantly configures the Handlebars template, applies beautifully matched scoped CSS styles, and populates sample preview data.
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-option-insert btn-primary-insert" (click)="applyFullPreset()">
+                    <span class="material-symbols-outlined">auto_fix_high</span>
+                    <span>Apply Complete Section</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Choice 2: HTML Markup Only -->
+              <div class="token-option-card">
+                <div class="option-header">
+                  <div class="option-info">
+                    <span class="option-tag tag-neutral">HTML Only</span>
+                    <h4 class="option-title">Insert HTML Markup Only</h4>
+                    <p class="option-desc">Inserts just the HTML structure at your current cursor position without modifying existing CSS or sample data.</p>
+                  </div>
+                  <button type="button" class="btn btn-option-insert btn-neutral-insert" (click)="applyPresetHtmlOnly()">
+                    <span class="material-symbols-outlined">code</span>
+                    <span>Insert HTML Only</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="token-modal-footer">
+            <button type="button" class="btn btn-modal-cancel" (click)="closePresetModal()">
+              Cancel
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -291,6 +384,7 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   @Input() category: string = 'menu';
   @Input() categoryName: string = 'Navigation';
   @Input() specificTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [];
+  @Input() samplePresets: Array<SectionPreset> = [];
   @Input() isEditMode: boolean = false;
   @Input() editorTokens: any = null;
 
@@ -327,6 +421,10 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
   // Token Confirmation Modal State
   showTokenConfirmModal: boolean = false;
   selectedTokenForInsert: { label: string; token: string; htmlSnippet?: string; description?: string } | null = null;
+
+  // Preset / Archetype Confirmation Modal State
+  showPresetConfirmModal: boolean = false;
+  selectedPresetForApply: SectionPreset | null = null;
 
   private monacoHtmlInstance: any = null;
   private monacoCssInstance: any = null;
@@ -474,6 +572,75 @@ export class VisualEditorComponent implements OnInit, OnDestroy, AfterViewInit, 
     this.closeTokenModal();
     this.insertToken(snippetToInsert);
     this.toast.success(`Inserted ${label}!`);
+  }
+
+  /**
+   * Opens the section archetype preset confirmation modal.
+   * @param preset Blueprint preset object with name, html, css, and sampleContent.
+   */
+  onSamplePresetClick(preset: SectionPreset): void {
+    this.selectedPresetForApply = preset;
+    this.showPresetConfirmModal = true;
+  }
+
+  /**
+   * Closes the section archetype preset confirmation modal.
+   */
+  closePresetModal(): void {
+    this.showPresetConfirmModal = false;
+    this.selectedPresetForApply = null;
+  }
+
+  /**
+   * Applies complete archetype blueprint (HTML markup + scoped CSS styles + mock data).
+   */
+  applyFullPreset(): void {
+    if (!this.selectedPresetForApply) return;
+    const preset = this.selectedPresetForApply;
+    this.closePresetModal();
+
+    this.htmlTemplate = preset.html;
+    this.cssStyles = preset.css;
+    this.jsScript = preset.js || '';
+
+    if (preset.sampleContent) {
+      this.sampleContent = JSON.parse(JSON.stringify(preset.sampleContent));
+      try {
+        this.rawJsonText = JSON.stringify(this.sampleContent, null, 2);
+      } catch {
+        this.rawJsonText = '{}';
+      }
+      this.sampleContentChange.emit(this.sampleContent);
+    }
+
+    if (this.monacoHtmlInstance) {
+      this.monacoHtmlInstance.setValue(this.htmlTemplate);
+    }
+    if (this.monacoCssInstance) {
+      this.monacoCssInstance.setValue(this.cssStyles);
+    }
+    if (this.monacoJsInstance) {
+      this.monacoJsInstance.setValue(this.jsScript);
+    }
+
+    this.htmlTemplateChange.emit(this.htmlTemplate);
+    this.cssStylesChange.emit(this.cssStyles);
+    this.jsScriptChange.emit(this.jsScript);
+
+    this.updatePreviewIframe();
+    this.toast.success(`Applied "${preset.name}" blueprint with HTML, Scoped CSS & Sample Data!`);
+  }
+
+  /**
+   * Inserts only the HTML markup of the archetype at the current cursor position.
+   */
+  applyPresetHtmlOnly(): void {
+    if (!this.selectedPresetForApply) return;
+    const html = this.selectedPresetForApply.html;
+    const name = this.selectedPresetForApply.name;
+    this.closePresetModal();
+    this.insertToken(html);
+    this.toast.success(`Inserted ${name} HTML markup!`);
   }
 
   /**

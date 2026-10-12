@@ -2,7 +2,8 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { VisualEditorComponent } from '../../visual-editor/visual-editor.component';
+import { VisualEditorComponent, SectionPreset } from '../../visual-editor/visual-editor.component';
+import { BODY_PRESETS } from './body-presets.data';
 import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
 import { UniversalPreviewModalService } from '../../services/universal-preview-modal.service';
@@ -165,6 +166,7 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             [jsScript]="jsScript"
             [sampleContent]="sampleContent"
             [specificTokens]="bodyTokens"
+            [samplePresets]="bodyPresets"
             [isEditMode]="isEditMode"
             [editorTokens]="editorTokens"
             (htmlTemplateChange)="htmlTemplate = $event"
@@ -1095,17 +1097,33 @@ export class BodyVisualComponent implements OnInit {
 
   jsScript: string = '';
 
-  bodyTokens: Array<{ label: string; token: string }> = [
-    { label: 'Title', token: '{{ Title }}' },
-    { label: 'MiniTitle', token: '{{ MiniTitle }}' },
-    { label: 'Description', token: '{{ Description }}' },
-    { label: 'FullDescription', token: '{{ FullDescription }}' },
-    { label: 'ButtonText', token: '{{ ButtonText }}' },
-    { label: 'ButtonLink', token: '{{ ButtonLink }}' },
-    { label: 'ImageUrl', token: '{{ ImageUrl }}' },
-    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="oz-feature-card">\n    <span class="material-symbols-outlined">{{ Icon }}</span>\n    <h3>{{ Title }}</h3>\n    <p>{{ Description }}</p>\n  </div>\n{{/each}}' },
-    { label: 'Contact Form', token: '{{ Form "Contact_Us" }}' }
+  bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
+    { label: 'Title', token: '{{ Title }}', description: 'Main section heading / title.' },
+    { label: 'MiniTitle', token: '{{ MiniTitle }}', description: 'Eyebrow kicker badge, category label, or card pill.' },
+    { label: 'Description', token: '{{ Description }}', description: 'Section intro description, subtitle, or card excerpt.' },
+    { label: 'FullDescription', token: '{{{ FullDescription }}}', description: 'Extended rich HTML body content for split showcases.' },
+    { label: 'Quote', token: '{{ Qoute }}', description: 'Highlight quote or callout banner narrative.' },
+    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic, hero image, or card thumbnail.' },
+    { label: 'SecondImageUrl', token: '{{ SecondImageUrl }}', description: 'Secondary collage graphic or split visual asset.' },
+    { label: 'VideoUrl', token: '{{ VideoUrl }}', description: 'Direct video file URL (.mp4, .webm).' },
+    { label: 'YoutubeUrlLink', token: '{{ YoutubeUrlLink }}', description: 'External YouTube or Vimeo embed/modal URL.' },
+    { label: 'IconText', token: '{{ IconText }}', description: 'CSS icon class string (e.g. tji-rocket, bi-star, fa-check).' },
+    { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button display label.' },
+    { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination URL.' },
+    { label: 'SecondButtonText', token: '{{ SecondButtonText }}', description: 'Secondary outline button label for dual-CTA sections.' },
+    { label: 'SecondButtonLink', token: '{{ SecondButtonLink }}', description: 'Secondary outline button destination URL.' },
+    { label: 'DirectUrl', token: '{{ DirectUrl }}', description: 'Direct routing link or section anchor.' },
+    {
+      label: 'Cards Repeater',
+      token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ Icon }}</span>\n    <h3>{{ Title }}</h3>\n    <p>{{ Description }}</p>\n    <a href="{{ ButtonLink }}">{{ ButtonText }}</a>\n  </div>\n{{/each}}',
+      description: 'Repeats over all active child items/cards in PageSectionList.'
+    },
+    { label: 'Contact Form', token: '{{ Form "Contact_Us" }}', description: 'Embeds dynamic tenant contact inquiry form.' },
+    { label: 'Service Form', token: '{{ Form "Service_Request" }}', description: 'Embeds dynamic tenant service quotation booking form.' },
+    { label: 'CustomClass', token: '{{ CustomClass }}', description: 'Injects custom CSS modifier class into the root container.' }
   ];
+
+  bodyPresets: SectionPreset[] = BODY_PRESETS;
 
   sampleContent: any = {
     title: 'Engineered For Enterprise Scale And Sub-Millisecond Speed',

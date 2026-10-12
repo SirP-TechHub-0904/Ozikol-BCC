@@ -20,16 +20,22 @@ export interface HydrationContext {
   description?: string;
   fullDescription?: string;
   qoute?: string;
+  quote?: string;
   buttonText?: string;
   buttonLink?: string;
   secondaryButtonText?: string;
   secondaryButtonLink?: string;
+  secondButtonText?: string;
+  secondButtonLink?: string;
   directUrl?: string;
   imageUrl?: string;
   secondImageUrl?: string;
   videoUrl?: string;
   youtubeUrlLink?: string;
+  iconText?: string;
+  backgroundColor?: string;
   customClass?: string;
+  pageSectionLists?: any[];
 
   // Navigation Links & Dropdowns
   navigationMenu?: Array<{
