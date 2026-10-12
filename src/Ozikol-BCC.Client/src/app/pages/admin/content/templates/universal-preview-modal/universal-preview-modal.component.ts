@@ -826,6 +826,13 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
             { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
             { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
           ],
+          blogCategories: custom.blogCategories || [
+            { name: 'Cloud Architecture', count: 14, url: '/blog/categories/cloud-architecture' },
+            { name: 'DevOps & CI/CD', count: 9, url: '/blog/categories/devops' },
+            { name: 'Security & Zero-Trust', count: 7, url: '/blog/categories/security' },
+            { name: 'Microservices & Mesh', count: 12, url: '/blog/categories/microservices' },
+            { name: 'Platform Engineering', count: 5, url: '/blog/categories/platform' }
+          ],
           recentArticles: custom.recentArticles || [
             {
               title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',

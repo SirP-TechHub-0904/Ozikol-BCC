@@ -96,7 +96,27 @@ export function hydrateBlogDetail(template: string, ctx: HydrationContext): stri
     }).join('\n');
   });
 
-  // 5. Article Content & Body (Triple-mustaches first to preserve HTML tags)
+  // 5. Sidebar Categories Loop: {{#each BlogCategories}}
+  const rawCategories = ctx.blogCategories || [];
+  output = resolveDepthAwareIf(output, 'BlogCategories', rawCategories.length > 0);
+  const catMatcher = (openTag: string) => {
+    return /^\{\{#each\s+BlogCategories\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  };
+
+  output = replaceDepthAwareEach(output, catMatcher, (innerTemplate) => {
+    if (rawCategories.length === 0) return '';
+    return rawCategories.map(cat => {
+      let rendered = innerTemplate;
+      rendered = resolveDepthAwareIf(rendered, 'Count', Boolean(cat.count !== undefined && cat.count !== null));
+      rendered = rendered.replace(/\{\{\s*Name\s*\}\}/gi, cat.name || '');
+      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, cat.url || '#');
+      rendered = rendered.replace(/\{\{\s*Count\s*\}\}/gi, String(cat.count ?? ''));
+      rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, cat.customClass || '');
+      return rendered;
+    }).join('\n');
+  });
+
+  // 6. Article Content & Body (Triple-mustaches first to preserve HTML tags)
   const resolvedBody = ctx.body || ctx.fullDescription || ctx.content || ctx.description || '<p>Article content goes here.</p>';
   output = output.replace(/\{\{\{\s*(?:Body|FullDescription|Content)\s*\}\}\}/gi, resolvedBody);
   output = output.replace(/\{\{\s*(?:Body|FullDescription|Content)\s*\}\}/gi, resolvedBody);
