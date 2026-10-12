@@ -2592,13 +2592,16 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Root Container Class: {{{{ CustomClass }}}}
 
 6. Blog Article Details (Category: blog_detail):
-   - Article Header & Meta: Headline {{{{ Article.Title }}}}, Category {{{{ Article.Category }}}}, Date {{{{ Article.PublishedDate }}}}, Read Time {{{{ Article.ReadTime }}}}, Cover Image src=""{{{{ Article.CoverImageUrl }}}}""
-   - Article Content Body: {{{{ Article.Body }}}}
-   - Article Summary / Lead Excerpt: {{{{ Article.Summary }}}}
-   - Author Profile Card: {{{{ Article.AuthorName }}}}, {{{{ Article.AuthorRole }}}}, Avatar src=""{{{{ Article.AuthorAvatarUrl }}}}""
-   - Topic Tags Loop: {{{{#each Article.Tags}}}}<span class=""tag"">{{{{ this }}}}</span>{{{{/each}}}}
-   - Social Sharing Strip: {{{{ PostShareStrip }}}}
-   - Sidebar / Related Reads: {{{{#each RecentArticles}}}} ... {{{{#/each}}}}, {{{{#each BlogCategories}}}} ... {{{{#/each}}}}
+   - Article Header & Meta: Headline {{{{ Title }}}}, Category {{{{#if Category}}}}{{{{ Category }}}}{{{{/if}}}}, Published Date {{{{#if PublishedDate}}}}{{{{ PublishedDate }}}}{{{{/if}}}}, Reading Time {{{{#if ReadingTime}}}}{{{{ ReadingTime }}}}{{{{/if}}}}
+   - Article Cover Image: {{{{#if CoverImageUrl}}}}<img src=""{{{{ CoverImageUrl }}}}"" alt=""{{{{ Title }}}}"" ... />{{{{/if}}}}
+   - Article Content Body: {{{{{{ Body }}}}}} (CRITICAL: MUST use triple braces {{{{{{ Body }}}}}} to allow rich HTML formatting without escaping)
+   - Article Summary / Lead Excerpt: {{{{#if Summary}}}}<p ...>{{{{ Summary }}}}</p>{{{{/if}}}}
+   - Author Profile Card: {{{{ AuthorName }}}}, {{{{#if AuthorRole}}}}{{{{ AuthorRole }}}}{{{{/if}}}}, {{{{#if AuthorBio}}}}{{{{ AuthorBio }}}}{{{{/if}}}}, Avatar src=""{{{{ AuthorAvatarUrl }}}}""
+   - Topic Tags Loop (if tags exist): {{{{#each Tags}}}}<a href=""{{{{ Url }}}}"" class=""..."">#{{{{ Name }}}}</a>{{{{/each}}}}
+   - Comments & Discussion (if comments/reply form is present in input HTML):
+     Replace the <form> ... </form> section with {{{{ Form ""Comment_Submit"" }}}}
+   - Recommended / Recent Reads Loop: {{{{#each RecentArticles}}}}<a href=""{{{{ Url }}}}"" ...><img src=""{{{{ CoverImageUrl }}}}"" ... /><span>{{{{ PublishedDate }}}}</span><h4>{{{{ Title }}}}</h4></a>{{{{/each}}}}
+   - Back to Blog Navigation: <a href=""/blog"" ...>All Articles</a>
    - Custom Class: {{{{ CustomClass }}}}
 
 7. Breadcrumbs & Page Banners (Category: breadcrumb):

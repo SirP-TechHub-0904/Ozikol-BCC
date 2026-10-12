@@ -9,16 +9,25 @@ export class BlogDetailAiRule implements ICategoryAiRule {
 
   readonly targetPlaceholders: string[] = [
     '{{ Title }}',
+    '{{ ArticleHeadline }}',
     '{{ Summary }}',
-    '{{ FullDescription }}',
+    '{{ ArticleLead }}',
+    '{{{ Body }}}',
+    '{{{ FullDescription }}}',
+    '{{{ Content }}}',
     '{{ Category }}',
     '{{ PublishedDate }}',
+    '{{ ReadingTime }}',
+    '{{ CoverImageUrl }}',
+    '{{ ImageUrl }}',
     '{{ AuthorName }}',
     '{{ AuthorRole }}',
     '{{ AuthorAvatarUrl }}',
+    '{{ AuthorAvatar }}',
     '{{ AuthorBio }}',
-    '{{ ImageUrl }}',
     '{{#each Tags}}',
+    '{{ Name }}',
+    '{{ Url }}',
     '{{#each RecentArticles}}',
     '{{ Form "Comment_Submit" }}',
     '{{ CustomClass }}'
@@ -26,41 +35,79 @@ export class BlogDetailAiRule implements ICategoryAiRule {
 
   buildSurgicalPrompt(context: AiRuleContext): string {
     return `You are a specialized surgical code transformer for Ozikol BCC CMS Single Article / Blog Post Details.
-Your mission is to replace static article text, author profiles, and comment sections with canonical Ozikol Handlebars tokens.
+Your mission is to replace static article headlines, metadata, editorial body content, author profile cards, tag clouds, and comment sections with canonical Ozikol Handlebars tokens.
 
 TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
-1. Article Headline & Metadata:
-   - Article Title / H1: {{ Title }}
-   - Category / Badge: {{ Category }}
-   - Published Date: {{ PublishedDate }}
-   - Article Featured Image: {{#if ImageUrl}}<img src="{{ ImageUrl }}" alt="{{ Title }}" />{{/if}}
+1. Article Headline & Meta:
+   - Category Badge / Pill: {{#if Category}}<span class="[original category classes]">{{ Category }}</span>{{/if}}
+   - Published Date: {{#if PublishedDate}}<span class="[original date classes]">{{ PublishedDate }}</span>{{/if}}
+   - Estimated Reading Time: {{#if ReadingTime}}<span class="[original time classes]">{{ ReadingTime }}</span>{{/if}}
+   - Main Article Headline (H1 / Title): <h1 class="[original title classes]">{{ Title }}</h1>
+     * Note: If animation libraries (GSAP, SplitText) split words into character divs (e.g. <div>I</div><div>n</div>...), collapse them cleanly into {{ Title }}.
+   - Lead Narrative / Subtitle / Excerpt:
+     {{#if Summary}}
+       <p class="[original lead classes]">{{ Summary }}</p>
+     {{/if}}
 
-2. Article Body:
-   - Article Excerpt / Intro: {{ Summary }}
-   - Full Article Body Content: {{ FullDescription }}
+2. Featured Cover Image:
+   Look for the hero/header cover image for the article:
+   {{#if CoverImageUrl}}
+     <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="[original image classes]" />
+   {{/if}}
+   * Or if styled as a CSS background-image: style="background-image: url('{{ CoverImageUrl }}');"
 
-3. Author Box / Biography:
-   - Author Name: {{ AuthorName }}
-   - Author Role / Title: {{ AuthorRole }}
-   - Author Avatar: {{#if AuthorAvatarUrl}}<img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" />{{/if}}
-   - Author Bio: {{ AuthorBio }}
+3. Editorial Article Body:
+   Look for the main reading container (.entry-content, .post-content, .article-body, .blog-details-content, etc.).
+   Replace the static paragraphs, sample text, and mock article copy with the unescaped body token:
+   <div class="[original body container classes]">
+     {{{ Body }}}
+   </div>
 
-4. Tags & Related Posts:
-   - Tags: {{#each Tags}}<a href="{{ Url }}" class="[tag classes]">{{ Name }}</a>{{/each}}
-   - Related/Recent Articles:
-     {{#each RecentArticles}}
-       <li><a href="{{ Url }}">{{ Title }}</a></li>
-     {{/each}}
+4. Author Profile Card / Signature Strip:
+   Look for author byline, author box, or writer profile card:
+   - Author Avatar Image:
+     {{#if AuthorAvatarUrl}}
+       <img src="{{ AuthorAvatarUrl }}" alt="{{ AuthorName }}" class="[original avatar classes]" />
+     {{/if}}
+   - Author Name: <span class="[original author name classes]">{{ AuthorName }}</span>
+   - Author Role / Title:
+     {{#if AuthorRole}}<span class="[original role classes]">{{ AuthorRole }}</span>{{/if}}
+   - Author Biography:
+     {{#if AuthorBio}}<p class="[original bio classes]">{{ AuthorBio }}</p>{{/if}}
 
-5. Comments Section / Submission Form:
-   If a comment form exists, inject {{ Form "Comment_Submit" }}.
+5. Tags Taxonomy Cloud:
+   Look for topic tags or category pills strip. Keep ONLY ONE representative tag pill inside {{#each Tags}} and discard static duplicates:
+   {{#each Tags}}
+     <a href="{{ Url }}" class="[original tag classes]">#{{ Name }}</a>
+   {{/each}}
 
-6. Root Container:
-   Ensure the root article wrapper includes class "{{ CustomClass }}".
+6. Related / Recent Articles (if present in sidebar or bottom grid):
+   Look for repeating related/recent article items. Keep ONLY ONE representative card inside {{#each RecentArticles}} and discard duplicates:
+   {{#each RecentArticles}}
+     <div class="[original related card classes]">
+       {{#if CoverImageUrl}}<img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="[original thumbnail classes]" />{{/if}}
+       <a href="{{ Url }}" class="[original link classes]">{{ Title }}</a>
+       {{#if PublishedDate}}<span class="[original date classes]">{{ PublishedDate }}</span>{{/if}}
+     </div>
+   {{/each}}
+
+7. Comments Section / Submission Form (if present):
+   Look for the comment list and response form block (e.g. <div class="comments-area">, <form class="comment-form">):
+   - Keep the surrounding container card and replace/augment the form with:
+     {{ Form "Comment_Submit" }}
+
+8. Back to Articles / Navigation Button (if present):
+   If there is a return link to the blog feed (e.g. "Back to Blog", "All Articles"):
+   <a href="/blog" class="[original back link classes]">[original text & icons]</a>
+
+9. Root Container:
+   Ensure the root article/section wrapper element includes class "{{ CustomClass }}".
 
 MANDATORY RULES:
-- 100% PRESERVATION: Keep EVERY existing CSS class, ID, layout container, and typography verbatim.
-- ZERO INVENTIONS: Do not add elements not present in the original HTML.
-- Return ONLY the transformed raw HTML. No markdown code blocks, no explanations.`;
+- 100% PRESERVATION: Keep EVERY single existing CSS class, ID, HTML tag, attribute, style, and structure from the input HTML exactly as-is.
+- ZERO INVENTIONS: DO NOT inject or invent any element (such as comments, sidebars, or widgets) that is not in the input HTML.
+- ZERO GENERIC OVERWRITES: Keep all original CSS classes verbatim.
+- STRIP RUNTIME ANIMATION INLINE STYLES: Strip library runtime styles ('transform: translate(...)', 'opacity: 1', 'visibility: inherit') while keeping layout classes.
+- Return ONLY the transformed raw HTML. No markdown code blocks, no explanations, no <style> tags.`;
   }
 }

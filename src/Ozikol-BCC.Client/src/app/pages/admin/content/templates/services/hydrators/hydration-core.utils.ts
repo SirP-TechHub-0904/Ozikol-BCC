@@ -120,8 +120,22 @@ export interface HydrationContext {
   authorName?: string;
   authorBio?: string;
   authorAvatarUrl?: string;
+  authorAvatar?: string;
   authorRole?: string;
+  authorTitle?: string;
   publishedDate?: string;
+  publishDate?: string;
+  readingTime?: string;
+  readTime?: string;
+  coverImageUrl?: string;
+  category?: string;
+  summary?: string;
+  articleHeadline?: string;
+  articleLead?: string;
+  content?: string;
+  body?: string;
+  article?: any;
+  [key: string]: any;
 
   // Category Pages & Tagged Pages
   categoryPages?: Record<string, Array<{ title: string; url: string; sortOrder?: number; publish?: boolean; customClass?: string }>>;
@@ -394,6 +408,28 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
       return `<form class="oz-injected-form oz-newsletter-form d-flex gap-2" onsubmit="event.preventDefault();">
   <input type="email" class="form-control" placeholder="Enter your work email" required />
   <button type="submit" class="btn btn-primary fw-semibold text-nowrap">Subscribe</button>
+</form>`;
+    }
+
+    if (formKey === 'comment_submit' || formKey === 'comment' || formKey === 'reply' || formKey === 'leave_comment') {
+      return `<form class="oz-injected-form oz-comment-form" onsubmit="event.preventDefault();">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Your Name *</label>
+      <input type="text" class="form-control" placeholder="e.g. Sarah Jenkins" required />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Email Address *</label>
+      <input type="email" class="form-control" placeholder="name@example.com" required />
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-semibold">Your Thoughts / Comment *</label>
+      <textarea class="form-control" rows="4" placeholder="Join the discussion or share your perspective..." required></textarea>
+    </div>
+    <div class="col-12 mt-3">
+      <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">Post Comment</button>
+    </div>
+  </div>
 </form>`;
     }
 

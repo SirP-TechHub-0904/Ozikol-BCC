@@ -772,7 +772,6 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
         };
 
       case 'blog':
-      case 'blog_detail':
         return {
           ...custom,
           title: custom.title || p.title || 'Platform Insights & Architectural Dispatches',
@@ -796,18 +795,51 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
             { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
             { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
             { name: 'Compliance', url: '/blog/tag/compliance' }
+          ]
+        };
+
+      case 'blog_detail':
+        return {
+          ...custom,
+          title: custom.title || custom.articleHeadline || p.title || 'Navigating Multi-Cloud Architecture at Scale',
+          articleHeadline: custom.articleHeadline || custom.title || 'Navigating Multi-Cloud Architecture at Scale',
+          summary: custom.summary || custom.articleLead || custom.description || 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+          articleLead: custom.articleLead || custom.summary || 'How global engineering teams maintain governance, zero-trust security, and low-latency continuous deployment across AWS, Azure, and private Kubernetes clusters.',
+          description: custom.description || custom.summary || '',
+          body: custom.body || custom.content || custom.fullDescription || '<p>Modern enterprise platforms increasingly face the requirement of sovereign data control, zero-egress billing models, and high availability across disparate multi-cloud ecosystems.</p><h2>The Multi-Cloud Shift</h2><p>By treating each cloud boundary as an untrusted peer node connected via encrypted service mesh fabrics, organizations can decouple workload logic from vendor-specific infrastructure APIs.</p><blockquote>"Architectural resilience is not measured by uptime on a single cloud, but by how transparently state synchronizes when an entire provider degrades."</blockquote><p>Implementing continuous cryptographic validation and distributed telemetry across regions provides operators with millisecond observability into network latency and data locality.</p>',
+          content: custom.content || custom.body || '',
+          fullDescription: custom.fullDescription || custom.body || '',
+          category: custom.category || 'Cloud Engineering',
+          publishedDate: custom.publishedDate || 'October 14, 2026',
+          readingTime: custom.readingTime || custom.readTime || '8 min read',
+          readTime: custom.readTime || custom.readingTime || '8 min read',
+          coverImageUrl: custom.coverImageUrl || custom.imageUrl || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+          imageUrl: custom.imageUrl || custom.coverImageUrl || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+          authorName: custom.authorName || 'Alex Vance',
+          authorRole: custom.authorRole || 'Chief Cloud Architect',
+          authorAvatarUrl: custom.authorAvatarUrl || custom.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          authorAvatar: custom.authorAvatar || custom.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          authorBio: custom.authorBio || 'Specializing in distributed systems, sovereign cloud meshes, and zero-trust container security across global enterprises.',
+          tags: custom.tags || [
+            { name: 'MultiCloud', url: '/blog/tags/multicloud' },
+            { name: 'Architecture', url: '/blog/tags/architecture' },
+            { name: 'Kubernetes', url: '/blog/tags/kubernetes' },
+            { name: 'ZeroTrust', url: '/blog/tags/zerotrust' }
           ],
-          article: custom.article || {
-            title: custom.title || p.title || 'Accelerating Enterprise Scalability with Hybrid Cloud Architecture',
-            category: 'Technology & Cloud',
-            publishedDate: 'September 14, 2026',
-            readTime: '5 min read',
-            coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
-            body: '<p class="lead">Organizations are increasingly challenged to balance agility, resilience, and operational security.</p><p>By transitioning toward unified hybrid cloud infrastructures, forward-thinking enterprises establish a modular foundation capable of horizontal scaling.</p>',
-            tags: ['Cloud Architecture', 'Security', 'Scalability'],
-            authorName: 'Dr. Jennifer Miller',
-            authorRole: 'Principal Cloud Strategist'
-          }
+          recentArticles: custom.recentArticles || [
+            {
+              title: 'Architecting Resilient Multi-Tenant Cloud Ecosystems',
+              url: '/blog/resilient-multi-tenant',
+              coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80',
+              publishedDate: 'Sep 28, 2026'
+            },
+            {
+              title: 'Automated Compliance Guardrails for Regulated FinTech',
+              url: '/blog/automated-compliance-guardrails',
+              coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80',
+              publishedDate: 'Sep 15, 2026'
+            }
+          ]
         };
 
       default:
