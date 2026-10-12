@@ -4931,6 +4931,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("IsLive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsWorkspaceInitialized")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LinkedInUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -5092,6 +5095,13 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<string>("WorkingHours")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("WorkspaceInitializationMode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("WorkspaceInitializedUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("YouTubeUrl")
                         .HasMaxLength(500)

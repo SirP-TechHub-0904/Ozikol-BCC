@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { AiAssistantComponent } from '../../shared/components/ai-assistant/ai-assistant.component';
 import { AiAssistantContextService } from '../../core/services/ai-assistant-context.service';
+import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
 
 interface TaskTab {
   title: string;
@@ -24,7 +25,7 @@ interface PinnedItem {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, AiAssistantComponent],
+  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isAdmin ? 'console' : 'workspace'">
@@ -981,6 +982,14 @@ interface PinnedItem {
           </ul>
         </div>
       </div>
+    </div>
+
+    <!-- First-Run Workspace Setup & Default Website Seeder Modal -->
+    <app-first-run-setup-modal
+      [isOpen]="showFirstRunModal"
+      [brandName]="brandName"
+      (completed)="onFirstRunCompleted($event)">
+    </app-first-run-setup-modal>
   `,
   styles: [`
     :host {
@@ -1478,6 +1487,7 @@ export class AdminLayoutComponent implements OnInit {
     return false;
   }
   showHelpModal = false;
+  showFirstRunModal = false;
 
   currentRoute = '/admin/dashboard';
   websiteMode: string = localStorage.getItem('tenant_website_mode') || 'standard';
@@ -1551,6 +1561,7 @@ export class AdminLayoutComponent implements OnInit {
     this.loadTenantInfo();
     this.loadNotificationFeed();
     this.loadSidebarForms();
+    this.checkFirstRunSetupStatus();
 
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
@@ -1965,5 +1976,51 @@ export class AdminLayoutComponent implements OnInit {
   onLogout(): void {
     localStorage.removeItem('access_token');
     this.router.navigate(['/auth/login']);
+  }
+
+  /**
+   * Checks if the workspace has been initialized with default or blank settings.
+   * If not, presents the first-run onboarding setup wizard modal to administrators.
+   */
+  checkFirstRunSetupStatus(): void {
+    // 1. Instant local/session guard: Avoid unnecessary network checks once verified in current browser session
+    if (sessionStorage.getItem('bcp_setup_modal_dismissed') === 'true' ||
+        localStorage.getItem('bcp_workspace_initialized') === 'true') {
+      return;
+    }
+
+    // 2. Only administrators should run or configure workspace initial seeding
+    if (!this.isAdmin) {
+      return;
+    }
+
+    this.api.get<any>('ContentApi/workspace/setup-status').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && res.data) {
+          if (res.data.isInitialized) {
+            // Workspace already has content or has completed initialization previously
+            localStorage.setItem('bcp_workspace_initialized', 'true');
+            this.showFirstRunModal = false;
+          } else {
+            // Pristine new workspace: present modal
+            this.showFirstRunModal = true;
+          }
+        }
+      },
+      error: (err) => {
+        console.warn('[AdminLayout] Failed to query workspace initialization status:', err);
+      }
+    });
+  }
+
+  /**
+   * Handles completion of the first-run workspace setup wizard.
+   * @param mode Selected setup mode ('default' or 'blank')
+   */
+  onFirstRunCompleted(mode: 'default' | 'blank'): void {
+    this.showFirstRunModal = false;
+    if (mode === 'default') {
+      this.loadSidebarForms();
+    }
   }
 }
