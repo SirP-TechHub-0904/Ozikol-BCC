@@ -313,6 +313,8 @@ export interface SectionPreset {
             </button>
           </div>
         </div>
+      </div>
+
       <!-- Archetype / Preset Confirmation Modal -->
       <div class="token-modal-backdrop" *ngIf="showPresetConfirmModal" (click)="closePresetModal()">
         <div class="token-modal-card preset-modal-card" (click)="$event.stopPropagation()">
