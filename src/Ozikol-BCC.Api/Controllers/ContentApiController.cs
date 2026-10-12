@@ -2598,11 +2598,12 @@ CANONICAL OZIKOL TOKENS SPECIFICATION (STRICT RULE: NEVER INVENT NON-EXISTENT TO
    - Article Content Body: {{{{{{ Body }}}}}} (CRITICAL: MUST use triple braces {{{{{{ Body }}}}}} to allow rich HTML formatting without escaping). If paragraphs and headings are direct children without a container, wrap them in <div class=""post-body"">{{{{{{ Body }}}}}}</div>.
    - Article Summary / Lead Excerpt: {{{{#if Summary}}}}<p class=""lead"">{{{{ Summary }}}}</p>{{{{/if}}}}
    - Author Profile Card: {{{{ AuthorName }}}}, {{{{#if AuthorRole}}}}{{{{ AuthorRole }}}}{{{{/if}}}}, {{{{#if AuthorBio}}}}{{{{ AuthorBio }}}}{{{{/if}}}}, Avatar src=""{{{{ AuthorAvatarUrl }}}}""
-   - Topic Tags Loop (if tags exist): Wrap entire tags container in {{{{#if Tags}}}}...{{{{/if}}}}: {{{{#if Tags}}}}<div class=""[original]""><h4 ...>Tags:</h4><div ...>{{{{#each Tags}}}}<a href=""{{{{ Url }}}}"" class=""..."">#{{{{ Name }}}}</a>{{{{/each}}}}</div></div>{{{{/if}}}}
+   - Topic Tags vs Social Share: If tags share a row with Social Share buttons, wrap ONLY the tag cloud wrapper in {{{{#if Tags}}}}...{{{{/if}}}} (never the shared row), so social share links remain visible when tags are empty.
    - Comments & Discussion (if comments/reply block is present in input HTML):
      * Discard all static mock visitor comment lists (<ol class=""comment-list"">, <div class=""post-comments"">, dummy commenters, replies).
      * Replace the static submission <form> ... </form> section with {{{{ Form ""Comment_Submit"" }}}}
-   - Recommended / Recent Reads Loop: {{{{#each RecentArticles}}}}<a href=""{{{{ Url }}}}"" ...><img src=""{{{{ CoverImageUrl }}}}"" ... /><span>{{{{ PublishedDate }}}}</span><h4>{{{{ Title }}}}</h4></a>{{{{/each}}}}
+   - Sidebar & ScrollTrigger: If a <div class=""pin-spacer"" ...> wrapper exists around the sidebar, strip it and keep the inner sidebar directly inside its column.
+   - Sidebar Widgets: Wrap in {{{{#if RecentArticles}}}}, {{{{#if BlogCategories}}}}, {{{{#if Tags}}}} respectively.
    - Back to Blog Navigation: <a href=""/blog"" ...>All Articles</a>
    - Custom Class: {{{{ CustomClass }}}}
 
