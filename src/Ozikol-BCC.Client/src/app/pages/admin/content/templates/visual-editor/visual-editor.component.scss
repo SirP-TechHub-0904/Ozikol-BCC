@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .visual-editor-container {
   display: flex;
   flex-direction: column;
@@ -203,11 +208,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   background-color: #111827;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  overflow: hidden;
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .chips-label {
@@ -218,52 +224,55 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+  user-select: none;
 }
 
 .chips-scroll {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 2px 2px 5px 2px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  padding: 4px 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
   &::-webkit-scrollbar {
-    height: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.22);
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.45);
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 
 .token-chip {
-  padding: 4px 10px;
-  background-color: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 5px 12px;
+  background-color: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.28);
   color: #38bdf8;
-  border-radius: 5px;
-  font-size: 11px;
+  border-radius: 6px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  user-select: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 5;
   transition: all 0.15s ease;
 
   &:hover {
-    background-color: rgba(56, 189, 248, 0.22);
+    background-color: rgba(56, 189, 248, 0.28);
     color: #ffffff;
     border-color: #38bdf8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
@@ -271,11 +280,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   background: linear-gradient(90deg, #0e1726 0%, #111c30 100%);
-  border-bottom: 1px solid rgba(129, 140, 248, 0.16);
-  overflow: hidden;
+  border-bottom: 1px solid rgba(129, 140, 248, 0.18);
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .presets-label {
@@ -289,6 +299,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+  user-select: none;
 
   .label-icon {
     font-size: 14px;
@@ -300,20 +311,24 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 11px;
-  background: rgba(99, 102, 241, 0.14);
-  border: 1px solid rgba(129, 140, 248, 0.3);
+  padding: 5px 13px;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(129, 140, 248, 0.35);
   color: #e0e7ff;
-  border-radius: 5px;
-  font-size: 11px;
+  border-radius: 6px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  user-select: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 5;
   transition: all 0.18s ease;
 
   .chip-icon {
-    font-size: 13px;
+    font-size: 14px;
     color: #818cf8;
     transition: color 0.18s ease;
   }
@@ -330,24 +345,29 @@
   }
 
   &:hover {
-    background: rgba(99, 102, 241, 0.28);
+    background: rgba(99, 102, 241, 0.35);
     border-color: #818cf8;
     color: #ffffff;
     transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.22);
+    box-shadow: 0 3px 12px rgba(99, 102, 241, 0.28);
 
     .chip-icon {
       color: #ffffff;
     }
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
 .monaco-wrapper {
   flex: 1;
   position: relative;
-  min-height: 520px;
+  min-height: 560px;
+  height: 560px;
 
-  &.hidden { display: none; }
+  &.hidden { display: none !important; }
 }
 
 .monaco-host {
@@ -356,6 +376,8 @@
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* Data Inspector */
