@@ -1,0 +1,28 @@
+.oz-stats-section {
+  padding: 64px 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #ffffff;
+}
+.oz-container { max-width: 1200px; margin: 0 auto; }
+.oz-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.oz-stat-card {
+  text-align: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+.oz-stat-icon { font-size: 32px; color: #38bdf8; margin-bottom: 12px; }
+.oz-stat-number { font-size: 40px; font-weight: 900; margin: 0 0 6px 0; color: #ffffff; letter-spacing: -0.02em; }
+.oz-stat-label { font-size: 13.5px; color: #94a3b8; margin: 0; font-weight: 500; }
+@media (max-width: 900px) {
+  .oz-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+  .oz-stats-grid { grid-template-columns: 1fr; }
+}
