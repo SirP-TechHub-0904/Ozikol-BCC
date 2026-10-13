@@ -140,13 +140,6 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   });
 
   // 4. Tagged Pages Loop: {{#each TaggedPages "..."}}, {{#each TaggedPages}}, and {{#each QuickLinks}}
-  const defaultTaggedPages: Array<{ title: string; url: string; sortOrder?: number; publish?: boolean; customClass?: string }> = [
-    { title: 'Release Notes', url: '/releases' },
-    { title: 'System Status', url: '/status' },
-    { title: 'Security Advisories', url: '/security' },
-    { title: 'Knowledge Base', url: '/kb' }
-  ];
-
   const taggedPagesParamMatcher = (openTag: string) => {
     const match = openTag.match(/\{\{#each\s+TaggedPages\s+["']([^"']+)["']\}\}/i);
     return match ? { matched: true, params: match[1] } : null;
@@ -158,7 +151,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
       ? ctx.taggedPages[key]
       : (ctx.taggedPages && ctx.taggedPages['quicklinks'] && ctx.taggedPages['quicklinks'].length > 0)
         ? ctx.taggedPages['quicklinks']
-        : defaultTaggedPages;
+        : [];
 
     return pages.map((page, idx) => {
       let rendered = innerTemplate;
@@ -178,7 +171,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
     const firstTag = ctx.taggedPages ? Object.keys(ctx.taggedPages)[0] : null;
     const pages = (firstTag && ctx.taggedPages?.[firstTag] && ctx.taggedPages[firstTag].length > 0)
       ? ctx.taggedPages[firstTag]
-      : defaultTaggedPages;
+      : (ctx.taggedPages && ctx.taggedPages['quicklinks'] ? ctx.taggedPages['quicklinks'] : []);
 
     return pages.map((page, idx) => {
       let rendered = innerTemplate;

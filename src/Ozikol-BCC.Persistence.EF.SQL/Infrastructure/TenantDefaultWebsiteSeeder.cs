@@ -345,7 +345,7 @@ public static class TenantDefaultWebsiteSeeder
                 Id = Guid.NewGuid(),
                 Title = "Product",
                 FooterDisplayTitle = "Products",
-                MenuSortOrder = 4,
+                MenuSortOrder = 1,
                 MenuPosition = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle,
                 ShowInMenu = true,
                 ShowInFooter = false,
@@ -382,13 +382,28 @@ public static class TenantDefaultWebsiteSeeder
                 }
 
                 var zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
-                if (p.Zone.Equals("middle", StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(p.Zone))
                 {
-                    zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+                    if (p.Zone.Equals("middle", StringComparison.OrdinalIgnoreCase))
+                    {
+                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+                    }
+                    else if (p.Zone.Equals("last", StringComparison.OrdinalIgnoreCase))
+                    {
+                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
+                    }
                 }
-                else if (p.Zone.Equals("last", StringComparison.OrdinalIgnoreCase))
+                else
                 {
-                    zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
+                    var fallbackSlug = directUrl.ToLowerInvariant();
+                    if (fallbackSlug is "career" or "blog")
+                    {
+                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+                    }
+                    else if (fallbackSlug is "contact" or "contact-us")
+                    {
+                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
+                    }
                 }
 
                 bool isCta = p.IsMenuCTA;
@@ -401,7 +416,7 @@ public static class TenantDefaultWebsiteSeeder
                 int topBarOrder = slugLower == "faq" ? 1 : (slugLower == "support" ? 2 : (slugLower == "documentation" ? 3 : p.SortOrder));
 
                 bool showInMain = !isHome && !isCta && !isLegalDoc && categoryId == null && !showInTopBar && p.MenuPosition.Equals("header", StringComparison.OrdinalIgnoreCase);
-                int mainOrder = slugLower == "about" ? 1 : (slugLower == "career" ? 3 : (slugLower == "blog" ? 5 : (slugLower is "contact" or "contact-us" ? 6 : p.SortOrder)));
+                int mainOrder = slugLower == "about" ? 1 : (slugLower == "career" ? 2 : (slugLower == "blog" ? 3 : (slugLower is "contact" or "contact-us" ? 1 : p.SortOrder)));
 
                 bool showInDropdown = !isCta && !isLegalDoc && categoryId != null;
                 int dropdownOrder = slugLower is "it" or "ai-agent" ? 1 : (slugLower is "hospital" or "machinery" or "machineries" ? 2 : (slugLower == "infrastructure" ? 3 : p.SortOrder));
