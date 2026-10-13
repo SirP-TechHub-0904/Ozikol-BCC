@@ -1579,30 +1579,8 @@ export class FooterVisualComponent implements OnInit {
         }
       },
       error: () => {
-        // Fallback: fetch directly from public blueprint files in client web root
-        this.loadStaticBlueprintFallback(toastSuccess);
+        this.toast.error('Failed to load Footer blueprint from central API.');
       }
-    });
-  }
-
-  private loadStaticBlueprintFallback(toastSuccess?: string): void {
-    Promise.all([
-      fetch('/blueprints/footer/template.html').then(r => r.text()),
-      fetch('/blueprints/footer/styles.css').then(r => r.text()),
-      fetch('/blueprints/footer/script.js').then(r => r.text()).catch(() => ''),
-      fetch('/blueprints/footer/sample-content.json').then(r => r.json()).catch(() => ({}))
-    ]).then(([html, css, js, json]) => {
-      this.htmlTemplate = html || '';
-      this.cssStyles = css || '';
-      this.jsScript = js || '';
-      if (json && Object.keys(json).length > 0) {
-        this.sampleContent = json;
-      }
-      if (toastSuccess) {
-        this.toast.info(toastSuccess);
-      }
-    }).catch(() => {
-      this.toast.error('Failed to load Footer blueprint files.');
     });
   }
 
@@ -1626,13 +1604,7 @@ export class FooterVisualComponent implements OnInit {
         }
       },
       error: () => {
-        fetch('/blueprints/footer/sample-content.json')
-          .then(r => r.json())
-          .then(json => {
-            this.sampleContent = json;
-            this.toast.info('Footer sample values reset to file defaults.');
-          })
-          .catch(() => this.toast.error('Failed to reset sample content.'));
+        this.toast.error('Failed to reset sample content from central API.');
       }
     });
   }

@@ -277,7 +277,8 @@
           "title": "About Our Organization",
           "miniTitle": "OUR MISSION & ETHOS",
           "description": "Pioneering sovereign digital infrastructure so every organization can operate with security and autonomy.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -339,7 +340,8 @@
           "title": "Information Technology Services",
           "miniTitle": "ENTERPRISE IT",
           "description": "End-to-end IT systems modernization, container orchestration, and multi-region network management.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -401,7 +403,8 @@
           "title": "Healthcare & Clinical Systems",
           "miniTitle": "HEALTHCARE ARCHITECTURE",
           "description": "Mission-critical clinical database isolation, encrypted medical imaging, and HIPAA-certified compliance.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -447,7 +450,8 @@
           "title": "Planetary Cloud Infrastructure",
           "miniTitle": "SOVEREIGN COMPUTE",
           "description": "Edge networks engineered for extreme throughput, zero vendor lock-in, and full database sovereignty.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -501,6 +505,7 @@
       "menuPosition": "header",
       "zone": "middle",
       "category": null,
+      "tags": "quicklinks",
       "isPublished": true,
       "sections": [
         {
@@ -509,7 +514,8 @@
           "title": "Build the Future With Us",
           "miniTitle": "CAREERS & CULTURE",
           "description": "We are looking for passionate engineers, architects, and problem solvers to redefine enterprise cloud systems.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -567,6 +573,7 @@
       "menuPosition": "header",
       "zone": "middle",
       "category": "Product",
+      "tags": "quicklinks",
       "isPublished": true,
       "sections": [
         {
@@ -575,7 +582,8 @@
           "title": "Autonomous AI Agents",
           "miniTitle": "COGNITIVE ARCHITECTURE",
           "description": "Deploy self-governing AI agents with strict security guardrails, private token pools, and sovereign memory.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -629,6 +637,7 @@
       "menuPosition": "header",
       "zone": "middle",
       "category": "Product",
+      "tags": "quicklinks",
       "isPublished": true,
       "sections": [
         {
@@ -637,7 +646,8 @@
           "title": "Machineries & Industrial Automation",
           "miniTitle": "HARDWARE & IOT",
           "description": "Real-time edge control, telemetry streams, and automated diagnostics for industrial machinery.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -683,7 +693,8 @@
           "title": "News, Insights & Articles",
           "miniTitle": "PUBLICATIONS",
           "description": "Expert engineering analysis, architectural deep-dives, and strategic organizational bulletins.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -708,6 +719,7 @@
       "menuPosition": "header",
       "zone": "last",
       "category": null,
+      "tags": "quicklinks",
       "isPublished": true,
       "sections": [
         {
@@ -716,7 +728,8 @@
           "title": "Get in Touch With Our Team",
           "miniTitle": "WE ARE HERE TO HELP",
           "description": "Whether you are planning a migration or seeking enterprise advice, our engineers are ready to assist.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -739,6 +752,7 @@
       "menuPosition": "topbar",
       "zone": "top",
       "category": null,
+      "tags": "quicklinks",
       "isPublished": true,
       "sections": [
         {
@@ -747,7 +761,8 @@
           "title": "Frequently Asked Questions",
           "miniTitle": "HELP & ANSWERS",
           "description": "Find clear answers to common inquiries regarding architecture, billing, and system reliability.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -804,7 +819,8 @@
           "title": "Customer Support & Help Desk",
           "miniTitle": "24/7 SUPPORT",
           "description": "Reach our dedicated site reliability engineers and customer support desk.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -835,7 +851,8 @@
           "title": "Technical Documentation",
           "miniTitle": "DEVELOPER PORTAL",
           "description": "API references, deployment manifests, security protocols, and integration guides.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -890,7 +907,8 @@
           "title": "Terms of Service",
           "miniTitle": "LEGAL COMPLIANCE",
           "description": "Effective Date: October 12, 2026. Official terms governing your platform access and service utilization.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -921,7 +939,8 @@
           "title": "Privacy Policy",
           "miniTitle": "DATA PROTECTION",
           "description": "Effective Date: October 12, 2026. How we collect, safeguard, and isolate your organizational data.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,
@@ -952,7 +971,8 @@
           "title": "Cookie & Session Policy",
           "miniTitle": "BROWSER STORAGE",
           "description": "Effective Date: October 12, 2026. Transparent details on session tokens, security cookies, and user preferences.",
-          "lists": []
+          "lists": [],
+          "imageUrl": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1600&q=80"
         },
         {
           "sortOrder": 2,

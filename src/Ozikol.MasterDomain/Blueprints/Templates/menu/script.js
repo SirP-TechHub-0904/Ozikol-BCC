@@ -2,17 +2,18 @@
   function initNav() {
     var toggleBtn = document.getElementById('ozNavToggleBtn') || document.querySelector('.oz-nav-toggler');
     var drawer = document.getElementById('ozNavDrawer');
-    if (!toggleBtn || !drawer) return;
 
-    // Toggle Mobile Drawer
-    toggleBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var isOpen = drawer.classList.toggle('active');
-      toggleBtn.classList.toggle('open', isOpen);
-      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
+    // 1. Toggle Mobile Drawer
+    if (toggleBtn && drawer) {
+      toggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = drawer.classList.toggle('active');
+        toggleBtn.classList.toggle('open', isOpen);
+        toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+    }
 
-    // Mobile Dropdown Click Accordion Toggle
+    // 2. Mobile Dropdown Click Accordion Toggle
     var dropdownToggles = document.querySelectorAll('.oz-dropdown-toggle');
     dropdownToggles.forEach(function(toggle) {
       toggle.addEventListener('click', function(e) {
@@ -26,23 +27,65 @@
       });
     });
 
-    // Close on click outside
+    // 3. Desktop Dropdown Graceful Hover with Delay
+    // Prevents dropdown vanishing while cursor traverses the gap to sub-items
+    var desktopDropdowns = document.querySelectorAll('.oz-dropdown');
+    desktopDropdowns.forEach(function(dropdown) {
+      var closeTimer = null;
+
+      dropdown.addEventListener('mouseenter', function() {
+        if (window.innerWidth > 991) {
+          if (closeTimer) {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+          }
+          dropdown.classList.add('is-open');
+        }
+      });
+
+      dropdown.addEventListener('mouseleave', function() {
+        if (window.innerWidth > 991) {
+          closeTimer = setTimeout(function() {
+            dropdown.classList.remove('is-open');
+          }, 400); // 400ms graceful close delay
+        }
+      });
+    });
+
+    // 4. Close on click outside
     document.addEventListener('click', function(e) {
-      if (drawer.classList.contains('active') && !drawer.contains(e.target) && !toggleBtn.contains(e.target)) {
+      if (drawer && drawer.classList.contains('active') && !drawer.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
         drawer.classList.remove('active');
-        toggleBtn.classList.remove('open');
-        toggleBtn.setAttribute('aria-expanded', 'false');
+        if (toggleBtn) {
+          toggleBtn.classList.remove('open');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      // Close open desktop dropdowns when clicking outside
+      if (window.innerWidth > 991) {
+        desktopDropdowns.forEach(function(dropdown) {
+          if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove('is-open');
+          }
+        });
       }
     });
 
-    // Reset mobile classes on resize to desktop
+    // 5. Reset classes on resize
     window.addEventListener('resize', function() {
       if (window.innerWidth > 991) {
-        drawer.classList.remove('active');
-        toggleBtn.classList.remove('open');
-        toggleBtn.setAttribute('aria-expanded', 'false');
+        if (drawer) drawer.classList.remove('active');
+        if (toggleBtn) {
+          toggleBtn.classList.remove('open');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
         document.querySelectorAll('.oz-dropdown.open').forEach(function(el) {
           el.classList.remove('open');
+        });
+      } else {
+        document.querySelectorAll('.oz-dropdown.is-open').forEach(function(el) {
+          el.classList.remove('is-open');
         });
       }
     });

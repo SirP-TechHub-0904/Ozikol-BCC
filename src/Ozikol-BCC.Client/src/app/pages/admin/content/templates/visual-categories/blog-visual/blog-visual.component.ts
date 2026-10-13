@@ -1282,430 +1282,28 @@ export class BlogVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'articles' | 'header' | 'taxonomies' = 'articles';
 
-  htmlTemplate: string = `<section class="oz-blog-section {{ CustomClass }}">
-  <div class="oz-blog-container">
-    <div class="oz-blog-header">
-      {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
-      <h2 class="oz-blog-title">{{ Title }}</h2>
-      {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
-      {{#if BlogCategories}}
-      <div class="oz-category-filter">
-        {{#each BlogCategories}}
-        <a href="{{ Url }}" class="oz-category-pill">{{ Name }} <span class="oz-pill-count">{{ Count }}</span></a>
-        {{/each}}
-      </div>
-      {{/if}}
-    </div>
-    <div class="oz-articles-grid">
-      {{#each Articles}}
-      <article class="oz-article-card">
-        {{#if CoverImageUrl}}
-        <div class="oz-card-media">
-          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
-          {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}
-        </div>
-        {{/if}}
-        <div class="oz-card-content">
-          <div class="oz-card-meta">
-            <span class="oz-meta-date"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>
-            <span class="oz-meta-bullet">&bull;</span>
-            <span class="oz-meta-author"><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>
-          </div>
-          <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
-          {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}
-          <div class="oz-card-footer">
-            <a href="{{ Url }}" class="oz-card-read-more">Read Article <i class="fa-solid fa-arrow-right"></i></a>
-          </div>
-        </div>
-      </article>
-      {{/each}}
-    </div>
-    {{#if ButtonText}}
-    <div class="oz-blog-action-wrap">
-      <a href="{{ ButtonLink }}" class="oz-btn-view-all">
-        <span>{{ ButtonText }}</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </a>
-    </div>
-    {{/if}}
-  </div>
-</section>`;
-
-  cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-
-.oz-blog-section {
-  padding: 80px 24px;
-  background: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #0f172a;
-}
-.oz-blog-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.oz-blog-header {
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto 50px auto;
-}
-.oz-blog-badge {
-  display: inline-block;
-  background: #eff6ff;
-  color: #0050e5;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 20px;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  border: 1px solid #dbeafe;
-}
-.oz-blog-title {
-  font-size: 36px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-}
-.oz-blog-desc {
-  font-size: 16px;
-  color: #64748b;
-  line-height: 1.65;
-  margin: 0 0 28px 0;
-}
-.oz-category-filter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
-}
-.oz-category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 30px;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-.oz-category-pill:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #0050e5;
-  transform: translateY(-1px);
-}
-.oz-pill-count {
-  font-size: 11px;
-  background: #e2e8f0;
-  color: #475569;
-  padding: 2px 7px;
-  border-radius: 12px;
-  font-weight: 800;
-}
-.oz-category-pill:hover .oz-pill-count {
-  background: #0050e5;
-  color: #ffffff;
-}
-.oz-articles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-.oz-article-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-}
-.oz-article-card:hover {
-  transform: translateY(-6px);
-  border-color: #cbd5e1;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-}
-.oz-card-media {
-  position: relative;
-  width: 100%;
-  height: 220px;
-  background: #0f172a;
-  overflow: hidden;
-}
-.oz-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-.oz-article-card:hover .oz-card-img {
-  transform: scale(1.05);
-}
-.oz-card-category {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 5px 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.oz-card-content {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-.oz-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  color: #94a3b8;
-  margin-bottom: 14px;
-}
-.oz-card-meta i {
-  color: #64748b;
-  margin-right: 4px;
-}
-.oz-meta-bullet {
-  color: #cbd5e1;
-  font-weight: 800;
-}
-.oz-card-title {
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.4;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.015em;
-}
-.oz-card-title-link {
-  color: #0f172a;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.oz-card-title-link:hover {
-  color: #0050e5;
-}
-.oz-card-summary {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0 0 24px 0;
-  flex-grow: 1;
-}
-.oz-card-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
-}
-.oz-card-read-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #0050e5;
-  font-size: 13.5px;
-  font-weight: 800;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-.oz-card-read-more i {
-  font-size: 12px;
-  transition: transform 0.2s ease;
-}
-.oz-card-read-more:hover {
-  color: #003dbb;
-}
-.oz-card-read-more:hover i {
-  transform: translateX(4px);
-}
-.oz-blog-action-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 56px;
-}
-.oz-btn-view-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 34px;
-  background: #0050e5;
-  color: #ffffff;
-  border-radius: 30px;
-  font-size: 14.5px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.25);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.oz-btn-view-all:hover {
-  background: #003dbb;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 80, 229, 0.35);
-  color: #ffffff;
-}
-.oz-btn-view-all i {
-  font-size: 13px;
-  transition: transform 0.2s ease;
-}
-.oz-btn-view-all:hover i {
-  transform: translateX(4px);
-}
-@media (max-width: 1024px) {
-  .oz-articles-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-}
-@media (max-width: 640px) {
-  .oz-blog-section {
-    padding: 56px 16px;
-  }
-  .oz-blog-title {
-    font-size: 28px;
-  }
-  .oz-articles-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .oz-btn-view-all {
-    width: 100%;
-    justify-content: center;
-  }
-}`;
-
+  htmlTemplate: string = '';
+  cssStyles: string = '';
   jsScript: string = '';
+  sampleContent: any = {};
 
   blogTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    {
-      label: 'Title',
-      token: '{{ Title }}',
-      htmlSnippet: '<h2 class="oz-blog-title">{{ Title }}</h2>',
-      description: 'Section headline for the blog/articles feed.'
-    },
-    {
-      label: 'MiniTitle',
-      token: '{{ MiniTitle }}',
-      htmlSnippet: '{{#if MiniTitle}}\n<span class="oz-blog-badge">{{ MiniTitle }}</span>\n{{/if}}',
-      description: 'Small category label, eyebrow, or sub-title badge.'
-    },
-    {
-      label: 'Description',
-      token: '{{ Description }}',
-      htmlSnippet: '{{#if Description}}\n<p class="oz-blog-subtitle">{{ Description }}</p>\n{{/if}}',
-      description: 'Section introductory description narrative.'
-    },
-    {
-      label: 'Articles Grid Loop',
-      token: '{{#each Articles}}\n  <article class="oz-article-card">\n    {{#if CoverImageUrl}}<div class="oz-card-thumb"><img src="{{ CoverImageUrl }}" alt="{{ Title }}" /></div>{{/if}}\n    <div class="oz-card-content">\n      {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}\n      <h3 class="oz-card-title"><a href="{{ Url }}">{{ Title }}</a></h3>\n      <p class="oz-card-summary">{{ Summary }}</p>\n      <div class="oz-card-meta">\n        {{#if PublishedDate}}<span>{{ PublishedDate }}</span>{{/if}}\n        {{#if AuthorName}}<span>{{ AuthorName }}</span>{{/if}}\n      </div>\n    </div>\n  </article>\n{{/each}}',
-      htmlSnippet: '<div class="oz-articles-grid">\n  {{#each Articles}}\n  <article class="oz-article-card {{ CustomClass }}">\n    {{#if CoverImageUrl}}\n    <div class="oz-card-thumb">\n      <img src="{{ CoverImageUrl }}" alt="{{ Title }}" />\n      {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}\n    </div>\n    {{/if}}\n    <div class="oz-card-content">\n      <div class="oz-card-meta">\n        {{#if PublishedDate}}<span><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>{{/if}}\n        {{#if AuthorName}}<span class="oz-meta-bullet">&bull;</span><span><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>{{/if}}\n      </div>\n      <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>\n      {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}\n      <div class="oz-card-footer">\n        <a href="{{ Url }}" class="oz-card-read-more">\n          <span>Read Article</span>\n          <i class="fa-solid fa-arrow-right"></i>\n        </a>\n      </div>\n    </div>\n  </article>\n  {{/each}}\n</div>',
-      description: 'Multi-column responsive grid repeating article cards with thumbnail, meta, title, summary, and read more link.'
-    },
-    {
-      label: 'Categories Filter',
-      token: '{{#each BlogCategories}}\n  <a href="{{ Url }}" class="oz-category-pill">\n    <span>{{ Name }}</span>\n    {{#if Count}}<span class="oz-pill-count">{{ Count }}</span>{{/if}}\n  </a>\n{{/each}}',
-      htmlSnippet: '{{#if BlogCategories}}\n<div class="oz-categories-bar">\n  {{#each BlogCategories}}\n  <a href="{{ Url }}" class="oz-category-pill {{ CustomClass }}">\n    <span>{{ Name }}</span>\n    {{#if Count}}<span class="oz-pill-count">{{ Count }}</span>{{/if}}\n  </a>\n  {{/each}}\n</div>\n{{/if}}',
-      description: 'Horizontal filter strip repeating category pills with count badges.'
-    },
-    {
-      label: 'Tags Cloud',
-      token: '{{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n{{/each}}',
-      htmlSnippet: '{{#if Tags}}\n<div class="oz-tags-cloud">\n  {{#each Tags}}\n  <a href="{{ Url }}" class="oz-tag-pill">#{{ Name }}</a>\n  {{/each}}\n</div>\n{{/if}}',
-      description: 'Tag taxonomy cloud repeating hashtag links.'
-    },
-    {
-      label: 'View All Button',
-      token: '{{ ButtonText }}',
-      htmlSnippet: '{{#if ButtonText}}\n<div class="oz-blog-action-wrap">\n  <a href="{{ ButtonLink }}" class="oz-btn-view-all">\n    <span>{{ ButtonText }}</span>\n    <i class="fa-solid fa-arrow-right"></i>\n  </a>\n</div>\n{{/if}}',
-      description: 'Centered call-to-action button linking to the complete articles catalog.'
-    },
-    {
-      label: 'ButtonLink',
-      token: '{{ ButtonLink }}',
-      htmlSnippet: '<a href="{{ ButtonLink }}">View All</a>',
-      description: 'Target URL link for the all articles action.'
-    },
-    {
-      label: 'CustomClass',
-      token: '{{ CustomClass }}',
-      htmlSnippet: '<section class="oz-blog-section {{ CustomClass }}">',
-      description: 'Root container CSS hook dynamically injected by the CMS.'
-    }
+    { label: 'Articles Grid Loop', token: '{{#each Articles}}\n<article class="card">\n  <img src="{{ CoverImageUrl }}" />\n  <h3>{{ Title }}</h3>\n  <p>{{ Summary }}</p>\n</article>\n{{/each}}', description: 'Responsive article card iteration.' },
+    { label: 'Article Title', token: '{{ Title }}', description: 'Headline of the article card.' },
+    { label: 'Summary', token: '{{ Summary }}', description: 'Article excerpt or summary paragraph.' },
+    { label: 'Cover Image', token: '{{ CoverImageUrl }}', description: 'Article featured thumbnail image URL.' },
+    { label: 'Author Name', token: '{{ AuthorName }}', description: 'Name of the author.' },
+    { label: 'Published Date', token: '{{ PublishedDate }}', description: 'Date of article publication.' },
+    { label: 'Article URL', token: '{{ Url }}', description: 'Link to article details page.' },
+    { label: 'Category Filter', token: '{{#each BlogCategories}}<a href="{{ Url }}">{{ Name }} ({{ Count }})</a>{{/each}}', description: 'Filter pills for blog categories.' }
   ];
-
-  sampleContent: any = {
-    title: 'Latest Insights & Technical Papers',
-    miniTitle: 'INSIGHTS & EDITORIALS',
-    description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
-    buttonText: 'View All Articles',
-    buttonLink: '/blog',
-    articles: [
-      {
-        title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
-        summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce continuous cryptographic verification across edge nodes.',
-        category: 'Architecture',
-        coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
-        authorName: 'Alex Vance',
-        publishedDate: 'Oct 12, 2026',
-        url: '/blog/zero-trust-architecture'
-      },
-      {
-        title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
-        summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties or split-brain partitions.',
-        category: 'Cloud Engineering',
-        coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
-        authorName: 'Sarah Jenkins',
-        publishedDate: 'Sep 28, 2026',
-        url: '/blog/distributed-data-fabrics'
-      },
-      {
-        title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
-        summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes and serverless pipelines.',
-        category: 'Compliance',
-        coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
-        authorName: 'Michael Chen',
-        publishedDate: 'Sep 15, 2026',
-        url: '/blog/compliance-guardrails'
-      }
-    ],
-    blogCategories: [
-      { name: 'All Articles', count: 18, url: '/blog' },
-      { name: 'Architecture', count: 6, url: '/blog/category/architecture' },
-      { name: 'Security & Zero-Trust', count: 5, url: '/blog/category/security' },
-      { name: 'Cloud Engineering', count: 4, url: '/blog/category/engineering' },
-      { name: 'Compliance', count: 3, url: '/blog/category/compliance' }
-    ],
-    tags: [
-      { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
-      { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
-      { name: 'Cloud Native', url: '/blog/tag/cloud-native' },
-      { name: 'Compliance', url: '/blog/tag/compliance' }
-    ]
-  };
 
   constructor(
     private api: ApiService,
     private toast: ToastService,
     private previewModalService: UniversalPreviewModalService,
     private router: Router
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     if (!this.variantCode) {
@@ -1713,6 +1311,8 @@ export class BlogVisualComponent implements OnInit {
     }
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    } else {
+      this.loadBlueprint();
     }
   }
 
@@ -1721,370 +1321,50 @@ export class BlogVisualComponent implements OnInit {
     this.variantCode = `BLOG_${randomSuffix}`;
   }
 
+  loadBlueprint(forceReload: boolean = false, toastSuccess?: string): void {
+    const url = forceReload ? 'ContentApi/templates/blueprint/blog?reload=true' : 'ContentApi/templates/blueprint/blog';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp) {
+          this.htmlTemplate = bp.htmlTemplate || '';
+          this.cssStyles = bp.cssStyles || '';
+          this.jsScript = bp.jsScript || '';
+          if (bp.sampleContent) {
+            this.sampleContent = bp.sampleContent;
+          }
+          if (!this.isEditMode) {
+            this.templateName = bp.name || this.templateName;
+            this.description = bp.description || this.description;
+          }
+          if (toastSuccess) {
+            this.toast.info(toastSuccess);
+          }
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to load Blog blueprint from central API.');
+      }
+    });
+  }
+
   resetBoilerplate(): void {
-    this.htmlTemplate = `<section class="oz-blog-section {{ CustomClass }}">
-  <div class="oz-blog-container">
-    <div class="oz-blog-header">
-      {{#if MiniTitle}}<span class="oz-blog-badge">{{ MiniTitle }}</span>{{/if}}
-      <h2 class="oz-blog-title">{{ Title }}</h2>
-      {{#if Description}}<p class="oz-blog-desc">{{ Description }}</p>{{/if}}
-      {{#if BlogCategories}}
-      <div class="oz-category-filter">
-        {{#each BlogCategories}}
-        <a href="{{ Url }}" class="oz-category-pill">{{ Name }} <span class="oz-pill-count">{{ Count }}</span></a>
-        {{/each}}
-      </div>
-      {{/if}}
-    </div>
-    <div class="oz-articles-grid">
-      {{#each Articles}}
-      <article class="oz-article-card">
-        {{#if CoverImageUrl}}
-        <div class="oz-card-media">
-          <img src="{{ CoverImageUrl }}" alt="{{ Title }}" class="oz-card-img" />
-          {{#if Category}}<span class="oz-card-category">{{ Category }}</span>{{/if}}
-        </div>
-        {{/if}}
-        <div class="oz-card-content">
-          <div class="oz-card-meta">
-            <span class="oz-meta-date"><i class="fa-regular fa-calendar"></i> {{ PublishedDate }}</span>
-            <span class="oz-meta-bullet">&bull;</span>
-            <span class="oz-meta-author"><i class="fa-regular fa-user"></i> {{ AuthorName }}</span>
-          </div>
-          <h3 class="oz-card-title"><a href="{{ Url }}" class="oz-card-title-link">{{ Title }}</a></h3>
-          {{#if Summary}}<p class="oz-card-summary">{{ Summary }}</p>{{/if}}
-          <div class="oz-card-footer">
-            <a href="{{ Url }}" class="oz-card-read-more">Read Article <i class="fa-solid fa-arrow-right"></i></a>
-          </div>
-        </div>
-      </article>
-      {{/each}}
-    </div>
-    {{#if ButtonText}}
-    <div class="oz-blog-action-wrap">
-      <a href="{{ ButtonLink }}" class="oz-btn-view-all">
-        <span>{{ ButtonText }}</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </a>
-    </div>
-    {{/if}}
-  </div>
-</section>`;
-
-    this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-
-.oz-blog-section {
-  padding: 80px 24px;
-  background: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #0f172a;
-}
-.oz-blog-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.oz-blog-header {
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto 50px auto;
-}
-.oz-blog-badge {
-  display: inline-block;
-  background: #eff6ff;
-  color: #0050e5;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 20px;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  border: 1px solid #dbeafe;
-}
-.oz-blog-title {
-  font-size: 36px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-}
-.oz-blog-desc {
-  font-size: 16px;
-  color: #64748b;
-  line-height: 1.65;
-  margin: 0 0 28px 0;
-}
-.oz-category-filter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
-}
-.oz-category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 30px;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-.oz-category-pill:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #0050e5;
-  transform: translateY(-1px);
-}
-.oz-pill-count {
-  font-size: 11px;
-  background: #e2e8f0;
-  color: #475569;
-  padding: 2px 7px;
-  border-radius: 12px;
-  font-weight: 800;
-}
-.oz-category-pill:hover .oz-pill-count {
-  background: #0050e5;
-  color: #ffffff;
-}
-.oz-articles-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-.oz-article-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-}
-.oz-article-card:hover {
-  transform: translateY(-6px);
-  border-color: #cbd5e1;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-}
-.oz-card-media {
-  position: relative;
-  width: 100%;
-  height: 220px;
-  background: #0f172a;
-  overflow: hidden;
-}
-.oz-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-.oz-article-card:hover .oz-card-img {
-  transform: scale(1.05);
-}
-.oz-card-category {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 5px 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.oz-card-content {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-.oz-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  color: #94a3b8;
-  margin-bottom: 14px;
-}
-.oz-card-meta i {
-  color: #64748b;
-  margin-right: 4px;
-}
-.oz-meta-bullet {
-  color: #cbd5e1;
-  font-weight: 800;
-}
-.oz-card-title {
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.4;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.015em;
-}
-.oz-card-title-link {
-  color: #0f172a;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.oz-card-title-link:hover {
-  color: #0050e5;
-}
-.oz-card-summary {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0 0 24px 0;
-  flex-grow: 1;
-}
-.oz-card-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
-}
-.oz-card-read-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #0050e5;
-  font-size: 13.5px;
-  font-weight: 800;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-.oz-card-read-more i {
-  font-size: 12px;
-  transition: transform 0.2s ease;
-}
-.oz-card-read-more:hover {
-  color: #003dbb;
-}
-.oz-card-read-more:hover i {
-  transform: translateX(4px);
-}
-.oz-blog-action-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 56px;
-}
-.oz-btn-view-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 34px;
-  background: #0050e5;
-  color: #ffffff;
-  border-radius: 30px;
-  font-size: 14.5px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0, 80, 229, 0.25);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.oz-btn-view-all:hover {
-  background: #003dbb;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 80, 229, 0.35);
-  color: #ffffff;
-}
-.oz-btn-view-all i {
-  font-size: 13px;
-  transition: transform 0.2s ease;
-}
-.oz-btn-view-all:hover i {
-  transform: translateX(4px);
-}
-@media (max-width: 1024px) {
-  .oz-articles-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
-}
-@media (max-width: 640px) {
-  .oz-blog-section {
-    padding: 56px 16px;
-  }
-  .oz-blog-title {
-    font-size: 28px;
-  }
-  .oz-articles-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .oz-btn-view-all {
-    width: 100%;
-    justify-content: center;
-  }
-}`;
-    this.resetSampleContent();
-    this.toast.info('Boilerplate reset to default blog grid structure.');
+    this.loadBlueprint(true, 'Boilerplate reset to default blog grid files.');
   }
 
   resetSampleContent(): void {
-    this.sampleContent = {
-      title: 'Latest Insights & Technical Papers',
-      miniTitle: 'INSIGHTS & EDITORIALS',
-      description: 'Explore in-depth engineering breakdowns, architectural case studies, and enterprise cloud patterns.',
-      buttonText: 'View All Articles',
-      buttonLink: '/blog',
-      articles: [
-        {
-          title: 'Zero Trust Network Architecture at Multi-Cloud Planetary Scale',
-          summary: 'How modern sovereign clouds eliminate perimeter trust boundaries and enforce continuous cryptographic verification across edge nodes.',
-          category: 'Architecture',
-          coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
-          authorName: 'Alex Vance',
-          publishedDate: 'Oct 12, 2026',
-          url: '/blog/zero-trust-architecture'
-        },
-        {
-          title: 'Sub-Millisecond Distributed Data Fabrics for Hybrid Enterprises',
-          summary: 'Synchronizing multi-master state machines across sovereign clusters without latency penalties or split-brain partitions.',
-          category: 'Cloud Engineering',
-          coverImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
-          authorName: 'Sarah Jenkins',
-          publishedDate: 'Sep 28, 2026',
-          url: '/blog/distributed-data-fabrics'
-        },
-        {
-          title: 'Automated Compliance Guardrails for Regulated Financial Platforms',
-          summary: 'Enforcing SOC2, HIPAA, and GDPR isolation policies continuously across dynamic container meshes and serverless pipelines.',
-          category: 'Compliance',
-          coverImageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
-          authorName: 'Michael Chen',
-          publishedDate: 'Sep 15, 2026',
-          url: '/blog/compliance-guardrails'
+    this.api.get<any>('ContentApi/templates/blueprint/blog?reload=true').subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp?.sampleContent) {
+          this.sampleContent = bp.sampleContent;
+          this.toast.info('Blog sample values reset to file defaults.');
         }
-      ],
-      blogCategories: [
-        { name: 'All Articles', count: 18, url: '/blog' },
-        { name: 'Architecture', count: 6, url: '/blog/category/architecture' },
-        { name: 'Security & Zero-Trust', count: 5, url: '/blog/category/security' },
-        { name: 'Cloud Engineering', count: 4, url: '/blog/category/engineering' },
-        { name: 'Compliance', count: 3, url: '/blog/category/compliance' }
-      ],
-      tags: [
-        { name: 'Zero-Trust', url: '/blog/tag/zero-trust' },
-        { name: 'Kubernetes', url: '/blog/tag/kubernetes' },
-        { name: 'Cloud Native', url: '/blog/tag/cloud-native' },
-        { name: 'Compliance', url: '/blog/tag/compliance' }
-      ]
-    };
-    this.toast.info('Blog sample values reset to defaults.');
+      },
+      error: () => {
+        this.toast.error('Failed to reset sample content from central API.');
+      }
+    });
   }
 
   addArticleItem(): void {

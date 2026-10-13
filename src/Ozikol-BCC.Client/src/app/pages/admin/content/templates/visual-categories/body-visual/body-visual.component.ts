@@ -1009,144 +1009,22 @@ export class BodyVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'cards' | 'meta' = 'cards';
 
-  htmlTemplate: string = `<section class="oz-features-section {{ CustomClass }}">
-  <div class="oz-features-container">
-    <div class="oz-features-header">
-      {{#if MiniTitle}}<span class="oz-features-badge">{{ MiniTitle }}</span>{{/if}}
-      <h2 class="oz-features-title">{{ Title }}</h2>
-      <p class="oz-features-desc">{{ Description }}</p>
-    </div>
-    <div class="oz-features-grid">
-      {{#each PageSectionLists}}
-      <div class="oz-feature-card">
-        <div class="oz-feature-icon-box">
-          <span class="material-symbols-outlined">{{ Icon }}</span>
-        </div>
-        <h3 class="oz-feature-card-title">{{ Title }}</h3>
-        <p class="oz-feature-card-desc">{{ Description }}</p>
-      </div>
-      {{/each}}
-    </div>
-  </div>
-</section>`;
-
-  cssStyles: string = `.oz-features-section {
-  padding: 80px 24px;
-  background: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-.oz-features-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.oz-features-header {
-  text-align: center;
-  max-width: 700px;
-  margin: 0 auto 56px auto;
-}
-.oz-features-badge {
-  display: inline-block;
-  background: #eff6ff;
-  color: #0050e5;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 14px;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
-}
-.oz-features-title {
-  font-size: 34px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.02em;
-}
-.oz-features-desc {
-  font-size: 15px;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0;
-}
-.oz-features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-}
-.oz-feature-card {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 32px 24px;
-  transition: all 0.2s ease;
-}
-.oz-feature-card:hover {
-  transform: translateY(-3px);
-  border-color: #0050e5;
-  box-shadow: 0 12px 28px rgba(0, 80, 229, 0.08);
-}
-.oz-feature-icon-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: #eff6ff;
-  color: #0050e5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-.oz-feature-icon-box .material-symbols-outlined { font-size: 26px; }
-.oz-feature-card-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 8px 0; }
-.oz-feature-card-desc { font-size: 13.5px; color: #64748b; line-height: 1.55; margin: 0; }
-@media (max-width: 768px) {
-  .oz-features-section { padding: 48px 16px; }
-  .oz-features-title { font-size: 26px; }
-  .oz-features-desc { font-size: 14px; margin-bottom: 32px; }
-  .oz-features-grid { grid-template-columns: 1fr; gap: 16px; }
-  .oz-feature-card { padding: 20px; }
-}`;
-
+  htmlTemplate: string = '';
+  cssStyles: string = '';
   jsScript: string = '';
+  sampleContent: any = {};
+  bodyPresets: SectionPreset[] = [];
 
   bodyTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
     { label: 'Title', token: '{{ Title }}', description: 'Main section heading / title.' },
     { label: 'MiniTitle', token: '{{ MiniTitle }}', description: 'Eyebrow kicker badge, category label, or card pill.' },
     { label: 'Description', token: '{{ Description }}', description: 'Section intro description, subtitle, or card excerpt.' },
     { label: 'FullDescription', token: '{{{ FullDescription }}}', description: 'Extended rich HTML body content for split showcases.' },
-    { label: 'Quote', token: '{{ Qoute }}', description: 'Highlight quote or callout banner narrative.' },
     { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Primary section graphic, hero image, or card thumbnail.' },
-    { label: 'SecondImageUrl', token: '{{ SecondImageUrl }}', description: 'Secondary collage graphic or split visual asset.' },
-    { label: 'VideoUrl', token: '{{ VideoUrl }}', description: 'Direct video file URL (.mp4, .webm).' },
-    { label: 'YoutubeUrlLink', token: '{{ YoutubeUrlLink }}', description: 'External YouTube or Vimeo embed/modal URL.' },
-    { label: 'IconText', token: '{{ IconText }}', description: 'CSS icon class string (e.g. tji-rocket, bi-star, fa-check).' },
     { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button display label.' },
     { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination URL.' },
-    { label: 'SecondButtonText', token: '{{ SecondButtonText }}', description: 'Secondary outline button label for dual-CTA sections.' },
-    { label: 'SecondButtonLink', token: '{{ SecondButtonLink }}', description: 'Secondary outline button destination URL.' },
-    { label: 'DirectUrl', token: '{{ DirectUrl }}', description: 'Direct routing link or section anchor.' },
-    {
-      label: 'Cards Repeater',
-      token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ Icon }}</span>\n    <h3>{{ Title }}</h3>\n    <p>{{ Description }}</p>\n    <a href="{{ ButtonLink }}">{{ ButtonText }}</a>\n  </div>\n{{/each}}',
-      description: 'Repeats over all active child items/cards in PageSectionList.'
-    },
-    { label: 'Contact Form', token: '{{ Form "Contact_Us" }}', description: 'Embeds dynamic tenant contact inquiry form.' },
-    { label: 'Service Form', token: '{{ Form "Service_Request" }}', description: 'Embeds dynamic tenant service quotation booking form.' },
-    { label: 'CustomClass', token: '{{ CustomClass }}', description: 'Injects custom CSS modifier class into the root container.' }
+    { label: 'Cards Repeater', token: '{{#each PageSectionLists}}\n  <div class="col-item">\n    <span class="material-symbols-outlined">{{ Icon }}</span>\n    <h3>{{ Title }}</h3>\n    <p>{{ Description }}</p>\n  </div>\n{{/each}}', description: 'Repeats over child items/cards in PageSectionList.' }
   ];
-
-  bodyPresets: SectionPreset[] = BODY_PRESETS;
-
-  sampleContent: any = {
-    title: 'Engineered For Enterprise Scale And Sub-Millisecond Speed',
-    miniTitle: 'PLATFORM CAPABILITIES',
-    description: 'Unified toolchain built from the ground up to solve distributed bottlenecks and enhance organizational productivity.',
-    pageSectionLists: [
-      { title: 'Edge Cloud Replication', description: 'Continuous multi-region synchronization keeps endpoints resilient against downtime.', icon: 'hub' },
-      { title: 'Zero Trust Security', description: 'Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every call.', icon: 'verified_user' },
-      { title: 'Automated CI/CD Workflows', description: 'Push to git and deploy production containers in seconds with automated rollbacks.', icon: 'rocket_launch' }
-    ]
-  };
 
   constructor(
     private api: ApiService,
@@ -1159,8 +1037,11 @@ export class BodyVisualComponent implements OnInit {
     if (!this.variantCode) {
       this.regenerateVariantCode();
     }
+    this.loadBodyPresets();
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    } else {
+      this.loadBlueprint();
     }
   }
 
@@ -1169,22 +1050,67 @@ export class BodyVisualComponent implements OnInit {
     this.variantCode = `BODY_${randomSuffix}`;
   }
 
+  /**
+   * Loads all 12 section archetypes dynamically from central blueprints.
+   */
+  loadBodyPresets(): void {
+    this.api.get<any>('ContentApi/templates/blueprint/body/presets').subscribe({
+      next: (res) => {
+        const list = res?.data || res;
+        if (Array.isArray(list) && list.length > 0) {
+          this.bodyPresets = list;
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to load Body section presets from central API.');
+      }
+    });
+  }
+
+  loadBlueprint(forceReload: boolean = false, toastSuccess?: string): void {
+    const url = forceReload ? 'ContentApi/templates/blueprint/body?reload=true' : 'ContentApi/templates/blueprint/body';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp) {
+          this.htmlTemplate = bp.htmlTemplate || '';
+          this.cssStyles = bp.cssStyles || '';
+          this.jsScript = bp.jsScript || '';
+          if (bp.sampleContent) {
+            this.sampleContent = bp.sampleContent;
+          }
+          if (!this.isEditMode) {
+            this.templateName = bp.name || this.templateName;
+            this.description = bp.description || this.description;
+          }
+          if (toastSuccess) {
+            this.toast.info(toastSuccess);
+          }
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to load Body blueprint from central API.');
+      }
+    });
+  }
+
   resetBoilerplate(): void {
-    this.toast.info('Boilerplate reset to default body section structure.');
+    this.loadBlueprint(true, 'Boilerplate reset to default body section files.');
   }
 
   resetSampleContent(): void {
-    this.sampleContent = {
-      title: 'Engineered For Enterprise Scale And Sub-Millisecond Speed',
-      miniTitle: 'PLATFORM CAPABILITIES',
-      description: 'Unified toolchain built from the ground up to solve distributed bottlenecks and enhance organizational productivity.',
-      pageSectionLists: [
-        { title: 'Edge Cloud Replication', description: 'Continuous multi-region synchronization keeps endpoints resilient against downtime.', icon: 'hub' },
-        { title: 'Zero Trust Security', description: 'Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every call.', icon: 'verified_user' },
-        { title: 'Automated CI/CD Workflows', description: 'Push to git and deploy production containers in seconds with automated rollbacks.', icon: 'rocket_launch' }
-      ]
-    };
-    this.toast.info('Body section sample values reset to defaults.');
+    this.api.get<any>('ContentApi/templates/blueprint/body?reload=true').subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp?.sampleContent) {
+          this.sampleContent = bp.sampleContent;
+          this.toast.info('Body section sample values reset to file defaults.');
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to reset sample content from central API.');
+      }
+    });
   }
 
   addCardItem(): void {

@@ -219,16 +219,29 @@
   animation: ozFadeIn 0.2s ease-in-out;
 }
 
+/* Invisible hover bridge to eliminate gap between trigger and menu */
+.oz-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
+}
+
 @keyframes ozFadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @media (min-width: 993px) {
-  .oz-dropdown:hover > .oz-dropdown-menu {
+  .oz-dropdown:hover > .oz-dropdown-menu,
+  .oz-dropdown.is-open > .oz-dropdown-menu {
     display: block;
   }
-  .oz-dropdown:hover .oz-caret {
+  .oz-dropdown:hover .oz-caret,
+  .oz-dropdown.is-open .oz-caret {
     transform: rotate(180deg);
   }
 }

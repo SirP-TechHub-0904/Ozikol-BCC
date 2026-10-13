@@ -1227,6 +1227,59 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Retrieves all canonical body section archetype presets directly from the central blueprint suite.
+        /// Powers the Body Visual Studio archetype selector by eliminating hardcoded inline presets from TypeScript.
+        /// </summary>
+        /// <param name="reload">Optional flag to force reload fresh file contents from disk.</param>
+        /// <returns>Collection of all 12 section archetypes populated with markup, styles, scripts, and sample content.</returns>
+        [HttpGet("templates/blueprint/body/presets")]
+        public IActionResult GetBodyPresets([FromQuery] bool reload = false)
+        {
+            try
+            {
+                if (reload)
+                {
+                    CentralBlueprintLoader.InvalidateCache();
+                }
+                var presets = CentralBlueprintLoader.GetBodySectionBlueprints();
+                var dtos = presets.Select(p =>
+                {
+                    object? sampleObj = null;
+                    if (!string.IsNullOrWhiteSpace(p.SampleContentJson))
+                    {
+                        try
+                        {
+                            sampleObj = JsonSerializer.Deserialize<object>(p.SampleContentJson);
+                        }
+                        catch
+                        {
+                            sampleObj = p.SampleContentJson;
+                        }
+                    }
+
+                    return new
+                    {
+                        name = p.Name,
+                        icon = p.Icon,
+                        badge = p.Badge,
+                        description = p.Description,
+                        html = p.HtmlTemplate,
+                        css = p.CssStyles,
+                        js = p.JsScript,
+                        sampleContent = sampleObj
+                    };
+                }).ToList();
+
+                return Ok(ApiResponse<object>.SuccessResponse(dtos, "Body section presets retrieved from central files."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"Failed to load body section presets: {ex.Message}"));
+            }
+        }
+
+
+        /// <summary>
         /// Retrieves all installed UI templates for this tenant from DashboardDbContext.
         /// </summary>
         [HttpGet("templates/installed")]

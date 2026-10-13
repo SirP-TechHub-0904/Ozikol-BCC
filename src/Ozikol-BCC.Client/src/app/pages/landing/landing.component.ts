@@ -709,7 +709,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         title: heroSection?.title || this.currentPage.title || '',
         miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || this.currentPage.miniTitle || '',
         description: heroSection?.description || this.currentPage.description || '',
-        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || '',
+        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: this.currentPage.title || '', url: '#', isActive: true }
@@ -826,7 +826,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         title: 'Blog',
         miniTitle: 'PUBLICATIONS',
         description: '',
-        backgroundImageUrl: '',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '#', isActive: true }
@@ -944,7 +944,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         title: this.currentArticle.title || '',
         miniTitle: this.currentArticle.blogCategory?.categoryName || this.currentArticle.categoryName || '',
         description: this.currentArticle.date ? `Published on ${new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '',
-        backgroundImageUrl: this.currentArticle.imageUrl || '',
+        backgroundImageUrl: this.currentArticle.imageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80',
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '/blog', isActive: false },

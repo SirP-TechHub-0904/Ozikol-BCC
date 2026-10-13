@@ -7,17 +7,20 @@ namespace Ozikol_BCC.Persistence.EF.SQL.Infrastructure;
 /// <summary>
 /// Turnkey default website seeder for tenant sovereign databases.
 /// Provisions the foundational website suite upon initial workspace registration or on-demand re-seed:
-/// 1. 3 Standard CMS Forms (Contact Us, Newsletter, Service Request) with dynamic fields.
-/// 2. 3 Rich Editorial Blog Articles with excerpts and formatted rich-text HTML bodies.
-/// 3. Standard Navigation Categories and WebPages (Home, Services, Company, About, Team, Blog, Contact, Legal).
-/// 4. 10 Dedicated Body Sections distributed across pages with PageSectionLists.
-/// 5. Global SEO, OpenGraph, Twitter Cards, Favicon &amp; Mobile PWA meta tags in &lt;head&gt;.
-/// 6. Automatic initialization timestamping via MisWebsiteSettings.
+/// 1. Dynamic CMS Forms loaded from central blueprints with dynamic fields.
+/// 2. Rich Editorial Blog Articles loaded from central HTML blueprints.
+/// 3. Contact Channels and Social Media profiles loaded from central blueprints.
+/// 4. Navigation Categories and WebPages driven purely by central blueprints.
+/// 5. Dedicated Body Sections distributed across pages with PageSectionLists.
+/// 6. Global SEO, OpenGraph, Twitter Cards, Favicon &amp; Mobile PWA meta tags in &lt;head&gt;.
+/// 7. Canonical corporate suite templates installed into TenantInstalledTemplates.
+/// 8. Automatic initialization timestamping via MisWebsiteSettings.
 /// </summary>
 public static class TenantDefaultWebsiteSeeder
 {
     /// <summary>
     /// Provisions the complete turnkey default website structure and content into the provided tenant database context.
+    /// Fully data-driven from central master domain blueprints with zero hardcoded content in C# logic.
     /// </summary>
     /// <param name="context">The target tenant's <see cref="DashboardDbContext"/> instance.</param>
     /// <param name="organizationName">Optional organization name for brand personalization.</param>
@@ -34,147 +37,63 @@ public static class TenantDefaultWebsiteSeeder
         string abbrev = setting?.CompanyNameAbbreviation ?? "OZI";
 
         // =========================================================================
-        // 1. Seed Dynamic Forms (Contact Us, Newsletter, Service Request)
+        // 1. Seed Dynamic Forms from Central Blueprints
         // =========================================================================
         if (!await context.PageForms.AnyAsync(cancellationToken))
         {
-            var contactForm = new PageForm
+            var formBlueprints = CentralContentLoader.GetDefaultForms();
+            var forms = formBlueprints.Select(fb => new PageForm
             {
                 Id = Guid.NewGuid(),
-                Title = "Contact Us",
-                FormKey = "Contact_Us",
-                Description = "Send our team a direct message and we will respond promptly.",
-                SubmitButtonText = "Send Message",
-                SuccessMessage = "Thank you! Your message has been received. Our team will get back to you shortly.",
-                IsActive = true,
+                Title = fb.Title,
+                FormKey = fb.FormKey,
+                Description = fb.Description,
+                SubmitButtonText = fb.SubmitButtonText,
+                SuccessMessage = fb.SuccessMessage,
+                IsActive = fb.IsActive,
                 CreatedAtUtc = DateTime.UtcNow,
-                Fields = new List<PageFormField>
+                Fields = fb.Fields.Select(f => new PageFormField
                 {
-                    new() { Id = Guid.NewGuid(), FieldKey = "full_name", Label = "Full Name", Placeholder = "e.g. First Last", FieldType = "text", IsRequired = true, SortOrder = 1, GridWidth = "col-md-6" },
-                    new() { Id = Guid.NewGuid(), FieldKey = "email", Label = "Email Address", Placeholder = "name@company.com", FieldType = "email", IsRequired = true, SortOrder = 2, GridWidth = "col-md-6" },
-                    new() { Id = Guid.NewGuid(), FieldKey = "phone", Label = "Phone Number", Placeholder = "e.g. +1 (555) 000-0000", FieldType = "phone", IsRequired = false, SortOrder = 3, GridWidth = "col-md-6" },
-                    new() { Id = Guid.NewGuid(), FieldKey = "subject", Label = "Subject", Placeholder = "e.g. Partnership Inquiry", FieldType = "text", IsRequired = false, SortOrder = 4, GridWidth = "col-md-6" },
-                    new() { Id = Guid.NewGuid(), FieldKey = "message", Label = "Your Message", Placeholder = "Please describe your inquiry or requirements in detail...", FieldType = "textarea", IsRequired = true, SortOrder = 5, GridWidth = "col-md-12" }
-                }
-            };
+                    Id = Guid.NewGuid(),
+                    FieldKey = f.FieldKey,
+                    Label = f.Label,
+                    Placeholder = f.Placeholder,
+                    FieldType = f.FieldType,
+                    OptionsJson = f.OptionsJson,
+                    IsRequired = f.IsRequired,
+                    SortOrder = f.SortOrder,
+                    GridWidth = f.GridWidth
+                }).ToList()
+            }).ToList();
 
-            var newsletterForm = new PageForm
-            {
-                Id = Guid.NewGuid(),
-                Title = "Newsletter Subscription",
-                FormKey = "Newsletter",
-                Description = "Subscribe to our periodic industry insights, corporate bulletins, and platform updates.",
-                SubmitButtonText = "Subscribe",
-                SuccessMessage = "Thank you for subscribing! You have been added to our priority announcement list.",
-                IsActive = true,
-                CreatedAtUtc = DateTime.UtcNow,
-                Fields = new List<PageFormField>
-                {
-                    new() { Id = Guid.NewGuid(), FieldKey = "email", Label = "Official Business Email", Placeholder = "name@company.com", FieldType = "email", IsRequired = true, SortOrder = 1, GridWidth = "col-md-12" }
-                }
-            };
-
-            var serviceRequestForm = new PageForm
-            {
-                Id = Guid.NewGuid(),
-                Title = "Service Request & Project Intake",
-                FormKey = "Service_Request",
-                Description = "Please answer the questions below so we can pair you with the right specialist.",
-                SubmitButtonText = "Submit Service Request",
-                SuccessMessage = "Thank you! Your service request has been received. A dedicated specialist will contact you within 1 business day.",
-                IsActive = true,
-                CreatedAtUtc = DateTime.UtcNow,
-                Fields = new List<PageFormField>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "service_required",
-                        Label = "1. What service or solution do you require?",
-                        FieldType = "pill_select",
-                        OptionsJson = "[\"Strategic Consulting & Advisory\", \"Digital Systems Modernization\", \"Directory & Portal Governance\", \"Custom Enterprise Integration\"]",
-                        IsRequired = true,
-                        SortOrder = 1,
-                        GridWidth = "col-md-12"
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "timeline",
-                        Label = "2. Estimated Timeline",
-                        FieldType = "dropdown",
-                        OptionsJson = "[\"Immediate (Within 30 Days)\", \"1–3 Months\", \"Next Fiscal Quarter\", \"Exploratory / Feasibility Only\"]",
-                        IsRequired = true,
-                        SortOrder = 2,
-                        GridWidth = "col-md-6"
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "organization_scale",
-                        Label = "3. Organization Scale",
-                        FieldType = "dropdown",
-                        OptionsJson = "[\"1–50 Members / Staff\", \"50–500 Enterprise Members\", \"500+ Large Institutional Body\"]",
-                        IsRequired = true,
-                        SortOrder = 3,
-                        GridWidth = "col-md-6"
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "full_name",
-                        Label = "Full Name",
-                        Placeholder = "e.g. First Last",
-                        FieldType = "text",
-                        IsRequired = true,
-                        SortOrder = 4,
-                        GridWidth = "col-md-6"
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "email",
-                        Label = "Official Business Email",
-                        Placeholder = "name@company.com",
-                        FieldType = "email",
-                        IsRequired = true,
-                        SortOrder = 5,
-                        GridWidth = "col-md-6"
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        FieldKey = "project_brief",
-                        Label = "4. Project Brief & Key Requirements",
-                        Placeholder = "Briefly describe your objectives, existing platform architecture, or challenges...",
-                        FieldType = "textarea",
-                        IsRequired = false,
-                        SortOrder = 6,
-                        GridWidth = "col-md-12"
-                    }
-                }
-            };
-
-            context.PageForms.AddRange(contactForm, newsletterForm, serviceRequestForm);
+            context.PageForms.AddRange(forms);
             await context.SaveChangesAsync(cancellationToken);
         }
 
         // =========================================================================
-        // 2. Seed Editorial Blog Category & 3 Full Rich Articles
+        // 2. Seed Editorial Blog Categories & Rich Articles from Central Blueprints
         // =========================================================================
-        if (!await context.BlogCategories.AnyAsync(cancellationToken))
+        if (!await context.Blogs.AnyAsync(cancellationToken))
         {
-            var defaultBlogCategory = new BlogCategory
-            {
-                Id = Guid.NewGuid(),
-                Title = "Enterprise Insights & Strategy",
-                Publish = true
-            };
-            context.BlogCategories.Add(defaultBlogCategory);
-
             var defaultBlogs = CentralContentLoader.GetDefaultBlogs();
             foreach (var b in defaultBlogs)
             {
+                var categoryTitle = !string.IsNullOrWhiteSpace(b.Category) ? b.Category.Trim() : "General";
+                var category = await context.BlogCategories
+                    .FirstOrDefaultAsync(c => c.Title.ToLower() == categoryTitle.ToLower(), cancellationToken);
+
+                if (category == null)
+                {
+                    category = new BlogCategory
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = categoryTitle,
+                        Publish = true
+                    };
+                    context.BlogCategories.Add(category);
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+
                 context.Blogs.Add(new Blog
                 {
                     Id = Guid.NewGuid(),
@@ -183,7 +102,7 @@ public static class TenantDefaultWebsiteSeeder
                     Publish = true,
                     SortOrder = b.SortOrder,
                     AddToRibon = true,
-                    BlogCategoryId = defaultBlogCategory.Id,
+                    BlogCategoryId = category.Id,
                     ImageUrl = b.CoverImageUrl,
                     Description = b.Summary,
                     FullDescription = b.BodyHtml
@@ -193,171 +112,71 @@ public static class TenantDefaultWebsiteSeeder
         }
 
         // =========================================================================
-        // 2b. Seed Default Contact Channels & Social Media Profiles
+        // 3. Seed Default Contact Channels & Social Media Profiles from Central Blueprints
         // =========================================================================
         if (!await context.MisWebsiteContactChannels.AnyAsync(cancellationToken))
         {
             string safeHandle = new string(orgName.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
             if (string.IsNullOrWhiteSpace(safeHandle)) safeHandle = "firm";
 
-            var defaultChannels = new List<MisWebsiteContactChannel>
+            var channelBlueprints = CentralContentLoader.GetDefaultContactChannels();
+            var channels = channelBlueprints.Select(cb => new MisWebsiteContactChannel
             {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.Email,
-                    Platform = "Support",
-                    Title = "Official Support Email",
-                    Description = "Under 2h average response time",
-                    Value = $"support@{safeHandle}.com",
-                    IconClass = "fa-solid fa-envelope",
-                    IsDefault = true,
-                    IsPublished = true,
-                    SortOrder = 1
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.Phone,
-                    Platform = "Office",
-                    Title = "Customer Support Hotline",
-                    Description = "Mon - Fri: 8:00 AM - 6:00 PM",
-                    Value = "+1 (800) 555-0199",
-                    IconClass = "fa-solid fa-phone",
-                    IsDefault = true,
-                    IsPublished = true,
-                    SortOrder = 2
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.Address,
-                    Platform = "Headquarters",
-                    Title = "Global Technology Headquarters",
-                    Description = "Primary Corporate Campus",
-                    Value = $"Headquarters: 100 Innovation Boulevard, Suite 500",
-                    IconClass = "fa-solid fa-location-dot",
-                    IsDefault = true,
-                    IsPublished = true,
-                    SortOrder = 3
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = "Hours",
-                    Platform = "Operations",
-                    Title = "Business Hours",
-                    Description = "Standard operational schedule",
-                    Value = "Mon - Fri: 8:00 AM - 6:00 PM",
-                    IconClass = "fa-regular fa-clock",
-                    IsDefault = true,
-                    IsPublished = true,
-                    SortOrder = 4
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.SocialMedia,
-                    Platform = "Twitter",
-                    Title = "Twitter / X",
-                    Description = "Official announcements",
-                    Value = $"https://x.com/{safeHandle}",
-                    IconClass = "fa-brands fa-x-twitter",
-                    IsDefault = false,
-                    IsPublished = true,
-                    SortOrder = 5
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.SocialMedia,
-                    Platform = "LinkedIn",
-                    Title = "LinkedIn",
-                    Description = "Corporate network",
-                    Value = $"https://linkedin.com/company/{safeHandle}",
-                    IconClass = "fa-brands fa-linkedin",
-                    IsDefault = false,
-                    IsPublished = true,
-                    SortOrder = 6
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.SocialMedia,
-                    Platform = "Facebook",
-                    Title = "Facebook",
-                    Description = "Community page",
-                    Value = $"https://facebook.com/{safeHandle}",
-                    IconClass = "fa-brands fa-facebook",
-                    IsDefault = false,
-                    IsPublished = true,
-                    SortOrder = 7
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    ChannelType = ContactChannelTypes.SocialMedia,
-                    Platform = "Instagram",
-                    Title = "Instagram",
-                    Description = "Behind the scenes",
-                    Value = $"https://instagram.com/{safeHandle}",
-                    IconClass = "fa-brands fa-instagram",
-                    IsDefault = false,
-                    IsPublished = true,
-                    SortOrder = 8
-                }
-            };
+                Id = Guid.NewGuid(),
+                ChannelType = cb.ChannelType,
+                Platform = cb.Platform,
+                Title = cb.Title,
+                Description = cb.Description,
+                Value = cb.Value.Replace("{safeHandle}", safeHandle).Replace("{orgName}", orgName),
+                IconClass = cb.IconClass,
+                IsDefault = cb.IsDefault,
+                IsPublished = cb.IsPublished,
+                SortOrder = cb.SortOrder
+            }).ToList();
 
-            context.MisWebsiteContactChannels.AddRange(defaultChannels);
+            context.MisWebsiteContactChannels.AddRange(channels);
             await context.SaveChangesAsync(cancellationToken);
         }
 
         // =========================================================================
-        // 3. Seed Page Categories (Service and Product)
+        // 4. Seed Page Categories from Central Blueprints
         // =========================================================================
-        var servicesCategory = await context.PageCategories
-            .FirstOrDefaultAsync(c => c.Title == "Service" || c.Title == "Services", cancellationToken);
-
-        if (servicesCategory == null)
+        var categoryBlueprints = CentralContentLoader.GetDefaultCategories();
+        foreach (var cb in categoryBlueprints)
         {
-            servicesCategory = new PageCategory
-            {
-                Id = Guid.NewGuid(),
-                Title = "Service",
-                FooterDisplayTitle = "Our Services",
-                MenuSortOrder = 2,
-                MenuPosition = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First,
-                ShowInMenu = true,
-                ShowInFooter = true,
-                FooterSortOrder = 1,
-                Publish = true
-            };
-            context.PageCategories.Add(servicesCategory);
-        }
+            var existing = await context.PageCategories
+                .FirstOrDefaultAsync(c => c.Title.ToLower() == cb.Title.Trim().ToLower(), cancellationToken);
 
-        var productCategory = await context.PageCategories
-            .FirstOrDefaultAsync(c => c.Title == "Product" || c.Title == "Products", cancellationToken);
-
-        if (productCategory == null)
-        {
-            productCategory = new PageCategory
+            if (existing == null)
             {
-                Id = Guid.NewGuid(),
-                Title = "Product",
-                FooterDisplayTitle = "Products",
-                MenuSortOrder = 1,
-                MenuPosition = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle,
-                ShowInMenu = true,
-                ShowInFooter = false,
-                FooterSortOrder = 2,
-                Publish = true
-            };
-            context.PageCategories.Add(productCategory);
+                var menuPos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
+                if (cb.MenuPosition.Equals("first", StringComparison.OrdinalIgnoreCase))
+                {
+                    menuPos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
+                }
+                else if (cb.MenuPosition.Equals("last", StringComparison.OrdinalIgnoreCase))
+                {
+                    menuPos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
+                }
+
+                context.PageCategories.Add(new PageCategory
+                {
+                    Id = Guid.NewGuid(),
+                    Title = cb.Title,
+                    FooterDisplayTitle = cb.FooterDisplayTitle,
+                    MenuSortOrder = cb.MenuSortOrder,
+                    MenuPosition = menuPos,
+                    ShowInMenu = cb.ShowInMenu,
+                    ShowInFooter = cb.ShowInFooter,
+                    FooterSortOrder = cb.FooterSortOrder,
+                    Publish = cb.Publish
+                });
+            }
         }
         await context.SaveChangesAsync(cancellationToken);
 
         // =========================================================================
-        // 4. Seed WebPages & Ordered PageSections from Central Content Blueprints
+        // 5. Seed WebPages & Ordered PageSections from Central Blueprints
         // =========================================================================
         if (!await context.WebPages.AnyAsync(cancellationToken))
         {
@@ -368,19 +187,16 @@ public static class TenantDefaultWebsiteSeeder
                 var directUrl = string.IsNullOrWhiteSpace(p.Slug) ? "home" : p.Slug.Trim();
                 var isHome = string.IsNullOrWhiteSpace(p.Slug) || directUrl.Equals("home", StringComparison.OrdinalIgnoreCase);
 
+                // 1. Dynamic category resolution by title from database
                 Guid? categoryId = null;
                 if (!string.IsNullOrWhiteSpace(p.Category))
                 {
-                    if (p.Category.Equals("Services", StringComparison.OrdinalIgnoreCase) || p.Category.Equals("Service", StringComparison.OrdinalIgnoreCase))
-                    {
-                        categoryId = servicesCategory.Id;
-                    }
-                    else if (p.Category.Equals("Product", StringComparison.OrdinalIgnoreCase) || p.Category.Equals("Products", StringComparison.OrdinalIgnoreCase))
-                    {
-                        categoryId = productCategory.Id;
-                    }
+                    var matchedCat = await context.PageCategories
+                        .FirstOrDefaultAsync(c => c.Title.ToLower() == p.Category.Trim().ToLower(), cancellationToken);
+                    categoryId = matchedCat?.Id;
                 }
 
+                // 2. Direct zone mapping from seed blueprint
                 var zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
                 if (!string.IsNullOrWhiteSpace(p.Zone))
                 {
@@ -393,47 +209,29 @@ public static class TenantDefaultWebsiteSeeder
                         zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
                     }
                 }
-                else
-                {
-                    var fallbackSlug = directUrl.ToLowerInvariant();
-                    if (fallbackSlug is "career" or "blog")
-                    {
-                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
-                    }
-                    else if (fallbackSlug is "contact" or "contact-us")
-                    {
-                        zonePos = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Last;
-                    }
-                }
 
+                // 3. Navigation and layout positions driven purely by blueprint properties
                 bool isCta = p.IsMenuCTA;
                 bool isLegalDoc = p.IsLegal;
-                bool isHomeDoc = isHome;
+                bool isTopBar = string.Equals(p.MenuPosition, "topbar", StringComparison.OrdinalIgnoreCase);
+                bool isHeader = string.Equals(p.MenuPosition, "header", StringComparison.OrdinalIgnoreCase);
+                bool isFooter = string.Equals(p.MenuPosition, "footer", StringComparison.OrdinalIgnoreCase);
 
-                // Independent positions determination based on page slug / role
-                var slugLower = directUrl.ToLowerInvariant();
-                bool showInTopBar = slugLower is "faq" or "support" or "documentation" || p.MenuPosition.Equals("topbar", StringComparison.OrdinalIgnoreCase);
-                int topBarOrder = slugLower == "faq" ? 1 : (slugLower == "support" ? 2 : (slugLower == "documentation" ? 3 : p.SortOrder));
+                bool showInTopBar = isTopBar;
+                int topBarOrder = isTopBar ? p.SortOrder : 0;
 
-                bool showInMain = !isHome && !isCta && !isLegalDoc && categoryId == null && !showInTopBar && p.MenuPosition.Equals("header", StringComparison.OrdinalIgnoreCase);
-                int mainOrder = slugLower == "about" ? 1 : (slugLower == "career" ? 2 : (slugLower == "blog" ? 3 : (slugLower is "contact" or "contact-us" ? 1 : p.SortOrder)));
+                bool showInMain = !isHome && !isCta && !isLegalDoc && categoryId == null && isHeader;
+                int mainOrder = showInMain ? p.SortOrder : 0;
 
                 bool showInDropdown = !isCta && !isLegalDoc && categoryId != null;
-                int dropdownOrder = slugLower is "it" or "ai-agent" ? 1 : (slugLower is "hospital" or "machinery" or "machineries" ? 2 : (slugLower == "infrastructure" ? 3 : p.SortOrder));
+                int dropdownOrder = showInDropdown ? p.SortOrder : 0;
 
-                bool showInFooterBottom = isLegalDoc || slugLower == "console";
-                int footerBottomOrder = slugLower == "terms" ? 1 : (slugLower == "privacy" ? 2 : (slugLower == "cookies" ? 3 : (slugLower == "console" ? 4 : 5)));
+                bool showInFooterBottom = isLegalDoc || isFooter;
+                int footerBottomOrder = showInFooterBottom ? p.SortOrder : 0;
 
-                // Tags for footer Quick Links column: AI Agent, Machinery, Career, FAQ, Contact Us
-                string? pageTags = null;
-                if (slugLower is "ai-agent" or "machinery" or "machineries" or "career" or "faq" or "contact" or "contact-us")
-                {
-                    pageTags = "quicklinks";
-                }
-
-                // ShowInFooter: true if in category, or tagged as quicklinks, or general footer column page
-                bool showInFooter = !isCta && !showInFooterBottom && (categoryId != null || !string.IsNullOrWhiteSpace(pageTags));
-                int footerOrder = slugLower is "it" or "ai-agent" ? 1 : (slugLower is "hospital" or "machinery" or "machineries" ? 2 : (slugLower is "infrastructure" or "career" ? 3 : (slugLower == "faq" ? 4 : (slugLower is "contact" or "contact-us" ? 5 : p.SortOrder))));
+                string? pageTags = p.Tags;
+                bool showInFooter = p.ShowInFooter ?? (!isCta && !showInFooterBottom && (categoryId != null || isHeader || !string.IsNullOrWhiteSpace(pageTags)));
+                int footerOrder = showInFooter ? p.SortOrder : 0;
 
                 var webPage = new WebPage
                 {
@@ -461,7 +259,7 @@ public static class TenantDefaultWebsiteSeeder
                     IsMenuCTA = isCta,
                     MenuCtaText = isCta ? p.Title : null,
                     MenuCtaUrl = isCta ? ("/" + directUrl) : null,
-                    MenuCtaStyle = "primary"
+                    MenuCtaStyle = p.MenuCtaStyle ?? "primary"
                 };
 
                 context.WebPages.Add(webPage);
@@ -511,67 +309,40 @@ public static class TenantDefaultWebsiteSeeder
                 }
             }
         }
+
         // =========================================================================
-        // 6. Seed Comprehensive SEO & Header Tag Suite
+        // 6. Seed Comprehensive SEO & Header Tag Suite from Central Blueprints
         // =========================================================================
         if (!await context.SiteCodeInjectionTags.AnyAsync(cancellationToken))
         {
-            var seoTag = new SiteCodeInjectionTag
+            var tagBlueprints = CentralContentLoader.GetDefaultCodeInjectionTags();
+            var tags = tagBlueprints.Select(tb => new SiteCodeInjectionTag
             {
                 Id = Guid.NewGuid(),
-                Name = "Comprehensive SEO, Social & Icons Suite (All-In-One)",
-                Zone = "head",
-                TagType = "meta_tag",
-                SortOrder = 10,
-                IsActive = true,
-                SuiteCode = "suite_corporate",
-                Content = @"<!-- Primary SEO Meta Tags -->
-<title>{{ Title }} | {{ BrandName }}</title>
-<meta name=""title"" content=""{{ Title }} | {{ BrandName }}"" />
-<meta name=""description"" content=""{{ Description }}"" />
-<meta name=""keywords"" content=""{{ Keywords }}"" />
-<meta name=""author"" content=""{{ Author }}"" />
-<meta name=""robots"" content=""index, follow"" />
-<link rel=""canonical"" href=""{{ CanonicalUrl }}"" />
+                Name = tb.Name,
+                Zone = tb.Zone,
+                TagType = tb.TagType,
+                SortOrder = tb.SortOrder,
+                IsActive = tb.IsActive,
+                SuiteCode = tb.SuiteCode,
+                Content = tb.Content
+            }).ToList();
 
-<!-- Open Graph Protocol (Facebook, LinkedIn, Discord) -->
-<meta property=""og:type"" content=""website"" />
-<meta property=""og:url"" content=""{{ CanonicalUrl }}"" />
-<meta property=""og:title"" content=""{{ Title }} | {{ BrandName }}"" />
-<meta property=""og:description"" content=""{{ Description }}"" />
-<meta property=""og:image"" content=""{{ ImageUrl }}"" />
-<meta property=""og:site_name"" content=""{{ BrandName }}"" />
-
-<!-- Twitter / X Cards -->
-<meta name=""twitter:card"" content=""summary_large_image"" />
-<meta name=""twitter:url"" content=""{{ CanonicalUrl }}"" />
-<meta name=""twitter:title"" content=""{{ Title }} | {{ BrandName }}"" />
-<meta name=""twitter:description"" content=""{{ Description }}"" />
-<meta name=""twitter:image"" content=""{{ ImageUrl }}"" />
-<meta name=""twitter:site"" content=""@{{ BrandName }}"" />
-
-<!-- Favicon & Web App Icons -->
-<link rel=""shortcut icon"" href=""{{ FaviconUrl }}"" type=""image/x-icon"" />
-<link rel=""icon"" type=""image/x-icon"" href=""{{ FaviconUrl }}"" />
-<link rel=""apple-touch-icon"" sizes=""180x180"" href=""{{ AppleTouchIconUrl }}"" />
-<meta name=""theme-color"" content=""{{ ThemeColor }}"" />"
-            };
-
-            context.SiteCodeInjectionTags.Add(seoTag);
+            context.SiteCodeInjectionTags.AddRange(tags);
             await context.SaveChangesAsync(cancellationToken);
         }
 
         // =========================================================================
         // 7. Seed Canonical Corporate Suite Templates into TenantInstalledTemplates
         // =========================================================================
-        if (!await context.TenantInstalledTemplates.AnyAsync(cancellationToken))
-        {
-            await SeedCorporateSuiteTemplatesAsync(context, cancellationToken);
-        }
+        // Ensure canonical corporate suite templates are installed and refreshed to latest blueprints
+        await SeedCorporateSuiteTemplatesAsync(context, cancellationToken);
 
         // =========================================================================
-        // 8. Stamp Workspace Initialized
+        // 8. Stamp Workspace Initialized with Central Settings Blueprint
         // =========================================================================
+        var settingsBlueprint = CentralContentLoader.GetDefaultWebsiteSettings();
+
         if (setting == null)
         {
             setting = new MisWebsiteSetting { BrandName = orgName, WebsiteTitle = $"{orgName} Official Website" };
@@ -584,19 +355,27 @@ public static class TenantDefaultWebsiteSeeder
         setting.UpdatedAtUtc = DateTime.UtcNow;
 
         if (string.IsNullOrWhiteSpace(setting.CompanyDescription))
-            setting.CompanyDescription = $"{orgName} delivers industry-leading solutions and professional services tailored to meet modern enterprise standards.";
+        {
+            setting.CompanyDescription = settingsBlueprint.CompanyDescription.Replace("{orgName}", orgName);
+        }
 
         if (string.IsNullOrWhiteSpace(setting.FooterDescription))
         {
-            setting.FooterDescription = $"{orgName} is committed to delivering world-class solutions, scalable sovereign infrastructure, and bespoke client experiences. Our mission drives continuous innovation, robust operational security, and measurable success for every partnership.";
+            setting.FooterDescription = settingsBlueprint.FooterDescription.Replace("{orgName}", orgName);
             setting.FooterNote = setting.FooterDescription;
         }
 
         if (string.IsNullOrWhiteSpace(setting.Tagline))
-            setting.Tagline = "Innovative Solutions & Professional Excellence";
+        {
+            setting.Tagline = settingsBlueprint.Tagline;
+        }
 
         if (string.IsNullOrWhiteSpace(setting.CopyrightNotice))
-            setting.CopyrightNotice = $"© {DateTime.UtcNow.Year} {orgName}. All rights reserved.";
+        {
+            setting.CopyrightNotice = settingsBlueprint.CopyrightNotice
+                .Replace("{year}", DateTime.UtcNow.Year.ToString())
+                .Replace("{orgName}", orgName);
+        }
 
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -632,11 +411,17 @@ public static class TenantDefaultWebsiteSeeder
             context.PageCategories.RemoveRange(allCategories);
         }
 
-        // 4. Remove Blog posts
+        // 4. Remove Blog posts & BlogCategories
         var allBlogs = await context.Blogs.ToListAsync(cancellationToken);
         if (allBlogs.Count > 0)
         {
             context.Blogs.RemoveRange(allBlogs);
+        }
+
+        var allBlogCategories = await context.BlogCategories.ToListAsync(cancellationToken);
+        if (allBlogCategories.Count > 0)
+        {
+            context.BlogCategories.RemoveRange(allBlogCategories);
         }
 
         // 5. Remove MisWebsiteContactChannels
@@ -673,24 +458,45 @@ public static class TenantDefaultWebsiteSeeder
         // to guarantee 100% exact character fidelity with the Angular Studio components.
         var blueprints = CentralBlueprintLoader.GetAllSuiteBlueprints();
 
-        var templates = blueprints.Select(b => new TenantInstalledTemplate
-        {
-            Id = Guid.NewGuid(),
-            TemplateKey = b.VariantCode,
-            CategoryKey = b.CategoryKey,
-            Name = b.Name,
-            VariantCode = b.VariantCode,
-            HtmlTemplate = b.HtmlTemplate,
-            CssStyles = b.CssStyles,
-            JsScript = b.JsScript,
-            DefaultContentJson = b.SampleContentJson,
-            IsDefault = true,
-            IsActive = true,
-            InstalledVersion = "1.0.0",
-            InstalledUtc = DateTime.UtcNow
-        }).ToList();
+        var existingTemplates = await context.TenantInstalledTemplates.ToListAsync(cancellationToken);
+        var existingLookup = existingTemplates
+            .Where(t => !string.IsNullOrWhiteSpace(t.VariantCode))
+            .ToDictionary(t => t.VariantCode.Trim().ToLowerInvariant(), t => t);
 
-        context.TenantInstalledTemplates.AddRange(templates);
+        foreach (var b in blueprints)
+        {
+            var key = (b.VariantCode ?? string.Empty).Trim().ToLowerInvariant();
+            if (existingLookup.TryGetValue(key, out var existing))
+            {
+                // Refresh existing template markup, styling, and script runtime to match latest blueprints
+                existing.HtmlTemplate = b.HtmlTemplate;
+                existing.CssStyles = b.CssStyles;
+                existing.JsScript = b.JsScript;
+                existing.DefaultContentJson = b.SampleContentJson;
+                existing.Name = b.Name;
+                existing.CategoryKey = b.CategoryKey;
+            }
+            else
+            {
+                context.TenantInstalledTemplates.Add(new TenantInstalledTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateKey = b.VariantCode,
+                    CategoryKey = b.CategoryKey,
+                    Name = b.Name,
+                    VariantCode = b.VariantCode,
+                    HtmlTemplate = b.HtmlTemplate,
+                    CssStyles = b.CssStyles,
+                    JsScript = b.JsScript,
+                    DefaultContentJson = b.SampleContentJson,
+                    IsDefault = true,
+                    IsActive = true,
+                    InstalledVersion = "1.0.0",
+                    InstalledUtc = DateTime.UtcNow
+                });
+            }
+        }
+
         await context.SaveChangesAsync(cancellationToken);
     }
 }

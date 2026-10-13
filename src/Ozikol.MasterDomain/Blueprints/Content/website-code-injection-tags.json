@@ -1,0 +1,11 @@
+[
+  {
+    "name": "Comprehensive SEO, Social & Icons Suite (All-In-One)",
+    "zone": "head",
+    "tagType": "meta_tag",
+    "sortOrder": 10,
+    "isActive": true,
+    "suiteCode": "suite_corporate",
+    "content": "<!-- Primary SEO Meta Tags -->\n<title>{{ Title }} | {{ BrandName }}</title>\n<meta name=\"title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta name=\"description\" content=\"{{ Description }}\" />\n<meta name=\"keywords\" content=\"{{ Keywords }}\" />\n<meta name=\"author\" content=\"{{ Author }}\" />\n<meta name=\"robots\" content=\"index, follow\" />\n<link rel=\"canonical\" href=\"{{ CanonicalUrl }}\" />\n\n<!-- Open Graph Protocol (Facebook, LinkedIn, Discord) -->\n<meta property=\"og:type\" content=\"website\" />\n<meta property=\"og:url\" content=\"{{ CanonicalUrl }}\" />\n<meta property=\"og:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta property=\"og:description\" content=\"{{ Description }}\" />\n<meta property=\"og:image\" content=\"{{ ImageUrl }}\" />\n<meta property=\"og:site_name\" content=\"{{ BrandName }}\" />\n\n<!-- Twitter / X Cards -->\n<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta name=\"twitter:url\" content=\"{{ CanonicalUrl }}\" />\n<meta name=\"twitter:title\" content=\"{{ Title }} | {{ BrandName }}\" />\n<meta name=\"twitter:description\" content=\"{{ Description }}\" />\n<meta name=\"twitter:image\" content=\"{{ ImageUrl }}\" />\n<meta name=\"twitter:site\" content=\"@{{ BrandName }}\" />\n\n<!-- Favicon & Web App Icons -->\n<link rel=\"shortcut icon\" href=\"{{ FaviconUrl }}\" type=\"image/x-icon\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"{{ FaviconUrl }}\" />\n<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"{{ AppleTouchIconUrl }}\" />\n<meta name=\"theme-color\" content=\"{{ ThemeColor }}\" />"
+  }
+]

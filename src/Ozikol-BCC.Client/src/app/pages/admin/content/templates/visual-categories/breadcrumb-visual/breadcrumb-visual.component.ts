@@ -992,162 +992,17 @@ export class BreadcrumbVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'trail' | 'banner' = 'trail';
 
-  htmlTemplate: string = `<header class="oz-breadcrumb-banner {{ CustomClass }}" style="background-image: url('{{ BackgroundImageUrl }}');">
-  <div class="oz-banner-overlay"></div>
-  <div class="oz-banner-container">
-    <h1 class="oz-banner-title">{{ Title }}</h1>
-    {{#if SubTitle}}<p class="oz-banner-subtitle">{{ SubTitle }}</p>{{/if}}
-    <nav class="oz-breadcrumb-nav" aria-label="Breadcrumb">
-      <ol class="oz-breadcrumb-list">
-        {{#each Breadcrumbs}}
-        <li class="oz-breadcrumb-item {{#if IsActive}}active{{/if}}">
-          {{#if Url}}
-          <a href="{{ Url }}" class="oz-breadcrumb-link">{{ Title }}</a>
-          {{else}}
-          <span class="oz-breadcrumb-current">{{ Title }}</span>
-          {{/if}}
-        </li>
-        {{/each}}
-      </ol>
-    </nav>
-  </div>
-</header>`;
-
-  cssStyles: string = `.oz-breadcrumb-banner {
-  position: relative;
-  background-size: cover;
-  background-position: center;
-  padding: 72px 24px;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  text-align: center;
-}
-.oz-banner-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(2px);
-}
-.oz-banner-container {
-  position: relative;
-  z-index: 2;
-  max-width: 960px;
-  margin: 0 auto;
-}
-.oz-banner-title {
-  font-size: 36px;
-  font-weight: 800;
-  margin: 0 0 10px 0;
-  letter-spacing: -0.02em;
-}
-.oz-banner-subtitle {
-  font-size: 16px;
-  color: #cbd5e1;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
-}
-.oz-breadcrumb-list {
-  display: inline-flex;
-  list-style: none;
-  padding: 6px 18px;
-  margin: 0;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 30px;
-  gap: 12px;
-  align-items: center;
-}
-.oz-breadcrumb-item + .oz-breadcrumb-item::before {
-  content: '/';
-  color: #94a3b8;
-  margin-right: 12px;
-}
-.oz-breadcrumb-link {
-  color: #cbd5e1;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.oz-breadcrumb-link:hover {
-  color: #ffffff;
-}
-.oz-breadcrumb-item.active {
-  color: #38bdf8;
-  font-weight: 700;
-}`;
-
+  htmlTemplate: string = '';
+  cssStyles: string = '';
   jsScript: string = '';
+  sampleContent: any = {};
 
   breadcrumbTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    {
-      label: 'Banner',
-      token: `{{ Title }}`,
-      htmlSnippet: `<header class="breadcrumb-banner position-relative {{ CustomClass }}" style="background-image: url('{{ BackgroundImageUrl }}'); background-size: cover; background-position: center;">
-  <div class="banner-overlay"></div>
-  <div class="container position-relative py-5 text-center text-white">
-    <h1 class="display-4 fw-bold">{{ Title }}</h1>
-    {{#if SubTitle}}<p class="lead text-white-50">{{ SubTitle }}</p>{{/if}}
-    <nav aria-label="breadcrumb" class="d-inline-block mt-3">
-      <ol class="breadcrumb bg-dark bg-opacity-50 px-4 py-2 rounded-pill mb-0">
-        {{#each Breadcrumbs}}
-        <li class="breadcrumb-item {{#if IsActive}}active text-white{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>
-          {{#if Url}}<a href="{{ Url }}" class="text-white-50 text-decoration-none">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}
-        </li>
-        {{/each}}
-      </ol>
-    </nav>
-  </div>
-</header>`,
-      description: 'Complete subpage header banner with responsive breadcrumb trail, background image, and dark contrast overlay.'
-    },
-    {
-      label: 'Trail Loop',
-      token: `{{#each Breadcrumbs}}\n<li class="breadcrumb-item {{#if IsActive}}active{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>\n  {{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}\n</li>\n{{/each}}`,
-      htmlSnippet: `<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    {{#each Breadcrumbs}}
-    <li class="breadcrumb-item {{#if IsActive}}active{{/if}}" {{#if IsActive}}aria-current="page"{{/if}}>
-      {{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}
-    </li>
-    {{/each}}
-  </ol>
-</nav>`,
-      description: 'Responsive breadcrumb list loop with active item highlighting.'
-    },
-    {
-      label: 'Title',
-      token: '{{ Title }}',
-      htmlSnippet: '<h1 class="page-title">{{ Title }}</h1>',
-      description: 'Primary subpage headline text.'
-    },
-    {
-      label: 'SubTitle',
-      token: '{{ SubTitle }}',
-      htmlSnippet: '{{#if SubTitle}}<p class="page-subtitle">{{ SubTitle }}</p>{{/if}}',
-      description: 'Subpage summary, description, or subtitle text.'
-    },
-    {
-      label: 'BackgroundImageUrl',
-      token: '{{ BackgroundImageUrl }}',
-      htmlSnippet: 'style="background-image: url(' + "'{{ BackgroundImageUrl }}'" + ');"',
-      description: 'Subpage banner background photo or graphic texture URL.'
-    },
-    {
-      label: 'Breadcrumb Link',
-      token: '{{ Url }}',
-      htmlSnippet: '{{#if Url}}<a href="{{ Url }}">{{ Title }}</a>{{else}}<span>{{ Title }}</span>{{/if}}',
-      description: 'Clickable parent crumb link with fallback span for current page.'
-    }
+    { label: 'Breadcrumbs Trail Loop', token: '{{#each Breadcrumbs}}\n<li class="breadcrumb-item {{#if IsActive}}active{{/if}}">\n  <a href="{{ Url }}">{{ Title }}</a>\n</li>\n{{/each}}', description: 'Dynamic breadcrumb hierarchy link iteration.' },
+    { label: 'Title', token: '{{ Title }}', description: 'Primary subpage headline text.' },
+    { label: 'SubTitle', token: '{{ SubTitle }}', description: 'Subpage narrative excerpt or subtitle.' },
+    { label: 'Background Image', token: '{{ BackgroundImageUrl }}', description: 'Banner header background photo URL.' }
   ];
-
-  sampleContent: any = {
-    title: 'Enterprise Architecture & Cloud Solutions',
-    subTitle: 'Discover our cloud migration, microservices, and enterprise consulting frameworks.',
-    backgroundImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-    breadcrumbs: [
-      { title: 'Home', url: '/' },
-      { title: 'Solutions', url: '/solutions' },
-      { title: 'Enterprise Architecture', url: '', isActive: true }
-    ]
-  };
 
   constructor(
     private api: ApiService,
@@ -1162,6 +1017,8 @@ export class BreadcrumbVisualComponent implements OnInit {
     }
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    } else {
+      this.loadBlueprint();
     }
   }
 
@@ -1170,22 +1027,50 @@ export class BreadcrumbVisualComponent implements OnInit {
     this.variantCode = `BCRUMB_${randomSuffix}`;
   }
 
+  loadBlueprint(forceReload: boolean = false, toastSuccess?: string): void {
+    const url = forceReload ? 'ContentApi/templates/blueprint/breadcrumb?reload=true' : 'ContentApi/templates/blueprint/breadcrumb';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp) {
+          this.htmlTemplate = bp.htmlTemplate || '';
+          this.cssStyles = bp.cssStyles || '';
+          this.jsScript = bp.jsScript || '';
+          if (bp.sampleContent) {
+            this.sampleContent = bp.sampleContent;
+          }
+          if (!this.isEditMode) {
+            this.templateName = bp.name || this.templateName;
+            this.description = bp.description || this.description;
+          }
+          if (toastSuccess) {
+            this.toast.info(toastSuccess);
+          }
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to load Breadcrumb blueprint from central API.');
+      }
+    });
+  }
+
   resetBoilerplate(): void {
-    this.toast.info('Boilerplate reset to default breadcrumb structure.');
+    this.loadBlueprint(true, 'Boilerplate reset to default breadcrumb files.');
   }
 
   resetSampleContent(): void {
-    this.sampleContent = {
-      title: 'Enterprise Architecture & Cloud Solutions',
-      subTitle: 'Discover our cloud migration, microservices, and enterprise consulting frameworks.',
-      backgroundImageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      breadcrumbs: [
-        { title: 'Home', url: '/' },
-        { title: 'Solutions', url: '/solutions' },
-        { title: 'Enterprise Architecture', url: '', isActive: true }
-      ]
-    };
-    this.toast.info('Breadcrumb sample values reset to defaults.');
+    this.api.get<any>('ContentApi/templates/blueprint/breadcrumb?reload=true').subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp?.sampleContent) {
+          this.sampleContent = bp.sampleContent;
+          this.toast.info('Breadcrumb sample values reset to file defaults.');
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to reset sample content from central API.');
+      }
+    });
   }
 
   addBreadcrumbItem(): void {
