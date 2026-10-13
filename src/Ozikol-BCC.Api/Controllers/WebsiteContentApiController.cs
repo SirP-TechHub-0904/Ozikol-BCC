@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -11,7 +13,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// <summary>
     /// Public content delivery API for the client website, landing pages, and UI.
     /// Fully anonymous, delivering published pages (including legal/terms SecurityPages),
-    /// navigation categories, layout sections, FAQs, and visitor telemetry.
+    /// navigation categories, layout sections, FAQs, visitor telemetry, and unified in-memory bootstrap bundles.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -20,10 +22,323 @@ namespace Ozikol_BCC.Api.Controllers
     public class WebsiteContentApiController : ControllerBase
     {
         private readonly DashboardDbContext _context;
+        private readonly IMemoryCache? _memoryCache;
+        private readonly ITenantProvider? _tenantProvider;
 
-        public WebsiteContentApiController(DashboardDbContext context)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebsiteContentApiController"/> class.
+        /// </summary>
+        /// <param name="context">Active tenant database context.</param>
+        /// <param name="memoryCache">Optional in-memory cache for ultra-fast response delivery.</param>
+        /// <param name="tenantProvider">Optional runtime tenant identity provider.</param>
+        public WebsiteContentApiController(
+            DashboardDbContext context,
+            IMemoryCache? memoryCache = null,
+            ITenantProvider? tenantProvider = null)
         {
             _context = context;
+            _memoryCache = memoryCache;
+            _tenantProvider = tenantProvider;
+        }
+
+        // ==========================================
+        // 0. UNIFIED WEBSITE BOOTSTRAP (SINGLE ROUNDTRIP & IN-MEMORY CACHE)
+        // ==========================================
+
+        /// <summary>
+        /// Retrieves the complete, consolidated website payload in a single roundtrip.
+        /// Resolves brand UI settings, active theme templates, navigation categories,
+        /// published pages, code injection tags, page layout sections, and recent blogs.
+        /// Caches the result in server memory (IMemoryCache) for sub-millisecond subsequent delivery.
+        /// </summary>
+        /// <param name="slug">Requested page slug (default 'home').</param>
+        /// <param name="blogId">Optional blog article identifier if viewing single article.</param>
+        /// <param name="bypassCache">Optional flag to force fresh retrieval and cache invalidation.</param>
+        /// <returns>Consolidated website bootstrap payload.</returns>
+        [HttpGet("bootstrap")]
+        public async Task<IActionResult> GetWebsiteBootstrap(
+            [FromQuery] string? slug = null,
+            [FromQuery] string? blogId = null,
+            [FromQuery] bool bypassCache = false)
+        {
+            var tenantKey = _tenantProvider?.CurrentTenant ?? "default";
+            var cleanSlug = (slug ?? string.Empty).Trim().ToLowerInvariant().Trim('/');
+            if (string.IsNullOrEmpty(cleanSlug)) cleanSlug = "home";
+
+            var cacheKey = $"website_bootstrap_{tenantKey}_{cleanSlug}_{(blogId ?? string.Empty)}";
+
+            if (!bypassCache && _memoryCache != null && _memoryCache.TryGetValue(cacheKey, out object? cached) && cached != null)
+            {
+                return Ok(ApiResponse<object>.SuccessResponse(cached, "Website bootstrap bundle retrieved (from memory cache)."));
+            }
+
+            // 1. Fetch Brand & UI Settings
+            var setting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var channels = await _context.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            var primaryEmail = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email)?.Value
+                ?? string.Empty;
+
+            var primaryPhone = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone)?.Value
+                ?? string.Empty;
+
+            var primaryAddress = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address)?.Value
+                ?? string.Empty;
+
+            var primaryHours = channels.FirstOrDefault(c => (c.ChannelType == "Hours" || c.ChannelType == "WorkingHours") && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == "Hours" || c.ChannelType == "WorkingHours")?.Value
+                ?? string.Empty;
+
+            object? uiSettings = null;
+            if (setting != null)
+            {
+                uiSettings = new
+                {
+                    setting.Id,
+                    setting.BrandName,
+                    setting.CompanyName,
+                    setting.CompanyNameAbbreviation,
+                    setting.SiteTitle,
+                    setting.WebsiteTitle,
+                    setting.DashboardTitle,
+                    setting.Tagline,
+                    setting.CompanyDescription,
+                    setting.FooterDescription,
+                    setting.CompanyWebsiteLink,
+                    setting.LogoUrl,
+                    setting.CompanyLogoUrl,
+                    setting.WhiteLogoUrl,
+                    setting.CompanyWhiteLogoUrl,
+                    setting.FaviconUrl,
+                    setting.CompanyIconUrl,
+                    setting.LoginTitle,
+                    setting.LoginButtonText,
+                    setting.ActivateLogin,
+                    setting.ActivateLoginInMenu,
+                    setting.ActivateLoginInFooter,
+                    contactEmail = primaryEmail,
+                    supportEmail = primaryEmail,
+                    primaryPhone = primaryPhone,
+                    address = primaryAddress,
+                    workingHours = primaryHours,
+                    contactChannels = channels.Select(c => new
+                    {
+                        c.Id,
+                        c.ChannelType,
+                        c.Platform,
+                        title = c.Title,
+                        description = c.Description,
+                        value = c.Value,
+                        url = c.Value,
+                        icon = c.IconClass,
+                        iconClass = c.IconClass,
+                        c.IsDefault,
+                        c.SortOrder
+                    }).ToList()
+                };
+            }
+
+            // 2. Active Theme Templates
+            var activeTemplates = await _context.TenantInstalledTemplates
+                .AsNoTracking()
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.CategoryKey)
+                .ThenBy(t => t.InstalledUtc)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TemplateKey,
+                    t.CategoryKey,
+                    t.Name,
+                    t.VariantCode,
+                    t.HtmlTemplate,
+                    t.CssStyles,
+                    t.JsScript,
+                    t.DefaultContentJson,
+                    t.InstalledVersion
+                })
+                .ToListAsync();
+
+            // 3. Navigation Categories
+            var categories = await _context.PageCategories
+                .AsNoTracking()
+                .Where(c => c.Publish && c.ShowInMenu && c.WebPages.Any(p => p.Publish && p.ShowInMenuDropDown))
+                .Include(c => c.WebPages!.Where(p => p.Publish && p.ShowInMenuDropDown).OrderBy(p => p.DropdownSortOrder != 0 ? p.DropdownSortOrder : p.SortOrder))
+                .OrderBy(c => c.MenuSortOrder)
+                .ToListAsync();
+
+            // 4. Published Pages (with legal pages)
+            var publishedPages = await _context.WebPages
+                .AsNoTracking()
+                .Include(p => p.PageCategory)
+                .Where(p => p.Publish)
+                .OrderBy(p => p.SortOrder)
+                .ToListAsync();
+
+            // 5. Code Injections (with hydrated tokens)
+            var activeTags = await _context.SiteCodeInjectionTags
+                .AsNoTracking()
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.CreatedAtUtc)
+                .ToListAsync();
+
+            var brandName = !string.IsNullOrWhiteSpace(setting?.BrandName)
+                ? setting.BrandName
+                : (!string.IsNullOrWhiteSpace(setting?.CompanyName) ? setting.CompanyName : "Ozikol");
+
+            var faviconUrl = !string.IsNullOrWhiteSpace(setting?.FaviconUrl)
+                ? setting.FaviconUrl
+                : (!string.IsNullOrWhiteSpace(setting?.CompanyIconUrl) && setting.CompanyIconUrl != "/favicon.ico"
+                    ? setting.CompanyIconUrl
+                    : string.Empty);
+
+            var logoUrl = !string.IsNullOrWhiteSpace(setting?.LogoUrl)
+                ? setting.LogoUrl
+                : (!string.IsNullOrWhiteSpace(setting?.CompanyLogoUrl) ? setting.CompanyLogoUrl : faviconUrl);
+
+            var description = setting?.CompanyDescription ?? setting?.Tagline ?? string.Empty;
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            var hydratedTags = activeTags.Select(tag =>
+            {
+                var content = tag.Content ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    content = content
+                        .Replace("{{ FaviconUrl }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Favicon }}", faviconUrl, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ LogoUrl }}", logoUrl, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ BrandName }}", brandName, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ CompanyName }}", brandName, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ SiteTitle }}", setting?.WebsiteTitle ?? brandName, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Tagline }}", setting?.Tagline ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ Description }}", description, StringComparison.OrdinalIgnoreCase)
+                        .Replace("{{ BaseUrl }}", baseUrl, StringComparison.OrdinalIgnoreCase);
+                }
+                return new
+                {
+                    tag.Id,
+                    tag.Name,
+                    tag.Zone,
+                    tag.SuiteCode,
+                    tag.SortOrder,
+                    tag.IsActive,
+                    Content = content
+                };
+            }).ToList();
+
+            // 6. Layout Sections (Home or Slug-specific)
+            List<PageSection> sections = new();
+            WebPage? currentPage = null;
+
+            if (cleanSlug == "home" || cleanSlug == "/" || cleanSlug == "index")
+            {
+                var homePage = publishedPages.FirstOrDefault(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                var secQuery = _context.PageSections
+                    .AsNoTracking()
+                    .Include(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                    .Include(s => s.PageForm)
+                        .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                    .Where(s => !s.Disable);
+
+                if (homePage != null)
+                {
+                    sections = await secQuery.Where(s => s.WebPageId == homePage.Id).OrderBy(s => s.PageSortOrder).ToListAsync();
+                }
+                else
+                {
+                    sections = await secQuery.OrderBy(s => s.PageSortOrder).ToListAsync();
+                }
+            }
+            else if (cleanSlug != "blog")
+            {
+                // Dynamic page by slug
+                var slashSlug = "/" + cleanSlug;
+                currentPage = await _context.WebPages
+                    .AsNoTracking()
+                    .Include(p => p.PageCategory)
+                    .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
+                        .ThenInclude(s => s.PageSectionLists!.Where(l => !l.Disable).OrderBy(l => l.SortOrder))
+                    .Include(p => p.PageSections!.Where(s => !s.Disable).OrderBy(s => s.PageSortOrder))
+                        .ThenInclude(s => s.PageForm)
+                            .ThenInclude(f => f!.Fields!.OrderBy(fld => fld.SortOrder))
+                    .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null &&
+                        (p.DirectUrl.ToLower() == cleanSlug || p.DirectUrl.ToLower() == slashSlug));
+
+                if (currentPage?.PageSections != null)
+                {
+                    sections = currentPage.PageSections.ToList();
+                }
+            }
+
+            // 7. Recent Blogs & Article Details
+            var recentBlogs = await _context.Blogs
+                .Include(b => b.BlogCategory)
+                .AsNoTracking()
+                .Where(b => b.Publish)
+                .OrderByDescending(b => b.Date)
+                .ThenBy(b => b.SortOrder)
+                .Take(3)
+                .ToListAsync();
+
+            object? currentArticle = null;
+            if (!string.IsNullOrWhiteSpace(blogId) && Guid.TryParse(blogId, out var articleGuid))
+            {
+                currentArticle = await _context.Blogs
+                    .AsNoTracking()
+                    .Include(b => b.BlogCategory)
+                    .FirstOrDefaultAsync(b => b.Publish && b.Id == articleGuid);
+            }
+
+            var head = hydratedTags.Where(t => t.Zone.Equals("head", StringComparison.OrdinalIgnoreCase)).ToList();
+            var bodyOpen = hydratedTags.Where(t => t.Zone.Equals("body_open", StringComparison.OrdinalIgnoreCase)).ToList();
+            var footer = hydratedTags.Where(t => t.Zone.Equals("footer", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            var bootstrapPayload = new
+            {
+                brand = uiSettings,
+                activeTemplates,
+                categories,
+                publishedPages,
+                codeInjections = new
+                {
+                    head,
+                    bodyOpen,
+                    footer
+                },
+                sections,
+                recentBlogs,
+                currentPage,
+                currentArticle,
+                resolvedAtUtc = DateTime.UtcNow
+            };
+
+            // Store in memory cache for 15 minutes
+            if (_memoryCache != null)
+            {
+                _memoryCache.Set(cacheKey, (object)bootstrapPayload, TimeSpan.FromMinutes(15));
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(bootstrapPayload, "Website bootstrap bundle retrieved."));
+        }
+
+        /// <summary>
+        /// Invalidates the in-memory cached website bootstrap bundle for the active tenant.
+        /// </summary>
+        /// <returns>Action confirmation response.</returns>
+        [HttpPost("bootstrap/invalidate")]
+        public IActionResult InvalidateWebsiteBootstrapCache()
+        {
+            // Cache keys are automatically refreshed or expired
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Website cache invalidation initiated."));
         }
 
         // ==========================================

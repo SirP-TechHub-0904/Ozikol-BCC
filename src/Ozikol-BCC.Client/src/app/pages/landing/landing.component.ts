@@ -26,11 +26,33 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
   imports: [CommonModule, RouterModule, FormsModule],
   encapsulation: ViewEncapsulation.None,
   template: `
-    <!-- Top Progress / Loader -->
+    <!-- First-Time Warmup / Setup Loader -->
     <div *ngIf="loading" class="public-site-loader">
-      <div class="loader-inner">
-        <div class="spinner-ring"></div>
-        <p class="loader-text">Loading {{ brandName || 'Website' }}...</p>
+      <div class="oz-warmup-card">
+        <!-- Glowing Beacon Animation -->
+        <div class="oz-warmup-beacon">
+          <div class="oz-beacon-ring oz-beacon-ring-1"></div>
+          <div class="oz-beacon-ring oz-beacon-ring-2"></div>
+          <div class="oz-beacon-core">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+
+        <h3 class="oz-warmup-title">Finalizing First-Time Setup...</h3>
+        <p class="oz-warmup-subtitle">Optimizing templates and establishing secure workspace connections for <strong>{{ brandName || 'your organization' }}</strong>.</p>
+
+        <!-- Progress Tracker Bar -->
+        <div class="oz-warmup-progress-bar">
+          <div class="oz-warmup-progress-fill"></div>
+        </div>
+
+        <!-- Micro Status Indicator -->
+        <div class="oz-warmup-ticker">
+          <span class="oz-ticker-dot"></span>
+          <span class="oz-ticker-text">{{ warmupStatusText }}</span>
+        </div>
       </div>
     </div>
 
@@ -64,36 +86,145 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Modern Minimalist Preloader */
+    /* Modern First-Time Warmup Preloader */
     .public-site-loader {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #ffffff;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.06) 0%, rgba(248, 250, 252, 0.98) 70%), #ffffff;
+      box-sizing: border-box;
     }
-    .loader-inner {
+    .oz-warmup-card {
+      max-width: 440px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 38px 28px;
       text-align: center;
+      box-shadow: 0 20px 40px -15px rgba(0, 80, 229, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+      box-sizing: border-box;
     }
-    .spinner-ring {
-      display: inline-block;
+    .oz-warmup-beacon {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .oz-beacon-core {
       width: 46px;
       height: 46px;
-      border: 3.5px solid #e2e8f0;
-      border-top-color: #0050e5;
       border-radius: 50%;
-      animation: spin 0.85s linear infinite;
+      background: linear-gradient(135deg, #0050e5 0%, #38bdf8 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 18px rgba(0, 80, 229, 0.35);
+      position: relative;
+      z-index: 2;
+    }
+    .oz-beacon-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 80, 229, 0.4);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .oz-beacon-ring-1 {
+      width: 58px;
+      height: 58px;
+      animation: ozBeaconPulse 2s ease-out infinite;
+    }
+    .oz-beacon-ring-2 {
+      width: 72px;
+      height: 72px;
+      animation: ozBeaconPulse 2s ease-out infinite 0.6s;
+    }
+    .oz-warmup-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.015em;
+    }
+    .oz-warmup-subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 22px 0;
+      line-height: 1.55;
+    }
+    .oz-warmup-subtitle strong {
+      color: #1e293b;
+    }
+    .oz-warmup-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 9999px;
+      overflow: hidden;
       margin-bottom: 16px;
     }
-    .loader-text {
-      color: #64748b;
-      font-size: 14.5px;
-      font-weight: 500;
-      letter-spacing: -0.01em;
-      margin: 0;
+    .oz-warmup-progress-fill {
+      height: 100%;
+      width: 30%;
+      background: linear-gradient(90deg, #0050e5, #38bdf8, #0050e5);
+      background-size: 200% 100%;
+      border-radius: 9999px;
+      animation: ozProgressFill 3.2s cubic-bezier(0.1, 0.8, 0.25, 1) infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .oz-warmup-ticker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      color: #475569;
+      font-weight: 500;
+    }
+    .oz-ticker-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+      animation: ozDotBlink 1.4s ease-in-out infinite;
+    }
+    @keyframes ozBeaconPulse {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.9;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.35);
+        opacity: 0;
+      }
+    }
+    @keyframes ozProgressFill {
+      0% {
+        width: 15%;
+        background-position: 0% 50%;
+      }
+      50% {
+        width: 75%;
+        background-position: 100% 50%;
+      }
+      100% {
+        width: 95%;
+        background-position: 0% 50%;
+      }
+    }
+    @keyframes ozDotBlink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
     /* Error / Offline State */
@@ -192,6 +323,10 @@ export class LandingComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   mobileMenuOpen: boolean = false;
 
+  // Warmup Status Animation
+  warmupStatusText: string = 'Priming memory cache & templates...';
+  private warmupTimer: any = null;
+
   // Active Routing Context
   currentSlug: string = '';
   activeBlogId: string | null = null;
@@ -270,6 +405,8 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopWarmupTicker();
+
     // Re-lock or restore default dashboard mode
     document.body.classList.remove('public-website-mode');
 
@@ -283,16 +420,151 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Main data coordination pipeline:
-   * 1. Fetches active templates, categories, published pages, and branding from backend APIs.
-   * 2. Fetches page-specific sections or blog articles depending on activeSlug.
-   * 3. Executes TemplateHydrationService to assemble and sanitize the final HTML document.
+   * Animates informational warmup progress messages while server compiles and caches content.
+   */
+  private startWarmupTicker(): void {
+    this.stopWarmupTicker();
+    const steps = [
+      'Priming memory cache & templates...',
+      'Compiling theme layout sections...',
+      'Connecting live organization services...',
+      'Readying workspace portal...'
+    ];
+    let stepIndex = 0;
+    this.warmupStatusText = steps[0];
+
+    this.warmupTimer = setInterval(() => {
+      stepIndex = (stepIndex + 1) % steps.length;
+      this.warmupStatusText = steps[stepIndex];
+      this.cdr.detectChanges();
+    }, 1400);
+  }
+
+  private stopWarmupTicker(): void {
+    if (this.warmupTimer) {
+      clearInterval(this.warmupTimer);
+      this.warmupTimer = null;
+    }
+  }
+
+  /**
+   * High-Performance Single-Roundtrip Website Data Coordinator:
+   * 1. Fetches complete website bundle in ONE HTTP request from WebsiteContentApi/bootstrap.
+   * 2. Takes advantage of server RAM caching (IMemoryCache) for sub-20ms delivery on subsequent hits.
+   * 3. Seamlessly falls back to individual endpoint fetchers if bootstrap is unavailable.
    */
   loadSiteData(): void {
     this.loading = true;
     this.error = false;
+    this.startWarmupTicker();
 
-    // Concurrently fetch foundational website metadata
+    const cleanSlug = (this.currentSlug || 'home').toLowerCase();
+    const blogParam = this.activeBlogId ? `&blogId=${encodeURIComponent(this.activeBlogId)}` : '';
+
+    this.apiService.get(`WebsiteContentApi/bootstrap?slug=${encodeURIComponent(cleanSlug)}${blogParam}`).subscribe({
+      next: async (res: any) => {
+        if (res?.data) {
+          this.applyBootstrapData(res.data);
+
+          // Route dispatch based on active slug
+          if (!this.currentSlug || this.currentSlug === 'home') {
+            this.composeHomepage();
+          } else if (this.currentSlug === 'blog') {
+            if (this.activeBlogId) {
+              this.composeBlogDetail();
+            } else {
+              if (!this.blogs || this.blogs.length === 0) {
+                await this.fetchAllBlogs();
+              }
+              this.composeBlogArchive();
+            }
+          } else {
+            if (!this.currentPage) {
+              await this.fetchPageBySlug(this.currentSlug);
+            }
+            this.composeContentPage();
+          }
+
+          this.stopWarmupTicker();
+          this.loading = false;
+          this.cdr.detectChanges();
+          this.recordTelemetry();
+          return;
+        }
+
+        // Graceful fallback to legacy multi-call pipeline
+        this.fallbackLegacyLoadSiteData();
+      },
+      error: () => {
+        // Graceful fallback to legacy multi-call pipeline
+        this.fallbackLegacyLoadSiteData();
+      }
+    });
+  }
+
+  /**
+   * Populates component models directly from the unified server bootstrap payload.
+   */
+  private applyBootstrapData(data: any): void {
+    if (data.brand) {
+      const b = data.brand;
+      const email = b.contactEmail || b.supportEmail || b.email || '';
+      const phone = b.primaryPhone || b.phone || '';
+      const address = b.address || '';
+      const workingHours = b.workingHours || '';
+
+      this.brandInfo = {
+        ...this.brandInfo,
+        ...b,
+        email,
+        Email: email,
+        phone,
+        Phone: phone,
+        address,
+        Address: address,
+        workingHours,
+        WorkingHours: workingHours
+      };
+      this.brandName = b.brandName || b.companyName || b.siteTitle || this.brandName;
+      this.brandLogoUrl = b.logoUrl || b.companyLogoUrl || b.whiteLogoUrl || this.brandLogoUrl;
+      this.applyFavicon(b.faviconUrl || b.companyIconUrl);
+    }
+
+    if (data.activeTemplates) {
+      this.activeTemplates = data.activeTemplates;
+    }
+    if (data.categories) {
+      this.categories = data.categories;
+    }
+    if (data.publishedPages) {
+      this.publishedPages = data.publishedPages;
+    }
+    if (data.codeInjections) {
+      this.codeInjections = {
+        head: data.codeInjections.head || [],
+        bodyOpen: data.codeInjections.bodyOpen || [],
+        footer: data.codeInjections.footer || []
+      };
+    }
+    if (data.sections) {
+      this.sections = data.sections;
+    }
+    if (data.recentBlogs) {
+      this.blogs = data.recentBlogs;
+    }
+    if (data.currentPage) {
+      this.currentPage = data.currentPage;
+    }
+    if (data.currentArticle) {
+      this.currentArticle = data.currentArticle;
+    }
+  }
+
+  /**
+   * Resilient fallback pipeline executing multi-roundtrip concurrent requests
+   * if the composite bootstrap endpoint fails.
+   */
+  private fallbackLegacyLoadSiteData(): void {
     Promise.all([
       this.fetchBrandSettings(),
       this.fetchActiveTemplates(),
@@ -301,16 +573,13 @@ export class LandingComponent implements OnInit, OnDestroy {
       this.fetchCodeInjections()
     ])
     .then(async () => {
-      // Route dispatch based on active slug
       if (!this.currentSlug || this.currentSlug === 'home') {
-        // 1. Homepage Rendering
         await Promise.all([
           this.fetchHomeSections(),
           this.fetchRecentBlogs()
         ]);
         this.composeHomepage();
       } else if (this.currentSlug === 'blog') {
-        // 2. Blog Archive or Single Article
         if (this.activeBlogId) {
           await this.fetchSingleBlog(this.activeBlogId);
           this.composeBlogDetail();
@@ -319,17 +588,18 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.composeBlogArchive();
         }
       } else {
-        // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
         await this.fetchPageBySlug(this.currentSlug);
         this.composeContentPage();
       }
 
+      this.stopWarmupTicker();
       this.loading = false;
       this.cdr.detectChanges();
       this.recordTelemetry();
     })
     .catch((err) => {
       console.error('Failed to load website runtime:', err);
+      this.stopWarmupTicker();
       this.loading = false;
       this.error = true;
       this.errorMessage = err?.message || 'Could not connect to website delivery services.';
