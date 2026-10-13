@@ -30,7 +30,7 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     <div *ngIf="loading" class="public-site-loader">
       <div class="loader-inner">
         <div class="spinner-ring"></div>
-        <p class="loader-text">Loading {{ brandName || 'Website' }}...</p>
+        <p class="loader-text">Finalizing setup... Preparing {{ brandName || 'your website' }}</p>
       </div>
     </div>
 
