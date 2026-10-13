@@ -1,0 +1,20 @@
+<header class="oz-breadcrumb-banner {{ CustomClass }}" style="background-image: url('{{ BackgroundImageUrl }}');">
+  <div class="oz-banner-overlay"></div>
+  <div class="oz-banner-container">
+    <h1 class="oz-banner-title">{{ Title }}</h1>
+    {{#if SubTitle}}<p class="oz-banner-subtitle">{{ SubTitle }}</p>{{/if}}
+    <nav class="oz-breadcrumb-nav" aria-label="Breadcrumb">
+      <ol class="oz-breadcrumb-list">
+        {{#each Breadcrumbs}}
+        <li class="oz-breadcrumb-item {{#if IsActive}}active{{/if}}">
+          {{#if Url}}
+          <a href="{{ Url }}" class="oz-breadcrumb-link">{{ Title }}</a>
+          {{else}}
+          <span class="oz-breadcrumb-current">{{ Title }}</span>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </nav>
+  </div>
+</header>

@@ -13,6 +13,7 @@ using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
 using Ozikol_BCC.Persistence.EF.SQL.Infrastructure;
 using Ozikol.MasterDomain.Models;
+using Ozikol.MasterDomain.Blueprints;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using System.Diagnostics;
 using System.IO;
@@ -1176,6 +1177,54 @@ namespace Ozikol_BCC.Api.Controllers
         // ==========================================
         // 9. TENANT INSTALLED UI TEMPLATES & MARKETPLACE
         // ==========================================
+
+        /// <summary>
+        /// Retrieves the default template blueprint package directly from the central blueprint files (template.html, styles.css, script.js, sample-content.json).
+        /// Powers the CMS Visual Studios by eliminating hardcoded inline templates from TypeScript components.
+        /// </summary>
+        /// <param name="category">Template category key (e.g. "footer", "menu", "hero", "breadcrumb", "body", "blog", "blog-detail").</param>
+        /// <param name="preset">Optional sub-preset key (e.g. for body section archetypes).</param>
+        /// <param name="reload">Optional flag to force reload fresh file contents from disk.</param>
+        /// <returns>Populated blueprint package with raw file contents and structured sample data.</returns>
+        [HttpGet("templates/blueprint/{category}")]
+        public IActionResult GetCategoryBlueprint(string category, [FromQuery] string? preset = null, [FromQuery] bool reload = false)
+        {
+            try
+            {
+                var bp = CentralBlueprintLoader.GetBlueprint(category, preset, reload);
+                object? sampleObj = null;
+                if (!string.IsNullOrWhiteSpace(bp.SampleContentJson))
+                {
+                    try
+                    {
+                        sampleObj = JsonSerializer.Deserialize<object>(bp.SampleContentJson);
+                    }
+                    catch
+                    {
+                        sampleObj = bp.SampleContentJson;
+                    }
+                }
+
+                return Ok(ApiResponse<object>.SuccessResponse(new
+                {
+                    name = bp.Name,
+                    categoryKey = bp.CategoryKey,
+                    variantCode = bp.VariantCode,
+                    description = bp.Description,
+                    icon = bp.Icon,
+                    badge = bp.Badge,
+                    htmlTemplate = bp.HtmlTemplate,
+                    cssStyles = bp.CssStyles,
+                    jsScript = bp.JsScript,
+                    sampleContent = sampleObj,
+                    sampleContentJson = bp.SampleContentJson
+                }, $"Default blueprint for '{category}' retrieved from central files."));
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse($"Blueprint for category '{category}' not found: {ex.Message}"));
+            }
+        }
 
         /// <summary>
         /// Retrieves all installed UI templates for this tenant from DashboardDbContext.

@@ -1,0 +1,54 @@
+.oz-faq-section {
+  padding: 88px 24px;
+  background-color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.oz-container { max-width: 860px; margin: 0 auto; }
+.oz-section-header { text-align: center; margin-bottom: 48px; }
+.oz-badge {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.oz-title { font-size: 34px; font-weight: 800; color: #0f172a; margin: 0 0 14px 0; }
+.oz-subtitle { font-size: 15px; color: #64748b; margin: 0; line-height: 1.6; }
+.oz-faq-list { display: flex; flex-direction: column; gap: 14px; }
+.oz-faq-item {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.oz-faq-item[open] { border-color: #2563eb; }
+.oz-faq-question {
+  padding: 20px 24px;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+}
+.oz-faq-question::-webkit-details-marker { display: none; }
+.oz-faq-toggle { transition: transform 0.2s ease; color: #64748b; }
+.oz-faq-item[open] .oz-faq-toggle { transform: rotate(180deg); color: #2563eb; }
+.oz-faq-answer {
+  padding: 0 24px 20px 24px;
+  font-size: 14.5px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.oz-faq-answer p { margin: 0; }
+@media (max-width: 768px) {
+  .oz-faq-section { padding: 56px 16px; }
+  .oz-title { font-size: 28px; }
+}

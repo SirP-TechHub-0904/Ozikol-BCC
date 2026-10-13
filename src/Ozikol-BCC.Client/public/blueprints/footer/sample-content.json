@@ -1,0 +1,189 @@
+{
+  "brandName": "Apex Global",
+  "brandLogo": "",
+  "logoUrl": "",
+  "homeUrl": "/",
+  "description": "Empowering modern enterprises with resilient cloud architectures, continuous integration pipelines, and high-availability systems.",
+  "copyright": "© 2026 Apex Global. All rights reserved.",
+  "year": "2026",
+  "hasContactInfo": true,
+  "hasSocialLinks": true,
+  "email": "contact@example.com",
+  "phone": "+1 (555) 019-2834",
+  "address": "100 Enterprise Boulevard, Suite 500",
+  "workingHours": "Mon - Fri: 8:00 AM - 6:00 PM",
+  "socialLinks": [
+    {
+      "platform": "Twitter / X",
+      "title": "Twitter / X",
+      "url": "https://twitter.com",
+      "icon": "share",
+      "iconClass": "fa-brands fa-x-twitter"
+    },
+    {
+      "platform": "LinkedIn",
+      "title": "LinkedIn",
+      "url": "https://linkedin.com",
+      "icon": "public",
+      "iconClass": "fa-brands fa-linkedin-in"
+    },
+    {
+      "platform": "Facebook",
+      "title": "Facebook",
+      "url": "https://facebook.com",
+      "icon": "thumb_up",
+      "iconClass": "fa-brands fa-facebook-f"
+    },
+    {
+      "platform": "Instagram",
+      "title": "Instagram",
+      "url": "https://instagram.com",
+      "icon": "photo_camera",
+      "iconClass": "fa-brands fa-instagram"
+    }
+  ],
+  "contactItems": [
+    {
+      "type": "phone",
+      "channelType": "Phone",
+      "platform": "Support",
+      "title": "Call Us",
+      "description": "Mon-Fri 8am-6pm",
+      "value": "+1 (555) 019-2834",
+      "content": "+1 (555) 019-2834",
+      "url": "tel:+15550192834",
+      "icon": "call",
+      "iconClass": "fa-solid fa-phone",
+      "isDefault": true
+    },
+    {
+      "type": "email",
+      "channelType": "Email",
+      "platform": "General",
+      "title": "Email Us",
+      "description": "Online Inquiries",
+      "value": "contact@example.com",
+      "content": "contact@example.com",
+      "url": "mailto:contact@example.com",
+      "icon": "mail",
+      "iconClass": "fa-solid fa-envelope",
+      "isDefault": true
+    },
+    {
+      "type": "address",
+      "channelType": "Address",
+      "platform": "HQ",
+      "title": "Headquarters",
+      "description": "Corporate Office",
+      "value": "100 Enterprise Boulevard, Suite 500",
+      "content": "100 Enterprise Boulevard, Suite 500",
+      "url": "#",
+      "icon": "location_on",
+      "iconClass": "fa-solid fa-location-dot",
+      "isDefault": true
+    }
+  ],
+  "taggedPages": {
+    "quicklinks": [
+      {
+        "title": "Release Notes",
+        "url": "/releases"
+      },
+      {
+        "title": "System Status",
+        "url": "/status"
+      },
+      {
+        "title": "Trust & Compliance",
+        "url": "/compliance"
+      },
+      {
+        "title": "Help Center",
+        "url": "/help"
+      }
+    ]
+  },
+  "legalPages": [
+    {
+      "title": "Privacy Policy",
+      "url": "/privacy-policy"
+    },
+    {
+      "title": "Terms of Service",
+      "url": "/terms-and-conditions"
+    },
+    {
+      "title": "Cookie Policy",
+      "url": "/cookie-policy"
+    },
+    {
+      "title": "Security & SLA",
+      "url": "/security"
+    }
+  ],
+  "footerCategories": [
+    {
+      "title": "Solutions",
+      "pages": [
+        {
+          "title": "Cloud Infrastructure",
+          "url": "/solutions/cloud"
+        },
+        {
+          "title": "Enterprise Security",
+          "url": "/solutions/security"
+        },
+        {
+          "title": "High Availability",
+          "url": "/solutions/ha"
+        },
+        {
+          "title": "Data Analytics",
+          "url": "/solutions/analytics"
+        }
+      ]
+    },
+    {
+      "title": "Resources",
+      "pages": [
+        {
+          "title": "Documentation",
+          "url": "/docs"
+        },
+        {
+          "title": "Developer Portal",
+          "url": "/developers"
+        },
+        {
+          "title": "API Reference",
+          "url": "/api"
+        },
+        {
+          "title": "Architecture Guides",
+          "url": "/guides"
+        }
+      ]
+    },
+    {
+      "title": "Company",
+      "pages": [
+        {
+          "title": "About Us",
+          "url": "/about"
+        },
+        {
+          "title": "Leadership Team",
+          "url": "/leadership"
+        },
+        {
+          "title": "Careers & Openings",
+          "url": "/careers"
+        },
+        {
+          "title": "News & Press",
+          "url": "/press"
+        }
+      ]
+    }
+  ]
+}

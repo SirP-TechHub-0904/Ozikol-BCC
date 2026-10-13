@@ -1419,378 +1419,8 @@ export class FooterVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'columns' | 'links' | 'brand' | 'contact' = 'columns';
 
-  htmlTemplate: string = `<footer class="oz-footer-section {{ CustomClass }}">
-  <div class="oz-footer-container">
-    <!-- Top Row: Brand & Mission, Multi-Column Navigation, and Newsletter -->
-    <div class="oz-footer-grid">
-      <!-- Zone 1: Brand, Tagline, Business Hours & Contact Touchpoints -->
-      <div class="oz-footer-brand-col">
-        <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
-          {{#if BrandLogo}}
-            <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
-          {{else}}
-            <span class="oz-footer-brand-title">{{ BrandName }}</span>
-          {{/if}}
-        </a>
-        <p class="oz-footer-desc">{{ Description }}</p>
-
-        {{#if WorkingHours}}
-        <div class="oz-footer-hours">
-          <i class="fa-regular fa-clock"></i>
-          <div class="oz-footer-hours-text">
-            <span class="oz-footer-hours-label">Business Hours</span>
-            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
-          </div>
-        </div>
-        {{/if}}
-
-        {{#if HasContactInfo}}
-        <div class="oz-footer-contacts">
-          {{#each ContactItems}}
-          <div class="oz-footer-contact-item">
-            <i class="{{ IconClass }}"></i>
-            <div class="oz-footer-contact-text">
-              <span class="oz-footer-contact-label">{{ Title }}</span>
-              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
-            </div>
-          </div>
-          {{/each}}
-        </div>
-        {{/if}}
-
-        {{#if HasSocialLinks}}
-        <div class="oz-footer-socials">
-          {{#each SocialLinks}}
-          <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
-            <i class="{{ IconClass }}"></i>
-          </a>
-          {{/each}}
-        </div>
-        {{/if}}
-      </div>
-
-      <!-- Zone 2: Dynamic Multi-Column Navigation (Categories & Tagged Quick Links) -->
-      <div class="oz-footer-nav-group">
-        {{#each FooterCategories}}
-        <div class="oz-footer-col">
-          <h4 class="oz-footer-col-title">{{ Title }}</h4>
-          <ul class="oz-footer-links">
-            {{#each Pages}}
-            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
-            {{/each}}
-          </ul>
-        </div>
-        {{/each}}
-
-        <!-- Zone 3: Tagged Pages (e.g. Quick Links) -->
-        <div class="oz-footer-col">
-          <h4 class="oz-footer-col-title">Quick Links</h4>
-          <ul class="oz-footer-links">
-            {{#each TaggedPages "quicklinks"}}
-            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
-            {{/each}}
-          </ul>
-        </div>
-      </div>
-
-      <!-- Zone 4: Interactive Newsletter Subscription Block -->
-      <div class="oz-footer-newsletter-col">
-        <h4 class="oz-footer-col-title">Stay Informed</h4>
-        <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
-        <div class="oz-footer-form-wrapper">
-          {{ Form "Newsletter_Subscribe" }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Zone 5: Bottom Compliance Bar & Legal Links -->
-    <div class="oz-footer-bottom">
-      <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
-      <div class="oz-footer-legal-links">
-        {{#each LegalPages}}
-        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
-        {{/each}}
-      </div>
-    </div>
-  </div>
-</footer>`;
-
-  cssStyles: string = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-
-.oz-footer-section {
-  background: #ffffff;
-  color: #475569;
-  padding: 72px 24px 36px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  border-top: 1px solid #e2e8f0;
-}
-.oz-footer-container {
-  max-width: 1240px;
-  margin: 0 auto;
-}
-.oz-footer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 36px;
-  padding-bottom: 56px;
-  border-bottom: 1px solid #e2e8f0;
-}
-.oz-footer-brand-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.oz-footer-brand-link {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-.oz-footer-brand-logo {
-  max-height: 40px;
-  width: auto;
-  object-fit: contain;
-}
-.oz-footer-brand-title {
-  color: #0f172a;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-.oz-footer-desc {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #64748b;
-  margin: 0;
-}
-.oz-footer-hours {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-top: 4px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-}
-.oz-footer-hours i {
-  color: #0284c7;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-.oz-footer-hours-text {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-hours-label {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #64748b;
-  font-weight: 700;
-}
-.oz-footer-hours-val {
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 600;
-}
-.oz-footer-contacts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 6px;
-}
-.oz-footer-contact-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 13.5px;
-}
-.oz-footer-contact-item i {
-  color: #0284c7;
-  font-size: 15px;
-  margin-top: 3px;
-  flex-shrink: 0;
-}
-.oz-footer-contact-text {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-contact-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #64748b;
-  font-weight: 600;
-}
-.oz-footer-contact-val {
-  color: #0f172a;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-.oz-footer-contact-val:hover {
-  color: #0284c7;
-}
-.oz-footer-socials {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-.oz-footer-social-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #475569;
-  text-decoration: none;
-  font-size: 15px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
-}
-.oz-footer-social-icon i {
-  font-size: 15px;
-  line-height: 1;
-  color: inherit;
-}
-.oz-footer-social-icon:hover {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #0284c7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
-}
-.oz-footer-nav-group {
-  display: contents;
-}
-.oz-footer-col-title {
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 0 0 18px 0;
-}
-.oz-footer-links {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.oz-footer-link {
-  color: #64748b;
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-.oz-footer-link:hover {
-  color: #0284c7;
-  padding-left: 3px;
-}
-.oz-footer-newsletter-col {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-newsletter-desc {
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: #64748b;
-  margin: 0 0 16px 0;
-}
-.oz-footer-form-wrapper {
-  margin-top: 4px;
-}
-.oz-footer-form-wrapper form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.oz-footer-form-wrapper input[type="email"],
-.oz-footer-form-wrapper input[type="text"] {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 11px 14px;
-  font-size: 13.5px;
-  color: #0f172a;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
-}
-.oz-footer-form-wrapper input:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-}
-.oz-footer-form-wrapper button,
-.oz-footer-form-wrapper input[type="submit"] {
-  background: #0284c7;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 11px 20px;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
-  transition: all 0.2s ease;
-}
-.oz-footer-form-wrapper button:hover,
-.oz-footer-form-wrapper input[type="submit"]:hover {
-  background: #0369a1;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-}
-.oz-footer-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 32px;
-  font-size: 13.5px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.oz-footer-copyright {
-  margin: 0;
-  color: #64748b;
-}
-.oz-footer-legal-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.oz-footer-legal-link {
-  color: #64748b;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.oz-footer-legal-link:hover {
-  color: #0f172a;
-}
-@media (max-width: 1024px) {
-  .oz-footer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 32px;
-  }
-}
-@media (max-width: 640px) {
-  .oz-footer-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-  .oz-footer-bottom {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}`;
-
+  htmlTemplate: string = '';
+  cssStyles: string = '';
   jsScript: string = '';
 
   footerTokens: Array<{ label: string; token: string }> = [
@@ -1898,75 +1528,7 @@ export class FooterVisualComponent implements OnInit {
     { label: 'Working Hours', token: '{{ WorkingHours }}' }
   ];
 
-  sampleContent: any = {
-    brandName: 'Apex Global',
-    brandLogo: '',
-    logoUrl: '',
-    homeUrl: '/',
-    description: 'Empowering modern enterprises with resilient cloud architectures, continuous integration pipelines, and high-availability systems.',
-    copyright: '© 2026 Apex Global. All rights reserved.',
-    year: '2026',
-    hasContactInfo: true,
-    hasSocialLinks: true,
-    email: 'contact@example.com',
-    phone: '+1 (555) 019-2834',
-    address: '100 Enterprise Boulevard, Suite 500',
-    workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
-    socialLinks: [
-      { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-      { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
-      { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
-      { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
-    ],
-    contactItems: [
-      { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-      { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-      { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '100 Enterprise Boulevard, Suite 500', content: '100 Enterprise Boulevard, Suite 500', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
-    ],
-    taggedPages: {
-      quicklinks: [
-        { title: 'Release Notes', url: '/releases' },
-        { title: 'System Status', url: '/status' },
-        { title: 'Trust & Compliance', url: '/compliance' },
-        { title: 'Help Center', url: '/help' }
-      ]
-    },
-    legalPages: [
-      { title: 'Privacy Policy', url: '/privacy-policy' },
-      { title: 'Terms of Service', url: '/terms-and-conditions' },
-      { title: 'Cookie Policy', url: '/cookie-policy' },
-      { title: 'Security & SLA', url: '/security' }
-    ],
-    footerCategories: [
-      {
-        title: 'Solutions',
-        pages: [
-          { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
-          { title: 'Enterprise Security', url: '/solutions/security' },
-          { title: 'High Availability', url: '/solutions/ha' },
-          { title: 'Data Analytics', url: '/solutions/analytics' }
-        ]
-      },
-      {
-        title: 'Resources',
-        pages: [
-          { title: 'Documentation', url: '/docs' },
-          { title: 'Developer Portal', url: '/developers' },
-          { title: 'API Reference', url: '/api' },
-          { title: 'Architecture Guides', url: '/guides' }
-        ]
-      },
-      {
-        title: 'Company',
-        pages: [
-          { title: 'About Us', url: '/about' },
-          { title: 'Leadership Team', url: '/leadership' },
-          { title: 'Careers & Openings', url: '/careers' },
-          { title: 'News & Press', url: '/press' }
-        ]
-      }
-    ]
-  };
+  sampleContent: any = {};
 
   constructor(
     private api: ApiService,
@@ -1981,6 +1543,8 @@ export class FooterVisualComponent implements OnInit {
     }
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    } else {
+      this.loadBlueprint();
     }
   }
 
@@ -1989,446 +1553,88 @@ export class FooterVisualComponent implements OnInit {
     this.variantCode = `FOOTER_${randomSuffix}`;
   }
 
-  resetBoilerplate(): void {
-    this.htmlTemplate = `<footer class="oz-footer-section {{ CustomClass }}">
-  <div class="oz-footer-container">
-    <div class="oz-footer-grid">
-      <div class="oz-footer-brand-col">
-        <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
-          {{#if BrandLogo}}
-            <img src="{{ BrandLogo }}" alt="{{ BrandName }}" class="oz-footer-brand-logo" />
-          {{else}}
-            <span class="oz-footer-brand-title">{{ BrandName }}</span>
-          {{/if}}
-        </a>
-        <p class="oz-footer-desc">{{ Description }}</p>
-
-        {{#if WorkingHours}}
-        <div class="oz-footer-hours">
-          <i class="fa-regular fa-clock"></i>
-          <div class="oz-footer-hours-text">
-            <span class="oz-footer-hours-label">Business Hours</span>
-            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
-          </div>
-        </div>
-        {{/if}}
-
-        {{#if HasContactInfo}}
-        <div class="oz-footer-contacts">
-          {{#each ContactItems}}
-          <div class="oz-footer-contact-item">
-            <i class="{{ IconClass }}"></i>
-            <div class="oz-footer-contact-text">
-              <span class="oz-footer-contact-label">{{ Title }}</span>
-              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
-            </div>
-          </div>
-          {{/each}}
-        </div>
-        {{/if}}
-
-        {{#if HasSocialLinks}}
-        <div class="oz-footer-socials">
-          {{#each SocialLinks}}
-          <a href="{{ Url }}" title="{{ Platform }}" class="oz-footer-social-icon" target="_blank" rel="noopener">
-            <i class="{{ IconClass }}"></i>
-          </a>
-          {{/each}}
-        </div>
-        {{/if}}
-      </div>
-
-      <div class="oz-footer-nav-group">
-        {{#each FooterCategories}}
-        <div class="oz-footer-col">
-          <h4 class="oz-footer-col-title">{{ Title }}</h4>
-          <ul class="oz-footer-links">
-            {{#each Pages}}
-            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
-            {{/each}}
-          </ul>
-        </div>
-        {{/each}}
-
-        <div class="oz-footer-col">
-          <h4 class="oz-footer-col-title">Quick Links</h4>
-          <ul class="oz-footer-links">
-            {{#each TaggedPages "quicklinks"}}
-            <li><a href="{{ Url }}" class="oz-footer-link">{{ Title }}</a></li>
-            {{/each}}
-          </ul>
-        </div>
-      </div>
-
-      <div class="oz-footer-newsletter-col">
-        <h4 class="oz-footer-col-title">Stay Informed</h4>
-        <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
-        <div class="oz-footer-form-wrapper">
-          {{ Form "Newsletter_Subscribe" }}
-        </div>
-      </div>
-    </div>
-
-    <div class="oz-footer-bottom">
-      <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
-      <div class="oz-footer-legal-links">
-        {{#each LegalPages}}
-        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
-        {{/each}}
-      </div>
-    </div>
-  </div>
-</footer>`;
-
-    this.cssStyles = `@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-
-.oz-footer-section {
-  background: #ffffff;
-  color: #475569;
-  padding: 72px 24px 36px 24px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  border-top: 1px solid #e2e8f0;
-}
-.oz-footer-container {
-  max-width: 1240px;
-  margin: 0 auto;
-}
-.oz-footer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 36px;
-  padding-bottom: 56px;
-  border-bottom: 1px solid #e2e8f0;
-}
-.oz-footer-brand-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.oz-footer-brand-link {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-.oz-footer-brand-logo {
-  max-height: 40px;
-  width: auto;
-  object-fit: contain;
-}
-.oz-footer-brand-title {
-  color: #0f172a;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-.oz-footer-desc {
-  font-size: 14px;
-  line-height: 1.65;
-  color: #64748b;
-  margin: 0;
-}
-.oz-footer-hours {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-top: 4px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-}
-.oz-footer-hours i {
-  color: #0284c7;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-.oz-footer-hours-text {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-hours-label {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #64748b;
-  font-weight: 700;
-}
-.oz-footer-hours-val {
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 600;
-}
-.oz-footer-contacts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 6px;
-}
-.oz-footer-contact-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 13.5px;
-}
-.oz-footer-contact-item i {
-  color: #0284c7;
-  font-size: 15px;
-  margin-top: 3px;
-  flex-shrink: 0;
-}
-.oz-footer-contact-text {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-contact-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #64748b;
-  font-weight: 600;
-}
-.oz-footer-contact-val {
-  color: #0f172a;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-.oz-footer-contact-val:hover {
-  color: #0284c7;
-}
-.oz-footer-socials {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-.oz-footer-social-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #475569;
-  text-decoration: none;
-  font-size: 15px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
-}
-.oz-footer-social-icon i {
-  font-size: 15px;
-  line-height: 1;
-  color: inherit;
-}
-.oz-footer-social-icon:hover {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #0284c7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
-}
-.oz-footer-nav-group {
-  display: contents;
-}
-.oz-footer-col-title {
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 0 0 18px 0;
-}
-.oz-footer-links {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.oz-footer-link {
-  color: #64748b;
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-.oz-footer-link:hover {
-  color: #0284c7;
-  padding-left: 3px;
-}
-.oz-footer-newsletter-col {
-  display: flex;
-  flex-direction: column;
-}
-.oz-footer-newsletter-desc {
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: #64748b;
-  margin: 0 0 16px 0;
-}
-.oz-footer-form-wrapper {
-  margin-top: 4px;
-}
-.oz-footer-form-wrapper form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.oz-footer-form-wrapper input[type="email"],
-.oz-footer-form-wrapper input[type="text"] {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 11px 14px;
-  font-size: 13.5px;
-  color: #0f172a;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
-}
-.oz-footer-form-wrapper input:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-}
-.oz-footer-form-wrapper button,
-.oz-footer-form-wrapper input[type="submit"] {
-  background: #0284c7;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 11px 20px;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
-  transition: all 0.2s ease;
-}
-.oz-footer-form-wrapper button:hover,
-.oz-footer-form-wrapper input[type="submit"]:hover {
-  background: #0369a1;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-}
-.oz-footer-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 32px;
-  font-size: 13.5px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.oz-footer-copyright {
-  margin: 0;
-  color: #64748b;
-}
-.oz-footer-legal-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.oz-footer-legal-link {
-  color: #64748b;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-.oz-footer-legal-link:hover {
-  color: #0f172a;
-}
-@media (max-width: 1024px) {
-  .oz-footer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 32px;
-  }
-}
-@media (max-width: 640px) {
-  .oz-footer-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-  .oz-footer-bottom {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}`;
-    this.toast.info('Boilerplate reset to default footer structure.');
-  }
-
-  resetSampleContent(): void {
-    this.sampleContent = {
-      brandName: 'Apex Global',
-      brandLogo: '',
-      logoUrl: '',
-      homeUrl: '/',
-      description: 'Empowering modern enterprises with resilient cloud architectures, continuous integration pipelines, and high-availability systems.',
-      copyright: '© 2026 Apex Global. All rights reserved.',
-      year: '2026',
-      hasContactInfo: true,
-      hasSocialLinks: true,
-      email: 'contact@example.com',
-      phone: '+1 (555) 019-2834',
-      address: '100 Enterprise Boulevard, Suite 500',
-      workingHours: 'Mon - Fri: 8:00 AM - 6:00 PM',
-      socialLinks: [
-        { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-        { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
-        { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
-        { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
-      ],
-      contactItems: [
-        { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: '+1 (555) 019-2834', content: '+1 (555) 019-2834', url: 'tel:+15550192834', icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-        { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: 'contact@example.com', content: 'contact@example.com', url: 'mailto:contact@example.com', icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-        { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: '100 Enterprise Boulevard, Suite 500', content: '100 Enterprise Boulevard, Suite 500', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
-      ],
-      taggedPages: {
-        quicklinks: [
-          { title: 'Release Notes', url: '/releases' },
-          { title: 'System Status', url: '/status' },
-          { title: 'Trust & Compliance', url: '/compliance' },
-          { title: 'Help Center', url: '/help' }
-        ]
-      },
-      legalPages: [
-        { title: 'Privacy Policy', url: '/privacy-policy' },
-        { title: 'Terms of Service', url: '/terms-and-conditions' },
-        { title: 'Cookie Policy', url: '/cookie-policy' },
-        { title: 'Security & SLA', url: '/security' }
-      ],
-      footerCategories: [
-        {
-          title: 'Solutions',
-          pages: [
-            { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
-            { title: 'Enterprise Security', url: '/solutions/security' },
-            { title: 'High Availability', url: '/solutions/ha' },
-            { title: 'Data Analytics', url: '/solutions/analytics' }
-          ]
-        },
-        {
-          title: 'Resources',
-          pages: [
-            { title: 'Documentation', url: '/docs' },
-            { title: 'Developer Portal', url: '/developers' },
-            { title: 'API Reference', url: '/api' },
-            { title: 'Architecture Guides', url: '/guides' }
-          ]
-        },
-        {
-          title: 'Company',
-          pages: [
-            { title: 'About Us', url: '/about' },
-            { title: 'Leadership Team', url: '/leadership' },
-            { title: 'Careers & Openings', url: '/careers' },
-            { title: 'News & Press', url: '/press' }
-          ]
+  /**
+   * Loads the factory default footer blueprint (template.html, styles.css, script.js, sample-content.json)
+   * directly from central blueprint files. Eliminates inline strings from TypeScript.
+   */
+  loadBlueprint(forceReload: boolean = false, toastSuccess?: string): void {
+    const url = forceReload ? 'ContentApi/templates/blueprint/footer?reload=true' : 'ContentApi/templates/blueprint/footer';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp) {
+          this.htmlTemplate = bp.htmlTemplate || '';
+          this.cssStyles = bp.cssStyles || '';
+          this.jsScript = bp.jsScript || '';
+          if (bp.sampleContent) {
+            this.sampleContent = bp.sampleContent;
+          }
+          if (!this.isEditMode) {
+            this.templateName = bp.name || this.templateName;
+            this.description = bp.description || this.description;
+          }
+          if (toastSuccess) {
+            this.toast.info(toastSuccess);
+          }
         }
-      ]
-    };
-    this.toast.info('Footer sample values reset to defaults.');
+      },
+      error: () => {
+        // Fallback: fetch directly from public blueprint files in client web root
+        this.loadStaticBlueprintFallback(toastSuccess);
+      }
+    });
+  }
+
+  private loadStaticBlueprintFallback(toastSuccess?: string): void {
+    Promise.all([
+      fetch('/blueprints/footer/template.html').then(r => r.text()),
+      fetch('/blueprints/footer/styles.css').then(r => r.text()),
+      fetch('/blueprints/footer/script.js').then(r => r.text()).catch(() => ''),
+      fetch('/blueprints/footer/sample-content.json').then(r => r.json()).catch(() => ({}))
+    ]).then(([html, css, js, json]) => {
+      this.htmlTemplate = html || '';
+      this.cssStyles = css || '';
+      this.jsScript = js || '';
+      if (json && Object.keys(json).length > 0) {
+        this.sampleContent = json;
+      }
+      if (toastSuccess) {
+        this.toast.info(toastSuccess);
+      }
+    }).catch(() => {
+      this.toast.error('Failed to load Footer blueprint files.');
+    });
+  }
+
+  /**
+   * Resets code editors (HTML, CSS, JS) back to the original central blueprint files.
+   */
+  resetBoilerplate(): void {
+    this.loadBlueprint(true, 'Boilerplate reset to default footer files.');
+  }
+
+  /**
+   * Resets simulation mock content back to the default sample-content.json file.
+   */
+  resetSampleContent(): void {
+    this.api.get<any>('ContentApi/templates/blueprint/footer?reload=true').subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp?.sampleContent) {
+          this.sampleContent = bp.sampleContent;
+          this.toast.info('Footer sample values reset to file defaults.');
+        }
+      },
+      error: () => {
+        fetch('/blueprints/footer/sample-content.json')
+          .then(r => r.json())
+          .then(json => {
+            this.sampleContent = json;
+            this.toast.info('Footer sample values reset to file defaults.');
+          })
+          .catch(() => this.toast.error('Failed to reset sample content.'));
+      }
+    });
   }
 
   addFooterCategory(): void {

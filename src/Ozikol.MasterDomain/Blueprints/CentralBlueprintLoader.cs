@@ -27,12 +27,18 @@ public static class CentralBlueprintLoader
     /// </summary>
     /// <param name="categoryKey">Category identifier (e.g., "menu", "hero", "breadcrumb", "body", "footer", "blog", "blog_detail").</param>
     /// <param name="sectionKey">Optional sub-section or preset key (e.g. "01-feature-grid").</param>
+    /// <param name="forceReload">If true, evicts cache and re-reads fresh files.</param>
     /// <returns>A populated <see cref="TemplateBlueprint"/> instance.</returns>
-    public static TemplateBlueprint GetBlueprint(string categoryKey, string? sectionKey = null)
+    public static TemplateBlueprint GetBlueprint(string categoryKey, string? sectionKey = null, bool forceReload = false)
     {
         string normCategory = NormalizeKey(categoryKey);
         string? normSection = string.IsNullOrWhiteSpace(sectionKey) ? null : NormalizeKey(sectionKey);
         string cacheKey = normSection != null ? $"{normCategory}::{normSection}" : normCategory;
+
+        if (forceReload)
+        {
+            BlueprintCache.TryRemove(cacheKey, out _);
+        }
 
         return BlueprintCache.GetOrAdd(cacheKey, _ =>
         {
@@ -101,9 +107,32 @@ public static class CentralBlueprintLoader
         return list;
     }
 
+    /// <summary>
+    /// Evicts all cached blueprint and resource entries to force fresh re-reading from disk or embedded manifests.
+    /// </summary>
+    public static void InvalidateCache()
+    {
+        BlueprintCache.Clear();
+        ResourceCache.Clear();
+    }
+
     private static string ReadBlueprintFile(string category, string? section, string fileName)
     {
-        // Build candidate search suffix
+        // 1. Try reading directly from physical disk in development so live edits to .html, .css, .js, .json take effect immediately
+        try
+        {
+            var diskContent = TryReadFromDisk(category, section, fileName);
+            if (diskContent != null)
+            {
+                return diskContent;
+            }
+        }
+        catch
+        {
+            // Fall back to assembly manifest resources if disk resolution fails
+        }
+
+        // 2. Build candidate search suffix for embedded assembly resources
         // E.g. .Templates.menu.template.html or .Templates.body._01_feature_grid.template.html
         var allNames = TargetAssembly.GetManifestResourceNames();
 
@@ -134,6 +163,38 @@ public static class CentralBlueprintLoader
         }
 
         return ReadResource(match);
+    }
+
+    /// <summary>
+    /// Attempts to read template file directly from source workspace disk directory.
+    /// </summary>
+    /// <param name="category">Normalized category name.</param>
+    /// <param name="section">Optional section name.</param>
+    /// <param name="fileName">File name to read.</param>
+    /// <returns>File text content if found on disk; otherwise null.</returns>
+    private static string? TryReadFromDisk(string category, string? section, string fileName)
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var dir = new DirectoryInfo(baseDir);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Ozikol-BCC.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        if (dir != null)
+        {
+            string folderCategory = category.Replace('_', '-');
+            string filePath = section != null
+                ? Path.Combine(dir.FullName, "src", "Ozikol.MasterDomain", "Blueprints", "Templates", folderCategory, section, fileName)
+                : Path.Combine(dir.FullName, "src", "Ozikol.MasterDomain", "Blueprints", "Templates", folderCategory, fileName);
+
+            if (File.Exists(filePath))
+            {
+                return File.ReadAllText(filePath, Encoding.UTF8);
+            }
+        }
+
+        return null;
     }
 
     private static string ReadResource(string resourceName)
