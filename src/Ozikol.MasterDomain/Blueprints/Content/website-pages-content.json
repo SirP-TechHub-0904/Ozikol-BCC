@@ -493,13 +493,13 @@
       ]
     },
     {
-      "sortOrder": 3,
+      "sortOrder": 2,
       "title": "Career",
       "slug": "career",
       "metaTitle": "Careers - Build Sovereign Technology With Us",
       "metaDescription": "Explore career opportunities across systems engineering, distributed infrastructure, and product design.",
       "menuPosition": "header",
-      "zone": "first",
+      "zone": "middle",
       "category": null,
       "isPublished": true,
       "sections": [
@@ -565,7 +565,7 @@
       "metaTitle": "AI Agent Platform - Autonomous Enterprise Intelligence",
       "metaDescription": "Autonomous agent workflows, secure private LLM execution, and turnkey cognitive assistants.",
       "menuPosition": "header",
-      "zone": "first",
+      "zone": "middle",
       "category": "Product",
       "isPublished": true,
       "sections": [
@@ -627,7 +627,7 @@
       "metaTitle": "Machineries & Hardware Automation - Industrial IoT & Edge Systems",
       "metaDescription": "Industrial automation, edge hardware telemetry, and automated machine synchronization.",
       "menuPosition": "header",
-      "zone": "first",
+      "zone": "middle",
       "category": "Product",
       "isPublished": true,
       "sections": [
@@ -667,13 +667,13 @@
       ]
     },
     {
-      "sortOrder": 5,
+      "sortOrder": 3,
       "title": "Blog",
       "slug": "blog",
       "metaTitle": "Blog & Publications - Technology Strategy & Corporate Insights",
       "metaDescription": "Explore our latest editorial briefings, systems architecture articles, and industry insights.",
       "menuPosition": "header",
-      "zone": "first",
+      "zone": "middle",
       "category": null,
       "isPublished": true,
       "sections": [
@@ -700,13 +700,13 @@
       ]
     },
     {
-      "sortOrder": 6,
+      "sortOrder": 1,
       "title": "Contact Us",
       "slug": "contact",
       "metaTitle": "Contact Our Team - Inquiries & Consultations",
       "metaDescription": "Reach our solutions architects, enterprise support desk, or schedule a personalized technical consultation.",
       "menuPosition": "header",
-      "zone": "first",
+      "zone": "last",
       "category": null,
       "isPublished": true,
       "sections": [

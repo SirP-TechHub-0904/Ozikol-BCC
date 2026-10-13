@@ -1418,6 +1418,50 @@ export class LandingComponent implements OnInit, OnDestroy {
     const contactPhone = footerPhoneChannel?.value || this.brandInfo?.primaryPhone || '';
     const contactAddress = footerAddressChannel?.value || this.brandInfo?.address || '';
 
+    // Get in Touch column strictly contains Address, Phone, Email
+    const contactItems: any[] = [];
+    if (contactAddress) {
+      contactItems.push({
+        title: 'Address',
+        content: contactAddress,
+        value: contactAddress,
+        type: 'address',
+        iconClass: 'fa-solid fa-location-dot',
+        url: '#'
+      });
+    }
+    if (contactPhone) {
+      contactItems.push({
+        title: 'Phone',
+        content: contactPhone,
+        value: contactPhone,
+        type: 'phone',
+        iconClass: 'fa-solid fa-phone',
+        url: `tel:${contactPhone.replace(/[^0-9+]/g, '')}`
+      });
+    }
+    if (contactEmail) {
+      contactItems.push({
+        title: 'Email',
+        content: contactEmail,
+        value: contactEmail,
+        type: 'email',
+        iconClass: 'fa-solid fa-envelope',
+        url: `mailto:${contactEmail}`
+      });
+    }
+
+    // Real published pages tagged with quicklinks for the Quick Links column
+    const quickLinkPages = (this.publishedPages || [])
+      .filter((p: any) => p.publish !== false && (
+        (p.tags && p.tags.toLowerCase().includes('quicklink')) ||
+        ['ai-agent', 'machinery', 'machineries', 'career', 'faq', 'contact', 'contact-us'].includes((p.directUrl || p.slug || '').toLowerCase().replace(/^\/+/, ''))
+      ))
+      .map((p: any) => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
+      }));
+
     const footerContext: any = {
       BrandName: this.brandName,
       brandName: this.brandName,
@@ -1447,10 +1491,18 @@ export class LandingComponent implements OnInit, OnDestroy {
       SocialLinks: footerSocialLinks,
       hasSocialLinks: footerSocialLinks.length > 0,
       HasSocialLinks: footerSocialLinks.length > 0,
-      contactItems: footerChannels,
-      ContactItems: footerChannels,
-      contactChannels: footerChannels,
-      ContactChannels: footerChannels,
+      hasContactInfo: contactItems.length > 0,
+      HasContactInfo: contactItems.length > 0,
+      contactItems: contactItems,
+      ContactItems: contactItems,
+      contactChannels: contactItems,
+      ContactChannels: contactItems,
+      taggedPages: {
+        quicklinks: quickLinkPages
+      },
+      TaggedPages: {
+        quicklinks: quickLinkPages
+      },
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,

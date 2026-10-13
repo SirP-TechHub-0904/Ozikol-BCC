@@ -1530,8 +1530,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-grid {
   display: grid;
-  grid-template-columns: 1.2fr 2.6fr 1.2fr;
-  gap: 40px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 36px;
   padding-bottom: 56px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -1666,9 +1666,7 @@ export class FooterVisualComponent implements OnInit {
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
 }
 .oz-footer-nav-group {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  display: contents;
 }
 .oz-footer-col-title {
   color: #0f172a;
@@ -1778,13 +1776,14 @@ export class FooterVisualComponent implements OnInit {
 }
 @media (max-width: 1024px) {
   .oz-footer-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
   }
 }
 @media (max-width: 640px) {
-  .oz-footer-nav-group {
-    grid-template-columns: 1fr 1fr;
+  .oz-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
   .oz-footer-bottom {
     flex-direction: column;
@@ -2096,8 +2095,8 @@ export class FooterVisualComponent implements OnInit {
 }
 .oz-footer-grid {
   display: grid;
-  grid-template-columns: 1.2fr 2.6fr 1.2fr;
-  gap: 40px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 36px;
   padding-bottom: 56px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -2232,9 +2231,7 @@ export class FooterVisualComponent implements OnInit {
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
 }
 .oz-footer-nav-group {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  display: contents;
 }
 .oz-footer-col-title {
   color: #0f172a;
@@ -2344,13 +2341,14 @@ export class FooterVisualComponent implements OnInit {
 }
 @media (max-width: 1024px) {
   .oz-footer-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
   }
 }
 @media (max-width: 640px) {
-  .oz-footer-nav-group {
-    grid-template-columns: 1fr 1fr;
+  .oz-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
   .oz-footer-bottom {
     flex-direction: column;
