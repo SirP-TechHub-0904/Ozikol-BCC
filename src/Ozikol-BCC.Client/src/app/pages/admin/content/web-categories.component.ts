@@ -51,6 +51,8 @@ import { ApiService } from '../../../core/services/api.service';
                 <th>MENU ZONE</th>
                 <th>ICON</th>
                 <th>ORDER</th>
+                <th>MAIN NAV</th>
+                <th>FOOTER</th>
                 <th>ATTACHED PAGES</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
@@ -72,6 +74,16 @@ import { ApiService } from '../../../core/services/api.service';
                   <span class="icon-chip"><i [class]="cat.icon || 'fa fa-folder'"></i> {{ cat.icon || '(None)' }}</span>
                 </td>
                 <td><strong>#{{ cat.menuSortOrder }}</strong></td>
+                <td>
+                  <span class="indicator" [class.on]="cat.showInMenu" [class.off]="!cat.showInMenu" [title]="'Menu Order: #' + (cat.menuSortOrder || 0)">
+                    {{ cat.showInMenu ? ('#' + (cat.menuSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="cat.showInFooter" [class.off]="!cat.showInFooter" [title]="'Footer Order: #' + (cat.footerSortOrder || 0)">
+                    {{ cat.showInFooter ? ('#' + (cat.footerSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
                 <td>
                   <span class="pages-badge" [class.has-pages]="cat.webPages && cat.webPages.length > 0">
                     {{ cat.webPages?.length || 0 }} WebPages
@@ -95,7 +107,7 @@ import { ApiService } from '../../../core/services/api.service';
                 </td>
               </tr>
               <tr *ngIf="filteredCategories.length === 0">
-                <td colspan="7" class="empty-cell">No categories found. Click "New Category" to create one.</td>
+                <td colspan="9" class="empty-cell">No categories found. Click "New Category" to create one.</td>
               </tr>
             </tbody>
           </table>
@@ -149,9 +161,29 @@ import { ApiService } from '../../../core/services/api.service';
                 <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.title }}</option>
               </select>
             </div>
-            <div class="form-check">
-              <input type="checkbox" [(ngModel)]="newCategory.publish" id="catPublish">
-              <label for="catPublish">Publish in Navigation Bar</label>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>FOOTER DISPLAY TITLE</label>
+                <input type="text" [(ngModel)]="newCategory.footerDisplayTitle" class="form-control" placeholder="e.g. Our Services">
+              </div>
+              <div class="form-group flex-1">
+                <label>FOOTER COLUMN SORT ORDER</label>
+                <input type="number" [(ngModel)]="newCategory.footerSortOrder" class="form-control" placeholder="0">
+              </div>
+            </div>
+            <div class="checkbox-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 12px;">
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.showInMenu">
+                <span>Show in Main Nav</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.showInFooter">
+                <span>Show in Footer</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="newCategory.publish">
+                <span>Published</span>
+              </label>
             </div>
             <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
           </div>
@@ -212,9 +244,29 @@ import { ApiService } from '../../../core/services/api.service';
                 <option *ngFor="let c of categories" [ngValue]="c.id" [disabled]="c.id === editingCategory.id">{{ c.title }}</option>
               </select>
             </div>
-            <div class="form-check">
-              <input type="checkbox" [(ngModel)]="editingCategory.publish" id="catEditPublish">
-              <label for="catEditPublish">Publish in Navigation Bar</label>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>FOOTER DISPLAY TITLE</label>
+                <input type="text" [(ngModel)]="editingCategory.footerDisplayTitle" class="form-control" placeholder="e.g. Our Services">
+              </div>
+              <div class="form-group flex-1">
+                <label>FOOTER COLUMN SORT ORDER</label>
+                <input type="number" [(ngModel)]="editingCategory.footerSortOrder" class="form-control" placeholder="0">
+              </div>
+            </div>
+            <div class="checkbox-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 12px;">
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.showInMenu">
+                <span>Show in Main Nav</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.showInFooter">
+                <span>Show in Footer</span>
+              </label>
+              <label class="checkbox-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;">
+                <input type="checkbox" [(ngModel)]="editingCategory.publish">
+                <span>Published</span>
+              </label>
             </div>
             <div class="error-box" *ngIf="editErrorMessage">{{ editErrorMessage }}</div>
           </div>
@@ -288,6 +340,9 @@ import { ApiService } from '../../../core/services/api.service';
     .status-pill { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
     .status-pill.published { background: #dcfce7; color: #15803d; }
     .status-pill.draft { background: #f1f5f9; color: #64748b; }
+    .indicator { font-size: 12px; font-weight: 700; }
+    .indicator.on { color: #16a34a; }
+    .indicator.off { color: #94a3b8; }
 
     .action-buttons { display: flex; gap: 8px; align-items: center; }
     .btn-edit {
@@ -350,12 +405,16 @@ export class WebCategoriesComponent implements OnInit {
 
   // Create Modal
   showCreateModal = false;
-  newCategory = {
+  newCategory: any = {
     title: '',
     menuPosition: 2,
     menuSortOrder: 0,
     customClass: '',
     publish: true,
+    showInMenu: true,
+    showInFooter: true,
+    footerSortOrder: 0,
+    footerDisplayTitle: '',
     parentId: null,
     icon: 'fa-solid fa-folder',
     homeSortFrom: 0
@@ -427,6 +486,10 @@ export class WebCategoriesComponent implements OnInit {
       menuSortOrder: this.categories.length + 1,
       customClass: '',
       publish: true,
+      showInMenu: true,
+      showInFooter: true,
+      footerSortOrder: 0,
+      footerDisplayTitle: '',
       parentId: null,
       icon: 'fa-solid fa-folder',
       homeSortFrom: 0
@@ -468,6 +531,10 @@ export class WebCategoriesComponent implements OnInit {
       menuSortOrder: cat.menuSortOrder || 0,
       customClass: cat.customClass || '',
       publish: cat.publish !== false,
+      showInMenu: cat.showInMenu !== false,
+      showInFooter: cat.showInFooter !== false,
+      footerSortOrder: cat.footerSortOrder || 0,
+      footerDisplayTitle: cat.footerDisplayTitle || '',
       parentId: cat.parentId || null,
       icon: cat.icon || 'fa-solid fa-folder'
     };

@@ -66,8 +66,6 @@ import { PageSectionEditComponent } from './pages/admin/content/page-section-edi
 import { PageSectionDeleteComponent } from './pages/admin/content/page-section-delete.component';
 import { PageSectionListEditComponent } from './pages/admin/content/page-section-list-edit.component';
 import { PageSectionListDeleteComponent } from './pages/admin/content/page-section-list-delete.component';
-import { SlidersComponent } from './pages/admin/content/sliders.component';
-import { SliderEditComponent } from './pages/admin/content/slider-edit.component';
 import { BlogsManagementComponent } from './pages/admin/cms/blogs-management.component';
 import { BlogCategoriesManagementComponent } from './pages/admin/cms/blog-categories-management.component';
 import { BlogCategoryDeleteComponent } from './pages/admin/cms/blog-category-delete.component';
@@ -77,7 +75,6 @@ import { UserDeleteComponent } from './pages/admin/users/user-delete.component';
 import { UserCategoryDeleteComponent } from './pages/admin/users/user-category-delete.component';
 import { KpiMetricDeleteComponent } from './pages/admin/users/kpi-metric-delete.component';
 import { WebPageDeleteComponent } from './pages/admin/content/web-page-delete.component';
-import { SliderDeleteComponent } from './pages/admin/content/slider-delete.component';
 
 // Commerce Studio & Storefront Components
 import { ProductsListComponent } from './pages/admin/products/products-list.component';
@@ -235,9 +232,6 @@ export const routes: Routes = [
       { path: 'content/console/sections/delete/:id', component: PageSectionDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/edit/:id', component: PageSectionListEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections/lists/delete/:id', component: PageSectionListDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders', component: SlidersComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/edit/:id', component: SliderEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
-      { path: 'content/console/sliders/delete/:id', component: SliderDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs', component: BlogsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/create', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/blogs/edit/:id', component: BlogEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },

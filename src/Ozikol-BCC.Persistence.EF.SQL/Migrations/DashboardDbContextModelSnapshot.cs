@@ -4793,30 +4793,10 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("ActivateProductsInHome")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Address")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("AddressOne")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("AddressTwo")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("BillingEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("BrandName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ComingSoonMessage")
                         .HasMaxLength(1000)
@@ -4866,17 +4846,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("ContactEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("CopyrightNotice")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("Country")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -4885,24 +4857,8 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("EmailOne")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("EmailTwo")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<bool>("EnableComingSoon")
                         .HasColumnType("bit");
-
-                    b.Property<string>("FacebookPage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("FacebookUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("FaviconKey")
                         .HasMaxLength(250)
@@ -4912,31 +4868,19 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("GitHubUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("FooterDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("GoogleMapUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("InstagramPage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("InstagramUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("FooterNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<bool>("IsLive")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsWorkspaceInitialized")
                         .HasColumnType("bit");
-
-                    b.Property<string>("LinkedInUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("LoginBackgroundImageKey")
                         .HasMaxLength(250)
@@ -4975,18 +4919,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("PhoneOne")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PhoneTwo")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PrimaryPhone")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("ProductTitle")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -5007,14 +4939,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("RemovePlatformWatermark")
                         .HasColumnType("bit");
 
-                    b.Property<string>("SalesEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("SecondaryPhone")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<bool>("ShowProductsInFooter")
                         .HasColumnType("bit");
 
@@ -5034,14 +4958,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("State")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("SupportEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("Tagline")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -5050,22 +4966,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("TikTokUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TiktokPage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TwitterPage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TwitterUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
@@ -5080,10 +4980,6 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("WhatsAppNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("WhiteLogoKey")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
@@ -5092,24 +4988,12 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("WorkingHours")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<string>("WorkspaceInitializationMode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("WorkspaceInitializedUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("YouTubeUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("YoutubeChannel")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -5153,6 +5037,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<int>("FooterSortOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("Icon")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -5170,6 +5057,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("ShowInFooter")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowInMenu")
                         .HasColumnType("bit");
 
                     b.Property<string>("Title")
@@ -5985,8 +5875,14 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("DropdownSortOrder")
+                        .HasColumnType("int");
+
                     b.Property<bool>("EnableDirectUrl")
                         .HasColumnType("bit");
+
+                    b.Property<int>("FooterBottomSortOrder")
+                        .HasColumnType("int");
 
                     b.Property<int>("FooterSortOrder")
                         .HasColumnType("int");
@@ -6007,6 +5903,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
 
                     b.Property<bool>("IsMenuCTA")
                         .HasColumnType("bit");
+
+                    b.Property<int>("MainMenuSortOrder")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("MainPageId")
                         .HasColumnType("uniqueidentifier");
@@ -6050,10 +5949,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                     b.Property<bool>("ShowInFooter")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("ShowInFooterBottom")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("ShowInMainMenu")
                         .HasColumnType("bit");
 
                     b.Property<bool>("ShowInMenuDropDown")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowInTopBar")
                         .HasColumnType("bit");
 
                     b.Property<int>("SortOrder")
@@ -6067,6 +5972,9 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TopBarSortOrder")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");

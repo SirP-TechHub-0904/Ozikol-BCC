@@ -480,8 +480,8 @@ export class TemplateHydrationService {
         renderedItem = renderedItem.replace(/\{\{\s*Icon\s*\}\}/gi, icon);
         renderedItem = renderedItem.replace(/\{\{\s*Title\s*\}\}/gi, item.title || `Item ${idx + 1}`);
         renderedItem = renderedItem.replace(/\{\{\s*MiniTitle\s*\}\}/gi, item.miniTitle || '');
-        renderedItem = renderedItem.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-        renderedItem = renderedItem.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
+        renderedItem = renderedItem.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
         renderedItem = renderedItem.replace(/\{\{\s*ImageUrl\s*\}\}/gi, item.imageUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*VideoUrl\s*\}\}/gi, item.videoUrl || '');
         renderedItem = renderedItem.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');

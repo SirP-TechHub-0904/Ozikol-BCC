@@ -66,9 +66,9 @@ export function hydrateBreadcrumb(template: string, ctx: HydrationContext): stri
   });
 
   // 3. Banner Scalars
-  const effectiveTitle = ctx.pageTitle || ctx.title || 'Corporate Journal & Insights';
-  const effectiveSubTitle = ctx.subTitle || ctx.miniTitle || ctx.description || 'HOME / CURRENT PAGE';
-  const effectiveBg = ctx.backgroundImageUrl || ctx.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80';
+  const effectiveTitle = ctx.pageTitle || ctx.title || '';
+  const effectiveSubTitle = ctx.subTitle || ctx.miniTitle || ctx.description || '';
+  const effectiveBg = ctx.backgroundImageUrl || ctx.imageUrl || '';
 
   output = output.replace(/\{\{\s*(?:PageTitle|Title)\s*\}\}/gi, effectiveTitle);
   output = output.replace(/\{\{\s*(?:SubTitle|Subtitle|MiniTitle|Description)\s*\}\}/gi, effectiveSubTitle);

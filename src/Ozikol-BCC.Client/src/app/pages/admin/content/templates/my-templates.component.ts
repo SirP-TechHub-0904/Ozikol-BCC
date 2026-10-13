@@ -70,7 +70,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     { id: 'breadcrumb', name: 'Breadcrumbs & Page Banner', icon: 'alt_route' },
     { id: 'body', name: 'Body Sections', icon: 'view_quilt' },
     { id: 'footer', name: 'Footers', icon: 'dock_to_bottom' },
-    { id: 'blog', name: 'Blogs & Articles', icon: 'newspaper' }
+    { id: 'blog', name: 'Blogs & Articles', icon: 'newspaper' },
+    { id: 'blog_detail', name: 'Blog Details', icon: 'article' }
   ];
 
   selectedGroup: string = 'all';
@@ -703,26 +704,55 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ],
     navigationMenu: [
       {
-        title: 'Solutions',
-        url: '/solutions',
+        title: 'About',
+        url: '/about',
+        zone: 'first',
+        isDropdown: false,
+        sortOrder: 1
+      },
+      {
+        title: 'Service',
+        url: '/services',
         zone: 'first',
         isDropdown: true,
+        sortOrder: 2,
         pages: [
-          { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
-          { title: 'Enterprise Security', url: '/solutions/security' }
+          { title: 'IT', url: '/services/it', sortOrder: 1 },
+          { title: 'Hospital', url: '/services/hospital', sortOrder: 2 },
+          { title: 'Infrastructure', url: '/services/infrastructure', sortOrder: 3 }
         ]
       },
       {
-        title: 'Platform',
-        url: '/platform',
+        title: 'Career',
+        url: '/careers',
         zone: 'middle',
-        isDropdown: false
+        isDropdown: false,
+        sortOrder: 3
       },
       {
-        title: 'Company',
-        url: '/company',
+        title: 'Product',
+        url: '/products',
+        zone: 'middle',
+        isDropdown: true,
+        sortOrder: 4,
+        pages: [
+          { title: 'AI agent', url: '/products/ai-agent', sortOrder: 1 },
+          { title: 'Machineries', url: '/products/machineries', sortOrder: 2 }
+        ]
+      },
+      {
+        title: 'Blog',
+        url: '/blog',
         zone: 'last',
-        isDropdown: false
+        isDropdown: false,
+        sortOrder: 5
+      },
+      {
+        title: 'Contact Us',
+        url: '/contact',
+        zone: 'last',
+        isDropdown: false,
+        sortOrder: 6
       }
     ],
     topMenuItems: [
@@ -732,15 +762,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ],
     dropdowns: [
       {
-        title: 'Services',
+        title: 'Service',
         pages: [
-          { title: 'Strategic Consulting', url: '/strategic-advisory' },
-          { title: 'Systems Modernization', url: '/systems-modernization' }
+          { title: 'IT', url: '/services/it' },
+          { title: 'Hospital', url: '/services/hospital' },
+          { title: 'Infrastructure', url: '/services/infrastructure' }
+        ]
+      },
+      {
+        title: 'Product',
+        pages: [
+          { title: 'AI agent', url: '/products/ai-agent' },
+          { title: 'Machineries', url: '/products/machineries' }
         ]
       }
     ],
     menuCtaButtons: [
-      { title: 'Get Started', url: '/get-started', customClass: 'oz-btn-primary' }
+      { title: 'Login', url: '/login', customClass: 'oz-btn-ghost', buttonClass: 'oz-btn-ghost' },
+      { title: 'Get Started', url: '/get-started', customClass: 'oz-btn-primary', buttonClass: 'oz-btn-primary' }
     ]
   };
 
@@ -2216,12 +2255,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       case 'contact':
       case 'contactus':
         return { icon: 'contact_mail', gradient: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', badge: 'Contact', subtitle: 'Contact Form' };
+      case 'breadcrumb':
+        return { icon: 'alt_route', gradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', badge: 'Breadcrumb', subtitle: 'Page Banner' };
       case 'footer':
         return { icon: 'dock_to_bottom', gradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', badge: 'Footer', subtitle: 'Page Footer' };
       case 'blog':
-      case 'blog_detail':
       case 'article':
         return { icon: 'newspaper', gradient: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)', badge: 'Articles', subtitle: 'News & Insights' };
+      case 'blog_detail':
+      case 'blog-detail':
+        return { icon: 'article', gradient: 'linear-gradient(135deg, #d97706 0%, #92400e 100%)', badge: 'Editorial', subtitle: 'Article Detail' };
       case 'newsletter':
         return { icon: 'mail', gradient: 'linear-gradient(135deg, #10b981 0%, #047857 100%)', badge: 'Newsletter', subtitle: 'Subscription Bar' };
       default:
@@ -2604,17 +2647,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    */
   matchesCategory(itemCat: string, filterCat: string): boolean {
     if (!itemCat || !filterCat) return false;
-    const item = itemCat.toLowerCase().trim();
-    const filter = filterCat.toLowerCase().trim();
+    const item = itemCat.toLowerCase().trim().replace(/[-_]/g, '');
+    const filter = filterCat.toLowerCase().trim().replace(/[-_]/g, '');
     if (item === filter) return true;
     if (filter === 'body' || filter === 'bodysections') {
       return item === 'body' || item === 'bodysections' || item === 'section' || item === 'ecommerce' ||
              item === 'faq' || item === 'contact' || item === 'contactus' || item === 'marquee' || item === 'features';
     }
     if (filter === 'menu') return item === 'menu' || item === 'nav' || item === 'header';
-    if (filter === 'hero') return item === 'hero' || item === 'breadcrumb' || item === 'banner' || item === 'slider';
+    if (filter === 'hero') return item === 'hero' || item === 'slider';
+    if (filter === 'breadcrumb') return item === 'breadcrumb' || item === 'pagebanner' || item === 'banner';
     if (filter === 'footer') return item === 'footer';
-    if (filter === 'blog') return item === 'blog' || item === 'blog_detail' || item === 'article' || item === 'news';
+    if (filter === 'blog') return item === 'blog' || item === 'blogfeed' || item === 'articles' || item === 'news';
+    if (filter === 'blogdetail') return item === 'blogdetail' || item === 'articledetail';
     return false;
   }
 
@@ -2709,16 +2754,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     let combinedJs = '';
 
     if (this.activePreviewItem.category === 'menu' && this.modalPreviewPageSlug !== 'isolated') {
-      const dataContext = { ...this.previewContent, ...this.previewMenuContent };
+      let menuData: any = null;
+      if (this.activePreviewItem.defaultContentJson) {
+        try { menuData = JSON.parse(this.activePreviewItem.defaultContentJson); } catch (e) {}
+      }
+      const dataContext = { ...this.previewContent, ...(menuData || this.previewMenuContent) };
       const sim = this.composePageSimulation(this.modalPreviewPageSlug, this.activePreviewItem, dataContext);
       combinedStyles = sim.combinedStyles;
       combinedHtml = sim.combinedHtml;
       combinedJs = sim.combinedJs;
     } else {
+      let defaultBlockData: any = null;
+      if (this.activePreviewItem.defaultContentJson) {
+        try { defaultBlockData = JSON.parse(this.activePreviewItem.defaultContentJson); } catch (e) {}
+      }
       const dataContext: any = (this.activePreviewItem.category === 'footer')
-        ? { ...this.previewContent, ...this.previewFooterContent }
+        ? { ...this.previewContent, ...this.previewFooterContent, ...(defaultBlockData || {}) }
         : (this.activePreviewItem.category === 'menu')
-        ? { ...this.previewContent, ...this.previewMenuContent }
+        ? { ...this.previewContent, ...(defaultBlockData || this.previewMenuContent) }
         : (this.activePreviewItem.category === 'blog')
         ? (this.isBlogDetailTemplate()
             ? { ...this.previewContent, ...this.previewBlogDetailContent, article: this.previewBlogDetailContent }
@@ -3491,10 +3544,14 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       };
 
       if (b.category === 'menu') {
+        let defaultMenuData: any = null;
+        if (b.defaultContentJson) {
+          try { defaultMenuData = JSON.parse(b.defaultContentJson); } catch (e) {}
+        }
         if (contextOverride) {
-          ctx = { ...ctx, ...contextOverride };
+          ctx = { ...ctx, ...(defaultMenuData || this.previewMenuContent), ...contextOverride };
         } else {
-          ctx = { ...ctx, ...this.previewMenuContent };
+          ctx = { ...ctx, ...(defaultMenuData || this.previewMenuContent) };
         }
       } else if (b.category === 'hero') {
         let defaultHeroData: any = null;
@@ -3503,37 +3560,34 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         }
         ctx = {
           ...ctx,
-          title: contextOverride?.title || this.previewHeroContent.title || defaultHeroData?.title || defaultHeroData?.Title || b.previewTitle || b.name,
-          miniTitle: contextOverride?.miniTitle || this.previewHeroContent.miniTitle || defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || b.previewSubtitle?.toUpperCase() || 'OFFICIAL',
-          text: contextOverride?.description || this.previewHeroContent.text || defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || b.previewBody || b.description || '',
-          buttonText: this.previewHeroContent.buttonText || defaultHeroData?.buttonText || defaultHeroData?.ButtonText || 'Explore Solutions',
-          buttonLink: this.previewHeroContent.buttonLink || defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || '/services',
-          videoButtonText: this.previewHeroContent.videoButtonText || defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || '',
-          videoLink: this.previewHeroContent.videoLink || defaultHeroData?.videoLink || defaultHeroData?.VideoLink || '',
-          url: this.previewHeroContent.url || defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || '',
-          secondUrl: this.previewHeroContent.secondUrl || defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || '',
-          youtubeVideo: this.previewHeroContent.youtubeVideo || defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || ''
+          title: contextOverride?.title || defaultHeroData?.title || defaultHeroData?.Title || this.previewHeroContent.title || b.previewTitle || b.name,
+          miniTitle: contextOverride?.miniTitle || defaultHeroData?.miniTitle || defaultHeroData?.MiniTitle || this.previewHeroContent.miniTitle || b.previewSubtitle?.toUpperCase() || 'OFFICIAL',
+          text: contextOverride?.description || defaultHeroData?.text || defaultHeroData?.Text || defaultHeroData?.description || this.previewHeroContent.text || b.previewBody || b.description || '',
+          buttonText: defaultHeroData?.buttonText || defaultHeroData?.ButtonText || this.previewHeroContent.buttonText || 'Explore Solutions',
+          buttonLink: defaultHeroData?.buttonLink || defaultHeroData?.ButtonLink || this.previewHeroContent.buttonLink || '/services',
+          videoButtonText: defaultHeroData?.videoButtonText || defaultHeroData?.VideoButtonText || this.previewHeroContent.videoButtonText || '',
+          videoLink: defaultHeroData?.videoLink || defaultHeroData?.VideoLink || this.previewHeroContent.videoLink || '',
+          url: defaultHeroData?.url || defaultHeroData?.Url || defaultHeroData?.imageUrl || defaultHeroData?.ImageUrl || this.previewHeroContent.url || '',
+          secondUrl: defaultHeroData?.secondUrl || defaultHeroData?.SecondUrl || this.previewHeroContent.secondUrl || '',
+          youtubeVideo: defaultHeroData?.youtubeVideo || defaultHeroData?.YoutubeVideo || this.previewHeroContent.youtubeVideo || '',
+          ...(defaultHeroData || {})
         };
       } else if (b.category === 'footer') {
-        ctx = {
-          ...ctx,
-          categories: this.previewFooterContent.categories,
-          legalPages: this.previewFooterContent.legalPages,
-          email: this.previewFooterContent.email,
-          phone: this.previewFooterContent.phone,
-          brandName: this.previewFooterContent.brandName || this.currentTenantBrandName
-        };
-
+        let defaultFooterData: any = null;
         if (b.defaultContentJson) {
           try {
-            const parsed = JSON.parse(b.defaultContentJson);
-            if (parsed?.categories) ctx.categories = parsed.categories;
-            if (parsed?.legalPages) ctx.legalPages = parsed.legalPages;
-            if (parsed?.email) ctx.email = parsed.email;
-            if (parsed?.phone) ctx.phone = parsed.phone;
-            if (parsed?.description) ctx.description = parsed.description;
+            defaultFooterData = JSON.parse(b.defaultContentJson);
           } catch (e) {}
         }
+        ctx = {
+          ...ctx,
+          categories: defaultFooterData?.categories || defaultFooterData?.footerCategories || this.previewFooterContent.categories,
+          legalPages: defaultFooterData?.legalPages || this.previewFooterContent.legalPages,
+          email: defaultFooterData?.email || this.previewFooterContent.email,
+          phone: defaultFooterData?.phone || this.previewFooterContent.phone,
+          brandName: defaultFooterData?.brandName || this.previewFooterContent.brandName || this.currentTenantBrandName,
+          ...(defaultFooterData || {})
+        };
       } else if (b.category === 'body') {
         if (b.defaultContentJson) {
           try {
@@ -3643,46 +3697,23 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       ? this.selectedGroup
       : (activeSuite ? activeSuite.code : (this.selectedThemeSuiteToActivate || 'suite_corporate'));
 
-    // Dynamic suite-specific + global head stylesheets, Google Fonts, and footer scripts
-    const activeHeadTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'head' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
-
-    const activeBodyOpenTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'body_open' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
-
-    const activeFooterTagsMarkup = this.allCodeInjections
-      .filter(t => t.zone === 'footer' && (t.isActive || (t.suiteCode || 'suite_corporate') === suiteCode) && ((t.suiteCode || 'suite_corporate') === suiteCode || t.suiteCode === 'global' || !t.suiteCode))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(t => t.content)
-      .join('\n');
+    const bundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.currentTenantBrandName} | Live Theme Demo`,
+      pageSlug: this.previewActivePageSlug,
+      suiteCode: suiteCode,
+      codeInjections: this.allCodeInjections,
+      sections: [
+        {
+          category: 'body',
+          html: combinedHtml,
+          css: combinedStyles,
+          js: combinedJs
+        }
+      ]
+    });
 
     this.safeFullDemoHtml = this.sanitizer.bypassSecurityTrustHtml(`<style>${combinedStyles}</style>\n${combinedHtml}`);
-
-    const iframeHtmlDoc = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  ${activeHeadTagsMarkup}
-  ${combinedStyles ? `<style>\n${combinedStyles}\n</style>` : ''}
-</head>
-<body>
-  ${activeBodyOpenTagsMarkup}
-  ${combinedHtml}
-  ${combinedJs ? `\n  <script>\n${combinedJs}\n  </script>` : ''}
-  ${activeFooterTagsMarkup}
-</body>
-</html>`;
-
-    this.safeFullDemoSrcDoc = this.sanitizer.bypassSecurityTrustHtml(iframeHtmlDoc);
+    this.safeFullDemoSrcDoc = this.sanitizer.bypassSecurityTrustHtml(bundle.fullDocumentHtml);
   }
 
   getFullDemoBlockCount(): number {

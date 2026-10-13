@@ -94,15 +94,46 @@ import { ApiService } from '../../../core/services/api.service';
             </select>
           </div>
 
-          <!-- Publish Toggle -->
+          <!-- Footer Customizations -->
+          <div class="form-group">
+            <label>FOOTER DISPLAY TITLE (OPTIONAL OVERRIDE)</label>
+            <input type="text" [(ngModel)]="category.footerDisplayTitle" class="form-control" placeholder="e.g. Our Services">
+            <small class="help-text">Leave blank to use the Category Title as the footer column header.</small>
+          </div>
+
+          <div class="form-group">
+            <label>FOOTER COLUMN SORT ORDER</label>
+            <input type="number" [(ngModel)]="category.footerSortOrder" class="form-control" placeholder="0">
+            <small class="help-text">Ordering position among other footer navigation columns.</small>
+          </div>
+
+          <!-- Visibility Toggles -->
           <div class="form-group full-width">
-            <label>NAVIGATION VISIBILITY</label>
-            <div class="checkbox-card">
-              <input type="checkbox" [(ngModel)]="category.publish" id="catPub">
-              <label for="catPub">
-                <strong>Publish in Main Navigation Menu</strong>
-                <p>When checked, this category and its child pages will render on the public website header.</p>
-              </label>
+            <label>CATEGORY VISIBILITY & PLACEMENTS</label>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+              <div class="checkbox-card">
+                <input type="checkbox" [(ngModel)]="category.publish" id="catPub">
+                <label for="catPub">
+                  <strong>Publish Category</strong>
+                  <p>When checked, this category is active across the tenant website.</p>
+                </label>
+              </div>
+
+              <div class="checkbox-card">
+                <input type="checkbox" [(ngModel)]="category.showInMenu" id="catShowMenu">
+                <label for="catShowMenu">
+                  <strong>Show in Navigation Header (Navbar Dropdown)</strong>
+                  <p>When enabled, renders as a dropdown category in the main menu header.</p>
+                </label>
+              </div>
+
+              <div class="checkbox-card">
+                <input type="checkbox" [(ngModel)]="category.showInFooter" id="catShowFooter">
+                <label for="catShowFooter">
+                  <strong>Show as Column in Website Footer</strong>
+                  <p>When enabled, renders as a dedicated column header with its attached child pages in the footer.</p>
+                </label>
+              </div>
             </div>
           </div>
         </div>

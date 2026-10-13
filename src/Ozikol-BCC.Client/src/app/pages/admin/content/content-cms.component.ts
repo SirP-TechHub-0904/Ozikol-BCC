@@ -17,8 +17,7 @@ Chart.register(...registerables);
       <app-page-header
         eyebrow="WEBSITE & CMS"
         icon="dynamic_feed"
-        title="Dynamic Content CMS Studio"
-        subtitle="Manage 100% database-driven WebPages, navigation dropdowns, section templates, and hero sliders."
+        subtitle="Manage 100% database-driven WebPages, navigation dropdowns, section templates, and FAQs."
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -48,11 +47,6 @@ Chart.register(...registerables);
           <span class="badge-pill" style="background:rgba(0,80,229,0.15); color:#0050e5; margin-left:6px;">{{ sections.length }}</span>
         </button>
 
-        <button type="button" class="feature-tab" [class.active]="activeTab === 'sliders'" (click)="setTab('sliders')">
-          <span class="material-symbols-outlined tab-icon">photo_library</span>
-          <span>Hero Sliders</span>
-          <span class="badge-pill" style="background:rgba(0,80,229,0.15); color:#0050e5; margin-left:6px;">{{ sliders.length }}</span>
-        </button>
 
         <button type="button" class="feature-tab" [class.active]="activeTab === 'faqs'" (click)="setTab('faqs')">
           <span class="material-symbols-outlined tab-icon">quiz</span>
@@ -74,11 +68,6 @@ Chart.register(...registerables);
             <div class="metric-label">Nav Dropdowns</div>
             <div class="metric-value">{{ categories.length }}</div>
             <span class="metric-trend text-green">Header Menu</span>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Hero Sliders</div>
-            <div class="metric-value">{{ sliders.length }}</div>
-            <span class="metric-trend text-purple">Homepage Banners</span>
           </div>
           <div class="metric-card">
             <div class="metric-label">FAQ Knowledge Base</div>
@@ -126,10 +115,6 @@ Chart.register(...registerables);
           <div class="action-card" (click)="openCreateModal('page')">
             <div class="action-icon-bg" style="background:#0050e5;"><span class="material-symbols-outlined">post_add</span></div>
             <span class="action-label">Create Web Page</span>
-          </div>
-          <div class="action-card" (click)="openCreateModal('slider')">
-            <div class="action-icon-bg" style="background:#a855f7;"><span class="material-symbols-outlined">add_photo_alternate</span></div>
-            <span class="action-label">Add Hero Banner</span>
           </div>
           <div class="action-card" (click)="openCreateModal('category')">
             <div class="action-icon-bg" style="background:#22c55e;"><span class="material-symbols-outlined">create_new_folder</span></div>
@@ -281,51 +266,6 @@ Chart.register(...registerables);
         </div>
       </section>
 
-      <!-- TAB 5: HERO SLIDERS -->
-      <section *ngIf="activeTab === 'sliders'" class="console-widget">
-        <div class="widget-head">
-          <div class="widget-title-wrap">
-            <span class="material-symbols-outlined drag-dot">drag_indicator</span>
-            <h2 class="widget-title">Homepage Hero Sliders & Banners</h2>
-          </div>
-          <button type="button" class="console-btn primary" (click)="openCreateModal('slider')">
-            <span class="material-symbols-outlined">add</span>
-            <span>New Slider</span>
-          </button>
-        </div>
-        <div class="widget-body" style="padding: 0;">
-          <table class="table-clean">
-            <thead>
-              <tr>
-                <th>Banner Title</th>
-                <th>Kicker / Subtitle</th>
-                <th>Action Button</th>
-                <th>Destination Link</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let s of sliders">
-                <td><strong>{{ s.title }}</strong></td>
-                <td>{{ s.kicker || '-' }}</td>
-                <td><span class="status-pill info">{{ s.buttonText || 'Learn More' }}</span></td>
-                <td><code class="slug-tag">{{ s.buttonLink || '/' }}</code></td>
-                <td><span class="status-pill" [class.good]="s.isActive" [class.muted]="!s.isActive">{{ s.isActive ? 'Active' : 'Disabled' }}</span></td>
-              </tr>
-              <tr *ngIf="sliders.length === 0">
-                <td colspan="5" class="text-center empty-state-row">
-                  <div class="empty-state-box">
-                    <span class="material-symbols-outlined empty-icon">photo_library</span>
-                    <h4>No hero sliders created yet</h4>
-                    <p>Add visual slider banners to engage visitors on the public home page.</p>
-                    <button type="button" class="console-btn primary" (click)="openCreateModal('slider')">+ Add Slider Banner</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       <!-- TAB 6: FAQS -->
       <section *ngIf="activeTab === 'faqs'" class="console-widget">
@@ -409,25 +349,6 @@ Chart.register(...registerables);
               </div>
             </div>
 
-            <!-- Slider Form -->
-            <div *ngIf="modalType === 'slider'">
-              <div class="form-group" style="margin-bottom:12px;">
-                <label class="form-label">Banner Title</label>
-                <input type="text" [(ngModel)]="sliderForm.title" name="sTitle" placeholder="e.g. Empowering Local Leadership" class="form-control" required />
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label class="form-label">Kicker / Subtitle</label>
-                <input type="text" [(ngModel)]="sliderForm.kicker" name="sKicker" placeholder="e.g. Community Excellence 2026" class="form-control" />
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label class="form-label">Background Image URL</label>
-                <input type="url" [(ngModel)]="sliderForm.imageUrl" name="sImg" placeholder="e.g. https://yourdomain.com/banner.jpg" class="form-control" />
-              </div>
-              <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label">Action Button Label</label>
-                <input type="text" [(ngModel)]="sliderForm.buttonText" name="sBtn" placeholder="e.g. Join the Initiative" class="form-control" />
-              </div>
-            </div>
 
             <!-- Category Form -->
             <div *ngIf="modalType === 'category'">
@@ -538,16 +459,14 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
   pages: any[] = [];
   categories: any[] = [];
   sections: any[] = [];
-  sliders: any[] = [];
   faqs: any[] = [];
 
   showModal = false;
-  modalType: 'page' | 'slider' | 'category' | 'faq' | 'section' = 'page';
+  modalType: 'page' | 'category' | 'faq' | 'section' = 'page';
   modalTitle = 'Create Web Page';
   modalIcon = 'post_add';
 
   pageForm: any = { title: '', slug: '', pageCategoryId: null, showInMenu: true, showInFooter: true, isPublished: true };
-  sliderForm: any = { title: '', kicker: '', imageUrl: '', buttonText: 'Learn More', buttonLink: '/' };
   categoryForm: any = { title: '', menuSortOrder: 0 };
   faqForm: any = { question: '', answer: '', category: 'General', isPublished: true };
 
@@ -587,7 +506,7 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
     let completed = 0;
     const checkDone = () => {
       completed++;
-      if (completed >= 5) {
+      if (completed >= 4) {
         setTimeout(() => {
           this.isLoading = false;
           this.updateCharts();
@@ -614,14 +533,6 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
     this.api.get<any>('ContentApi/sections').subscribe({
       next: (res) => {
         this.sections = res?.data || [];
-        checkDone();
-      },
-      error: () => checkDone()
-    });
-
-    this.api.get<any>('ContentApi/sliders').subscribe({
-      next: (res) => {
-        this.sliders = res?.data || [];
         checkDone();
       },
       error: () => checkDone()
@@ -681,11 +592,11 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
         this.contentBarChart = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: ['Pages', 'Dropdowns', 'Sections', 'Sliders', 'FAQs'],
+            labels: ['Pages', 'Dropdowns', 'Sections', 'FAQs'],
             datasets: [{
               label: 'Total Items',
-              data: [this.pages.length || 3, this.categories.length || 2, this.sections.length || 4, this.sliders.length || 2, this.faqs.length || 5],
-              backgroundColor: ['#0050e5', '#22c55e', '#a855f7', '#f59e0b', '#06b6d4'],
+              data: [this.pages.length || 3, this.categories.length || 2, this.sections.length || 4, this.faqs.length || 5],
+              backgroundColor: ['#0050e5', '#22c55e', '#a855f7', '#f59e0b'],
               borderRadius: 6
             }]
           },
@@ -709,7 +620,6 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
         this.pages.length || 3,
         this.categories.length || 2,
         this.sections.length || 4,
-        this.sliders.length || 2,
         this.faqs.length || 5
       ];
       this.contentBarChart.update();
@@ -719,7 +629,7 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
   isSaving = false;
   errorMessage = '';
 
-  openCreateModal(type: 'page' | 'slider' | 'category' | 'faq' | 'section'): void {
+  openCreateModal(type: 'page' | 'category' | 'faq' | 'section'): void {
     this.modalType = type;
     this.showModal = true;
     this.errorMessage = '';
@@ -729,11 +639,6 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
         this.modalTitle = 'Create Dynamic Web Page';
         this.modalIcon = 'post_add';
         this.pageForm = { title: '', slug: '', pageCategoryId: null, showInMenu: true, showInFooter: true, isPublished: true };
-        break;
-      case 'slider':
-        this.modalTitle = 'Add Hero Banner Slider';
-        this.modalIcon = 'add_photo_alternate';
-        this.sliderForm = { title: '', kicker: '', imageUrl: '', buttonText: 'Learn More', buttonLink: '/' };
         break;
       case 'category':
         this.modalTitle = 'New Navigation Menu Dropdown';
@@ -771,18 +676,6 @@ export class ContentCmsComponent implements OnInit, AfterViewInit {
         error: (err) => {
           this.isSaving = false;
           this.errorMessage = err?.error?.message || 'Failed to create web page.';
-        }
-      });
-    } else if (this.modalType === 'slider') {
-      this.api.post<any>('ContentApi/sliders', this.sliderForm).subscribe({
-        next: () => {
-          this.isSaving = false;
-          this.showModal = false;
-          this.loadAll();
-        },
-        error: (err) => {
-          this.isSaving = false;
-          this.errorMessage = err?.error?.message || 'Failed to create hero banner.';
         }
       });
     } else if (this.modalType === 'category') {

@@ -46,11 +46,24 @@ namespace Ozikol_BCC.Domain.Models
         public bool Publish { get; set; } = true;
 
         /// <summary>
+        /// Toggle visibility as a dropdown menu in the website navigation header.
+        /// When true, this category and its attached child pages will render in the navbar.
+        /// </summary>
+        [Display(Name = "Show In Menu")]
+        public bool ShowInMenu { get; set; } = true;
+
+        /// <summary>
         /// Toggle visibility as a column header in the website footer.
         /// When true, child WebPages with ShowInFooter = true will be rendered under this category column.
         /// </summary>
         [Display(Name = "Show In Footer")]
         public bool ShowInFooter { get; set; } = true;
+
+        /// <summary>
+        /// Explicit sorting position of this category column within the website footer columns layout.
+        /// </summary>
+        [Display(Name = "Footer Sort Order")]
+        public int FooterSortOrder { get; set; } = 0;
 
         /// <summary>
         /// Custom display title to use when displayed as a footer column header.

@@ -661,20 +661,60 @@ export class UniversalPreviewModalComponent implements OnInit, OnDestroy {
           ],
           navigationMenu: custom.navigationMenu || [
             {
-              title: 'Solutions',
-              url: '/solutions',
+              title: 'About',
+              url: '/about',
+              zone: 'first',
+              isDropdown: false,
+              sortOrder: 1
+            },
+            {
+              title: 'Service',
+              url: '/services',
               zone: 'first',
               isDropdown: true,
+              sortOrder: 2,
               pages: [
-                { title: 'Cloud Infrastructure', url: '/solutions/cloud' },
-                { title: 'Enterprise Security', url: '/solutions/security' }
+                { title: 'IT', url: '/services/it', sortOrder: 1 },
+                { title: 'Hospital', url: '/services/hospital', sortOrder: 2 },
+                { title: 'Infrastructure', url: '/services/infrastructure', sortOrder: 3 }
               ]
             },
-            { title: 'Platform', url: '/platform', zone: 'middle', isDropdown: false },
-            { title: 'Company', url: '/company', zone: 'last', isDropdown: false }
+            {
+              title: 'Career',
+              url: '/careers',
+              zone: 'middle',
+              isDropdown: false,
+              sortOrder: 3
+            },
+            {
+              title: 'Product',
+              url: '/products',
+              zone: 'middle',
+              isDropdown: true,
+              sortOrder: 4,
+              pages: [
+                { title: 'AI agent', url: '/products/ai-agent', sortOrder: 1 },
+                { title: 'Machineries', url: '/products/machineries', sortOrder: 2 }
+              ]
+            },
+            {
+              title: 'Blog',
+              url: '/blog',
+              zone: 'last',
+              isDropdown: false,
+              sortOrder: 5
+            },
+            {
+              title: 'Contact Us',
+              url: '/contact',
+              zone: 'last',
+              isDropdown: false,
+              sortOrder: 6
+            }
           ],
           menuCtaButtons: custom.menuCtaButtons || [
-            { title: 'Get Started', url: '/get-started', buttonClass: 'oz-btn-primary' }
+            { title: 'Login', url: '/login', buttonClass: 'oz-btn-ghost', customClass: 'oz-btn-ghost' },
+            { title: 'Get Started', url: '/get-started', buttonClass: 'oz-btn-primary', customClass: 'oz-btn-primary' }
           ],
           socialLinks: custom.socialLinks || [
             { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
