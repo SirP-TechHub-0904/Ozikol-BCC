@@ -7,7 +7,8 @@ namespace Ozikol.MasterDomain.Blueprints;
 
 /// <summary>
 /// Service responsible for loading and resolving turnkey default content from central embedded resources.
-/// Powers tenant onboarding and first-run seeder suites with rich HTML editorial blogs and pre-configured website pages.
+/// Powers tenant onboarding and first-run seeder suites with rich HTML editorial blogs, pre-configured website pages,
+/// dynamic CMS forms, contact channels, categories, SEO meta tags, and global site settings.
 /// </summary>
 public static class CentralContentLoader
 {
@@ -16,7 +17,7 @@ public static class CentralContentLoader
 
     private static readonly Lazy<List<EditorialBlogBlueprint>> DefaultBlogsCache = new(() =>
     {
-        string manifestJson = ReadResource("Ozikol.MasterDomain.Blueprints.Content.blogs.blogs-manifest.json");
+        string manifestJson = ReadContentFile("blogs/blogs-manifest.json", "Ozikol.MasterDomain.Blueprints.Content.blogs.blogs-manifest.json");
         var manifest = JsonSerializer.Deserialize<List<BlogManifestItem>>(manifestJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                        ?? new List<BlogManifestItem>();
 
@@ -28,7 +29,7 @@ public static class CentralContentLoader
                 .FirstOrDefault(n => n.EndsWith(item.HtmlFile, StringComparison.OrdinalIgnoreCase))
                 ?? throw new FileNotFoundException($"Blog HTML body resource '{item.HtmlFile}' not found.");
 
-            string htmlBody = ReadResource(htmlResourceName);
+            string htmlBody = ReadContentFile($"blogs/{item.HtmlFile}", htmlResourceName);
 
             result.Add(new EditorialBlogBlueprint
             {
@@ -52,13 +53,48 @@ public static class CentralContentLoader
 
     private static readonly Lazy<WebsiteContentManifest> DefaultPagesCache = new(() =>
     {
-        string pagesJson = ReadResource("Ozikol.MasterDomain.Blueprints.Content.website-pages-content.json");
+        string pagesJson = ReadContentFile("website-pages-content.json", "Ozikol.MasterDomain.Blueprints.Content.website-pages-content.json");
         return JsonSerializer.Deserialize<WebsiteContentManifest>(pagesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                ?? new WebsiteContentManifest();
     });
 
+    private static readonly Lazy<List<WebCategoryBlueprint>> DefaultCategoriesCache = new(() =>
+    {
+        string json = ReadContentFile("website-categories-content.json", "Ozikol.MasterDomain.Blueprints.Content.website-categories-content.json");
+        return JsonSerializer.Deserialize<List<WebCategoryBlueprint>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+               ?? new List<WebCategoryBlueprint>();
+    });
+
+    private static readonly Lazy<List<WebFormBlueprint>> DefaultFormsCache = new(() =>
+    {
+        string json = ReadContentFile("website-forms-content.json", "Ozikol.MasterDomain.Blueprints.Content.website-forms-content.json");
+        return JsonSerializer.Deserialize<List<WebFormBlueprint>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+               ?? new List<WebFormBlueprint>();
+    });
+
+    private static readonly Lazy<List<WebContactChannelBlueprint>> DefaultContactChannelsCache = new(() =>
+    {
+        string json = ReadContentFile("website-contact-channels.json", "Ozikol.MasterDomain.Blueprints.Content.website-contact-channels.json");
+        return JsonSerializer.Deserialize<List<WebContactChannelBlueprint>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+               ?? new List<WebContactChannelBlueprint>();
+    });
+
+    private static readonly Lazy<List<WebCodeInjectionTagBlueprint>> DefaultCodeInjectionTagsCache = new(() =>
+    {
+        string json = ReadContentFile("website-code-injection-tags.json", "Ozikol.MasterDomain.Blueprints.Content.website-code-injection-tags.json");
+        return JsonSerializer.Deserialize<List<WebCodeInjectionTagBlueprint>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+               ?? new List<WebCodeInjectionTagBlueprint>();
+    });
+
+    private static readonly Lazy<WebDefaultSettingsBlueprint> DefaultWebsiteSettingsCache = new(() =>
+    {
+        string json = ReadContentFile("website-default-settings.json", "Ozikol.MasterDomain.Blueprints.Content.website-default-settings.json");
+        return JsonSerializer.Deserialize<WebDefaultSettingsBlueprint>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+               ?? new WebDefaultSettingsBlueprint();
+    });
+
     /// <summary>
-    /// Retrieves the 3 factory-standard editorial blog articles showcasing Ozikol's sovereign cloud, automation, and security.
+    /// Retrieves all factory-standard editorial blog articles showcasing Ozikol's sovereign cloud, automation, and security.
     /// Each article includes full rich-text HTML formatted with subheadings, styled quotes, and feature checklists.
     /// </summary>
     /// <returns>A read-only collection of <see cref="EditorialBlogBlueprint"/> instances.</returns>
@@ -74,6 +110,84 @@ public static class CentralContentLoader
     public static IReadOnlyList<WebPageBlueprint> GetDefaultPages()
     {
         return DefaultPagesCache.Value.Pages;
+    }
+
+    /// <summary>
+    /// Retrieves all factory-default page categories (e.g. Service, Product) from central blueprints.
+    /// </summary>
+    /// <returns>A read-only collection of <see cref="WebCategoryBlueprint"/> instances.</returns>
+    public static IReadOnlyList<WebCategoryBlueprint> GetDefaultCategories()
+    {
+        return DefaultCategoriesCache.Value;
+    }
+
+    /// <summary>
+    /// Retrieves all turnkey CMS forms (Contact Us, Newsletter, Service Request &amp; Intake) and their dynamic fields.
+    /// </summary>
+    /// <returns>A read-only collection of <see cref="WebFormBlueprint"/> instances.</returns>
+    public static IReadOnlyList<WebFormBlueprint> GetDefaultForms()
+    {
+        return DefaultFormsCache.Value;
+    }
+
+    /// <summary>
+    /// Retrieves all default communication channels, hotlines, addresses, and social media profile blueprints.
+    /// </summary>
+    /// <returns>A read-only collection of <see cref="WebContactChannelBlueprint"/> instances.</returns>
+    public static IReadOnlyList<WebContactChannelBlueprint> GetDefaultContactChannels()
+    {
+        return DefaultContactChannelsCache.Value;
+    }
+
+    /// <summary>
+    /// Retrieves all turnkey SEO meta tags, social share cards, favicons, and code injection tags.
+    /// </summary>
+    /// <returns>A read-only collection of <see cref="WebCodeInjectionTagBlueprint"/> instances.</returns>
+    public static IReadOnlyList<WebCodeInjectionTagBlueprint> GetDefaultCodeInjectionTags()
+    {
+        return DefaultCodeInjectionTagsCache.Value;
+    }
+
+    /// <summary>
+    /// Retrieves the factory-default website copywriting, taglines, and brand settings blueprint.
+    /// </summary>
+    /// <returns>A <see cref="WebDefaultSettingsBlueprint"/> instance.</returns>
+    public static WebDefaultSettingsBlueprint GetDefaultWebsiteSettings()
+    {
+        return DefaultWebsiteSettingsCache.Value;
+    }
+
+    private static string ReadContentFile(string relativePath, string resourceName)
+    {
+        var diskContent = TryReadFromDisk(relativePath);
+        if (diskContent != null)
+        {
+            return diskContent;
+        }
+
+        return ReadResource(resourceName);
+    }
+
+    private static string? TryReadFromDisk(string relativePath)
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var dir = new DirectoryInfo(baseDir);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Ozikol-BCC.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        if (dir != null)
+        {
+            string normalizedRelative = relativePath.Replace('/', Path.DirectorySeparatorChar);
+            string filePath = Path.Combine(dir.FullName, "src", "Ozikol.MasterDomain", "Blueprints", "Content", normalizedRelative);
+            if (File.Exists(filePath))
+            {
+                return File.ReadAllText(filePath, Encoding.UTF8);
+            }
+        }
+
+        return null;
     }
 
     private static string ReadResource(string resourceName)
@@ -106,6 +220,257 @@ public static class CentralContentLoader
         public string HtmlFile { get; set; } = string.Empty;
         public List<string>? Tags { get; set; }
     }
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for a turnkey page category.
+/// </summary>
+public class WebCategoryBlueprint
+{
+    /// <summary>
+    /// Gets or sets the category display title.
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the footer display title override.
+    /// </summary>
+    public string? FooterDisplayTitle { get; set; }
+
+    /// <summary>
+    /// Gets or sets the menu sort order.
+    /// </summary>
+    public int MenuSortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the menu position ("First", "Middle", "Last").
+    /// </summary>
+    public string MenuPosition { get; set; } = "Middle";
+
+    /// <summary>
+    /// Gets or sets whether to display in the header menu.
+    /// </summary>
+    public bool ShowInMenu { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether to display as a footer column.
+    /// </summary>
+    public bool ShowInFooter { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the footer column sort order.
+    /// </summary>
+    public int FooterSortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this category is published.
+    /// </summary>
+    public bool Publish { get; set; } = true;
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for a turnkey CMS page form.
+/// </summary>
+public class WebFormBlueprint
+{
+    /// <summary>
+    /// Gets or sets the form title.
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the unique form key identifier.
+    /// </summary>
+    public string FormKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the form instructions or description.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets the submit button text.
+    /// </summary>
+    public string SubmitButtonText { get; set; } = "Submit";
+
+    /// <summary>
+    /// Gets or sets the success feedback message.
+    /// </summary>
+    public string SuccessMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether this form is active.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the dynamic form fields.
+    /// </summary>
+    public List<WebFormFieldBlueprint> Fields { get; set; } = new();
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for a dynamic field inside a CMS form.
+/// </summary>
+public class WebFormFieldBlueprint
+{
+    /// <summary>
+    /// Gets or sets the unique field key identifier.
+    /// </summary>
+    public string FieldKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the field label.
+    /// </summary>
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the input placeholder hint text.
+    /// </summary>
+    public string? Placeholder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the input control type (e.g. "text", "email", "phone", "textarea", "dropdown", "pill_select").
+    /// </summary>
+    public string FieldType { get; set; } = "text";
+
+    /// <summary>
+    /// Gets or sets JSON-serialized options for select and dropdown controls.
+    /// </summary>
+    public string? OptionsJson { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether input is required.
+    /// </summary>
+    public bool IsRequired { get; set; }
+
+    /// <summary>
+    /// Gets or sets the presentation display order.
+    /// </summary>
+    public int SortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Bootstrap grid width (e.g. "col-md-6", "col-md-12").
+    /// </summary>
+    public string GridWidth { get; set; } = "col-md-12";
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for a default contact channel or social media link.
+/// </summary>
+public class WebContactChannelBlueprint
+{
+    /// <summary>
+    /// Gets or sets the channel type (e.g. "Email", "Phone", "Address", "Hours", "SocialMedia").
+    /// </summary>
+    public string ChannelType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the platform name (e.g. "Support", "Office", "Twitter", "LinkedIn").
+    /// </summary>
+    public string Platform { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the channel title.
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the channel description or operational schedule.
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the target contact value template (e.g. "support@{safeHandle}.com").
+    /// </summary>
+    public string Value { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the icon CSS class.
+    /// </summary>
+    public string IconClass { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether this channel is the primary default.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this channel is published.
+    /// </summary>
+    public bool IsPublished { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the display sort order.
+    /// </summary>
+    public int SortOrder { get; set; }
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for a turnkey site code injection tag (e.g. SEO suite).
+/// </summary>
+public class WebCodeInjectionTagBlueprint
+{
+    /// <summary>
+    /// Gets or sets the injection name.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the target zone ("head", "body_open", "footer").
+    /// </summary>
+    public string Zone { get; set; } = "head";
+
+    /// <summary>
+    /// Gets or sets the tag type ("meta_tag", "script_url", etc.).
+    /// </summary>
+    public string TagType { get; set; } = "meta_tag";
+
+    /// <summary>
+    /// Gets or sets the execution sort order.
+    /// </summary>
+    public int SortOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the tag is active.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the suite code (e.g. "suite_corporate").
+    /// </summary>
+    public string SuiteCode { get; set; } = "suite_corporate";
+
+    /// <summary>
+    /// Gets or sets the raw code content.
+    /// </summary>
+    public string Content { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Strongly-typed blueprint model for default website brand and copywriting settings.
+/// </summary>
+public class WebDefaultSettingsBlueprint
+{
+    /// <summary>
+    /// Gets or sets the brand tagline.
+    /// </summary>
+    public string Tagline { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the company overview description template with {orgName} placeholder.
+    /// </summary>
+    public string CompanyDescription { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the footer mission statement template with {orgName} placeholder.
+    /// </summary>
+    public string FooterDescription { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the copyright notice template with {year} and {orgName} placeholders.
+    /// </summary>
+    public string CopyrightNotice { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -239,6 +604,21 @@ public class WebPageBlueprint
     /// Gets or sets whether this page is a legal compliance document (e.g. Privacy Policy, Terms of Service).
     /// </summary>
     public bool IsLegal { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets optional comma-separated tags (e.g. "quicklinks").
+    /// </summary>
+    public string? Tags { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this page should be displayed in footer columns.
+    /// </summary>
+    public bool? ShowInFooter { get; set; }
+
+    /// <summary>
+    /// Gets or sets the CTA button style ("primary", "secondary", etc.).
+    /// </summary>
+    public string? MenuCtaStyle { get; set; }
 
     /// <summary>
     /// Gets or sets whether the page is published publicly.

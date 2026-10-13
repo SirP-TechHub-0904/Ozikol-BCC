@@ -1158,471 +1158,22 @@ export class HeroVisualComponent implements OnInit {
   activeEditorTab: 'html' | 'css' | 'js' | 'mock' = 'html';
   activeMockTab: 'slide_1' | 'slide_2' = 'slide_1';
 
-  htmlTemplate: string = `<section class="oz-hero-slider {{ CustomClass }}">
-  <div class="oz-slider-track">
-    {{#each PageSectionLists}}
-    <div class="oz-slide {{#if @first}}active{{/if}}" data-slide="{{ @index }}">
-      <div class="oz-slide-bg" style="background-image: url('{{ ImageUrl }}');"></div>
-      <div class="oz-slide-overlay"></div>
-      <div class="oz-slide-container">
-        <div class="oz-slide-content">
-          {{#if MiniTitle}}<span class="oz-slide-badge">{{ MiniTitle }}</span>{{/if}}
-          <h1 class="oz-slide-title">{{ Title }}</h1>
-          <p class="oz-slide-desc">{{ Description }}</p>
-          <div class="oz-slide-actions">
-            {{#if ButtonText}}
-            <a href="{{ ButtonLink }}" class="oz-btn-primary">{{ ButtonText }}</a>
-            {{/if}}
-            {{#if SecondaryButtonText}}
-            <a href="{{ SecondaryButtonLink }}" class="oz-btn-secondary">{{ SecondaryButtonText }}</a>
-            {{/if}}
-          </div>
-        </div>
-      </div>
-    </div>
-    {{/each}}
-  </div>
-
-  <!-- Navigation Controls -->
-  <button type="button" class="oz-slider-arrow oz-prev" aria-label="Previous Slide">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="15 18 9 12 15 6"></polyline>
-    </svg>
-  </button>
-  <button type="button" class="oz-slider-arrow oz-next" aria-label="Next Slide">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="9 18 15 12 9 6"></polyline>
-    </svg>
-  </button>
-
-  <!-- Pagination Dots -->
-  <div class="oz-slider-dots">
-    {{#each PageSectionLists}}
-    <button type="button" class="oz-slider-dot {{#if @first}}active{{/if}}" data-index="{{ @index }}" aria-label="Slide {{ @number }}"></button>
-    {{/each}}
-  </div>
-</section>`;
-
-  cssStyles: string = `.oz-hero-slider {
-  position: relative;
-  min-height: 580px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  background: #0f172a;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-.oz-slider-track {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 580px;
-}
-.oz-slide {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-}
-.oz-slide.active {
-  opacity: 1;
-  visibility: visible;
-  z-index: 2;
-}
-.oz-slide-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transform: scale(1.05);
-  transition: transform 7s ease-out;
-}
-.oz-slide.active .oz-slide-bg {
-  transform: scale(1);
-}
-.oz-slide-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.68) 55%, rgba(15, 23, 42, 0.35) 100%);
-}
-.oz-slide-container {
-  position: relative;
-  z-index: 3;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 80px 32px;
-  box-sizing: border-box;
-}
-.oz-slide-content {
-  max-width: 640px;
-}
-.oz-slide-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  background: rgba(0, 80, 229, 0.25);
-  border: 1px solid rgba(147, 197, 253, 0.4);
-  color: #93c5fd;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 18px;
-  backdrop-filter: blur(8px);
-}
-.oz-slide-title {
-  font-size: 46px;
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1.15;
-  margin: 0 0 18px 0;
-  letter-spacing: -0.025em;
-}
-.oz-slide-desc {
-  font-size: 16px;
-  color: #e2e8f0;
-  line-height: 1.6;
-  margin: 0 0 32px 0;
-}
-.oz-slide-actions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.oz-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 30px;
-  background: #0050e5;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 80, 229, 0.4);
-}
-.oz-btn-primary:hover {
-  background: #003db3;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(0, 80, 229, 0.5);
-}
-.oz-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 30px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 8px;
-  text-decoration: none;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  transition: all 0.2s ease;
-}
-.oz-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-.oz-slider-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.oz-slider-arrow:hover {
-  background: rgba(0, 80, 229, 0.85);
-  border-color: #0050e5;
-  transform: translateY(-50%) scale(1.08);
-}
-.oz-prev { left: 24px; }
-.oz-next { right: 24px; }
-
-.oz-slider-dots {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  gap: 10px;
-}
-.oz-slider-dot {
-  width: 28px;
-  height: 7px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.35);
-  border: none;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  padding: 0;
-}
-.oz-slider-dot.active {
-  width: 44px;
-  background: #0050e5;
-  box-shadow: 0 0 10px rgba(0, 80, 229, 0.6);
-}
-@media (max-width: 768px) {
-  .oz-hero-slider, .oz-slider-track { min-height: 500px; }
-  .oz-slide-title { font-size: 32px; }
-  .oz-slide-desc { font-size: 15px; }
-  .oz-slider-arrow { display: none; }
-  .oz-slide-container { padding: 60px 20px; }
-}
-@media (max-width: 480px) {
-  .oz-hero-slider, .oz-slider-track { min-height: 460px; }
-  .oz-slide-title { font-size: 26px; }
-  .oz-slide-desc { font-size: 14px; margin-bottom: 24px; }
-  .oz-slide-actions { flex-direction: column; width: 100%; }
-  .oz-btn-primary, .oz-btn-secondary { width: 100%; text-align: center; box-sizing: border-box; }
-}`;
-
-  jsScript: string = `(function() {
-  function initHeroSlider() {
-    var section = document.querySelector('.oz-hero-slider');
-    if (!section) return;
-
-    var slides = section.querySelectorAll('.oz-slide');
-    var dots = section.querySelectorAll('.oz-slider-dot');
-    var prevBtn = section.querySelector('.oz-prev');
-    var nextBtn = section.querySelector('.oz-next');
-
-    if (slides.length <= 1) return;
-
-    var currentIndex = 0;
-    var timer = null;
-
-    function showSlide(index) {
-      if (index < 0) index = slides.length - 1;
-      if (index >= slides.length) index = 0;
-      currentIndex = index;
-
-      for (var i = 0; i < slides.length; i++) {
-        if (i === currentIndex) {
-          slides[i].classList.add('active');
-        } else {
-          slides[i].classList.remove('active');
-        }
-      }
-
-      for (var j = 0; j < dots.length; j++) {
-        if (j === currentIndex) {
-          dots[j].classList.add('active');
-        } else {
-          dots[j].classList.remove('active');
-        }
-      }
-    }
-
-    function nextSlide() {
-      showSlide(currentIndex + 1);
-    }
-
-    function prevSlide() {
-      showSlide(currentIndex - 1);
-    }
-
-    function startAutoPlay() {
-      stopAutoPlay();
-      timer = setInterval(nextSlide, 5000);
-    }
-
-    function stopAutoPlay() {
-      if (timer) clearInterval(timer);
-    }
-
-    if (prevBtn) {
-      prevBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        prevSlide();
-        startAutoPlay();
-      });
-    }
-
-    if (nextBtn) {
-      nextBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        nextSlide();
-        startAutoPlay();
-      });
-    }
-
-    for (var k = 0; k < dots.length; k++) {
-      (function(idx) {
-        dots[idx].addEventListener('click', function(e) {
-          e.preventDefault();
-          showSlide(idx);
-          startAutoPlay();
-        });
-      })(k);
-    }
-
-    section.addEventListener('mouseenter', stopAutoPlay);
-    section.addEventListener('mouseleave', startAutoPlay);
-
-    startAutoPlay();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHeroSlider);
-  } else {
-    initHeroSlider();
-  }
-})();`;
+  htmlTemplate: string = '';
+  cssStyles: string = '';
+  jsScript: string = '';
+  sampleContent: any = {};
 
   heroTokens: Array<{ label: string; token: string; htmlSnippet?: string; description?: string }> = [
-    {
-      label: 'Slider',
-      token: `{{#each PageSectionLists}}\n<div class="swiper-slide">\n  <div class="slide-item">\n    <h1>{{ Title }}</h1>\n    <p>{{ Description }}</p>\n    <img src="{{ ImageUrl }}" alt="{{ Title }}" />\n  </div>\n</div>\n{{/each}}`,
-      htmlSnippet: `<section class="slider-section position-relative {{ CustomClass }}">
-  <div class="swiper hero-slider">
-    <div class="swiper-wrapper">
-      {{#each PageSectionLists}}
-      <div class="swiper-slide">
-        <div class="slide-content">
-          {{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}
-          <h1>{{ Title }}</h1>
-          <p>{{ Description }}</p>
-          {{#if ButtonText}}
-          <a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>
-          {{/if}}
-        </div>
-        {{#if ImageUrl}}
-        <img src="{{ ImageUrl }}" alt="{{ Title }}" class="slide-img" />
-        {{/if}}
-      </div>
-      {{/each}}
-    </div>
-    <!-- Navigation Controls -->
-    <div class="swiper-button-prev"></div>
-    <div class="swiper-button-next"></div>
-  </div>
-</section>`,
-      description: 'Multi-slide responsive Swiper carousel for rotating promotions or hero images.'
-    },
-    {
-      label: 'Hero',
-      token: `{{ Title }}`,
-      htmlSnippet: `<section class="hero-section {{ CustomClass }}">
-  <div class="container">
-    <div class="row align-items-center">
-      <div class="col-lg-6">
-        {{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}
-        <h1 class="display-4 fw-bold">{{ Title }}</h1>
-        <p class="lead">{{ Description }}</p>
-        <div class="d-flex gap-3">
-          {{#if ButtonText}}
-          <a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>
-          {{/if}}
-          {{#if SecondaryButtonText}}
-          <a href="{{ SecondaryButtonLink }}" class="btn btn-outline">{{ SecondaryButtonText }}</a>
-          {{/if}}
-        </div>
-      </div>
-      <div class="col-lg-6">
-        {{#if ImageUrl}}
-        <img src="{{ ImageUrl }}" alt="{{ Title }}" class="img-fluid" />
-        {{/if}}
-      </div>
-    </div>
-  </div>
-</section>`,
-      description: 'Single showcase hero banner with split columns (headline on left, visual on right).'
-    },
-    {
-      label: 'Title',
-      token: '{{ Title }}',
-      htmlSnippet: '<h1>{{ Title }}</h1>',
-      description: 'Primary hero headline text.'
-    },
-    {
-      label: 'MiniTitle',
-      token: '{{ MiniTitle }}',
-      htmlSnippet: '{{#if MiniTitle}}<span class="sub-title">{{ MiniTitle }}</span>{{/if}}',
-      description: 'Small category label, eyebrow, or badge above the main title.'
-    },
-    {
-      label: 'Description',
-      token: '{{ Description }}',
-      htmlSnippet: '<p>{{ Description }}</p>',
-      description: 'Hero introductory narrative or paragraph text.'
-    },
-    {
-      label: 'ImageUrl',
-      token: '{{ ImageUrl }}',
-      htmlSnippet: '{{#if ImageUrl}}<img src="{{ ImageUrl }}" alt="{{ Title }}" class="img-fluid" />{{/if}}',
-      description: 'Hero featured showcase image or slide illustration URL.'
-    },
-    {
-      label: 'Button',
-      token: '{{ ButtonText }}',
-      htmlSnippet: '{{#if ButtonText}}<a href="{{ ButtonLink }}" class="btn btn-primary">{{ ButtonText }}</a>{{/if}}',
-      description: 'Primary call-to-action button with dynamic label and target URL.'
-    },
-    {
-      label: 'Secondary Button',
-      token: '{{ SecondaryButtonText }}',
-      htmlSnippet: '{{#if SecondaryButtonText}}<a href="{{ SecondaryButtonLink }}" class="btn btn-outline">{{ SecondaryButtonText }}</a>{{/if}}',
-      description: 'Secondary outline button with dynamic label and link.'
-    }
+    { label: 'Slider Track Loop', token: '{{#each PageSectionLists}}\n<div class="slide">\n  <h1>{{ Title }}</h1>\n  <p>{{ Description }}</p>\n</div>\n{{/each}}', description: 'Multi-slide responsive carousel iteration.' },
+    { label: 'Title', token: '{{ Title }}', description: 'Primary hero headline text.' },
+    { label: 'MiniTitle', token: '{{ MiniTitle }}', description: 'Category label or eyebrow badge.' },
+    { label: 'Description', token: '{{ Description }}', description: 'Introductory narrative text.' },
+    { label: 'ImageUrl', token: '{{ ImageUrl }}', description: 'Showcase background or slide visual URL.' },
+    { label: 'ButtonText', token: '{{ ButtonText }}', description: 'Primary action button label.' },
+    { label: 'ButtonLink', token: '{{ ButtonLink }}', description: 'Primary action destination link.' },
+    { label: 'SecondaryButtonText', token: '{{ SecondaryButtonText }}', description: 'Secondary button label.' },
+    { label: 'SecondaryButtonLink', token: '{{ SecondaryButtonLink }}', description: 'Secondary button destination link.' }
   ];
-
-  sampleContent: any = {
-    title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
-    miniTitle: 'ENTERPRISE CLOUD PLATFORM',
-    description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
-    buttonText: 'Get Started Free',
-    buttonLink: '#signup',
-    secondaryButtonText: 'Explore Platform',
-    secondaryButtonLink: '#features',
-    imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
-    items: [
-      {
-        sortOrder: 1,
-        miniTitle: 'ENTERPRISE CLOUD PLATFORM',
-        title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
-        description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
-        imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
-        buttonText: 'Get Started Free',
-        buttonLink: '#signup',
-        secondaryButtonText: 'Explore Platform',
-        secondaryButtonLink: '#features'
-      },
-      {
-        sortOrder: 2,
-        miniTitle: 'NEXT-GEN AI AUTOMATION',
-        title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
-        description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
-        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
-        buttonText: 'Schedule a Demo',
-        buttonLink: '#demo',
-        secondaryButtonText: 'View Case Studies',
-        secondaryButtonLink: '#case-studies'
-      }
-    ]
-  };
-
   constructor(
     private api: ApiService,
     private toast: ToastService,
@@ -1634,52 +1185,69 @@ export class HeroVisualComponent implements OnInit {
     if (!this.variantCode) {
       this.regenerateVariantCode();
     }
-    this.ensureSlideItems();
     if (this.isEditMode && this.existingTemplateId) {
       this.loadExistingTemplate(this.existingTemplateId);
+    } else {
+      this.loadBlueprint();
     }
   }
 
+  regenerateVariantCode(): void {
+    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+    this.variantCode = `HERO_${randomSuffix}`;
+  }
+
   /**
-   * Guarantees that sampleContent.items contains both Slide 1 and Slide 2 objects.
+   * Loads the factory default hero blueprint (template.html, styles.css, script.js, sample-content.json)
+   * directly from central blueprint files.
    */
+  loadBlueprint(forceReload: boolean = false, toastSuccess?: string): void {
+    const url = forceReload ? 'ContentApi/templates/blueprint/hero?reload=true' : 'ContentApi/templates/blueprint/hero';
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp) {
+          this.htmlTemplate = bp.htmlTemplate || '';
+          this.cssStyles = bp.cssStyles || '';
+          this.jsScript = bp.jsScript || '';
+          if (bp.sampleContent) {
+            this.sampleContent = bp.sampleContent;
+            this.ensureSlideItems();
+          }
+          if (!this.isEditMode) {
+            this.templateName = bp.name || this.templateName;
+            this.description = bp.description || this.description;
+          }
+          if (toastSuccess) {
+            this.toast.info(toastSuccess);
+          }
+        }
+      },
+      error: () => {
+        this.toast.error('Failed to load Hero blueprint from central API.');
+      }
+    });
+  }
+
   ensureSlideItems(): void {
-    if (!this.sampleContent) {
-      this.sampleContent = {};
-    }
-    const defaultSlide1 = {
-      sortOrder: 1,
-      miniTitle: this.sampleContent.miniTitle || 'ENTERPRISE CLOUD PLATFORM',
-      title: this.sampleContent.title || 'Scale Your Digital Infrastructure With Unrivaled Speed',
-      description: this.sampleContent.description || 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
-      imageUrl: this.sampleContent.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
-      buttonText: this.sampleContent.buttonText || 'Get Started Free',
-      buttonLink: this.sampleContent.buttonLink || '#signup',
-      secondaryButtonText: this.sampleContent.secondaryButtonText || 'Explore Platform',
-      secondaryButtonLink: this.sampleContent.secondaryButtonLink || '#features'
-    };
-    const defaultSlide2 = {
-      sortOrder: 2,
-      miniTitle: 'NEXT-GEN AI AUTOMATION',
-      title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
-      description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
-      imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
-      buttonText: 'Schedule a Demo',
-      buttonLink: '#demo',
-      secondaryButtonText: 'View Case Studies',
-      secondaryButtonLink: '#case-studies'
-    };
-
-    if (!Array.isArray(this.sampleContent.items) || this.sampleContent.items.length === 0) {
-      this.sampleContent.items = [defaultSlide1, defaultSlide2];
-    } else if (this.sampleContent.items.length === 1) {
-      this.sampleContent.items.push(defaultSlide2);
+    if (!this.sampleContent) this.sampleContent = {};
+    if (!this.sampleContent.items || this.sampleContent.items.length === 0) {
+      this.sampleContent.items = [
+        {
+          sortOrder: 1,
+          miniTitle: this.sampleContent.miniTitle || 'ENTERPRISE PLATFORM',
+          title: this.sampleContent.title || 'Scale Your Digital Infrastructure',
+          description: this.sampleContent.description || 'Deploy mission-critical workloads.',
+          imageUrl: this.sampleContent.imageUrl || 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600',
+          buttonText: this.sampleContent.buttonText || 'Get Started',
+          buttonLink: this.sampleContent.buttonLink || '#signup',
+          secondaryButtonText: this.sampleContent.secondaryButtonText || 'Explore',
+          secondaryButtonLink: this.sampleContent.secondaryButtonLink || '#features'
+        }
+      ];
     }
   }
 
-  /**
-   * Synchronizes Slide 1 field updates with top-level scalar tokens for backward compatibility.
-   */
   onSlide1Change(): void {
     if (this.sampleContent?.items?.[0]) {
       const s1 = this.sampleContent.items[0];
@@ -1694,52 +1262,24 @@ export class HeroVisualComponent implements OnInit {
     }
   }
 
-  regenerateVariantCode(): void {
-    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
-    this.variantCode = `HERO_${randomSuffix}`;
-  }
-
   resetBoilerplate(): void {
-    this.resetSampleContent();
-    this.toast.info('Boilerplate reset to default 2-image hero slider.');
+    this.loadBlueprint(true, 'Boilerplate reset to default hero files.');
   }
 
   resetSampleContent(): void {
-    this.sampleContent = {
-      title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
-      miniTitle: 'ENTERPRISE CLOUD PLATFORM',
-      description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
-      buttonText: 'Get Started Free',
-      buttonLink: '#signup',
-      secondaryButtonText: 'Explore Platform',
-      secondaryButtonLink: '#features',
-      imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
-      items: [
-        {
-          sortOrder: 1,
-          miniTitle: 'ENTERPRISE CLOUD PLATFORM',
-          title: 'Scale Your Digital Infrastructure With Unrivaled Speed',
-          description: 'Deploy mission-critical workloads, orchestrate multi-cloud pipelines, and protect customer assets with sub-millisecond resilience.',
-          imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&auto=format&fit=crop&q=80',
-          buttonText: 'Get Started Free',
-          buttonLink: '#signup',
-          secondaryButtonText: 'Explore Platform',
-          secondaryButtonLink: '#features'
-        },
-        {
-          sortOrder: 2,
-          miniTitle: 'NEXT-GEN AI AUTOMATION',
-          title: 'Accelerate Intelligent Workflows Across Your Entire Ecosystem',
-          description: 'Automate complex operations, empower your teams with real-time analytics, and deliver high-impact results with modern intelligence.',
-          imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80',
-          buttonText: 'Schedule a Demo',
-          buttonLink: '#demo',
-          secondaryButtonText: 'View Case Studies',
-          secondaryButtonLink: '#case-studies'
+    this.api.get<any>('ContentApi/templates/blueprint/hero?reload=true').subscribe({
+      next: (res) => {
+        const bp = res?.data || res;
+        if (bp?.sampleContent) {
+          this.sampleContent = bp.sampleContent;
+          this.ensureSlideItems();
+          this.toast.info('Hero sample values reset to file defaults.');
         }
-      ]
-    };
-    this.toast.info('Hero 2-slider sample values reset to defaults.');
+      },
+      error: () => {
+        this.toast.error('Failed to reset sample content from central API.');
+      }
+    });
   }
 
   openPreviewModal(): void {

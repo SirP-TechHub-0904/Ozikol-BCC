@@ -2,7 +2,7 @@
   <div class="oz-slider-track">
     {{#each PageSectionLists}}
     <div class="oz-slide {{#if @first}}active{{/if}}" data-slide="{{ @index }}">
-      <div class="oz-slide-bg" style="background-image: url('{{ ImageUrl }}');"></div>
+      <div class="oz-slide-bg" {{#if ImageUrl}}style="background-image: url('{{ ImageUrl }}');"{{/if}}></div>
       <div class="oz-slide-overlay"></div>
       <div class="oz-slide-container">
         <div class="oz-slide-content">

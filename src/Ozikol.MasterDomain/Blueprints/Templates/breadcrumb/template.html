@@ -1,4 +1,4 @@
-<header class="oz-breadcrumb-banner {{ CustomClass }}" style="background-image: url('{{ BackgroundImageUrl }}');">
+<header class="oz-breadcrumb-banner {{ CustomClass }}" {{#if BackgroundImageUrl}}style="background-image: url('{{ BackgroundImageUrl }}');"{{/if}}>
   <div class="oz-banner-overlay"></div>
   <div class="oz-banner-container">
     <h1 class="oz-banner-title">{{ Title }}</h1>
