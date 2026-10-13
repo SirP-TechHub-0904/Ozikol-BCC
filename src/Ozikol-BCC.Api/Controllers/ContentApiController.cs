@@ -414,9 +414,9 @@ namespace Ozikol_BCC.Api.Controllers
                 .Include(p => p.PageCategory)
                 .Include(p => p.PageSections!.OrderBy(s => s.PageSortOrder))
                     .ThenInclude(s => s.PageSectionLists!.OrderBy(l => l.SortOrder))
-                .FirstOrDefaultAsync(p => p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
+                .FirstOrDefaultAsync(p => p.Publish && p.DirectUrl != null && p.DirectUrl.ToLower() == cleanSlug);
 
-            if (page == null) return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' not found."));
+            if (page == null) return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
 
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
@@ -617,6 +617,10 @@ namespace Ozikol_BCC.Api.Controllers
                     MenuSortOrder = request.MenuSortOrder,
                     CustomClass = request.CustomClass?.Trim(),
                     Publish = request.Publish,
+                    ShowInMenu = request.ShowInMenu,
+                    ShowInFooter = request.ShowInFooter,
+                    FooterSortOrder = request.FooterSortOrder,
+                    FooterDisplayTitle = request.FooterDisplayTitle?.Trim(),
                     ParentId = request.ParentId == Guid.Empty ? null : request.ParentId,
                     Icon = request.Icon,
                     CreatedAtUtc = DateTime.UtcNow
@@ -646,6 +650,10 @@ namespace Ozikol_BCC.Api.Controllers
                 existing.MenuSortOrder = updated.MenuSortOrder;
                 existing.CustomClass = updated.CustomClass?.Trim();
                 existing.Publish = updated.Publish;
+                existing.ShowInMenu = updated.ShowInMenu;
+                existing.ShowInFooter = updated.ShowInFooter;
+                existing.FooterSortOrder = updated.FooterSortOrder;
+                existing.FooterDisplayTitle = updated.FooterDisplayTitle?.Trim();
                 existing.ParentId = updated.ParentId == Guid.Empty ? null : updated.ParentId;
                 existing.Icon = updated.Icon;
                 existing.UpdatedAtUtc = DateTime.UtcNow;
@@ -3904,7 +3912,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     })
                     .ToListAsync();
 
-                // 2. Menu Dropdown Categories
+                // 2. Menu Dropdown Categories (Publish == true && ShowInMenu == true)
                 var rawCategories = await _context.PageCategories
                     .AsNoTracking()
                     .Where(c => c.Publish)
@@ -3912,44 +3920,60 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     .OrderBy(c => c.MenuSortOrder)
                     .ToListAsync();
 
-                var dropdowns = rawCategories.Select(c => new
-                {
-                    id = c.Id,
-                    title = c.Title,
-                    footerTitle = c.FooterDisplayTitle ?? c.Title,
-                    showInFooter = c.ShowInFooter,
-                    pages = (c.WebPages ?? new List<WebPage>())
-                        .Where(p => p.Publish)
-                        .OrderBy(p => p.SortOrder)
-                        .Select(p => new
-                        {
-                            id = p.Id,
-                            title = p.Title,
-                            slug = p.DirectUrl,
-                            url = "/" + (p.DirectUrl ?? p.Id.ToString()),
-                            showInFooter = p.ShowInFooter,
-                            showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
-                        })
-                        .ToList()
-                }).ToList();
-
-                // 3. Footer Groups (Categories specifically enabled for the footer)
-                var footerGroups = dropdowns
-                    .Where(d => d.showInFooter)
-                    .Select(d => new
+                // Dropdowns for header navigation (only categories with ShowInMenu == true and active child pages)
+                var dropdowns = rawCategories
+                    .Where(c => c.ShowInMenu && (c.WebPages != null && c.WebPages.Any(p => p.Publish && p.ShowInMenuDropDown)))
+                    .Select(c => new
                     {
-                        id = d.id,
-                        name = d.title,
-                        displayTitle = d.footerTitle,
-                        pages = d.pages.Where(p => p.showInFooter).ToList()
+                        id = c.Id,
+                        title = c.Title,
+                        footerTitle = c.FooterDisplayTitle ?? c.Title,
+                        showInFooter = c.ShowInFooter,
+                        pages = (c.WebPages ?? new List<WebPage>())
+                            .Where(p => p.Publish && p.ShowInMenuDropDown)
+                            .OrderBy(p => p.DropdownSortOrder != 0 ? p.DropdownSortOrder : p.SortOrder)
+                            .Select(p => new
+                            {
+                                id = p.Id,
+                                title = p.Title,
+                                slug = p.DirectUrl,
+                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                showInFooter = p.ShowInFooter,
+                                showInMenu = true
+                            })
+                            .ToList()
+                    }).ToList();
+
+                // 3. Footer Groups (Categories specifically enabled for the footer, sorted by FooterSortOrder)
+                var footerGroups = rawCategories
+                    .Where(c => c.ShowInFooter)
+                    .OrderBy(c => c.FooterSortOrder)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        name = c.Title,
+                        displayTitle = !string.IsNullOrWhiteSpace(c.FooterDisplayTitle) ? c.FooterDisplayTitle : c.Title,
+                        pages = (c.WebPages ?? new List<WebPage>())
+                            .Where(p => p.Publish && p.ShowInFooter)
+                            .OrderBy(p => p.FooterSortOrder != 0 ? p.FooterSortOrder : p.SortOrder)
+                            .Select(p => new
+                            {
+                                id = p.Id,
+                                title = p.Title,
+                                slug = p.DirectUrl,
+                                url = "/" + (p.DirectUrl ?? p.Id.ToString()),
+                                showInFooter = true,
+                                showInMenu = p.ShowInMenuDropDown || p.ShowInMainMenu
+                            })
+                            .ToList()
                     })
                     .ToList();
 
-                // 4. Legal Compliance Pages (Only published and enabled for footer)
+                // 4. Footer Bottom Compliance / Legal Pages (ShowInFooterBottom == true or IsLegal == true)
                 var legalPages = await _context.WebPages
                     .AsNoTracking()
-                    .Where(p => p.IsLegal && p.Publish && p.ShowInFooter)
-                    .OrderBy(p => p.SortOrder)
+                    .Where(p => (p.ShowInFooterBottom || p.IsLegal) && p.Publish)
+                    .OrderBy(p => p.FooterBottomSortOrder)
                     .Select(p => new
                     {
                         id = p.Id,
@@ -3959,25 +3983,69 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     })
                     .ToListAsync();
 
-                // 4b. Menu CTA Action Buttons (IsMenuCTA == true)
-                var menuCtaButtons = await _context.WebPages
+                // 4a. Top Utility Bar Pages (ShowInTopBar == true && Publish == true)
+                var topBarPages = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.ShowInTopBar && p.Publish)
+                    .OrderBy(p => p.TopBarSortOrder)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        title = p.Title,
+                        slug = p.DirectUrl,
+                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                    })
+                    .ToListAsync();
+
+                // 4b. Menu CTA Action Buttons (IsMenuCTA == true or fallback to platform defaults)
+                var dbCtaButtons = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.IsMenuCTA && p.Publish)
                     .OrderBy(p => p.SortOrder)
                     .Select(p => new
                     {
                         id = p.Id,
-                        title = p.Title,
+                        title = p.MenuCtaText ?? p.Title,
                         slug = p.DirectUrl,
-                        url = "/" + (p.DirectUrl ?? p.Id.ToString())
+                        url = !string.IsNullOrWhiteSpace(p.MenuCtaUrl) ? p.MenuCtaUrl : ("/" + (p.DirectUrl ?? p.Id.ToString())),
+                        customClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary",
+                        buttonClass = p.MenuCtaStyle == "outline" ? "oz-btn-ghost" : "oz-btn-primary"
                     })
                     .ToListAsync();
+
+                var menuCtaButtons = new List<object>();
+                if (dbCtaButtons.Count > 0)
+                {
+                    menuCtaButtons.AddRange(dbCtaButtons);
+                }
+                else
+                {
+                    // Fallback to platform default action buttons (Login & Get Started)
+                    menuCtaButtons.Add(new
+                    {
+                        id = Guid.NewGuid(),
+                        title = "Login",
+                        slug = "auth/login",
+                        url = "/auth/login",
+                        customClass = "oz-btn-ghost",
+                        buttonClass = "oz-btn-ghost"
+                    });
+                    menuCtaButtons.Add(new
+                    {
+                        id = Guid.NewGuid(),
+                        title = "Get Started",
+                        slug = "auth/register",
+                        url = "/auth/register",
+                        customClass = "oz-btn-primary",
+                        buttonClass = "oz-btn-primary"
+                    });
+                }
 
                 // 4c. Top-Level Main Menu Items (ShowInMainMenu == true)
                 var topMenuItems = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.ShowInMainMenu && p.Publish)
-                    .OrderBy(p => p.SortOrder)
+                    .OrderBy(p => p.MainMenuSortOrder != 0 ? p.MainMenuSortOrder : p.SortOrder)
                     .Select(p => new
                     {
                         id = p.Id,
@@ -3991,7 +4059,7 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 var taggedWebPages = await _context.WebPages
                     .AsNoTracking()
                     .Where(p => p.Publish && p.ShowInFooter && !string.IsNullOrWhiteSpace(p.Tags))
-                    .OrderBy(p => p.SortOrder)
+                    .OrderBy(p => p.FooterSortOrder != 0 ? p.FooterSortOrder : p.SortOrder)
                     .Select(p => new
                     {
                         id = p.Id,
@@ -4010,8 +4078,9 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                         .Select(t => t.Trim())
                         .Where(t => !string.IsNullOrWhiteSpace(t));
 
-                    foreach (var tag in tokens)
+                    foreach (var rawTag in tokens)
                     {
+                        var tag = rawTag.ToLowerInvariant();
                         if (!taggedPagesDict.TryGetValue(tag, out var list))
                         {
                             list = new List<object>();
@@ -4033,6 +4102,75 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     pages = kvp.Value
                 }).OrderBy(g => g.tag).ToList();
 
+                // 5a. Dynamic Contact Channels & Social Media Profiles
+                var contactChannels = new List<object>();
+                var socialLinks = new List<object>();
+                var contactPhones = new List<object>();
+                var contactEmails = new List<object>();
+                var contactAddresses = new List<object>();
+
+                var dbChannels = await _context.MisWebsiteContactChannels
+                    .AsNoTracking()
+                    .Where(c => c.IsPublished)
+                    .OrderBy(c => c.SortOrder)
+                    .ToListAsync();
+
+                if (dbChannels.Any())
+                {
+                    foreach (var c in dbChannels)
+                    {
+                        var item = new
+                        {
+                            id = c.Id,
+                            channelType = c.ChannelType,
+                            platform = c.Platform ?? c.ChannelType,
+                            title = c.Title,
+                            description = c.Description ?? string.Empty,
+                            value = c.Value,
+                            content = c.Value,
+                            url = c.Value,
+                            iconClass = c.IconClass ?? string.Empty,
+                            isDefault = c.IsDefault,
+                            sortOrder = c.SortOrder
+                        };
+
+                        contactChannels.Add(item);
+
+                        if (string.Equals(c.ChannelType, ContactChannelTypes.SocialMedia, StringComparison.OrdinalIgnoreCase))
+                        {
+                            socialLinks.Add(item);
+                        }
+                        else if (string.Equals(c.ChannelType, ContactChannelTypes.Phone, StringComparison.OrdinalIgnoreCase))
+                        {
+                            contactPhones.Add(item);
+                        }
+                        else if (string.Equals(c.ChannelType, ContactChannelTypes.Email, StringComparison.OrdinalIgnoreCase))
+                        {
+                            contactEmails.Add(item);
+                        }
+                        else if (string.Equals(c.ChannelType, ContactChannelTypes.Address, StringComparison.OrdinalIgnoreCase))
+                        {
+                            contactAddresses.Add(item);
+                        }
+                    }
+                }
+
+                var primaryEmail = dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email && c.IsDefault)?.Value
+                    ?? dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email)?.Value
+                    ?? string.Empty;
+                var primaryPhone = dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone && c.IsDefault)?.Value
+                    ?? dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone)?.Value
+                    ?? string.Empty;
+                var primaryAddress = dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address && c.IsDefault)?.Value
+                    ?? dbChannels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address)?.Value
+                    ?? string.Empty;
+
+                var facebookUrl = dbChannels.FirstOrDefault(c => (c.Platform != null && c.Platform.ToLower().Contains("facebook")) || (c.Title != null && c.Title.ToLower().Contains("facebook")))?.Value ?? string.Empty;
+                var twitterUrl = dbChannels.FirstOrDefault(c => (c.Platform != null && (c.Platform.ToLower().Contains("twitter") || c.Platform.ToLower() == "x")) || (c.Title != null && (c.Title.ToLower().Contains("twitter") || c.Title.ToLower() == "x")))?.Value ?? string.Empty;
+                var instagramUrl = dbChannels.FirstOrDefault(c => (c.Platform != null && c.Platform.ToLower().Contains("instagram")) || (c.Title != null && c.Title.ToLower().Contains("instagram")))?.Value ?? string.Empty;
+                var youtubeUrl = dbChannels.FirstOrDefault(c => (c.Platform != null && c.Platform.ToLower().Contains("youtube")) || (c.Title != null && c.Title.ToLower().Contains("youtube")))?.Value ?? string.Empty;
+                var tiktokUrl = dbChannels.FirstOrDefault(c => (c.Platform != null && c.Platform.ToLower().Contains("tiktok")) || (c.Title != null && c.Title.ToLower().Contains("tiktok")))?.Value ?? string.Empty;
+
                 // 5. Tenant Brand Settings
                 var config = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
                 var brand = new
@@ -4041,111 +4179,23 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     logoUrl = config?.LogoUrl ?? config?.CompanyLogoUrl ?? string.Empty,
                     whiteLogoUrl = config?.WhiteLogoUrl ?? config?.CompanyWhiteLogoUrl ?? string.Empty,
                     tagline = config?.Tagline ?? config?.CompanyDescription ?? string.Empty,
-                    email = config?.ContactEmail ?? config?.EmailOne ?? string.Empty,
-                    phone = config?.PrimaryPhone ?? config?.PhoneOne ?? string.Empty,
-                    address = config?.Address ?? config?.AddressOne ?? string.Empty,
-                    facebook = config?.FacebookUrl ?? config?.FacebookPage ?? string.Empty,
-                    twitter = config?.TwitterUrl ?? config?.TwitterPage ?? string.Empty,
-                    instagram = config?.InstagramUrl ?? config?.InstagramPage ?? string.Empty,
-                    youtube = config?.YouTubeUrl ?? config?.YoutubeChannel ?? string.Empty,
-                    tiktok = config?.TikTokUrl ?? config?.TiktokPage ?? string.Empty
+                    email = primaryEmail,
+                    phone = primaryPhone,
+                    address = primaryAddress,
+                    facebook = facebookUrl,
+                    twitter = twitterUrl,
+                    instagram = instagramUrl,
+                    youtube = youtubeUrl,
+                    tiktok = tiktokUrl
                 };
 
-                // 5a. Dynamic Contact Channels & Social Media Profiles
-                var contactChannels = new List<object>();
-                var socialLinks = new List<object>();
-                var contactPhones = new List<object>();
-                var contactEmails = new List<object>();
-                var contactAddresses = new List<object>();
 
-                try
-                {
-                    var dbChannels = await _context.MisWebsiteContactChannels
-                        .AsNoTracking()
-                        .Where(c => c.IsPublished)
-                        .OrderBy(c => c.SortOrder)
-                        .ToListAsync();
-
-                    if (dbChannels.Any())
-                    {
-                        foreach (var c in dbChannels)
-                        {
-                            var item = new
-                            {
-                                id = c.Id,
-                                channelType = c.ChannelType,
-                                platform = c.Platform ?? c.ChannelType,
-                                title = c.Title,
-                                description = c.Description ?? string.Empty,
-                                value = c.Value,
-                                content = c.Value,
-                                url = c.Value,
-                                iconClass = c.IconClass ?? string.Empty,
-                                isDefault = c.IsDefault,
-                                sortOrder = c.SortOrder
-                            };
-
-                            contactChannels.Add(item);
-
-                            if (string.Equals(c.ChannelType, ContactChannelTypes.SocialMedia, StringComparison.OrdinalIgnoreCase))
-                            {
-                                socialLinks.Add(item);
-                            }
-                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Phone, StringComparison.OrdinalIgnoreCase))
-                            {
-                                contactPhones.Add(item);
-                            }
-                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Email, StringComparison.OrdinalIgnoreCase))
-                            {
-                                contactEmails.Add(item);
-                            }
-                            else if (string.Equals(c.ChannelType, ContactChannelTypes.Address, StringComparison.OrdinalIgnoreCase))
-                            {
-                                contactAddresses.Add(item);
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // Table not yet migrated in tenant database; fallback to MisWebsiteSettings below.
-                }
-
-                // Fallback to MisWebsiteSettings if contact channels table is empty or unmigrated
-                if (!socialLinks.Any() && config != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(config.TwitterUrl ?? config.TwitterPage))
-                        socialLinks.Add(new { platform = "Twitter / X", title = "Twitter / X", url = config.TwitterUrl ?? config.TwitterPage, iconClass = "fa-brands fa-x-twitter" });
-                    if (!string.IsNullOrWhiteSpace(config.LinkedInUrl))
-                        socialLinks.Add(new { platform = "LinkedIn", title = "LinkedIn", url = config.LinkedInUrl, iconClass = "fa-brands fa-linkedin" });
-                    if (!string.IsNullOrWhiteSpace(config.FacebookUrl ?? config.FacebookPage))
-                        socialLinks.Add(new { platform = "Facebook", title = "Facebook", url = config.FacebookUrl ?? config.FacebookPage, iconClass = "fa-brands fa-facebook" });
-                    if (!string.IsNullOrWhiteSpace(config.InstagramUrl ?? config.InstagramPage))
-                        socialLinks.Add(new { platform = "Instagram", title = "Instagram", url = config.InstagramUrl ?? config.InstagramPage, iconClass = "fa-brands fa-instagram" });
-                    if (!string.IsNullOrWhiteSpace(config.YouTubeUrl ?? config.YoutubeChannel))
-                        socialLinks.Add(new { platform = "YouTube", title = "YouTube", url = config.YouTubeUrl ?? config.YoutubeChannel, iconClass = "fa-brands fa-youtube" });
-                    if (!string.IsNullOrWhiteSpace(config.GitHubUrl))
-                        socialLinks.Add(new { platform = "GitHub", title = "GitHub", url = config.GitHubUrl, iconClass = "fa-brands fa-github" });
-                    if (!string.IsNullOrWhiteSpace(config.TikTokUrl ?? config.TiktokPage))
-                        socialLinks.Add(new { platform = "TikTok", title = "TikTok", url = config.TikTokUrl ?? config.TiktokPage, iconClass = "fa-brands fa-tiktok" });
-                }
-
-                if (!contactPhones.Any() && config != null && !string.IsNullOrWhiteSpace(config.PrimaryPhone ?? config.PhoneOne))
-                {
-                    contactPhones.Add(new { type = "phone", channelType = "Phone", platform = "Primary", title = "Primary Phone", value = config.PrimaryPhone ?? config.PhoneOne, content = config.PrimaryPhone ?? config.PhoneOne, iconClass = "fa-solid fa-phone", isDefault = true });
-                }
-                if (!contactEmails.Any() && config != null && !string.IsNullOrWhiteSpace(config.ContactEmail ?? config.EmailOne))
-                {
-                    contactEmails.Add(new { type = "email", channelType = "Email", platform = "General", title = "Contact Email", value = config.ContactEmail ?? config.EmailOne, content = config.ContactEmail ?? config.EmailOne, iconClass = "fa-solid fa-envelope", isDefault = true });
-                }
-                if (!contactAddresses.Any() && config != null && !string.IsNullOrWhiteSpace(config.Address ?? config.AddressOne))
-                {
-                    contactAddresses.Add(new { type = "address", channelType = "Address", platform = "HQ", title = "Physical Address", value = config.Address ?? config.AddressOne, content = config.Address ?? config.AddressOne, iconClass = "fa-solid fa-location-dot", isDefault = true });
-                }
+                // MisWebsiteContactChannels is the authoritative single source of truth for all contact and social channels.
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     publishedForms = forms,
+                    topBarPages = topBarPages,
                     menuDropdowns = dropdowns,
                     topMenuItems = topMenuItems,
                     menuCtaButtons = menuCtaButtons,
@@ -5283,6 +5333,10 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public Ozikol_BCC.Domain.Enum.Enum.MenuPosition MenuPosition { get; set; } = Ozikol_BCC.Domain.Enum.Enum.MenuPosition.Middle;
         public string? CustomClass { get; set; }
         public bool Publish { get; set; } = true;
+        public bool ShowInMenu { get; set; } = true;
+        public bool ShowInFooter { get; set; } = true;
+        public int FooterSortOrder { get; set; } = 0;
+        public string? FooterDisplayTitle { get; set; }
         public Guid? ParentId { get; set; }
         public string? Icon { get; set; }
         public Ozikol_BCC.Domain.Enum.Enum.HomeSortFrom HomeSortFrom { get; set; }

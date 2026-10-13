@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +8,7 @@ import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
+import { ContentHydrationService } from '../admin/content/templates/services/content-hydration.service';
 import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../admin/content/templates/services/html-assembler.service';
 
 /**
@@ -203,7 +204,6 @@ export class LandingComponent implements OnInit, OnDestroy {
   categories: any[] = [];
   publishedPages: any[] = [];
   sections: any[] = [];
-  sliders: any[] = [];
   blogs: any[] = [];
   codeInjections: { head: any[]; bodyOpen: any[]; footer: any[] } = { head: [], bodyOpen: [], footer: [] };
 
@@ -224,11 +224,13 @@ export class LandingComponent implements OnInit, OnDestroy {
     public cartService: CartService,
     private toastService: ToastService,
     private templateHydration: TemplateHydrationService,
+    private contentHydration: ContentHydrationService,
     private htmlAssembler: HtmlAssemblerService,
     private sanitizer: DomSanitizer,
     private titleService: Title,
     private metaService: Meta,
-    private elementRef: ElementRef
+    private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef
   ) {}
 
   /**
@@ -304,7 +306,6 @@ export class LandingComponent implements OnInit, OnDestroy {
         // 1. Homepage Rendering
         await Promise.all([
           this.fetchHomeSections(),
-          this.fetchSliders(),
           this.fetchRecentBlogs()
         ]);
         this.composeHomepage();
@@ -324,6 +325,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
 
       this.loading = false;
+      this.cdr.detectChanges();
       this.recordTelemetry();
     })
     .catch((err) => {
@@ -345,7 +347,22 @@ export class LandingComponent implements OnInit, OnDestroy {
         next: (uiRes: any) => {
           if (uiRes?.data) {
             const data = uiRes.data;
-            this.brandInfo = { ...this.brandInfo, ...data };
+            const email = data.contactEmail || data.supportEmail || data.email || data.companyEmail || '';
+            const phone = data.primaryPhone || data.phoneOne || data.phone || data.companyPhone || '';
+            const address = data.address || data.addressOne || data.companyAddress || '';
+            const workingHours = data.workingHours || '';
+            this.brandInfo = {
+              ...this.brandInfo,
+              ...data,
+              email,
+              Email: email,
+              phone,
+              Phone: phone,
+              address,
+              Address: address,
+              workingHours,
+              WorkingHours: workingHours
+            };
             this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
             this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
             this.applyFavicon(data.faviconUrl || data.companyIconUrl);
@@ -489,18 +506,6 @@ export class LandingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private fetchSliders(): Promise<void> {
-    return new Promise((resolve) => {
-      this.apiService.get('WebsiteContentApi/sliders').subscribe({
-        next: (res: any) => {
-          this.sliders = res?.data || [];
-          resolve();
-        },
-        error: () => resolve()
-      });
-    });
-  }
-
   private fetchRecentBlogs(): Promise<void> {
     return new Promise((resolve) => {
       this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
@@ -542,13 +547,21 @@ export class LandingComponent implements OnInit, OnDestroy {
       const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
       this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
         next: (res: any) => {
-          this.currentPage = res?.data || null;
-          // In-memory fallback if not found via API
+          const loadedPage = res?.data || null;
+          // Strictly reject unpublished pages
+          if (loadedPage && (loadedPage.publish === false || loadedPage.Publish === false)) {
+            this.currentPage = null;
+          } else {
+            this.currentPage = loadedPage;
+          }
+
+          // In-memory fallback if not found via API, strictly enforcing publish === true
           if (!this.currentPage) {
             this.currentPage = this.publishedPages.find(p =>
-              (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+              p.publish !== false && p.Publish !== false &&
+              ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
               (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
             ) || null;
           }
           resolve();
@@ -556,9 +569,10 @@ export class LandingComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.warn(`Could not load page with slug '${slug}':`, err);
           this.currentPage = this.publishedPages.find(p =>
-            (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+            p.publish !== false && p.Publish !== false &&
+            ((p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
             (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
-            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean))
           ) || null;
           resolve();
         }
@@ -590,19 +604,28 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     // 2. Hero Section Unit
     const heroTemplate = this.findActiveTemplate('hero');
-    const dbHeroSection = this.sections.find(s => s.directUrl === 'home-hero' || s.homePageSortOrder === 1);
+    const dbHeroSection = this.sections.find(s => 
+      s.directUrl === 'home-hero' || 
+      (s.templateKey || '').toUpperCase().includes('HERO') || 
+      s.homePageSortOrder === 1 || 
+      s.pageSortOrder === 1
+    );
     const heroSection: SectionTemplateUnit | undefined = heroTemplate ? {
       id: heroTemplate.id,
       name: heroTemplate.name,
       category: 'hero',
-      html: this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, this.buildHeroContext(dbHeroSection), this.getHydrationOptions()),
+      html: this.contentHydration.hydrate(heroTemplate.htmlTemplate, this.buildHeroContext(dbHeroSection), 'hero'),
       css: heroTemplate.cssStyles,
       js: heroTemplate.jsScript
     } : undefined;
 
     // 3. Modular Body Section Units from database
     const bodySectionsList: SectionTemplateUnit[] = [];
-    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
+    const bodySections = this.sections.filter(s => 
+      s !== dbHeroSection && 
+      s.directUrl !== 'home-hero' && 
+      !(s.templateKey || '').toUpperCase().includes('HERO')
+    );
 
     for (const sec of bodySections) {
       const secTemplate = this.findTemplateForSection(sec);
@@ -615,7 +638,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           id: sec.id || secTemplate.id,
           name: sec.title || secTemplate.name,
           category: 'body',
-          html: this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions()),
+          html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
           css: activeCss,
           js: activeJs,
           sortOrder: sec.homePageSortOrder ?? sec.pageSortOrder ?? 0
@@ -655,7 +678,7 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
    */
   private composeContentPage(): void {
-    if (!this.currentPage) {
+    if (!this.currentPage || this.currentPage.publish === false || this.currentPage.Publish === false) {
       this.composeNotFoundPage();
       return;
     }
@@ -696,7 +719,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         id: breadcrumbTemplate.id,
         name: breadcrumbTemplate.name,
         category: 'breadcrumb',
-        html: this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()),
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
         css: breadcrumbTemplate.cssStyles,
         js: breadcrumbTemplate.jsScript
       };
@@ -720,7 +743,7 @@ export class LandingComponent implements OnInit, OnDestroy {
             id: sec.id || secTemplate.id,
             name: sec.title || secTemplate.name,
             category: 'body',
-            html: this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions()),
+            html: this.contentHydration.hydrate(activeHtml, sectionData, 'body'),
             css: activeCss,
             js: activeJs,
             sortOrder: sec.pageSortOrder ?? 0
@@ -813,7 +836,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         id: breadcrumbTemplate.id,
         name: breadcrumbTemplate.name,
         category: 'breadcrumb',
-        html: this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()),
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
         css: breadcrumbTemplate.cssStyles,
         js: breadcrumbTemplate.jsScript
       };
@@ -856,7 +879,7 @@ export class LandingComponent implements OnInit, OnDestroy {
         id: blogTemplate.id,
         name: blogTemplate.name || 'Blog Grid',
         category: 'body',
-        html: this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()),
+        html: this.contentHydration.hydrate(blogTemplate.htmlTemplate, blogContext, 'blog'),
         css: blogTemplate.cssStyles,
         js: blogTemplate.jsScript,
         sortOrder: 1
@@ -892,7 +915,7 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Assembles a single Blog Article Reader view:
-   * Menu + Breadcrumb Header + Article Details + Footer.
+   * Menu + Breadcrumb Header + Article Details + Newsletter + Footer.
    */
   private composeBlogDetail(): void {
     if (!this.currentArticle) {
@@ -902,22 +925,21 @@ export class LandingComponent implements OnInit, OnDestroy {
 
     this.titleService.setTitle(`${this.currentArticle.title || 'Blog'} | ${this.brandName}`);
 
+    // 1. Navigation Header Section Unit
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, 'blog'),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    // 2. Breadcrumb Header Section Unit
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
-    const footerTemplate = this.findActiveTemplate('footer');
-
-    let combinedStyles = '';
-    let combinedHtml = '';
-    let combinedJs = '';
-
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
-      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
-    }
-
+    let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
-      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
       const breadcrumbData = {
         title: this.currentArticle.title || '',
         miniTitle: this.currentArticle.blogCategory?.categoryName || this.currentArticle.categoryName || '',
@@ -929,60 +951,96 @@ export class LandingComponent implements OnInit, OnDestroy {
           { label: this.currentArticle.title || '', url: '#', isActive: true }
         ]
       };
-      combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
-      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+      breadcrumbSection = {
+        id: breadcrumbTemplate.id,
+        name: breadcrumbTemplate.name,
+        category: 'breadcrumb',
+        html: this.contentHydration.hydrate(breadcrumbTemplate.htmlTemplate, breadcrumbData, 'breadcrumb'),
+        css: breadcrumbTemplate.cssStyles,
+        js: breadcrumbTemplate.jsScript
+      };
     }
 
-    // Article Reader Layout
-    combinedHtml += `
-      <section class="py-5 bg-white">
-        <div class="container py-4">
-          <div class="row justify-content-center">
-            <div class="col-lg-8">
-              ${this.currentArticle.imageUrl ? `
-                <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
-                  <img src="${this.currentArticle.imageUrl}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
-                </div>
-              ` : ''}
+    // 3. Article Reader Body Section Units
+    const bodySectionsList: SectionTemplateUnit[] = [];
+    bodySectionsList.push({
+      name: 'Article Detail',
+      category: 'body',
+      html: `
+        <section class="py-5 bg-white">
+          <div class="container py-4">
+            <div class="row justify-content-center">
+              <div class="col-lg-8">
+                ${this.currentArticle.imageUrl ? `
+                  <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
+                    <img src="${this.currentArticle.imageUrl}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
+                  </div>
+                ` : ''}
 
-              <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
-                ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
-              </div>
-
-              <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
-                <div>
-                  <span class="text-muted small d-block">Published under</span>
-                  <span class="badge bg-primary fs-6 mt-1">${this.currentArticle.blogCategory?.categoryName || 'General Insights'}</span>
+                <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
+                  ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
                 </div>
-                <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+
+                <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="text-muted small d-block">Published under</span>
+                    <span class="badge bg-primary fs-6 mt-1">${this.currentArticle.blogCategory?.categoryName || 'General Insights'}</span>
+                  </div>
+                  <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    `;
+        </section>
+      `,
+      sortOrder: 1
+    });
 
-    // Newsletter Section (matching Demo Preview sequence)
+    // 4. Newsletter Section (matching Demo Preview sequence)
     const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
                                this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
     if (newsletterTemplate) {
-      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
       const newsContext = {
         title: 'Subscribe to Executive Insights',
         miniTitle: 'NEWSLETTER',
         description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
       };
-      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
-      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+      bodySectionsList.push({
+        id: newsletterTemplate.id,
+        name: newsletterTemplate.name || 'Newsletter',
+        category: 'body',
+        html: this.contentHydration.hydrate(newsletterTemplate.htmlTemplate, newsContext, 'body'),
+        css: newsletterTemplate.cssStyles,
+        js: newsletterTemplate.jsScript,
+        sortOrder: 2
+      });
     }
 
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
-    }
+    // 5. Footer Section Unit
+    const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+    // 6. Synthesize Unified Page Bundle via HtmlAssemblerService
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `${this.currentArticle.title || 'Blog'} | ${this.brandName}`,
+      pageSlug: 'blog',
+      metaDescription: this.currentArticle.description || this.brandInfo?.companyDescription,
+      faviconUrl: this.brandInfo?.faviconUrl,
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      breadcrumbSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
+
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   /**
@@ -991,33 +1049,51 @@ export class LandingComponent implements OnInit, OnDestroy {
   private composeNotFoundPage(): void {
     this.titleService.setTitle(`Page Not Found | ${this.brandName}`);
     const menuTemplate = this.findActiveTemplate('menu');
+    const headerSection: SectionTemplateUnit | undefined = menuTemplate ? {
+      id: menuTemplate.id,
+      name: menuTemplate.name,
+      category: 'menu',
+      html: this.hydrateMenu(menuTemplate.htmlTemplate, ''),
+      css: menuTemplate.cssStyles,
+      js: menuTemplate.jsScript
+    } : undefined;
+
+    const bodySectionsList: SectionTemplateUnit[] = [{
+      name: '404 Not Found',
+      category: 'body',
+      html: `
+        <section class="py-5 text-center bg-white my-5">
+          <div class="container py-5">
+            <span class="material-symbols-outlined display-1 text-primary opacity-50 mb-3">error_outline</span>
+            <h1 class="display-5 fw-bold text-dark mb-3">Page Not Found</h1>
+            <p class="lead text-muted mb-4">The page you requested does not exist or may have been relocated.</p>
+            <a href="/" class="btn btn-primary px-4 py-2 fw-semibold">Return to Homepage</a>
+          </div>
+        </section>
+      `,
+      sortOrder: 1
+    }];
+
     const footerTemplate = this.findActiveTemplate('footer');
+    const footerSection: SectionTemplateUnit | undefined = footerTemplate ? {
+      id: footerTemplate.id,
+      name: footerTemplate.name,
+      category: 'footer',
+      html: this.hydrateFooter(footerTemplate.htmlTemplate),
+      css: footerTemplate.cssStyles,
+      js: footerTemplate.jsScript
+    } : undefined;
 
-    let combinedStyles = '';
-    let combinedHtml = '';
+    const pageBundle = this.htmlAssembler.assemblePageBundle({
+      pageTitle: `Page Not Found | ${this.brandName}`,
+      pageSlug: '404',
+      codeInjections: this.allCodeInjectionsList,
+      headerSection,
+      bodySections: bodySectionsList,
+      footerSection
+    });
 
-    if (menuTemplate) {
-      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, '');
-    }
-
-    combinedHtml += `
-      <section class="py-5 text-center bg-white my-5">
-        <div class="container py-5">
-          <span class="material-symbols-outlined display-1 text-primary opacity-50 mb-3">error_outline</span>
-          <h1 class="display-5 fw-bold text-dark mb-3">Page Not Found</h1>
-          <p class="lead text-muted mb-4">The page you requested does not exist or may have been relocated.</p>
-          <a href="/" class="btn btn-primary px-4 py-2 fw-semibold">Return to Homepage</a>
-        </div>
-      </section>
-    `;
-
-    if (footerTemplate) {
-      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
-      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
-    }
-
-    this.finalizeRender(combinedStyles, combinedHtml);
+    this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
   }
 
   // ========================================================
@@ -1026,343 +1102,9 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Hydrates the active Navbar template with live navigation categories, child links,
-   * top menu pages, CTA buttons, and active link highlights.
-   */
-  /**
-   * Hydrates the active Navbar template with live navigation categories, child links,
-   * top menu pages, CTA buttons, and active link highlights.
+   * top menu pages, CTA buttons, and active link highlights via ContentHydrationService.
    */
   private hydrateMenu(rawHtml: string, activeSlug: string): string {
-    // Helper to safely parse and normalize MenuPosition values (1 = First, 2 = Middle, 3 = Last, 4 = Top)
-    const normalizeMenuPosition = (val: any): number => {
-      if (val === null || val === undefined) return 1;
-      if (typeof val === 'number') return isNaN(val) ? 1 : val;
-      const str = String(val).toLowerCase().trim();
-      if (str.includes('first') || str === '1' || str === 'left') return 1;
-      if (str.includes('middle') || str === '2' || str === 'center' || str === 'second') return 2;
-      if (str.includes('last') || str === '3' || str === 'right' || str === 'third') return 3;
-      if (str.includes('top') || str === '4') return 4;
-      const num = Number(val);
-      return isNaN(num) ? 1 : num;
-    };
-
-    // 1. Unified PageCategories list supporting both Standalone Pages and Nested Dropdown Categories
-    const unifiedPageCategories: any[] = [];
-
-    // Standalone pages (e.g. About Us, Contact Us)
-    this.publishedPages
-      .filter(p => (p.publish !== false && p.Publish !== false) && p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
-      .forEach(p => {
-        const url = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
-        const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
-        unifiedPageCategories.push({
-          title: pTitle,
-          Title: pTitle,
-          pageTitle: pTitle,
-          PageTitle: pTitle,
-          name: pTitle,
-          Name: pTitle,
-          url: url,
-          Url: url,
-          pageUrl: url,
-          PageUrl: url,
-          directUrl: url,
-          DirectUrl: url,
-          link: url,
-          Link: url,
-          hasChildren: false,
-          HasChildren: false,
-          isDropdown: false,
-          IsDropdown: false,
-          pages: [],
-          Pages: [],
-          sortOrder: p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0),
-          menuPosition: normalizeMenuPosition(p.menuPosition ?? p.MenuPosition ?? 1),
-          customClass: p.customClass || p.CustomClass || '',
-          CustomClass: p.customClass || p.CustomClass || ''
-        });
-      });
-
-    // Dropdown Categories (e.g. Services -> Real Estate)
-    this.categories
-      .filter(c => c.publish !== false && c.Publish !== false)
-      .forEach(c => {
-        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
-        const rawWebPages = c.webPages || c.WebPages || [];
-        const childPages = (rawWebPages && rawWebPages.length > 0)
-          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false)
-          : this.publishedPages.filter(p => (p.publish !== false && p.Publish !== false) && (p.pageCategoryId === c.id || p.pageCategoryId === c.Id || p.pageCategory?.id === c.id || p.pageCategory?.Id === c.id || p.pageCategory?.title === catTitle || p.pageCategory?.name === catTitle));
-
-        const pagesList = childPages.map((p: any) => {
-          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
-          const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
-          return {
-            title: pTitle,
-            Title: pTitle,
-            pageTitle: pTitle,
-            PageTitle: pTitle,
-            name: pTitle,
-            Name: pTitle,
-            url: pUrl,
-            Url: pUrl,
-            pageUrl: pUrl,
-            PageUrl: pUrl,
-            directUrl: pUrl,
-            DirectUrl: pUrl,
-            link: pUrl,
-            Link: pUrl,
-            customClass: p.customClass || p.CustomClass || '',
-            CustomClass: p.customClass || p.CustomClass || '',
-            pageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
-            PageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
-            pageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
-            PageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
-            sortOrder: p.sortOrder || p.SortOrder || 0
-          };
-        });
-
-        unifiedPageCategories.push({
-          title: catTitle,
-          Title: catTitle,
-          pageTitle: catTitle,
-          PageTitle: catTitle,
-          name: catTitle,
-          Name: catTitle,
-          categoryName: catTitle,
-          CategoryName: catTitle,
-          url: '#',
-          Url: '#',
-          directUrl: '#',
-          DirectUrl: '#',
-          link: '#',
-          Link: '#',
-          hasChildren: pagesList.length > 0,
-          HasChildren: pagesList.length > 0,
-          isDropdown: true,
-          IsDropdown: true,
-          pages: pagesList,
-          Pages: pagesList,
-          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : 0),
-          menuPosition: normalizeMenuPosition(c.menuPosition ?? c.MenuPosition ?? 2),
-          customClass: c.customClass || c.CustomClass || '',
-          CustomClass: c.customClass || c.CustomClass || ''
-        });
-      });
-
-    // Ensure 'Home' is the first navigation item if not already present
-    if (!unifiedPageCategories.some(m => m.url === '/' || m.directUrl === '/')) {
-      unifiedPageCategories.unshift({
-        title: 'Home',
-        Title: 'Home',
-        pageTitle: 'Home',
-        PageTitle: 'Home',
-        name: 'Home',
-        Name: 'Home',
-        url: '/',
-        Url: '/',
-        pageUrl: '/',
-        PageUrl: '/',
-        directUrl: '/',
-        DirectUrl: '/',
-        link: '/',
-        Link: '/',
-        hasChildren: false,
-        HasChildren: false,
-        isDropdown: false,
-        IsDropdown: false,
-        pages: [],
-        Pages: [],
-        sortOrder: -1,
-        menuPosition: 1,
-        customClass: '',
-        CustomClass: ''
-      });
-    }
-
-    // Top menu items (standalone pages)
-    const topMenuItems = this.publishedPages
-      .filter(p => (p.publish !== false && p.Publish !== false) && p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
-      .map(p => ({
-        title: p.title || p.Title || '',
-        Title: p.title || p.Title || '',
-        name: p.title || p.Title || '',
-        Name: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        Url: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        directUrl: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        DirectUrl: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        link: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        Link: `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`,
-        sortOrder: p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0),
-        menuPosition: normalizeMenuPosition(p.menuPosition ?? p.MenuPosition ?? 1),
-        customClass: p.customClass || p.CustomClass || '',
-        CustomClass: p.customClass || p.CustomClass || '',
-        isDropdown: false,
-        IsDropdown: false,
-        hasChildren: false,
-        HasChildren: false,
-        pages: [],
-        Pages: []
-      }));
-
-    if (!topMenuItems.some(m => m.url === '/')) {
-      topMenuItems.unshift({
-        title: 'Home',
-        Title: 'Home',
-        name: 'Home',
-        Name: 'Home',
-        url: '/',
-        Url: '/',
-        directUrl: '/',
-        DirectUrl: '/',
-        link: '/',
-        Link: '/',
-        sortOrder: -1,
-        menuPosition: 1,
-        customClass: '',
-        CustomClass: '',
-        isDropdown: false,
-        IsDropdown: false,
-        hasChildren: false,
-        HasChildren: false,
-        pages: [],
-        Pages: []
-      });
-    }
-    if (!topMenuItems.some(m => m.url === '/blog') && this.blogs.length > 0) {
-      topMenuItems.push({
-        title: 'Blog',
-        Title: 'Blog',
-        name: 'Blog',
-        Name: 'Blog',
-        url: '/blog',
-        Url: '/blog',
-        directUrl: '/blog',
-        DirectUrl: '/blog',
-        link: '/blog',
-        Link: '/blog',
-        sortOrder: 99,
-        menuPosition: 3,
-        customClass: '',
-        CustomClass: '',
-        isDropdown: false,
-        IsDropdown: false,
-        hasChildren: false,
-        HasChildren: false,
-        pages: [],
-        Pages: []
-      });
-    }
-
-    // Dropdowns
-    const dropdowns = this.categories
-      .filter(c => c.publish !== false && c.Publish !== false)
-      .map(c => {
-        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
-        const rawWebPages = c.webPages || c.WebPages || [];
-        const childPages = (rawWebPages && rawWebPages.length > 0)
-          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false)
-          : this.publishedPages.filter(p => (p.publish !== false && p.Publish !== false) && (p.pageCategoryId === c.id || p.pageCategoryId === c.Id || p.pageCategory?.id === c.id || p.pageCategory?.Id === c.id || p.pageCategory?.title === catTitle || p.pageCategory?.name === catTitle));
-
-        const pagesList = childPages.map((p: any) => {
-          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
-          const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
-          return {
-            title: pTitle,
-            Title: pTitle,
-            pageTitle: pTitle,
-            PageTitle: pTitle,
-            name: pTitle,
-            Name: pTitle,
-            url: pUrl,
-            Url: pUrl,
-            pageUrl: pUrl,
-            PageUrl: pUrl,
-            directUrl: pUrl,
-            DirectUrl: pUrl,
-            link: pUrl,
-            Link: pUrl,
-            customClass: p.customClass || p.CustomClass || '',
-            CustomClass: p.customClass || p.CustomClass || '',
-            pageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
-            PageImage: p.imageUrl || p.pageImage || p.ImageUrl || p.PageImage || '',
-            pageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
-            PageDescription: p.description || p.pageDescription || p.Description || p.PageDescription || '',
-            sortOrder: p.sortOrder || p.SortOrder || 0
-          };
-        });
-
-        return {
-          title: catTitle,
-          Title: catTitle,
-          name: catTitle,
-          Name: catTitle,
-          categoryName: catTitle,
-          CategoryName: catTitle,
-          url: '#',
-          Url: '#',
-          directUrl: '#',
-          DirectUrl: '#',
-          link: '#',
-          Link: '#',
-          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : 0),
-          menuPosition: normalizeMenuPosition(c.menuPosition ?? c.MenuPosition ?? 2),
-          customClass: c.customClass || c.CustomClass || '',
-          CustomClass: c.customClass || c.CustomClass || '',
-          isDropdown: true,
-          IsDropdown: true,
-          hasChildren: pagesList.length > 0,
-          HasChildren: pagesList.length > 0,
-          pages: pagesList,
-          Pages: pagesList
-        };
-      });
-
-    // Combined Unified NavItems (Direct Pages + Dropdowns, deduplicated)
-    const categoryTitles = new Set(dropdowns.map(d => (d.title || d.Title || '').toLowerCase().trim()));
-    const filteredTopMenuItems = topMenuItems.filter(t => !categoryTitles.has((t.title || t.Title || '').toLowerCase().trim()));
-    const allNavItems: any[] = [...filteredTopMenuItems, ...dropdowns];
-    
-    // Bucket into Multi-Zone Groups with combined SortOrder sorting
-    const navItemsFirst = allNavItems
-      .filter(item => normalizeMenuPosition(item.menuPosition) === 1)
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
-    const navItemsMiddle = allNavItems
-      .filter(item => normalizeMenuPosition(item.menuPosition) === 2)
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
-    const navItemsLast = allNavItems
-      .filter(item => normalizeMenuPosition(item.menuPosition) === 3)
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
-    const navItems = [...allNavItems].sort((a, b) => {
-      const posA = normalizeMenuPosition(a.menuPosition);
-      const posB = normalizeMenuPosition(b.menuPosition);
-      if (posA !== posB) return posA - posB;
-      return (a.sortOrder || 0) - (b.sortOrder || 0);
-    });
-
-    // TopBar Utility Pages (MenuPosition.Top == 4 or showInMenuTopBar == true)
-    const topBarPages = this.publishedPages
-      .filter(p => p.publish && (normalizeMenuPosition(p.menuPosition) === 4 || p.showInMenuTopBar === true))
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-      .map(p => ({
-        title: p.title,
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || ''
-      }));
-
-    // 3. CTA Buttons (pages with isMenuCTA = true)
-    const menuCtaButtons: Array<{ title: string; url: string; customClass?: string }> = this.publishedPages
-      .filter(p => p.isMenuCTA)
-      .map(p => ({
-        title: p.title,
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        customClass: p.customClass || ''
-      }));
-
-    // Dynamic Live Sign-In Button in Navigation Menu
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInMenu = this.brandInfo?.activateLoginInMenu !== false;
     const authed = this.isUserAuthenticated();
@@ -1375,103 +1117,191 @@ export class LandingComponent implements OnInit, OnDestroy {
     const loginUrl = !authed 
       ? '/auth/login' 
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
-    const loginIcon = !authed 
-      ? 'fa-solid fa-arrow-right-to-bracket' 
-      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
 
-    const loginButtonHtml = (isLoginActive && isLoginInMenu)
-      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
-      : '';
+    // Helper to normalize zone ('first' | 'middle' | 'last' | 'top')
+    const normalizeZone = (val: any): string => {
+      if (!val) return 'first';
+      const s = String(val).toLowerCase();
+      if (s.includes('mid') || s === '2') return 'middle';
+      if (s.includes('last') || s === '3' || s.includes('right')) return 'last';
+      if (s.includes('top') || s === '4') return 'top';
+      return 'first';
+    };
 
+    // 1. Build distinct dropdown categories (only those with active child pages)
+    const dropdownItems: any[] = [];
+    const usedUrls = new Set<string>();
+
+    (this.categories || [])
+      .filter(c => c.publish !== false && c.Publish !== false && c.showInMenu !== false && c.ShowInMenu !== false)
+      .forEach(c => {
+        const catTitle = c.title || c.categoryName || c.name || c.Title || c.CategoryName || 'Menu';
+        const rawWebPages = c.webPages || c.WebPages || [];
+        const childPages = (rawWebPages && rawWebPages.length > 0)
+          ? rawWebPages.filter((p: any) => p.publish !== false && p.Publish !== false && p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false)
+          : (this.publishedPages || []).filter(p => (p.publish !== false && p.Publish !== false) && 
+              (p.showInMenuDropDown !== false && p.ShowInMenuDropDown !== false) && 
+              (p.pageCategoryId === c.id || p.pageCategoryId === c.Id));
+
+        if (!childPages || childPages.length === 0) return;
+
+        const pagesList = childPages.map((p: any) => {
+          const pUrl = `/${(p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '')}`;
+          usedUrls.add(pUrl.toLowerCase());
+          return {
+            title: p.title || p.Title || p.pageTitle || p.PageTitle || '',
+            url: pUrl,
+            customClass: p.customClass || p.CustomClass || '',
+            sortOrder: p.dropdownSortOrder || p.DropdownSortOrder || p.sortOrder || p.SortOrder || 0
+          };
+        });
+
+        dropdownItems.push({
+          title: catTitle,
+          url: '#',
+          isDropdown: true,
+          publish: true,
+          showInMainMenu: true,
+          pages: pagesList,
+          zone: normalizeZone(c.menuPosition ?? c.MenuPosition ?? 1),
+          sortOrder: c.menuSortOrder !== undefined ? c.menuSortOrder : (c.MenuSortOrder !== undefined ? c.MenuSortOrder : (c.sortOrder || 0)),
+          customClass: c.customClass || c.CustomClass || ''
+        });
+      });
+
+    // 2. Build standalone menu items (excluding URLs already contained in dropdowns)
+    const standaloneItems: any[] = [];
+    (this.publishedPages || [])
+      .filter(p => (p.publish !== false && p.Publish !== false) && 
+                   (p.showInMainMenu === true || p.ShowInMainMenu === true || p.showInMenu === true || p.ShowInMenu === true) && 
+                   !p.isLegal && !p.pageCategoryId && !p.isMenuCTA)
+      .forEach(p => {
+        const rawUrl = (p.directUrl || p.slug || p.DirectUrl || p.Slug || '').replace(/^\/+/, '');
+        const pUrl = (rawUrl === '' || rawUrl.toLowerCase() === 'home') ? '/' : `/${rawUrl}`;
+        const pLower = pUrl.toLowerCase();
+
+        // Avoid duplicating if URL is already in a dropdown or already added
+        if (pLower !== '/' && usedUrls.has(pLower)) return;
+        if (usedUrls.has(pLower)) return;
+        usedUrls.add(pLower);
+
+        const pTitle = p.title || p.Title || p.pageTitle || p.PageTitle || '';
+        standaloneItems.push({
+          title: pTitle,
+          url: pUrl,
+          isDropdown: false,
+          publish: true,
+          showInMainMenu: true,
+          pages: [],
+          zone: normalizeZone(p.menuPosition ?? p.MenuPosition ?? 1),
+          sortOrder: (p.mainMenuSortOrder !== undefined && p.mainMenuSortOrder !== 0) ? p.mainMenuSortOrder : ((p.MainMenuSortOrder !== undefined && p.MainMenuSortOrder !== 0) ? p.MainMenuSortOrder : (p.sortOrder !== undefined ? p.sortOrder : (p.SortOrder !== undefined ? p.SortOrder : 0))),
+          customClass: p.customClass || p.CustomClass || ''
+        });
+      });
+
+    // Combine into navigationMenu list
+    const navigationMenu = [...standaloneItems, ...dropdownItems].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+    // 3. TopBar Utility Pages
+    const topBarPages = (this.publishedPages || [])
+      .filter(p => (p.publish !== false && p.Publish !== false) && (normalizeZone(p.menuPosition) === 'top' || p.showInMenuTopBar === true || p.showInTopBar === true))
+      .sort((a, b) => (a.topBarSortOrder || a.TopBarSortOrder || a.sortOrder || 0) - (b.topBarSortOrder || b.TopBarSortOrder || b.sortOrder || 0))
+      .map(p => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
+        customClass: p.customClass || ''
+      }));
+
+    // 4. CTA Buttons: Live CTA pages or fallback to standard CTA buttons
+    const liveCtaButtons = (this.publishedPages || [])
+      .filter(p => p.isMenuCTA && p.publish !== false)
+      .map(p => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
+        buttonClass: p.buttonClass || 'oz-btn-primary',
+        customClass: p.customClass || ''
+      }));
+
+    const menuCtaButtons = liveCtaButtons.length > 0 ? liveCtaButtons : [
+      {
+        title: loginText,
+        url: loginUrl,
+        buttonClass: 'oz-btn-ghost',
+        customClass: 'oz-login-cta'
+      },
+      {
+        title: 'Get Started',
+        url: '/request-service',
+        buttonClass: 'oz-btn-primary',
+        customClass: ''
+      }
+    ];
+
+    const channels: any[] = this.brandInfo?.contactChannels || [];
+    const defaultEmailChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'email');
+    const defaultPhoneChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
+    const defaultAddressChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'address');
+    const defaultHoursChannel = channels.find((c: any) => (c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours') && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'hours' || c.channelType?.toLowerCase() === 'workinghours');
+    const socialLinks = channels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
+
+    const contactEmail = defaultEmailChannel?.value || this.brandInfo?.contactEmail || '';
+    const contactPhone = defaultPhoneChannel?.value || this.brandInfo?.primaryPhone || '';
+    const contactAddress = defaultAddressChannel?.value || this.brandInfo?.address || '';
+    const workingHours = defaultHoursChannel?.value || this.brandInfo?.workingHours || '';
+    const hasContactInfo = Boolean(contactEmail || contactPhone || contactAddress || channels.length > 0);
     const hasBrandLogo = Boolean(this.brandLogoUrl && this.brandLogoUrl.trim().length > 0);
-    const hasContactInfo = Boolean(this.brandInfo?.phone || this.brandInfo?.email || this.brandInfo?.address);
 
-    const menuContext = {
-      PageCategories: unifiedPageCategories,
-      pageCategories: unifiedPageCategories,
-      NavigationMenu: unifiedPageCategories,
-      navigationMenu: unifiedPageCategories,
-      categories: unifiedPageCategories,
-      topMenuItems,
-      dropdowns,
-      menuCtaButtons,
-      navItems,
-      navItemsFirst,
-      navItemsMiddle,
-      navItemsLast,
+    const menuContext: any = {
+      navigationMenu,
+      NavigationMenu: navigationMenu,
+      PageCategories: navigationMenu,
+      categories: navigationMenu,
       topBarPages,
-      mainMenuItemsTop: topBarPages,
+      TopBarPages: topBarPages,
+      menuCtaButtons,
+      MenuCtaButtons: menuCtaButtons,
       cartCount: this.cartService.getItemCount(),
       BrandName: this.brandName,
       brandName: this.brandName,
       CompanyName: this.brandName,
-      companyName: this.brandName,
-      'Brand.Name': this.brandName,
       LogoUrl: this.brandLogoUrl,
       logoUrl: this.brandLogoUrl,
       BrandLogo: this.brandLogoUrl,
       brandLogo: this.brandLogoUrl,
-      CompanyLogo: this.brandLogoUrl,
-      companyLogo: this.brandLogoUrl,
       WhiteLogoUrl: this.brandLogoUrl,
-      whiteLogoUrl: this.brandLogoUrl,
-      'Brand.LogoUrl': this.brandLogoUrl,
-      'Brand.WhiteLogoUrl': this.brandLogoUrl,
-      'Brand.WebsiteUrl': '/',
-      'Brand.LoginButtonText': loginText,
       HasBrandLogo: hasBrandLogo,
       hasBrandLogo: hasBrandLogo,
       HomeUrl: '/',
-      homeUrl: '/',
       WebsiteUrl: '/',
-      websiteUrl: '/',
-      // Multi-zone conditional flags for defensive DOM rendering
-      HasNavItemsFirst: navItemsFirst.length > 0,
-      hasNavItemsFirst: navItemsFirst.length > 0,
-      NavItemsFirst: navItemsFirst.length > 0,
-      HasNavItemsMiddle: navItemsMiddle.length > 0,
-      hasNavItemsMiddle: navItemsMiddle.length > 0,
-      NavItemsMiddle: navItemsMiddle.length > 0,
-      HasNavItemsLast: navItemsLast.length > 0,
-      hasNavItemsLast: navItemsLast.length > 0,
-      NavItemsLast: navItemsLast.length > 0,
-      HasNavItems: navItems.length > 0,
-      hasNavItems: navItems.length > 0,
-      HasTopBar: topBarPages.length > 0 || hasContactInfo,
-      hasTopBar: topBarPages.length > 0 || hasContactInfo,
-      HasTopBarPages: topBarPages.length > 0,
-      hasTopBarPages: topBarPages.length > 0,
-      HasMenuCtaButtons: menuCtaButtons.length > 0,
-      hasMenuCtaButtons: menuCtaButtons.length > 0,
+      email: contactEmail,
+      Email: contactEmail,
+      phone: contactPhone,
+      Phone: contactPhone,
+      address: contactAddress,
+      Address: contactAddress,
+      workingHours: workingHours,
+      WorkingHours: workingHours,
+      hasContactInfo,
       HasContactInfo: hasContactInfo,
-      hasContactInfo: hasContactInfo,
-      HasPhone: Boolean(this.brandInfo?.phone),
-      hasPhone: Boolean(this.brandInfo?.phone),
-      HasEmail: Boolean(this.brandInfo?.email),
-      hasEmail: Boolean(this.brandInfo?.email),
-      HasAddress: Boolean(this.brandInfo?.address),
-      hasAddress: Boolean(this.brandInfo?.address),
-      email: this.brandInfo?.email || '',
-      Email: this.brandInfo?.email || '',
-      phone: this.brandInfo?.phone || '',
-      Phone: this.brandInfo?.phone || '',
-      address: this.brandInfo?.address || '',
-      Address: this.brandInfo?.address || '',
-      // Authentication & Role Tokens for Menu templates
+      hasTopBar: topBarPages.length > 0 || hasContactInfo || socialLinks.length > 0,
+      HasTopBar: topBarPages.length > 0 || hasContactInfo || socialLinks.length > 0,
+      socialLinks,
+      SocialLinks: socialLinks,
+      hasSocialLinks: socialLinks.length > 0,
+      HasSocialLinks: socialLinks.length > 0,
+      contactItems: channels,
+      ContactItems: channels,
+      contactChannels: channels,
+      ContactChannels: channels,
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
       ActivateLoginInMenu: isLoginActive && isLoginInMenu,
-      ShowLogin: isLoginActive && isLoginInMenu,
       LoginText: loginText,
-      LoginTitle: loginText,
-      LoginUrl: loginUrl,
-      LoginButtonHtml: loginButtonHtml,
-      LoginButton: loginButtonHtml,
-      LoginLink: loginButtonHtml
+      LoginUrl: loginUrl
     };
 
-    let html = this.templateHydration.hydrateTemplate(rawHtml, menuContext, this.getHydrationOptions());
+    let html = this.contentHydration.hydrate(rawHtml, menuContext, 'menu');
 
     // Highlight active link matching activeSlug
     if (activeSlug) {
@@ -1520,38 +1350,9 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   /**
    * Hydrates the active Footer template with legal pages, categorized links, brand details,
-   * and enforces the official Ozikol credit bar.
+   * and enforces the official Ozikol credit bar via ContentHydrationService.
    */
   private hydrateFooter(rawHtml: string): string {
-    // Prepare categorized links for footer columns
-    const footerCategories = this.categories
-      .filter(c => c.publish && c.showInFooter !== false)
-      .map(c => {
-        const catTitle = c.title || c.categoryName || c.name || 'Category';
-        const displayTitle = c.footerDisplayTitle || catTitle;
-        const childPages = (c.webPages && c.webPages.length > 0)
-          ? c.webPages.filter((p: any) => p.publish && p.showInFooter !== false)
-          : this.publishedPages.filter(p => p.publish && p.showInFooter !== false && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
-
-        return {
-          name: catTitle,
-          title: catTitle,
-          displayTitle: displayTitle,
-          pages: childPages.map((p: any) => ({
-            title: p.title,
-            url: `/${p.directUrl || p.slug || ''}`
-          }))
-        };
-      });
-
-    const legalPages = this.publishedPages
-      .filter(p => p.isLegal)
-      .map(p => ({
-        title: p.title,
-        url: `/${p.directUrl || p.slug}`
-      }));
-
-    // Dynamic Live Sign-In Button in Website Footer
     const isLoginActive = this.brandInfo?.activateLogin !== false;
     const isLoginInFooter = this.brandInfo?.activateLoginInFooter !== false;
     const authed = this.isUserAuthenticated();
@@ -1564,13 +1365,34 @@ export class LandingComponent implements OnInit, OnDestroy {
     const loginUrl = !authed 
       ? '/auth/login' 
       : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
-    const loginIcon = !authed 
-      ? 'fa-solid fa-arrow-right-to-bracket' 
-      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
 
-    const loginButtonHtml = (isLoginActive && isLoginInFooter)
-      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
-      : '';
+    // Prepare categorized links for footer columns
+    const footerCategories = (this.categories || [])
+      .filter(c => c.publish !== false && c.showInFooter !== false)
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Category';
+        const displayTitle = c.footerDisplayTitle || catTitle;
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish !== false && p.showInFooter !== false)
+          : (this.publishedPages || []).filter(p => (p.publish !== false && p.showInFooter !== false) && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+
+        return {
+          name: catTitle,
+          title: catTitle,
+          displayTitle: displayTitle,
+          pages: childPages.map((p: any) => ({
+            title: p.title || p.Title || '',
+            url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
+          }))
+        };
+      });
+
+    const legalPages = (this.publishedPages || [])
+      .filter(p => p.isLegal && p.publish !== false)
+      .map(p => ({
+        title: p.title || p.Title || '',
+        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
+      }));
 
     if (isLoginActive && isLoginInFooter) {
       legalPages.push({
@@ -1585,82 +1407,133 @@ export class LandingComponent implements OnInit, OnDestroy {
       }
     }
 
-    const footerContext = {
+    const currentYear = new Date().getFullYear().toString();
+    const footerChannels: any[] = this.brandInfo?.contactChannels || [];
+    const footerEmailChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'email');
+    const footerPhoneChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'phone');
+    const footerAddressChannel = footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address' && c.isDefault) || footerChannels.find((c: any) => c.channelType?.toLowerCase() === 'address');
+    const footerSocialLinks = footerChannels.filter((c: any) => c.channelType?.toLowerCase() === 'socialmedia');
+
+    const contactEmail = footerEmailChannel?.value || this.brandInfo?.contactEmail || '';
+    const contactPhone = footerPhoneChannel?.value || this.brandInfo?.primaryPhone || '';
+    const contactAddress = footerAddressChannel?.value || this.brandInfo?.address || '';
+
+    const footerContext: any = {
       BrandName: this.brandName,
+      brandName: this.brandName,
       LogoUrl: this.brandLogoUrl,
-      Year: new Date().getFullYear().toString(),
-      Description: this.brandInfo?.companyDescription || '',
-      Email: this.brandInfo?.companyEmail || this.brandInfo?.email || '',
-      Phone: this.brandInfo?.companyPhone || this.brandInfo?.phone || '',
-      Address: this.brandInfo?.companyAddress || this.brandInfo?.address || '',
-      Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
+      logoUrl: this.brandLogoUrl,
+      BrandLogo: this.brandLogoUrl,
+      Year: currentYear,
+      year: currentYear,
+      Description: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '',
+      description: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || this.brandInfo?.tagline || '',
+      FooterDescription: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || '',
+      footerDescription: this.brandInfo?.footerDescription || this.brandInfo?.companyDescription || '',
+      Tagline: this.brandInfo?.tagline || '',
+      tagline: this.brandInfo?.tagline || '',
+      Email: contactEmail,
+      email: contactEmail,
+      Phone: contactPhone,
+      phone: contactPhone,
+      Address: contactAddress,
+      address: contactAddress,
+      Copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      copyright: `&copy; ${currentYear} ${this.brandName}. All rights reserved.`,
+      footerCategories: footerCategories,
       categories: footerCategories,
       legalPages: legalPages,
-      // Authentication & Role Tokens for Footer templates
+      socialLinks: footerSocialLinks,
+      SocialLinks: footerSocialLinks,
+      hasSocialLinks: footerSocialLinks.length > 0,
+      HasSocialLinks: footerSocialLinks.length > 0,
+      contactItems: footerChannels,
+      ContactItems: footerChannels,
+      contactChannels: footerChannels,
+      ContactChannels: footerChannels,
       IsAuthenticated: authed,
       IsAdmin: isAdmin,
       IsMember: isMember,
       ActivateLoginInFooter: isLoginActive && isLoginInFooter,
       LoginText: loginText,
-      LoginTitle: loginText,
-      LoginUrl: loginUrl,
-      LoginButtonHtml: loginButtonHtml,
-      LoginButton: loginButtonHtml,
-      LoginLink: loginButtonHtml
+      LoginUrl: loginUrl
     };
 
-    let html = this.templateHydration.hydrateTemplate(rawHtml, footerContext, this.getHydrationOptions());
+    let html = this.contentHydration.hydrate(rawHtml, footerContext, 'footer');
     return this.templateHydration.enforceOzikolCredit(html);
   }
 
   /**
-   * Builds Hero hydration data from active DB section or sliders.
+   * Builds Hero hydration data strictly from active database PageSection entity and its child lists.
    */
   private buildHeroContext(dbHeroSection?: any): any {
-    if (dbHeroSection) {
-      return {
-        title: dbHeroSection.title || '',
-        Title: dbHeroSection.title || '',
-        miniTitle: dbHeroSection.miniTitle || '',
-        MiniTitle: dbHeroSection.miniTitle || '',
-        description: dbHeroSection.description || '',
-        Description: dbHeroSection.description || '',
-        imageUrl: dbHeroSection.imageUrl || '',
-        ImageUrl: dbHeroSection.imageUrl || '',
-        buttonText: dbHeroSection.buttonText || '',
-        ButtonText: dbHeroSection.buttonText || '',
-        buttonLink: dbHeroSection.buttonLink || '',
-        ButtonLink: dbHeroSection.buttonLink || '',
-        secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-        SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
-        secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '',
-        SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || ''
-      };
-    }
+    const listItems = (dbHeroSection?.pageSectionLists || dbHeroSection?.items || []).map((item: any, idx: number) => ({
+      id: item.id,
+      title: item.title || '',
+      Title: item.title || '',
+      miniTitle: item.miniTitle || '',
+      MiniTitle: item.miniTitle || '',
+      description: item.description || '',
+      Description: item.description || '',
+      moreDescription: item.moreDescription || '',
+      MoreDescription: item.moreDescription || '',
+      icon: item.iconText || item.icon || '',
+      imageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
+      ImageUrl: item.imageUrl || dbHeroSection?.imageUrl || '',
+      buttonText: item.buttonText || '',
+      ButtonText: item.buttonText || '',
+      buttonLink: item.buttonLink || '#',
+      ButtonLink: item.buttonLink || '#',
+      secondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
+      SecondaryButtonText: item.secondaryButtonText || item.secondButtonText || '',
+      secondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
+      SecondaryButtonLink: item.secondaryButtonLink || item.secondButtonLink || '#',
+      sortOrder: item.sortOrder || idx + 1
+    }));
 
-    if (this.sliders && this.sliders.length > 0) {
-      const activeSlider = this.sliders[0];
-      return {
-        title: activeSlider.title || '',
-        Title: activeSlider.title || '',
-        miniTitle: activeSlider.miniTitle || '',
-        MiniTitle: activeSlider.miniTitle || '',
-        description: activeSlider.description || '',
-        Description: activeSlider.description || '',
-        imageUrl: activeSlider.imageUrl || '',
-        ImageUrl: activeSlider.imageUrl || '',
-        buttonText: activeSlider.buttonText || '',
-        ButtonText: activeSlider.buttonText || '',
-        buttonLink: activeSlider.buttonLink || '',
-        ButtonLink: activeSlider.buttonLink || '',
-        secondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
-        SecondaryButtonText: activeSlider.secondaryButtonText || activeSlider.secondButtonText || '',
-        secondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || '',
-        SecondaryButtonLink: activeSlider.secondaryButtonLink || activeSlider.secondButtonLink || ''
-      };
-    }
+    // If section has no child list items, construct single slide from the parent section
+    const childSlides = listItems.length > 0 ? listItems : (dbHeroSection ? [{
+      title: dbHeroSection.title || this.brandName,
+      Title: dbHeroSection.title || this.brandName,
+      miniTitle: dbHeroSection.miniTitle || '',
+      MiniTitle: dbHeroSection.miniTitle || '',
+      description: dbHeroSection.description || '',
+      Description: dbHeroSection.description || '',
+      imageUrl: dbHeroSection.imageUrl || '',
+      ImageUrl: dbHeroSection.imageUrl || '',
+      buttonText: dbHeroSection.buttonText || '',
+      ButtonText: dbHeroSection.buttonText || '',
+      buttonLink: dbHeroSection.buttonLink || '#',
+      ButtonLink: dbHeroSection.buttonLink || '#',
+      secondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+      SecondaryButtonText: dbHeroSection.secondaryButtonText || dbHeroSection.secondButtonText || '',
+      secondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#',
+      SecondaryButtonLink: dbHeroSection.secondaryButtonLink || dbHeroSection.secondButtonLink || '#'
+    }] : []);
 
-    return {};
+    const firstSlide = childSlides[0] || {};
+    return {
+      title: dbHeroSection?.title || firstSlide.title || '',
+      Title: dbHeroSection?.title || firstSlide.title || '',
+      miniTitle: dbHeroSection?.miniTitle || firstSlide.miniTitle || '',
+      MiniTitle: dbHeroSection?.miniTitle || firstSlide.miniTitle || '',
+      description: dbHeroSection?.description || firstSlide.description || '',
+      Description: dbHeroSection?.description || firstSlide.description || '',
+      imageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
+      ImageUrl: dbHeroSection?.imageUrl || firstSlide.imageUrl || '',
+      buttonText: dbHeroSection?.buttonText || firstSlide.buttonText || '',
+      ButtonText: dbHeroSection?.buttonText || firstSlide.buttonText || '',
+      buttonLink: dbHeroSection?.buttonLink || firstSlide.buttonLink || '',
+      ButtonLink: dbHeroSection?.buttonLink || firstSlide.buttonLink || '',
+      secondaryButtonText: dbHeroSection?.secondaryButtonText || dbHeroSection?.secondButtonText || firstSlide.secondaryButtonText || '',
+      SecondaryButtonText: dbHeroSection?.secondaryButtonText || dbHeroSection?.secondButtonText || firstSlide.secondaryButtonText || '',
+      secondaryButtonLink: dbHeroSection?.secondaryButtonLink || dbHeroSection?.secondButtonLink || firstSlide.secondaryButtonLink || '',
+      SecondaryButtonLink: dbHeroSection?.secondaryButtonLink || dbHeroSection?.secondButtonLink || firstSlide.secondaryButtonLink || '',
+      items: childSlides,
+      pageSectionLists: childSlides,
+      slides: childSlides,
+      PageSectionLists: childSlides
+    };
   }
 
   /**
@@ -1832,8 +1705,15 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 2. Set Safe HTML for main page layout
     this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
 
-    // 3. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
-    this.injectCodeTags(combinedJs);
+    // 3. Complete loading and trigger Change Detection so Angular renders [innerHTML] into the DOM
+    this.loading = false;
+    this.cdr.detectChanges();
+
+    // 4. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
+    // after Angular has mounted the elements into the DOM tree
+    setTimeout(() => {
+      this.injectCodeTags(combinedJs);
+    }, 50);
   }
 
   /**

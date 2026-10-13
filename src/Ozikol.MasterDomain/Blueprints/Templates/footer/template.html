@@ -2,7 +2,7 @@
   <div class="oz-footer-container">
     <!-- Top Row: Brand & Mission, Multi-Column Navigation, and Newsletter -->
     <div class="oz-footer-grid">
-      <!-- Zone 1: Brand, Tagline, Business Hours & Contact Touchpoints -->
+      <!-- Zone 1 / Column 1: Brand, Tagline/Note, and Social Media -->
       <div class="oz-footer-brand-col">
         <a class="oz-footer-brand-link" href="{{ HomeUrl }}">
           {{#if BrandLogo}}
@@ -12,30 +12,6 @@
           {{/if}}
         </a>
         <p class="oz-footer-desc">{{ Description }}</p>
-
-        {{#if WorkingHours}}
-        <div class="oz-footer-hours">
-          <i class="fa-regular fa-clock"></i>
-          <div class="oz-footer-hours-text">
-            <span class="oz-footer-hours-label">Business Hours</span>
-            <span class="oz-footer-hours-val">{{ WorkingHours }}</span>
-          </div>
-        </div>
-        {{/if}}
-
-        {{#if HasContactInfo}}
-        <div class="oz-footer-contacts">
-          {{#each ContactItems}}
-          <div class="oz-footer-contact-item">
-            <i class="{{ IconClass }}"></i>
-            <div class="oz-footer-contact-text">
-              <span class="oz-footer-contact-label">{{ Title }}</span>
-              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
-            </div>
-          </div>
-          {{/each}}
-        </div>
-        {{/if}}
 
         {{#if HasSocialLinks}}
         <div class="oz-footer-socials">
@@ -72,9 +48,22 @@
         </div>
       </div>
 
-      <!-- Zone 4: Interactive Newsletter Subscription Block -->
+      <!-- Zone 4 / Column 4: Address, Email, Phone and Interactive Newsletter Form -->
       <div class="oz-footer-newsletter-col">
-        <h4 class="oz-footer-col-title">Stay Informed</h4>
+        <h4 class="oz-footer-col-title">Get in Touch</h4>
+        {{#if HasContactInfo}}
+        <div class="oz-footer-contacts">
+          {{#each ContactItems}}
+          <div class="oz-footer-contact-item">
+            <i class="{{ IconClass }}"></i>
+            <div class="oz-footer-contact-text">
+              <span class="oz-footer-contact-label">{{ Title }}</span>
+              <a href="{{ Url }}" class="oz-footer-contact-val">{{ Content }}</a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
         <p class="oz-footer-newsletter-desc">Subscribe to receive system alerts, release updates, and architecture advisories.</p>
         <div class="oz-footer-form-wrapper">
           {{ Form "Newsletter_Subscribe" }}
@@ -89,6 +78,7 @@
         {{#each LegalPages}}
         <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
         {{/each}}
+        <span class="oz-footer-powered-by">Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>.</span>
       </div>
     </div>
   </div>

@@ -86,5 +86,13 @@
     "icon": "contact_mail",
     "badge": "Form",
     "description": "Split layout with corporate contact info on the left and dynamic {{ Form \"Contact_Us\" }} on the right."
+  },
+  {
+    "index": 12,
+    "folderKey": "12-rich-document",
+    "name": "Rich Text Document & Legal Policy",
+    "icon": "description",
+    "badge": "Document",
+    "description": "Clean long-form legal terms, privacy policies, compliance notices, and editorial rich text rendering {{{ FullDescription }}}."
   }
 ]

@@ -62,8 +62,8 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
       // Item Card Scalars
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
       rendered = rendered.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
-      rendered = rendered.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-      rendered = rendered.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || '');
+      rendered = rendered.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
       rendered = rendered.replace(/\{\{\s*Icon\s*\}\}/gi, item.icon || 'verified');
       rendered = rendered.replace(/\{\{\s*IconText\s*\}\}/gi, item.iconText || item.icon || 'verified');
       rendered = rendered.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');
@@ -82,7 +82,7 @@ export function hydrateBodySections(template: string, ctx: HydrationContext): st
   output = output.replace(/\{\{\s*Title\s*\}\}/gi, ctx.title || '');
   output = output.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, ctx.miniTitle || ctx.subTitle || '');
   output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || '');
-  output = output.replace(/\{\{\s*FullDescription\s*\}\}/gi, ctx.fullDescription || ctx.description || '');
+  output = output.replace(/\{\{\{?\s*FullDescription\s*\}?\}\}/gi, ctx.fullDescription || ctx.description || '');
   output = output.replace(/\{\{\s*Qoute\s*\}\}/gi, ctx.qoute || ctx.quote || '');
   output = output.replace(/\{\{\s*Quote\s*\}\}/gi, ctx.quote || ctx.qoute || '');
   output = output.replace(/\{\{\s*ButtonText\s*\}\}/gi, ctx.buttonText || '');

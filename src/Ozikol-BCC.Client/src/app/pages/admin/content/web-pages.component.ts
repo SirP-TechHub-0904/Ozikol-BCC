@@ -45,19 +45,25 @@ import { ToastService } from '../../../core/services/toast.service';
       <!-- Filter Controls Bar -->
       <div class="filter-bar">
         <div class="filter-group">
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all'" (click)="filterStatus = 'all'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'all' && !selectedTagFilter" (click)="filterStatus = 'all'; selectedTagFilter = null">
             All Pages ({{ pages.length }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published'" (click)="filterStatus = 'published'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'published' && !selectedTagFilter" (click)="filterStatus = 'published'; selectedTagFilter = null">
             Published ({{ publishedCount }})
           </button>
-          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft'" (click)="filterStatus = 'draft'">
+          <button type="button" class="filter-btn" [class.active]="filterStatus === 'draft' && !selectedTagFilter" (click)="filterStatus = 'draft'; selectedTagFilter = null">
             Drafts ({{ draftCount }})
+          </button>
+
+          <!-- Dynamic Active Tag Filters -->
+          <span style="border-left: 1px solid #cbd5e1; height: 20px; margin: 0 4px;" *ngIf="availableTags.length > 0"></span>
+          <button type="button" class="filter-btn" *ngFor="let tag of availableTags" [class.active]="selectedTagFilter === tag" (click)="toggleTagFilter(tag)">
+            🏷️ #{{ tag }} ({{ getTagCount(tag) }})
           </button>
         </div>
         <div class="search-box">
           <span class="material-symbols-outlined">search</span>
-          <input type="text" [(ngModel)]="searchTerm" placeholder="Search by title or slug...">
+          <input type="text" [(ngModel)]="searchTerm" placeholder="Search by title, slug, or tag...">
         </div>
       </div>
 
@@ -70,10 +76,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 <th>PAGE TITLE</th>
                 <th>ZONE</th>
                 <th>DIRECT URL SLUG</th>
-                <th>MENU CATEGORY</th>
-                <th>NAV BAR</th>
+                <th>CATEGORY</th>
+                <th>TOP BAR</th>
+                <th>MAIN NAV</th>
+                <th>DROPDOWN</th>
                 <th>FOOTER</th>
-                <th>VIEWS</th>
+                <th>BOTTOM</th>
                 <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
@@ -85,6 +93,9 @@ import { ToastService } from '../../../core/services/toast.service';
                     <div class="d-flex align-items-center gap-2">
                       <strong>{{ page.title }}</strong>
                       <span class="cta-pill" *ngIf="page.isMenuCTA">CTA Button</span>
+                    </div>
+                    <div class="tags-badge-list" *ngIf="page.tags" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                      <span class="tag-pill" *ngFor="let t of getPageTags(page.tags)" style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: 600;">#{{ t }}</span>
                     </div>
                     <span class="security-badge" *ngIf="page.securityPage">
                       <span class="material-symbols-outlined">lock</span> Protected
@@ -108,17 +119,29 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="badge-none" *ngIf="!page.pageCategory">Standalone</span>
                 </td>
                 <td>
-                  <span class="indicator" [class.on]="page.showInMainMenu" [class.off]="!page.showInMainMenu">
-                    {{ page.showInMainMenu ? 'Yes' : 'No' }}
+                  <span class="indicator" [class.on]="page.showInTopBar" [class.off]="!page.showInTopBar" [title]="'Sort: #' + (page.topBarSortOrder || 0)">
+                    {{ page.showInTopBar ? ('#' + (page.topBarSortOrder || 0)) : 'No' }}
                   </span>
                 </td>
                 <td>
-                  <span class="indicator" [class.on]="page.showInFooter" [class.off]="!page.showInFooter">
-                    {{ page.showInFooter ? 'Yes' : 'No' }}
+                  <span class="indicator" [class.on]="page.showInMainMenu" [class.off]="!page.showInMainMenu" [title]="'Sort: #' + (page.mainMenuSortOrder || page.sortOrder || 0)">
+                    {{ page.showInMainMenu ? ('#' + (page.mainMenuSortOrder || page.sortOrder || 0)) : 'No' }}
                   </span>
                 </td>
                 <td>
-                  <span class="views-pill">{{ page.viewCount || 0 }} views</span>
+                  <span class="indicator" [class.on]="page.showInMenuDropDown" [class.off]="!page.showInMenuDropDown" [title]="'Sort: #' + (page.dropdownSortOrder || 0)">
+                    {{ page.showInMenuDropDown ? ('#' + (page.dropdownSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="page.showInFooter" [class.off]="!page.showInFooter" [title]="'Sort: #' + (page.footerSortOrder || 0)">
+                    {{ page.showInFooter ? ('#' + (page.footerSortOrder || 0)) : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="indicator" [class.on]="page.showInFooterBottom || page.isLegal" [class.off]="!page.showInFooterBottom && !page.isLegal" [title]="'Sort: #' + (page.footerBottomSortOrder || 0)">
+                    {{ (page.showInFooterBottom || page.isLegal) ? ('#' + (page.footerBottomSortOrder || 0)) : 'No' }}
+                  </span>
                 </td>
                 <td>
                   <span class="status-pill" [class.published]="page.publish" [class.draft]="!page.publish">
@@ -548,6 +571,38 @@ export class WebPagesComponent implements OnInit {
     });
   }
 
+  selectedTagFilter: string | null = null;
+
+  get availableTags(): string[] {
+    const set = new Set<string>();
+    for (const p of this.pages) {
+      if (p.tags) {
+        p.tags.split(/[,;]/).forEach((t: string) => {
+          const trimmed = t.trim().toLowerCase();
+          if (trimmed) set.add(trimmed);
+        });
+      }
+    }
+    return Array.from(set).sort();
+  }
+
+  getTagCount(tag: string): number {
+    return this.pages.filter(p => this.getPageTags(p.tags).includes(tag.toLowerCase())).length;
+  }
+
+  getPageTags(tagsStr: string | null | undefined): string[] {
+    if (!tagsStr) return [];
+    return tagsStr.split(/[,;]/).map(t => t.trim().toLowerCase()).filter(t => !!t);
+  }
+
+  toggleTagFilter(tag: string): void {
+    if (this.selectedTagFilter === tag) {
+      this.selectedTagFilter = null;
+    } else {
+      this.selectedTagFilter = tag;
+    }
+  }
+
   get publishedCount(): number {
     return this.pages.filter(p => p.publish).length;
   }
@@ -561,9 +616,13 @@ export class WebPagesComponent implements OnInit {
     if (this.filterStatus === 'published') list = list.filter(p => p.publish);
     else if (this.filterStatus === 'draft') list = list.filter(p => !p.publish);
 
+    if (this.selectedTagFilter) {
+      list = list.filter(p => this.getPageTags(p.tags).includes(this.selectedTagFilter!));
+    }
+
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      list = list.filter(p => p.title?.toLowerCase().includes(term) || p.directUrl?.toLowerCase().includes(term));
+      list = list.filter(p => p.title?.toLowerCase().includes(term) || p.directUrl?.toLowerCase().includes(term) || (p.tags && p.tags.toLowerCase().includes(term)));
     }
     return list;
   }

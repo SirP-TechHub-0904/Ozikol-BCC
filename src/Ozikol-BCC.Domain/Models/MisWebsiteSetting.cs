@@ -186,6 +186,21 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Copyright Notice")]
         public string? CopyrightNotice { get; set; }
 
+        /// <summary>
+        /// Dedicated footer note or brand bio displayed in the website footer under the logo.
+        /// More comprehensive than the standard company description or short tagline.
+        /// Injected into templates via {{ FooterDescription }} and {{ Description }}.
+        /// </summary>
+        [MaxLength(2000)]
+        [Display(Name = "Footer Note / Brand Bio")]
+        public string? FooterDescription { get; set; }
+
+        /// <summary>
+        /// Alias for FooterDescription.
+        /// </summary>
+        [MaxLength(2000)]
+        public string? FooterNote { get; set; }
+
         // ── Login Page Branding & Experience ──
 
         /// <summary>
@@ -258,215 +273,10 @@ namespace Ozikol_BCC.Domain.Models
 
         // ── Contact Information ──
 
-        /// <summary>
-        /// Primary organizational telephone or support line.
-        /// Injected into templates via {{ Phone }}.
-        /// </summary>
-        [MaxLength(50)]
-        [Display(Name = "Primary Phone")]
-        public string? PrimaryPhone { get; set; }
+        // NOTE: All contact channels (emails, phone lines, physical addresses, operating hours, 
+        // WhatsApp, and social media profiles) are managed dynamically in the dedicated 
+        // MisWebsiteContactChannels table, which supports multiple entries, sorting, icons, and default markers.
 
-        /// <summary>
-        /// Alias for PrimaryPhone.
-        /// </summary>
-        [MaxLength(50)]
-        public string? PhoneOne { get; set; }
-
-        /// <summary>
-        /// Secondary or after-hours telephone line.
-        /// </summary>
-        [MaxLength(50)]
-        [Display(Name = "Secondary Phone")]
-        public string? SecondaryPhone { get; set; }
-
-        /// <summary>
-        /// Alias for SecondaryPhone.
-        /// </summary>
-        [MaxLength(50)]
-        public string? PhoneTwo { get; set; }
-
-        /// <summary>
-        /// Official WhatsApp customer line or direct chat link.
-        /// </summary>
-        [MaxLength(50)]
-        [Display(Name = "WhatsApp Number")]
-        public string? WhatsAppNumber { get; set; }
-
-        /// <summary>
-        /// Primary physical office address or headquarters location.
-        /// Injected into templates via {{ Address }}.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "Physical Address")]
-        public string? Address { get; set; }
-
-        /// <summary>
-        /// Alias for Address.
-        /// </summary>
-        [MaxLength(500)]
-        public string? AddressOne { get; set; }
-
-        /// <summary>
-        /// Secondary address (e.g., regional branch, annex).
-        /// </summary>
-        [MaxLength(500)]
-        public string? AddressTwo { get; set; }
-
-        /// <summary>
-        /// City of primary operation.
-        /// </summary>
-        [MaxLength(100)]
-        public string? City { get; set; }
-
-        /// <summary>
-        /// State or province.
-        /// </summary>
-        [MaxLength(100)]
-        public string? State { get; set; }
-
-        /// <summary>
-        /// Country of operation.
-        /// </summary>
-        [MaxLength(100)]
-        public string? Country { get; set; }
-
-        /// <summary>
-        /// Weekly operational hours (e.g. "Mon - Fri: 8:00 AM - 6:00 PM").
-        /// </summary>
-        [MaxLength(200)]
-        [Display(Name = "Working Hours")]
-        public string? WorkingHours { get; set; }
-
-        /// <summary>
-        /// Google Maps embed iframe or location URL for contact pages.
-        /// </summary>
-        [MaxLength(1000)]
-        [Display(Name = "Google Maps Embed URL")]
-        public string? GoogleMapUrl { get; set; }
-
-        // ── Public Emails ──
-
-        /// <summary>
-        /// General inquiries email address.
-        /// Injected into templates via {{ Email }}.
-        /// </summary>
-        [MaxLength(150)]
-        [Display(Name = "Contact Email")]
-        public string? ContactEmail { get; set; }
-
-        /// <summary>
-        /// Alias for ContactEmail.
-        /// </summary>
-        [MaxLength(150)]
-        public string? EmailOne { get; set; }
-
-        /// <summary>
-        /// Dedicated customer support email address.
-        /// </summary>
-        [MaxLength(150)]
-        [Display(Name = "Support Email")]
-        public string? SupportEmail { get; set; }
-
-        /// <summary>
-        /// Alias for SupportEmail.
-        /// </summary>
-        [MaxLength(150)]
-        public string? EmailTwo { get; set; }
-
-        /// <summary>
-        /// Dedicated billing and invoicing email address.
-        /// </summary>
-        [MaxLength(150)]
-        [Display(Name = "Billing Email")]
-        public string? BillingEmail { get; set; }
-
-        /// <summary>
-        /// Dedicated business development and sales email address.
-        /// </summary>
-        [MaxLength(150)]
-        [Display(Name = "Sales Email")]
-        public string? SalesEmail { get; set; }
-
-        // ── Social Media Channels ──
-
-        /// <summary>
-        /// Facebook profile or page URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "Facebook URL")]
-        public string? FacebookUrl { get; set; }
-
-        /// <summary>
-        /// Alias for FacebookUrl.
-        /// </summary>
-        [MaxLength(500)]
-        public string? FacebookPage { get; set; }
-
-        /// <summary>
-        /// Twitter / X profile URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "Twitter / X URL")]
-        public string? TwitterUrl { get; set; }
-
-        /// <summary>
-        /// Alias for TwitterUrl.
-        /// </summary>
-        [MaxLength(500)]
-        public string? TwitterPage { get; set; }
-
-        /// <summary>
-        /// LinkedIn company or organization profile URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "LinkedIn URL")]
-        public string? LinkedInUrl { get; set; }
-
-        /// <summary>
-        /// Instagram profile URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "Instagram URL")]
-        public string? InstagramUrl { get; set; }
-
-        /// <summary>
-        /// Alias for InstagramUrl.
-        /// </summary>
-        [MaxLength(500)]
-        public string? InstagramPage { get; set; }
-
-        /// <summary>
-        /// YouTube channel or video URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "YouTube URL")]
-        public string? YouTubeUrl { get; set; }
-
-        /// <summary>
-        /// Alias for YouTubeUrl.
-        /// </summary>
-        [MaxLength(500)]
-        public string? YoutubeChannel { get; set; }
-
-        /// <summary>
-        /// GitHub organization or repository URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "GitHub URL")]
-        public string? GitHubUrl { get; set; }
-
-        /// <summary>
-        /// TikTok account URL.
-        /// </summary>
-        [MaxLength(500)]
-        [Display(Name = "TikTok URL")]
-        public string? TikTokUrl { get; set; }
-
-        /// <summary>
-        /// Alias for TikTokUrl.
-        /// </summary>
-        [MaxLength(500)]
-        public string? TiktokPage { get; set; }
 
         // ── Storefront & E-Commerce Mode ──
 

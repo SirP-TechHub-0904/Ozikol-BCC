@@ -449,9 +449,13 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
 export function replaceCommonScalars(template: string, ctx: HydrationContext): string {
   let output = template;
 
-  output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, ctx.brandName || 'Apex Global');
+  const brand = ctx.brandName || '';
+  const currentYr = new Date().getFullYear().toString();
+  const defaultCopyright = brand ? `© ${currentYr} ${brand}. All rights reserved.` : `© ${currentYr}. All rights reserved.`;
+
+  output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brand);
   output = output.replace(/\{\{\s*(?:BrandLogo|LogoUrl)\s*\}\}/gi, ctx.brandLogo || ctx.logoUrl || '');
-  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${new Date().getFullYear()} Apex Global. All rights reserved.`);
+  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || defaultCopyright);
   output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || '');
   output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '');
   output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || '');
@@ -466,11 +470,11 @@ export function replaceCommonScalars(template: string, ctx: HydrationContext): s
 }
 
 /**
- * Scrubs any leftover unrendered tokens.
+ * Scrubs any leftover unrendered tokens (supporting both {{ Token }} and {{{ Token }}}).
  */
 export function scrubRemainingTokens(template: string): string {
   let output = template.replace(/\{\{#each\s+[^}]+\}\}[\s\S]*?\{\{\/each\}\}/gi, '');
   output = output.replace(/\{\{#if\s+[^}]+\}\}[\s\S]*?\{\{\/if\}\}/gi, '');
-  output = output.replace(/\{\{\s*[^}]+\s*\}\}/gi, '');
+  output = output.replace(/\{\{\{?\s*[^}]+\s*\}?\}\}/gi, '');
   return output;
 }

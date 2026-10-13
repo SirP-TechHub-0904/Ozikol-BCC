@@ -4,83 +4,256 @@
       "sortOrder": 1,
       "title": "Home",
       "slug": "",
-      "metaTitle": "Official Website - Home",
+      "metaTitle": "Official Website - Sovereign Cloud & Turnkey Enterprise Platform",
       "metaDescription": "Empowering modern organizations with sovereign cloud infrastructure, sub-millisecond execution, and turnkey digital workspaces.",
       "menuPosition": "header",
       "zone": "first",
+      "category": null,
       "isPublished": true,
       "sections": [
         {
           "sortOrder": 1,
+          "templateKey": "HERO_SLIDER",
+          "title": "Sovereign Cloud Infrastructure for Global Enterprise",
+          "miniTitle": "SUB-MILLISECOND EXECUTION",
+          "description": "Architected to eliminate latency, automate compliance, and safeguard mission-critical data with dedicated database sovereignty.",
+          "buttonText": "Explore Infrastructure",
+          "buttonLink": "/infrastructure",
+          "secondaryButtonText": "Get Started",
+          "secondaryButtonLink": "/auth/register",
+          "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "miniTitle": "SUB-MILLISECOND EXECUTION",
+              "title": "Sovereign Cloud Infrastructure for Global Enterprise",
+              "description": "Architected to eliminate latency, automate compliance, and safeguard mission-critical workloads with sovereign database isolation.",
+              "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80",
+              "buttonText": "Explore Infrastructure",
+              "buttonLink": "/infrastructure",
+              "secondaryButtonText": "Get Started",
+              "secondaryButtonLink": "/auth/register"
+            },
+            {
+              "sortOrder": 2,
+              "miniTitle": "ZERO-TRUST SECURITY MESH",
+              "title": "Uncompromising Privacy & Planetary Resilience",
+              "description": "Continuous multi-region synchronization and automated failover keep your services resilient against unexpected outages.",
+              "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1600&auto=format&fit=crop&q=80",
+              "buttonText": "View IT Services",
+              "buttonLink": "/it",
+              "secondaryButtonText": "Talk to an Architect",
+              "secondaryButtonLink": "/contact"
+            }
+          ]
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Automate Operational Resilience Across Distributed Stacks",
+          "miniTitle": "PROVEN INFRASTRUCTURE",
+          "description": "Eliminate human error and orchestrate multi-zone failovers in milliseconds with automated policy enforcement.",
+          "imageUrl": "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&auto=format&fit=crop&q=80",
+          "buttonText": "Start 14-Day Free Trial",
+          "buttonLink": "/auth/register",
+          "secondaryButtonText": "Schedule Technical Demo",
+          "secondaryButtonLink": "/contact",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Instant Health Monitoring",
+              "description": "Real-time telemetry continuously evaluates endpoint responsiveness and latency jitter."
+            },
+            {
+              "sortOrder": 2,
+              "title": "Zero Configuration Deployments",
+              "description": "Declarative manifests automatically synchronize state across staging and production."
+            },
+            {
+              "sortOrder": 3,
+              "title": "Audited Compliance Vault",
+              "description": "Tamper-evident cryptographic logs satisfy SOC2, HIPAA, and ISO 27001 requirements."
+            }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_06_SERVICES_GRID",
+          "title": "Comprehensive Managed Services for Modern Cloud Operations",
+          "miniTitle": "OUR SERVICES",
+          "description": "End-to-end consulting, continuous optimization, and round-the-clock infrastructure governance.",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Cloud Architecture Design",
+              "description": "Blueprints tailored to high-availability multi-region setups.",
+              "icon": "cloud_sync",
+              "buttonText": "Explore Service",
+              "buttonLink": "/infrastructure"
+            },
+            {
+              "sortOrder": 2,
+              "title": "Database Optimization",
+              "description": "Query caching, partitioning, and automated read-replica routing.",
+              "icon": "database",
+              "buttonText": "Explore Service",
+              "buttonLink": "/it"
+            },
+            {
+              "sortOrder": 3,
+              "title": "Security & Penetration Audit",
+              "description": "Vulnerability scanners, secret leak monitoring, and zero-trust policies.",
+              "icon": "security",
+              "buttonText": "Explore Service",
+              "buttonLink": "/contact"
+            },
+            {
+              "sortOrder": 4,
+              "title": "Kubernetes Orchestration",
+              "description": "Production-ready container pods, ingress controllers, and auto-scalers.",
+              "icon": "deployed_code",
+              "buttonText": "Explore Service",
+              "buttonLink": "/infrastructure"
+            },
+            {
+              "sortOrder": 5,
+              "title": "Clinical Systems & Healthcare Warm-Standby",
+              "description": "Instant replication and point-in-time snapshot recovery for clinical health data.",
+              "icon": "restore",
+              "buttonText": "Explore Service",
+              "buttonLink": "/hospital"
+            },
+            {
+              "sortOrder": 6,
+              "title": "Cost Allocation Governance",
+              "description": "Identify orphaned cloud resources and slash unnecessary cloud spend.",
+              "icon": "savings",
+              "buttonText": "Explore Service",
+              "buttonLink": "/contact"
+            }
+          ]
+        },
+        {
+          "sortOrder": 4,
           "templateKey": "BODY_08_METRICS_COUNTERS",
           "title": "Global Scale by the Numbers",
           "miniTitle": "PLATFORM TELEMETRY",
           "description": "Continuous real-time verification across distributed edge nodes and sovereign enterprise clouds.",
           "lists": [
-            { "sortOrder": 1, "title": "99.99%", "description": "Guaranteed SLA Uptime", "icon": "verified" },
-            { "sortOrder": 2, "title": "120+", "description": "Global Edge Locations", "icon": "public" },
-            { "sortOrder": 3, "title": "< 1.2ms", "description": "Average API Latency", "icon": "speed" },
-            { "sortOrder": 4, "title": "500K+", "description": "Protected Transactions", "icon": "shield" }
+            {
+              "sortOrder": 1,
+              "title": "99.99%",
+              "description": "Guaranteed SLA Uptime",
+              "icon": "verified"
+            },
+            {
+              "sortOrder": 2,
+              "title": "120+",
+              "description": "Global Edge Locations",
+              "icon": "public"
+            },
+            {
+              "sortOrder": 3,
+              "title": "< 1.2ms",
+              "description": "Average API Latency",
+              "icon": "speed"
+            },
+            {
+              "sortOrder": 4,
+              "title": "500K+",
+              "description": "Protected Transactions",
+              "icon": "shield"
+            }
           ]
         },
         {
-          "sortOrder": 2,
-          "templateKey": "BODY_01_FEATURE_GRID",
-          "title": "Engineered For Enterprise Scale And Sub-Millisecond Speed",
-          "miniTitle": "CORE CAPABILITIES",
-          "description": "Unified cloud infrastructure designed to eliminate latency, automate compliance, and safeguard mission-critical data.",
-          "lists": [
-            { "sortOrder": 1, "title": "Edge Cloud Replication", "description": "Continuous multi-region synchronization keeps endpoints resilient against unexpected outages.", "icon": "hub", "buttonText": "Learn More", "buttonLink": "/services" },
-            { "sortOrder": 2, "title": "Zero-Trust Security Mesh", "description": "Granular policy enforcement, automatic device trust tokens, and cryptographic verification on every call.", "icon": "verified_user", "buttonText": "Explore Security", "buttonLink": "/services" },
-            { "sortOrder": 3, "title": "Automated CI/CD Pipelines", "description": "Push code to git and deploy production containers in seconds with automated canary health probes.", "icon": "rocket_launch", "buttonText": "View Deployments", "buttonLink": "/services" }
-          ]
-        },
-        {
-          "sortOrder": 3,
+          "sortOrder": 5,
           "templateKey": "BODY_03_SPLIT_RIGHT",
           "title": "Architected for Sovereign Control and Unmatched Stability",
           "miniTitle": "NEXT-GENERATION CLOUD",
           "description": "Take full control of your organizational assets with sovereign database isolation, private container fabrics, and round-the-clock telemetry.",
-          "buttonText": "Explore Platform",
-          "buttonLink": "/services",
+          "buttonText": "Explore Infrastructure",
+          "buttonLink": "/infrastructure",
           "secondaryButtonText": "Talk to an Architect",
           "secondaryButtonLink": "/contact",
           "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80",
           "lists": []
         },
         {
-          "sortOrder": 4,
-          "templateKey": "BODY_04_PROCESS_STEPS",
-          "title": "A Streamlined Four-Step Journey to Production",
-          "miniTitle": "HOW IT WORKS",
-          "description": "From initial onboarding to planetary scale, our automated platform guides you every step of the way.",
-          "lists": [
-            { "sortOrder": 1, "title": "Architecture Audit", "description": "Analyze your current workloads and define sovereign isolation policies.", "icon": "analytics" },
-            { "sortOrder": 2, "title": "Automated Migration", "description": "Transfer data and schemas seamlessly with zero downtime or traffic loss.", "icon": "cloud_sync" },
-            { "sortOrder": 3, "title": "Continuous Verification", "description": "Automated health checks validate encryption, endpoints, and latency.", "icon": "rule" },
-            { "sortOrder": 4, "title": "24/7 Monitored Scale", "description": "Relax as intelligent autoscaling expands capacity effortlessly.", "icon": "trending_up" }
-          ]
-        },
-        {
-          "sortOrder": 5,
-          "templateKey": "BODY_07_TESTIMONIALS",
-          "title": "Trusted by Forward-Thinking Engineering Leaders",
-          "miniTitle": "CLIENT EXPERIENCES",
-          "description": "Discover how innovative organizations leverage our infrastructure to outpace competitors.",
-          "lists": [
-            { "sortOrder": 1, "title": "David Miller", "description": "Switching to this architecture eliminated our latency bottlenecks and gave our security team complete confidence.", "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80", "buttonText": "CTO, Horizon Tech" },
-            { "sortOrder": 2, "title": "Elena Rostova", "description": "Turnkey onboarding meant our client portals were live in days rather than quarters. Absolutely transformative.", "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80", "buttonText": "VP Engineering, Apex Dynamics" },
-            { "sortOrder": 3, "title": "Marcus Chen", "description": "The sovereign data boundaries solved our international compliance headaches instantly. A masterclass in software design.", "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80", "buttonText": "Head of Infrastructure, NexaFlow" }
-          ]
-        },
-        {
           "sortOrder": 6,
+          "templateKey": "BODY_05_PRICING_MATRIX",
+          "title": "Predictable Pricing That Scales With Your Business",
+          "miniTitle": "PLANS & TIERS",
+          "description": "Choose the ideal tier for your workload. Transparent billing with zero hidden seat fees or upgrade penalties.",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Starter Tier",
+              "miniTitle": "$29 / mo",
+              "description": "Best for solo founders and pre-seed ventures launching MVPs.",
+              "moreDescription": "<ul><li>✓ 5 Active Projects</li><li>✓ 50 GB Cloud Storage</li><li>✓ Community Forum Support</li></ul>",
+              "buttonText": "Choose Starter",
+              "buttonLink": "/auth/register"
+            },
+            {
+              "sortOrder": 2,
+              "title": "Pro Growth",
+              "miniTitle": "$79 / mo",
+              "description": "Engineered for scaling startups requiring multi-region failover.",
+              "moreDescription": "<ul><li>✓ Unlimited Projects</li><li>✓ 500 GB High-Speed NVMe</li><li>✓ 24/7 Priority SLA Chat</li><li>✓ Custom Domain CNAMEs</li></ul>",
+              "buttonText": "Start Pro Trial",
+              "buttonLink": "/auth/register",
+              "customClass": "featured"
+            },
+            {
+              "sortOrder": 3,
+              "title": "Enterprise Dedicated",
+              "miniTitle": "$249 / mo",
+              "description": "Tailored for regulated compliance and dedicated VPC pipelines.",
+              "moreDescription": "<ul><li>✓ Dedicated Cluster Instances</li><li>✓ Unlimited Multi-Cloud Sync</li><li>✓ Dedicated Success Engineer</li><li>✓ SOC2 & HIPAA Verification</li></ul>",
+              "buttonText": "Contact Sales",
+              "buttonLink": "/contact"
+            }
+          ]
+        },
+        {
+          "sortOrder": 7,
+          "templateKey": "BODY_07_TESTIMONIALS",
+          "title": "Trusted by Mission-Critical Engineering Teams Worldwide",
+          "miniTitle": "PROVEN IN PRODUCTION",
+          "description": "Read how global organizations run high-volume operations on our sovereign cloud infrastructure.",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Sarah Lin",
+              "miniTitle": "VP of Engineering at FinMesh",
+              "description": "\"Migrating to this architecture reduced our cross-region replication lag from 400ms to under 12ms. The sovereign database boundary made audit compliance painless.\"",
+              "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
+            },
+            {
+              "sortOrder": 2,
+              "title": "Marcus Vance",
+              "miniTitle": "Chief Technology Officer at ApexLogistics",
+              "description": "\"Zero downtime, automated failovers that actually work, and predictable pricing. It is easily the most dependable cloud platform we have operated.\"",
+              "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80"
+            },
+            {
+              "sortOrder": 3,
+              "title": "Elena Rostova",
+              "miniTitle": "Lead Systems Architect at CyberSentry",
+              "description": "\"The out-of-the-box telemetry and crash alerting caught edge regressions before our customers ever noticed. Exceptional developer experience.\"",
+              "imageUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80"
+            }
+          ]
+        },
+        {
+          "sortOrder": 8,
           "templateKey": "BODY_10_CTA_BANNER",
-          "title": "Ready to Transform Your Digital Infrastructure?",
-          "miniTitle": "START TODAY",
-          "description": "Join hundreds of thriving organizations already powered by our sovereign cloud platform.",
-          "buttonText": "Get Started Free",
-          "buttonLink": "/contact",
+          "title": "Ready to Transform Your Cloud Architecture?",
+          "miniTitle": "GET STARTED TODAY",
+          "description": "Join hundreds of forward-thinking enterprises leveraging sovereign digital infrastructure today.",
+          "buttonText": "Get Started",
+          "buttonLink": "/auth/register",
           "secondaryButtonText": "Schedule a Demo",
           "secondaryButtonLink": "/contact",
           "lists": []
@@ -88,64 +261,558 @@
       ]
     },
     {
-      "sortOrder": 2,
-      "title": "Services",
-      "slug": "services",
-      "metaTitle": "Our Services & Capabilities",
-      "metaDescription": "Explore our full suite of modular cloud infrastructure, managed security, and enterprise migration services.",
+      "sortOrder": 1,
+      "title": "About",
+      "slug": "about",
+      "metaTitle": "About Our Firm - Vision, Mission & Innovation",
+      "metaDescription": "Learn about our mission to deliver sovereign cloud performance, privacy, and simplicity worldwide.",
       "menuPosition": "header",
       "zone": "first",
+      "category": null,
       "isPublished": true,
       "sections": [
         {
           "sortOrder": 1,
-          "templateKey": "BODY_06_SERVICES_GRID",
-          "title": "Comprehensive Capabilities Tailored for Scale",
-          "miniTitle": "MODULAR SOLUTIONS",
-          "description": "Deploy precisely the tools your organization needs with modular billing and zero technical lock-in.",
-          "lists": [
-            { "sortOrder": 1, "title": "Managed Cloud Clusters", "description": "Dedicated microservices with automated failover and sub-millisecond edge routing.", "icon": "dns", "buttonText": "Explore Clusters", "buttonLink": "/contact" },
-            { "sortOrder": 2, "title": "Zero-Trust Identity Governance", "description": "Granular role-based access control, biometric verification, and session tokens.", "icon": "fingerprint", "buttonText": "View Security", "buttonLink": "/contact" },
-            { "sortOrder": 3, "title": "Disaster Recovery & Hot Failover", "description": "Continuous encrypted snapshots guarantee instant recovery within seconds.", "icon": "restore", "buttonText": "Learn More", "buttonLink": "/contact" },
-            { "sortOrder": 4, "title": "High-Performance Data Fabrics", "description": "Low-latency distributed state machines synchronizing data across multi-region nodes.", "icon": "storage", "buttonText": "View Architecture", "buttonLink": "/contact" },
-            { "sortOrder": 5, "title": "Compliance Automation", "description": "Pre-configured guardrails ensuring continuous SOC2, GDPR, and HIPAA compliance.", "icon": "gavel", "buttonText": "Read Guide", "buttonLink": "/contact" },
-            { "sortOrder": 6, "title": "24/7 Dedicated SRE Support", "description": "Direct access to senior site reliability engineers with a 15-minute response SLA.", "icon": "support_agent", "buttonText": "Contact Team", "buttonLink": "/contact" }
-          ]
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "About Our Organization",
+          "miniTitle": "OUR MISSION & ETHOS",
+          "description": "Pioneering sovereign digital infrastructure so every organization can operate with security and autonomy.",
+          "lists": []
         },
         {
           "sortOrder": 2,
           "templateKey": "BODY_02_SPLIT_LEFT",
-          "title": "Engineered for Sub-Millisecond Speed and Reliability",
-          "miniTitle": "PERFORMANCE FIRST",
-          "description": "Our distributed architecture bypasses traditional internet bottlenecks to deliver instant, fluid interactions for global users.",
-          "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
-          "buttonText": "View Infrastructure Specs",
-          "buttonLink": "/contact",
+          "title": "Architecting Digital Independence for Modern Business",
+          "miniTitle": "WHO WE ARE",
+          "description": "Founded with the conviction that organizations should own their data unconditionally, our platform delivers enterprise-scale power without data sprawl.",
+          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Explore Open Roles",
+          "buttonLink": "/career",
+          "secondaryButtonText": "Contact Us",
+          "secondaryButtonLink": "/contact",
           "lists": [
-            { "sortOrder": 1, "title": "Global Edge Caching", "description": "Assets served from nodes closest to your users.", "icon": "check_circle" },
-            { "sortOrder": 2, "title": "Cryptographic Isolation", "description": "Sovereign tenant partitions prevent data contamination.", "icon": "check_circle" },
-            { "sortOrder": 3, "title": "Automated Canary Deploys", "description": "Zero-downtime updates with instant rollback safety.", "icon": "check_circle" }
+            {
+              "sortOrder": 1,
+              "title": "Zero Lock-In Philosophy",
+              "description": "Open database schemas and portable container designs give you permanent independence."
+            },
+            {
+              "sortOrder": 2,
+              "title": "Engineering-First Focus",
+              "description": "Every solution is vetted by senior systems architects before deployment."
+            },
+            {
+              "sortOrder": 3,
+              "title": "Continuous Availability",
+              "description": "Planetary edge fabrics designed to withstand multi-zone network disruptions."
+            }
           ]
         },
         {
           "sortOrder": 3,
-          "templateKey": "BODY_05_PRICING_MATRIX",
-          "title": "Transparent Pricing with Predictable Value",
-          "miniTitle": "PLANS & SUBSCRIPTIONS",
-          "description": "Choose the tier that matches your current momentum. Upgrade or downgrade anytime with pro-rated billing.",
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Join Us on the Journey Forward",
+          "miniTitle": "WORK WITH US",
+          "description": "Connect with our team to discover how sovereign cloud architecture elevates your operations.",
+          "buttonText": "Contact Our Team",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Explore Services",
+          "secondaryButtonLink": "/it",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 1,
+      "title": "IT",
+      "slug": "it",
+      "metaTitle": "IT Services - Enterprise Managed Infrastructure",
+      "metaDescription": "Comprehensive IT consulting, cloud infrastructure, and modern systems engineering.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": "Service",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Information Technology Services",
+          "miniTitle": "ENTERPRISE IT",
+          "description": "End-to-end IT systems modernization, container orchestration, and multi-region network management.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Planetary IT Infrastructure Tailored for High Throughput",
+          "miniTitle": "INFRASTRUCTURE DEEP-DIVE",
+          "description": "Deploy workloads across 120+ edge locations with automated multi-region sync and real-time DNS routing.",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Schedule Consultation",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "View Documentation",
+          "secondaryButtonLink": "/documentation",
           "lists": [
-            { "sortOrder": 1, "title": "Starter Node", "description": "$49 / month - Perfect for emerging organizations launching their initial digital portal.", "icon": "rocket", "buttonText": "Get Started", "buttonLink": "/contact" },
-            { "sortOrder": 2, "title": "Professional Mesh", "description": "$199 / month - Elevated power with multi-region replication and dedicated support.", "icon": "star", "buttonText": "Start Free Trial", "buttonLink": "/contact" },
-            { "sortOrder": 3, "title": "Enterprise Sovereign", "description": "Custom Quote - Unlimited throughput, custom compliance guarantees, and dedicated SRE.", "icon": "workspace_premium", "buttonText": "Contact Sales", "buttonLink": "/contact" }
+            {
+              "sortOrder": 1,
+              "title": "NVMe Storage Fabrics",
+              "description": "Up to 1.2 million IOPS per cluster node."
+            },
+            {
+              "sortOrder": 2,
+              "title": "Private BGP Peering",
+              "description": "Direct enterprise interconnects bypass public internet congestion."
+            },
+            {
+              "sortOrder": 3,
+              "title": "Instant Canary Rollouts",
+              "description": "Safely deploy micro-updates with sub-second health verification."
+            }
           ]
         },
         {
-          "sortOrder": 4,
+          "sortOrder": 3,
           "templateKey": "BODY_10_CTA_BANNER",
-          "title": "Need a Tailored Architectural Solution?",
-          "miniTitle": "CUSTOM ARCHITECTURE",
-          "description": "Our senior solutions engineers are available to review your workload requirements and build a tailored deployment roadmap.",
-          "buttonText": "Book Consultation",
+          "title": "Ready to Upgrade Your IT Stack?",
+          "miniTitle": "PROVEN OPERATIONS",
+          "description": "Speak with our IT systems architects to design your high-availability cloud foundation.",
+          "buttonText": "Get in Touch",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "View Products",
+          "secondaryButtonLink": "/ai-agent",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 2,
+      "title": "Hospital",
+      "slug": "hospital",
+      "metaTitle": "Hospital & Healthcare Solutions - HIPAA Compliant Health Cloud",
+      "metaDescription": "Secure, sovereign clinical health record infrastructure with sub-second retrieval and strict compliance.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": "Service",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Healthcare & Clinical Systems",
+          "miniTitle": "HEALTHCARE ARCHITECTURE",
+          "description": "Mission-critical clinical database isolation, encrypted medical imaging, and HIPAA-certified compliance.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_03_SPLIT_RIGHT",
+          "title": "Sovereign Health Records with Zero Data Leakage",
+          "miniTitle": "CLINICAL COMPLIANCE",
+          "description": "Dedicated patient data silos with cryptographic immutability, automated disaster recovery, and uninterrupted uptime.",
+          "imageUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Request Clinical Demo",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Compliance Overview",
+          "secondaryButtonLink": "/documentation",
+          "lists": []
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Empower Your Healthcare Network",
+          "miniTitle": "ZERO-TRUST PATIENT CARE",
+          "description": "Partner with our specialized medical systems engineers for dependable healthcare operations.",
+          "buttonText": "Contact Us",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Learn More",
+          "secondaryButtonLink": "/about",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 3,
+      "title": "Infrastructure",
+      "slug": "infrastructure",
+      "metaTitle": "Cloud Infrastructure - High Performance & Sovereign Compute",
+      "metaDescription": "Explore our high-performance cloud infrastructure nodes with sub-millisecond inter-region latency.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": "Service",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Planetary Cloud Infrastructure",
+          "miniTitle": "SOVEREIGN COMPUTE",
+          "description": "Edge networks engineered for extreme throughput, zero vendor lock-in, and full database sovereignty.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Dedicated Bare-Metal & Sovereign Container Fabrics",
+          "miniTitle": "HIGH PERFORMANCE",
+          "description": "Eliminate virtualization overhead with dedicated compute slices and hardware-level encryption.",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Explore Nodes",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Technical Specs",
+          "secondaryButtonLink": "/documentation",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Sub-Millisecond Edge Routing",
+              "description": "Global anycast DNS and private backbone interconnects."
+            },
+            {
+              "sortOrder": 2,
+              "title": "Automated Failover Meshes",
+              "description": "Zero-data-loss replication across isolated availability zones."
+            },
+            {
+              "sortOrder": 3,
+              "title": "24/7 Site Reliability Engineering",
+              "description": "Proactive monitoring and automated incident remediation."
+            }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Ready to Scale Your Infrastructure?",
+          "miniTitle": "INSTANT PROVISIONING",
+          "description": "Provision your sovereign nodes in minutes with turnkey templates and automated security.",
+          "buttonText": "Get Started",
+          "buttonLink": "/auth/register",
+          "secondaryButtonText": "Contact Us",
+          "secondaryButtonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 3,
+      "title": "Career",
+      "slug": "career",
+      "metaTitle": "Careers - Build Sovereign Technology With Us",
+      "metaDescription": "Explore career opportunities across systems engineering, distributed infrastructure, and product design.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": null,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Build the Future With Us",
+          "miniTitle": "CAREERS & CULTURE",
+          "description": "We are looking for passionate engineers, architects, and problem solvers to redefine enterprise cloud systems.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_01_FEATURE_GRID",
+          "title": "Open Engineering & Systems Positions",
+          "miniTitle": "CURRENT VACANCIES",
+          "description": "All roles are remote-first with comprehensive health benefits, flexible working schedules, and competitive equity.",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Senior Distributed Systems Engineer",
+              "description": "Design high-throughput multi-region consensus algorithms and edge replication fabrics.",
+              "icon": "memory",
+              "buttonText": "Apply Now",
+              "buttonLink": "/contact"
+            },
+            {
+              "sortOrder": 2,
+              "title": "Site Reliability Architect (SRE)",
+              "description": "Build automated canary release verification, crash alerting, and failover telemetry.",
+              "icon": "monitoring",
+              "buttonText": "Apply Now",
+              "buttonLink": "/contact"
+            },
+            {
+              "sortOrder": 3,
+              "title": "Product Security Specialist",
+              "description": "Execute threat modeling, cryptographic audits, and zero-trust mesh policies.",
+              "icon": "shield",
+              "buttonText": "Apply Now",
+              "buttonLink": "/contact"
+            }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Do Not See Your Exact Role?",
+          "miniTitle": "OPEN APPLICATION",
+          "description": "We are always eager to meet outstanding talent. Send us your resume and tell us what you would love to build.",
+          "buttonText": "Submit Resume",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Learn About Us",
+          "secondaryButtonLink": "/about",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 1,
+      "title": "AI agent",
+      "slug": "ai-agent",
+      "metaTitle": "AI Agent Platform - Autonomous Enterprise Intelligence",
+      "metaDescription": "Autonomous agent workflows, secure private LLM execution, and turnkey cognitive assistants.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": "Product",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Autonomous AI Agents",
+          "miniTitle": "COGNITIVE ARCHITECTURE",
+          "description": "Deploy self-governing AI agents with strict security guardrails, private token pools, and sovereign memory.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_02_SPLIT_LEFT",
+          "title": "Enterprise AI Agents Designed for Mission-Critical Workflows",
+          "miniTitle": "INTELLIGENT AUTOMATION",
+          "description": "Accelerate operational velocity by deploying autonomous task agents connected directly to your enterprise database containers.",
+          "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Deploy Agents",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "API Documentation",
+          "secondaryButtonLink": "/documentation",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "Private Knowledge Retainers",
+              "description": "Vectorized embeddings remain securely inside your tenant database."
+            },
+            {
+              "sortOrder": 2,
+              "title": "Multi-Model Failover Routing",
+              "description": "Dynamic switching between Gemini, DeepSeek, and local LLMs."
+            },
+            {
+              "sortOrder": 3,
+              "title": "Audited Action Traces",
+              "description": "Cryptographic logs of every prompt, tool execution, and state change."
+            }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Ready to Automate with AI Agents?",
+          "miniTitle": "GET STARTED TODAY",
+          "description": "Experience next-generation cognitive automation built with sovereign security at its core.",
+          "buttonText": "Get Started",
+          "buttonLink": "/auth/register",
+          "secondaryButtonText": "Schedule Demo",
+          "secondaryButtonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 2,
+      "title": "Machineries",
+      "slug": "machineries",
+      "metaTitle": "Machineries & Hardware Automation - Industrial IoT & Edge Systems",
+      "metaDescription": "Industrial automation, edge hardware telemetry, and automated machine synchronization.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": "Product",
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Machineries & Industrial Automation",
+          "miniTitle": "HARDWARE & IOT",
+          "description": "Real-time edge control, telemetry streams, and automated diagnostics for industrial machinery.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_03_SPLIT_RIGHT",
+          "title": "Next-Gen Machinery Interconnects & Sub-Second Diagnostics",
+          "miniTitle": "EDGE COMPUTING",
+          "description": "Connect factory floor sensors, robotic assemblies, and edge controllers with deterministic sub-millisecond responsiveness.",
+          "imageUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+          "buttonText": "Explore Machinery Specs",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Contact Engineers",
+          "secondaryButtonLink": "/contact",
+          "lists": []
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Modernize Your Machinery Fleet",
+          "miniTitle": "INDUSTRIAL TRANSFORMATION",
+          "description": "Connect your industrial operations with sovereign telemetry and real-time failure prediction.",
+          "buttonText": "Get in Touch",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Documentation",
+          "secondaryButtonLink": "/documentation",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 5,
+      "title": "Blog",
+      "slug": "blog",
+      "metaTitle": "Blog & Publications - Technology Strategy & Corporate Insights",
+      "metaDescription": "Explore our latest editorial briefings, systems architecture articles, and industry insights.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": null,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "News, Insights & Articles",
+          "miniTitle": "PUBLICATIONS",
+          "description": "Expert engineering analysis, architectural deep-dives, and strategic organizational bulletins.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Stay Ahead with Executive Insights",
+          "miniTitle": "SUBSCRIBE TODAY",
+          "description": "Join thousands of technical leaders receiving our periodic engineering publications.",
+          "buttonText": "Subscribe",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "Explore Products",
+          "secondaryButtonLink": "/ai-agent",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 6,
+      "title": "Contact Us",
+      "slug": "contact",
+      "metaTitle": "Contact Our Team - Inquiries & Consultations",
+      "metaDescription": "Reach our solutions architects, enterprise support desk, or schedule a personalized technical consultation.",
+      "menuPosition": "header",
+      "zone": "first",
+      "category": null,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Get in Touch With Our Team",
+          "miniTitle": "WE ARE HERE TO HELP",
+          "description": "Whether you are planning a migration or seeking enterprise advice, our engineers are ready to assist.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_11_CONTACT_SPLIT",
+          "title": "Direct Communication Channels",
+          "miniTitle": "FAST RESPONSE TIME",
+          "description": "Our team responds to all inquiries within 1 business day. Feel free to use the form or reach out directly.",
+          "buttonText": "Send Message",
+          "buttonLink": "/contact",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 1,
+      "title": "FAQ",
+      "slug": "faq",
+      "metaTitle": "Frequently Asked Questions - Platform Answers & Guidance",
+      "metaDescription": "Clear answers to common questions about our platform, security, database isolation, and billing.",
+      "menuPosition": "topbar",
+      "zone": "top",
+      "category": null,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Frequently Asked Questions",
+          "miniTitle": "HELP & ANSWERS",
+          "description": "Find clear answers to common inquiries regarding architecture, billing, and system reliability.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_09_FAQ_ACCORDION",
+          "title": "General Platform Questions",
+          "miniTitle": "COMMON QUERIES",
+          "description": "Explore the most frequently asked questions about our technology and operations.",
+          "lists": [
+            {
+              "sortOrder": 1,
+              "title": "How does tenant database isolation work?",
+              "description": "Every tenant is provisioned with an isolated, dedicated database container. Schemas, credentials, and cryptographic keys are strictly partitioned."
+            },
+            {
+              "sortOrder": 2,
+              "title": "What is your historical uptime SLA?",
+              "description": "We maintain a 99.99% monthly availability guarantee across all production regions with automated financial credits for any verified downtime."
+            },
+            {
+              "sortOrder": 3,
+              "title": "Can we export our database at any time?",
+              "description": "Yes. You have 100% data ownership and can download complete raw SQL database backups with zero vendor lock-in."
+            }
+          ]
+        },
+        {
+          "sortOrder": 3,
+          "templateKey": "BODY_10_CTA_BANNER",
+          "title": "Still Have Questions?",
+          "miniTitle": "WE ARE READY TO HELP",
+          "description": "Speak directly with our engineering team for detailed technical clarifications.",
+          "buttonText": "Contact Us",
+          "buttonLink": "/contact",
+          "secondaryButtonText": "View Documentation",
+          "secondaryButtonLink": "/documentation",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 2,
+      "title": "Support",
+      "slug": "support",
+      "metaTitle": "Technical Support & Customer Care Desk",
+      "metaDescription": "Round-the-clock technical support, ticket escalation, and incident reporting.",
+      "menuPosition": "topbar",
+      "zone": "top",
+      "category": null,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Customer Support & Help Desk",
+          "miniTitle": "24/7 SUPPORT",
+          "description": "Reach our dedicated site reliability engineers and customer support desk.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_11_CONTACT_SPLIT",
+          "title": "Submit a Support Ticket",
+          "miniTitle": "RAPID ESCALATION",
+          "description": "Our support engineers respond to enterprise tickets in under 15 minutes.",
+          "buttonText": "Submit Request",
           "buttonLink": "/contact",
           "lists": []
         }
@@ -153,175 +820,147 @@
     },
     {
       "sortOrder": 3,
-      "title": "About Us",
-      "slug": "about",
-      "metaTitle": "About Our Firm - Vision, Mission & Team",
-      "metaDescription": "Learn about our mission to bring sovereign cloud performance, privacy, and simplicity to forward-thinking businesses worldwide.",
-      "menuPosition": "header",
-      "zone": "middle",
+      "title": "Documentation",
+      "slug": "documentation",
+      "metaTitle": "Developer Documentation & API Reference",
+      "metaDescription": "Comprehensive developer manuals, SDK guides, and architectural blueprints.",
+      "menuPosition": "topbar",
+      "zone": "top",
+      "category": null,
       "isPublished": true,
       "sections": [
         {
           "sortOrder": 1,
-          "templateKey": "BODY_02_SPLIT_LEFT",
-          "title": "Pioneering Sovereign Digital Infrastructure",
-          "miniTitle": "OUR FOUNDING VISION",
-          "description": "We started with a singular conviction: businesses should never have to sacrifice data ownership or system performance to achieve cloud scalability.",
-          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
-          "buttonText": "Join Our Journey",
-          "buttonLink": "/careers",
-          "lists": [
-            { "sortOrder": 1, "title": "Data Sovereignty First", "description": "Your customers' data belongs exclusively to you.", "icon": "check_circle" },
-            { "sortOrder": 2, "title": "Uncompromising Quality", "description": "Every line of code is optimized for microsecond delivery.", "icon": "check_circle" },
-            { "sortOrder": 3, "title": "Radical Transparency", "description": "Honest pricing, public roadmaps, and verifiable uptime.", "icon": "check_circle" }
-          ]
-        },
-        {
-          "sortOrder": 2,
-          "templateKey": "BODY_08_METRICS_COUNTERS",
-          "title": "A Track Record of Verified Excellence",
-          "miniTitle": "MILESTONES",
-          "description": "Real impact delivered daily across mission-critical client deployments.",
-          "lists": [
-            { "sortOrder": 1, "title": "10+ Years", "description": "Engineering Experience", "icon": "history" },
-            { "sortOrder": 2, "title": "45+", "description": "Patents & Inventions", "icon": "lightbulb" },
-            { "sortOrder": 3, "title": "98.6%", "description": "Client Retention Rate", "icon": "favorite" },
-            { "sortOrder": 4, "title": "24/7", "description": "Global SRE Monitoring", "icon": "lock_clock" }
-          ]
-        },
-        {
-          "sortOrder": 3,
-          "templateKey": "BODY_04_PROCESS_STEPS",
-          "title": "The Guiding Principles Behind Every Decision",
-          "miniTitle": "CORE VALUES",
-          "description": "How our distributed engineering team approaches problem-solving and customer partnerships.",
-          "lists": [
-            { "sortOrder": 1, "title": "Customer Empathy", "description": "We listen intently to user pain points before designing solutions.", "icon": "support" },
-            { "sortOrder": 2, "title": "Ruthless Simplification", "description": "We eliminate unnecessary friction and complexity at every turn.", "icon": "tune" },
-            { "sortOrder": 3, "title": "Zero Compromise on Security", "description": "Privacy and isolation are built directly into our foundational layer.", "icon": "security" },
-            { "sortOrder": 4, "title": "Long-Term Craftsmanship", "description": "We build sustainable software architected to endure for decades.", "icon": "construction" }
-          ]
-        }
-      ]
-    },
-    {
-      "sortOrder": 4,
-      "title": "Contact Us",
-      "slug": "contact",
-      "metaTitle": "Contact Our Solutions Team",
-      "metaDescription": "Have questions about our cloud platform? Send us a direct inquiry and our solutions team will respond promptly.",
-      "menuPosition": "header",
-      "zone": "last",
-      "isPublished": true,
-      "sections": [
-        {
-          "sortOrder": 1,
-          "templateKey": "BODY_11_CONTACT_SPLIT",
-          "title": "Get in Touch with Our Global Team",
-          "miniTitle": "DIRECT COMMUNICATION",
-          "description": "Whether you are planning a migration, exploring pricing tiers, or requesting technical assistance, we are here to support your success.",
-          "lists": [
-            { "sortOrder": 1, "title": "Global Headquarters", "description": "100 Innovation Way, Suite 500, Tech Hub", "icon": "location_on" },
-            { "sortOrder": 2, "title": "Inquiry Hotline", "description": "+1 (555) 019-2834 (Mon-Fri 8am-6pm)", "icon": "call" },
-            { "sortOrder": 3, "title": "Official Email", "description": "contact@example.com (Under 2h response)", "icon": "mail" },
-            { "sortOrder": 4, "title": "24/7 Emergency SRE", "description": "Available to all active enterprise subscribers", "icon": "support_agent" }
-          ]
-        },
-        {
-          "sortOrder": 2,
-          "templateKey": "BODY_09_FAQ_ACCORDION",
-          "title": "Quick Answers to Common Inquiries",
-          "miniTitle": "PRE-SALES FAQ",
-          "description": "Find immediate clarity regarding onboarding, data migration, and technical specifications.",
-          "lists": [
-            { "sortOrder": 1, "title": "How fast can our team go live on the platform?", "description": "Once your workspace is provisioned, your foundational pages, templates, and forms are live in under 5 minutes. You can begin publishing immediate updates through the CMS Studio." },
-            { "sortOrder": 2, "title": "Is our organization's database completely isolated?", "description": "Yes. Every tenant receives sovereign database boundaries and isolated encryption keys. Cross-tenant leakage is architecturally impossible." },
-            { "sortOrder": 3, "title": "Can we connect our custom domain name?", "description": "Absolutely. You can attach custom domains and subdomains with automatic SSL certificates generated and renewed seamlessly." },
-            { "sortOrder": 4, "title": "What level of technical support is included?", "description": "All standard workspaces include 24/7 ticket and email support. Enterprise tiers feature direct dedicated Slack channels and senior SRE hotline access." }
-          ]
-        }
-      ]
-    },
-    {
-      "sortOrder": 5,
-      "title": "Careers",
-      "slug": "careers",
-      "metaTitle": "Careers - Join Our Engineering Mission",
-      "metaDescription": "Help us build the next generation of sovereign cloud platforms. Explore our remote-first openings and engineering culture.",
-      "menuPosition": "header",
-      "zone": "middle",
-      "isPublished": true,
-      "sections": [
-        {
-          "sortOrder": 1,
-          "templateKey": "BODY_03_SPLIT_RIGHT",
-          "title": "Build the Future of Cloud Computing With Us",
-          "miniTitle": "WORK WITH PURPOSE",
-          "description": "We are a remote-first, globally distributed team of engineers, designers, and systems architects dedicated to solving complex infrastructure challenges.",
-          "buttonText": "View Open Positions",
-          "buttonLink": "/contact",
-          "secondaryButtonText": "Learn About Our Culture",
-          "secondaryButtonLink": "/about",
-          "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Technical Documentation",
+          "miniTitle": "DEVELOPER PORTAL",
+          "description": "API references, deployment manifests, security protocols, and integration guides.",
           "lists": []
         },
         {
           "sortOrder": 2,
           "templateKey": "BODY_01_FEATURE_GRID",
-          "title": "Comprehensive Benefits Designed for Modern Living",
-          "miniTitle": "WHY JOIN OUR TEAM",
-          "description": "We invest heavily in the physical, mental, and professional well-being of every team member.",
+          "title": "Documentation Guides",
+          "miniTitle": "QUICK START",
+          "description": "Step-by-step technical guides to help you build and deploy with confidence.",
           "lists": [
-            { "sortOrder": 1, "title": "100% Remote Freedom", "description": "Work from anywhere in the world with flexible hours built around output, not clock-watching.", "icon": "public" },
-            { "sortOrder": 2, "title": "Continuous Learning Stipends", "description": "Annual budgets for books, conferences, technical certifications, and hardware upgrades.", "icon": "school" },
-            { "sortOrder": 3, "title": "Competitive Equity & Health", "description": "Top-tier health coverage, generous parental leave, and meaningful company equity grants.", "icon": "favorite" }
+            {
+              "sortOrder": 1,
+              "title": "API Quickstart",
+              "description": "Authenticate, generate JWT keys, and perform your first API call.",
+              "icon": "terminal",
+              "buttonText": "Read Guide",
+              "buttonLink": "/documentation"
+            },
+            {
+              "sortOrder": 2,
+              "title": "Database Schemas",
+              "description": "Understand relational models, migrations, and tenant isolation.",
+              "icon": "database",
+              "buttonText": "Read Guide",
+              "buttonLink": "/documentation"
+            },
+            {
+              "sortOrder": 3,
+              "title": "Security Protocols",
+              "description": "Zero-trust policies, encryption standards, and compliance audits.",
+              "icon": "shield",
+              "buttonText": "Read Guide",
+              "buttonLink": "/documentation"
+            }
           ]
+        }
+      ]
+    },
+    {
+      "sortOrder": 1,
+      "title": "Terms of Service",
+      "slug": "terms",
+      "metaTitle": "Terms of Service - Official Enterprise Master Agreement",
+      "metaDescription": "Review the contractual terms, service obligations, database ownership, and SLA parameters governing our platform.",
+      "menuPosition": "footer",
+      "zone": "first",
+      "category": null,
+      "isLegal": true,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Terms of Service",
+          "miniTitle": "LEGAL COMPLIANCE",
+          "description": "Effective Date: October 12, 2026. Official terms governing your platform access and service utilization.",
+          "lists": []
         },
         {
-          "sortOrder": 3,
-          "templateKey": "BODY_10_CTA_BANNER",
-          "title": "Don't See Your Role Listed? We Still Want to Hear From You.",
-          "miniTitle": "GENERAL APPLICATIONS",
-          "description": "Send your portfolio and engineering background directly to our talent acquisition team.",
-          "buttonText": "Send Spontaneous Application",
-          "buttonLink": "/contact",
+          "sortOrder": 2,
+          "templateKey": "BODY_12_RICH_DOCUMENT",
+          "title": "Enterprise Master Service Agreement",
+          "miniTitle": "CONTRACTUAL TERMS",
+          "description": "Please review these terms carefully prior to accessing or deploying applications on our sovereign infrastructure.",
+          "fullDescription": "<p>These Terms of Service constitute a legally binding agreement between your organization and our platform provider. By accessing services, you accept these terms in full.</p><h3>1. Sovereign Tenant Isolation</h3><p>We warrant that each workspace operates within dedicated, cryptographically isolated database containers.</p><h3>2. Availability Commitments</h3><p>We commit to maintaining a 99.99% monthly availability SLA for production workloads.</p><h3>3. Data Ownership</h3><p>Customer retains 100% proprietary ownership of all data, code, and configurations uploaded to the platform.</p>",
           "lists": []
         }
       ]
     },
     {
-      "sortOrder": 6,
-      "title": "FAQ & Support",
-      "slug": "faq",
-      "metaTitle": "Frequently Asked Questions & Helpdesk",
-      "metaDescription": "Browse answers to frequently asked questions about billing, deployment, security, and tenant customization.",
-      "menuPosition": "topbar",
+      "sortOrder": 2,
+      "title": "Privacy Policy",
+      "slug": "privacy",
+      "metaTitle": "Privacy Policy - Data Protection & Sovereignty Disclosures",
+      "metaDescription": "Learn how we handle organizational metadata, authentication tokens, and respect international data sovereignty regulations.",
+      "menuPosition": "footer",
       "zone": "first",
+      "category": null,
+      "isLegal": true,
       "isPublished": true,
       "sections": [
         {
           "sortOrder": 1,
-          "templateKey": "BODY_09_FAQ_ACCORDION",
-          "title": "Answers to Your Most Common Questions",
-          "miniTitle": "KNOWLEDGE BASE",
-          "description": "Quickly find clarity on billing cycles, domain routing, custom styling, and enterprise security guarantees.",
-          "lists": [
-            { "sortOrder": 1, "title": "How does monthly recurring billing work?", "description": "Subscriptions are billed automatically on a 30-day recurring cycle. You can cancel or upgrade your plan anytime without termination fees." },
-            { "sortOrder": 2, "title": "Can I export or backup our tenant data at any time?", "description": "Yes. You have complete sovereign data ownership. Full database backups and content archives can be downloaded directly from your workspace admin portal." },
-            { "sortOrder": 3, "title": "Are templates customizable after installation?", "description": "Every installed template can be customized in the CMS Studio or through the Visual Editor, enabling custom CSS overrides, unique color palettes, and custom token layouts." },
-            { "sortOrder": 4, "title": "How do inquiries submitted via website forms reach us?", "description": "Inquiry submissions are immediately stored in your sovereign database and forwarded via real-time notifications to your official corporate inbox." },
-            { "sortOrder": 5, "title": "What happens if our website experiences sudden viral traffic?", "description": "Our containerized cloud mesh automatically provisions additional edge capacity in milliseconds to absorb traffic surges without performance degradation." },
-            { "sortOrder": 6, "title": "How does Ozikol ensure spam protection on broadcast emails?", "description": "The platform incorporates real-time keyword analysis, blacklist detection, and automated sender verification to protect your domain reputation." }
-          ]
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Privacy Policy",
+          "miniTitle": "DATA PROTECTION",
+          "description": "Effective Date: October 12, 2026. How we collect, safeguard, and isolate your organizational data.",
+          "lists": []
         },
         {
           "sortOrder": 2,
-          "templateKey": "BODY_10_CTA_BANNER",
-          "title": "Still Need Assistance? Our Engineers Are Here.",
-          "miniTitle": "24/7 HELPDESK",
-          "description": "Contact our technical support desk anytime for personalized assistance.",
-          "buttonText": "Submit Helpdesk Ticket",
-          "buttonLink": "/contact",
+          "templateKey": "BODY_12_RICH_DOCUMENT",
+          "title": "Enterprise Privacy Disclosures",
+          "miniTitle": "SECURITY & CONFIDENTIALITY",
+          "description": "Our transparent commitments regarding data handling, zero-trust telemetry, and GDPR/CCPA compliance.",
+          "fullDescription": "<p>Your organizational privacy is fundamental to our architecture. This Privacy Policy details the strict measures implemented across all our cloud nodes.</p><h3>1. Information We Collect</h3><p>We collect only technical telemetry strictly required to operate your sovereign clusters.</p><h3>2. Zero Third-Party Monetization</h3><p>We do not sell, rent, or trade customer contact details or telemetry to third parties.</p><h3>3. Cryptographic Storage</h3><p>All stored data is encrypted at rest using AES-256 standards with sovereign keys.</p>",
+          "lists": []
+        }
+      ]
+    },
+    {
+      "sortOrder": 3,
+      "title": "Cookie Policy",
+      "slug": "cookies",
+      "metaTitle": "Cookie Policy - Session Tokens & Telemetry Cookies",
+      "metaDescription": "Information regarding essential session tokens, authentication cookies, and operational telemetry.",
+      "menuPosition": "footer",
+      "zone": "first",
+      "category": null,
+      "isLegal": true,
+      "isPublished": true,
+      "sections": [
+        {
+          "sortOrder": 1,
+          "templateKey": "BREADCRUMB_BANNER",
+          "title": "Cookie & Session Policy",
+          "miniTitle": "BROWSER STORAGE",
+          "description": "Effective Date: October 12, 2026. Transparent details on session tokens, security cookies, and user preferences.",
+          "lists": []
+        },
+        {
+          "sortOrder": 2,
+          "templateKey": "BODY_12_RICH_DOCUMENT",
+          "title": "Cookie Usage & Session Disclosures",
+          "miniTitle": "FUNCTIONAL STORAGE",
+          "description": "How our browser-side tokens keep your administrative sessions authenticated securely.",
+          "fullDescription": "<p>Our platform uses minimal browser cookies and local storage tokens strictly required for cryptographic security and session persistence.</p><h3>1. Strictly Necessary Cookies</h3><p>These cookies are essential for navigating the portal and verifying JWT tokens.</p><h3>2. Anti-CSRF Protection</h3><p>We issue ephemeral tokens to protect forms from cross-site request forgery.</p>",
           "lists": []
         }
       ]

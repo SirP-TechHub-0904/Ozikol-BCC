@@ -259,6 +259,19 @@
 .oz-footer-legal-link:hover {
   color: #0f172a;
 }
+.oz-footer-powered-by {
+  font-size: 13px;
+  color: #64748b;
+  margin-left: 8px;
+}
+.oz-footer-powered-by a {
+  color: #0050e5;
+  font-weight: 700;
+  text-decoration: none;
+}
+.oz-footer-powered-by a:hover {
+  text-decoration: underline;
+}
 @media (max-width: 1024px) {
   .oz-footer-grid {
     grid-template-columns: 1fr;

@@ -250,6 +250,7 @@ namespace Ozikol_BCC.Api.Controllers
                 CompanyName = companyName,
                 CompanyNameAbbreviation = abbreviation,
                 CompanyDescription = site?.CompanyDescription ?? site?.Tagline ?? "",
+                FooterDescription = site?.FooterDescription ?? site?.FooterNote ?? "",
                 CompanyWebsiteLink = site?.CompanyWebsiteLink ?? "",
                 WebsiteTitle = site?.WebsiteTitle ?? site?.SiteTitle ?? "",
                 DashboardTitle = site?.DashboardTitle ?? "",
@@ -303,6 +304,8 @@ namespace Ozikol_BCC.Api.Controllers
                 ? dto.CompanyNameAbbreviation.Trim()
                 : ComputeAbbreviation(dto.CompanyName);
             site.CompanyDescription = dto.CompanyDescription;
+            site.FooterDescription = dto.FooterDescription;
+            site.FooterNote = dto.FooterDescription;
             site.CompanyWebsiteLink = dto.CompanyWebsiteLink;
             site.WebsiteTitle = dto.WebsiteTitle;
             site.SiteTitle = dto.WebsiteTitle;
@@ -461,6 +464,18 @@ namespace Ozikol_BCC.Api.Controllers
                 ? site.TemplateLayoutKey
                 : "standard";
 
+            var channels = await _db.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .ToListAsync();
+
+            var supportEmail = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email)?.Value ?? "";
+            var supportPhone = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone)?.Value ?? "";
+            var pickupAddress = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address)?.Value ?? "";
+
             var data = new StoreSettingsDto
             {
                 StorefrontEnabled = site?.ActivateProductsInHome ?? true,
@@ -483,9 +498,9 @@ namespace Ozikol_BCC.Api.Controllers
                 FlatShippingRate = 0,
                 FreeShippingThreshold = 0,
                 TaxPercentage = 0,
-                SupportEmail = !string.IsNullOrWhiteSpace(site?.ContactEmail) ? site.ContactEmail : (!string.IsNullOrWhiteSpace(site?.EmailOne) ? site.EmailOne : ""),
-                SupportPhone = !string.IsNullOrWhiteSpace(site?.PrimaryPhone) ? site.PrimaryPhone : (!string.IsNullOrWhiteSpace(site?.PhoneOne) ? site.PhoneOne : ""),
-                PickupAddress = !string.IsNullOrWhiteSpace(site?.Address) ? site.Address : (!string.IsNullOrWhiteSpace(site?.AddressOne) ? site.AddressOne : "")
+                SupportEmail = supportEmail,
+                SupportPhone = supportPhone,
+                PickupAddress = pickupAddress
             };
 
             return Ok(ApiResponse<StoreSettingsDto>.SuccessResponse(data, "Store & Website settings retrieved."));
@@ -628,6 +643,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string CompanyName { get; set; } = "Workspace";
         public string CompanyNameAbbreviation { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
+        public string FooterDescription { get; set; } = string.Empty;
         public string CompanyWebsiteLink { get; set; } = string.Empty;
         public string WebsiteTitle { get; set; } = string.Empty;
         public string DashboardTitle { get; set; } = string.Empty;
@@ -660,6 +676,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string CompanyName { get; set; } = "Workspace";
         public string CompanyNameAbbreviation { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
+        public string FooterDescription { get; set; } = string.Empty;
         public string CompanyWebsiteLink { get; set; } = string.Empty;
         public string WebsiteTitle { get; set; } = string.Empty;
         public string DashboardTitle { get; set; } = string.Empty;

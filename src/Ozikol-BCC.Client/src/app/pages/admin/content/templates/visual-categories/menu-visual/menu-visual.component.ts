@@ -2368,12 +2368,14 @@ export class MenuVisualComponent implements OnInit {
       {
         title: 'Login',
         url: '/login',
-        customClass: 'oz-btn-ghost'
+        customClass: 'oz-btn-ghost',
+        buttonClass: 'oz-btn-ghost'
       },
       {
         title: 'Get Started',
         url: '/get-started',
-        customClass: 'oz-btn-primary'
+        customClass: 'oz-btn-primary',
+        buttonClass: 'oz-btn-primary'
       }
     ],
     hasSocialLinks: true,

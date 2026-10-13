@@ -226,6 +226,21 @@ public class WebPageBlueprint
     public string Zone { get; set; } = "first";
 
     /// <summary>
+    /// Gets or sets the optional parent category title for dropdown grouping (e.g. "Services", "Company").
+    /// </summary>
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this page acts as an official Call-to-Action button in the navigation header.
+    /// </summary>
+    public bool IsMenuCTA { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets whether this page is a legal compliance document (e.g. Privacy Policy, Terms of Service).
+    /// </summary>
+    public bool IsLegal { get; set; } = false;
+
+    /// <summary>
     /// Gets or sets whether the page is published publicly.
     /// </summary>
     public bool IsPublished { get; set; } = true;
@@ -265,6 +280,11 @@ public class PageSectionBlueprint
     /// Gets or sets the subtitle or narrative copy.
     /// </summary>
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the extended rich HTML body content for the section (used for legal documents and long-form articles).
+    /// </summary>
+    public string? FullDescription { get; set; }
 
     /// <summary>
     /// Gets or sets the optional section media graphic or hero photo URL.
@@ -313,9 +333,24 @@ public class SectionListBlueprint
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the optional kicker, badge, or mini title.
+    /// </summary>
+    public string? MiniTitle { get; set; }
+
+    /// <summary>
     /// Gets or sets the card description or body text.
     /// </summary>
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets extended HTML list items or bullet details (e.g. for pricing cards).
+    /// </summary>
+    public string? MoreDescription { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional CSS class applied to the list item container (e.g. 'featured').
+    /// </summary>
+    public string? CustomClass { get; set; }
 
     /// <summary>
     /// Gets or sets the Material Symbols or FontAwesome icon name.
@@ -336,4 +371,14 @@ public class SectionListBlueprint
     /// Gets or sets the card button destination link.
     /// </summary>
     public string? ButtonLink { get; set; }
+
+    /// <summary>
+    /// Gets or sets the secondary action button label.
+    /// </summary>
+    public string? SecondaryButtonText { get; set; }
+
+    /// <summary>
+    /// Gets or sets the secondary action button destination link.
+    /// </summary>
+    public string? SecondaryButtonLink { get; set; }
 }

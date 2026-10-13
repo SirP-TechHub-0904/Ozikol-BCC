@@ -37,8 +37,10 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   const hasPhone = Boolean(ctx.phone && ctx.phone.trim().length > 0);
   const hasAddress = Boolean(ctx.address && ctx.address.trim().length > 0);
   const hasWorkingHours = Boolean(ctx.workingHours && ctx.workingHours.trim().length > 0);
-  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress || (ctx.contactItems && ctx.contactItems.length > 0)));
-  const hasSocial = Boolean(ctx.hasSocialLinks ?? ((ctx.socialLinks && ctx.socialLinks.length > 0) || true));
+  const rawSocials = ctx.socialLinks || [];
+  const rawContactItems = ctx.contactItems || [];
+  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress || rawContactItems.length > 0));
+  const hasSocial = Boolean(ctx.hasSocialLinks ?? (rawSocials.length > 0));
   const hasTopBar = Boolean(ctx.hasTopBar ?? (hasContact || hasSocial || (ctx.topBarPages && ctx.topBarPages.length > 0)));
 
   output = resolveDepthAwareIf(output, 'HasTopBar', hasTopBar);
@@ -123,13 +125,6 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   });
 
   // 8b. Social Media Channels Loop: {{#each SocialLinks}}
-  const rawSocials = (ctx.socialLinks && ctx.socialLinks.length > 0) ? ctx.socialLinks : [
-    { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-    { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin' },
-    { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook' },
-    { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
-  ];
-
   const socialMatcher = (openTag: string) => {
     return /^\{\{#each\s+SocialLinks\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };
@@ -149,12 +144,6 @@ export function hydrateNavigation(template: string, ctx: HydrationContext): stri
   });
 
   // 8c. Structured Contact Items Loops: {{#each ContactItems}}, {{#each ContactChannels}}
-  const rawContactItems = (ctx.contactItems && ctx.contactItems.length > 0) ? ctx.contactItems : [
-    { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: ctx.phone || '+1 (555) 019-2834', content: ctx.phone || '+1 (555) 019-2834', url: `tel:${(ctx.phone || '+15550192834').replace(/[^0-9+]/g, '')}`, icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-    { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: ctx.email || 'support@ozikol.cloud', content: ctx.email || 'support@ozikol.cloud', url: `mailto:${ctx.email || 'support@ozikol.cloud'}`, icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-    { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: ctx.address || '1200 Innovation Way, Suite 400', content: ctx.address || '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
-  ];
-
   const contactItemsMatcher = (openTag: string) => {
     return /^\{\{#each\s+(?:ContactItems|ContactChannels)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };

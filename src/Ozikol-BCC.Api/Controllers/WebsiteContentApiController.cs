@@ -11,7 +11,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// <summary>
     /// Public content delivery API for the client website, landing pages, and UI.
     /// Fully anonymous, delivering published pages (including legal/terms SecurityPages),
-    /// navigation categories, layout sections, sliders, FAQs, and visitor telemetry.
+    /// navigation categories, layout sections, FAQs, and visitor telemetry.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -117,13 +117,14 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Retrieves published menu categories and their published pages for navbar dropdowns.
+        /// Filters out categories with zero published child pages to avoid empty dropdown placeholders.
         /// </summary>
         [HttpGet("categories")]
         public async Task<IActionResult> GetPublishedCategories()
         {
             var categories = await _context.PageCategories
-                .Where(c => c.Publish)
-                .Include(c => c.WebPages!.Where(p => p.Publish).OrderBy(p => p.SortOrder))
+                .Where(c => c.Publish && c.ShowInMenu && c.WebPages.Any(p => p.Publish && p.ShowInMenuDropDown))
+                .Include(c => c.WebPages!.Where(p => p.Publish && p.ShowInMenuDropDown).OrderBy(p => p.DropdownSortOrder != 0 ? p.DropdownSortOrder : p.SortOrder))
                 .OrderBy(c => c.MenuSortOrder)
                 .ToListAsync();
 
@@ -168,15 +169,6 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(sections, "Page layout sections retrieved."));
         }
 
-        /// <summary>
-        /// Retrieves published banner sliders for the public storefront.
-        /// </summary>
-        /// <returns>A collection of active slider items.</returns>
-        [HttpGet("sliders")]
-        public IActionResult GetPublishedSliders()
-        {
-            return Ok(ApiResponse<List<object>>.SuccessResponse(new List<object>(), "Sliders retrieved successfully."));
-        }
 
         // ==========================================
         // 4. PUBLIC VISITOR TELEMETRY
@@ -585,29 +577,108 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the public brand identity and UI configuration settings for visitor UI rendering.
+        /// Retrieves the public brand identity, contact channels, and UI configuration settings for visitor UI rendering.
         /// </summary>
         /// <returns>Public-safe UI settings record.</returns>
         [HttpGet("ui-settings")]
         public async Task<IActionResult> GetPublicUiSettings()
         {
             var setting = await _context.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var channels = await _context.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            // Contact details are strictly derived from the dedicated MisWebsiteContactChannels table
+            var primaryEmail = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Email)?.Value
+                ?? string.Empty;
+
+            var primaryPhone = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Phone)?.Value
+                ?? string.Empty;
+
+            var primaryAddress = channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == ContactChannelTypes.Address)?.Value
+                ?? string.Empty;
+
+            var primaryHours = channels.FirstOrDefault(c => (c.ChannelType == "Hours" || c.ChannelType == "WorkingHours") && c.IsDefault)?.Value
+                ?? channels.FirstOrDefault(c => c.ChannelType == "Hours" || c.ChannelType == "WorkingHours")?.Value
+                ?? string.Empty;
 
             if (setting != null)
             {
-                return Ok(ApiResponse<object>.SuccessResponse(setting, "Public UI settings retrieved."));
+                var payload = new
+                {
+                    setting.Id,
+                    setting.BrandName,
+                    setting.CompanyName,
+                    setting.CompanyNameAbbreviation,
+                    setting.SiteTitle,
+                    setting.WebsiteTitle,
+                    setting.DashboardTitle,
+                    setting.Tagline,
+                    setting.CompanyDescription,
+                    setting.FooterDescription,
+                    setting.CompanyWebsiteLink,
+                    setting.LogoUrl,
+                    setting.CompanyLogoUrl,
+                    setting.WhiteLogoUrl,
+                    setting.CompanyWhiteLogoUrl,
+                    setting.FaviconUrl,
+                    setting.CompanyIconUrl,
+                    setting.LoginTitle,
+                    setting.LoginButtonText,
+                    setting.ActivateLogin,
+                    setting.ActivateLoginInMenu,
+                    setting.ActivateLoginInFooter,
+                    contactEmail = primaryEmail,
+                    supportEmail = primaryEmail,
+                    primaryPhone = primaryPhone,
+                    address = primaryAddress,
+                    workingHours = primaryHours,
+                    setting.CopyrightNotice,
+                    setting.EnableComingSoon,
+                    setting.RemovePlatformWatermark,
+                    contactChannels = channels
+                };
+
+                return Ok(ApiResponse<object>.SuccessResponse(payload, "Public UI settings retrieved."));
             }
 
-            var defaultSetting = new MisWebsiteSetting
+            var defaultSetting = new
             {
-                BrandName = "Organization",
-                SiteTitle = "Organization Sovereign Platform",
-                Tagline = "Sovereign Enterprise Infrastructure",
+                BrandName = string.Empty,
+                SiteTitle = string.Empty,
+                Tagline = string.Empty,
+                contactEmail = primaryEmail,
+                supportEmail = primaryEmail,
+                primaryPhone = primaryPhone,
+                address = primaryAddress,
+                workingHours = primaryHours,
                 EnableComingSoon = false,
-                RemovePlatformWatermark = false
+                RemovePlatformWatermark = false,
+                contactChannels = channels
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(defaultSetting, "Default public UI settings retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves published website contact channels and social media profiles.
+        /// </summary>
+        /// <returns>List of published contact channels ordered by sort index.</returns>
+        [HttpGet("contact-channels")]
+        public async Task<IActionResult> GetPublishedContactChannels()
+        {
+            var channels = await _context.MisWebsiteContactChannels
+                .AsNoTracking()
+                .Where(c => c.IsPublished)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(channels, "Published contact channels retrieved."));
         }
     }
 

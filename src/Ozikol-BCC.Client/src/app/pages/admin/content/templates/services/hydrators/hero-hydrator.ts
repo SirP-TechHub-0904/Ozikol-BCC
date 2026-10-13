@@ -60,8 +60,8 @@ export function hydrateHero(template: string, ctx: HydrationContext): string {
       // Slide Item Scalars
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, item.title || '');
       rendered = rendered.replace(/\{\{\s*(?:MiniTitle|Subtitle|SubTitle)\s*\}\}/gi, item.miniTitle || item.subTitle || '');
-      rendered = rendered.replace(/\{\{\s*Description\s*\}\}/gi, item.description || '');
-      rendered = rendered.replace(/\{\{\s*MoreDescription\s*\}\}/gi, item.moreDescription || '');
+      rendered = rendered.replace(/\{\{\{?\s*Description\s*\}?\}\}/gi, item.description || '');
+      rendered = rendered.replace(/\{\{\{?\s*MoreDescription\s*\}?\}\}/gi, item.moreDescription || '');
       rendered = rendered.replace(/\{\{\s*Icon\s*\}\}/gi, item.icon || 'star');
       rendered = rendered.replace(/\{\{\s*IconText\s*\}\}/gi, item.iconText || '');
       rendered = rendered.replace(/\{\{\s*ButtonText\s*\}\}/gi, item.buttonText || '');

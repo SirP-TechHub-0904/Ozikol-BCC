@@ -96,32 +96,71 @@ namespace Ozikol_BCC.Domain.Models
         public string? ImageKey { get; set; }
 
         /// <summary>
-        /// Toggle visibility in the primary navigation header menu.
+        /// Toggle visibility in the website top utility bar (e.g. beside contact info / social icons).
+        /// </summary>
+        [Display(Name = "Show In Top Bar")]
+        public bool ShowInTopBar { get; set; } = false;
+
+        /// <summary>
+        /// Explicit sorting position within the website top utility bar.
+        /// </summary>
+        [Display(Name = "Top Bar Sort Order")]
+        public int TopBarSortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// Toggle visibility in the primary navigation header menu as a standalone item.
         /// </summary>
         [Display(Name = "Show In Main Menu")]
         public bool ShowInMainMenu { get; set; } = true;
 
         /// <summary>
-        /// Toggle visibility inside dropdown menus.
+        /// Explicit sorting position within the primary navigation header menu.
+        /// Defaults to SortOrder when 0.
+        /// </summary>
+        [Display(Name = "Main Menu Sort Order")]
+        public int MainMenuSortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// Toggle visibility inside category dropdown menus.
+        /// Applicable when PageCategoryId is assigned.
         /// </summary>
         [Display(Name = "Show In Menu Dropdown")]
         public bool ShowInMenuDropDown { get; set; } = true;
 
         /// <summary>
-        /// Toggle visibility as a link item in the website footer.
+        /// Explicit sorting position within the category dropdown menu.
+        /// </summary>
+        [Display(Name = "Dropdown Sort Order")]
+        public int DropdownSortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// Toggle visibility as a link item in the website footer columns (under its Category or Tagged group).
         /// </summary>
         [Display(Name = "Show In Footer")]
         public bool ShowInFooter { get; set; } = true;
 
         /// <summary>
-        /// Explicit sorting position within the footer column.
+        /// Explicit sorting position within its footer column.
         /// </summary>
         [Display(Name = "Footer Sort Order")]
         public int FooterSortOrder { get; set; } = 0;
 
         /// <summary>
+        /// Toggle visibility in the bottom compliance / legal bar row beside copyright.
+        /// Completely independent from category or column placement.
+        /// </summary>
+        [Display(Name = "Show In Footer Bottom")]
+        public bool ShowInFooterBottom { get; set; } = false;
+
+        /// <summary>
+        /// Explicit sorting position in the bottom compliance / footer bottom bar row.
+        /// </summary>
+        [Display(Name = "Footer Bottom Sort Order")]
+        public int FooterBottomSortOrder { get; set; } = 0;
+
+        /// <summary>
         /// Flags this page as an official legal compliance document (e.g., Privacy Policy, Terms &amp; Conditions, Cookie Policy).
-        /// Legal documents are surfaced to {{#each LegalPages}} and legal tokens in footer bottom bars.
+        /// Retained for backward compatibility with {{#each LegalPages}} tokens.
         /// </summary>
         [Display(Name = "Is Legal Document")]
         public bool IsLegal { get; set; } = false;

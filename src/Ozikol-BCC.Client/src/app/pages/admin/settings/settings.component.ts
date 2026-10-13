@@ -168,6 +168,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <textarea [(ngModel)]="brand.companyDescription" rows="2" class="form-control" placeholder="Brief statement displayed in metadata and portal footers..."></textarea>
             </div>
 
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="form-label">
+                <span>Website Footer Note / Brand Bio</span>
+                <span class="field-hint" style="font-weight: normal; margin-left: 8px;">(Displayed prominently in the public website footer under the brand logo)</span>
+              </label>
+              <textarea [(ngModel)]="brand.footerDescription" rows="3" class="form-control" placeholder="Detailed brand story or institutional mission statement displayed in your live website footer..."></textarea>
+            </div>
+
             <div class="form-row-2">
               <div class="form-group">
                 <label class="form-label">Website Browser Title</label>
@@ -2593,6 +2601,7 @@ export class SettingsComponent implements OnInit {
     companyName: '',
     companyNameAbbreviation: '',
     companyDescription: '',
+    footerDescription: '',
     companyWebsiteLink: '',
     websiteTitle: '',
     dashboardTitle: '',

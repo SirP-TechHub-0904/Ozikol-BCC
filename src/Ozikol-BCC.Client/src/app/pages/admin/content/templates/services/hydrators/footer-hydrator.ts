@@ -191,12 +191,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   });
 
   // 5. Social Media Channels Loop: {{#each SocialLinks}}
-  const rawSocials = (ctx.socialLinks && ctx.socialLinks.length > 0) ? ctx.socialLinks : [
-    { platform: 'Twitter / X', title: 'Twitter / X', url: 'https://twitter.com', icon: 'share', iconClass: 'fa-brands fa-x-twitter' },
-    { platform: 'LinkedIn', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'public', iconClass: 'fa-brands fa-linkedin-in' },
-    { platform: 'Facebook', title: 'Facebook', url: 'https://facebook.com', icon: 'thumb_up', iconClass: 'fa-brands fa-facebook-f' },
-    { platform: 'Instagram', title: 'Instagram', url: 'https://instagram.com', icon: 'photo_camera', iconClass: 'fa-brands fa-instagram' }
-  ];
+  const rawSocials = ctx.socialLinks || [];
 
   const socialMatcher = (openTag: string) => {
     return /^\{\{#each\s+SocialLinks\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -217,11 +212,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   });
 
   // 5b. Structured Contact Items Loops: {{#each ContactItems}}, {{#each ContactChannels}}
-  const rawContactItems = (ctx.contactItems && ctx.contactItems.length > 0) ? ctx.contactItems : [
-    { type: 'phone', channelType: 'Phone', platform: 'Support', title: 'Call Us', description: 'Mon-Fri 8am-6pm', value: ctx.phone || '+1 (555) 019-2834', content: ctx.phone || '+1 (555) 019-2834', url: `tel:${(ctx.phone || '+15550192834').replace(/[^0-9+]/g, '')}`, icon: 'call', iconClass: 'fa-solid fa-phone', isDefault: true },
-    { type: 'email', channelType: 'Email', platform: 'General', title: 'Email Us', description: 'Online Inquiries', value: ctx.email || 'contact@example.com', content: ctx.email || 'contact@example.com', url: `mailto:${ctx.email || 'contact@example.com'}`, icon: 'mail', iconClass: 'fa-solid fa-envelope', isDefault: true },
-    { type: 'address', channelType: 'Address', platform: 'HQ', title: 'Headquarters', description: 'Corporate Office', value: ctx.address || '1200 Innovation Way, Suite 400', content: ctx.address || '1200 Innovation Way, Suite 400', url: '#', icon: 'location_on', iconClass: 'fa-solid fa-location-dot', isDefault: true }
-  ];
+  const rawContactItems = ctx.contactItems || [];
 
   const contactItemsMatcher = (openTag: string) => {
     return /^\{\{#each\s+(?:ContactItems|ContactChannels)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -251,12 +242,7 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   });
 
   // 6. Legal Policy Pages Loop: {{#each LegalPages}}
-  const rawLegal = ctx.legalPages || [
-    { title: 'Privacy Policy', url: '/privacy-policy' },
-    { title: 'Terms of Service', url: '/terms-and-conditions' },
-    { title: 'Security & SLA', url: '/security' },
-    { title: 'Cookie Policy', url: '/cookie-policy' }
-  ];
+  const rawLegal = ctx.legalPages || [];
 
   const legalMatcher = (openTag: string) => {
     return /^\{\{#each\s+LegalPages\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
@@ -277,8 +263,8 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   const hasPhone = Boolean(ctx.phone && ctx.phone.trim().length > 0);
   const hasAddress = Boolean(ctx.address && ctx.address.trim().length > 0);
   const hasWorkingHours = Boolean(ctx.workingHours && ctx.workingHours.trim().length > 0);
-  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress || (ctx.contactItems && ctx.contactItems.length > 0)));
-  const hasSocial = Boolean(ctx.hasSocialLinks ?? ((ctx.socialLinks && ctx.socialLinks.length > 0) || true));
+  const hasContact = Boolean(ctx.hasContactInfo ?? (hasEmail || hasPhone || hasAddress || rawContactItems.length > 0));
+  const hasSocial = Boolean(ctx.hasSocialLinks ?? (rawSocials.length > 0));
 
   output = resolveDepthAwareIf(output, 'HasContactInfo', hasContact);
   output = resolveDepthAwareIf(output, 'HasSocialLinks', hasSocial);
@@ -286,25 +272,25 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
   output = resolveDepthAwareIf(output, 'Phone', hasPhone);
   output = resolveDepthAwareIf(output, 'Address', hasAddress);
   output = resolveDepthAwareIf(output, 'WorkingHours', hasWorkingHours);
-  output = resolveDepthAwareIf(output, 'Description', Boolean(ctx.description && ctx.description.trim().length > 0));
-
   const currentYear = new Date().getFullYear().toString();
-  const brandName = ctx.brandName || 'Apex Global';
+  const brandName = ctx.brandName || '';
   const logoUrl = (ctx.brandLogo || ctx.logoUrl || '').trim();
+  const effectiveDesc = ctx.description || (ctx as any)['tagline'] || '';
+  output = resolveDepthAwareIf(output, 'Description', Boolean(effectiveDesc && effectiveDesc.trim().length > 0));
 
   output = resolveDepthAwareIf(output, 'BrandLogo', Boolean(logoUrl.length > 0));
   output = resolveDepthAwareIf(output, 'LogoUrl', Boolean(logoUrl.length > 0));
 
   const brandIdentityHtml = (logoUrl.length > 0)
     ? `<img src="${logoUrl}" alt="${brandName}" class="oz-footer-brand-logo" />`
-    : `<span class="oz-footer-brand-text">${brandName}</span>`;
+    : (brandName ? `<span class="oz-footer-brand-text">${brandName}</span>` : '');
 
   output = output.replace(/\{\{\s*(?:BrandIdentity|BrandLogoOrName)\s*\}\}/gi, brandIdentityHtml);
   output = output.replace(/\{\{\s*(?:BrandLogo|LogoUrl)\s*\}\}/gi, logoUrl);
   output = output.replace(/\{\{\s*BrandName\s*\}\}/gi, brandName);
   output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
-  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `© ${currentYear} ${brandName}. All rights reserved.`);
-  output = output.replace(/\{\{\s*Description\s*\}\}/gi, ctx.description || 'Empowering enterprise workloads with global scale, sub-millisecond resilience, and autonomous cloud pipelines.');
+  output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || (brandName ? `© ${currentYear} ${brandName}. All rights reserved.` : `© ${currentYear}. All rights reserved.`));
+  output = output.replace(/\{\{\s*Description\s*\}\}/gi, effectiveDesc);
   output = output.replace(/\{\{\s*ContactUrl\s*\}\}/gi, (ctx as any).contactUrl || '/contact');
 
   // 8. Replace Brand Scalars & CustomClass
