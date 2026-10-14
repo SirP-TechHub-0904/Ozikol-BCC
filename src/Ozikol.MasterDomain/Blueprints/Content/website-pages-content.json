@@ -984,6 +984,28 @@
           "lists": []
         }
       ]
+    },
+    {
+      "sortOrder": 4,
+      "title": "Sign In",
+      "slug": "login",
+      "metaTitle": "Sign In - Member & Administrative Console",
+      "metaDescription": "Secure single sign-on access to administrative and member portals.",
+      "menuPosition": "header",
+      "zone": "last",
+      "category": null,
+      "enableDirectUrl": true,
+      "directUrl": "/auth/login",
+      "isMenuCTA": true,
+      "menuCtaText": "Sign In",
+      "menuCtaUrl": "/auth/login",
+      "menuCtaStyle": "primary",
+      "showInMainMenu": false,
+      "showInFooter": false,
+      "showInFooterBottom": true,
+      "footerBottomSortOrder": 10,
+      "isPublished": true,
+      "sections": []
     }
   ]
 }

@@ -613,21 +613,19 @@ export class TemplateHydrationService {
       }).join('\n');
     });
 
-    // 4. Loop over {{#each LegalPages}}...{{/each}}
-    const legalRegex = /\{\{#each\s+LegalPages\}\}([\s\S]*?)\{\{\/each\}\}/gi;
+    // 4. Loop over {{#each FooterBottomPages}}...{{/each}} or {{#each LegalPages}}...{{/each}}
+    const legalRegex = /\{\{#each\s+(?:FooterBottomPages|LegalPages)\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(legalRegex, (_match, innerTemplate) => {
       let pages: any[] = [];
-      const legals = ctx.legalPages || opts.editorTokens?.legalPages || opts.previewFooterContent?.legalPages;
-      if (legals && Array.isArray(legals) && legals.length > 0) {
-        pages = legals.filter((lp: any) =>
-          (lp.publish === undefined || lp.publish === true) &&
-          (lp.showInFooter === undefined || lp.showInFooter === true)
+      const bottomPages = (ctx as any).footerBottomPages || ctx.legalPages || opts.editorTokens?.footerBottomPages || opts.editorTokens?.legalPages || opts.previewFooterContent?.footerBottomPages || opts.previewFooterContent?.legalPages;
+      if (bottomPages && Array.isArray(bottomPages) && bottomPages.length > 0) {
+        pages = bottomPages.filter((lp: any) =>
+          (lp.publish === undefined || lp.publish === true)
         );
       } else if (opts.availablePages && Array.isArray(opts.availablePages)) {
         pages = opts.availablePages.filter((p: any) =>
           p.publish !== false &&
-          p.showInFooter !== false &&
-          p.isLegal === true
+          (p.showInFooterBottom === true || p.isLegal === true)
         );
       }
 
@@ -635,7 +633,8 @@ export class TemplateHydrationService {
         pages = [
           { title: 'Privacy Policy', url: '/privacy-policy' },
           { title: 'Terms of Service', url: '/terms-and-conditions' },
-          { title: 'Cookie Policy', url: '/cookie-policy' }
+          { title: 'Cookie Policy', url: '/cookie-policy' },
+          { title: 'Sign In', url: '/auth/login' }
         ];
       }
 
@@ -643,6 +642,7 @@ export class TemplateHydrationService {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, lp.title || '');
         rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, lp.url || '#');
+        rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, lp.customClass || '');
         return rendered;
       }).join('\n');
     });

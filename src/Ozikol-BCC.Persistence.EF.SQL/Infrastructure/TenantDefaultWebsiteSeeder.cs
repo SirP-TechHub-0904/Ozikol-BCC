@@ -33,7 +33,7 @@ public static class TenantDefaultWebsiteSeeder
         var setting = await context.MisWebsiteSettings.FirstOrDefaultAsync(cancellationToken);
         string orgName = !string.IsNullOrWhiteSpace(organizationName)
             ? organizationName.Trim()
-            : (setting?.BrandName ?? "Our Firm");
+            : (setting?.BrandName ?? string.Empty);
         string abbrev = setting?.CompanyNameAbbreviation ?? "OZI";
 
         // =========================================================================
@@ -184,7 +184,9 @@ public static class TenantDefaultWebsiteSeeder
 
             foreach (var p in pageBlueprints)
             {
-                var directUrl = string.IsNullOrWhiteSpace(p.Slug) ? "home" : p.Slug.Trim();
+                var directUrl = !string.IsNullOrWhiteSpace(p.DirectUrl)
+                    ? p.DirectUrl.Trim()
+                    : (string.IsNullOrWhiteSpace(p.Slug) ? "home" : p.Slug.Trim());
                 var isHome = string.IsNullOrWhiteSpace(p.Slug) || directUrl.Equals("home", StringComparison.OrdinalIgnoreCase);
 
                 // 1. Dynamic category resolution by title from database
@@ -220,14 +222,14 @@ public static class TenantDefaultWebsiteSeeder
                 bool showInTopBar = isTopBar;
                 int topBarOrder = isTopBar ? p.SortOrder : 0;
 
-                bool showInMain = !isHome && !isCta && !isLegalDoc && categoryId == null && isHeader;
+                bool showInMain = p.ShowInMainMenu ?? (!isHome && !isCta && !isLegalDoc && categoryId == null && isHeader);
                 int mainOrder = showInMain ? p.SortOrder : 0;
 
                 bool showInDropdown = !isCta && !isLegalDoc && categoryId != null;
                 int dropdownOrder = showInDropdown ? p.SortOrder : 0;
 
-                bool showInFooterBottom = isLegalDoc || isFooter;
-                int footerBottomOrder = showInFooterBottom ? p.SortOrder : 0;
+                bool showInFooterBottom = p.ShowInFooterBottom || isLegalDoc || isFooter;
+                int footerBottomOrder = p.FooterBottomSortOrder != 0 ? p.FooterBottomSortOrder : (showInFooterBottom ? p.SortOrder : 0);
 
                 string? pageTags = p.Tags;
                 bool showInFooter = p.ShowInFooter ?? (!isCta && !showInFooterBottom && (categoryId != null || isHeader || !string.IsNullOrWhiteSpace(pageTags)));
@@ -251,14 +253,14 @@ public static class TenantDefaultWebsiteSeeder
                     FooterBottomSortOrder = footerBottomOrder,
                     IsLegal = isLegalDoc,
                     Tags = pageTags,
-                    EnableDirectUrl = true,
+                    EnableDirectUrl = p.EnableDirectUrl || true,
                     Publish = p.IsPublished,
                     SortOrder = p.SortOrder,
                     PageCategoryId = categoryId,
                     MenuPosition = zonePos,
                     IsMenuCTA = isCta,
-                    MenuCtaText = isCta ? p.Title : null,
-                    MenuCtaUrl = isCta ? ("/" + directUrl) : null,
+                    MenuCtaText = isCta ? (p.MenuCtaText ?? p.Title) : null,
+                    MenuCtaUrl = isCta ? (p.MenuCtaUrl ?? ("/" + directUrl)) : null,
                     MenuCtaStyle = p.MenuCtaStyle ?? "primary"
                 };
 

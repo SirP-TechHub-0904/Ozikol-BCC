@@ -75,8 +75,8 @@
     <div class="oz-footer-bottom">
       <p class="oz-footer-copyright">© {{ Year }} {{ BrandName }}. All rights reserved.</p>
       <div class="oz-footer-legal-links">
-        {{#each LegalPages}}
-        <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+        {{#each FooterBottomPages}}
+        <a href="{{ Url }}" class="oz-footer-legal-link {{ CustomClass }}">{{ Title }}</a>
         {{/each}}
         <span class="oz-footer-powered-by">Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>.</span>
       </div>

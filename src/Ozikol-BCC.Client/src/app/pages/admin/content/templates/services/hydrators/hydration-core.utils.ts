@@ -178,7 +178,14 @@ export interface HydrationContext {
   }>;
   workingHours?: string;
 
-  // Legal Pages
+  // Footer Bottom & Legal Pages
+  footerBottomPages?: Array<{
+    title: string;
+    url: string;
+    sortOrder?: number;
+    publish?: boolean;
+    customClass?: string;
+  }>;
   legalPages?: Array<{
     title: string;
     url: string;

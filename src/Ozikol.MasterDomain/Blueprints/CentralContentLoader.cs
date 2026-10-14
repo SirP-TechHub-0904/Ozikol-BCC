@@ -621,6 +621,41 @@ public class WebPageBlueprint
     public string? MenuCtaStyle { get; set; }
 
     /// <summary>
+    /// Gets or sets whether direct internal or external URL routing is enabled.
+    /// </summary>
+    public bool EnableDirectUrl { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the direct destination URL route (e.g. "/auth/login").
+    /// </summary>
+    public string? DirectUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets custom text for the Menu CTA button.
+    /// </summary>
+    public string? MenuCtaText { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target URL for the Menu CTA button.
+    /// </summary>
+    public string? MenuCtaUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to display as a standalone link in the main navigation menu.
+    /// </summary>
+    public bool? ShowInMainMenu { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to display in the bottom compliance / footer bottom bar.
+    /// </summary>
+    public bool ShowInFooterBottom { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets explicit sort order in the footer bottom bar.
+    /// </summary>
+    public int FooterBottomSortOrder { get; set; } = 0;
+
+    /// <summary>
     /// Gets or sets whether the page is published publicly.
     /// </summary>
     public bool IsPublished { get; set; } = true;

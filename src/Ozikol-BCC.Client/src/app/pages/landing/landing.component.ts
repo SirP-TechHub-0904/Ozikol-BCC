@@ -30,7 +30,6 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     <div *ngIf="loading" class="public-site-loader">
       <div class="loader-inner">
         <div class="spinner-ring"></div>
-        <p class="loader-text">Finalizing setup... Preparing {{ brandName || 'your website' }}</p>
       </div>
     </div>
 
@@ -83,13 +82,6 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       border-top-color: #0050e5;
       border-radius: 50%;
       animation: spin 0.85s linear infinite;
-      margin-bottom: 16px;
-    }
-    .loader-text {
-      color: #64748b;
-      font-size: 14.5px;
-      font-weight: 500;
-      letter-spacing: -0.01em;
       margin: 0;
     }
     @keyframes spin {
@@ -205,7 +197,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   activeBlogId: string | null = null;
 
   // Tenant Live Content & Theme Architecture
-  brandName: string = 'Organization';
+  brandName: string = '';
   brandLogoUrl: string = '';
   brandInfo: any = {};
   recaptchaSiteKey: string = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
@@ -935,16 +927,10 @@ export class LandingComponent implements OnInit, OnDestroy {
    * every article has a valid cover image, direct URL, author, and formatted date.
    */
   private mapBlogArticles(blogs: any[]): any[] {
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80'
-    ];
-
-    return (blogs || []).map((b, idx) => {
-      const cover = b.imageUrl || b.coverImageUrl || defaultImages[idx % defaultImages.length];
-      const pubDate = b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
-      const categoryName = b.blogCategory?.categoryName || b.blogCategory?.title || b.categoryName || 'General';
+    return (blogs || []).map((b) => {
+      const cover = b.imageUrl || b.coverImageUrl || '';
+      const pubDate = b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      const categoryName = b.blogCategory?.categoryName || b.blogCategory?.title || b.categoryName || '';
       const summaryText = b.description || b.summary || b.excerpt || '';
       const articleUrl = `/blog/${b.id}`;
 
@@ -964,10 +950,10 @@ export class LandingComponent implements OnInit, OnDestroy {
         Date: pubDate,
         publishedDate: pubDate,
         PublishedDate: pubDate,
-        author: b.author || 'Staff Writer',
-        Author: b.author || 'Staff Writer',
-        authorName: b.author || 'Staff Writer',
-        AuthorName: b.author || 'Staff Writer',
+        author: b.author || b.authorName || '',
+        Author: b.author || b.authorName || '',
+        authorName: b.author || b.authorName || '',
+        AuthorName: b.author || b.authorName || '',
         imageUrl: cover,
         ImageUrl: cover,
         coverImageUrl: cover,
@@ -1734,30 +1720,22 @@ export class LandingComponent implements OnInit, OnDestroy {
         customClass: p.customClass || ''
       }));
 
-    // 4. CTA Buttons: Live CTA pages or fallback to standard CTA buttons
-    const liveCtaButtons = (this.publishedPages || [])
-      .filter(p => p.isMenuCTA && p.publish !== false)
-      .map(p => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`,
-        buttonClass: p.buttonClass || 'oz-btn-primary',
-        customClass: p.customClass || ''
-      }));
-
-    const menuCtaButtons = liveCtaButtons.length > 0 ? liveCtaButtons : [
-      {
-        title: loginText,
-        url: loginUrl,
-        buttonClass: 'oz-btn-ghost',
-        customClass: 'oz-login-cta'
-      },
-      {
-        title: 'Get Started',
-        url: '/request-service',
-        buttonClass: 'oz-btn-primary',
-        customClass: ''
-      }
-    ];
+    // 4. CTA Buttons: Driven purely from publishedPages where isMenuCTA is true
+    const menuCtaButtons = (this.publishedPages || [])
+      .filter(p => (p.isMenuCTA || p.IsMenuCTA) && p.publish !== false && p.Publish !== false)
+      .sort((a, b) => (a.sortOrder || a.SortOrder || 0) - (b.sortOrder || b.SortOrder || 0))
+      .map(p => {
+        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const ctaTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.menuCtaText || p.MenuCtaText || p.title || p.Title || '');
+        const ctaUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : (p.menuCtaUrl || p.MenuCtaUrl || `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`);
+        const ctaStyle = p.menuCtaStyle || p.MenuCtaStyle || p.buttonClass || (isAuthDirect ? 'oz-btn-ghost' : 'oz-btn-primary');
+        return {
+          title: ctaTitle,
+          url: ctaUrl,
+          buttonClass: ctaStyle.startsWith('oz-btn-') ? ctaStyle : `oz-btn-${ctaStyle}`,
+          customClass: p.customClass || p.CustomClass || (isAuthDirect ? 'oz-login-cta' : '')
+        };
+      });
 
     const channels: any[] = this.brandInfo?.contactChannels || [];
     const defaultEmailChannel = channels.find((c: any) => c.channelType?.toLowerCase() === 'email' && c.isDefault) || channels.find((c: any) => c.channelType?.toLowerCase() === 'email');
@@ -1909,19 +1887,21 @@ export class LandingComponent implements OnInit, OnDestroy {
         };
       });
 
-    const legalPages = (this.publishedPages || [])
-      .filter(p => p.isLegal && p.publish !== false)
-      .map(p => ({
-        title: p.title || p.Title || '',
-        url: `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`
-      }));
-
-    if (isLoginActive && isLoginInFooter) {
-      legalPages.push({
-        title: loginText,
-        url: loginUrl
+    const footerBottomPages = (this.publishedPages || [])
+      .filter(p => (p.showInFooterBottom || p.ShowInFooterBottom || p.isLegal || p.IsLegal) && p.publish !== false && p.Publish !== false)
+      .sort((a, b) => (a.footerBottomSortOrder || a.FooterBottomSortOrder || a.sortOrder || a.SortOrder || 0) - (b.footerBottomSortOrder || b.FooterBottomSortOrder || b.sortOrder || b.SortOrder || 0))
+      .map(p => {
+        const isAuthDirect = (p.directUrl || p.slug || '').toLowerCase().includes('login') || (p.title || '').toLowerCase().includes('sign in');
+        const itemTitle = isAuthDirect && authed ? (isAdmin ? 'Admin Console' : 'Member Portal') : (p.title || p.Title || '');
+        const itemUrl = isAuthDirect && authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : `/${(p.directUrl || p.slug || '').replace(/^\/+/, '')}`;
+        return {
+          title: itemTitle,
+          url: itemUrl,
+          customClass: p.customClass || p.CustomClass || ''
+        };
       });
-    }
+
+    const legalPages = footerBottomPages;
 
     const currentYear = new Date().getFullYear().toString();
     const footerChannels: any[] = this.brandInfo?.contactChannels || [];
@@ -2003,6 +1983,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       footerCategories: footerCategories,
       categories: footerCategories,
       legalPages: legalPages,
+      LegalPages: legalPages,
+      footerBottomPages: footerBottomPages,
+      FooterBottomPages: footerBottomPages,
       socialLinks: footerSocialLinks,
       SocialLinks: footerSocialLinks,
       hasSocialLinks: footerSocialLinks.length > 0,

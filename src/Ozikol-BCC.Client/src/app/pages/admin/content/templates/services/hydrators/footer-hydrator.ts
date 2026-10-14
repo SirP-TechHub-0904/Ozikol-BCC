@@ -234,15 +234,15 @@ export function hydrateFooter(template: string, ctx: HydrationContext): string {
     return renderFooterContactItemsList(addresses, innerTemplate);
   });
 
-  // 6. Legal Policy Pages Loop: {{#each LegalPages}}
-  const rawLegal = ctx.legalPages || [];
+  // 6. Footer Bottom / Legal Policy Pages Loop: {{#each FooterBottomPages}} & {{#each LegalPages}}
+  const rawBottomPages = ctx.footerBottomPages || ctx.legalPages || [];
 
-  const legalMatcher = (openTag: string) => {
-    return /^\{\{#each\s+LegalPages\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
+  const bottomPagesMatcher = (openTag: string) => {
+    return /^\{\{#each\s+(?:FooterBottomPages|LegalPages)\b[^}]*\}\}/i.test(openTag) ? { matched: true } : null;
   };
 
-  output = replaceDepthAwareEach(output, legalMatcher, (innerTemplate) => {
-    return rawLegal.map(page => {
+  output = replaceDepthAwareEach(output, bottomPagesMatcher, (innerTemplate) => {
+    return rawBottomPages.map(page => {
       let rendered = innerTemplate;
       rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, page.title || '');
       rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, page.url || '#');
