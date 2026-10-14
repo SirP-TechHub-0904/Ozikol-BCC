@@ -28,18 +28,16 @@
           </div>
 
           <div class="header-actions">
-            <div class="action-btn-item">
-              <button
-                type="button"
-                class="btn btn-import-website btn-disabled"
-                disabled
-                title="Import Website — Coming Soon"
-              >
-                <span class="material-symbols-outlined btn-icon">cloud_download</span>
-                <span>Import Website</span>
-              </button>
-              <span class="coming-soon-label">Coming Soon</span>
-            </div>
+            <button
+              type="button"
+              class="btn btn-import-website btn-disabled"
+              disabled
+              title="Import Website — Coming Soon"
+            >
+              <span class="material-symbols-outlined btn-icon">cloud_download</span>
+              <span>Import Website</span>
+              <span class="badge-soon">Soon</span>
+            </button>
 
             <a
               routerLink="/content/console/templates/visuals"
@@ -68,24 +66,21 @@
               (click)="openReinstallDefaultsModal()"
               [disabled]="reinstallingDefaults"
               title="Install turnkey default Corporate Suite blueprints and 10 body sections into database"
-              style="background: #059669; color: #ffffff; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);"
             >
               <span class="material-symbols-outlined btn-icon">restart_alt</span>
               <span>Install Default Suite</span>
             </button>
 
-            <div class="action-btn-item">
-              <button
-                type="button"
-                class="btn btn-primary-market btn-disabled"
-                disabled
-                title="Explore Marketplace — Coming Soon"
-              >
-                <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
-                <span>Explore Marketplace (36+)</span>
-              </button>
-              <span class="coming-soon-label">Coming Soon</span>
-            </div>
+            <button
+              type="button"
+              class="btn btn-primary-market btn-disabled"
+              disabled
+              title="Explore Marketplace — Coming Soon"
+            >
+              <span class="material-symbols-outlined btn-icon">add_shopping_cart</span>
+              <span>Explore Marketplace</span>
+              <span class="badge-soon">Soon</span>
+            </button>
 
             <button
               type="button"
@@ -93,26 +88,22 @@
               (click)="runAiWebsiteHealthCheck()"
               [disabled]="isDiagnosingWebsite"
               title="Run deep AI diagnostic on website scripts, fonts, CORS headers, and active template integrity"
-              style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);"
             >
-              <span class="material-symbols-outlined btn-icon" style="font-size: 18px;">health_and_safety</span>
+              <span class="material-symbols-outlined btn-icon">health_and_safety</span>
               <span *ngIf="!isDiagnosingWebsite">Inspect &amp; Debug Website</span>
               <span *ngIf="isDiagnosingWebsite">Diagnosing...</span>
             </button>
 
-            <!-- Direct Link to Dedicated Maintenance Page -->
-            <div class="action-btn-item">
-              <button
-                type="button"
-                class="btn btn-vault-settings-trigger btn-disabled"
-                disabled
-                title="Template Vault Maintenance — Coming Soon"
-              >
-                <span class="material-symbols-outlined btn-icon">tune</span>
-                <span>Maintenance</span>
-              </button>
-              <span class="coming-soon-label">Coming Soon</span>
-            </div>
+            <button
+              type="button"
+              class="btn btn-vault-settings-trigger btn-disabled"
+              disabled
+              title="Template Vault Maintenance — Coming Soon"
+            >
+              <span class="material-symbols-outlined btn-icon">tune</span>
+              <span>Maintenance</span>
+              <span class="badge-soon">Soon</span>
+            </button>
           </div>
         </div>
       </div>
