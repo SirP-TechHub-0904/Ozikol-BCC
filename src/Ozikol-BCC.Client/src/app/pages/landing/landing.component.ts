@@ -183,6 +183,14 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       opacity: 0.65;
       cursor: not-allowed;
     }
+    .oz-recaptcha-wrap {
+      display: flex;
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+    .oz-recaptcha-wrap .g-recaptcha {
+      transform-origin: 0 0;
+    }
 
     /* Universal Dropdown Click-to-Show Architecture */
     .oz-dropdown > .oz-dropdown-menu {
@@ -216,6 +224,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   brandName: string = 'Organization';
   brandLogoUrl: string = '';
   brandInfo: any = {};
+  recaptchaSiteKey: string = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
   activeTemplates: any[] = [];
   categories: any[] = [];
   publishedPages: any[] = [];
@@ -381,6 +390,9 @@ export class LandingComponent implements OnInit, OnDestroy {
             };
             this.brandName = data.brandName || data.companyName || data.siteTitle || this.brandName;
             this.brandLogoUrl = data.logoUrl || data.companyLogoUrl || data.whiteLogoUrl || this.brandLogoUrl;
+            if (data.recaptchaSiteKey) {
+              this.recaptchaSiteKey = data.recaptchaSiteKey;
+            }
             this.applyFavicon(data.faviconUrl || data.companyIconUrl);
           }
           // 2. Also attempt to fetch full SettingsApi/brand if available
@@ -2292,6 +2304,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     // after Angular has mounted the elements into the DOM tree
     setTimeout(() => {
       this.injectCodeTags(combinedJs);
+      this.initRecaptchas();
     }, 50);
   }
 
@@ -2490,11 +2503,58 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Dynamically loads Google reCAPTCHA script tag if not yet present in the document.
+   */
+  private loadRecaptchaScript(): void {
+    if (document.getElementById('google-recaptcha-script')) {
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-recaptcha-script';
+    script.src = 'https://www.google.com/recaptcha/api.js';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  /**
+   * Discovers all .g-recaptcha containers on the rendered page and renders or assigns the site key.
+   */
+  private initRecaptchas(): void {
+    this.loadRecaptchaScript();
+
+    setTimeout(() => {
+      try {
+        const root = this.elementRef.nativeElement;
+        const recaptchaContainers = root.querySelectorAll('.g-recaptcha');
+        recaptchaContainers.forEach((container: HTMLElement) => {
+          if (!container.getAttribute('data-sitekey') || container.getAttribute('data-sitekey') === '') {
+            container.setAttribute('data-sitekey', this.recaptchaSiteKey);
+          }
+          const grecaptcha = (window as any).grecaptcha;
+          if (grecaptcha && typeof grecaptcha.render === 'function' && container.children.length === 0) {
+            try {
+              grecaptcha.render(container, {
+                sitekey: this.recaptchaSiteKey
+              });
+            } catch (renderErr) {
+              // Ignore if already initialized
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('reCAPTCHA init deferred:', e);
+      }
+    }, 300);
+  }
+
+  /**
    * Submits a public interactive form (e.g., Contact Us, Newsletter, Service Request)
    * to WebsiteContentApi/forms/{formKey}/submit.
    */
   private submitDynamicForm(form: HTMLFormElement, submitBtn: HTMLElement): void {
-    const formKey = form.getAttribute('data-form-key') || form.id || 'contact-us';
+    const rawKey = form.getAttribute('data-form-key') || form.id || 'Contact_Us';
+    const formKey = rawKey.trim();
     const formData = new FormData(form);
     const dataPayload: Record<string, any> = {};
 
@@ -2502,12 +2562,33 @@ export class LandingComponent implements OnInit, OnDestroy {
       dataPayload[key] = value;
     });
 
+    // Also collect all named inputs directly to support dynamically hydrated forms without standard form submit
+    const inputs = form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select');
+    inputs.forEach(inp => {
+      const name = inp.getAttribute('name') || inp.id;
+      if (name && inp.value !== undefined && dataPayload[name] === undefined) {
+        dataPayload[name] = inp.value;
+      }
+    });
+
+    // Retrieve Google reCAPTCHA response token from form inputs or global grecaptcha
+    let recaptchaToken = (dataPayload['g-recaptcha-response'] as string) || '';
+    if (!recaptchaToken) {
+      const grecaptcha = (window as any).grecaptcha;
+      if (grecaptcha && typeof grecaptcha.getResponse === 'function') {
+        try {
+          recaptchaToken = grecaptcha.getResponse() || '';
+        } catch {}
+      }
+    }
+
     const originalText = submitBtn.innerHTML;
     submitBtn.setAttribute('disabled', 'true');
     submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Submitting...`;
 
     this.apiService.post(`WebsiteContentApi/forms/${formKey}/submit`, {
       data: dataPayload,
+      recaptchaToken: recaptchaToken,
       sourcePageUrl: window.location.pathname
     }).subscribe({
       next: (res: any) => {
@@ -2516,12 +2597,18 @@ export class LandingComponent implements OnInit, OnDestroy {
         const successMsg = res?.message || 'Thank you! Your submission has been received.';
         this.toastService.success(successMsg);
         form.reset();
+        try {
+          (window as any).grecaptcha?.reset();
+        } catch {}
       },
       error: (err: any) => {
         submitBtn.removeAttribute('disabled');
         submitBtn.innerHTML = originalText;
         const errorMsg = err?.error?.message || 'Unable to submit your request. Please check all fields.';
         this.toastService.error(errorMsg);
+        try {
+          (window as any).grecaptcha?.reset();
+        } catch {}
       }
     });
   }

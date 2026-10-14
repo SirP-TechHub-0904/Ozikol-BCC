@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -20,10 +21,12 @@ namespace Ozikol_BCC.Api.Controllers
     public class WebsiteContentApiController : ControllerBase
     {
         private readonly DashboardDbContext _context;
+        private readonly IRecaptchaService _recaptchaService;
 
-        public WebsiteContentApiController(DashboardDbContext context)
+        public WebsiteContentApiController(DashboardDbContext context, IRecaptchaService recaptchaService)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _recaptchaService = recaptchaService ?? throw new ArgumentNullException(nameof(recaptchaService));
         }
 
         // ==========================================
@@ -372,7 +375,25 @@ namespace Ozikol_BCC.Api.Controllers
         /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
         /// </summary>
         /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "newsletter", "service-request").</param>
-        /// <returns>Form schema and ordered interactive fields.</returns>
+        /// <summary>
+        /// Retrieves the public Google reCAPTCHA site key for client form rendering.
+        /// </summary>
+        [HttpGet("recaptcha-config")]
+        public IActionResult GetRecaptchaConfig()
+        {
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                siteKey = _recaptchaService.SiteKey
+            }, "Google reCAPTCHA configuration retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves public schema and field definitions for an active website form.
+        /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
+        /// Normalizes hyphens, underscores, and canonical form keys.
+        /// </summary>
+        /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "Contact_Us", "newsletter", "service-request").</param>
+        /// <returns>Form schema, ordered interactive fields, and reCAPTCHA site key.</returns>
         [HttpGet("forms/{formKey}")]
         public async Task<IActionResult> GetPublicFormByKey(string formKey)
         {
@@ -381,15 +402,10 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse.FailureResponse("Form key is required."));
             }
 
-            var cleanKey = formKey.Trim().ToLowerInvariant();
-            var form = await _context.PageForms
-                .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
-
+            var form = await FindMatchingFormAsync(formKey);
             if (form == null)
             {
-                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+                return NotFound(ApiResponse.FailureResponse($"Active form '{formKey.Trim()}' was not found."));
             }
 
             var publicForm = new
@@ -400,6 +416,7 @@ namespace Ozikol_BCC.Api.Controllers
                 form.Description,
                 form.SubmitButtonText,
                 form.SuccessMessage,
+                recaptchaSiteKey = _recaptchaService.SiteKey,
                 Fields = form.Fields.OrderBy(fl => fl.SortOrder).Select(fl => new
                 {
                     fl.Id,
@@ -420,10 +437,10 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Submits visitor input to an active dynamic website form.
-        /// Validates required fields, stores the payload, captures visitor telemetry, and returns the custom success message.
+        /// Validates Google reCAPTCHA challenge, required fields, maps synonyms, captures visitor telemetry, and returns success message.
         /// </summary>
         /// <param name="formKey">The programmatic key of the form to submit to.</param>
-        /// <param name="payload">Visitor submitted key-value data and optional referral/source URL.</param>
+        /// <param name="payload">Visitor submitted key-value data, reCAPTCHA token, and source URL.</param>
         /// <returns>Confirmation and custom form success message.</returns>
         [HttpPost("forms/{formKey}/submit")]
         public async Task<IActionResult> SubmitPublicForm(string formKey, [FromBody] PublicFormSubmissionPayload payload)
@@ -433,25 +450,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse.FailureResponse("Form key is required."));
             }
 
-            var cleanKey = formKey.Trim().ToLowerInvariant();
-            var form = await _context.PageForms
-                .Include(f => f.Fields)
-                .FirstOrDefaultAsync(f => f.FormKey == cleanKey && f.IsActive);
-
+            var form = await FindMatchingFormAsync(formKey);
             if (form == null)
             {
-                return NotFound(ApiResponse.FailureResponse($"Active form '{cleanKey}' was not found."));
+                return NotFound(ApiResponse.FailureResponse($"Active form '{formKey.Trim()}' was not found."));
             }
 
             var data = payload?.Data ?? new Dictionary<string, object>();
 
-            // Validate all required fields
+            // 1. Google reCAPTCHA Verification
+            var recaptchaToken = payload?.RecaptchaToken;
+            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
+            {
+                recaptchaToken = gToken.ToString();
+            }
+            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
+            {
+                recaptchaToken = rToken.ToString();
+            }
+
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
+            if (!isCaptchaValid)
+            {
+                return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
+            }
+
+            // 2. Validate all required fields with synonym support
             var missingRequiredFields = new List<string>();
             foreach (var field in form.Fields.Where(f => f.IsRequired))
             {
-                if (!data.TryGetValue(field.FieldKey, out var val) || val == null || string.IsNullOrWhiteSpace(val.ToString()))
+                var val = ResolveFieldValue(field.FieldKey, data);
+                if (val == null || string.IsNullOrWhiteSpace(val.ToString()))
                 {
                     missingRequiredFields.Add(field.Label);
+                }
+                else
+                {
+                    // Ensure canonical key is populated in data payload
+                    data[field.FieldKey] = val;
                 }
             }
 
@@ -461,6 +498,10 @@ namespace Ozikol_BCC.Api.Controllers
                     $"Please fill in all required fields: {string.Join(", ", missingRequiredFields)}"));
             }
 
+            // Remove reCAPTCHA token from persistent submission data if present to keep records clean
+            data.Remove("g-recaptcha-response");
+            data.Remove("recaptchaToken");
+
             var submission = new PageFormSubmission
             {
                 Id = Guid.NewGuid(),
@@ -469,7 +510,7 @@ namespace Ozikol_BCC.Api.Controllers
                 SourcePageUrl = payload?.SourcePageUrl?.Trim(),
                 Status = "New",
                 SubmittedAtUtc = DateTime.UtcNow,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                IpAddress = clientIp,
                 UserAgent = Request.Headers.UserAgent.ToString()
             };
 
@@ -481,6 +522,93 @@ namespace Ozikol_BCC.Api.Controllers
                 submissionId = submission.Id,
                 message = form.SuccessMessage
             }, form.SuccessMessage));
+        }
+
+        /// <summary>
+        /// Locates an active PageForm by key, handling hyphen/underscore variations and canonical prefixes.
+        /// </summary>
+        private async Task<PageForm?> FindMatchingFormAsync(string formKey)
+        {
+            if (string.IsNullOrWhiteSpace(formKey)) return null;
+
+            var raw = formKey.Trim();
+            var lower = raw.ToLowerInvariant();
+            var withUnderscore = lower.Replace("-", "_");
+            var withHyphen = lower.Replace("_", "-");
+            var alphanumericOnly = new string(lower.Where(char.IsLetterOrDigit).ToArray());
+
+            var forms = await _context.PageForms
+                .Include(f => f.Fields.OrderBy(fl => fl.SortOrder))
+                .Where(f => f.IsActive)
+                .ToListAsync();
+
+            return forms.FirstOrDefault(f =>
+            {
+                var fkLower = f.FormKey.ToLowerInvariant();
+                var fkUnderscore = fkLower.Replace("-", "_");
+                var fkHyphen = fkLower.Replace("_", "-");
+                var fkAlpha = new string(fkLower.Where(char.IsLetterOrDigit).ToArray());
+
+                return fkLower == lower
+                    || fkUnderscore == withUnderscore
+                    || fkHyphen == withHyphen
+                    || fkAlpha == alphanumericOnly
+                    || (lower.Contains("contact") && fkLower.Contains("contact"))
+                    || (lower.Contains("newsletter") && fkLower.Contains("newsletter"))
+                    || (lower.Contains("service") && fkLower.Contains("service"));
+            });
+        }
+
+        /// <summary>
+        /// Resolves field values from visitor submission payload supporting common HTML input name synonyms.
+        /// </summary>
+        private static object? ResolveFieldValue(string fieldKey, Dictionary<string, object> dict)
+        {
+            if (dict.TryGetValue(fieldKey, out var direct) && direct != null && !string.IsNullOrWhiteSpace(direct.ToString()))
+                return direct;
+
+            var entry = dict.FirstOrDefault(kvp => string.Equals(kvp.Key, fieldKey, StringComparison.OrdinalIgnoreCase));
+            if (entry.Value != null && !string.IsNullOrWhiteSpace(entry.Value.ToString()))
+                return entry.Value;
+
+            var keyLower = fieldKey.ToLowerInvariant().Replace("-", "_");
+            if (keyLower is "full_name" or "name")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "name" or "fullname" or "full_name" or "contact_name" or "client_name" or "user_name" or "your_name");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "email")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "email" or "work_email" or "workemail" or "contact_email" or "email_address");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "phone" or "phone_number")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "phone" or "phone_number" or "phonenumber" or "tel" or "telephone" or "mobile");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "subject")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "subject" or "title" or "topic" or "inquiry");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "message")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "message" or "comments" or "comment" or "notes" or "details" or "description" or "body" or "your_message");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "organization_name" or "company")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "company" or "organization" or "organization_name" or "org_name" or "firm");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+            else if (keyLower is "service_required" or "service")
+            {
+                var match = dict.FirstOrDefault(kvp => kvp.Key.ToLowerInvariant() is "service_required" or "service" or "scope" or "service_type");
+                if (match.Value != null && !string.IsNullOrWhiteSpace(match.Value.ToString())) return match.Value;
+            }
+
+            return null;
         }
 
         // ==========================================
@@ -641,6 +769,7 @@ namespace Ozikol_BCC.Api.Controllers
                     setting.CopyrightNotice,
                     setting.EnableComingSoon,
                     setting.RemovePlatformWatermark,
+                    recaptchaSiteKey = _recaptchaService.SiteKey,
                     contactChannels = channels
                 };
 
@@ -659,6 +788,7 @@ namespace Ozikol_BCC.Api.Controllers
                 workingHours = primaryHours,
                 EnableComingSoon = false,
                 RemovePlatformWatermark = false,
+                recaptchaSiteKey = _recaptchaService.SiteKey,
                 contactChannels = channels
             };
 
@@ -696,5 +826,10 @@ namespace Ozikol_BCC.Api.Controllers
         /// Optional public website URL or path where the submission originated.
         /// </summary>
         public string? SourcePageUrl { get; set; }
+
+        /// <summary>
+        /// Optional Google reCAPTCHA response token from client challenge widget.
+        /// </summary>
+        public string? RecaptchaToken { get; set; }
     }
 }

@@ -378,32 +378,36 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
   const formRegex = /\{\{\s*(?:Form|form)\s+["']?([^"'}]+)["']?\s*\}\}/gi;
 
   return template.replace(formRegex, (_match, formKeyRaw) => {
-    const formKey = (formKeyRaw || '').trim().toLowerCase();
+    const rawKey = (formKeyRaw || '').trim();
+    const formKey = rawKey.toLowerCase().replace(/-/g, '_');
 
     if (ctx.forms && ctx.forms[formKey]) {
       return ctx.forms[formKey];
     }
 
     if (formKey === 'contact_us' || formKey === 'contact' || formKey === 'inquiry') {
-      return `<form class="oz-injected-form oz-contact-form" onsubmit="event.preventDefault();">
+      return `<form class="oz-injected-form oz-contact-form" data-form-key="Contact_Us" onsubmit="event.preventDefault();">
   <div class="row g-3">
     <div class="col-md-6">
       <label class="form-label fw-semibold">Full Name *</label>
-      <input type="text" class="form-control" placeholder="e.g. Alex Rivera" required />
+      <input type="text" name="full_name" class="form-control" placeholder="e.g. Alex Rivera" required />
     </div>
     <div class="col-md-6">
       <label class="form-label fw-semibold">Work Email *</label>
-      <input type="email" class="form-control" placeholder="name@company.com" required />
+      <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
     </div>
     <div class="col-12">
       <label class="form-label fw-semibold">Subject</label>
-      <input type="text" class="form-control" placeholder="Project Inquiry / Advisory" />
+      <input type="text" name="subject" class="form-control" placeholder="Project Inquiry / Advisory" />
     </div>
     <div class="col-12">
       <label class="form-label fw-semibold">Message *</label>
-      <textarea class="form-control" rows="4" placeholder="How can our engineering team assist your organization?" required></textarea>
+      <textarea name="message" class="form-control" rows="4" placeholder="How can our engineering team assist your organization?" required></textarea>
     </div>
-    <div class="col-12 mt-3">
+    <div class="col-12 oz-recaptcha-wrap my-2">
+      <div class="g-recaptcha" data-sitekey=""></div>
+    </div>
+    <div class="col-12 mt-2">
       <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">Send Message</button>
     </div>
   </div>
@@ -411,28 +415,65 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
     }
 
     if (formKey === 'newsletter_subscribe' || formKey === 'newsletter' || formKey === 'subscribe') {
-      return `<form class="oz-injected-form oz-newsletter-form d-flex gap-2" onsubmit="event.preventDefault();">
-  <input type="email" class="form-control" placeholder="Enter your work email" required />
-  <button type="submit" class="btn btn-primary fw-semibold text-nowrap">Subscribe</button>
+      return `<form class="oz-injected-form oz-newsletter-form d-flex flex-column gap-2" data-form-key="Newsletter" onsubmit="event.preventDefault();">
+  <div class="d-flex gap-2">
+    <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
+    <button type="submit" class="btn btn-primary fw-semibold text-nowrap">Subscribe</button>
+  </div>
+  <div class="oz-recaptcha-wrap mt-1">
+    <div class="g-recaptcha" data-sitekey=""></div>
+  </div>
+</form>`;
+    }
+
+    if (formKey === 'service_request' || formKey === 'service' || formKey === 'intake') {
+      return `<form class="oz-injected-form oz-service-form" data-form-key="Service_Request" onsubmit="event.preventDefault();">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Organization Name *</label>
+      <input type="text" name="organization_name" class="form-control" placeholder="e.g. Acme Corporation" required />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Work Email *</label>
+      <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-semibold">Service Required *</label>
+      <input type="text" name="service_required" class="form-control" placeholder="e.g. Strategic Consulting / Modernization" required />
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-semibold">Project Details / Requirements</label>
+      <textarea name="message" class="form-control" rows="4" placeholder="Please describe your requirements in detail..."></textarea>
+    </div>
+    <div class="col-12 oz-recaptcha-wrap my-2">
+      <div class="g-recaptcha" data-sitekey=""></div>
+    </div>
+    <div class="col-12 mt-2">
+      <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">Submit Service Request</button>
+    </div>
+  </div>
 </form>`;
     }
 
     if (formKey === 'comment_submit' || formKey === 'comment' || formKey === 'reply' || formKey === 'leave_comment') {
-      return `<form class="oz-injected-form oz-comment-form" onsubmit="event.preventDefault();">
+      return `<form class="oz-injected-form oz-comment-form" data-form-key="Contact_Us" onsubmit="event.preventDefault();">
   <div class="row g-3">
     <div class="col-md-6">
       <label class="form-label fw-semibold">Your Name *</label>
-      <input type="text" class="form-control" placeholder="e.g. Sarah Jenkins" required />
+      <input type="text" name="full_name" class="form-control" placeholder="e.g. Sarah Jenkins" required />
     </div>
     <div class="col-md-6">
       <label class="form-label fw-semibold">Email Address *</label>
-      <input type="email" class="form-control" placeholder="name@example.com" required />
+      <input type="email" name="email" class="form-control" placeholder="name@example.com" required />
     </div>
     <div class="col-12">
       <label class="form-label fw-semibold">Your Thoughts / Comment *</label>
-      <textarea class="form-control" rows="4" placeholder="Join the discussion or share your perspective..." required></textarea>
+      <textarea name="message" class="form-control" rows="4" placeholder="Join the discussion or share your perspective..." required></textarea>
     </div>
-    <div class="col-12 mt-3">
+    <div class="col-12 oz-recaptcha-wrap my-2">
+      <div class="g-recaptcha" data-sitekey=""></div>
+    </div>
+    <div class="col-12 mt-2">
       <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">Post Comment</button>
     </div>
   </div>

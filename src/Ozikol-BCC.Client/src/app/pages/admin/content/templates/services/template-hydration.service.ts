@@ -954,20 +954,28 @@ export class TemplateHydrationService {
       const isService = /service|request|intake/i.test(key);
 
       if (isNewsletter) {
-        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" data-form-key="${key}" onsubmit="event.preventDefault();">
-          <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
-          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
+        return `<form class="oz-dynamic-form oz-form-newsletter d-flex flex-column gap-2" data-form-key="${key}" onsubmit="event.preventDefault();">
+          <div class="d-flex gap-2">
+            <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
+            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
+          </div>
+          <div class="oz-recaptcha-wrap mt-1">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
         </form>`;
       }
 
       if (isContact) {
         return `<form class="oz-dynamic-form oz-form-contact d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
           <div class="row g-2">
-            <div class="col-md-6"><input type="text" name="name" class="form-control" placeholder="e.g. First Last" required /></div>
+            <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
             <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
           </div>
           <input type="text" name="subject" class="form-control" placeholder="e.g. Inquiry / Subject" />
           <textarea name="message" class="form-control" rows="3" placeholder="e.g. How can we assist your organization?" required></textarea>
+          <div class="oz-recaptcha-wrap my-1">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Send Message →</button>
         </form>`;
       }
@@ -975,31 +983,37 @@ export class TemplateHydrationService {
       if (isService) {
         return `<form class="oz-dynamic-form oz-form-service d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
           <div class="row g-2">
-            <div class="col-md-6"><input type="text" name="company" class="form-control" placeholder="e.g. Your Organization Name" required /></div>
-            <div class="col-md-6"><input type="text" name="name" class="form-control" placeholder="e.g. First Last" required /></div>
+            <div class="col-md-6"><input type="text" name="organization_name" class="form-control" placeholder="e.g. Your Organization Name" required /></div>
+            <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
           </div>
           <div class="row g-2">
             <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
             <div class="col-md-6"><input type="tel" name="phone" class="form-control" placeholder="e.g. +0 (000) 000-0000" /></div>
           </div>
-          <select name="scope" class="form-select">
+          <select name="service_required" class="form-select">
             <option selected value="">Select Advisory / Solution Scope...</option>
             <option value="Enterprise Architecture">Enterprise Architecture & Infrastructure</option>
             <option value="Systems Modernization">Systems Modernization & Scalability</option>
             <option value="Security Governance">Security & Governance Frameworks</option>
             <option value="Custom Consultation">Custom Strategic Consultation</option>
           </select>
-          <textarea name="details" class="form-control" rows="3" placeholder="e.g. Brief project scope or target timeline..."></textarea>
+          <textarea name="message" class="form-control" rows="3" placeholder="e.g. Brief project scope or target timeline..."></textarea>
+          <div class="oz-recaptcha-wrap my-1">
+            <div class="g-recaptcha" data-sitekey=""></div>
+          </div>
           <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Submit Service Request →</button>
         </form>`;
       }
 
       return `<form class="oz-dynamic-form oz-form-generic d-flex flex-column gap-3" data-form-key="${key}" onsubmit="event.preventDefault();">
         <div class="row g-2">
-          <div class="col-md-6"><input type="text" name="name" class="form-control" placeholder="e.g. First Last" required /></div>
+          <div class="col-md-6"><input type="text" name="full_name" class="form-control" placeholder="e.g. First Last" required /></div>
           <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="name@company.com" required /></div>
         </div>
         <textarea name="message" class="form-control" rows="3" placeholder="e.g. Enter your message here..." required></textarea>
+        <div class="oz-recaptcha-wrap my-1">
+          <div class="g-recaptcha" data-sitekey=""></div>
+        </div>
         <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 align-self-start">Submit →</button>
       </form>`;
     });
