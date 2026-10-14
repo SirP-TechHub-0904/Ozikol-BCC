@@ -308,7 +308,11 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.fetchHomeSections(),
           this.fetchRecentBlogs()
         ]);
-        this.composeHomepage();
+        if (this.activeTemplates.length === 0 && this.sections.length === 0) {
+          this.composeBlankCanvasWelcome();
+        } else {
+          this.composeHomepage();
+        }
       } else if (this.currentSlug === 'blog') {
         // 2. Blog Archive or Single Article
         if (this.activeBlogId) {
@@ -613,6 +617,11 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Hero + Home Body Sections in Order (without duplicate Hero) + Footer.
    */
   private composeHomepage(): void {
+    if (this.activeTemplates.length === 0 && this.sections.length === 0) {
+      this.composeBlankCanvasWelcome();
+      return;
+    }
+
     this.titleService.setTitle(`${this.brandName} | Official Website`);
 
     // 1. Navigation Header Section Unit
@@ -702,6 +711,11 @@ export class LandingComponent implements OnInit, OnDestroy {
    * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
    */
   private composeContentPage(): void {
+    if (this.activeTemplates.length === 0 && this.sections.length === 0 && !this.currentPage) {
+      this.composeBlankCanvasWelcome();
+      return;
+    }
+
     if (!this.currentPage || this.currentPage.publish === false || this.currentPage.Publish === false) {
       this.composeNotFoundPage();
       return;
@@ -1601,6 +1615,220 @@ export class LandingComponent implements OnInit, OnDestroy {
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
+  }
+
+  /**
+   * Assembles the "Start Building Now" onboarding view when the tenant workspace
+   * has zero installed templates and zero published content/sections (pure blank canvas).
+   * Displays clear call-to-action to sign in and begin configuring the site.
+   */
+  private composeBlankCanvasWelcome(): void {
+    const brand = this.brandName || this.brandInfo?.brandName || 'Digital Workspace';
+    const logoUrl = this.brandLogoUrl || this.brandInfo?.logoUrl || '';
+    const currentYear = new Date().getFullYear().toString();
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const loginUrl = authed ? (isAdmin ? '/dashboard/console' : '/dashboard/workspace') : '/auth/login';
+    const loginText = authed ? (isAdmin ? 'Go to Admin Console' : 'Go to Workspace') : 'Login to Continue';
+
+    this.titleService.setTitle(`Start Building Now | ${brand}`);
+
+    const welcomeHtml = `
+      <div id="oz-blank-canvas-root" class="oz-blank-canvas-wrap">
+        <div class="oz-blank-canvas-card">
+          <div class="oz-blank-brand mb-4">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${brand}" class="oz-blank-logo" />` : `<div class="oz-blank-brand-badge">${brand.substring(0, 2).toUpperCase()}</div>`}
+            <h2 class="oz-blank-brand-name">${brand}</h2>
+          </div>
+
+          <div class="oz-blank-status-pill">
+            <span class="oz-blank-status-dot"></span>
+            <span>Workspace Initialized & Ready</span>
+          </div>
+
+          <h1 class="oz-blank-title">Start Building Now</h1>
+          <p class="oz-blank-subtitle">
+            Your sovereign digital workspace is set up and ready. Sign in to your admin console to install templates, design custom pages, and launch your brand.
+          </p>
+
+          <div class="oz-blank-actions">
+            <a id="btn-blank-login-continue" href="${loginUrl}" class="oz-blank-btn-primary">
+              <span>${loginText}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+
+          <div class="oz-blank-footer">
+            <span>© ${currentYear} ${brand}. Sovereign Cloud Infrastructure.</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const welcomeCss = `
+      .oz-blank-canvas-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: radial-gradient(circle at 50% 20%, #f8fafc 0%, #e2e8f0 100%);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        box-sizing: border-box;
+      }
+
+      .oz-blank-canvas-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 48px 40px;
+        max-width: 560px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.04);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .oz-blank-canvas-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+      }
+
+      .oz-blank-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .oz-blank-logo {
+        max-height: 48px;
+        max-width: 180px;
+        object-fit: contain;
+      }
+
+      .oz-blank-brand-badge {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: -0.02em;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+      }
+
+      .oz-blank-brand-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #334155;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+
+      .oz-blank-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #166534;
+        margin-bottom: 24px;
+      }
+
+      .oz-blank-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        display: inline-block;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        animation: ozBlankPulse 2s infinite ease-in-out;
+      }
+
+      @keyframes ozBlankPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.3); opacity: 0.6; }
+      }
+
+      .oz-blank-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+      }
+
+      .oz-blank-subtitle {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #64748b;
+        margin: 0 0 32px 0;
+      }
+
+      .oz-blank-actions {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 32px;
+      }
+
+      .oz-blank-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 32px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+      }
+
+      .oz-blank-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      }
+
+      .oz-blank-footer {
+        font-size: 12px;
+        color: #94a3b8;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 20px;
+      }
+
+      @media (max-width: 640px) {
+        .oz-blank-canvas-card {
+          padding: 36px 24px;
+        }
+        .oz-blank-title {
+          font-size: 26px;
+        }
+      }
+    `;
+
+    this.finalizeRender(welcomeCss, welcomeHtml, '');
   }
 
   // ========================================================

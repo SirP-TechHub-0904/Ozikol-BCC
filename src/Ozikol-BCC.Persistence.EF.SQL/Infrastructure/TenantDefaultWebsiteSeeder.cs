@@ -433,7 +433,14 @@ public static class TenantDefaultWebsiteSeeder
             context.MisWebsiteContactChannels.RemoveRange(allChannels);
         }
 
-        // 6. Update Website Settings to Blank Canvas
+        // 6. Remove TenantInstalledTemplates to ensure completely pure blank canvas
+        var allTemplates = await context.TenantInstalledTemplates.ToListAsync(cancellationToken);
+        if (allTemplates.Count > 0)
+        {
+            context.TenantInstalledTemplates.RemoveRange(allTemplates);
+        }
+
+        // 7. Update Website Settings to Blank Canvas
         var setting = await context.MisWebsiteSettings.FirstOrDefaultAsync(cancellationToken);
         if (setting != null)
         {
