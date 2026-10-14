@@ -110,30 +110,6 @@ public static class TenantDefaultWebsiteSeeder
             }
             await context.SaveChangesAsync(cancellationToken);
         }
-        else
-        {
-            // Backfill default cover images if existing seeded blogs lack an ImageUrl
-            var blogsWithoutImages = await context.Blogs
-                .Where(b => string.IsNullOrEmpty(b.ImageUrl))
-                .ToListAsync(cancellationToken);
-
-            if (blogsWithoutImages.Count > 0)
-            {
-                var defaultImages = new[]
-                {
-                    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80"
-                };
-
-                for (int i = 0; i < blogsWithoutImages.Count; i++)
-                {
-                    blogsWithoutImages[i].ImageUrl = defaultImages[i % defaultImages.Length];
-                }
-
-                await context.SaveChangesAsync(cancellationToken);
-            }
-        }
 
         // =========================================================================
         // 3. Seed Default Contact Channels & Social Media Profiles from Central Blueprints
