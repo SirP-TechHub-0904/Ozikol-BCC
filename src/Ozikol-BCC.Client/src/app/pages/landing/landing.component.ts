@@ -1925,12 +1925,6 @@ export class LandingComponent implements OnInit, OnDestroy {
         title: loginText,
         url: loginUrl
       });
-      if (footerCategories.length > 0) {
-        footerCategories[footerCategories.length - 1].pages.push({
-          title: loginText,
-          url: loginUrl
-        });
-      }
     }
 
     const currentYear = new Date().getFullYear().toString();
