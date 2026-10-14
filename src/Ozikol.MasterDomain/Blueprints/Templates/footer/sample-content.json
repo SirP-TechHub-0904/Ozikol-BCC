@@ -103,6 +103,24 @@
       }
     ]
   },
+  "footerBottomPages": [
+    {
+      "title": "Privacy Policy",
+      "url": "/privacy-policy"
+    },
+    {
+      "title": "Terms of Service",
+      "url": "/terms-and-conditions"
+    },
+    {
+      "title": "Cookie Policy",
+      "url": "/cookie-policy"
+    },
+    {
+      "title": "Sign In",
+      "url": "/auth/login"
+    }
+  ],
   "legalPages": [
     {
       "title": "Privacy Policy",
@@ -117,8 +135,8 @@
       "url": "/cookie-policy"
     },
     {
-      "title": "Security & SLA",
-      "url": "/security"
+      "title": "Sign In",
+      "url": "/auth/login"
     }
   ],
   "footerCategories": [

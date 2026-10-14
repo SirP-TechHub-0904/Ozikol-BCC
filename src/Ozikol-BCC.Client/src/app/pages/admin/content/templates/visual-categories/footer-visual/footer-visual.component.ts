@@ -331,12 +331,12 @@ import { UniversalPreviewModalService } from '../../services/universal-preview-m
             <div class="inspector-section-block" style="margin-top: 24px;">
               <div class="section-block-header">
                 <div>
-                  <h4 class="section-block-title">Legal &amp; Compliance Pages</h4>
-                  <p class="section-block-desc">Mock policy links rendered by <code [innerText]="'{{#each LegalPages}}'"></code></p>
+                  <h4 class="section-block-title">Footer Bottom Bar Pages</h4>
+                  <p class="section-block-desc">Pages and policies with 'Show In Footer Bottom' enabled, rendered by <code [innerText]="'{{#each FooterBottomPages}}'"></code></p>
                 </div>
                 <button type="button" class="btn-add-subpage" (click)="addLegalPage()">
                   <span class="material-symbols-outlined">add</span>
-                  <span>Add Legal Policy</span>
+                  <span>Add Bottom Page</span>
                 </button>
               </div>
               <div class="repeater-simple-list">
@@ -1499,10 +1499,10 @@ export class FooterVisualComponent implements OnInit {
 {{/if}}`
     },
     {
-      label: 'Legal Pages (Strip)',
+      label: 'Footer Bottom Pages (Strip)',
       token: `<div class="oz-footer-legal-links">
-  {{#each LegalPages}}
-  <a href="{{ Url }}" class="oz-footer-legal-link">{{ Title }}</a>
+  {{#each FooterBottomPages}}
+  <a href="{{ Url }}" class="oz-footer-legal-link {{ CustomClass }}">{{ Title }}</a>
   {{/each}}
 </div>`
     },

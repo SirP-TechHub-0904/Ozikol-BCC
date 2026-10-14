@@ -17,6 +17,7 @@ export class FooterAiRule implements ICategoryAiRule {
     '{{#each Pages}}',
     '{{#each TaggedPages "quicklinks"}}',
     '{{#each TaggedPages}}',
+    '{{#each FooterBottomPages}}',
     '{{#each LegalPages}}',
     '{{#if HasSocialLinks}}',
     '{{#each SocialLinks}}',
@@ -72,11 +73,12 @@ TARGET PLACEHOLDERS & STRUCTURAL PATTERNS:
        </ul>
      </div>
 
-3. Legal & Compliance Policy Links:
-   Inside the legal strip, bottom bar, or policy links container:
-   {{#each LegalPages}}
-     <a href="{{ Url }}" class="[original link classes]">{{ Title }}</a>
+3. Footer Bottom Bar & Compliance Policy Links:
+   Inside the bottom bar, legal strip, or compliance container:
+   {{#each FooterBottomPages}}
+     <a href="{{ Url }}" class="[original link classes] {{ CustomClass }}">{{ Title }}</a>
    {{/each}}
+   (or {{#each LegalPages}})
 
 4. Social Media Channels:
    Inside the social icon container:
