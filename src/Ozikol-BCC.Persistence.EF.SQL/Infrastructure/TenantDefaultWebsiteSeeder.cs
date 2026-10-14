@@ -506,6 +506,25 @@ public static class TenantDefaultWebsiteSeeder
             }
         }
 
+        // Ensure standard 3-zone code injection tags (Google Fonts, SEO, PWA) exist in the tenant database
+        if (!await context.SiteCodeInjectionTags.AnyAsync(cancellationToken))
+        {
+            var tagBlueprints = CentralContentLoader.GetDefaultCodeInjectionTags();
+            var tags = tagBlueprints.Select(tb => new SiteCodeInjectionTag
+            {
+                Id = Guid.NewGuid(),
+                Name = tb.Name,
+                Zone = tb.Zone,
+                TagType = tb.TagType,
+                SortOrder = tb.SortOrder,
+                IsActive = tb.IsActive,
+                SuiteCode = tb.SuiteCode,
+                Content = tb.Content
+            }).ToList();
+
+            context.SiteCodeInjectionTags.AddRange(tags);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
     }
 }
