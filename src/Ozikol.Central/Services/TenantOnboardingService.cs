@@ -805,18 +805,18 @@ public class TenantOnboardingService : ITenantOnboardingService
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5. Automatically provision turnkey Corporate Suite website templates, 10 body sections, web pages, forms, and code injections
+            // 5. Provision factory-default Corporate Theme Suite template blueprints into TenantInstalledTemplates
+            // Note: Pages, 10 body sections, forms, and blogs are seeded on-demand when the user clicks "Seed Default Website Suite" on the GetStarted portal.
             try
             {
-                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedCorporateSuiteTemplatesAsync(
                     dbContext,
-                    request.OrganizationName,
                     cancellationToken);
-                _logger.LogInformation("✅ Turnkey Corporate Suite website templates, pages, and 10 body sections successfully seeded for tenant [{TenantKey}]", request.TenantKey);
+                _logger.LogInformation("✅ Turnkey Corporate Suite website template blueprints installed for tenant [{TenantKey}]", request.TenantKey);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "⚠️ Failed to automatically seed default website suite for tenant [{TenantKey}]: {Message}", request.TenantKey, ex.Message);
+                _logger.LogError(ex, "⚠️ Failed to seed corporate suite template blueprints for tenant [{TenantKey}]: {Message}", request.TenantKey, ex.Message);
             }
         }
     }
