@@ -35,6 +35,7 @@ import { KpiMetricEditComponent } from './pages/admin/users/kpi-metric-edit.comp
 import { KpiGradeComponent } from './pages/admin/users/kpi-grade.component';
 import { UserActivityComponent } from './pages/admin/users/user-activity.component';
 import { NotificationsManagementComponent } from './pages/admin/users/notifications-management.component';
+import { RegistrationFormBuilderComponent } from './pages/admin/users/registration-form-builder.component';
 import { WorkspaceNotificationsComponent } from './pages/workspace/workspace-notifications.component';
 
 import { IdentityDashboardComponent } from './pages/admin/identity/identity-dashboard.component';
@@ -44,6 +45,7 @@ import { IdentityAuditLogsComponent } from './pages/admin/identity/identity-audi
 import { IdentityPoliciesComponent } from './pages/admin/identity/identity-policies.component';
 import { GroupsComponent } from './pages/admin/groups/groups.component';
 import { SettingsComponent } from './pages/admin/settings/settings.component';
+import { CustomDomainComponent } from './pages/admin/settings/custom-domain.component';
 
 import { CmsDashboardComponent } from './pages/admin/content/cms-dashboard.component';
 import { MarketplaceComponent } from './pages/admin/content/marketplace/marketplace.component';
@@ -104,21 +106,29 @@ export const routes: Routes = [
   // Public Landing
   { path: '', component: LandingComponent, pathMatch: 'full' },
 
-  // Unified Authentication Shell & Flows
+  // Unified Authentication Shell & Flows (Login, Password Reset, Access Denied) - Dedicated Split-Screen
   {
     path: 'auth',
     component: AuthLayoutComponent,
     children: [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
       { path: 'login', component: LoginComponent },
-      { path: 'register', component: RegisterComponent },
       { path: 'reset-password', component: ResetPasswordComponent },
       { path: 'forgot-password', component: ResetPasswordComponent },
       { path: 'access-denied', component: AccessDeniedComponent }
     ]
   },
+
+  // Dedicated Standalone Member Onboarding & Registration Suite (Full-Width Viewport, Outside AuthLayout)
+  { path: 'register', component: RegisterComponent },
+  { path: 'join', component: RegisterComponent },
+  { path: 'apply', component: RegisterComponent },
+  { path: 'enroll', component: RegisterComponent },
+  { path: 'get-started', component: RegisterComponent },
+  { path: 'onboarding', component: RegisterComponent },
+  { path: 'signup', component: RegisterComponent },
+  { path: 'auth/:customSlug', component: RegisterComponent },
   { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
-  { path: 'register', redirectTo: 'auth/register', pathMatch: 'full' },
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
@@ -158,6 +168,7 @@ export const routes: Routes = [
       { path: 'users/console/kpi/metrics/delete/:id', component: KpiMetricDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
 
       // 2. User Management Suite: Workspace (Member Self-Service)
@@ -192,6 +203,9 @@ export const routes: Routes = [
 
       // 4. Configuration & Identity (Console Only)
       { path: 'settings/console', component: SettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'settings/console/custom-domain', component: CustomDomainComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'settings/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },
+      { path: 'admin/custom-domain', redirectTo: 'settings/console/custom-domain', pathMatch: 'full' },
       { path: 'settings', component: SettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console', component: IdentityDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/dashboard', component: IdentityDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
@@ -220,10 +234,12 @@ export const routes: Routes = [
       { path: 'admin/marketplace', redirectTo: 'content/console/marketplace', pathMatch: 'full' },
       { path: 'content/console', component: CmsDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages', component: WebPagesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/pages/create', component: WebPageEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/details/:id', component: WebPageDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/edit/:id', component: WebPageEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/pages/delete/:id', component: WebPageDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories', component: WebCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
+      { path: 'content/console/categories/create', component: WebCategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories/edit/:id', component: WebCategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/categories/delete/:id', component: WebCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
       { path: 'content/console/sections', component: PageSectionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CmsManager'] } },
@@ -263,10 +279,18 @@ export const routes: Routes = [
       { path: 'admin/users/details/:id', redirectTo: 'users/console/details/:id', pathMatch: 'full' },
       { path: 'admin/users/edit/:id', redirectTo: 'users/console/edit/:id', pathMatch: 'full' },
       { path: 'admin/users/categories', redirectTo: 'users/console/categories', pathMatch: 'full' },
+      { path: 'admin/users/registration-form', redirectTo: 'users/console/registration-form', pathMatch: 'full' },
       { path: 'admin/users/kpi', redirectTo: 'users/console/kpi', pathMatch: 'full' },
       { path: 'admin/users/activity', redirectTo: 'users/console/activity', pathMatch: 'full' },
       { path: 'admin/groups', redirectTo: 'groups/console', pathMatch: 'full' },
       { path: 'admin/settings', redirectTo: 'settings/console', pathMatch: 'full' },
+      { path: 'admin/content/pages/create', redirectTo: 'content/console/pages/create', pathMatch: 'full' },
+      { path: 'admin/content/pages/edit/:id', redirectTo: 'content/console/pages/edit/:id' },
+      { path: 'admin/content/pages', redirectTo: 'content/console/pages', pathMatch: 'full' },
+      { path: 'admin/content/categories/create', redirectTo: 'content/console/categories/create', pathMatch: 'full' },
+      { path: 'admin/content/categories/edit/:id', redirectTo: 'content/console/categories/edit/:id' },
+      { path: 'admin/content/categories', redirectTo: 'content/console/categories', pathMatch: 'full' },
+      { path: 'admin/content/sections', redirectTo: 'content/console/sections', pathMatch: 'full' },
       { path: 'admin/content', redirectTo: 'content/console', pathMatch: 'full' },
       { path: 'admin', redirectTo: 'dashboard/console', pathMatch: 'full' },
       { path: 'portal', redirectTo: 'dashboard/workspace', pathMatch: 'full' },

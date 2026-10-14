@@ -539,6 +539,57 @@ namespace Ozikol_BCC.Domain.Models
         [MaxLength(10)]
         public string? MemberIdDelimiter { get; set; } = "-";
 
+        // ── Dynamic User Registration & Onboarding Policies ──
+
+        /// <summary>
+        /// Master policy toggle allowing or disallowing public self-registration ("Get Started" / Register).
+        /// If false, account creation is strictly invite-only by administrators.
+        /// </summary>
+        [Display(Name = "Allow Public Self-Registration")]
+        public bool AllowPublicRegistration { get; set; } = true;
+
+        /// <summary>
+        /// When true, public self-registrations require manual administrator review and approval before login access is granted.
+        /// Accounts are assigned UserStatus.PendingApproval upon submission.
+        /// </summary>
+        [Display(Name = "Require Admin Approval Before Login")]
+        public bool RequireApprovalBeforeLogin { get; set; } = false;
+
+        /// <summary>
+        /// Custom welcome subtitle or instructions presented on the public "Get Started" / Register card.
+        /// </summary>
+        [MaxLength(300)]
+        [Display(Name = "Registration Welcome Subtitle")]
+        public string RegistrationWelcomeMessage { get; set; } = "Join our member directory and workspace portal.";
+
+        /// <summary>
+        /// Custom success confirmation message presented after a member successfully registers.
+        /// </summary>
+        [MaxLength(300)]
+        [Display(Name = "Registration Success Message")]
+        public string RegistrationSuccessMessage { get; set; } = "Registration successful! Welcome to the portal.";
+
+        /// <summary>
+        /// Custom URL slug for member registration / onboarding (e.g. "register", "join", "apply", "enroll", "get-started").
+        /// Defaults to "register".
+        /// </summary>
+        [MaxLength(80)]
+        [Display(Name = "Custom Registration URL Slug")]
+        public string RegistrationUrlSlug { get; set; } = "register";
+
+        /// <summary>
+        /// Toggle whether the public registration form displays the "Have an Affiliate Referral Code?" input.
+        /// </summary>
+        [Display(Name = "Enable Affiliate Referral Code Input")]
+        public bool EnableAffiliateReferralCode { get; set; } = true;
+
+        /// <summary>
+        /// Primary industry or organization sector for the tenant (e.g. "Business & Enterprise", "Education & Academy", "Healthcare & Care Services").
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Industry / Organization Sector")]
+        public string? DefaultIndustrySector { get; set; } = "Business & Enterprise";
+
         // ── Timestamps ──
 
         /// <summary>

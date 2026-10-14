@@ -50,6 +50,97 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     <div *ngIf="!loading && !error" class="public-dynamic-site-wrapper" [class.mobile-menu-active]="mobileMenuOpen">
       <!-- Rendered HTML Blocks (Menu, Hero/Breadcrumb, Sections, Footer) -->
       <main class="dynamic-rendered-content" [innerHTML]="safeRenderedHtml"></main>
+
+      <!-- Glassmorphic Cookie Consent Bar -->
+      <aside *ngIf="showCookieConsent && cookieSettings?.enabled" class="oz-cookie-consent-bar" role="dialog" aria-live="polite" aria-label="Cookie consent banner">
+        <div class="oz-cookie-content">
+          <div class="oz-cookie-icon-wrap">
+            <svg class="oz-cookie-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
+              <path d="M8.5 8.5v.01" />
+              <path d="M7 14v.01" />
+              <path d="M11 17v.01" />
+              <path d="M15 13v.01" />
+            </svg>
+          </div>
+          <div class="oz-cookie-text">
+            <h4 class="oz-cookie-title">{{ cookieSettings?.title || 'Cookie Preferences & Privacy' }}</h4>
+            <p class="oz-cookie-msg">
+              {{ cookieSettings?.message || 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.' }}
+              <a *ngIf="cookieSettings?.policyUrl" [href]="cookieSettings?.policyUrl" target="_blank" rel="noopener noreferrer" class="oz-cookie-link">Privacy Policy</a>
+            </p>
+          </div>
+        </div>
+        <div class="oz-cookie-actions">
+          <button type="button" (click)="declineCookieConsent()" class="oz-cookie-btn-decline">{{ cookieSettings?.declineText || 'Decline' }}</button>
+          <button type="button" (click)="acceptCookieConsent()" class="oz-cookie-btn-accept">{{ cookieSettings?.acceptText || 'Accept All' }}</button>
+        </div>
+      </aside>
+
+      <!-- WhatsApp Floating Live Chat Widget -->
+      <div *ngIf="whatsAppSettings?.enabled" class="oz-whatsapp-widget" role="complementary" aria-label="WhatsApp live chat support">
+        <!-- Chat Popup Card -->
+        <div *ngIf="whatsAppChatOpen" class="oz-whatsapp-popup" aria-live="polite">
+          <div class="oz-whatsapp-header">
+            <div class="oz-whatsapp-avatar-wrap">
+              <div class="oz-whatsapp-avatar">
+                <svg class="oz-whatsapp-header-svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
+                </svg>
+              </div>
+              <span class="oz-whatsapp-online-dot"></span>
+            </div>
+            <div class="oz-whatsapp-meta">
+              <h4 class="oz-whatsapp-title">{{ whatsAppSettings?.widgetTitle || 'Live WhatsApp Support' }}</h4>
+              <p class="oz-whatsapp-subtitle">{{ whatsAppSettings?.widgetSubtitle || 'Typically replies within minutes' }}</p>
+            </div>
+            <button type="button" class="oz-whatsapp-close-btn" (click)="toggleWhatsAppChat()" aria-label="Close WhatsApp chat">×</button>
+          </div>
+
+          <div class="oz-whatsapp-body">
+            <div class="oz-whatsapp-date-pill">Today</div>
+            <div class="oz-whatsapp-bubble-agent" (click)="launchWhatsAppChat()" role="button" tabindex="0" title="Click to open this in WhatsApp">
+              <div class="oz-whatsapp-sender">{{ brandName || 'Support Team' }}</div>
+              <p class="oz-whatsapp-bubble-msg">{{ whatsAppSettings?.promptMessage || 'Hello! How can we assist you today?' }}</p>
+              <div class="oz-whatsapp-bubble-footer">
+                <span class="oz-whatsapp-bubble-time">{{ currentChatTime }}</span>
+              </div>
+            </div>
+          </div>
+
+          <form class="oz-whatsapp-footer" (ngSubmit)="launchWhatsAppChat()">
+            <input
+              type="text"
+              name="waMessage"
+              [(ngModel)]="whatsAppUserMessage"
+              [placeholder]="'Type a message...'"
+              class="oz-whatsapp-input"
+              autocomplete="off"
+            />
+            <button type="submit" class="oz-whatsapp-send-btn" aria-label="Send via WhatsApp">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- Floating Pill / Trigger Button -->
+        <button
+          type="button"
+          class="oz-whatsapp-trigger-pill"
+          (click)="toggleWhatsAppChat()"
+          [attr.aria-expanded]="whatsAppChatOpen"
+          aria-label="Chat with us on WhatsApp"
+        >
+          <div class="oz-whatsapp-trigger-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zM17.5 14.33c-.23.65-1.14 1.2-1.6 1.25-.43.05-.98.08-1.58-.12-.39-.13-.9-.29-1.55-.58-2.73-1.18-4.51-3.96-4.65-4.14-.14-.19-1.11-1.48-1.11-2.82 0-1.34.7-2 1-2.28.23-.21.5-.27.67-.27.17 0 .34 0 .49.01.16.01.37-.06.58.44.22.52.74 1.8.8 1.93.07.13.11.29.02.47-.08.18-.13.3-.26.45-.13.15-.27.33-.39.45-.13.13-.26.27-.11.53.15.26.68 1.12 1.45 1.81 1 .89 1.84 1.17 2.1 1.3.26.13.41.11.56-.06.15-.17.65-.76.82-1.02.17-.26.35-.22.58-.13.24.09 1.5.71 1.76.84.26.13.43.2.49.31.06.11.06.65-.17 1.3z"/>
+            </svg>
+          </div>
+          <span class="oz-whatsapp-trigger-text">Chat with us</span>
+        </button>
+      </div>
     </div>
   `,
   styles: [`
@@ -182,6 +273,374 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     .oz-recaptcha-wrap .g-recaptcha {
       transform-origin: 0 0;
     }
+
+    /* Glassmorphic Cookie Consent Banner */
+    .oz-cookie-consent-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 860px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      z-index: 99990;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.45);
+      animation: ozSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes ozSlideUp {
+      from { transform: translate(-50%, 40px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .oz-cookie-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+      min-width: 0;
+    }
+    .oz-cookie-icon-wrap {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fbbf24;
+    }
+    .oz-cookie-svg {
+      width: 24px;
+      height: 24px;
+    }
+    .oz-cookie-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .oz-cookie-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 3px;
+    }
+    .oz-cookie-msg {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      margin: 0;
+    }
+    .oz-cookie-link {
+      color: #60a5fa;
+      text-decoration: underline;
+      margin-left: 6px;
+    }
+    .oz-cookie-link:hover {
+      color: #93c5fd;
+    }
+    .oz-cookie-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .oz-cookie-btn-decline {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .oz-cookie-btn-decline:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+    .oz-cookie-btn-accept {
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.35);
+      transition: all 0.15s ease;
+    }
+    .oz-cookie-btn-accept:hover {
+      background: #003ebd;
+      transform: translateY(-1px);
+    }
+
+    /* WhatsApp Floating Live Chat Widget */
+    .oz-whatsapp-widget {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 99995;
+      font-family: inherit;
+    }
+    .oz-whatsapp-trigger-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #25D366;
+      color: #ffffff;
+      border: none;
+      padding: 12px 20px 12px 14px;
+      border-radius: 999px;
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      box-shadow: 0 10px 24px -4px rgba(37, 211, 102, 0.5), 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .oz-whatsapp-trigger-pill:hover {
+      background: #20ba59;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 28px -4px rgba(37, 211, 102, 0.6), 0 6px 12px rgba(0, 0, 0, 0.12);
+    }
+    .oz-whatsapp-trigger-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .oz-whatsapp-trigger-text {
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    /* WhatsApp Popup Card */
+    .oz-whatsapp-popup {
+      position: absolute;
+      bottom: 64px;
+      right: 0;
+      width: 350px;
+      max-width: calc(100vw - 32px);
+      background: #ffffff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.22), 0 10px 20px -6px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      animation: ozPopupSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes ozPopupSlide {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .oz-whatsapp-header {
+      background: #075E54;
+      color: #ffffff;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+    .oz-whatsapp-avatar-wrap {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+    }
+    .oz-whatsapp-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #25D366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+    .oz-whatsapp-header-svg {
+      width: 26px;
+      height: 26px;
+    }
+    .oz-whatsapp-online-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 11px;
+      height: 11px;
+      background: #4ade80;
+      border: 2px solid #075E54;
+      border-radius: 50%;
+    }
+    .oz-whatsapp-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .oz-whatsapp-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .oz-whatsapp-subtitle {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.82);
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .oz-whatsapp-close-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .oz-whatsapp-close-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .oz-whatsapp-body {
+      background: #efeae2;
+      background-image: radial-gradient(#d5cdc1 1px, transparent 1px);
+      background-size: 16px 16px;
+      padding: 20px 16px;
+      min-height: 160px;
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .oz-whatsapp-date-pill {
+      align-self: center;
+      background: rgba(255, 255, 255, 0.8);
+      color: #54656f;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .oz-whatsapp-bubble-agent {
+      align-self: flex-start;
+      background: #ffffff;
+      border-radius: 12px 12px 12px 2px;
+      padding: 10px 14px;
+      max-width: 88%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .oz-whatsapp-bubble-agent:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+    .oz-whatsapp-sender {
+      font-size: 11px;
+      font-weight: 700;
+      color: #128C7E;
+      margin-bottom: 4px;
+    }
+    .oz-whatsapp-bubble-msg {
+      font-size: 13.5px;
+      color: #111b21;
+      line-height: 1.45;
+      margin: 0 0 6px;
+    }
+    .oz-whatsapp-bubble-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .oz-whatsapp-bubble-time {
+      font-size: 10.5px;
+      color: #667781;
+    }
+    .oz-whatsapp-footer {
+      background: #f0f2f5;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid #e9edef;
+    }
+    .oz-whatsapp-input {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #d1d7db;
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-size: 13.5px;
+      color: #111b21;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .oz-whatsapp-input:focus {
+      border-color: #00a884;
+    }
+    .oz-whatsapp-send-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #00a884;
+      color: #ffffff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .oz-whatsapp-send-btn:hover {
+      background: #008f6f;
+      transform: scale(1.05);
+    }
+    @media (max-width: 768px) {
+      .oz-cookie-consent-bar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        bottom: 12px;
+      }
+      .oz-cookie-actions {
+        justify-content: flex-end;
+      }
+    }
+    @media (max-width: 480px) {
+      .oz-whatsapp-widget {
+        bottom: 18px;
+        right: 18px;
+      }
+      .oz-whatsapp-popup {
+        width: calc(100vw - 36px);
+        bottom: 58px;
+      }
+    }
   `]
 })
 export class LandingComponent implements OnInit, OnDestroy {
@@ -206,6 +665,19 @@ export class LandingComponent implements OnInit, OnDestroy {
   sections: any[] = [];
   blogs: any[] = [];
   codeInjections: { head: any[]; bodyOpen: any[]; footer: any[] } = { head: [], bodyOpen: [], footer: [] };
+
+  // Breaking News Ribbon Ticker
+  ribbonSettings: { enabled: boolean; title: string; position: string } | null = null;
+  tickerItems: any[] = [];
+
+  // Cookie Consent Preferences
+  cookieSettings: { enabled: boolean; title: string; message: string; acceptText: string; declineText: string; policyUrl: string } | null = null;
+  showCookieConsent: boolean = false;
+
+  // WhatsApp Floating Live Chat Support
+  whatsAppSettings: { enabled: boolean; number: string; promptMessage: string; widgetTitle: string; widgetSubtitle: string } | null = null;
+  whatsAppChatOpen: boolean = false;
+  whatsAppUserMessage: string = '';
 
   // Page Specific Resolution
   currentPage: any = null;
@@ -301,6 +773,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       this.fetchCodeInjections()
     ])
     .then(async () => {
+      // Concurrently fetch active ticker items if breaking news ribbon is enabled
+      await this.fetchTickerItems();
+
       // Route dispatch based on active slug
       if (!this.currentSlug || this.currentSlug === 'home') {
         // 1. Homepage Rendering
@@ -372,6 +847,16 @@ export class LandingComponent implements OnInit, OnDestroy {
             if (data.recaptchaSiteKey) {
               this.recaptchaSiteKey = data.recaptchaSiteKey;
             }
+            if (data.ribbonTicker) {
+              this.ribbonSettings = data.ribbonTicker;
+            }
+            if (data.cookieConsent) {
+              this.cookieSettings = data.cookieConsent;
+              this.evaluateCookieConsent();
+            }
+            if (data.whatsAppChat) {
+              this.whatsAppSettings = data.whatsAppChat;
+            }
             this.applyFavicon(data.faviconUrl || data.companyIconUrl);
           }
           // 2. Also attempt to fetch full SettingsApi/brand if available
@@ -382,6 +867,33 @@ export class LandingComponent implements OnInit, OnDestroy {
                 this.brandInfo = { ...this.brandInfo, ...bData };
                 if (bData.companyName) this.brandName = bData.companyName;
                 if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                if (bData.enableBreakingNewsRibon !== undefined) {
+                  this.ribbonSettings = {
+                    enabled: !!bData.enableBreakingNewsRibon,
+                    title: bData.breakingNewsRibonTitle || 'Breaking News',
+                    position: bData.breakingNewsRibonPosition || 'Top'
+                  };
+                }
+                if (bData.enableCookieConsent !== undefined) {
+                  this.cookieSettings = {
+                    enabled: !!bData.enableCookieConsent,
+                    title: bData.cookieConsentTitle || 'Cookie Preferences & Privacy',
+                    message: bData.cookieConsentMessage || 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.',
+                    acceptText: bData.cookieConsentAcceptText || 'Accept All',
+                    declineText: bData.cookieConsentDeclineText || 'Decline',
+                    policyUrl: bData.cookieConsentPolicyUrl || '/privacy-policy'
+                  };
+                  this.evaluateCookieConsent();
+                }
+                if (bData.enableWhatsAppChat !== undefined) {
+                  this.whatsAppSettings = {
+                    enabled: !!bData.enableWhatsAppChat && !!bData.whatsAppNumber,
+                    number: bData.whatsAppNumber || '',
+                    promptMessage: bData.whatsAppPromptMessage || 'Hello! How can we assist you today?',
+                    widgetTitle: bData.whatsAppWidgetTitle || 'Live WhatsApp Support',
+                    widgetSubtitle: bData.whatsAppWidgetSubtitle || 'Typically replies within minutes'
+                  };
+                }
                 this.applyFavicon(bData.companyIconUrl);
               }
               resolve();
@@ -397,6 +909,33 @@ export class LandingComponent implements OnInit, OnDestroy {
                 this.brandInfo = { ...this.brandInfo, ...bData };
                 if (bData.companyName) this.brandName = bData.companyName;
                 if (bData.companyLogoUrl) this.brandLogoUrl = bData.companyLogoUrl;
+                if (bData.enableBreakingNewsRibon !== undefined) {
+                  this.ribbonSettings = {
+                    enabled: !!bData.enableBreakingNewsRibon,
+                    title: bData.breakingNewsRibonTitle || 'Breaking News',
+                    position: bData.breakingNewsRibonPosition || 'Top'
+                  };
+                }
+                if (bData.enableCookieConsent !== undefined) {
+                  this.cookieSettings = {
+                    enabled: !!bData.enableCookieConsent,
+                    title: bData.cookieConsentTitle || 'Cookie Preferences & Privacy',
+                    message: bData.cookieConsentMessage || 'We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.',
+                    acceptText: bData.cookieConsentAcceptText || 'Accept All',
+                    declineText: bData.cookieConsentDeclineText || 'Decline',
+                    policyUrl: bData.cookieConsentPolicyUrl || '/privacy-policy'
+                  };
+                  this.evaluateCookieConsent();
+                }
+                if (bData.enableWhatsAppChat !== undefined) {
+                  this.whatsAppSettings = {
+                    enabled: !!bData.enableWhatsAppChat && !!bData.whatsAppNumber,
+                    number: bData.whatsAppNumber || '',
+                    promptMessage: bData.whatsAppPromptMessage || 'Hello! How can we assist you today?',
+                    widgetTitle: bData.whatsAppWidgetTitle || 'Live WhatsApp Support',
+                    widgetSubtitle: bData.whatsAppWidgetSubtitle || 'Typically replies within minutes'
+                  };
+                }
                 this.applyFavicon(bData.companyIconUrl);
               }
               resolve();
@@ -420,6 +959,286 @@ export class LandingComponent implements OnInit, OnDestroy {
       link.href = activeIcon;
       document.head.appendChild(link);
     }
+  }
+
+  // ========================================================
+  // WIDGET & TICKER RUNTIME LOGIC
+  // ========================================================
+
+  /**
+   * Fetches active ticker items from WebsiteContentApi/ticker.
+   */
+  private fetchTickerItems(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.ribbonSettings?.enabled) {
+        resolve();
+        return;
+      }
+      this.apiService.get('WebsiteContentApi/ticker').subscribe({
+        next: (res: any) => {
+          if (res?.success && Array.isArray(res.data)) {
+            this.tickerItems = res.data;
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  /**
+   * Synthesizes an animated horizontal ribbon marquee section with pause-on-hover.
+   */
+  private buildRibbonSection(): SectionTemplateUnit | undefined {
+    if (!this.ribbonSettings?.enabled) {
+      return undefined;
+    }
+
+    // Resolve streamable items with multi-tier fallback
+    let items = (this.tickerItems && this.tickerItems.length > 0) ? [...this.tickerItems] : [];
+
+    if (items.length === 0 && this.blogs && this.blogs.length > 0) {
+      items = this.blogs.slice(0, 5).map(b => ({
+        id: b.id,
+        type: 'Blog',
+        title: b.title || 'Latest Update',
+        url: `/blog/${b.id}`
+      }));
+    }
+
+    if (items.length === 0 && this.publishedPages && this.publishedPages.length > 0) {
+      items = this.publishedPages.filter(p => !p.isHomePage).slice(0, 5).map(p => ({
+        id: p.id,
+        type: 'Page',
+        title: p.title || 'Featured Page',
+        url: p.directUrl ? (p.directUrl.startsWith('/') ? p.directUrl : `/${p.directUrl}`) : `/page/${p.id}`
+      }));
+    }
+
+    if (items.length === 0) {
+      items = [
+        {
+          id: 'default-welcome-item',
+          type: 'Announcement',
+          title: `Welcome to ${this.brandName || 'our official website'} — explore our latest services, capabilities, and updates.`,
+          url: '#'
+        }
+      ];
+    }
+
+    // Ensure smooth continuous marquee loop by duplicating items if fewer than 3
+    let streamItems = [...items];
+    while (streamItems.length < 3) {
+      streamItems = streamItems.concat(items);
+    }
+
+    const title = this.ribbonSettings.title || 'Breaking News';
+    const itemsMarkup = streamItems.map(item => `
+      <a href="${item.url || '#'}" class="oz-ticker-item">
+        <span class="oz-ticker-dot">●</span>
+        <span class="oz-ticker-type">${this.escapeHtml(item.type || 'Update')}</span>
+        <span class="oz-ticker-text">${this.escapeHtml(item.title || '')}</span>
+      </a>
+    `).join('');
+
+    const html = `
+      <section class="oz-ticker-bar" aria-label="Breaking announcements and updates">
+        <div class="oz-ticker-badge">
+          <span class="oz-ticker-pulse"></span>
+          <span class="oz-ticker-label">${this.escapeHtml(title)}</span>
+        </div>
+        <div class="oz-ticker-track-wrapper">
+          <div class="oz-ticker-track">
+            <div class="oz-ticker-group">${itemsMarkup}</div>
+            <div class="oz-ticker-group" aria-hidden="true">${itemsMarkup}</div>
+          </div>
+        </div>
+      </section>
+    `;
+
+    const css = `
+      .oz-ticker-bar {
+        display: flex;
+        align-items: center;
+        background: #0f172a;
+        color: #f8fafc;
+        font-size: 13px;
+        height: 44px;
+        overflow: hidden;
+        position: relative;
+        z-index: 40;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .oz-ticker-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #0050e5;
+        color: #ffffff;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 11.5px;
+        padding: 0 16px;
+        height: 100%;
+        white-space: nowrap;
+        position: relative;
+        z-index: 2;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.25);
+      }
+      .oz-ticker-pulse {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
+        animation: ozTickerPulse 1.8s infinite;
+      }
+      @keyframes ozTickerPulse {
+        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        70% { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+      }
+      .oz-ticker-track-wrapper {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+      }
+      .oz-ticker-track {
+        display: inline-flex;
+        align-items: center;
+        will-change: transform;
+        animation: ozMarqueeScroll 35s linear infinite;
+      }
+      .oz-ticker-bar:hover .oz-ticker-track {
+        animation-play-state: paused;
+      }
+      .oz-ticker-group {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .oz-ticker-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #e2e8f0;
+        text-decoration: none;
+        padding: 0 20px;
+        transition: color 0.15s ease;
+      }
+      .oz-ticker-item:hover {
+        color: #60a5fa;
+      }
+      .oz-ticker-dot {
+        color: #3b82f6;
+        font-size: 8px;
+      }
+      .oz-ticker-type {
+        background: rgba(255, 255, 255, 0.1);
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+      .oz-ticker-text {
+        font-weight: 500;
+      }
+      @keyframes ozMarqueeScroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      @media (max-width: 640px) {
+        .oz-ticker-bar { height: 38px; font-size: 12px; }
+        .oz-ticker-badge { font-size: 10.5px; padding: 0 10px; }
+        .oz-ticker-item { padding: 0 12px; }
+      }
+    `;
+
+    return {
+      id: 'ribbon-ticker-unit',
+      name: 'Breaking News Ticker',
+      category: 'ribbon',
+      html,
+      css
+    };
+  }
+
+  /**
+   * Safely escapes plain text strings for injection into HTML fragments.
+   */
+  private escapeHtml(raw: string): string {
+    if (!raw) return '';
+    return raw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * Checks client localStorage to decide whether the Cookie Consent banner should be presented.
+   */
+  private evaluateCookieConsent(): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const consent = localStorage.getItem('ozikol_cookie_consent');
+    this.showCookieConsent = !consent && !!this.cookieSettings?.enabled;
+  }
+
+  /**
+   * Dismisses and accepts cookie storage.
+   */
+  acceptCookieConsent(): void {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('ozikol_cookie_consent', 'accepted');
+    }
+    this.showCookieConsent = false;
+  }
+
+  /**
+   * Dismisses and declines non-essential cookies.
+   */
+  declineCookieConsent(): void {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('ozikol_cookie_consent', 'declined');
+    }
+    this.showCookieConsent = false;
+  }
+
+  /**
+   * Toggles the WhatsApp live chat popup drawer.
+   */
+  toggleWhatsAppChat(): void {
+    this.whatsAppChatOpen = !this.whatsAppChatOpen;
+  }
+
+  /**
+   * Current formatted time for the chat bubble timestamp.
+   */
+  get currentChatTime(): string {
+    const d = new Date();
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /**
+   * Opens official WhatsApp direct chat in a new tab with prompt text or user custom message.
+   */
+  launchWhatsAppChat(): void {
+    if (!this.whatsAppSettings?.number) return;
+    const cleanNumber = (this.whatsAppSettings.number || '').replace(/[^0-9]/g, '');
+    const message = (this.whatsAppUserMessage || '').trim() || (this.whatsAppSettings.promptMessage || 'Hello! How can we assist you today?');
+    const encoded = encodeURIComponent(message);
+    const waUrl = `https://wa.me/${cleanNumber}?text=${encoded}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   }
 
   private fetchActiveTemplates(): Promise<void> {
@@ -622,6 +1441,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.currentPage = this.publishedPages.find(p => p.isHomePage || p.directUrl === '/' || p.directUrl === 'home' || p.directUrl === 'index') || null;
     this.titleService.setTitle(`${this.brandName} | Official Website`);
 
     // 1. Navigation Header Section Unit
@@ -700,7 +1520,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       headerSection,
       heroSection,
       bodySections: bodySectionsList,
-      footerSection
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
@@ -737,20 +1559,39 @@ export class LandingComponent implements OnInit, OnDestroy {
     // 2. Breadcrumb Header Section Unit
     const rawSections: any[] = this.currentPage.pageSections || [];
     const heroSection = rawSections.find(
-      (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
+      (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' ||
+                    (sec.templateKey || '').toLowerCase() === 'breadcrumb_banner'
     );
 
+    // Row 5 custom background image uploaded for this page takes highest priority
+    const pageCustomBg = this.currentPage.imageUrl || 
+                         this.currentPage.ImageUrl || 
+                         this.currentPage.headerImageUrl || 
+                         this.currentPage.backgroundImageUrl;
+
+    const effectiveBg = pageCustomBg || 
+                        heroSection?.imageUrl || 
+                        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
+
+    const pageTitle = this.currentPage.title || heroSection?.title || '';
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
-        title: heroSection?.title || this.currentPage.title || '',
+        title: pageTitle,
+        Title: pageTitle,
+        pageTitle: pageTitle,
         miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || this.currentPage.pageCategory?.title || this.currentPage.miniTitle || '',
-        description: heroSection?.description || this.currentPage.description || '',
-        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80',
+        description: this.currentPage.description || heroSection?.description || '',
+        backgroundImageUrl: effectiveBg,
+        imageUrl: effectiveBg,
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: this.currentPage.title || '', url: '#', isActive: true }
+          { label: pageTitle, url: '#', isActive: true }
+        ],
+        breadcrumbs: [
+          { title: 'Home', url: '/', isActive: false },
+          { title: pageTitle, url: '#', isActive: true }
         ]
       };
       breadcrumbSection = {
@@ -763,10 +1604,13 @@ export class LandingComponent implements OnInit, OnDestroy {
       };
     }
 
-    // 3. Page Layout Sections from database
+    // 3. Page Layout Sections from database (filter out header/breadcrumb sections so they do not duplicate in body)
     const bodySectionsList: SectionTemplateUnit[] = [];
     const pageSections = rawSections.filter(
-      (sec: any) => sec !== heroSection && (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit'
+      (sec: any) => sec !== heroSection &&
+                    (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit' &&
+                    (sec.templateKey || '').toLowerCase() !== 'breadcrumb_banner' &&
+                    !(sec.templateKey || '').toLowerCase().includes('breadcrumb')
     );
 
     if (pageSections.length > 0) {
@@ -832,7 +1676,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       headerSection,
       breadcrumbSection,
       bodySections: bodySectionsList,
-      footerSection
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
@@ -860,14 +1706,24 @@ export class LandingComponent implements OnInit, OnDestroy {
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
+      const blogPage = this.publishedPages.find(p => (p.slug || '').toLowerCase() === 'blog' || (p.directUrl || '').toLowerCase() === 'blog');
+      const blogBg = blogPage?.imageUrl || blogPage?.ImageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80';
+      const blogTitle = blogPage?.title || 'Blog';
       const breadcrumbData = {
-        title: 'Blog',
+        title: blogTitle,
+        Title: blogTitle,
+        pageTitle: blogTitle,
         miniTitle: 'PUBLICATIONS',
-        description: '',
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80',
+        description: blogPage?.description || '',
+        backgroundImageUrl: blogBg,
+        imageUrl: blogBg,
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
-          { label: 'Blog', url: '#', isActive: true }
+          { label: blogTitle, url: '#', isActive: true }
+        ],
+        breadcrumbs: [
+          { title: 'Home', url: '/', isActive: false },
+          { title: blogTitle, url: '#', isActive: true }
         ]
       };
       breadcrumbSection = {
@@ -929,7 +1785,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       headerSection,
       breadcrumbSection,
       bodySections: bodySectionsList,
-      footerSection
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
@@ -1015,13 +1873,21 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (breadcrumbTemplate) {
       const breadcrumbData = {
         title: this.currentArticle.title || '',
+        Title: this.currentArticle.title || '',
+        pageTitle: this.currentArticle.title || '',
         miniTitle: categoryTitle,
         description: this.currentArticle.date ? `Published on ${pubDate}` : '',
         backgroundImageUrl: resolvedCover,
+        imageUrl: resolvedCover,
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '/blog', isActive: false },
           { label: this.currentArticle.title || '', url: '#', isActive: true }
+        ],
+        breadcrumbs: [
+          { title: 'Home', url: '/', isActive: false },
+          { title: 'Blog', url: '/blog', isActive: false },
+          { title: this.currentArticle.title || '', url: '#', isActive: true }
         ]
       };
       breadcrumbSection = {
@@ -1172,7 +2038,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       headerSection,
       breadcrumbSection,
       bodySections: bodySectionsList,
-      footerSection
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
@@ -1611,7 +2479,9 @@ export class LandingComponent implements OnInit, OnDestroy {
       codeInjections: this.allCodeInjectionsList,
       headerSection,
       bodySections: bodySectionsList,
-      footerSection
+      footerSection,
+      ribbonSection: this.buildRibbonSection(),
+      ribonPosition: this.ribbonSettings?.position
     });
 
     this.finalizeRender(pageBundle.combinedStyles, pageBundle.visualBodyMarkup, pageBundle.combinedScripts);
@@ -2590,6 +3460,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   private recordTelemetry(): void {
     try {
       this.apiService.post('WebsiteContentApi/track-view', {
+        pageId: this.currentPage?.id || null,
         pageUrl: window.location.pathname || '/',
         pageTitle: this.titleService.getTitle() || this.brandName
       }).subscribe({

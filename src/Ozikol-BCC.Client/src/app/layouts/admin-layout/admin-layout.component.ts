@@ -37,19 +37,6 @@ interface PinnedItem {
       </div>
 
       <nav class="sidebar-nav">
-        <!-- Top of Sidebar: Active Operating Mode Badge -->
-        <div class="sidebar-mode-top-banner" *ngIf="isAdmin">
-          <div class="mode-banner-inner" [class.is-store]="websiteMode === 'ecommerce'" [class.is-website]="websiteMode !== 'ecommerce'" [title]="websiteMode === 'ecommerce' ? 'Current Mode: E-Commerce Storefront Default' : 'Current Mode: Standard Organization Website Default'">
-            <div class="mode-banner-left">
-              <span class="mode-pulse-dot"></span>
-              <span class="material-symbols-outlined mode-banner-icon">{{ websiteMode === 'ecommerce' ? 'storefront' : 'domain' }}</span>
-              <span class="mode-banner-text">{{ websiteMode === 'ecommerce' ? 'Store Default' : 'Website Default' }}</span>
-            </div>
-            <a routerLink="/admin/settings" class="mode-banner-tune" title="Configure Website Operating Mode in Settings">
-              <span class="material-symbols-outlined">tune</span>
-            </a>
-          </div>
-        </div>
         <!-- Section: PIN NAVIGATION -->
         <div id="pinned-sidebar-section" *ngIf="pinnedItems.length > 0">
           <div class="menu-title" style="display:flex; justify-content:space-between; align-items:center;">
@@ -73,6 +60,29 @@ interface PinnedItem {
         <!-- ADMIN CONSOLE SIDEBAR (when isAdmin is true)   -->
         <!-- ============================================== -->
         <ng-container *ngIf="isAdmin">
+          <!-- Section: WEBSITE -->
+          <div class="menu-title">Website</div>
+          <div class="nav-item">
+            <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">home</span>
+                <span>Home</span>
+              </div>
+              <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/settings/console/custom-domain" class="nav-link domain-nav-link" [class.is-linked]="hasCustomDomain" [title]="hasCustomDomain ? 'Manage Custom Domain (' + customDomain + ')' : 'Link a Custom Domain'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'domain_verification' : 'add_link' }}</span>
+                <span>{{ hasCustomDomain ? 'Manage Domain' : 'Link Domain' }}</span>
+              </div>
+              <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
+                {{ hasCustomDomain ? 'Active' : 'Setup' }}
+              </span>
+            </a>
+          </div>
+
           <div class="menu-title">Command Center</div>
           <div class="nav-item">
             <a routerLink="/dashboard/console" [class.active]="isCurrentRoute('/dashboard/console') || isCurrentRoute('/admin/dashboard')" class="nav-link">
@@ -224,6 +234,36 @@ interface PinnedItem {
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/marketplace')" (click)="togglePin('UI Marketplace', '/content/console/marketplace', 'widgets'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/marketplace') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/content/console/marketplace') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+
+          <!-- Brand & Settings Menu Item (Under Content CMS Studio) -->
+          <div class="nav-item">
+            <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">palette</span>
+                <span>Brand &amp; Settings</span>
+                <span class="badge-pill badge-hot">Hot</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+
+          <!-- Custom Domain Setup Menu Item (Under Content CMS Studio) -->
+          <div class="nav-item">
+            <a routerLink="/settings/console/custom-domain" [class.active]="isCurrentRoute('/settings/console/custom-domain')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">dns</span>
+                <span>Custom Domain</span>
+                <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
+                  {{ hasCustomDomain ? 'Active' : 'Setup' }}
+                </span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/custom-domain')" (click)="togglePin('Custom Domain', '/settings/console/custom-domain', 'dns'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console/custom-domain') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/settings/console/custom-domain') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
@@ -421,6 +461,16 @@ interface PinnedItem {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/registration-form" [class.active]="isCurrentRoute('/users/console/registration-form')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">dynamic_form</span>Registration Form Builder</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/registration-form')" (click)="togglePin('Registration Form Builder', '/users/console/registration-form', 'dynamic_form')" [title]="isPinned('/users/console/registration-form') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/registration-form') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/kpi" [class.active]="isUserKpiActive()" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">monitoring</span>KPIs & Leaderboard</span>
                   </a>
@@ -546,19 +596,7 @@ interface PinnedItem {
             </span>
           </div>
 
-          <div class="menu-title">Configuration</div>
-          <div class="nav-item">
-            <a routerLink="/settings/console" [class.active]="isParentActive('/settings/console') || isParentActive('/admin/settings')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">palette</span>
-                <span>Brand & Settings</span>
-                <span class="badge-pill badge-hot">Hot</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
+
 
           <div class="menu-title">Reports & Knowledge</div>
           <span class="nav-link disabled">
@@ -1491,6 +1529,37 @@ export class AdminLayoutComponent implements OnInit {
 
   currentRoute = '/admin/dashboard';
   websiteMode: string = localStorage.getItem('tenant_website_mode') || 'standard';
+  customDomain: string = localStorage.getItem('tenant_custom_domain') || '';
+  primaryDomain: string = localStorage.getItem('tenant_primary_domain') || '';
+  websiteUrl: string = localStorage.getItem('tenant_website_url') || '';
+  tenantKey: string = localStorage.getItem('tenant_key') || '';
+
+  get hasCustomDomain(): boolean {
+    return !!(this.customDomain && this.customDomain.trim());
+  }
+
+  formatDomainUrl(domainOrUrl: string): string {
+    if (!domainOrUrl) return '';
+    const trimmed = domainOrUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    const isLocal = trimmed.includes('localhost') || trimmed.includes('127.0.0.1');
+    return `${isLocal ? 'http://' : 'https://'}${trimmed}`;
+  }
+
+  get liveWebsiteUrl(): string {
+    if (this.hasCustomDomain) {
+      return this.formatDomainUrl(this.customDomain);
+    }
+    if (this.websiteUrl && this.websiteUrl.trim()) {
+      return this.formatDomainUrl(this.websiteUrl);
+    }
+    if (this.primaryDomain && this.primaryDomain.trim()) {
+      return this.formatDomainUrl(this.primaryDomain);
+    }
+    return window.location.origin;
+  }
   openTabs: TaskTab[] = [
     { title: 'Dashboard', url: '/admin/dashboard', icon: 'dashboard', closable: false }
   ];
@@ -1566,6 +1635,18 @@ export class AdminLayoutComponent implements OnInit {
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
       this.loadTenantInfo();
+    });
+
+    // Listen for dynamic tenant domain updates from the Domain Settings suite
+    window.addEventListener('tenant_domain_updated', (e: any) => {
+      if (e?.detail) {
+        this.customDomain = e.detail.customDomain || '';
+        if (this.customDomain) {
+          localStorage.setItem('tenant_custom_domain', this.customDomain);
+        } else {
+          localStorage.removeItem('tenant_custom_domain');
+        }
+      }
     });
 
     // Listen for dynamic forms changes from Manage Forms suite
@@ -1788,6 +1869,33 @@ export class AdminLayoutComponent implements OnInit {
         if (res?.data?.storeOperatingMode) {
           this.websiteMode = res.data.storeOperatingMode;
           localStorage.setItem('tenant_website_mode', res.data.storeOperatingMode);
+        }
+      },
+      error: () => {}
+    });
+
+    this.api.get<any>('DashboardApi/metrics').subscribe({
+      next: (res) => {
+        if (res?.data?.masterTenantInfo) {
+          const info = res.data.masterTenantInfo;
+          this.customDomain = info.customDomain || '';
+          this.primaryDomain = info.primaryDomain || '';
+          this.websiteUrl = info.websiteUrl || '';
+          this.tenantKey = info.tenantKey || '';
+          if (this.customDomain) {
+            localStorage.setItem('tenant_custom_domain', this.customDomain);
+          } else {
+            localStorage.removeItem('tenant_custom_domain');
+          }
+          if (this.primaryDomain) {
+            localStorage.setItem('tenant_primary_domain', this.primaryDomain);
+          }
+          if (this.websiteUrl) {
+            localStorage.setItem('tenant_website_url', this.websiteUrl);
+          }
+          if (this.tenantKey) {
+            localStorage.setItem('tenant_key', this.tenantKey);
+          }
         }
       },
       error: () => {}

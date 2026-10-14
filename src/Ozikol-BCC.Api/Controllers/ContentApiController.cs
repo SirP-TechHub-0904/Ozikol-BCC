@@ -70,7 +70,23 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder);
+                // Check if tenant has activated their own Bring-Your-Own-Storage (BYOS) Cloudinary credentials
+                var config = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                string? customCloud = null;
+                string? customKey = null;
+                string? customSecret = null;
+
+                if (config?.UseCustomStorage == true &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryCloudName) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiKey) &&
+                    !string.IsNullOrWhiteSpace(config.CustomCloudinaryApiSecret))
+                {
+                    customCloud = config.CustomCloudinaryCloudName;
+                    customKey = config.CustomCloudinaryApiKey;
+                    customSecret = config.CustomCloudinaryApiSecret;
+                }
+
+                var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, folder, customCloud, customKey, customSecret);
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     url = secureUrl,
@@ -472,12 +488,23 @@ namespace Ozikol_BCC.Api.Controllers
                     Title = request.Title.Trim(),
                     DirectUrl = uniqueSlug,
                     EnableDirectUrl = true,
+                    IsHomePage = request.IsHomePage,
                     PageCategoryId = categoryId,
+                    ShowInTopBar = request.ShowInTopBar,
+                    TopBarSortOrder = request.TopBarSortOrder,
                     ShowInMainMenu = request.ShowInMenu || request.ShowInMainMenu,
+                    MainMenuSortOrder = request.MainMenuSortOrder != 0 ? request.MainMenuSortOrder : request.SortOrder,
                     ShowInMenuDropDown = request.ShowInMenuDropDown,
+                    DropdownSortOrder = request.DropdownSortOrder,
                     ShowInFooter = request.ShowInFooter,
+                    FooterSortOrder = request.FooterSortOrder,
+                    ShowInFooterBottom = request.ShowInFooterBottom,
+                    FooterBottomSortOrder = request.FooterBottomSortOrder,
                     IsLegal = request.IsLegal,
                     IsMenuCTA = request.IsMenuCTA,
+                    MenuCtaText = request.MenuCtaText?.Trim(),
+                    MenuCtaUrl = request.MenuCtaUrl?.Trim(),
+                    MenuCtaStyle = string.IsNullOrWhiteSpace(request.MenuCtaStyle) ? "primary" : request.MenuCtaStyle.Trim(),
                     Tags = request.Tags,
                     Publish = request.IsPublished || request.Publish,
                     SecurityPage = request.SecurityPage,
@@ -490,6 +517,9 @@ namespace Ozikol_BCC.Api.Controllers
                     MetaDescription = request.MetaDescription,
                     MetaKeywords = request.MetaKeywords,
                     MainPageId = request.MainPageId,
+                    AddToRibon = request.AddToRibon,
+                    RibonCustomDisplayTitle = request.RibonCustomDisplayTitle,
+                    RibonSortOrder = request.RibonSortOrder,
                     CreatedAtUtc = DateTime.UtcNow
                 };
 
@@ -519,13 +549,24 @@ namespace Ozikol_BCC.Api.Controllers
 
             existing.Title = updated.Title;
             existing.EnableDirectUrl = updated.EnableDirectUrl;
+            existing.IsHomePage = updated.IsHomePage;
             existing.Publish = updated.Publish;
             existing.SecurityPage = updated.SecurityPage;
+            existing.ShowInTopBar = updated.ShowInTopBar;
+            existing.TopBarSortOrder = updated.TopBarSortOrder;
             existing.ShowInMainMenu = updated.ShowInMainMenu;
+            existing.MainMenuSortOrder = updated.MainMenuSortOrder;
             existing.ShowInMenuDropDown = updated.ShowInMenuDropDown;
+            existing.DropdownSortOrder = updated.DropdownSortOrder;
             existing.ShowInFooter = updated.ShowInFooter;
+            existing.FooterSortOrder = updated.FooterSortOrder;
+            existing.ShowInFooterBottom = updated.ShowInFooterBottom;
+            existing.FooterBottomSortOrder = updated.FooterBottomSortOrder;
             existing.IsLegal = updated.IsLegal;
             existing.IsMenuCTA = updated.IsMenuCTA;
+            existing.MenuCtaText = updated.MenuCtaText?.Trim();
+            existing.MenuCtaUrl = updated.MenuCtaUrl?.Trim();
+            existing.MenuCtaStyle = string.IsNullOrWhiteSpace(updated.MenuCtaStyle) ? "primary" : updated.MenuCtaStyle.Trim();
             existing.Tags = updated.Tags;
             existing.SortOrder = updated.SortOrder;
             existing.MenuPosition = updated.MenuPosition != 0 ? updated.MenuPosition : Ozikol_BCC.Domain.Enum.Enum.MenuPosition.First;
@@ -537,6 +578,9 @@ namespace Ozikol_BCC.Api.Controllers
             existing.MetaDescription = updated.MetaDescription;
             existing.MetaKeywords = updated.MetaKeywords;
             existing.MainPageId = updated.MainPageId;
+            existing.AddToRibon = updated.AddToRibon;
+            existing.RibonCustomDisplayTitle = updated.RibonCustomDisplayTitle;
+            existing.RibonSortOrder = updated.RibonSortOrder;
             existing.UpdatedAtUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -2043,14 +2087,6 @@ namespace Ozikol_BCC.Api.Controllers
             }, "Workspace marked as blank canvas successfully."));
         }
 
-        /// <summary>
-        /// Seeds the complete turnkey website defaults into the tenant database:
-        /// 1. 3 Standard CMS Forms (Contact Us, Newsletter, Service Request)
-        /// 2. 3 Rich Editorial Blog Posts (Excerpts + Full Rich-Text HTML)
-        /// 3. Standard Navigation Categories and WebPages
-        /// 4. 10 Dedicated Body Sections distributed across Home, Services, About, and Contact pages
-        /// 5. Installed Category Templates (Menu, Hero, 10 Body Sections, Blog Feed, Blog Detail, Footer)
-        /// 6. Comprehensive SEO, Social, Favicon &amp; Mobile PWA tags in &amp;lt;head&amp;gt;
         /// <summary>
         /// Restores only the canonical Corporate Theme Suite template blueprints and 3-zone code injection tags into the vault.
         /// Does NOT seed or alter website pages, sections, blogs, or forms.
@@ -4140,10 +4176,50 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     })
                     .ToListAsync();
 
+                // Resolve tenant dynamic registration vanity slug
+                string regSlug = "register";
+                try
+                {
+                    var misConfig = await _context.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                    if (!string.IsNullOrWhiteSpace(misConfig?.RegistrationUrlSlug))
+                    {
+                        regSlug = misConfig.RegistrationUrlSlug.Trim().TrimStart('/');
+                    }
+                    else
+                    {
+                        var policyField = await _context.BcpRegistrationFormFields.AsNoTracking().FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+                        if (policyField != null && !string.IsNullOrWhiteSpace(policyField.OptionsJson))
+                        {
+                            var extra = JsonSerializer.Deserialize<RegistrationLayoutConfigExtra>(policyField.OptionsJson);
+                            if (!string.IsNullOrWhiteSpace(extra?.RegistrationUrlSlug))
+                                regSlug = extra.RegistrationUrlSlug.Trim().TrimStart('/');
+                        }
+                    }
+                }
+                catch { }
+
+                string regUrl = regSlug == "register" ? "/auth/register" : $"/auth/{regSlug}";
+
                 var menuCtaButtons = new List<object>();
                 if (dbCtaButtons.Count > 0)
                 {
-                    menuCtaButtons.AddRange(dbCtaButtons);
+                    foreach (var btn in dbCtaButtons)
+                    {
+                        string btnUrl = btn.url;
+                        if (btnUrl == "/register" || btnUrl == "/auth/register" || btnUrl == "register")
+                        {
+                            btnUrl = regUrl;
+                        }
+                        menuCtaButtons.Add(new
+                        {
+                            btn.id,
+                            btn.title,
+                            slug = (btn.slug == "auth/register" || btn.slug == "register") ? regUrl.TrimStart('/') : btn.slug,
+                            url = btnUrl,
+                            btn.customClass,
+                            btn.buttonClass
+                        });
+                    }
                 }
                 else
                 {
@@ -4161,8 +4237,8 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                     {
                         id = Guid.NewGuid(),
                         title = "Get Started",
-                        slug = "auth/register",
-                        url = "/auth/register",
+                        slug = regUrl.TrimStart('/'),
+                        url = regUrl,
                         customClass = "oz-btn-primary",
                         buttonClass = "oz-btn-primary"
                     });
@@ -5451,6 +5527,20 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? MetaKeywords { get; set; }
         public Ozikol_BCC.Domain.Enum.Enum.HomeSortFrom HomeSortFrom { get; set; }
         public Guid? MainPageId { get; set; }
+        public bool IsHomePage { get; set; } = false;
+        public bool ShowInTopBar { get; set; } = false;
+        public int TopBarSortOrder { get; set; } = 0;
+        public int MainMenuSortOrder { get; set; } = 0;
+        public int DropdownSortOrder { get; set; } = 0;
+        public int FooterSortOrder { get; set; } = 0;
+        public bool ShowInFooterBottom { get; set; } = false;
+        public int FooterBottomSortOrder { get; set; } = 0;
+        public string? MenuCtaText { get; set; }
+        public string? MenuCtaUrl { get; set; }
+        public string? MenuCtaStyle { get; set; } = "primary";
+        public bool AddToRibon { get; set; } = false;
+        public string? RibonCustomDisplayTitle { get; set; }
+        public int RibonSortOrder { get; set; } = 0;
     }
 
     public class CreatePageCategoryRequest
@@ -5466,7 +5556,6 @@ You MUST respond strictly with a valid JSON object matching this schema without 
         public string? FooterDisplayTitle { get; set; }
         public Guid? ParentId { get; set; }
         public string? Icon { get; set; }
-        public Ozikol_BCC.Domain.Enum.Enum.HomeSortFrom HomeSortFrom { get; set; }
     }
 
     public class CreateBlogCategoryRequest

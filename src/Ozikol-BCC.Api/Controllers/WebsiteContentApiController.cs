@@ -82,10 +82,6 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(ApiResponse<object>.FailureResponse($"Page with slug '{slug}' was not found or is unpublished."));
             }
 
-            // Increment public page view counter
-            page.ViewCount++;
-            await _context.SaveChangesAsync();
-
             return Ok(ApiResponse<object>.SuccessResponse(page, "Page details retrieved."));
         }
 
@@ -203,11 +199,42 @@ namespace Ozikol_BCC.Api.Controllers
 
             var (deviceType, browser) = ParseClientDeviceAndBrowser(userAgent);
 
+            // Resolve page entity: first by PageId, and if not provided or Guid.Empty, by PageUrl/DirectUrl
+            WebPage? page = null;
+            if (request.PageId.HasValue && request.PageId.Value != Guid.Empty)
+            {
+                page = await _context.WebPages.FindAsync(request.PageId.Value);
+            }
+
+            if (page == null && !string.IsNullOrWhiteSpace(request.PageUrl))
+            {
+                var clean = request.PageUrl.Trim().ToLowerInvariant().Trim('/');
+                if (clean.StartsWith("page/"))
+                {
+                    clean = clean.Substring(5).Trim('/');
+                }
+
+                var slashClean = "/" + clean;
+
+                if (string.IsNullOrWhiteSpace(clean) || clean == "home" || clean == "index")
+                {
+                    page = await _context.WebPages.FirstOrDefaultAsync(p => p.IsHomePage || p.DirectUrl == "/" || p.DirectUrl == "home" || p.DirectUrl == "index");
+                }
+                else
+                {
+                    page = await _context.WebPages.FirstOrDefaultAsync(p => p.DirectUrl != null && 
+                        (p.DirectUrl.ToLower() == clean || 
+                         p.DirectUrl.ToLower() == slashClean || 
+                         p.DirectUrl.ToLower().Trim('/') == clean ||
+                         p.Title.ToLower() == clean));
+                }
+            }
+
             var log = new WebPageViewLog
             {
-                WebPageId = request.PageId,
+                WebPageId = page?.Id ?? request.PageId,
                 PageUrl = request.PageUrl,
-                PageTitle = request.PageTitle,
+                PageTitle = request.PageTitle ?? page?.Title,
                 DeviceType = deviceType,
                 Browser = browser,
                 UserAgent = userAgent,
@@ -220,13 +247,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             _context.WebPageViewLogs.Add(log);
 
-            if (request.PageId.HasValue && request.PageId.Value != Guid.Empty)
+            if (page != null)
             {
-                var page = await _context.WebPages.FindAsync(request.PageId.Value);
-                if (page != null)
-                {
-                    page.ViewCount += 1;
-                }
+                page.ViewCount += 1;
             }
 
             await _context.SaveChangesAsync();
@@ -370,11 +393,6 @@ namespace Ozikol_BCC.Api.Controllers
         // 9. PUBLIC PAGE FORMS & DYNAMIC SUBMISSIONS
         // ==========================================
 
-        /// <summary>
-        /// Retrieves the public schema and field definitions of an active website form by its key.
-        /// Used by public website sections (Contact Us, Newsletter, Service Request, etc.).
-        /// </summary>
-        /// <param name="formKey">The programmatic key of the form (e.g. "contact-us", "newsletter", "service-request").</param>
         /// <summary>
         /// Retrieves the public Google reCAPTCHA site key for client form rendering.
         /// </summary>
@@ -780,7 +798,30 @@ namespace Ozikol_BCC.Api.Controllers
                     setting.EnableComingSoon,
                     setting.RemovePlatformWatermark,
                     recaptchaSiteKey = _recaptchaService.SiteKey,
-                    contactChannels = channels
+                    contactChannels = channels,
+                    ribbonTicker = new
+                    {
+                        enabled = setting.EnableBreakingNewsRibon,
+                        title = !string.IsNullOrWhiteSpace(setting.BreakingNewsRibonTitle) ? setting.BreakingNewsRibonTitle : "BREAKING NEWS",
+                        position = !string.IsNullOrWhiteSpace(setting.BreakingNewsRibonPosition) ? setting.BreakingNewsRibonPosition : "after_menu"
+                    },
+                    cookieConsent = new
+                    {
+                        enabled = setting.EnableCookieConsent,
+                        title = !string.IsNullOrWhiteSpace(setting.CookieConsentTitle) ? setting.CookieConsentTitle : "Cookie Preferences & Privacy",
+                        message = !string.IsNullOrWhiteSpace(setting.CookieConsentMessage) ? setting.CookieConsentMessage : "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                        acceptText = !string.IsNullOrWhiteSpace(setting.CookieConsentAcceptText) ? setting.CookieConsentAcceptText : "Accept All",
+                        declineText = !string.IsNullOrWhiteSpace(setting.CookieConsentDeclineText) ? setting.CookieConsentDeclineText : "Decline",
+                        policyUrl = !string.IsNullOrWhiteSpace(setting.CookieConsentPolicyUrl) ? setting.CookieConsentPolicyUrl : "/privacy-policy"
+                    },
+                    whatsAppChat = new
+                    {
+                        enabled = setting.EnableWhatsAppChat,
+                        number = setting.WhatsAppNumber ?? string.Empty,
+                        promptMessage = !string.IsNullOrWhiteSpace(setting.WhatsAppPromptMessage) ? setting.WhatsAppPromptMessage : "Hello! I have an inquiry regarding your services.",
+                        widgetTitle = !string.IsNullOrWhiteSpace(setting.WhatsAppWidgetTitle) ? setting.WhatsAppWidgetTitle : "Chat with Us",
+                        widgetSubtitle = !string.IsNullOrWhiteSpace(setting.WhatsAppWidgetSubtitle) ? setting.WhatsAppWidgetSubtitle : "Typically replies within minutes"
+                    }
                 };
 
                 return Ok(ApiResponse<object>.SuccessResponse(payload, "Public UI settings retrieved."));
@@ -799,10 +840,119 @@ namespace Ozikol_BCC.Api.Controllers
                 EnableComingSoon = false,
                 RemovePlatformWatermark = false,
                 recaptchaSiteKey = _recaptchaService.SiteKey,
-                contactChannels = channels
+                contactChannels = channels,
+                ribbonTicker = new
+                {
+                    enabled = false,
+                    title = "BREAKING NEWS",
+                    position = "after_menu"
+                },
+                cookieConsent = new
+                {
+                    enabled = true,
+                    title = "Cookie Preferences & Privacy",
+                    message = "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                    acceptText = "Accept All",
+                    declineText = "Decline",
+                    policyUrl = "/privacy-policy"
+                },
+                whatsAppChat = new
+                {
+                    enabled = false,
+                    number = string.Empty,
+                    promptMessage = "Hello! I have an inquiry regarding your services.",
+                    widgetTitle = "Chat with Us",
+                    widgetSubtitle = "Typically replies within minutes"
+                }
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(defaultSetting, "Default public UI settings retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves active ticker items from published blog articles and web pages flagged with AddToRibon.
+        /// Ordered by RibonSortOrder ascending.
+        /// </summary>
+        /// <returns>Collection of marquee ticker items.</returns>
+        [HttpGet("ticker")]
+        public async Task<IActionResult> GetPublicTicker()
+        {
+            var blogItems = await _context.Blogs
+                .AsNoTracking()
+                .Where(b => b.Publish && b.AddToRibon)
+                .Select(b => new
+                {
+                    id = b.Id,
+                    type = "blog",
+                    title = !string.IsNullOrWhiteSpace(b.RibonCustomDisplayTitle) ? b.RibonCustomDisplayTitle : (b.Title ?? string.Empty),
+                    url = $"/blog/{b.Id}",
+                    sortOrder = b.RibonSortOrder,
+                    createdAtUtc = b.Date
+                })
+                .ToListAsync();
+
+            var pageItems = await _context.WebPages
+                .AsNoTracking()
+                .Where(p => p.Publish && p.AddToRibon)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    type = "page",
+                    title = !string.IsNullOrWhiteSpace(p.RibonCustomDisplayTitle) ? p.RibonCustomDisplayTitle : p.Title,
+                    url = !string.IsNullOrWhiteSpace(p.DirectUrl) ? (p.DirectUrl.StartsWith("/") ? p.DirectUrl : $"/{p.DirectUrl}") : $"/page/{p.Id}",
+                    sortOrder = p.RibonSortOrder,
+                    createdAtUtc = p.CreatedAtUtc
+                })
+                .ToListAsync();
+
+            var combined = blogItems
+                .Concat(pageItems)
+                .OrderBy(item => item.sortOrder)
+                .ThenByDescending(item => item.createdAtUtc)
+                .ToList();
+
+            // Fallback: If tenant has not yet explicitly flagged any blog or page with AddToRibon,
+            // stream the latest published blogs and published pages so the marquee ticker displays immediately.
+            if (combined.Count == 0)
+            {
+                var fallbackBlogs = await _context.Blogs
+                    .AsNoTracking()
+                    .Where(b => b.Publish)
+                    .OrderByDescending(b => b.Date)
+                    .Take(5)
+                    .Select(b => new
+                    {
+                        id = b.Id,
+                        type = "blog",
+                        title = b.Title ?? string.Empty,
+                        url = $"/blog/{b.Id}",
+                        sortOrder = 0,
+                        createdAtUtc = b.Date
+                    })
+                    .ToListAsync();
+
+                var fallbackPages = await _context.WebPages
+                    .AsNoTracking()
+                    .Where(p => p.Publish && !p.IsHomePage)
+                    .OrderBy(p => p.SortOrder)
+                    .Take(5)
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        type = "page",
+                        title = p.Title,
+                        url = !string.IsNullOrWhiteSpace(p.DirectUrl) ? (p.DirectUrl.StartsWith("/") ? p.DirectUrl : $"/{p.DirectUrl}") : $"/page/{p.Id}",
+                        sortOrder = 0,
+                        createdAtUtc = p.CreatedAtUtc
+                    })
+                    .ToListAsync();
+
+                combined = fallbackBlogs
+                    .Concat(fallbackPages)
+                    .ToList();
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(combined, "Ticker items retrieved successfully."));
         }
 
         /// <summary>

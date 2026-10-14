@@ -122,6 +122,13 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Registration Source")]
         [StringLength(50)]
         public string RegistrationSource { get; set; } = "Admin";
+
+        /// <summary>
+        /// Dynamic business-specific registration and onboarding attribute responses stored as serialized JSON key-value pairs.
+        /// Corresponds to the field definitions configured in BcpRegistrationFormFields.
+        /// </summary>
+        [Display(Name = "Custom Attributes (JSON)")]
+        public string? CustomAttributesJson { get; set; }
     }
 }
 

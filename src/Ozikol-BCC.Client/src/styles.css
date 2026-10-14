@@ -2844,3 +2844,33 @@ body.sidebar-closed .topbar-brand-logo {
   font-size: 12px;
 }
 
+/* Sidebar Domain Badges and Nav Indicators */
+.nav-external-hint {
+  font-size: 13.5px !important;
+  opacity: 0.45;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  margin-left: 4px;
+}
+.nav-link:hover .nav-external-hint {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+.badge-pill.badge-linked {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #16a34a !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 6px !important;
+}
+.badge-pill.badge-unlinked {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #d97706 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 6px !important;
+}
+

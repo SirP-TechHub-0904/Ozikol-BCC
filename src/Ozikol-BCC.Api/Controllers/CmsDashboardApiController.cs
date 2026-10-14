@@ -48,7 +48,13 @@ namespace Ozikol_BCC.Api.Controllers
             var dropdownItems = await _context.WebPages.CountAsync(p => p.ShowInMenuDropDown && p.Publish);
             var footerLinks = await _context.WebPages.CountAsync(p => p.ShowInFooter && p.Publish);
 
-            // 4. Blogs & Sections
+            // 4. Forms & Submissions Metrics
+            var totalForms = await _context.PageForms.CountAsync();
+            var activeForms = await _context.PageForms.CountAsync(f => f.IsActive);
+            var totalSubmissions = await _context.PageFormSubmissions.CountAsync();
+            var newSubmissions = await _context.PageFormSubmissions.CountAsync(s => s.Status == "New");
+
+            // 5. Blogs & Sections
             var totalSliders = 0;
             var publishedSliders = 0;
             var totalFaqs = 0;
@@ -57,7 +63,7 @@ namespace Ozikol_BCC.Api.Controllers
             var totalBlogs = await _context.Blogs.CountAsync();
             var totalBlogCategories = await _context.BlogCategories.CountAsync();
 
-            // 5. Active Theme Suite & Blueprints
+            // 6. Active Theme Suite & Blueprints
             var blueprintCount = await _context.TenantInstalledTemplates.CountAsync();
             var activeInjections = await _context.SiteCodeInjectionTags.CountAsync(t => t.IsActive);
 
@@ -68,47 +74,98 @@ namespace Ozikol_BCC.Api.Controllers
                 ? activeHeroOrMenu.Name
                 : "Corporate Suite";
 
-            // 6. Content Health Diagnostics
-            var emptyPages = await _context.WebPages
+            // Helper: Check if a webpage uses direct routing, external URL, or dedicated system destination
+            bool IsDirectOrSystemPage(WebPage p)
+            {
+                if (p.EnableDirectUrl) return true;
+                if (p.IsMenuCTA) return true;
+                if (!string.IsNullOrWhiteSpace(p.MenuCtaUrl)) return true;
+                if (string.IsNullOrWhiteSpace(p.DirectUrl)) return false;
+
+                var slug = p.DirectUrl.Trim().ToLowerInvariant();
+                return slug.StartsWith("http://") ||
+                       slug.StartsWith("https://") ||
+                       slug.StartsWith("mailto:") ||
+                       slug.StartsWith("tel:") ||
+                       slug.StartsWith("/auth") || slug.StartsWith("auth/") ||
+                       slug.StartsWith("/portal") || slug.StartsWith("portal/") ||
+                       slug.StartsWith("/store") || slug.StartsWith("store/") ||
+                       slug.StartsWith("/login") || slug.StartsWith("login") ||
+                       slug.StartsWith("/register") || slug.StartsWith("register") ||
+                       slug.StartsWith("/admin") || slug.StartsWith("admin/") ||
+                       slug.StartsWith("/settings") || slug.StartsWith("settings/") ||
+                       slug.StartsWith("/users") || slug.StartsWith("users/") ||
+                       slug.StartsWith("/products") || slug.StartsWith("products/") ||
+                       slug.StartsWith("#");
+            }
+
+            // 7. Content Health Diagnostics & Inaccessible Pages Audit
+            // Exclude direct URL, system routes, and menu CTA pages from empty section checks
+            var allWebPagesForAudit = await _context.WebPages
                 .AsNoTracking()
                 .Include(p => p.PageSections)
-                .Where(p => p.Publish && (p.PageSections == null || !p.PageSections.Any() || p.PageSections.All(s => s.Disable)))
                 .ToListAsync();
 
-            var emptyPagesCount = emptyPages.Count;
+            // Detect genuine broken pages: missing direct URL slug OR published content page with 0 active layout sections
+            var issuesList = allWebPagesForAudit
+                .Where(p => string.IsNullOrWhiteSpace(p.DirectUrl) ||
+                            (p.Publish && !IsDirectOrSystemPage(p) && (p.PageSections == null || !p.PageSections.Any(s => !s.Disable))))
+                .ToList();
 
-            // 7. Real Most Visited Web Pages from Database
-            var mostVisitedPages = await _context.WebPages
+            var emptyPagesCount = issuesList.Count;
+
+            // 8. Real Most Visited Web Pages from Database (Aggregating ViewCount & WebPageViewLogs)
+            var allPagesForViews = await _context.WebPages
                 .AsNoTracking()
-                .OrderByDescending(p => p.ViewCount)
-                .Take(7)
-                .Select(p => new
+                .Include(p => p.PageCategory)
+                .ToListAsync();
+
+            var allLogs = await _context.WebPageViewLogs
+                .AsNoTracking()
+                .Select(l => new { l.Id, l.WebPageId, PageUrl = (l.PageUrl ?? string.Empty).Trim().ToLower() })
+                .ToListAsync();
+
+            var mostVisitedPages = allPagesForViews
+                .Select(p =>
                 {
-                    id = p.Id,
-                    title = p.Title ?? "Untitled Page",
-                    slug = p.DirectUrl ?? "home",
-                    views = p.ViewCount,
-                    publish = p.Publish,
-                    category = p.PageCategory != null ? p.PageCategory.Title : "Standalone"
-                })
-                .ToListAsync();
+                    var cleanUrl = (p.DirectUrl ?? string.Empty).Trim().ToLower().Trim('/');
+                    var slashUrl = "/" + cleanUrl;
 
-            // 8. Real Broken / Inaccessible Pages Alert Detector from Database
-            var brokenPages = await _context.WebPages
-                .AsNoTracking()
-                .Include(p => p.PageSections)
-                .Where(p => string.IsNullOrWhiteSpace(p.DirectUrl) || (p.Publish && (p.PageSections == null || !p.PageSections.Any())))
-                .Take(5)
+                    // Each unique log entry is counted at most once for this page
+                    var logCount = allLogs.Count(l =>
+                        (l.WebPageId.HasValue && l.WebPageId.Value == p.Id) ||
+                        (!l.WebPageId.HasValue && !string.IsNullOrEmpty(l.PageUrl) && (l.PageUrl == slashUrl || l.PageUrl == cleanUrl || l.PageUrl.Trim('/') == cleanUrl)));
+
+                    // If logs exist, the distinct logged events count is the authoritative count of real user visits;
+                    // otherwise fall back to the stored ViewCount.
+                    var totalVisits = logCount > 0 ? (long)logCount : (long)p.ViewCount;
+                    return new
+                    {
+                        id = p.Id,
+                        title = p.Title ?? "Untitled Page",
+                        slug = p.DirectUrl ?? "home",
+                        views = totalVisits,
+                        publish = p.Publish,
+                        category = p.PageCategory != null ? p.PageCategory.Title : "Standalone"
+                    };
+                })
+                .OrderByDescending(p => p.views)
+                .Take(7)
+                .ToList();
+
+            // 9. Real Broken / Inaccessible Pages Alert Detector from Database
+            var brokenPages = issuesList
+                .Take(50)
                 .Select(p => new
                 {
                     id = p.Id,
                     title = p.Title ?? "Untitled Page",
                     slug = p.DirectUrl ?? "(No Direct URL)",
                     issue = string.IsNullOrWhiteSpace(p.DirectUrl) ? "Missing URL Slug" :
-                            !p.Publish ? "Unpublished / Draft Mode" : "Published but 0 Layout Sections Attached",
+                            "Published Content Page with 0 Layout Sections Attached",
                     updatedUtc = p.UpdatedAtUtc ?? p.CreatedAtUtc
                 })
-                .ToListAsync();
+                .ToList();
 
             // 9. Real Timeframe Range Cutoff
             DateTime cutoff = range?.ToLowerInvariant() switch
@@ -203,8 +260,10 @@ namespace Ozikol_BCC.Api.Controllers
                     totalFaqs,
                     publishedFaqs,
                     totalFaqCategories,
-                    totalBlogs,
-                    totalBlogCategories,
+                    totalForms,
+                    activeForms,
+                    totalSubmissions,
+                    newSubmissions,
                     blueprintCount,
                     activeInjections,
                     emptyPagesCount,

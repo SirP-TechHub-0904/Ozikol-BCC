@@ -275,7 +275,21 @@ namespace Ozikol_BCC.Api.Controllers
                 ActivateLogin = site?.ActivateLogin ?? true,
                 ActivateLoginInMenu = site?.ActivateLoginInMenu ?? true,
                 ActivateLoginInFooter = site?.ActivateLoginInFooter ?? true,
-                LoginButtonText = !string.IsNullOrWhiteSpace(site?.LoginButtonText) ? site.LoginButtonText : "Sign In"
+                LoginButtonText = !string.IsNullOrWhiteSpace(site?.LoginButtonText) ? site.LoginButtonText : "Sign In",
+                EnableBreakingNewsRibon = site?.EnableBreakingNewsRibon ?? false,
+                BreakingNewsRibonTitle = !string.IsNullOrWhiteSpace(site?.BreakingNewsRibonTitle) ? site.BreakingNewsRibonTitle : "BREAKING NEWS",
+                BreakingNewsRibonPosition = !string.IsNullOrWhiteSpace(site?.BreakingNewsRibonPosition) ? site.BreakingNewsRibonPosition : "after_menu",
+                EnableCookieConsent = site?.EnableCookieConsent ?? true,
+                CookieConsentTitle = !string.IsNullOrWhiteSpace(site?.CookieConsentTitle) ? site.CookieConsentTitle : "Cookie Preferences & Privacy",
+                CookieConsentMessage = !string.IsNullOrWhiteSpace(site?.CookieConsentMessage) ? site.CookieConsentMessage : "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.",
+                CookieConsentAcceptText = !string.IsNullOrWhiteSpace(site?.CookieConsentAcceptText) ? site.CookieConsentAcceptText : "Accept All",
+                CookieConsentDeclineText = !string.IsNullOrWhiteSpace(site?.CookieConsentDeclineText) ? site.CookieConsentDeclineText : "Decline",
+                CookieConsentPolicyUrl = !string.IsNullOrWhiteSpace(site?.CookieConsentPolicyUrl) ? site.CookieConsentPolicyUrl : "/privacy-policy",
+                EnableWhatsAppChat = site?.EnableWhatsAppChat ?? false,
+                WhatsAppNumber = site?.WhatsAppNumber ?? "",
+                WhatsAppPromptMessage = !string.IsNullOrWhiteSpace(site?.WhatsAppPromptMessage) ? site.WhatsAppPromptMessage : "Hello! I have an inquiry regarding your services.",
+                WhatsAppWidgetTitle = !string.IsNullOrWhiteSpace(site?.WhatsAppWidgetTitle) ? site.WhatsAppWidgetTitle : "Chat with Us",
+                WhatsAppWidgetSubtitle = !string.IsNullOrWhiteSpace(site?.WhatsAppWidgetSubtitle) ? site.WhatsAppWidgetSubtitle : "Typically replies within minutes"
             };
 
             return Ok(ApiResponse<BrandSettingsResponseDto>.SuccessResponse(data, "Brand identity settings retrieved."));
@@ -336,6 +350,20 @@ namespace Ozikol_BCC.Api.Controllers
             site.ActivateLoginInMenu = dto.ActivateLoginInMenu;
             site.ActivateLoginInFooter = dto.ActivateLoginInFooter;
             site.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
+            site.EnableBreakingNewsRibon = dto.EnableBreakingNewsRibon;
+            site.BreakingNewsRibonTitle = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonTitle) ? dto.BreakingNewsRibonTitle.Trim() : "BREAKING NEWS";
+            site.BreakingNewsRibonPosition = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonPosition) ? dto.BreakingNewsRibonPosition.Trim() : "after_menu";
+            site.EnableCookieConsent = dto.EnableCookieConsent;
+            site.CookieConsentTitle = !string.IsNullOrWhiteSpace(dto.CookieConsentTitle) ? dto.CookieConsentTitle.Trim() : "We Value Your Privacy";
+            site.CookieConsentMessage = !string.IsNullOrWhiteSpace(dto.CookieConsentMessage) ? dto.CookieConsentMessage.Trim() : "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+            site.CookieConsentAcceptText = !string.IsNullOrWhiteSpace(dto.CookieConsentAcceptText) ? dto.CookieConsentAcceptText.Trim() : "Accept All";
+            site.CookieConsentDeclineText = !string.IsNullOrWhiteSpace(dto.CookieConsentDeclineText) ? dto.CookieConsentDeclineText.Trim() : "Decline";
+            site.CookieConsentPolicyUrl = !string.IsNullOrWhiteSpace(dto.CookieConsentPolicyUrl) ? dto.CookieConsentPolicyUrl.Trim() : "/privacy-policy";
+            site.EnableWhatsAppChat = dto.EnableWhatsAppChat;
+            site.WhatsAppNumber = dto.WhatsAppNumber?.Trim();
+            site.WhatsAppPromptMessage = !string.IsNullOrWhiteSpace(dto.WhatsAppPromptMessage) ? dto.WhatsAppPromptMessage.Trim() : "Hello! I have an inquiry regarding your services.";
+            site.WhatsAppWidgetTitle = !string.IsNullOrWhiteSpace(dto.WhatsAppWidgetTitle) ? dto.WhatsAppWidgetTitle.Trim() : "Chat with Us";
+            site.WhatsAppWidgetSubtitle = !string.IsNullOrWhiteSpace(dto.WhatsAppWidgetSubtitle) ? dto.WhatsAppWidgetSubtitle.Trim() : "Typically replies within minutes";
             site.UpdatedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -669,6 +697,20 @@ namespace Ozikol_BCC.Api.Controllers
         public bool ActivateLoginInMenu { get; set; } = true;
         public bool ActivateLoginInFooter { get; set; } = true;
         public string LoginButtonText { get; set; } = "Sign In";
+        public bool EnableBreakingNewsRibon { get; set; } = false;
+        public string BreakingNewsRibonTitle { get; set; } = "BREAKING NEWS";
+        public string BreakingNewsRibonPosition { get; set; } = "after_menu";
+        public bool EnableCookieConsent { get; set; } = false;
+        public string CookieConsentTitle { get; set; } = "We Value Your Privacy";
+        public string CookieConsentMessage { get; set; } = "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+        public string CookieConsentAcceptText { get; set; } = "Accept All";
+        public string CookieConsentDeclineText { get; set; } = "Decline";
+        public string CookieConsentPolicyUrl { get; set; } = "/privacy-policy";
+        public bool EnableWhatsAppChat { get; set; } = false;
+        public string WhatsAppNumber { get; set; } = string.Empty;
+        public string WhatsAppPromptMessage { get; set; } = "Hello! I have an inquiry regarding your services.";
+        public string WhatsAppWidgetTitle { get; set; } = "Chat with Us";
+        public string WhatsAppWidgetSubtitle { get; set; } = "Typically replies within minutes";
     }
 
     public class BrandSettingsUpdateRequestDto
@@ -700,6 +742,20 @@ namespace Ozikol_BCC.Api.Controllers
         public bool ActivateLoginInMenu { get; set; } = true;
         public bool ActivateLoginInFooter { get; set; } = true;
         public string LoginButtonText { get; set; } = "Sign In";
+        public bool EnableBreakingNewsRibon { get; set; } = false;
+        public string BreakingNewsRibonTitle { get; set; } = "BREAKING NEWS";
+        public string BreakingNewsRibonPosition { get; set; } = "after_menu";
+        public bool EnableCookieConsent { get; set; } = false;
+        public string CookieConsentTitle { get; set; } = "We Value Your Privacy";
+        public string CookieConsentMessage { get; set; } = "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.";
+        public string CookieConsentAcceptText { get; set; } = "Accept All";
+        public string CookieConsentDeclineText { get; set; } = "Decline";
+        public string CookieConsentPolicyUrl { get; set; } = "/privacy-policy";
+        public bool EnableWhatsAppChat { get; set; } = false;
+        public string? WhatsAppNumber { get; set; }
+        public string WhatsAppPromptMessage { get; set; } = "Hello! I have an inquiry regarding your services.";
+        public string WhatsAppWidgetTitle { get; set; } = "Chat with Us";
+        public string WhatsAppWidgetSubtitle { get; set; } = "Typically replies within minutes";
     }
 
     public class AppearanceUpdateRequestDto

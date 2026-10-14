@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ using Ozikol_BCC.Api.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Domain.Models;
+using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using static Ozikol_BCC.Domain.Enum.Enum;
@@ -38,6 +40,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly Ozikol_BCC.Application.Services.IMemberIdGeneratorService? _memberIdGenerator;
         private readonly Ozikol_BCC.Application.Services.IOtpVerificationService? _otpService;
         private readonly IServiceScopeFactory? _serviceScopeFactory;
+        private readonly IRecaptchaService? _recaptchaService;
 
         public AuthController(
             IMediator mediator,
@@ -50,7 +53,8 @@ namespace Ozikol_BCC.Api.Controllers
             DashboardDbContext? dbContext = null,
             Ozikol_BCC.Application.Services.IMemberIdGeneratorService? memberIdGenerator = null,
             Ozikol_BCC.Application.Services.IOtpVerificationService? otpService = null,
-            IServiceScopeFactory? serviceScopeFactory = null)
+            IServiceScopeFactory? serviceScopeFactory = null,
+            IRecaptchaService? recaptchaService = null)
         {
             _mediator = mediator;
             _userManager = userManager;
@@ -63,6 +67,7 @@ namespace Ozikol_BCC.Api.Controllers
             _memberIdGenerator = memberIdGenerator;
             _otpService = otpService;
             _serviceScopeFactory = serviceScopeFactory;
+            _recaptchaService = recaptchaService;
         }
 
         [HttpGet("me")]
@@ -221,8 +226,17 @@ namespace Ozikol_BCC.Api.Controllers
                 return Unauthorized(ApiResponse<object>.FailureResponse("Invalid email or password credentials."));
             }
 
-            // Check tenant policy: Enforce Email Confirmation before login
-            var tenantSetting = activeDbContext != null ? await activeDbContext.MisConfigurationSettings.FirstOrDefaultAsync() : null;
+            // Check tenant policy: Enforce Email Confirmation before login with schema resilience
+            MisConfigurationSetting? tenantSetting = null;
+            try
+            {
+                tenantSetting = activeDbContext != null ? await activeDbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync() : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load MisConfigurationSettings for email confirmation check; continuing with standard policy.");
+            }
+
             if (tenantSetting != null && tenantSetting.RequireConfirmedEmailToLogin && !user.EmailConfirmed)
             {
                 return StatusCode(403, ApiResponse<object>.FailureResponse("Email confirmation is required by workspace policy before you can sign in."));
@@ -392,6 +406,29 @@ namespace Ozikol_BCC.Api.Controllers
             var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
 
+            // Check if user account has pending/incomplete onboarding steps
+            bool requiresOnboarding = false;
+            int onboardingStep = 1;
+            if (!string.IsNullOrEmpty(user.CustomAttributesJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(user.CustomAttributesJson);
+                    if (doc.RootElement.TryGetProperty("onboarding_completed", out var comp) && comp.ValueKind == JsonValueKind.False)
+                    {
+                        requiresOnboarding = true;
+                        if (doc.RootElement.TryGetProperty("onboarding_step", out var stepProp) && stepProp.TryGetInt32(out var s))
+                        {
+                            onboardingStep = s;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fail-safe: malformed JSON ignored
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -402,6 +439,8 @@ namespace Ozikol_BCC.Api.Controllers
                 TenantKey = resolvedTenantKey,
                 OrganizationName = resolvedOrgName,
                 MustChangePassword = user.MustChangePassword,
+                RequiresOnboarding = requiresOnboarding,
+                OnboardingStep = onboardingStep,
                 Roles = userRoles
             };
 
@@ -885,8 +924,63 @@ namespace Ozikol_BCC.Api.Controllers
             if (!string.IsNullOrWhiteSpace(model.ConfirmPassword) && model.Password != model.ConfirmPassword)
                 return BadRequest(ApiResponse<object>.FailureResponse("Passwords do not match."));
 
-            // Dynamic Password policy screening
-            var settings = _dbContext != null ? await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync() : null;
+            // Validate Google reCAPTCHA challenge token if provided
+            if (_recaptchaService != null && !string.IsNullOrWhiteSpace(model.RecaptchaToken))
+            {
+                var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(model.RecaptchaToken, clientIp);
+                if (!isCaptchaValid)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
+                }
+            }
+
+            // Dynamic Password policy screening and tenant registration policies with resilience against unapplied database schema migrations
+            MisConfigurationSetting? settings = null;
+            try
+            {
+                if (_dbContext != null)
+                {
+                    settings = await _dbContext.MisConfigurationSettings.AsNoTracking().FirstOrDefaultAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load MisConfigurationSettings for registration policies (possible database schema drift). Falling back to safe defaults and durable layout configuration.");
+            }
+
+            // Durable layout & onboarding policy fallbacks (matches RegistrationFormApiController)
+            bool allowPublicRegistration = settings?.AllowPublicRegistration ?? true;
+            bool requireApprovalBeforeLogin = settings?.RequireApprovalBeforeLogin ?? false;
+            string registrationSuccessMessage = !string.IsNullOrWhiteSpace(settings?.RegistrationSuccessMessage)
+                ? settings.RegistrationSuccessMessage
+                : "Registration successful! Welcome to the workspace.";
+
+            if (_dbContext != null)
+            {
+                try
+                {
+                    var policyConfigField = await _dbContext.BcpRegistrationFormFields
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
+                    if (policyConfigField != null && !string.IsNullOrWhiteSpace(policyConfigField.OptionsJson))
+                    {
+                        using var doc = JsonDocument.Parse(policyConfigField.OptionsJson);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("allowPublicRegistration", out var aprProp) && aprProp.ValueKind == JsonValueKind.False)
+                            allowPublicRegistration = false;
+                        if (root.TryGetProperty("requireApprovalBeforeLogin", out var rablProp) && rablProp.ValueKind == JsonValueKind.True)
+                            requireApprovalBeforeLogin = true;
+                        if (root.TryGetProperty("registrationSuccessMessage", out var rsmProp) && !string.IsNullOrWhiteSpace(rsmProp.GetString()))
+                            registrationSuccessMessage = rsmProp.GetString()!;
+                    }
+                }
+                catch
+                {
+                    // Fall back cleanly to defaults if layout policy cannot be parsed
+                }
+            }
+
             if (settings != null)
             {
                 var password = model.Password;
@@ -904,6 +998,13 @@ namespace Ozikol_BCC.Api.Controllers
                 // screening blacklist
                 var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
                 if (compromised.Contains(password.ToLowerInvariant()))
+                    return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
+            }
+            else
+            {
+                // Fallback blacklist screening when settings table cannot be fully queried
+                var compromised = new[] { "123456", "password", "password123", "qwerty", "admin123" };
+                if (compromised.Contains(model.Password.ToLowerInvariant()))
                     return BadRequest(ApiResponse<object>.FailureResponse("This password is on the security blacklist due to high risk. Choose a more secure password."));
             }
 
@@ -942,6 +1043,64 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            // Check public self-registration policy
+            if (invitation == null && !allowPublicRegistration)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Public registration is currently disabled for this organization. Please request an invitation link from an administrator."));
+            }
+
+            // Validate dynamic onboarding fields
+            if (_dbContext != null)
+            {
+                var activeFields = await _dbContext.BcpRegistrationFormFields
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+
+                var missingRequired = new List<string>();
+                foreach (var f in activeFields)
+                {
+                    // Check if field is scoped to a specific category
+                    if (f.BcpUserCategoryId.HasValue && f.BcpUserCategoryId.Value != model.BcpUserCategoryId)
+                    {
+                        continue;
+                    }
+
+                    if (f.IsRequired)
+                    {
+                        if (model.CustomAttributes == null ||
+                            !model.CustomAttributes.TryGetValue(f.FieldKey, out var val) ||
+                            val == null ||
+                            string.IsNullOrWhiteSpace(val.ToString()))
+                        {
+                            missingRequired.Add(f.Label);
+                        }
+                    }
+                }
+
+                if (missingRequired.Count > 0)
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse($"Please complete the required fields: {string.Join(", ", missingRequired)}"));
+                }
+            }
+
+            var requireApproval = requireApprovalBeforeLogin && invitation == null;
+            var initialStatus = requireApproval ? UserStatus.Pending : UserStatus.Active;
+
+            var customAttrs = model.CustomAttributes != null
+                ? new Dictionary<string, object>(model.CustomAttributes)
+                : new Dictionary<string, object>();
+
+            if (!string.IsNullOrWhiteSpace(model.ReferralCode))
+            {
+                customAttrs["referral_code"] = model.ReferralCode.Trim().ToUpperInvariant();
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.OrganizationType))
+            {
+                customAttrs["organization_type"] = model.OrganizationType.Trim();
+            }
+
             var newUser = new Profile
             {
                 Id = Guid.NewGuid().ToString(),
@@ -953,13 +1112,16 @@ namespace Ozikol_BCC.Api.Controllers
                 PhoneNumber = model.PhoneNumber?.Trim(),
                 Designation = model.Designation?.Trim() ?? "Member",
                 BcpUserCategoryId = model.BcpUserCategoryId,
-                UserStatus = UserStatus.Active,
+                UserStatus = initialStatus,
                 JoinDate = DateTime.UtcNow,
                 EmailConfirmed = invitation != null, // trust email if came from invitation
                 PhoneNumberConfirmed = false,
                 MustChangePassword = false,
-                RegistrationSource = invitation != null ? "Invited" : "SelfRegistered",
-                MemberId = memberId
+                RegistrationSource = invitation != null ? "Invited" : (!string.IsNullOrWhiteSpace(model.ReferralCode) ? $"Referred:{model.ReferralCode.Trim().ToUpperInvariant()}" : "SelfRegistered"),
+                MemberId = memberId,
+                CustomAttributesJson = customAttrs.Count > 0
+                    ? JsonSerializer.Serialize(customAttrs)
+                    : null
             };
 
             var createResult = await _userManager.CreateAsync(newUser, model.Password);
@@ -992,10 +1154,26 @@ namespace Ozikol_BCC.Api.Controllers
                     PerformedByFullName = newUser.FullName,
                     TargetProfileId = newUser.Id,
                     TargetFullName = newUser.FullName,
-                    Description = $"New member registered: '{newUser.FullName}' ({newUser.Email})",
+                    Description = $"New member registered: '{newUser.FullName}' ({newUser.Email}) - Status: {initialStatus}",
                     IpAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? Request.HttpContext.Connection.RemoteIpAddress?.ToString()
                 });
                 await _dbContext.SaveChangesAsync();
+            }
+
+            // If approval is required by the tenant's onboarding policy, do not issue an immediate JWT token
+            if (requireApproval)
+            {
+                var pendingResponse = new
+                {
+                    userId = newUser.Id,
+                    email = newUser.Email,
+                    fullName = newUser.FullName,
+                    memberId = newUser.MemberId,
+                    status = "PendingApproval",
+                    requiresApproval = true,
+                    message = "Your registration has been submitted and is currently pending administrator verification. You will be notified once your account is active."
+                };
+                return Ok(ApiResponse<object>.SuccessResponse(pendingResponse, "Registration submitted successfully! Your account is pending administrator review."));
             }
 
             var token = await GenerateJwtTokenAsync(newUser);
@@ -1010,7 +1188,11 @@ namespace Ozikol_BCC.Api.Controllers
                 Roles = new List<string> { assignedRole }
             };
 
-            return Ok(ApiResponse<LoginResponseModel>.SuccessResponse(responseData, "Registration successful! Welcome to the workspace."));
+            var successMsg = !string.IsNullOrWhiteSpace(registrationSuccessMessage)
+                ? registrationSuccessMessage
+                : "Registration successful! Welcome to the workspace.";
+
+            return Ok(ApiResponse<LoginResponseModel>.SuccessResponse(responseData, successMsg));
         }
 
         [HttpPost("password/force-change")]
@@ -1429,6 +1611,17 @@ namespace Ozikol_BCC.Api.Controllers
         public string? TenantKey { get; set; }
         public string? OrganizationName { get; set; }
         public bool MustChangePassword { get; set; }
+
+        /// <summary>
+        /// Indicates if the user account requires completing multi-stage registration onboarding.
+        /// </summary>
+        public bool RequiresOnboarding { get; set; }
+
+        /// <summary>
+        /// The specific onboarding step the applicant should resume at if incomplete.
+        /// </summary>
+        public int OnboardingStep { get; set; } = 1;
+
         public List<string> Roles { get; set; } = new List<string>();
     }
 
@@ -1473,6 +1666,27 @@ namespace Ozikol_BCC.Api.Controllers
         public string? Designation { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
         public string? InvitationToken { get; set; }
+
+        /// <summary>
+        /// Dynamic business-specific onboarding attribute key-value pairs submitted by the user.
+        /// Corresponds to fields configured in BcpRegistrationFormFields.
+        /// </summary>
+        public Dictionary<string, object>? CustomAttributes { get; set; }
+
+        /// <summary>
+        /// Optional affiliate or partner referral code entered by the registrant.
+        /// </summary>
+        public string? ReferralCode { get; set; }
+
+        /// <summary>
+        /// Optional Google reCAPTCHA response token from client challenge widget.
+        /// </summary>
+        public string? RecaptchaToken { get; set; }
+
+        /// <summary>
+        /// Selected industry or organization sector during registration.
+        /// </summary>
+        public string? OrganizationType { get; set; }
     }
 
     public class ForceChangePasswordRequest

@@ -273,6 +273,8 @@ namespace Ozikol_BCC.Domain.Enum
             [Description("BeforeFooter")]
             BeforeFooter = 6,
 
+            [Description("AfterFooter")]
+            AfterFooter = 7,
         }
         public enum DOBStatus
         {

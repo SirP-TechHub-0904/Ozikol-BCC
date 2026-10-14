@@ -953,6 +953,15 @@ export class LoginComponent implements OnInit {
         if (res?.data?.token) {
           this.storeLoginSession(res.data);
 
+          // Check if user has incomplete registration onboarding stages to finish
+          if (res.data.requiresOnboarding) {
+            const resumeStep = res.data.onboardingStep || 2;
+            this.router.navigate(['/auth/register'], {
+              queryParams: { resume: 'true', step: resumeStep }
+            });
+            return;
+          }
+
           if (res.data.mustChangePassword) {
             this.showForceChangeModal = true;
           } else {

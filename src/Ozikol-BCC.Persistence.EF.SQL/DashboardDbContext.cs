@@ -88,6 +88,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
     // --- BCP: User Management Feature ---
     public DbSet<BcpUserCategory> BcpUserCategories { get; set; }
+    public DbSet<BcpRegistrationFormField> BcpRegistrationFormFields { get; set; }
     public DbSet<BcpKpiIndicator> BcpKpiIndicators { get; set; }
     public DbSet<BcpKpiUserScore> BcpKpiUserScores { get; set; }
     public DbSet<BcpKpiPeriod> BcpKpiPeriods { get; set; } = null!;

@@ -10,6 +10,7 @@ using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Services;
 using System.Security.Claims;
+using System.Text.Json;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -339,6 +340,35 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
+            // Custom Dynamic Onboarding Attributes
+            var customAttributes = new List<object>();
+            if (!string.IsNullOrWhiteSpace(user.CustomAttributesJson))
+            {
+                try
+                {
+                    var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(user.CustomAttributesJson);
+                    if (rawDict != null && rawDict.Count > 0)
+                    {
+                        var fieldDefs = await _dbContext.BcpRegistrationFormFields.AsNoTracking().ToListAsync();
+                        foreach (var kvp in rawDict)
+                        {
+                            var def = fieldDefs.FirstOrDefault(f => f.FieldKey.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
+                            customAttributes.Add(new
+                            {
+                                fieldKey = kvp.Key,
+                                label = def?.Label ?? kvp.Key,
+                                fieldType = def?.FieldType ?? "text",
+                                value = kvp.Value?.ToString() ?? string.Empty
+                            });
+                        }
+                    }
+                }
+                catch
+                {
+                    // Graceful fallback if JSON fails
+                }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 id = user.Id,
@@ -366,7 +396,8 @@ namespace Ozikol_BCC.Api.Controllers
                 roles,
                 kpiScores,
                 notes,
-                logs
+                logs,
+                customAttributes
             }, "Member 360° dossier retrieved."));
         }
 

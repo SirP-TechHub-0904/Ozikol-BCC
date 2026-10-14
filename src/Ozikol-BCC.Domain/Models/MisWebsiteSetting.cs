@@ -382,6 +382,108 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Workspace Initialization Mode")]
         public string? WorkspaceInitializationMode { get; set; }
 
+        // ── Breaking News Ribbon Ticker ──
+
+        /// <summary>
+        /// Master toggle enabling or disabling the Breaking News Ribbon Ticker on the public website.
+        /// </summary>
+        [Display(Name = "Enable Ribbon Ticker")]
+        public bool EnableBreakingNewsRibon { get; set; } = false;
+
+        /// <summary>
+        /// Static lead badge label displayed on the ribbon ticker (e.g. "BREAKING NEWS", "ANNOUNCEMENTS").
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "Ribbon Ticker Badge Title")]
+        public string BreakingNewsRibonTitle { get; set; } = "BREAKING NEWS";
+
+        /// <summary>
+        /// Display placement position of the ticker on the public website:
+        /// "top", "after_menu", "after_hero", "before_footer", "after_footer".
+        /// </summary>
+        [MaxLength(50)]
+        [Display(Name = "Ribbon Ticker Position")]
+        public string BreakingNewsRibonPosition { get; set; } = "after_menu";
+
+        // ── Cookie Consent Popup ──
+
+        /// <summary>
+        /// Master toggle enabling or disabling the bottom Cookie Consent Popup on the public website.
+        /// </summary>
+        [Display(Name = "Enable Cookie Consent")]
+        public bool EnableCookieConsent { get; set; } = true;
+
+        /// <summary>
+        /// Heading title displayed on the Cookie Consent banner.
+        /// </summary>
+        [MaxLength(150)]
+        [Display(Name = "Cookie Consent Title")]
+        public string CookieConsentTitle { get; set; } = "Cookie Preferences & Privacy";
+
+        /// <summary>
+        /// Informational message text explaining cookie usage to visitors.
+        /// </summary>
+        [MaxLength(1000)]
+        [Display(Name = "Cookie Consent Message")]
+        public string CookieConsentMessage { get; set; } = "We use cookies to optimize site performance, analyze traffic, and ensure you get the best browsing experience on our website.";
+
+        /// <summary>
+        /// Label text for the primary accept button.
+        /// </summary>
+        [MaxLength(50)]
+        [Display(Name = "Cookie Accept Button Text")]
+        public string CookieConsentAcceptText { get; set; } = "Accept All";
+
+        /// <summary>
+        /// Label text for the secondary decline or essential-only button.
+        /// </summary>
+        [MaxLength(50)]
+        [Display(Name = "Cookie Decline Button Text")]
+        public string CookieConsentDeclineText { get; set; } = "Decline";
+
+        /// <summary>
+        /// Destination URL for the full Privacy or Cookie Policy page.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "Cookie Policy URL")]
+        public string CookieConsentPolicyUrl { get; set; } = "/privacy-policy";
+
+        // ── WhatsApp Floating Live Chat ──
+
+        /// <summary>
+        /// Master toggle enabling or disabling the floating WhatsApp Live Chat button on the public website.
+        /// </summary>
+        [Display(Name = "Enable WhatsApp Chat")]
+        public bool EnableWhatsAppChat { get; set; } = false;
+
+        /// <summary>
+        /// WhatsApp phone number with international country code (e.g. "+15550192834").
+        /// </summary>
+        [MaxLength(50)]
+        [Display(Name = "WhatsApp Phone Number")]
+        public string? WhatsAppNumber { get; set; }
+
+        /// <summary>
+        /// Pre-filled welcome/prompt message loaded into WhatsApp when the visitor initiates a chat.
+        /// </summary>
+        [MaxLength(500)]
+        [Display(Name = "WhatsApp Prompt Message")]
+        public string? WhatsAppPromptMessage { get; set; } = "Hello! I have an inquiry regarding your services.";
+
+        /// <summary>
+        /// Header title displayed on the floating WhatsApp chat popup window (e.g. "Chat with Us").
+        /// </summary>
+        [MaxLength(100)]
+        [Display(Name = "WhatsApp Widget Title")]
+        public string WhatsAppWidgetTitle { get; set; } = "Chat with Us";
+
+        /// <summary>
+        /// Status subtitle displayed under the agent name (e.g. "Typically replies within minutes").
+        /// </summary>
+        [MaxLength(150)]
+        [Display(Name = "WhatsApp Widget Subtitle")]
+        public string WhatsAppWidgetSubtitle { get; set; } = "Typically replies within minutes";
+
         // ── Timestamps ──
 
         /// <summary>

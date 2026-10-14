@@ -101,6 +101,43 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
           </div>
 
+          <!-- 1.5 Custom Registration & Onboarding Attributes Card -->
+          <div class="dossier-card" *ngIf="user.customAttributes && user.customAttributes.length > 0">
+            <div class="card-header">
+              <span class="material-symbols-outlined header-icon">dynamic_form</span>
+              <div>
+                <h3>Onboarding & Custom Attributes</h3>
+                <p>Dynamic registration details submitted by member</p>
+              </div>
+            </div>
+
+            <div class="details-list" style="padding: 16px 20px;">
+              <div class="detail-item" *ngFor="let attr of user.customAttributes">
+                <span class="item-label">{{ attr.label || attr.key }}</span>
+                <div class="item-value">
+                  <!-- File attachment link/preview -->
+                  <ng-container *ngIf="attr.fieldType === 'file' && attr.value">
+                    <a *ngIf="isDataUrlOrLink(attr.value)" [href]="attr.value" target="_blank" download="attachment" class="file-download-link">
+                      <span class="material-symbols-outlined">attachment</span>
+                      <span>Download / View File</span>
+                    </a>
+                    <span *ngIf="!isDataUrlOrLink(attr.value)">{{ attr.value }}</span>
+                  </ng-container>
+                  <!-- Boolean Checkbox Badge -->
+                  <ng-container *ngIf="attr.fieldType === 'checkbox'">
+                    <span class="attr-bool-badge" [class.badge-true]="attr.value === 'true' || attr.value === 'True'" [class.badge-false]="attr.value !== 'true' && attr.value !== 'True'">
+                      {{ (attr.value === 'true' || attr.value === 'True') ? 'Yes' : 'No' }}
+                    </span>
+                  </ng-container>
+                  <!-- Standard Text / Number / Date / Select / Textarea -->
+                  <ng-container *ngIf="attr.fieldType !== 'file' && attr.fieldType !== 'checkbox'">
+                    <span>{{ attr.value || 'Not provided' }}</span>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 2. Confidential Admin Notes Card -->
           <div class="dossier-card">
             <div class="card-header">
@@ -513,6 +550,31 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn-primary:hover:not(:disabled) { background: #0040b8; }
     .btn-danger { background: #dc2626; color: #ffffff; }
     .btn-danger:hover { background: #b91c1c; }
+
+    /* Custom Registration Attributes */
+    .file-download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #0050e5;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12px;
+      background: #eff6ff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #dbeafe;
+    }
+    .file-download-link:hover { text-decoration: underline; background: #dbeafe; }
+    .attr-bool-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .attr-bool-badge.badge-true { background: #dcfce7; color: #15803d; }
+    .attr-bool-badge.badge-false { background: #f1f5f9; color: #64748b; }
   `]
 })
 export class UserDetailsComponent implements OnInit {
@@ -918,5 +980,10 @@ export class UserDetailsComponent implements OnInit {
   isGuid(val: string): boolean {
     if (!val) return false;
     return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val.trim());
+  }
+
+  isDataUrlOrLink(val: string): boolean {
+    if (!val) return false;
+    return val.startsWith('data:') || val.startsWith('http://') || val.startsWith('https://');
   }
 }

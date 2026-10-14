@@ -392,10 +392,16 @@ export class UsersListComponent implements OnInit {
 
   headerButtons: PageHeaderButton[] = [
     {
+      text: 'Registration Form Builder',
+      icon: 'dynamic_form',
+      isPrimary: false,
+      routerLink: '/users/console/registration-form'
+    },
+    {
       text: 'Add Member',
       icon: 'person_add',
       isPrimary: true,
-      routerLink: '/admin/users/create'
+      routerLink: '/users/console/create'
     }
   ];
 
