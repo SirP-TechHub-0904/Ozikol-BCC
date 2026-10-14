@@ -191,22 +191,6 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     .oz-recaptcha-wrap .g-recaptcha {
       transform-origin: 0 0;
     }
-
-    /* Universal Dropdown Click-to-Show Architecture */
-    .oz-dropdown > .oz-dropdown-menu {
-      display: none !important;
-    }
-    .oz-dropdown.is-open > .oz-dropdown-menu,
-    .oz-dropdown.open > .oz-dropdown-menu {
-      display: block !important;
-    }
-    .oz-dropdown.is-open .oz-caret,
-    .oz-dropdown.open .oz-caret {
-      transform: rotate(180deg) !important;
-    }
-    .oz-dropdown:hover:not(.is-open):not(.open) > .oz-dropdown-menu {
-      display: none !important;
-    }
   `]
 })
 export class LandingComponent implements OnInit, OnDestroy {
@@ -2416,46 +2400,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     const target = e.target as HTMLElement;
     if (!target) return;
 
-    // 1. Dropdown Toggle Click Handler (Supports Bootstrap and Ozikol Blueprint dropdowns)
-    const dropdownToggle = target.closest('.dropdown-toggle, .oz-dropdown-toggle, [data-bs-toggle="dropdown"]') as HTMLElement;
-    if (dropdownToggle) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const parentDropdown = dropdownToggle.closest('.dropdown, .oz-dropdown');
-      if (parentDropdown) {
-        const isOz = parentDropdown.classList.contains('oz-dropdown');
-        const menu = parentDropdown.querySelector('.dropdown-menu, .oz-dropdown-menu');
-        const isAlreadyOpen = isOz
-          ? (parentDropdown.classList.contains('is-open') || parentDropdown.classList.contains('open'))
-          : (menu?.classList.contains('show') ?? false);
-
-        // Close all other open dropdowns
-        document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
-        document.querySelectorAll('.oz-dropdown.is-open, .oz-dropdown.open').forEach(d => d.classList.remove('is-open', 'open'));
-        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"], .oz-dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
-
-        if (!isAlreadyOpen) {
-          if (isOz) {
-            parentDropdown.classList.add('is-open', 'open');
-          }
-          if (menu) {
-            menu.classList.add('show');
-          }
-          dropdownToggle.setAttribute('aria-expanded', 'true');
-        }
-      }
-      return;
-    }
-
-    // 2. Click Outside Closes All Dropdowns
-    if (!target.closest('.dropdown, .oz-dropdown')) {
-      document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
-      document.querySelectorAll('.oz-dropdown.is-open, .oz-dropdown.open').forEach(d => d.classList.remove('is-open', 'open'));
-      document.querySelectorAll('.dropdown-toggle[aria-expanded="true"], .oz-dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
-    }
-
-    // 3. Dropdown Items & Internal Navigation Links
+    // 1. Internal Navigation Link Interception (SPA client routing)
     const anchor = target.closest('a') as HTMLAnchorElement;
     if (anchor && !anchor.classList.contains('dropdown-toggle') && !anchor.classList.contains('oz-dropdown-toggle')) {
       // Check if this anchor is a toggle button or modal/drawer trigger
