@@ -35,6 +35,7 @@ namespace Ozikol_BCC.Api
             builder.Services
                 .AddApplicationExtensions(builder.Configuration)
                 .AddTenantSupport(builder.Configuration)
+                .AddRecaptchaSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
