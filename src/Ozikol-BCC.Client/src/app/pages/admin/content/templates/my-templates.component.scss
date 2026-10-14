@@ -2515,6 +2515,35 @@
       }
     }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.96);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+      }
+      70% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 14px rgba(79, 70, 229, 0);
+      }
+      100% {
+        transform: scale(0.96);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+      }
+    }
+
+    .spin-icon {
+      animation: spin 1.2s linear infinite;
+      display: inline-block;
+    }
+
+    .diagnostic-pulse-spinner {
+      animation: pulse-ring 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
     /* Main Tabs Bar */
     .mytemplates-main-tabs {
       display: flex;

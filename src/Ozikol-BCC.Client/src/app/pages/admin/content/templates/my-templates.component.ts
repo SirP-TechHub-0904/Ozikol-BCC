@@ -3974,12 +3974,19 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     warnings: Array<{ title: string; rootCause: string; recommendation: string }>;
     passedChecks: string[];
   } | null = null;
+  diagnosticStep: number = 1;
 
   runAiWebsiteHealthCheck(): void {
     // 1. Immediately open diagnostic modal in scanning state for clear user feedback
     this.isDiagnosingWebsite = true;
     this.showAiHealthModal = true;
     this.diagnosticReport = null;
+    this.diagnosticStep = 1;
+
+    // Progressive visual steps
+    setTimeout(() => { if (this.isDiagnosingWebsite) this.diagnosticStep = 2; }, 300);
+    setTimeout(() => { if (this.isDiagnosingWebsite) this.diagnosticStep = 3; }, 600);
+    setTimeout(() => { if (this.isDiagnosingWebsite) this.diagnosticStep = 4; }, 900);
 
     // 2. Gather active tags and template metadata from DB state
     const headTags = this.allCodeInjections
