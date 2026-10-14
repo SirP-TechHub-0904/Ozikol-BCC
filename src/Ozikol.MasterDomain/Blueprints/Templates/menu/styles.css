@@ -426,11 +426,13 @@
     box-sizing: border-box;
   }
 
+  .oz-dropdown.is-open > .oz-dropdown-menu,
   .oz-dropdown.open > .oz-dropdown-menu {
     display: block;
     animation: ozFadeIn 0.2s ease-in-out;
   }
 
+  .oz-dropdown.is-open .oz-caret,
   .oz-dropdown.open .oz-caret {
     transform: rotate(180deg);
   }
