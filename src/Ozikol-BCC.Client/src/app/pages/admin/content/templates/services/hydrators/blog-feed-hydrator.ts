@@ -42,22 +42,32 @@ export function hydrateBlogFeed(template: string, ctx: HydrationContext): string
   output = replaceDepthAwareEach(output, articleMatcher, (innerTemplate) => {
     if (activeArticles.length === 0) return '';
 
-    return activeArticles.map(art => {
+    return activeArticles.map((art: any) => {
       let rendered = innerTemplate;
 
-      rendered = resolveDepthAwareIf(rendered, 'CoverImageUrl', Boolean(art.coverImageUrl && art.coverImageUrl.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'Summary', Boolean(art.summary && art.summary.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'Category', Boolean(art.category && art.category.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'AuthorName', Boolean(art.authorName && art.authorName.trim().length > 0));
-      rendered = resolveDepthAwareIf(rendered, 'PublishedDate', Boolean(art.publishedDate && art.publishedDate.trim().length > 0));
+      const coverImg = (art.coverImageUrl || art.CoverImageUrl || art.imageUrl || art.ImageUrl || '').trim();
+      const summaryText = (art.summary || art.Summary || art.excerpt || art.Excerpt || art.description || art.Description || '').trim();
+      const catText = (art.category || art.Category || 'General').trim();
+      const authorText = (art.authorName || art.AuthorName || art.author || art.Author || 'Staff Writer').trim();
+      const pubDate = (art.publishedDate || art.PublishedDate || art.date || art.Date || 'Recently').trim();
+      const articleUrl = (art.url || art.Url || art.directUrl || art.DirectUrl || (art.id ? `/blog/${art.id}` : '#')).trim();
+      const titleText = (art.title || art.Title || '').trim();
 
-      rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, art.title || '');
-      rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, art.summary || '');
-      rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, art.category || 'General');
-      rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, art.publishedDate || 'Recently');
-      rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, art.authorName || 'Staff Writer');
-      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, art.url || '#');
-      rendered = rendered.replace(/\{\{\s*CoverImageUrl\s*\}\}/gi, art.coverImageUrl || '');
+      rendered = resolveDepthAwareIf(rendered, 'CoverImageUrl', Boolean(coverImg.length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'ImageUrl', Boolean(coverImg.length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'Summary', Boolean(summaryText.length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'Category', Boolean(catText.length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'AuthorName', Boolean(authorText.length > 0));
+      rendered = resolveDepthAwareIf(rendered, 'PublishedDate', Boolean(pubDate.length > 0));
+
+      rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, titleText);
+      rendered = rendered.replace(/\{\{\s*Summary\s*\}\}/gi, summaryText);
+      rendered = rendered.replace(/\{\{\s*Category\s*\}\}/gi, catText);
+      rendered = rendered.replace(/\{\{\s*PublishedDate\s*\}\}/gi, pubDate);
+      rendered = rendered.replace(/\{\{\s*AuthorName\s*\}\}/gi, authorText);
+      rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, articleUrl);
+      rendered = rendered.replace(/\{\{\s*CoverImageUrl\s*\}\}/gi, coverImg);
+      rendered = rendered.replace(/\{\{\s*ImageUrl\s*\}\}/gi, coverImg);
       rendered = rendered.replace(/\{\{\s*CustomClass\s*\}\}/gi, art.customClass || '');
 
       return rendered;

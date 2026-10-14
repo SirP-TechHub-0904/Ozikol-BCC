@@ -548,12 +548,33 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private fetchSingleBlog(id: string): Promise<void> {
     return new Promise((resolve) => {
-      this.apiService.get(`WebsiteContentApi/blogs/${id}`).subscribe({
+      const cleanId = (id || '').trim();
+      this.apiService.get(`WebsiteContentApi/blogs/${cleanId}`).subscribe({
         next: (res: any) => {
           this.currentArticle = res?.data || null;
-          resolve();
+          if (this.blogs.length === 0) {
+            this.fetchRecentBlogs().then(() => resolve());
+          } else {
+            resolve();
+          }
         },
-        error: () => resolve()
+        error: () => {
+          // Graceful fallback: match by ID or slug within the full published blog list
+          this.apiService.get('WebsiteContentApi/blogs').subscribe({
+            next: (allRes: any) => {
+              const allBlogs: any[] = allRes?.data || [];
+              this.blogs = allBlogs;
+              const found = allBlogs.find(b => 
+                (b.id && b.id.toLowerCase() === cleanId.toLowerCase()) ||
+                (b.title && b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === cleanId.toLowerCase()) ||
+                (b.slug && b.slug.toLowerCase() === cleanId.toLowerCase())
+              );
+              this.currentArticle = found || null;
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
       });
     });
   }
@@ -862,23 +883,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     const bodySectionsList: SectionTemplateUnit[] = [];
     const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
     if (blogTemplate) {
-      const articlesList = this.blogs.map(b => ({
-        id: b.id,
-        title: b.title || '',
-        Title: b.title || '',
-        excerpt: b.description || '',
-        Excerpt: b.description || '',
-        category: b.blogCategory?.categoryName || b.categoryName || '',
-        Category: b.blogCategory?.categoryName || b.categoryName || '',
-        date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-        Date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-        author: b.author || '',
-        Author: b.author || '',
-        imageUrl: b.imageUrl || '',
-        ImageUrl: b.imageUrl || '',
-        directUrl: `/blog/${b.id}`,
-        DirectUrl: `/blog/${b.id}`
-      }));
+      const articlesList = this.mapBlogArticles(this.blogs);
 
       const blogContext = {
         title: 'Blog Articles',
@@ -930,6 +935,56 @@ export class LandingComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Helper to map raw blog entities into robust Handlebars tokens, ensuring
+   * every article has a valid cover image, direct URL, author, and formatted date.
+   */
+  private mapBlogArticles(blogs: any[]): any[] {
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80'
+    ];
+
+    return (blogs || []).map((b, idx) => {
+      const cover = b.imageUrl || b.coverImageUrl || defaultImages[idx % defaultImages.length];
+      const pubDate = b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
+      const categoryName = b.blogCategory?.categoryName || b.blogCategory?.title || b.categoryName || 'General';
+      const summaryText = b.description || b.summary || b.excerpt || '';
+      const articleUrl = `/blog/${b.id}`;
+
+      return {
+        id: b.id,
+        title: b.title || '',
+        Title: b.title || '',
+        excerpt: summaryText,
+        Excerpt: summaryText,
+        summary: summaryText,
+        Summary: summaryText,
+        description: summaryText,
+        Description: summaryText,
+        category: categoryName,
+        Category: categoryName,
+        date: pubDate,
+        Date: pubDate,
+        publishedDate: pubDate,
+        PublishedDate: pubDate,
+        author: b.author || 'Staff Writer',
+        Author: b.author || 'Staff Writer',
+        authorName: b.author || 'Staff Writer',
+        AuthorName: b.author || 'Staff Writer',
+        imageUrl: cover,
+        ImageUrl: cover,
+        coverImageUrl: cover,
+        CoverImageUrl: cover,
+        directUrl: articleUrl,
+        DirectUrl: articleUrl,
+        url: articleUrl,
+        Url: articleUrl
+      };
+    });
+  }
+
+  /**
    * Assembles a single Blog Article Reader view:
    * Menu + Breadcrumb Header + Article Details + Newsletter + Footer.
    */
@@ -953,14 +1008,21 @@ export class LandingComponent implements OnInit, OnDestroy {
     } : undefined;
 
     // 2. Breadcrumb Header Section Unit
+    const defaultCover = 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80';
+    const resolvedCover = this.currentArticle.imageUrl || this.currentArticle.coverImageUrl || defaultCover;
+    const categoryTitle = this.currentArticle.blogCategory?.categoryName || this.currentArticle.blogCategory?.title || this.currentArticle.categoryName || 'Platform Insights';
+    const pubDate = this.currentArticle.date
+      ? new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : 'Recently Published';
+
     const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
     let breadcrumbSection: SectionTemplateUnit | undefined;
     if (breadcrumbTemplate) {
       const breadcrumbData = {
         title: this.currentArticle.title || '',
-        miniTitle: this.currentArticle.blogCategory?.categoryName || this.currentArticle.categoryName || '',
-        description: this.currentArticle.date ? `Published on ${new Date(this.currentArticle.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : '',
-        backgroundImageUrl: this.currentArticle.imageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80',
+        miniTitle: categoryTitle,
+        description: this.currentArticle.date ? `Published on ${pubDate}` : '',
+        backgroundImageUrl: resolvedCover,
         breadcrumbTrail: [
           { label: 'Home', url: '/', isActive: false },
           { label: 'Blog', url: '/blog', isActive: false },
@@ -977,40 +1039,102 @@ export class LandingComponent implements OnInit, OnDestroy {
       };
     }
 
-    // 3. Article Reader Body Section Units
+    // 3. Article Reader Body Section Units (Checking installed blog-detail blueprint)
     const bodySectionsList: SectionTemplateUnit[] = [];
-    bodySectionsList.push({
-      name: 'Article Detail',
-      category: 'body',
-      html: `
-        <section class="py-5 bg-white">
-          <div class="container py-4">
-            <div class="row justify-content-center">
-              <div class="col-lg-8">
-                ${this.currentArticle.imageUrl ? `
+    const blogDetailTemplate = this.findActiveTemplate('blog-detail') ||
+                               this.findActiveTemplate('blog_detail') ||
+                               this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'blog_detail');
+
+    const blogDetailContext: any = {
+      title: this.currentArticle.title || 'Untitled Article',
+      Title: this.currentArticle.title || 'Untitled Article',
+      articleHeadline: this.currentArticle.title || 'Untitled Article',
+      summary: this.currentArticle.description || '',
+      articleLead: this.currentArticle.description || '',
+      description: this.currentArticle.description || '',
+      body: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      fullDescription: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      content: this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>',
+      category: categoryTitle,
+      publishedDate: pubDate,
+      readingTime: '5 min read',
+      coverImageUrl: resolvedCover,
+      imageUrl: resolvedCover,
+      CoverImageUrl: resolvedCover,
+      ImageUrl: resolvedCover,
+      authorName: this.currentArticle.author || 'Ozikol Editorial Team',
+      authorRole: 'Product Architecture',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      authorBio: 'Technology writer and systems architect contributing to sovereign multi-tenant cloud infrastructure and high-performance digital workspaces.',
+      tags: [
+        { name: categoryTitle, url: '/blog' },
+        { name: 'Update', url: '/blog' },
+        { name: 'Engineering', url: '/blog' }
+      ],
+      recentArticles: (this.blogs || []).filter(b => b.id !== this.currentArticle.id).slice(0, 3).map((b, idx) => {
+        const otherDefaults = [
+          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80'
+        ];
+        return {
+          title: b.title || '',
+          url: `/blog/${b.id}`,
+          coverImageUrl: b.imageUrl || otherDefaults[idx % otherDefaults.length],
+          imageUrl: b.imageUrl || otherDefaults[idx % otherDefaults.length],
+          publishedDate: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
+        };
+      }),
+      blogCategories: (this.categories || []).map(c => ({
+        name: c.title || c.categoryName || '',
+        url: '/blog',
+        count: ''
+      }))
+    };
+
+    if (blogDetailTemplate) {
+      bodySectionsList.push({
+        id: blogDetailTemplate.id,
+        name: blogDetailTemplate.name || 'Article Detail',
+        category: 'blog_detail',
+        html: this.contentHydration.hydrate(blogDetailTemplate.htmlTemplate, blogDetailContext, 'blog_detail'),
+        css: blogDetailTemplate.cssStyles,
+        js: blogDetailTemplate.jsScript,
+        sortOrder: 1
+      });
+    } else {
+      // Clean fallback reader layout if dedicated blog-detail template is uninstalled
+      bodySectionsList.push({
+        name: 'Article Detail',
+        category: 'body',
+        html: `
+          <section class="py-5 bg-white">
+            <div class="container py-4">
+              <div class="row justify-content-center">
+                <div class="col-lg-8">
                   <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
-                    <img src="${this.currentArticle.imageUrl}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
+                    <img src="${resolvedCover}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
                   </div>
-                ` : ''}
 
-                <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
-                  ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
-                </div>
-
-                <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
-                  <div>
-                    <span class="text-muted small d-block">Published under</span>
-                    <span class="badge bg-primary fs-6 mt-1">${this.currentArticle.blogCategory?.categoryName || 'General Insights'}</span>
+                  <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
+                    ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
                   </div>
-                  <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+
+                  <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                    <div>
+                      <span class="text-muted small d-block">Published under</span>
+                      <span class="badge bg-primary fs-6 mt-1">${categoryTitle}</span>
+                    </div>
+                    <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      `,
-      sortOrder: 1
-    });
+          </section>
+        `,
+        sortOrder: 1
+      });
+    }
 
     // 4. Newsletter Section (matching Demo Preview sequence)
     const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
@@ -2065,12 +2189,19 @@ export class LandingComponent implements OnInit, OnDestroy {
       FormKey: sec.formKey || (sec.pageForm ? sec.pageForm.formKey : ''),
       pageSectionLists: listItems,
       PageSectionLists: listItems,
-      items: listItems
+      items: listItems,
+      articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : [],
+      Articles: this.blogs && this.blogs.length > 0 ? this.mapBlogArticles(this.blogs) : []
     };
   }
 
   private findActiveTemplate(category: string): any {
-    return this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+    const target = (category || '').toLowerCase().replace(/[-_]/g, '');
+    return this.activeTemplates.find(t => {
+      const cat = (t.categoryKey || t.category || '').toLowerCase().replace(/[-_]/g, '');
+      const key = (t.templateKey || t.variantCode || '').toLowerCase().replace(/[-_]/g, '');
+      return cat === target || key === target;
+    });
   }
 
   private findTemplateForSection(sec: any): any {
