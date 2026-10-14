@@ -236,12 +236,12 @@
 }
 
 @media (min-width: 993px) {
-  .oz-dropdown:hover > .oz-dropdown-menu,
-  .oz-dropdown.is-open > .oz-dropdown-menu {
+  .oz-dropdown.is-open > .oz-dropdown-menu,
+  .oz-dropdown.open > .oz-dropdown-menu {
     display: block;
   }
-  .oz-dropdown:hover .oz-caret,
-  .oz-dropdown.is-open .oz-caret {
+  .oz-dropdown.is-open .oz-caret,
+  .oz-dropdown.open .oz-caret {
     transform: rotate(180deg);
   }
 }

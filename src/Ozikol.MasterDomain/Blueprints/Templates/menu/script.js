@@ -13,46 +13,39 @@
       });
     }
 
-    // 2. Mobile Dropdown Click Accordion Toggle
+    // 2. Click to toggle dropdowns (Desktop & Mobile)
     var dropdownToggles = document.querySelectorAll('.oz-dropdown-toggle');
     dropdownToggles.forEach(function(toggle) {
       toggle.addEventListener('click', function(e) {
-        if (window.innerWidth <= 991) {
-          e.preventDefault();
-          var parentDropdown = toggle.closest('.oz-dropdown');
-          if (parentDropdown) {
-            parentDropdown.classList.toggle('open');
+        e.preventDefault();
+        e.stopPropagation();
+
+        var parentDropdown = toggle.closest('.oz-dropdown');
+        if (!parentDropdown) return;
+
+        var isAlreadyOpen = parentDropdown.classList.contains('is-open') || parentDropdown.classList.contains('open');
+
+        // Close all other open dropdowns
+        document.querySelectorAll('.oz-dropdown.is-open, .oz-dropdown.open').forEach(function(d) {
+          if (d !== parentDropdown) {
+            d.classList.remove('is-open', 'open');
+            var dToggle = d.querySelector('.oz-dropdown-toggle');
+            if (dToggle) dToggle.setAttribute('aria-expanded', 'false');
           }
+        });
+
+        // Toggle clicked dropdown
+        if (isAlreadyOpen) {
+          parentDropdown.classList.remove('is-open', 'open');
+          toggle.setAttribute('aria-expanded', 'false');
+        } else {
+          parentDropdown.classList.add('is-open', 'open');
+          toggle.setAttribute('aria-expanded', 'true');
         }
       });
     });
 
-    // 3. Desktop Dropdown Graceful Hover with Delay
-    // Prevents dropdown vanishing while cursor traverses the gap to sub-items
-    var desktopDropdowns = document.querySelectorAll('.oz-dropdown');
-    desktopDropdowns.forEach(function(dropdown) {
-      var closeTimer = null;
-
-      dropdown.addEventListener('mouseenter', function() {
-        if (window.innerWidth > 991) {
-          if (closeTimer) {
-            clearTimeout(closeTimer);
-            closeTimer = null;
-          }
-          dropdown.classList.add('is-open');
-        }
-      });
-
-      dropdown.addEventListener('mouseleave', function() {
-        if (window.innerWidth > 991) {
-          closeTimer = setTimeout(function() {
-            dropdown.classList.remove('is-open');
-          }, 400); // 400ms graceful close delay
-        }
-      });
-    });
-
-    // 4. Close on click outside
+    // 3. Close open dropdowns and drawer when clicking anywhere outside
     document.addEventListener('click', function(e) {
       if (drawer && drawer.classList.contains('active') && !drawer.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
         drawer.classList.remove('active');
@@ -62,17 +55,28 @@
         }
       }
 
-      // Close open desktop dropdowns when clicking outside
-      if (window.innerWidth > 991) {
-        desktopDropdowns.forEach(function(dropdown) {
-          if (!dropdown.contains(e.target)) {
-            dropdown.classList.remove('is-open');
-          }
+      // Close all dropdowns if click is outside any dropdown
+      if (!e.target.closest('.oz-dropdown')) {
+        document.querySelectorAll('.oz-dropdown.is-open, .oz-dropdown.open').forEach(function(d) {
+          d.classList.remove('is-open', 'open');
+          var dToggle = d.querySelector('.oz-dropdown-toggle');
+          if (dToggle) dToggle.setAttribute('aria-expanded', 'false');
         });
       }
     });
 
-    // 5. Reset classes on resize
+    // 4. Close dropdowns on Escape key press
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        document.querySelectorAll('.oz-dropdown.is-open, .oz-dropdown.open').forEach(function(d) {
+          d.classList.remove('is-open', 'open');
+          var dToggle = d.querySelector('.oz-dropdown-toggle');
+          if (dToggle) dToggle.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+
+    // 5. Reset open states on window resize
     window.addEventListener('resize', function() {
       if (window.innerWidth > 991) {
         if (drawer) drawer.classList.remove('active');
@@ -80,13 +84,6 @@
           toggleBtn.classList.remove('open');
           toggleBtn.setAttribute('aria-expanded', 'false');
         }
-        document.querySelectorAll('.oz-dropdown.open').forEach(function(el) {
-          el.classList.remove('open');
-        });
-      } else {
-        document.querySelectorAll('.oz-dropdown.is-open').forEach(function(el) {
-          el.classList.remove('is-open');
-        });
       }
     });
   }
