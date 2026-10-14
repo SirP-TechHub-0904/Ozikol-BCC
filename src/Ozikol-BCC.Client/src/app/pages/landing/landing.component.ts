@@ -175,17 +175,6 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
       opacity: 0.65;
       cursor: not-allowed;
     }
-    .oz-newsletter-form,
-    .oz-form-newsletter {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .oz-newsletter-form button[type="submit"],
-    .oz-form-newsletter button[type="submit"] {
-      margin-top: 10px !important;
-      align-self: flex-start;
-    }
     .oz-recaptcha-wrap {
       display: flex;
       margin: 12px 0;
