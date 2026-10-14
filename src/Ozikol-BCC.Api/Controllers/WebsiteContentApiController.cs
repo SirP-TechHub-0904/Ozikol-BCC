@@ -458,22 +458,27 @@ namespace Ozikol_BCC.Api.Controllers
 
             var data = payload?.Data ?? new Dictionary<string, object>();
 
-            // 1. Google reCAPTCHA Verification
-            var recaptchaToken = payload?.RecaptchaToken;
-            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
-            {
-                recaptchaToken = gToken.ToString();
-            }
-            if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
-            {
-                recaptchaToken = rToken.ToString();
-            }
-
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
-            if (!isCaptchaValid)
+
+            // 1. Google reCAPTCHA Verification (enforced on contact/inquiry/service forms, exempted on compact newsletter subscribe)
+            var isNewsletter = formKey.ToLowerInvariant().Contains("newsletter") || form.FormKey.ToLowerInvariant().Contains("newsletter");
+            if (!isNewsletter)
             {
-                return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
+                var recaptchaToken = payload?.RecaptchaToken;
+                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
+                {
+                    recaptchaToken = gToken.ToString();
+                }
+                if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("recaptchaToken", out var rToken) && rToken != null)
+                {
+                    recaptchaToken = rToken.ToString();
+                }
+
+                var isCaptchaValid = await _recaptchaService.ValidateTokenAsync(recaptchaToken, clientIp);
+                if (!isCaptchaValid)
+                {
+                    return BadRequest(ApiResponse.FailureResponse("Security verification failed. Please complete the reCAPTCHA challenge and try again."));
+                }
             }
 
             // 2. Validate all required fields with synonym support

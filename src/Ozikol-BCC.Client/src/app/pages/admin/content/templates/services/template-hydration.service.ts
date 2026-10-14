@@ -959,9 +959,6 @@ export class TemplateHydrationService {
             <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
             <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
           </div>
-          <div class="oz-recaptcha-wrap mt-1">
-            <div class="g-recaptcha" data-sitekey=""></div>
-          </div>
         </form>`;
       }
 
