@@ -1556,29 +1556,34 @@
         </div>
 
         <div class="confirm-modal-footer reinstall-modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeReinstallDefaultsModal()" [disabled]="reinstallingDefaults">
+          <button
+            type="button"
+            class="btn-cancel-action"
+            (click)="closeReinstallDefaultsModal()"
+            [disabled]="reinstallingDefaults"
+          >
             Cancel
           </button>
           
           <button
             type="button"
-            class="btn btn-secondary-action"
+            class="btn-secondary-action"
             (click)="confirmRestoreTemplatesOnly()"
             [disabled]="reinstallingDefaults"
             title="Installs only the 16 template blueprints and code injections into your vault without generating pages or content"
           >
-            <span class="material-symbols-outlined me-1">layers</span>
+            <span class="material-symbols-outlined">layers</span>
             <span>{{ reinstallingTemplatesOnly ? 'Restoring Templates...' : 'Restore Templates Only' }}</span>
           </button>
 
           <button
             type="button"
-            class="btn btn-primary-action"
+            class="btn-primary-action"
             (click)="confirmSeedFullSuite()"
             [disabled]="reinstallingDefaults"
             title="Installs all 16 blueprints PLUS full sample website with 10 pre-assembled body sections, demo pages, and blogs"
           >
-            <span class="material-symbols-outlined me-1">auto_mode</span>
+            <span class="material-symbols-outlined">auto_mode</span>
             <span>{{ seedingFullSuite ? 'Installing Suite & Pages...' : 'Install Suite + Sample Pages' }}</span>
           </button>
         </div>

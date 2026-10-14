@@ -2373,7 +2373,7 @@
 
     /* Corporate Suite Reinstall Modal Styles */
     .reinstall-modal-card {
-      max-width: 580px !important;
+      max-width: 660px !important;
       width: 100%;
     }
 
@@ -2456,25 +2456,64 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 12px;
       padding: 16px 24px;
       background: #f8fafc;
       border-top: 1.5px solid #e2e8f0;
       border-radius: 0 0 18px 18px;
 
+      .btn-cancel-action,
+      .btn-secondary-action,
+      .btn-primary-action {
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        padding: 0 20px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        line-height: 1 !important;
+        border-radius: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+        transition: all 0.2s ease !important;
+
+        .material-symbols-outlined {
+          font-size: 19px !important;
+        }
+      }
+
+      .btn-cancel-action {
+        margin-right: auto;
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        color: #475569;
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+          color: #0f172a;
+        }
+
+        &:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+      }
+
       .btn-secondary-action {
         background: #ffffff;
         border: 1.5px solid #cbd5e1;
-        color: #334155;
-        font-weight: 600;
-        font-size: 13px;
-        padding: 9px 15px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
+        color: #1e293b;
         cursor: pointer;
-        transition: all 0.2s ease;
+
+        .material-symbols-outlined {
+          color: #475569;
+        }
 
         &:hover:not(:disabled) {
           background: #f1f5f9;
@@ -2490,18 +2529,15 @@
 
       .btn-primary-action {
         background: linear-gradient(135deg, #0050e5 0%, #2563eb 100%);
-        border: 1px solid #0050e5;
+        border: 1.5px solid #0050e5;
         color: #ffffff;
-        font-weight: 700;
-        font-size: 13px;
-        padding: 9px 18px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
+        font-weight: 700 !important;
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
-        transition: all 0.2s ease;
+
+        .material-symbols-outlined {
+          color: #ffffff;
+        }
 
         &:hover:not(:disabled) {
           background: linear-gradient(135deg, #0040b8 0%, #1d4ed8 100%);
