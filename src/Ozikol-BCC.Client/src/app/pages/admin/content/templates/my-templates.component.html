@@ -2031,29 +2031,29 @@
           
           <!-- SCANNING IN PROGRESS STATE -->
           <div *ngIf="isDiagnosingWebsite" style="text-align: center; padding: 48px 24px;">
-            <div style="width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: rgba(79, 70, 229, 0.12); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(79, 70, 229, 0.25);">
-              <span class="material-symbols-outlined" style="font-size: 38px; color: #4f46e5; animation: spin 2s linear infinite;">autorenew</span>
+            <div class="diagnostic-pulse-spinner" style="width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: rgba(79, 70, 229, 0.12); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(79, 70, 229, 0.35);">
+              <span class="material-symbols-outlined spin-icon" style="font-size: 38px; color: #4f46e5;">health_and_safety</span>
             </div>
             <h4 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Diagnosing Website Runtime...</h4>
             <p style="font-size: 14px; color: #64748b; margin: 0 auto 28px; max-width: 500px; line-height: 1.5;">
               Executing headless sandbox probe to detect JavaScript runtime exceptions, missing libraries, CORS font blocks, and template integrity issues.
             </p>
-            <div style="max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 22px;">
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
-                <span>Probing JavaScript sandbox runtime for uncaught errors...</span>
+            <div style="max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 18px 22px;">
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 13.5px;" [style.color]="diagnosticStep > 1 ? '#15803d' : (diagnosticStep === 1 ? '#0050e5' : '#94a3b8')" [style.font-weight]="diagnosticStep === 1 ? '700' : '500'">
+                <span class="material-symbols-outlined" style="font-size: 20px;" [class.spin-icon]="diagnosticStep === 1">{{ diagnosticStep > 1 ? 'check_circle' : (diagnosticStep === 1 ? 'sync' : 'radio_button_unchecked') }}</span>
+                <span>Probing JavaScript sandbox runtime for uncaught errors</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
-                <span>Validating Header &amp; Footer script injection tags...</span>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 13.5px;" [style.color]="diagnosticStep > 2 ? '#15803d' : (diagnosticStep === 2 ? '#0050e5' : '#94a3b8')" [style.font-weight]="diagnosticStep === 2 ? '700' : '500'">
+                <span class="material-symbols-outlined" style="font-size: 20px;" [class.spin-icon]="diagnosticStep === 2">{{ diagnosticStep > 2 ? 'check_circle' : (diagnosticStep === 2 ? 'sync' : 'radio_button_unchecked') }}</span>
+                <span>Validating Header &amp; Footer script injection tags</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
-                <span>Evaluating external fonts, CDN assets &amp; CORS headers...</span>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 13.5px;" [style.color]="diagnosticStep > 3 ? '#15803d' : (diagnosticStep === 3 ? '#0050e5' : '#94a3b8')" [style.font-weight]="diagnosticStep === 3 ? '700' : '500'">
+                <span class="material-symbols-outlined" style="font-size: 20px;" [class.spin-icon]="diagnosticStep === 3">{{ diagnosticStep > 3 ? 'check_circle' : (diagnosticStep === 3 ? 'sync' : 'radio_button_unchecked') }}</span>
+                <span>Evaluating external fonts, CDN assets &amp; CORS headers</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
-                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
-                <span>Consulting AI Engine for root-cause diagnosis...</span>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 13.5px;" [style.color]="diagnosticStep >= 4 ? '#0050e5' : '#94a3b8'" [style.font-weight]="diagnosticStep >= 4 ? '700' : '500'">
+                <span class="material-symbols-outlined" style="font-size: 20px;" [class.spin-icon]="diagnosticStep >= 4">{{ diagnosticStep >= 4 ? 'sync' : 'radio_button_unchecked' }}</span>
+                <span>Consulting AI Engine for root-cause diagnosis &amp; remediation</span>
               </div>
             </div>
           </div>
