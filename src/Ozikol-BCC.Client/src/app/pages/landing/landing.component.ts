@@ -1648,7 +1648,7 @@ export class LandingComponent implements OnInit, OnDestroy {
 
           <h1 class="oz-blank-title">Start Building Now</h1>
           <p class="oz-blank-subtitle">
-            Your sovereign digital workspace is set up and ready. Sign in to your admin console to install templates, design custom pages, and launch your brand.
+            Your workspace is ready. Sign in to your admin console to choose a template, design custom pages, and launch your site.
           </p>
 
           <div class="oz-blank-actions">
@@ -1662,7 +1662,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           </div>
 
           <div class="oz-blank-footer">
-            <span>© ${currentYear} ${brand}. Sovereign Cloud Infrastructure.</span>
+            <span>© ${currentYear} ${brand}. Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline; font-weight: 600;">Ozikol</a>.</span>
           </div>
         </div>
       </div>
