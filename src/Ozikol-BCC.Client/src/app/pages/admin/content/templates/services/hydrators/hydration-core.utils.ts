@@ -427,9 +427,6 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
     <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
     <button type="submit" class="btn btn-primary fw-semibold text-nowrap">Subscribe</button>
   </div>
-  <div class="oz-recaptcha-wrap mt-1">
-    <div class="g-recaptcha" data-sitekey=""></div>
-  </div>
 </form>`;
     }
 

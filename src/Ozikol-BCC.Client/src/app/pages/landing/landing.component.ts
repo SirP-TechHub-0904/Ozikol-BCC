@@ -178,7 +178,6 @@ import { HtmlAssemblerService, SectionTemplateUnit, CodeInjectionTag } from '../
     .oz-recaptcha-wrap {
       display: flex;
       margin: 12px 0;
-      overflow-x: auto;
     }
     .oz-recaptcha-wrap .g-recaptcha {
       transform-origin: 0 0;
@@ -200,7 +199,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   brandName: string = '';
   brandLogoUrl: string = '';
   brandInfo: any = {};
-  recaptchaSiteKey: string = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+  recaptchaSiteKey: string = '6LdBsb8tAAAAAPuXWg5SLjjbPVZd0_-v1w4WbK6H';
   activeTemplates: any[] = [];
   categories: any[] = [];
   publishedPages: any[] = [];
