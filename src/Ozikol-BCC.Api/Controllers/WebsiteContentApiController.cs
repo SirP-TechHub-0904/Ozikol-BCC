@@ -460,9 +460,14 @@ namespace Ozikol_BCC.Api.Controllers
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            // 1. Google reCAPTCHA Verification (enforced on contact/inquiry/service forms, exempted on compact newsletter subscribe)
-            var isNewsletter = formKey.ToLowerInvariant().Contains("newsletter") || form.FormKey.ToLowerInvariant().Contains("newsletter");
-            if (!isNewsletter)
+            // 1. Dynamic Google reCAPTCHA Verification
+            // Single-field email forms (e.g. newsletter subscriptions, waitlists, alert captures) are compact inline inputs designed for narrow footers/sidebars where reCAPTCHA boxes do not fit.
+            // Multi-field forms (2+ fields: contact inquiries, service requests, quote requests) enforce reCAPTCHA challenge verification to eliminate bot spam.
+            var isSingleFieldEmailCapture = form.Fields.Count <= 1 &&
+                form.Fields.All(f => f.FieldType.Equals("email", StringComparison.OrdinalIgnoreCase) ||
+                                     f.FieldKey.Contains("email", StringComparison.OrdinalIgnoreCase));
+
+            if (!isSingleFieldEmailCapture)
             {
                 var recaptchaToken = payload?.RecaptchaToken;
                 if (string.IsNullOrWhiteSpace(recaptchaToken) && data.TryGetValue("g-recaptcha-response", out var gToken) && gToken != null)
