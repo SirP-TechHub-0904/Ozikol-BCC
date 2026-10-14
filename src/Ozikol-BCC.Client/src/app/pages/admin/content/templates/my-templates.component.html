@@ -528,7 +528,7 @@
             title="Install the complete factory default Corporate Suite templates including all 10 body sections"
           >
             <span class="material-symbols-outlined">restart_alt</span>
-            <span>{{ reinstallingDefaults ? 'Installing Blueprints...' : 'Install Default Corporate Suite (15 Blueprints & 10 Body Sections)' }}</span>
+            <span>{{ reinstallingDefaults ? 'Installing Blueprints...' : 'Install Default Corporate Suite (16 Blueprints & 10 Body Sections)' }}</span>
           </button>
           <a routerLink="/content/console/marketplace" class="btn btn-outline" *ngIf="installedTemplates.length > 0">
             <span class="material-symbols-outlined">storefront</span>
@@ -1497,7 +1497,7 @@
     <!-- MODAL 9: REINSTALL DEFAULT CORPORATE SUITE MODAL        -->
     <!-- ======================================================= -->
     <div class="modal-backdrop" *ngIf="showReinstallDefaultsModal" (click)="closeReinstallDefaultsModal()">
-      <div class="modal-card confirm-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-card confirm-modal-card reinstall-modal-card" (click)="$event.stopPropagation()">
         <div class="confirm-modal-header">
           <div class="confirm-danger-badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5;">
             <span class="material-symbols-outlined confirm-icon">restart_alt</span>
@@ -1508,28 +1508,78 @@
         <div class="confirm-modal-body">
           <h3 class="confirm-modal-title">Restore Default Corporate Theme Suite?</h3>
           <p class="confirm-modal-subtitle">
-            This will reset your template vault and restore the <strong>16 standard turnkey Corporate Suite components</strong> and standard 3-zone code injection tags.
+            Choose how you wish to provision your workspace. You can restore the <strong>16 standard turnkey Corporate Suite components</strong> alone, or initialize the full sample website with all 10 pre-assembled body sections and demo pages.
           </p>
-          <div class="p-3 rounded-3 mt-3" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 13px; color: #475569;">
-            <div class="d-flex align-items-center gap-2 mb-1 fw-semibold text-dark">
-              <span class="material-symbols-outlined text-primary fs-5">verified</span>
-              <span>Included in Corporate Suite:</span>
+
+          <!-- Structured Inclusions List -->
+          <div class="suite-inclusions-box">
+            <div class="inclusions-header">
+              <div class="inclusions-title">
+                <span class="material-symbols-outlined">verified</span>
+                <span>Included in Corporate Suite (16 Blueprints):</span>
+              </div>
+              <span class="badge-turnkey">Turnkey Suite</span>
             </div>
-            • Classic Light Corporate Navbar &amp; Modern Corporate Split Hero<br>
-            • 6 Modular Body Sections (Features, Mission, Metrics, Testimonials, FAQ, CTA)<br>
-            • Storefront Product Grid, Newsletter Bar, Contact &amp; Service Request forms<br>
-            • Blog Card Grid &amp; Article Detail with Sticky Sidebar<br>
-            • Centered Breadcrumb Banner &amp; 4-Column Corporate Footer
+            <ul class="suite-feature-list">
+              <li class="feature-item">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <div class="feature-text">
+                  <strong>Header &amp; Navigation:</strong> Classic Light Corporate Navbar &amp; Modern Corporate Split Hero
+                </div>
+              </li>
+              <li class="feature-item">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <div class="feature-text">
+                  <strong>10 Body Sections:</strong> Features, Mission, Metrics, Testimonials, FAQ, CTA, Marquee, Product Grid &amp; Showcase
+                </div>
+              </li>
+              <li class="feature-item">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <div class="feature-text">
+                  <strong>Interactive Forms:</strong> Storefront Product Grid, Newsletter Bar, Contact Us &amp; Service Request forms
+                </div>
+              </li>
+              <li class="feature-item">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <div class="feature-text">
+                  <strong>Blog Suite:</strong> Responsive Blog Card Grid &amp; Article Detail with Sticky Sidebar
+                </div>
+              </li>
+              <li class="feature-item">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <div class="feature-text">
+                  <strong>Footer &amp; Breadcrumb:</strong> Centered Breadcrumb Banner &amp; 4-Column Corporate Footer
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
 
-        <div class="confirm-modal-footer">
+        <div class="confirm-modal-footer reinstall-modal-footer">
           <button type="button" class="btn btn-outline" (click)="closeReinstallDefaultsModal()" [disabled]="reinstallingDefaults">
             Cancel
           </button>
-          <button type="button" class="btn btn-primary" (click)="confirmReinstallDefaults()" [disabled]="reinstallingDefaults" style="background: #0050e5; border-color: #0050e5; border-radius: 8px; padding: 10px 20px; font-weight: 600;">
-            <span class="material-symbols-outlined me-1">restart_alt</span>
-            <span>{{ reinstallingDefaults ? 'Restoring Defaults...' : 'Restore Defaults' }}</span>
+          
+          <button
+            type="button"
+            class="btn btn-secondary-action"
+            (click)="confirmRestoreTemplatesOnly()"
+            [disabled]="reinstallingDefaults"
+            title="Installs only the 16 template blueprints and code injections into your vault without generating pages or content"
+          >
+            <span class="material-symbols-outlined me-1">layers</span>
+            <span>{{ reinstallingTemplatesOnly ? 'Restoring Templates...' : 'Restore Templates Only' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary-action"
+            (click)="confirmSeedFullSuite()"
+            [disabled]="reinstallingDefaults"
+            title="Installs all 16 blueprints PLUS full sample website with 10 pre-assembled body sections, demo pages, and blogs"
+          >
+            <span class="material-symbols-outlined me-1">auto_mode</span>
+            <span>{{ seedingFullSuite ? 'Installing Suite & Pages...' : 'Install Suite + Sample Pages' }}</span>
           </button>
         </div>
       </div>
@@ -1979,8 +2029,37 @@
         <!-- Modal Body -->
         <div style="padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px;">
           
-          <!-- Summary Score Card -->
-          <div *ngIf="diagnosticReport" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px 22px;">
+          <!-- SCANNING IN PROGRESS STATE -->
+          <div *ngIf="isDiagnosingWebsite" style="text-align: center; padding: 48px 24px;">
+            <div style="width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: rgba(79, 70, 229, 0.12); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(79, 70, 229, 0.25);">
+              <span class="material-symbols-outlined" style="font-size: 38px; color: #4f46e5; animation: spin 2s linear infinite;">autorenew</span>
+            </div>
+            <h4 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">Diagnosing Website Runtime...</h4>
+            <p style="font-size: 14px; color: #64748b; margin: 0 auto 28px; max-width: 500px; line-height: 1.5;">
+              Executing headless sandbox probe to detect JavaScript runtime exceptions, missing libraries, CORS font blocks, and template integrity issues.
+            </p>
+            <div style="max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 22px;">
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
+                <span>Probing JavaScript sandbox runtime for uncaught errors...</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
+                <span>Validating Header &amp; Footer script injection tags...</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
+                <span>Evaluating external fonts, CDN assets &amp; CORS headers...</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155; font-weight: 600;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #4f46e5;">sync</span>
+                <span>Consulting AI Engine for root-cause diagnosis...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMPLETED REPORT: Summary Score Card -->
+          <div *ngIf="!isDiagnosingWebsite && diagnosticReport" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 18px 22px;">
             <div>
               <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Overall Health Status</div>
               <div style="font-size: 22px; font-weight: 800; margin-top: 4px;" [style.color]="diagnosticReport.healthScore >= 90 ? '#16a34a' : (diagnosticReport.healthScore >= 70 ? '#d97706' : '#dc2626')">
@@ -2004,7 +2083,7 @@
           </div>
 
           <!-- Critical Issues List -->
-          <div *ngIf="diagnosticReport && diagnosticReport.criticalIssues.length > 0">
+          <div *ngIf="!isDiagnosingWebsite && diagnosticReport && diagnosticReport.criticalIssues.length > 0">
             <h4 style="font-size: 14px; font-weight: 800; color: #991b1b; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
               <span class="material-symbols-outlined" style="font-size: 18px;">cancel</span>
               Critical Issues Requiring Attention ({{ diagnosticReport.criticalIssues.length }})
@@ -2021,7 +2100,7 @@
           </div>
 
           <!-- Warnings List -->
-          <div *ngIf="diagnosticReport && diagnosticReport.warnings.length > 0">
+          <div *ngIf="!isDiagnosingWebsite && diagnosticReport && diagnosticReport.warnings.length > 0">
             <h4 style="font-size: 14px; font-weight: 800; color: #92400e; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
               <span class="material-symbols-outlined" style="font-size: 18px;">warning</span>
               Warnings &amp; Deliverability Recommendations ({{ diagnosticReport.warnings.length }})
@@ -2038,7 +2117,7 @@
           </div>
 
           <!-- Passed Checks List -->
-          <div *ngIf="diagnosticReport && diagnosticReport.passedChecks.length > 0">
+          <div *ngIf="!isDiagnosingWebsite && diagnosticReport && diagnosticReport.passedChecks.length > 0">
             <h4 style="font-size: 14px; font-weight: 800; color: #15803d; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 6px;">
               <span class="material-symbols-outlined" style="font-size: 18px;">task_alt</span>
               Passed Health Checks ({{ diagnosticReport.passedChecks.length }})
@@ -2059,9 +2138,21 @@
             <span class="material-symbols-outlined">edit_note</span>
             <span>Go to Header &amp; Footer Code Injections</span>
           </button>
-          <button type="button" class="btn btn-primary" (click)="closeAiHealthModal()">
-            Close Report
-          </button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button
+              *ngIf="!isDiagnosingWebsite"
+              type="button"
+              class="btn btn-outline"
+              (click)="runAiWebsiteHealthCheck()"
+              title="Run deep AI diagnostic again"
+            >
+              <span class="material-symbols-outlined" style="font-size: 17px;">refresh</span>
+              <span>Re-run Diagnostic</span>
+            </button>
+            <button type="button" class="btn btn-primary" (click)="closeAiHealthModal()" style="background: #4f46e5; border-color: #4f46e5;">
+              Close Report
+            </button>
+          </div>
         </div>
       </div>
     </div>

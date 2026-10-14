@@ -2051,10 +2051,35 @@ namespace Ozikol_BCC.Api.Controllers
         /// 4. 10 Dedicated Body Sections distributed across Home, Services, About, and Contact pages
         /// 5. Installed Category Templates (Menu, Hero, 10 Body Sections, Blog Feed, Blog Detail, Footer)
         /// 6. Comprehensive SEO, Social, Favicon &amp; Mobile PWA tags in &amp;lt;head&amp;gt;
+        /// <summary>
+        /// Restores only the canonical Corporate Theme Suite template blueprints and 3-zone code injection tags into the vault.
+        /// Does NOT seed or alter website pages, sections, blogs, or forms.
+        /// </summary>
+        /// <returns>A confirmation of the templates-only vault restoration.</returns>
+        [HttpPost("templates/reinstall-templates-only")]
+        public async Task<IActionResult> ReinstallTemplatesOnly()
+        {
+            await TenantDefaultWebsiteSeeder.SeedCorporateSuiteTemplatesAsync(_context);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                templatesRestored = true
+            }, "Default Corporate Theme Suite templates and code injection tags restored to your vault."));
+        }
+
+        /// <summary>
+        /// Seeds the complete turnkey website defaults into the tenant database:
+        /// 1. 3 Standard CMS Forms (Contact Us, Newsletter, Service Request)
+        /// 2. 3 Rich Editorial Blog Posts (Excerpts + Full Rich-Text HTML)
+        /// 3. Standard Navigation Categories and WebPages
+        /// 4. 10 Dedicated Body Sections distributed across Home, Services, About, and Contact pages
+        /// 5. Installed Category Templates (Menu, Hero, 10 Body Sections, Blog Feed, Blog Detail, Footer)
+        /// 6. Comprehensive SEO, Social, Favicon &amp; Mobile PWA tags in &lt;head&gt;
         /// Stamps IsWorkspaceInitialized = true with current UTC timestamp.
         /// </summary>
         /// <returns>A confirmation of the turnkey setup.</returns>
         [HttpPost("workspace/seed-defaults")]
+        [HttpPost("website/seed-default-suite")]
         [HttpPost("templates/reinstall-defaults")]
         public async Task<IActionResult> SeedWorkspaceDefaults()
         {

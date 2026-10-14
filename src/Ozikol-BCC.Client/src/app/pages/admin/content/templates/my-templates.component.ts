@@ -101,6 +101,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   clearingVault: boolean = false;
   showReinstallDefaultsModal: boolean = false;
   reinstallingDefaults: boolean = false;
+  reinstallingTemplatesOnly: boolean = false;
+  seedingFullSuite: boolean = false;
 
   // Code Injection Modal State
   showTagModal: boolean = false;
@@ -2621,21 +2623,62 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.showReinstallDefaultsModal = false;
   }
 
-  confirmReinstallDefaults(): void {
+  /**
+   * Restores only the 16 canonical Corporate Suite template blueprints and 3-zone code injection tags into the vault.
+   * Does not create or alter any website pages, sections, blogs, or inquiry forms.
+   */
+  confirmRestoreTemplatesOnly(): void {
+    this.reinstallingTemplatesOnly = true;
     this.reinstallingDefaults = true;
-    this.api.post<any>('ContentApi/templates/reinstall-defaults', {}).subscribe({
+
+    this.api.post<any>('ContentApi/templates/reinstall-templates-only', {}).subscribe({
       next: (res) => {
+        this.reinstallingTemplatesOnly = false;
         this.reinstallingDefaults = false;
         this.showReinstallDefaultsModal = false;
-        this.toast.success(res?.message || 'Default Corporate Theme Suite and code injections restored.');
+        this.toast.success(res?.message || 'Default Corporate Theme Suite templates and code injections restored.');
         this.loadInstalledTemplates();
         this.loadAllCodeInjections();
       },
       error: (err) => {
+        this.reinstallingTemplatesOnly = false;
         this.reinstallingDefaults = false;
-        this.toast.error('Failed to reinstall defaults: ' + (err?.message || 'Server error'));
+        this.toast.error('Failed to restore templates: ' + (err?.error?.message || err?.message || 'Server error'));
       }
     });
+  }
+
+  /**
+   * Provisions the complete factory-default Corporate Suite website:
+   * Installs all 16 template blueprints, 10 pre-assembled body sections, demo pages (About, Services, Contact, Blog),
+   * rich blog posts, storefront products, and interactive inquiry forms.
+   */
+  confirmSeedFullSuite(): void {
+    this.seedingFullSuite = true;
+    this.reinstallingDefaults = true;
+
+    this.api.post<any>('ContentApi/website/seed-default-suite', {}).subscribe({
+      next: (res) => {
+        this.seedingFullSuite = false;
+        this.reinstallingDefaults = false;
+        this.showReinstallDefaultsModal = false;
+        this.toast.success(res?.message || 'Corporate Suite templates, 10 body sections, sample pages, and blogs initialized successfully!');
+        this.loadInstalledTemplates();
+        this.loadAllCodeInjections();
+      },
+      error: (err) => {
+        this.seedingFullSuite = false;
+        this.reinstallingDefaults = false;
+        this.toast.error('Failed to initialize full suite: ' + (err?.error?.message || err?.message || 'Server error'));
+      }
+    });
+  }
+
+  /**
+   * Legacy backward-compatible delegate for reinstalling defaults.
+   */
+  confirmReinstallDefaults(): void {
+    this.confirmSeedFullSuite();
   }
 
   /**
@@ -3933,9 +3976,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   } | null = null;
 
   runAiWebsiteHealthCheck(): void {
+    // 1. Immediately open diagnostic modal in scanning state for clear user feedback
     this.isDiagnosingWebsite = true;
+    this.showAiHealthModal = true;
+    this.diagnosticReport = null;
 
-    // 1. Gather active tags and template metadata from DB state
+    // 2. Gather active tags and template metadata from DB state
     const headTags = this.allCodeInjections
       .filter(t => t.zone === 'head' && t.isActive)
       .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -3950,9 +3996,21 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const activeFooter = this.getActiveFooter();
     const sim = this.composePageSimulation('home');
 
-    // 2. Execute headless sandbox runtime probe to capture real browser exceptions
+    // 3. Execute headless sandbox runtime probe to capture real browser exceptions
     const capturedErrors: string[] = [];
     const capturedWarnings: string[] = [];
+
+    // Check for lingering unhydrated template tokens
+    const tokenMatches = (sim.combinedHtml || '').match(/\{\{\s*[\w\.\-]+\s*\}\}/g);
+    if (tokenMatches && tokenMatches.length > 0) {
+      const distinctTokens = Array.from(new Set(tokenMatches)).slice(0, 5);
+      capturedWarnings.push('Lingering unhydrated template tokens detected: ' + distinctTokens.join(', '));
+    }
+
+    // Check for empty template vault state
+    if (this.installedTemplates.length === 0) {
+      capturedWarnings.push('Template Vault is currently empty (0 installed templates). Blank workspace detected.');
+    }
 
     const sandboxIframe = document.createElement('iframe');
     sandboxIframe.style.display = 'none';
@@ -3970,6 +4028,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     window.addEventListener('unhandledrejection', function(e) {
       window.parent.postMessage({ type: 'OZ_RUNTIME_ERR', msg: 'Unhandled Promise: ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown') }, '*');
     });
+    window.addEventListener('error', function(e) {
+      if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+        var src = e.target.src || e.target.href || 'resource';
+        window.parent.postMessage({ type: 'OZ_RUNTIME_WARN', msg: 'Failed to load external resource: ' + src }, '*');
+      }
+    }, true);
   </script>
   ${this.allCodeInjections.filter(t => t.zone === 'head' && t.isActive).sort((a, b) => a.sortOrder - b.sortOrder).map(t => t.content).join('\n')}
   <style>${sim.combinedStyles}</style>
@@ -3984,13 +4048,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     const messageHandler = (e: MessageEvent) => {
       if (e.data?.type === 'OZ_RUNTIME_ERR') {
         capturedErrors.push(e.data.msg);
+      } else if (e.data?.type === 'OZ_RUNTIME_WARN') {
+        capturedWarnings.push(e.data.msg);
       }
     };
     window.addEventListener('message', messageHandler);
 
     sandboxIframe.srcdoc = probeHtml;
 
-    // 3. After sandbox evaluation window, dispatch real telemetry to AI Engine
+    // 4. After sandbox evaluation window, dispatch real telemetry to AI Engine
     setTimeout(() => {
       window.removeEventListener('message', messageHandler);
       sandboxIframe.remove();
@@ -4010,14 +4076,13 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         next: (res) => {
           this.isDiagnosingWebsite = false;
           this.diagnosticReport = res?.data || null;
-          this.showAiHealthModal = true;
         },
         error: (err) => {
           this.isDiagnosingWebsite = false;
-          this.toast.error(err?.error?.message || 'Failed to complete AI diagnostic inspection.');
+          this.toast.error(err?.error?.message || err?.message || 'Failed to complete AI diagnostic inspection.');
         }
       });
-    }, 600);
+    }, 700);
   }
 
   closeAiHealthModal(): void {
