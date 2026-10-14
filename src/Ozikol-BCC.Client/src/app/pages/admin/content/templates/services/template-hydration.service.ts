@@ -954,11 +954,9 @@ export class TemplateHydrationService {
       const isService = /service|request|intake/i.test(key);
 
       if (isNewsletter) {
-        return `<form class="oz-dynamic-form oz-form-newsletter d-flex flex-column gap-2" data-form-key="${key}" onsubmit="event.preventDefault();">
-          <div class="d-flex gap-2">
-            <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
-            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Subscribe</button>
-          </div>
+        return `<form class="oz-dynamic-form oz-form-newsletter" data-form-key="${key}" onsubmit="event.preventDefault();">
+          <input type="email" name="email" class="form-control form-control-sm rounded-pill px-3" placeholder="name@company.com" required />
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" style="margin-top: 10px;">Subscribe</button>
         </form>`;
       }
 
