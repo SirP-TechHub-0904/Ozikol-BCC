@@ -193,10 +193,12 @@
 .oz-footer-form-wrapper form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .oz-footer-form-wrapper input[type="email"],
 .oz-footer-form-wrapper input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -213,11 +215,13 @@
 }
 .oz-footer-form-wrapper button,
 .oz-footer-form-wrapper input[type="submit"] {
+  align-self: flex-start;
+  margin-top: 6px;
   background: #0284c7;
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  padding: 11px 20px;
+  padding: 11px 22px;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;

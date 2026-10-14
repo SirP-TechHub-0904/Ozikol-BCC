@@ -422,11 +422,9 @@ export function injectDynamicForms(template: string, ctx: HydrationContext): str
     }
 
     if (formKey === 'newsletter_subscribe' || formKey === 'newsletter' || formKey === 'subscribe') {
-      return `<form class="oz-injected-form oz-newsletter-form d-flex flex-column gap-2" data-form-key="Newsletter" onsubmit="event.preventDefault();">
-  <div class="d-flex gap-2">
-    <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
-    <button type="submit" class="btn btn-primary fw-semibold text-nowrap">Subscribe</button>
-  </div>
+      return `<form class="oz-injected-form oz-newsletter-form" data-form-key="Newsletter" onsubmit="event.preventDefault();">
+  <input type="email" name="email" class="form-control" placeholder="name@company.com" required />
+  <button type="submit" class="btn btn-primary fw-semibold text-nowrap" style="margin-top: 10px;">Subscribe</button>
 </form>`;
     }
 
