@@ -75,6 +75,9 @@ export class ContentHydrationService {
         return hydrateBlogFeed(rawTemplate, ctx);
 
       case 'blog_detail':
+      case 'blog-detail':
+      case 'blog_details':
+      case 'blog-details':
       case 'article_detail':
       case 'post_detail':
         return hydrateBlogDetail(rawTemplate, ctx);
