@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Ozikol_BCC.Application.Services.Cloudflare.ICloudflareR2StorageService, Ozikol_BCC.Application.Services.Cloudflare.CloudflareR2StorageService>();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher, Ozikol_BCC.Application.Services.Notifications.CentralNotificationDispatcher>();
         services.AddSingleton<Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector, Ozikol_BCC.Application.Services.Logging.CentralLogCollector>();
+        services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger, Ozikol_BCC.Application.Services.Logging.TenantActivityLogger>();
         services.AddScoped<Ozikol_BCC.Application.Services.LoggerLibrary>();
         services.AddTransient<Ozikol_BCC.Application.Seeders.DefaultTenantSeeder>();
         return services;
