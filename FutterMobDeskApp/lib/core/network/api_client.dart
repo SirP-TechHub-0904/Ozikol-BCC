@@ -9,8 +9,9 @@ class ApiClient {
   late final Dio dio;
 
   ApiClient(SecureStorageService storageService, {String? customBaseUrl}) {
+    final effectiveUrl = customBaseUrl ?? storageService.getCustomBaseUrl() ?? ApiConstants.defaultBaseUrl;
     final baseOptions = BaseOptions(
-      baseUrl: customBaseUrl ?? ApiConstants.defaultBaseUrl,
+      baseUrl: effectiveUrl,
       connectTimeout: ApiConstants.connectTimeout,
       receiveTimeout: ApiConstants.receiveTimeout,
       responseType: ResponseType.json,

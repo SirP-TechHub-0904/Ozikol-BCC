@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/glass_container.dart';
@@ -26,6 +27,90 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     super.dispose();
   }
 
+  void _showServerSettingsDialog() {
+    final storage = ref.read(storageServiceProvider);
+    final currentCustom = storage.getCustomBaseUrl();
+    final customController = TextEditingController(text: currentCustom ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.dns_rounded, color: AppColors.primary, size: 22),
+              SizedBox(width: 10),
+              Text('API Server Environment', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Active Base URL:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+              const SizedBox(height: 4),
+              SelectableText(
+                currentCustom ?? ApiConstants.defaultBaseUrl,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+              ),
+              const Divider(height: 24),
+              const Text('Switch Preset:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.computer_rounded, color: AppColors.success),
+                title: const Text('Local .NET API (Development)'),
+                subtitle: Text(ApiConstants.defaultBaseUrl, style: const TextStyle(fontSize: 11)),
+                onTap: () async {
+                  await storage.setCustomBaseUrl(null);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  setState(() {});
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.cloud_outlined, color: AppColors.primary),
+                title: const Text('Production Cloud (Online)'),
+                subtitle: const Text(ApiConstants.productionBaseUrl, style: TextStyle(fontSize: 11)),
+                onTap: () async {
+                  await storage.setCustomBaseUrl(ApiConstants.productionBaseUrl);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: customController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Server / LAN IP',
+                  hintText: 'e.g. http://192.168.1.50:51025',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final txt = customController.text.trim();
+                await storage.setCustomBaseUrl(txt.isNotEmpty ? txt : null);
+                if (ctx.mounted) Navigator.pop(ctx);
+                setState(() {});
+              },
+              child: const Text('Save Custom'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _handleContinue() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -50,6 +135,24 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Server Environment Configuration Toggle (Top-Right)
+          Positioned(
+            top: 14,
+            right: 14,
+            child: SafeArea(
+              child: Tooltip(
+                message: 'Configure API Server Environment',
+                child: IconButton(
+                  icon: Icon(
+                    Icons.settings_ethernet_rounded,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    size: 20,
+                  ),
+                  onPressed: _showServerSettingsDialog,
+                ),
+              ),
+            ),
+          ),
           // Background subtle ambient radial gradients
           Positioned(
             top: -120,

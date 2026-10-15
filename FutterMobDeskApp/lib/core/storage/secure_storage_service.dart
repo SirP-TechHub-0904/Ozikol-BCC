@@ -167,4 +167,32 @@ class SecureStorageService {
       return null;
     }
   }
+
+  static const String _customBaseUrlPrefs = 'ozikol_custom_base_url';
+
+  /// Retrieves the user-configured API Base URL override if any
+  String? getCustomBaseUrl() {
+    if (_prefs != null) {
+      return _prefs.getString(_customBaseUrlPrefs);
+    }
+    return _memoryStore[_customBaseUrlPrefs];
+  }
+
+  /// Sets or clears the user-configured API Base URL override
+  Future<void> setCustomBaseUrl(String? url) async {
+    if (url == null || url.trim().isEmpty) {
+      if (_prefs != null) {
+        await _prefs.remove(_customBaseUrlPrefs);
+      } else {
+        _memoryStore.remove(_customBaseUrlPrefs);
+      }
+      return;
+    }
+
+    if (_prefs != null) {
+      await _prefs.setString(_customBaseUrlPrefs, url.trim());
+    } else {
+      _memoryStore[_customBaseUrlPrefs] = url.trim();
+    }
+  }
 }

@@ -5,17 +5,20 @@ import 'package:flutter/foundation.dart';
 class ApiConstants {
   ApiConstants._();
 
-  /// Default API base URL dynamically resolved based on current runtime platform.
+  /// Production cloud API URL
+  static const String productionBaseUrl = 'https://api.ozikol.cloud';
+
+  /// Default API base URL dynamically resolved based on current runtime platform for local development.
   static String get defaultBaseUrl {
     if (kIsWeb) {
-      return 'http://localhost:51026';
+      return 'http://localhost:51025';
     }
     if (Platform.isAndroid) {
-      // Android emulator maps 10.0.2.2 to host machine's localhost
-      return 'http://10.0.2.2:51026';
+      // Android emulator maps 10.0.2.2 to host Windows machine's localhost
+      return 'http://10.0.2.2:51025';
     }
     // Windows, macOS, Linux desktop and iOS simulator connect directly via localhost
-    return 'http://localhost:51026';
+    return 'http://localhost:51025';
   }
 
   // Auth & Tenant Endpoints
