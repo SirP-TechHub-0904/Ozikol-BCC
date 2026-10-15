@@ -187,6 +187,7 @@ interface IndustryTemplate {
           <div class="rf-form-group">
             <label class="rf-form-label">DEFAULT INDUSTRY SECTOR</label>
             <select [(ngModel)]="policy.defaultIndustrySector" class="rf-select">
+              <option value="">-- Select Default Industry Sector (None) --</option>
               <option value="Business & Enterprise">Business & Enterprise</option>
               <option value="Education & Academy">Education & Academy</option>
               <option value="Healthcare & Care Services">Healthcare & Care Services</option>
@@ -1176,6 +1177,7 @@ interface IndustryTemplate {
                     <div class="rf-sim-group">
                       <label class="rf-sim-label">Industry Sector</label>
                       <select class="rf-sim-input" [(ngModel)]="policy.defaultIndustrySector">
+                        <option value="">-- Select Industry Sector --</option>
                         <option value="Business & Enterprise">Business & Enterprise</option>
                         <option value="Education & Academy">Education & Academy</option>
                         <option value="Healthcare & Care Services">Healthcare & Care Services</option>

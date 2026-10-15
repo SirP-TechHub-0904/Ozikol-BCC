@@ -348,6 +348,7 @@ interface WizardStep {
                           class="form-select"
                           required
                         >
+                          <option value="" disabled selected>-- Select Industry / Sector --</option>
                           <option *ngFor="let sec of industrySectors" [value]="sec">{{ sec }}</option>
                         </select>
                       </div>
@@ -401,7 +402,7 @@ interface WizardStep {
                           (change)="onCategoryChanged()"
                           class="form-select"
                         >
-                          <option [ngValue]="null">No specific tier (Standard Member)</option>
+                          <option [ngValue]="null">-- Select Category Tier (or Standard Member) --</option>
                           <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
                         </select>
                       </div>
@@ -458,7 +459,7 @@ interface WizardStep {
                             class="form-select"
                             [required]="field.isRequired"
                           >
-                            <option value="">{{ field.placeholder || 'Select an option...' }}</option>
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                         </div>
@@ -671,7 +672,8 @@ interface WizardStep {
                         <label class="form-label">Industry Sector <span class="req-star">*</span></label>
                         <div class="input-wrapper">
                           <span class="material-symbols-outlined input-icon">apartment</span>
-                          <select [(ngModel)]="model.organizationType" name="sec_orgType" class="form-select">
+                          <select [(ngModel)]="model.organizationType" name="sec_orgType" class="form-select" required>
+                            <option value="" disabled selected>-- Select Industry / Sector --</option>
                             <option *ngFor="let sec of industrySectors" [value]="sec">{{ sec }}</option>
                           </select>
                         </div>
@@ -717,7 +719,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'sec_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="">{{ field.placeholder || 'Select...' }}</option>
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                         </div>
@@ -830,7 +832,8 @@ interface WizardStep {
                     <div class="form-grid-2">
                       <div class="form-group" *ngIf="!isCoreFieldUnpublished('organizationType')">
                         <label class="form-label">Sector <span class="req-star">*</span></label>
-                        <select [(ngModel)]="model.organizationType" name="st_sec" class="form-select">
+                        <select [(ngModel)]="model.organizationType" name="st_sec" class="form-select" required>
+                          <option value="" disabled selected>-- Select Industry / Sector --</option>
                           <option *ngFor="let sec of industrySectors" [value]="sec">{{ sec }}</option>
                         </select>
                       </div>
@@ -888,7 +891,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'st_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="">{{ field.placeholder || 'Select an option...' }}</option>
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                           <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
@@ -1015,11 +1018,11 @@ interface WizardStep {
                     <div class="form-grid-2">
                       <div class="form-group">
                         <label class="form-label">First Name <span class="req-star">*</span></label>
-                        <input type="text" [(ngModel)]="model.firstName" name="pg_fn" placeholder="First Name" class="form-input" required />
+                        <input type="text" [(ngModel)]="model.firstName" name="pg_fn" placeholder="e.g. First Name" class="form-input" required />
                       </div>
                       <div class="form-group">
                         <label class="form-label">Last Name <span class="req-star">*</span></label>
-                        <input type="text" [(ngModel)]="model.lastName" name="pg_ln" placeholder="Last Name" class="form-input" required />
+                        <input type="text" [(ngModel)]="model.lastName" name="pg_ln" placeholder="e.g. Last Name" class="form-input" required />
                       </div>
                     </div>
                     <div class="form-group">
@@ -1029,11 +1032,11 @@ interface WizardStep {
                     <div *ngIf="isPasswordRequired" class="form-grid-2">
                       <div class="form-group">
                         <label class="form-label">Password <span class="req-star">*</span></label>
-                        <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.password" (input)="onPasswordInput(model.password)" name="pg_pw" placeholder="Password" class="form-input" required />
+                        <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.password" (input)="onPasswordInput(model.password)" name="pg_pw" placeholder="••••••••" class="form-input" required />
                       </div>
                       <div class="form-group">
                         <label class="form-label">Confirm Password <span class="req-star">*</span></label>
-                        <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="pg_cpw" placeholder="Confirm Password" class="form-input" required />
+                        <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.confirmPassword" name="pg_cpw" placeholder="••••••••" class="form-input" required />
                       </div>
                     </div>
                     <div class="wizard-actions">
@@ -1045,7 +1048,8 @@ interface WizardStep {
                   <div *ngIf="currentStep === 2" class="page-content fade-in">
                     <div class="form-group" *ngIf="!isCoreFieldUnpublished('organizationType')">
                       <label class="form-label">Industry Sector <span class="req-star">*</span></label>
-                      <select [(ngModel)]="model.organizationType" name="pg_sec" class="form-select">
+                      <select [(ngModel)]="model.organizationType" name="pg_sec" class="form-select" required>
+                        <option value="" disabled selected>-- Select Industry / Sector --</option>
                         <option *ngFor="let sec of industrySectors" [value]="sec">{{ sec }}</option>
                       </select>
                     </div>
@@ -1105,7 +1109,7 @@ interface WizardStep {
                         <div class="form-group" *ngIf="field.fieldType === 'select'">
                           <label class="form-label">{{ field.label }} <span *ngIf="field.isRequired" class="req-star">*</span></label>
                           <select [(ngModel)]="customAttributes[field.fieldKey]" [name]="'pg_' + field.fieldKey" class="form-select" [required]="field.isRequired">
-                            <option value="">{{ field.placeholder || 'Select an option...' }}</option>
+                            <option value="" disabled selected>{{ field.placeholder || '-- Select an option --' }}</option>
                             <option *ngFor="let opt of field.optionsList" [value]="opt">{{ opt }}</option>
                           </select>
                           <span class="help-text" *ngIf="field.helpText">{{ field.helpText }}</span>
@@ -1515,10 +1519,10 @@ interface WizardStep {
       font-size: 18px;
       pointer-events: none;
     }
-    .form-input, .form-select, .custom-textarea {
+    .form-input, .form-select {
       width: 100%;
-      height: 42px;
-      padding: 0 12px 0 38px;
+      height: 44px;
+      padding: 0 14px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       font-size: 13.5px;
@@ -1528,10 +1532,39 @@ interface WizardStep {
       transition: all 0.2s ease;
       outline: none;
     }
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px 16px;
+    }
     .custom-textarea {
+      width: 100%;
       height: auto;
-      padding: 10px 12px;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #ffffff;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      outline: none;
       line-height: 1.5;
+    }
+    /* When an icon is present, apply left padding */
+    .input-wrapper .input-icon + .form-input,
+    .input-wrapper .input-icon + .form-select,
+    .input-wrapper .input-icon ~ .form-input,
+    .input-wrapper .input-icon ~ .form-select,
+    .input-wrapper:has(.input-icon) .form-input,
+    .input-wrapper:has(.input-icon) .form-select {
+      padding-left: 38px;
     }
     .form-input:focus, .form-select:focus, .custom-textarea:focus {
       border-color: #0050e5;
@@ -2237,7 +2270,7 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     lastName: '',
     email: '',
     phoneNumber: '',
-    organizationType: 'Business & Enterprise',
+    organizationType: '',
     bcpUserCategoryId: null,
     password: '',
     confirmPassword: '',
@@ -2590,7 +2623,10 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     // Step 2: Sector & Member Tier
     if (stepNumber === 2) {
       if (!this.isCoreFieldUnpublished('organizationType') && !this.model.organizationType?.trim()) {
-        this.model.organizationType = this.policy.defaultIndustrySector || 'Business & Enterprise';
+        this.errorMessage = 'Please select your industry or organization sector.';
+        this.toast.error(this.errorMessage);
+        this.focusInputField('s_organizationType', 'st_sec', 'pg_sec', 'sec_orgType');
+        return false;
       }
 
       if (!this.isCoreFieldUnpublished('phoneNumber') && this.model.phoneNumber?.trim()) {
