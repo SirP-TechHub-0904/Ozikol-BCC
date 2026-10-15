@@ -2,21 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/in_app_update_service.dart';
+import '../../../core/widgets/activity_tile.dart';
+import '../../../core/widgets/app_badge.dart';
+import '../../../core/widgets/app_drawer.dart';
+import '../../../core/widgets/app_top_bar.dart';
 import '../../../core/widgets/contextual_info_button.dart';
-import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
-import '../../../core/widgets/theme_mode_switcher.dart';
 import '../../../core/widgets/update_banner.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 import '../../notifications/data/notification_service.dart';
 import '../../notifications/presentation/notifications_sheet.dart';
 
-/// Adaptive dashboard shell accommodating desktop window layouts (multi-pane)
-/// and mobile viewports (bottom navigation + drawer).
+/// Clean adaptive dashboard shell accommodating desktop window layouts (multi-column)
+/// and mobile viewports (bottom navigation + drawer), powered by the unified UI kit.
 class DashboardShellScreen extends ConsumerStatefulWidget {
+  /// Creates the primary [DashboardShellScreen].
   const DashboardShellScreen({super.key});
 
   @override
@@ -26,36 +30,11 @@ class DashboardShellScreen extends ConsumerStatefulWidget {
 class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
   int _selectedNavIndex = 0;
 
-  final List<_NavCategory> _categories = const [
-    _NavCategory(
-      title: 'Workspace Hub',
-      items: [
-        _NavItem(id: 'kpi_dashboard', label: 'Dashboard & Analytics', icon: Icons.dashboard_rounded),
-        _NavItem(id: 'members', label: 'Member Directory', icon: Icons.people_outline_rounded),
-        _NavItem(id: 'announcements', label: 'Announcements', icon: Icons.campaign_outlined),
-      ],
-    ),
-    _NavCategory(
-      title: 'Communication & Chat',
-      items: [
-        _NavItem(id: 'group_chat', label: 'Team Group Chat', icon: Icons.chat_bubble_outline_rounded, isLocked: false),
-        _NavItem(id: 'direct_messages', label: 'Direct Messages', icon: Icons.forum_outlined),
-        _NavItem(id: 'message_templates', label: 'Message Templates', icon: Icons.dynamic_form_outlined),
-      ],
-    ),
-    _NavCategory(
-      title: 'Operations & MIS Core',
-      items: [
-        _NavItem(id: 'inventory', label: 'Inventory Management', icon: Icons.inventory_2_outlined, isLocked: true),
-        _NavItem(id: 'billing', label: 'Invoices & Payments', icon: Icons.receipt_long_outlined, isLocked: true),
-        _NavItem(id: 'page_forms', label: 'Custom Dynamic Forms', icon: Icons.table_chart_outlined),
-      ],
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceStateProvider);
+    final notifState = ref.watch(notificationProvider);
+    final updateAsync = ref.watch(appUpdateCheckProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
 
@@ -64,308 +43,151 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
         final isDesktop = constraints.maxWidth >= 900;
 
         if (isDesktop) {
-          return Scaffold(
-            body: Row(
-              children: [
-                // 1. Far Left Workspace Switcher Dock (Multi-Tenant)
-                const WorkspaceSwitcherDock(),
-
-                // 2. Feature Navigation Sidebar (250px)
-                _buildDesktopSidebar(isDark, activeWs),
-
-                // 3. Main Dynamic Content Canvas with Offline Resilience Bar
-                Expanded(
-                  child: Column(
-                    children: [
-                      const OfflineStatusBar(),
-                      Expanded(child: _buildMainCanvas(isDark, activeWs)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          return _buildDesktopLayout(
+            context,
+            isDark: isDark,
+            activeWs: activeWs,
+            notifCount: notifState.unreadCount,
+            updateAsync: updateAsync,
           );
         }
 
-        // Mobile Layout with Offline Resilience Bar
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            elevation: 0,
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TenantAvatar(
-                  logoUrl: activeWs?.logoUrl,
-                  name: activeWs?.displayName ?? 'Ozikol',
-                  size: 28,
-                  borderRadius: 8,
-                ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    activeWs?.displayName ?? 'Workspace',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              const ThemeModeSwitcher(compact: true),
-              Consumer(
-                builder: (context, ref, _) {
-                  final notifState = ref.watch(notificationProvider);
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none_rounded),
-                        tooltip: 'Notifications',
-                        onPressed: () => NotificationsSheet.show(context),
-                      ),
-                      if (notifState.unreadCount > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: AppColors.error,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                            child: Center(
-                              child: Text(
-                                '${notifState.unreadCount > 99 ? '99+' : notifState.unreadCount}',
-                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.swap_horiz_rounded),
-                tooltip: 'Switch Workspace',
-                onPressed: () => _showMobileWorkspaceSheet(context),
-              ),
-            ],
-          ),
-          drawer: _buildMobileDrawer(isDark, activeWs),
-          body: Column(
-            children: [
-              Consumer(
-                builder: (context, ref, _) {
-                  final updateAsync = ref.watch(appUpdateCheckProvider);
-                  return updateAsync.maybeWhen(
-                    data: (res) => res.hasUpdate && res.updateInfo != null
-                        ? UpdateBanner(updateInfo: res.updateInfo!)
-                        : const SizedBox.shrink(),
-                    orElse: () => const SizedBox.shrink(),
-                  );
-                },
-              ),
-              const OfflineStatusBar(),
-              Expanded(child: _buildMobileBody(isDark, activeWs)),
-            ],
-          ),
+        return _buildMobileLayout(
+          context,
+          isDark: isDark,
+          activeWs: activeWs,
+          notifCount: notifState.unreadCount,
+          updateAsync: updateAsync,
         );
       },
     );
   }
 
-  Widget _buildDesktopSidebar(bool isDark, dynamic activeWs) {
-    final sidebarBg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-    final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
+  // =========================================================================
+  // DESKTOP LAYOUT (>= 900px)
+  // =========================================================================
 
-    return Container(
-      width: 250,
-      decoration: BoxDecoration(
-        color: sidebarBg,
-        border: Border(right: BorderSide(color: borderColor, width: 1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildDesktopLayout(
+    BuildContext context, {
+    required bool isDark,
+    required dynamic activeWs,
+    required int notifCount,
+    required AsyncValue<dynamic> updateAsync,
+  }) {
+    return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: Row(
         children: [
-          // Workspace Header Card
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: borderColor)),
-            ),
-            child: Row(
-              children: [
-                TenantAvatar(
-                  logoUrl: activeWs?.logoUrl,
-                  name: activeWs?.displayName ?? 'Ozikol',
-                  size: 38,
-                  borderRadius: 12,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        activeWs?.displayName ?? 'Workspace',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        activeWs?.primaryDomain ?? 'domain.ozikol.cloud',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          // 1. Far Left Multi-Tenant Workspace Switcher Dock (68px)
+          const WorkspaceSwitcherDock(),
+
+          // 2. Persistent Adaptive Left Navigation Sidebar (250px)
+          AppDrawer(
+            isPermanentSidebar: true,
+            width: 250,
+            header: _buildDesktopSidebarHeader(isDark, activeWs),
+            sections: _buildNavigationSections(isDark),
+            footer: _buildDesktopSidebarFooter(isDark, activeWs),
           ),
 
-          // Categorized Feature Navigation List
+          // 3. Main Workspace Canvas
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              itemCount: _categories.length,
-              itemBuilder: (context, catIdx) {
-                final cat = _categories[catIdx];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      child: Text(
-                        cat.title.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                        ),
-                      ),
+            child: Column(
+              children: [
+                // Top Application Bar with Notifications & Theme Switcher
+                AppTopBar(
+                  leadingType: AppTopBarLeadingType.none,
+                  title: activeWs?.displayName ?? 'Workspace',
+                  subtitle: activeWs?.primaryDomain ?? 'domain.ozikol.cloud',
+                  actions: [
+                    AppTopBarAction(
+                      icon: Icons.notifications_none_rounded,
+                      tooltip: 'Notifications',
+                      badge: notifCount > 0
+                          ? AppBadge(text: '$notifCount', backgroundColor: AppColors.error)
+                          : null,
+                      onTap: () => NotificationsSheet.show(context),
                     ),
-                    ...cat.items.asMap().entries.map((entry) {
-                      final item = entry.value;
-                      final globalIndex = catIdx * 10 + entry.key;
-                      final isSelected = _selectedNavIndex == globalIndex;
+                    AppTopBarAction(
+                      icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      tooltip: 'Toggle Theme',
+                      onTap: () => _toggleTheme(),
+                    ),
+                  ],
+                ),
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                        child: InkWell(
-                          onTap: () {
-                            if (item.isLocked) {
-                              _showLockedFeatureDialog(context, item.label);
-                            } else {
-                              setState(() => _selectedNavIndex = globalIndex);
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary.withAlpha(isDark ? 40 : 20)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  item.icon,
-                                  size: 18,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    item.label,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : (isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight),
-                                    ),
-                                  ),
-                                ),
-                                if (item.isLocked)
-                                  const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 14,
-                                    color: AppColors.warning,
-                                  ),
-                              ],
-                            ),
+                // In-App Update Banner
+                updateAsync.maybeWhen(
+                  data: (res) => res.hasUpdate && res.updateInfo != null
+                      ? UpdateBanner(updateInfo: res.updateInfo!)
+                      : const SizedBox.shrink(),
+                  orElse: () => const SizedBox.shrink(),
+                ),
+
+                // Offline Network Resilience Bar
+                const OfflineStatusBar(),
+
+                // 2-Column Responsive Landing Content Area
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(28),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column (60%): Hero, KPIs & Quick Action Capabilities
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildWorkspaceHeroCard(isDark, activeWs),
+                              const SizedBox(height: 24),
+                              _buildSectionHeader(
+                                isDark,
+                                title: 'Workspace Overview',
+                                infoTitle: 'Workspace Telemetry & Capabilities',
+                                infoPurpose:
+                                    'Summarizes live operational metrics, member directory counts, and active modular capabilities for this tenant organization.',
+                              ),
+                              const SizedBox(height: 14),
+                              _buildMetricsGrid(isDark, activeWs),
+                              const SizedBox(height: 28),
+                              _buildSectionHeader(
+                                isDark,
+                                title: 'Quick Operations',
+                                infoTitle: 'Modular Operational Actions',
+                                infoPurpose:
+                                    'Launch common administrative workflows, invite new members, or engage the Ozi AI studio assistant.',
+                              ),
+                              const SizedBox(height: 14),
+                              _buildQuickActionsGrid(isDark),
+                            ],
                           ),
                         ),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              },
-            ),
-          ),
 
-          // User Footer Profile
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: borderColor)),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.primaryContainer,
-                  child: Text(
-                    activeWs?.userFullName?.isNotEmpty == true
-                        ? activeWs!.userFullName![0].toUpperCase()
-                        : 'U',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        const SizedBox(width: 24),
+
+                        // Right Column (40%): Live Activity Feed & Audit Log
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader(
+                                isDark,
+                                title: 'Recent Activity & Telemetry',
+                                infoTitle: 'Audit Logs & Telemetry Stream',
+                                infoPurpose:
+                                    'Real-time stream of member actions, system events, and notification dispatches for compliance and auditing.',
+                              ),
+                              const SizedBox(height: 14),
+                              _buildLiveActivityStream(isDark),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        activeWs?.userFullName ?? 'Staff Member',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        activeWs?.userEmail ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFF64748B)),
-                  tooltip: 'Sign Out of Workspace',
-                  onPressed: () {
-                    if (activeWs != null) {
-                      ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
-                        (route) => false,
-                      );
-                    }
-                  },
                 ),
               ],
             ),
@@ -375,191 +197,250 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
     );
   }
 
-  Widget _buildMainCanvas(bool isDark, dynamic activeWs) {
+  // =========================================================================
+  // MOBILE LAYOUT (< 900px)
+  // =========================================================================
+
+  Widget _buildMobileLayout(
+    BuildContext context, {
+    required bool isDark,
+    required dynamic activeWs,
+    required int notifCount,
+    required AsyncValue<dynamic> updateAsync,
+  }) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      appBar: AppTopBar(
+        leadingType: AppTopBarLeadingType.menu,
+        title: activeWs?.displayName ?? 'Workspace',
+        subtitle: activeWs?.primaryDomain ?? 'domain.ozikol.cloud',
+        actions: [
+          AppTopBarAction(
+            icon: Icons.notifications_none_rounded,
+            tooltip: 'Notifications',
+            badge: notifCount > 0
+                ? AppBadge(text: '$notifCount', backgroundColor: AppColors.error)
+                : null,
+            onTap: () => NotificationsSheet.show(context),
+          ),
+          AppTopBarAction(
+            icon: Icons.swap_horiz_rounded,
+            tooltip: 'Switch Workspace',
+            onTap: () => _showMobileWorkspaceSheet(context),
+          ),
+        ],
+      ),
+      drawer: AppDrawer(
+        header: _buildDesktopSidebarHeader(isDark, activeWs),
+        sections: _buildNavigationSections(isDark),
+        footer: _buildDesktopSidebarFooter(isDark, activeWs),
+      ),
       body: Column(
         children: [
-          Consumer(
-            builder: (context, ref, _) {
-              final updateAsync = ref.watch(appUpdateCheckProvider);
-              return updateAsync.maybeWhen(
-                data: (res) => res.hasUpdate && res.updateInfo != null
-                    ? UpdateBanner(updateInfo: res.updateInfo!)
-                    : const SizedBox.shrink(),
-                orElse: () => const SizedBox.shrink(),
-              );
-            },
+          // Update Banner
+          updateAsync.maybeWhen(
+            data: (res) => res.hasUpdate && res.updateInfo != null
+                ? UpdateBanner(updateInfo: res.updateInfo!)
+                : const SizedBox.shrink(),
+            orElse: () => const SizedBox.shrink(),
           ),
+
+          // Offline Status Bar
           const OfflineStatusBar(),
+
+          // Single-Column Mobile Feed
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Spatial Welcome Banner
-            GlassContainer(
-              borderRadius: 20,
-              padding: const EdgeInsets.all(28),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back to ${activeWs?.displayName ?? "Workspace"}',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                            color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Multi-Tenant Cross-Platform MIS • Active Database Connected',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _buildWorkspaceHeroCard(isDark, activeWs),
+                  const SizedBox(height: 20),
+                  _buildSectionHeader(
+                    isDark,
+                    title: 'Workspace Metrics',
+                    infoTitle: 'Tenant Metrics',
+                    infoPurpose: 'Operational statistics and capability status.',
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withAlpha(isDark ? 40 : 25),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.success.withAlpha(80)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          'Tenant Channel Active',
-                          style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 12),
+                  _buildMetricsGrid(isDark, activeWs, isMobile: true),
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(
+                    isDark,
+                    title: 'Quick Actions',
+                    infoTitle: 'Workspace Operations',
+                    infoPurpose: 'Core administrative shortcuts.',
                   ),
-                  const SizedBox(width: 12),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final notifState = ref.watch(notificationProvider);
-                      return InkWell(
-                        onTap: () => NotificationsSheet.show(context),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  const Icon(Icons.notifications_outlined, size: 18),
-                                  if (notifState.unreadCount > 0)
-                                    Positioned(
-                                      right: -2,
-                                      top: -2,
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.error,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Alerts (${notifState.unreadCount})',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  const SizedBox(height: 12),
+                  _buildQuickActionsGrid(isDark, isMobile: true),
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(
+                    isDark,
+                    title: 'Recent Activity',
+                    infoTitle: 'Audit Logs',
+                    infoPurpose: 'Recent tenant events and audit history.',
                   ),
-                  const SizedBox(width: 12),
-                  const ThemeModeSwitcher(),
+                  const SizedBox(height: 12),
+                  _buildLiveActivityStream(isDark),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-
-            // Responsive KPI Widgets Showcase
-            Row(
-              children: [
-                Text(
-                  'Workspace Overview',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const ContextualInfoButton(
-                  title: 'Workspace Metrics & Operations',
-                  purpose: 'Summarizes key operational telemetry, active member counts, and recurring feature subscription revenue for the active tenant organization.',
-                  expectedInputs: 'Automated live feed aggregated across financial records and member registrations.',
-                  impact: 'Reflects real-time transactional performance across web, desktop, and mobile channels.',
-                  bestPractices: 'Monitor active feature subscriptions and recurring revenue weekly to track tenant organization growth.',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            LayoutBuilder(
-              builder: (context, box) {
-                final cardWidth = (box.maxWidth - 48) / 3;
-                return Wrap(
-                  spacing: 24,
-                  runSpacing: 24,
-                  children: [
-                    _buildKpiCard('Active Members', '142', '+12% this month', Icons.people_outline_rounded, AppColors.primary, cardWidth),
-                    _buildKpiCard('Active Discussions', '28', '8 unread messages', Icons.chat_bubble_outline_rounded, AppColors.secondary, cardWidth),
-                    _buildKpiCard('Modular Features', '40+', 'Active plan tier', Icons.extension_outlined, AppColors.tertiary, cardWidth),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ),
-  ],
-),
-);
-}
+      bottomNavigationBar: _buildMobileBottomBar(isDark),
+    );
+  }
 
-  Widget _buildKpiCard(String title, String value, String sub, IconData icon, Color color, double width) {
+  // =========================================================================
+  // REUSABLE DASHBOARD CANVAS COMPONENTS
+  // =========================================================================
+
+  /// Prominent Workspace Hero Banner
+  Widget _buildWorkspaceHeroCard(bool isDark, dynamic activeWs) {
     return Container(
-      width: width.clamp(240, 400),
+      width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              TenantAvatar(
+                logoUrl: activeWs?.logoUrl,
+                name: activeWs?.displayName ?? 'Ozikol',
+                size: 46,
+                borderRadius: 14,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activeWs?.displayName ?? 'Active Workspace',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      activeWs?.primaryDomain ?? 'domain.ozikol.cloud',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppBadge(
+                text: 'Connected',
+                backgroundColor: AppColors.success,
+                textColor: Colors.white,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tenant Key: ${activeWs?.tenantKey ?? "Default"}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                ),
+              ),
+              Text(
+                'Channel: Live Sync Active',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Metric Counter Cards Grid
+  Widget _buildMetricsGrid(bool isDark, dynamic activeWs, {bool isMobile = false}) {
+    final metrics = [
+      _MetricData(
+        title: 'Organization Members',
+        value: 'Active',
+        subtitle: 'Directory Synced',
+        icon: Icons.people_outline_rounded,
+        iconBg: AppColors.primaryContainer,
+        iconColor: AppColors.primary,
+      ),
+      _MetricData(
+        title: 'Modular Capabilities',
+        value: 'Enabled',
+        subtitle: 'Enterprise Tier',
+        icon: Icons.extension_outlined,
+        iconBg: AppColors.secondaryContainer,
+        iconColor: AppColors.secondary,
+      ),
+      _MetricData(
+        title: 'Subscription Status',
+        value: 'Active',
+        subtitle: 'Monthly Recurring Plan',
+        icon: Icons.verified_outlined,
+        iconBg: isDark ? AppColors.surfaceVariantDark : const Color(0xFFE0F2FE),
+        iconColor: AppColors.info,
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: metrics
+            .map((m) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _buildMetricTile(isDark, m),
+                ))
+            .toList(),
+      );
+    }
+
+    return Row(
+      children: metrics
+          .map((m) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: _buildMetricTile(isDark, m),
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildMetricTile(bool isDark, _MetricData data) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark ? AppColors.outlineDark : AppColors.outlineLight,
+          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
         ),
       ),
       child: Column(
@@ -569,182 +450,508 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                data.title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                ),
               ),
-              Icon(icon, size: 22, color: color),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: data.iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(data.icon, size: 18, color: data.iconColor),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
-            value,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+            data.value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            sub,
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500),
+            data.subtitle,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? AppColors.gray400 : AppColors.gray500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMobileDrawer(bool isDark, dynamic activeWs) {
-    return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            UserAccountsDrawerHeader(
-              currentAccountPicture: TenantAvatar(
-                logoUrl: activeWs?.logoUrl,
-                name: activeWs?.displayName ?? 'OZ',
-                size: 50,
+  /// Quick Operational Actions Grid
+  Widget _buildQuickActionsGrid(bool isDark, {bool isMobile = false}) {
+    final actions = [
+      _ActionData(
+        title: 'Invite Member',
+        subtitle: 'Grant workspace access',
+        icon: Icons.person_add_alt_1_rounded,
+        onTap: () {},
+      ),
+      _ActionData(
+        title: 'Modular Capabilities',
+        subtitle: 'Configure tenant features',
+        icon: Icons.apps_rounded,
+        onTap: () {},
+      ),
+      _ActionData(
+        title: 'Audit Activity',
+        subtitle: 'Review security logs',
+        icon: Icons.shield_outlined,
+        onTap: () {},
+      ),
+      _ActionData(
+        title: 'Ozi AI Studio',
+        subtitle: 'Smart workspace assist',
+        icon: Icons.auto_awesome_rounded,
+        onTap: () {},
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isMobile ? 2 : 4,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: isMobile ? 1.3 : 1.4,
+      ),
+      itemCount: actions.length,
+      itemBuilder: (context, index) {
+        final action = actions[index];
+        return Material(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: action.onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                ),
               ),
-              accountName: Text(activeWs?.displayName ?? 'Workspace'),
-              accountEmail: Text(activeWs?.primaryDomain ?? ''),
-              decoration: const BoxDecoration(color: AppColors.primary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(action.icon, size: 22, color: AppColors.primary),
+                  const SizedBox(height: 10),
+                  Text(
+                    action.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    action.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isDark ? AppColors.gray400 : AppColors.gray500,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz_rounded),
-              title: const Text('Switch Workspace'),
-              onTap: () {
-                Navigator.pop(context);
-                _showMobileWorkspaceSheet(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_business_rounded),
-              title: const Text('Add Another Workspace'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()));
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileBody(bool isDark, dynamic activeWs) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome, ${activeWs?.displayName ?? "User"}',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 16),
-          _buildKpiCard('Active Members', '142', '+12%', Icons.people_outline_rounded, AppColors.primary, double.infinity),
-          const SizedBox(height: 14),
-          _buildKpiCard('Active Discussions', '28', '8 unread', Icons.chat_bubble_outline_rounded, AppColors.secondary, double.infinity),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  void _showMobileWorkspaceSheet(BuildContext context) {
-    final state = ref.read(workspaceStateProvider);
-    final notifier = ref.read(workspaceStateProvider.notifier);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  /// Live Activity Stream powered by ActivityTile
+  Widget _buildLiveActivityStream(bool isDark) {
+    final activities = [
+      _ActivityEntry(
+        title: 'Workspace Session Active',
+        subtitle: 'System initialized on host machine',
+        timestamp: 'Just now',
+        status: 'Success',
+        severity: 'success',
+        icon: Icons.login_rounded,
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+      _ActivityEntry(
+        title: 'Central Database Synced',
+        subtitle: 'Tenant configuration resolved',
+        timestamp: '10m ago',
+        status: 'Active',
+        severity: 'info',
+        icon: Icons.sync_rounded,
+      ),
+      _ActivityEntry(
+        title: 'Multi-Tenant Security Check',
+        subtitle: 'Vault keys verified cleanly',
+        timestamp: '1h ago',
+        status: 'Verified',
+        severity: 'success',
+        icon: Icons.verified_user_outlined,
+      ),
+    ];
+
+    return Column(
+      children: activities
+          .map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ActivityTile(
+                  title: a.title,
+                  subtitle: a.subtitle,
+                  timestamp: a.timestamp,
+                  statusBadge: a.status,
+                  statusSeverity: a.severity,
+                  icon: a.icon,
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+  /// Section Header with Contextual Info Icon (Rule 13)
+  Widget _buildSectionHeader(
+    bool isDark, {
+    required String title,
+    required String infoTitle,
+    required String infoPurpose,
+  }) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
+          ),
+        ),
+        const SizedBox(width: 8),
+        ContextualInfoButton(
+          title: infoTitle,
+          purpose: infoPurpose,
+          expectedInputs: 'Synchronized live from active tenant database records.',
+          impact: 'Ensures workspace administrators possess full situational awareness.',
+          bestPractices: 'Review audit events daily to maintain tenant organization compliance.',
+        ),
+      ],
+    );
+  }
+
+  // =========================================================================
+  // SIDEBAR & DRAWER SECTIONS
+  // =========================================================================
+
+  Widget _buildDesktopSidebarHeader(bool isDark, dynamic activeWs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariantLight,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          TenantAvatar(
+            logoUrl: activeWs?.logoUrl,
+            name: activeWs?.displayName ?? 'Ozikol',
+            size: 32,
+            borderRadius: 10,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Text('Enrolled Workspaces', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  activeWs?.displayName ?? 'Workspace',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
-                ...state.enrolledWorkspaces.map((ws) {
-                  final isActive = ws.tenantKey == state.activeWorkspace?.tenantKey;
-                  return ListTile(
-                    leading: TenantAvatar(logoUrl: ws.logoUrl, name: ws.displayName, size: 36),
-                    title: Text(ws.displayName),
-                    subtitle: Text(ws.primaryDomain),
-                    trailing: isActive ? const Icon(Icons.check_circle_rounded, color: AppColors.primary) : null,
-                    onTap: () {
-                      notifier.switchWorkspace(ws.tenantKey);
-                      Navigator.pop(context);
-                    },
-                  );
-                }),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.add_rounded, color: AppColors.primary),
-                  title: const Text('Add Another Workspace', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()));
-                  },
+                Text(
+                  activeWs?.primaryDomain ?? 'domain.ozikol.cloud',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? AppColors.gray400 : AppColors.gray600,
+                  ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  void _showLockedFeatureDialog(BuildContext context, String featureName) {
-    showDialog(
+  Widget _buildDesktopSidebarFooter(bool isDark, dynamic activeWs) {
+    return Container(
+      padding: const EdgeInsets.only(top: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 15,
+            backgroundColor: AppColors.primaryContainer,
+            child: Text(
+              activeWs?.userFullName?.isNotEmpty == true
+                  ? activeWs!.userFullName![0].toUpperCase()
+                  : 'U',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              activeWs?.userFullName ?? 'Staff Member',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            tooltip: 'Sign Out',
+            onPressed: () {
+              if (activeWs != null) {
+                ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<AppDrawerSection> _buildNavigationSections(bool isDark) {
+    return [
+      AppDrawerSection(
+        title: 'WORKSPACE HUB',
+        items: [
+          AppDrawerItem(
+            icon: Icons.dashboard_rounded,
+            title: 'Overview & Landing',
+            isSelected: _selectedNavIndex == 0,
+            onTap: () => setState(() => _selectedNavIndex = 0),
+          ),
+          AppDrawerItem(
+            icon: Icons.extension_outlined,
+            title: 'Modular Capabilities',
+            isSelected: _selectedNavIndex == 1,
+            onTap: () => setState(() => _selectedNavIndex = 1),
+          ),
+          AppDrawerItem(
+            icon: Icons.people_outline_rounded,
+            title: 'Member Directory',
+            isSelected: _selectedNavIndex == 2,
+            onTap: () => setState(() => _selectedNavIndex = 2),
+          ),
+        ],
+      ),
+      AppDrawerSection(
+        title: 'OPERATIONS & COMPLIANCE',
+        items: [
+          AppDrawerItem(
+            icon: Icons.receipt_long_outlined,
+            title: 'Audit & Activity Log',
+            isSelected: _selectedNavIndex == 3,
+            onTap: () => setState(() => _selectedNavIndex = 3),
+          ),
+          AppDrawerItem(
+            icon: Icons.auto_awesome_rounded,
+            title: 'Ozi AI Studio',
+            isSelected: _selectedNavIndex == 4,
+            onTap: () => setState(() => _selectedNavIndex = 4),
+          ),
+          AppDrawerItem(
+            icon: Icons.settings_outlined,
+            title: 'Workspace Settings',
+            isSelected: _selectedNavIndex == 5,
+            onTap: () => setState(() => _selectedNavIndex = 5),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildMobileBottomBar(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+          ),
+        ),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedNavIndex.clamp(0, 3),
+        onTap: (index) => setState(() => _selectedNavIndex = index),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: isDark ? AppColors.gray400 : AppColors.gray500,
+        type: BottomNavigationBarType.fixed,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.extension_rounded),
+            label: 'Features',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_rounded),
+            label: 'Activity',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_rounded),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleTheme() {
+    ref.read(themeModeProvider.notifier).toggleTheme(context);
+  }
+
+  void _showMobileWorkspaceSheet(BuildContext context) {
+    final state = ref.read(workspaceStateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.lock_rounded, color: AppColors.warning, size: 22),
-              const SizedBox(width: 10),
-              const Text('Feature Locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.gray700 : AppColors.gray300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Switch Tenant Workspace',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              ...state.enrolledWorkspaces.map((ws) {
+                final isCurrent = ws.tenantKey == state.activeWorkspace?.tenantKey;
+                return ListTile(
+                  leading: TenantAvatar(logoUrl: ws.logoUrl, name: ws.displayName, size: 36),
+                  title: Text(ws.displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(ws.primaryDomain, style: const TextStyle(fontSize: 12)),
+                  trailing: isCurrent
+                      ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    ref.read(workspaceStateProvider.notifier).switchWorkspace(ws.tenantKey);
+                    Navigator.of(context).pop();
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
             ],
           ),
-          content: Text(
-            '$featureName is a modular capability not included in your organization\'s active subscription.\n\nPlease contact your system administrator or upgrade your subscription tier in the Central Works portal.',
-            style: const TextStyle(fontSize: 13, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Dismiss'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('View Upgrade Options'),
-            ),
-          ],
         );
       },
     );
   }
 }
 
-class _NavCategory {
+class _MetricData {
   final String title;
-  final List<_NavItem> items;
-  const _NavCategory({required this.title, required this.items});
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+
+  const _MetricData({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+  });
 }
 
-class _NavItem {
-  final String id;
-  final String label;
+class _ActionData {
+  final String title;
+  final String subtitle;
   final IconData icon;
-  final bool isLocked;
-  const _NavItem({required this.id, required this.label, required this.icon, this.isLocked = false});
+  final VoidCallback onTap;
+
+  const _ActionData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+}
+
+class _ActivityEntry {
+  final String title;
+  final String subtitle;
+  final String timestamp;
+  final String status;
+  final String severity;
+  final IconData icon;
+
+  const _ActivityEntry({
+    required this.title,
+    required this.subtitle,
+    required this.timestamp,
+    required this.status,
+    required this.severity,
+    required this.icon,
+  });
 }
