@@ -371,7 +371,7 @@ interface WizardStep {
                   </div>
 
                   <!-- Member Category / Tier Selector -->
-                  <div class="form-group category-picker-group" *ngIf="categories.length > 0">
+                  <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                     <label class="form-label">Select Member Category / Tier</label>
                     <div class="category-cards-grid">
                       <div
@@ -688,7 +688,7 @@ interface WizardStep {
                     </div>
 
                     <!-- Category Selector -->
-                    <div class="form-group category-picker-group" *ngIf="categories.length > 0">
+                    <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                       <label class="form-label">Member Tier</label>
                       <div class="category-cards-grid">
                         <div *ngFor="let cat of categories" class="category-card" [class.selected]="model.bcpUserCategoryId === cat.id" (click)="selectCategory(cat.id)">
@@ -842,7 +842,7 @@ interface WizardStep {
                         <input type="text" [(ngModel)]="model.phoneNumber" name="st_ph" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
                       </div>
                     </div>
-                    <div class="form-group category-picker-group" *ngIf="categories.length > 0">
+                    <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                       <label class="form-label">Select Category</label>
                       <div class="category-cards-grid">
                         <div *ngFor="let cat of categories" class="category-card" [class.selected]="model.bcpUserCategoryId === cat.id" (click)="selectCategory(cat.id)">
@@ -1057,7 +1057,7 @@ interface WizardStep {
                       <label class="form-label">Phone Number <span class="optional-tag">(Optional)</span></label>
                       <input type="text" [(ngModel)]="model.phoneNumber" name="pg_ph" placeholder="e.g. +0 (000) 000-0000" class="form-input" />
                     </div>
-                    <div class="form-group category-picker-group" *ngIf="categories.length > 0">
+                    <div class="form-group category-picker-group" *ngIf="categories.length > 0 && !isCoreFieldUnpublished('category')">
                       <label class="form-label">Member Category / Tier</label>
                       <div class="category-cards-grid">
                         <div *ngFor="let cat of categories" class="category-card" [class.selected]="model.bcpUserCategoryId === cat.id" (click)="selectCategory(cat.id)">

@@ -655,6 +655,33 @@ interface IndustryTemplate {
                       </span>
                     </div>
                   </div>
+
+                  <!-- Industry Sector / Organization Domain (Unpublishable) -->
+                  <div class="rf-core-row">
+                    <div class="rf-core-info">
+                      <span class="material-symbols-outlined rf-core-icon">apartment</span>
+                      <div>
+                        <strong>Industry / Organization Sector</strong>
+                        <span class="rf-core-hint">Allows applicants to specify their industry vertical. Can be unpublished to hide from registration.</span>
+                      </div>
+                    </div>
+                    <div class="rf-core-controls">
+                      <span [class]="isCoreFieldPublished('organizationType') ? 'rf-badge-opt' : 'rf-badge-unpub'">
+                        {{ isCoreFieldPublished('organizationType') ? 'Published' : 'Hidden' }}
+                      </span>
+                      <button type="button"
+                              class="rf-btn-unpub"
+                              [class.is-active]="isCoreFieldPublished('organizationType')"
+                              (click)="toggleCoreFieldPublish('organizationType')">
+                        <span class="material-symbols-outlined">{{ isCoreFieldPublished('organizationType') ? 'visibility' : 'visibility_off' }}</span>
+                        <span>{{ isCoreFieldPublished('organizationType') ? 'Published' : 'Unpublished' }}</span>
+                      </button>
+                      <span class="rf-lock-badge" title="System Field: Cannot delete from database, but can be unpublished">
+                        <span class="material-symbols-outlined">lock</span>
+                        <span>No Delete</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -754,6 +781,10 @@ interface IndustryTemplate {
                           <span>{{ getFieldTypeLabel(field.fieldType) }}</span>
                         </span>
                         
+                        <!-- Active / Disabled Soft Status -->
+                        <span *ngIf="field.isActive" class="rf-badge-active">Active</span>
+                        <span *ngIf="!field.isActive" class="rf-badge-disabled" title="Disabled: Question is hidden from new signups. Historical member answers are preserved.">Disabled (Hidden)</span>
+
                         <!-- Validation Rule Badges -->
                         <span *ngIf="field.isRequired" class="rf-badge-req">Required</span>
                         <span *ngIf="!field.isRequired" class="rf-badge-opt">Optional</span>
@@ -788,6 +819,13 @@ interface IndustryTemplate {
                     </div>
 
                     <div class="rf-field-actions">
+                      <button type="button"
+                              class="rf-action-btn rf-btn-toggle-active"
+                              [class.is-active]="field.isActive"
+                              (click)="toggleFieldActive(field)"
+                              [title]="field.isActive ? 'Disable Question (Soft-hide from new applicants without losing historical data)' : 'Enable Question (Publish on registration form)'">
+                        <span class="material-symbols-outlined">{{ field.isActive ? 'visibility' : 'visibility_off' }}</span>
+                      </button>
                       <button type="button" class="rf-action-btn" (click)="openEditModal(field)" title="Edit Question &amp; Validation">
                         <span class="material-symbols-outlined">edit</span>
                       </button>
@@ -2715,7 +2753,29 @@ interface IndustryTemplate {
       transition: all 0.15s ease;
     }
     .rf-action-btn:hover { background: #f8fafc; color: #0050e5; border-color: #cbd5e1; }
+    .rf-btn-toggle-active { color: #94a3b8; }
+    .rf-btn-toggle-active.is-active { color: #10b981; background: #ecfdf5; border-color: #a7f3d0; }
+    .rf-btn-toggle-active:hover { border-color: #10b981; color: #10b981; }
     .rf-btn-del:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+    .rf-badge-active {
+      background: #dcfce7;
+      color: #166534;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .rf-badge-disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      border: 1px dashed #cbd5e1;
+    }
 
     /* Empty state */
     .rf-empty-fields {
@@ -5549,6 +5609,50 @@ export class RegistrationFormBuilderComponent implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Soft-toggles question active state without deleting historical registrant answers.
+   * When deactivated, the question is excluded from public registration for new applicants,
+   * while all existing member answers remain safely preserved in their account profiles.
+   */
+  toggleFieldActive(field: RegistrationField): void {
+    const previousState = field.isActive;
+    const newState = !previousState;
+    field.isActive = newState;
+
+    const payload = {
+      label: field.label,
+      fieldKey: field.fieldKey,
+      placeholder: field.placeholder || '',
+      fieldType: field.fieldType,
+      options: field.options ? [...field.options] : [],
+      isRequired: field.isRequired,
+      sortOrder: field.sortOrder,
+      isActive: newState,
+      bcpUserCategoryId: field.bcpUserCategoryId || null,
+      helpText: field.helpText || '',
+      showInWorkspaceProfile: field.showInWorkspaceProfile,
+      sectionName: field.sectionName || '',
+      minLength: field.minLength ?? null,
+      maxLength: field.maxLength ?? null,
+      patternRegex: field.patternRegex || '',
+      customErrorMessage: field.customErrorMessage || ''
+    };
+
+    this.api.put<any>(`RegistrationFormApi/fields/${field.id}`, payload).subscribe({
+      next: () => {
+        this.toast.success(
+          newState
+            ? `Question "${field.label}" is now active and visible to new registrants.`
+            : `Question "${field.label}" is disabled. Hidden from new applicants while preserving historical member records.`
+        );
+      },
+      error: (err) => {
+        field.isActive = previousState;
+        this.toast.error(err?.error?.message || 'Could not update question status.');
+      }
+    });
   }
 
   deleteField(field: RegistrationField): void {
