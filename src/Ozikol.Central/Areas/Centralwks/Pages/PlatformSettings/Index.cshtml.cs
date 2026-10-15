@@ -257,7 +257,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.DefaultTrialDays = Input.DefaultTrialDays;
             settings.DefaultCurrencyCode = Input.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "USD";
             settings.SupportCategories = Input.SupportCategories.Trim();
-            settings.MongoLogsConnectionString = Input.MongoLogsConnectionString?.Trim();
+
+            // Guard against accidental secret wipeouts when re-submitting settings
+            if (!string.IsNullOrWhiteSpace(Input.MongoLogsConnectionString))
+            {
+                settings.MongoLogsConnectionString = Input.MongoLogsConnectionString.Trim();
+            }
+
             settings.MongoLogsDatabaseName = string.IsNullOrWhiteSpace(Input.MongoLogsDatabaseName) ? "OzikolLogsDb" : Input.MongoLogsDatabaseName.Trim();
             settings.MongoLogsCollectionName = string.IsNullOrWhiteSpace(Input.MongoLogsCollectionName) ? "central_system_logs" : Input.MongoLogsCollectionName.Trim();
             settings.SentryDsn = Input.SentryDsn?.Trim();
@@ -265,7 +271,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.CloudflareTurnstileSiteKey = Input.CloudflareTurnstileSiteKey?.Trim();
             settings.CloudinaryCloudName = Input.CloudinaryCloudName?.Trim();
             settings.CloudinaryApiKey = Input.CloudinaryApiKey?.Trim();
-            settings.CloudinaryApiSecret = Input.CloudinaryApiSecret?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Input.CloudinaryApiSecret))
+            {
+                settings.CloudinaryApiSecret = Input.CloudinaryApiSecret.Trim();
+            }
+
             settings.IsMaintenanceMode = Input.IsMaintenanceMode;
             settings.MaintenanceMessage = Input.MaintenanceMessage?.Trim();
             settings.MinimumAppVersion = string.IsNullOrWhiteSpace(Input.MinimumAppVersion) ? "1.0.0" : Input.MinimumAppVersion.Trim();
@@ -280,6 +291,38 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             StatusMessage = "Global platform settings saved successfully.";
 
             return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to test a MongoDB connection string in real-time.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestMongoConnectionAsync([FromForm] string? connectionString)
+        {
+            var targetConn = connectionString?.Trim();
+            if (string.IsNullOrWhiteSpace(targetConn))
+            {
+                var settings = await _context.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1);
+                targetConn = settings?.MongoLogsConnectionString;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetConn))
+            {
+                return new JsonResult(new { success = false, message = "No MongoDB connection string provided or configured." });
+            }
+
+            try
+            {
+                var clientSettings = MongoDB.Driver.MongoClientSettings.FromConnectionString(targetConn);
+                clientSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(6);
+                var client = new MongoDB.Driver.MongoClient(clientSettings);
+                var db = client.GetDatabase("OzikolLogsDb");
+                await db.RunCommandAsync((MongoDB.Driver.Command<MongoDB.Bson.BsonDocument>)"{ping:1}");
+                return new JsonResult(new { success = true, message = "Successfully connected to MongoDB Atlas! Cluster ping: ok." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Connection failed: {ex.Message}" });
+            }
         }
     }
 }

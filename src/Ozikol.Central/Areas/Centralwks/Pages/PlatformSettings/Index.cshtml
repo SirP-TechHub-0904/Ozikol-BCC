@@ -263,11 +263,25 @@
 
             <div style="padding: 24px; background: var(--admin-bg-surface);">
                 <div style="margin-bottom: 20px;">
-                    <label asp-for="Input.MongoLogsConnectionString" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
-                        MongoDB Connection String (Strictly for System Logs)
-                    </label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label asp-for="Input.MongoLogsConnectionString" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                            MongoDB Connection String (Strictly for System Logs)
+                        </label>
+                        @if (!string.IsNullOrEmpty(Model.Input.MongoLogsConnectionString))
+                        {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669;"></span> Configured in Master DB
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;">
+                                Not Configured
+                            </span>
+                        }
+                    </div>
                     <div style="position: relative;">
-                        <input asp-for="Input.MongoLogsConnectionString" id="mongoConnInput" type="password" class="form-control" 
+                        <input asp-for="Input.MongoLogsConnectionString" value="@Model.Input.MongoLogsConnectionString" id="mongoConnInput" type="password" class="form-control" 
                                placeholder="mongodb+srv://dbuser:password@@cluster0.mongodb.net/?retryWrites=true&amp;w=majority" 
                                style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
                         <button type="button" onclick="togglePasswordVisibility('mongoConnInput', this)" 
@@ -275,9 +289,18 @@
                             <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
                         </button>
                     </div>
-                    <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">
-                        Persisted centrally in the Master Catalog. The central API securely resolves this dynamically without committing credentials into Git.
-                    </span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 12px; color: var(--admin-text-muted);">
+                            Persisted centrally in the Master Catalog. The string remains safely preserved upon saving. Click the eye icon to view or edit.
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button type="button" id="btnTestMongo" onclick="testMongoConnection()" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 4px 12px; border: 1px solid var(--admin-border); display: inline-flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">wifi_tethering</span>
+                                <span>Test Live Connection</span>
+                            </button>
+                            <span id="mongoTestStatus" style="font-size: 12px; font-weight: 600;"></span>
+                        </div>
+                    </div>
                     <span asp-validation-for="Input.MongoLogsConnectionString" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
@@ -390,11 +413,19 @@
                     </div>
 
                     <div>
-                        <label asp-for="Input.CloudinaryApiSecret" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
-                            API Secret
-                        </label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.CloudinaryApiSecret" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                API Secret
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.CloudinaryApiSecret))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Configured
+                                </span>
+                            }
+                        </div>
                         <div style="position: relative;">
-                            <input asp-for="Input.CloudinaryApiSecret" id="cloudSecretInput" type="password" class="form-control" 
+                            <input asp-for="Input.CloudinaryApiSecret" value="@Model.Input.CloudinaryApiSecret" id="cloudSecretInput" type="password" class="form-control" 
                                    placeholder="e.g. secret_token_value" 
                                    style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); padding-right: 42px;" />
                             <button type="button" onclick="togglePasswordVisibility('cloudSecretInput', this)" 
@@ -508,6 +539,46 @@
         } else {
             input.type = 'password';
             if (icon) icon.textContent = 'visibility';
+        }
+    }
+
+    async function testMongoConnection() {
+        var input = document.getElementById('mongoConnInput');
+        var btn = document.getElementById('btnTestMongo');
+        var status = document.getElementById('mongoTestStatus');
+        if (!input || !status) return;
+
+        var connStr = input.value.trim();
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Connecting to MongoDB Atlas...';
+        btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('connectionString', connStr);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestMongoConnection', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing connection.';
+        } finally {
+            btn.disabled = false;
         }
     }
 
